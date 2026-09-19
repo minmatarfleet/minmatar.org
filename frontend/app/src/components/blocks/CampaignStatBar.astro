@@ -1,0 +1,61 @@
+---
+export interface CampaignStat {
+    label:  string;
+    value:  string;
+    title?: string;
+}
+
+interface Props {
+    stats:              CampaignStat[];
+    [propName: string]: any;
+}
+
+const {
+    stats,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div class:list={['[ campaign-stat-bar ][ light-transparency ]', Astro.props.class]} {...attributes}>
+    {stats.map(stat =>
+        <div class="[ campaign-stat ]" title={stat.title}>
+            <span class="[ campaign-stat-value ]">{stat.value}</span>
+            <small class="[ campaign-stat-label ]">{stat.label}</small>
+        </div>
+    )}
+</div>
+
+<style lang="scss">
+    .campaign-stat-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
+        gap: var(--space-3xs);
+        border: solid 1px var(--border-color);
+        padding: var(--space-2xs);
+        width: 100%;
+    }
+
+    .campaign-stat {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-2xs) var(--space-xs);
+        min-width: 0;
+    }
+
+    .campaign-stat-value {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        line-height: 1;
+        overflow-wrap: anywhere;
+    }
+
+    .campaign-stat-label {
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>

@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { CampaignReadiness } from '@dtypes/api.minmatar.org'
+import {
+    get_campaign_readiness,
+    include_campaign_character,
+    exclude_campaign_character,
+} from '@helpers/api.minmatar.org/campaigns'
+
+const slug = Astro.url.searchParams.get('slug') as string
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+const included = Astro.url.searchParams.get('included') === 'true'
+
+let flash:string | false = false
+
+if (Astro.request.method === 'POST' && slug && character_id) {
+    try {
+        if (included)
+            await include_campaign_character(slug, auth_token as string, character_id)
+        else
+            await exclude_campaign_character(slug, auth_token as string, character_id)
+    } catch (error) {
+        flash = t('campaigns.action_failed')
+    }
+}
+
+let readiness:CampaignReadiness = { characters: [], tracked: 0, total: 0 }
+
+try {
+    readiness = await get_campaign_readiness(auth_token as string)
+} catch (error) {
+    flash = t('campaigns.action_failed')
+}
+
+import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
+---
+
+<CampaignReadinessTable readiness={readiness} campaign_slug={slug} flash={flash} />

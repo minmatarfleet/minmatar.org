@@ -1,0 +1,176 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    slug:               string;
+    variant:            'card' | 'hero';
+    is_enlisted:        boolean;
+    standing_fleet_up:  boolean;
+    systems?:           CampaignSystemSummary[];
+    flash?:             string | false;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    variant,
+    is_enlisted,
+    standing_fleet_up,
+    systems = [],
+    flash = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const actions_id = `campaign-actions-${slug}`
+const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}&variant=${variant}`)
+
+const hx_attributes = (action:string) => ({
+    'hx-post': `${PARTIAL_URL}&action=${action}`,
+    'hx-target': `#${actions_id}`,
+    'hx-swap': 'outerHTML',
+    'hx-indicator': '.loader',
+})
+
+const standing_fleet_label = standing_fleet_up ? t('campaigns.join_standing_fleet') : t('campaigns.take_standing_fleet')
+const standing_fleet_action = standing_fleet_up ? 'standing_fleet_join' : 'standing_fleet_take'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<Flexblock
+    id={actions_id}
+    gap='var(--space-2xs)'
+    class:list={['[ campaign-actions ]', Astro.props.class]}
+    {...attributes}
+>
+    {variant === 'card' ?
+        <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-row ]">
+            {is_enlisted ?
+                <Button color='transparent' {...hx_attributes('leave')}>
+                    {t('campaigns.leave')}
+                </Button>
+                :
+                <Button color='green' {...hx_attributes('enlist')}>
+                    {t('campaigns.enlist')}
+                </Button>
+            }
+            <Button color='fleet-red' {...hx_attributes(standing_fleet_action)}>
+                {standing_fleet_label}
+            </Button>
+            <Button color='transparent' href={translatePath(`/campaigns/${slug}/`)}>
+                {t('campaigns.open')}
+            </Button>
+        </FlexInline>
+        :
+        <Flexblock gap='var(--space-2xs)'>
+            <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-row ]">
+                <Button color='fleet-red' {...hx_attributes(standing_fleet_action)}>
+                    {standing_fleet_label}
+                </Button>
+                <DialogButton color='transparent' max_width='460px'>
+                    {t('campaigns.form_gang')}
+                    <Flexblock slot='dialog' gap='var(--space-s)'>
+                        <h3>{t('campaigns.gang.dialog_title')}</h3>
+                        <form
+                            hx-post={`${PARTIAL_URL}&action=gang`}
+                            hx-target={`#${actions_id}`}
+                            hx-swap='outerHTML'
+                            hx-indicator='.loader'
+                            @htmx:after-request="close_dialog()"
+                        >
+                            <Flexblock gap='var(--space-s)'>
+                                <label>
+                                    <small>{t('campaigns.gang.ships')}</small>
+                                    <Input type='text' name='ships' placeholder={t('campaigns.gang.ships_placeholder')} required />
+                                </label>
+                                <label>
+                                    <small>{t('campaigns.gang.note')}</small>
+                                    <Textarea name='note' rows='3' />
+                                </label>
+                                <Button size='sm' color='green' type='submit'>
+                                    {t('campaigns.gang.submit')}
+                                </Button>
+                            </Flexblock>
+                        </form>
+                    </Flexblock>
+                </DialogButton>
+                <DialogButton color='transparent' max_width='460px'>
+                    {t('campaigns.undock_solo')}
+                    <Flexblock slot='dialog' gap='var(--space-s)'>
+                        <h3>{t('campaigns.undock_solo')}</h3>
+                        <p>{t('campaigns.undock_solo_hint')}</p>
+                        <FlexInline gap='var(--space-2xs)'>
+                            {systems.map(system =>
+                                <span class="[ campaign-actions-system ]">{system.name}</span>
+                            )}
+                        </FlexInline>
+                    </Flexblock>
+                </DialogButton>
+            </FlexInline>
+
+            <FlexInline gap='var(--space-s)' class="[ campaign-actions-links ]">
+                {is_enlisted ?
+                    <button type='button' class="[ campaign-actions-link ]" {...hx_attributes('leave')}>
+                        {t('campaigns.leave')}
+                    </button>
+                    :
+                    <button type='button' class="[ campaign-actions-link ]" {...hx_attributes('enlist')}>
+                        {t('campaigns.enlist')}
+                    </button>
+                }
+                <a class="[ campaign-actions-link ]" href={translatePath('/account/')}>
+                    {t('campaigns.alert_settings')}
+                </a>
+            </FlexInline>
+        </Flexblock>
+    }
+
+    {flash && <small class="[ campaign-actions-flash ]">{flash}</small>}
+</Flexblock>
+
+<style lang="scss">
+    .campaign-actions-row {
+        align-items: stretch;
+    }
+
+    .campaign-actions-link {
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--foreground);
+        font-size: var(--step--1);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .campaign-actions-flash {
+        color: var(--highlight);
+    }
+
+    .campaign-actions-system {
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+</style>

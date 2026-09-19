@@ -1,0 +1,56 @@
+---
+import type { CampaignSystemTrendPoint } from '@dtypes/api.minmatar.org'
+import { trend_sparkline } from '@helpers/fetching/campaigns'
+
+interface Props {
+    trend:              CampaignSystemTrendPoint[];
+    color?:             string;
+    title?:             string;
+    [propName: string]: any;
+}
+
+const {
+    trend,
+    color = 'var(--fleet-yellow)',
+    title,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const sparkline = trend_sparkline(trend)
+---
+
+{!sparkline.empty &&
+    <svg
+        class:list={['[ campaign-sparkline ]', Astro.props.class]}
+        viewBox="0 0 100 32"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={title}
+        {...attributes}
+    >
+        <polygon class="[ campaign-sparkline-area ]" points={sparkline.area} />
+        <polyline class="[ campaign-sparkline-line ]" points={sparkline.line} />
+    </svg>
+}
+
+<style lang="scss" define:vars={{ campaign_sparkline_color: color }}>
+    .campaign-sparkline {
+        display: block;
+        width: 100%;
+        height: var(--space-l);
+    }
+
+    .campaign-sparkline-line {
+        fill: none;
+        stroke: var(--campaign_sparkline_color);
+        stroke-width: 2;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .campaign-sparkline-area {
+        fill: var(--campaign_sparkline_color);
+        opacity: 0.15;
+    }
+</style>

@@ -1,0 +1,82 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignWeek } from '@dtypes/api.minmatar.org'
+import { pace_color, pace_i18n_key, week_target_progress } from '@helpers/fetching/campaigns'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    week:               CampaignWeek;
+    [propName: string]: any;
+}
+
+const {
+    week,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+---
+
+<Flexblock gap='var(--space-s)' class:list={['[ campaign-week ]', Astro.props.class]} {...attributes}>
+    <small>{t('campaigns.week.week_of').replace('{date}', format_date_short(lang, week.week_start))}</small>
+
+    {week.targets.length === 0 ?
+        <small>{t('campaigns.week.none')}</small>
+        :
+        week.targets.map(target => {
+            const { progress_percent, pace_percent } = week_target_progress(target)
+
+            return (
+                <Flexblock gap='var(--space-3xs)' class="[ campaign-week-target ]">
+                    <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
+                        <Flexblock gap='var(--space-3xs)'>
+                            <span class="[ text-[var(--highlight)] ]">{target.system}</span>
+                            <small>{target.metric.replaceAll('_', ' ')}</small>
+                        </Flexblock>
+                        <FlexInline gap='var(--space-2xs)'>
+                            {target.proposed && <Tag text={t('campaigns.week.proposed')} color='alliance-blue' narrow={true} />}
+                            <Tag text={t(pace_i18n_key(target.pace) as any)} color={pace_color(target.pace)} narrow={true} />
+                        </FlexInline>
+                    </FlexInline>
+
+                    <CampaignMeter
+                        percent={progress_percent}
+                        marker_percent={pace_percent}
+                        marker_label={t('campaigns.week.pace_marker')}
+                        label={`${target.system} ${t('campaigns.week.target')}`}
+                    />
+
+                    <FlexInline gap='var(--space-2xs)' justification='space-between'>
+                        <small>
+                            {target.progress.toFixed(0)} / {target.target.toFixed(0)} · {t('campaigns.week.target')}
+                        </small>
+                        <small>{t('campaigns.week.last_week')}: {target.last_week_actual.toFixed(0)}</small>
+                    </FlexInline>
+
+                    {target.projected_arc_date &&
+                        <small>{t('campaigns.week.projected_arc')}: {format_date_short(lang, target.projected_arc_date)}</small>
+                    }
+                </Flexblock>
+            )
+        })
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-week-target {
+        padding-block-end: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .campaign-week-target:last-child {
+        border-bottom: none;
+        padding-block-end: 0;
+    }
+</style>

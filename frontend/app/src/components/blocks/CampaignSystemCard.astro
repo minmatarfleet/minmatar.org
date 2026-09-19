@@ -1,0 +1,172 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+import { clamp_percent, status_chip_color, status_chip_i18n_key } from '@helpers/fetching/campaigns'
+
+interface Props {
+    system:             CampaignSystemSummary;
+    slug:               string;
+    can_report?:        boolean;
+    [propName: string]: any;
+}
+
+const {
+    system,
+    slug,
+    can_report = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const contested = clamp_percent(system.contested_percent)
+const contested_change = system.contested_change_24h ?? 0
+const our_pct = clamp_percent(system.advantage_our_pct)
+const enemy_pct = clamp_percent(system.advantage_enemy_pct)
+const net_pct = system.advantage_net_pct ?? 0
+const kills_change = system.kills_change_24h ?? 0
+const goal_key = system.goal === 'capture' ? 'campaigns.goal.capture' : 'campaigns.goal.defend'
+
+const advantage_age_text = system.advantage_basis === 'unknown' || system.advantage_age_minutes === null
+    ? t('campaigns.system.no_reading')
+    : system.advantage_is_stale
+        ? t('campaigns.system.reading_stale')
+        : t('campaigns.system.reading_age').replace('{minutes}', String(system.advantage_age_minutes))
+
+const ADVANTAGE_PARTIAL_URL = translatePath(`/partials/campaign_advantage_component?slug=${slug}&system_id=${system.id}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Input from '@components/blocks/Input.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
+---
+
+<ComponentBlock
+    id={`campaign-system-${system.id}`}
+    class:list={['[ campaign-system-card ]', Astro.props.class]}
+    padding_inline='var(--space-s)'
+    padding_block='var(--space-s)'
+    {...attributes}
+>
+    <Flexblock gap='var(--space-s)'>
+        <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ items-start ]">
+            <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                <h3>{system.name}</h3>
+                <Tag text={t(goal_key as any)} color='militia-purple' />
+            </FlexInline>
+            <Tag
+                text={t(status_chip_i18n_key(system.status_chip) as any)}
+                color={status_chip_color(system.status_chip)}
+            />
+        </FlexInline>
+
+        <Grid min_item_width='15rem' row_gap='var(--space-s)' column_gap='var(--space-l)'>
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('campaigns.system.contested')}</small>
+                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                    <span class="[ campaign-figure ]">{contested.toFixed(1)}%</span>
+                    <small>{contested_change >= 0 ? '+' : ''}{contested_change.toFixed(1)} · {t('campaigns.system.change_24h')}</small>
+                </FlexInline>
+                <CampaignMeter percent={contested} label={`${system.name} ${t('campaigns.system.contested')}`} />
+                {system.trend.length > 1 ?
+                    <CampaignSparkline trend={system.trend} title={t('campaigns.system.trend')} />
+                    :
+                    <small>{t('campaigns.system.no_trend')}</small>
+                }
+                <small>
+                    {t('campaigns.system.victory_points')}: {system.victory_points ?? 0} / {system.victory_points_threshold ?? 0}
+                </small>
+            </Flexblock>
+
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('campaigns.system.advantage')}</small>
+                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                    <span class="[ campaign-figure ]">{net_pct >= 0 ? '+' : ''}{net_pct.toFixed(1)}%</span>
+                    <small>{t('campaigns.system.net')}</small>
+                </FlexInline>
+                <Flexblock gap='var(--space-3xs)'>
+                    <small>{t('campaigns.system.ours')} {our_pct.toFixed(1)}%</small>
+                    <CampaignMeter percent={our_pct} color='var(--green)' label={t('campaigns.system.ours')} />
+                    <small>{t('campaigns.system.enemy')} {enemy_pct.toFixed(1)}%</small>
+                    <CampaignMeter percent={enemy_pct} color='var(--fleet-red)' label={t('campaigns.system.enemy')} />
+                </Flexblock>
+                <small>
+                    {advantage_age_text}
+                    {system.advantage_basis === 'estimate' && ` · ${t('campaigns.system.estimated')}`}
+                </small>
+                {can_report &&
+                    <DialogButton size='sm' color='transparent' max_width='420px'>
+                        {t('campaigns.system.report_advantage')}
+                        <Flexblock slot='dialog' gap='var(--space-s)'>
+                            <h3>{t('campaigns.advantage.dialog_title')} · {system.name}</h3>
+                            <small>{t('campaigns.advantage.hint')}</small>
+                            <form
+                                hx-post={ADVANTAGE_PARTIAL_URL}
+                                hx-target={`#campaign-system-${system.id}`}
+                                hx-swap='outerHTML'
+                                hx-indicator='.loader'
+                                @htmx:after-request="close_dialog()"
+                            >
+                                <Flexblock gap='var(--space-s)'>
+                                    <label>
+                                        <small>{t('campaigns.advantage.our_pct')}</small>
+                                        <Input type='number' name='our_pct' min='0' max='100' step='0.1' value='0' required />
+                                    </label>
+                                    <label>
+                                        <small>{t('campaigns.advantage.enemy_pct')}</small>
+                                        <Input type='number' name='enemy_pct' min='0' max='100' step='0.1' value='0' required />
+                                    </label>
+                                    <Button size='sm' color='green' type='submit'>
+                                        {t('campaigns.advantage.submit')}
+                                    </Button>
+                                </Flexblock>
+                            </form>
+                        </Flexblock>
+                    </DialogButton>
+                }
+            </Flexblock>
+
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('campaigns.system.kills_losses')}</small>
+                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                    <span class="[ campaign-figure ]">{system.kills_24h}</span>
+                    <small>{t('campaigns.system.kills')}</small>
+                </FlexInline>
+                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                    <span class="[ campaign-figure ]">{system.losses_24h}</span>
+                    <small>{t('campaigns.system.losses')}</small>
+                </FlexInline>
+                <small>{kills_change >= 0 ? '+' : ''}{kills_change} · {t('campaigns.system.change_24h')}</small>
+            </Flexblock>
+        </Grid>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .campaign-figure {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+        line-height: 1;
+    }
+
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+</style>

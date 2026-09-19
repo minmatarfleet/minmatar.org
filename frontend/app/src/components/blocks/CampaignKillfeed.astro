@@ -1,0 +1,151 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignKillmail, CampaignKillmailOutcome, CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+import { format_isk } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    slug:               string;
+    killmails:          CampaignKillmail[];
+    outcome:            CampaignKillmailOutcome | '';
+    systems?:           CampaignSystemSummary[];
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    killmails,
+    outcome,
+    systems = [],
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const system_names = new Map(systems.map(system => [ system.solar_system_id, system.name ]))
+const filters:(CampaignKillmailOutcome | '')[] = [ '', 'kill', 'loss' ]
+
+const filter_label = (item:CampaignKillmailOutcome | '') => {
+    if (item === 'kill') return t('campaigns.killfeed.kill')
+    if (item === 'loss') return t('campaigns.killfeed.loss')
+    return t('campaigns.killfeed.all')
+}
+
+const partial_url = (item:CampaignKillmailOutcome | '') =>
+    translatePath(`/partials/campaign_killfeed_component?slug=${slug}&outcome=${item}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+<Flexblock
+    id='campaign-killfeed'
+    gap='var(--space-s)'
+    class:list={['[ campaign-killfeed ]', Astro.props.class]}
+    {...attributes}
+>
+    <FlexInline gap='var(--space-3xs)'>
+        {filters.map(item =>
+            <Button
+                size='sm'
+                color='transparent'
+                class={item === outcome ? 'is-active' : undefined}
+                aria-pressed={item === outcome ? 'true' : 'false'}
+                hx-get={partial_url(item)}
+                hx-target='#campaign-killfeed'
+                hx-swap='outerHTML'
+                hx-indicator='.loader'
+            >
+                {filter_label(item)}
+            </Button>
+        )}
+    </FlexInline>
+
+    {killmails.length === 0 ?
+        <small>{t('campaigns.killfeed.none')}</small>
+        :
+        <CampaignTable
+            min_width='42rem'
+            template='7rem minmax(12rem, 1fr) 7rem 7rem 11rem'
+            numeric={[ 3 ]}
+            columns={[
+                t('campaigns.killfeed.outcome'),
+                t('campaigns.killfeed.victim'),
+                t('campaigns.sites.system'),
+                t('campaigns.stat.isk_destroyed'),
+                t('campaigns.sites.when'),
+            ]}
+        >
+            {killmails.map(killmail =>
+                <div class="[ campaign-table-row ]" role="row">
+                    <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                        <Tag
+                            text={killmail.outcome === 'kill' ? t('campaigns.killfeed.kill') : t('campaigns.killfeed.loss')}
+                            color={killmail.outcome === 'kill' ? 'green' : 'fleet-red'}
+                            narrow={true}
+                        />
+                        {killmail.is_solo && <Tag text={t('campaigns.killfeed.solo')} color='alliance-blue' narrow={true} />}
+                    </FlexInline>
+                    <div class="[ campaign-cell-media ]">
+                        {killmail.victim_ship_type_id &&
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_item_icon(killmail.victim_ship_type_id, 32)}
+                                alt={String(killmail.victim_ship_type_id)}
+                            />
+                        }
+                        <Flexblock gap='0'>
+                            <span>{killmail.victim_character_name || t('campaigns.killfeed.unknown_pilot')}</span>
+                            <small class="[ campaign-table-muted ]">
+                                {t('campaigns.killfeed.attackers').replace('{count}', String(killmail.enlisted_attacker_count))}
+                            </small>
+                        </Flexblock>
+                    </div>
+                    <span>{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
+                    <span class="[ campaign-table-numeric ]">{format_isk(killmail.isk_value)}</span>
+                    <small class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
+                </div>
+            )}
+        </CampaignTable>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-killfeed :global(button.button.is-active) {
+        border-color: var(--alliance-blue);
+        color: var(--highlight);
+    }
+
+    .campaign-killfeed img {
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-cell-media img {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media span {
+        overflow-wrap: anywhere;
+    }
+
+</style>

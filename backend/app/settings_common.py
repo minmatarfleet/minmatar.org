@@ -25,6 +25,7 @@ CELERY_IMPORTS = (
     "alliance.tasks",
     "fittings.tasks",
     "surveys.tasks",
+    "campaigns.tasks",
 )
 
 
@@ -106,6 +107,8 @@ INSTALLED_APPS = [
     "help_tickets.apps.HelpTicketsConfig",
     # Quarterly community surveys
     "surveys.apps.SurveysConfig",
+    # Live multi-system Faction Warfare campaigns
+    "campaigns.apps.CampaignsConfig",
 ]
 
 # Discord Login

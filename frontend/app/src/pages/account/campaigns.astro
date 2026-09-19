@@ -1,0 +1,98 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import type { CampaignReadiness, CampaignListItem } from '@dtypes/api.minmatar.org'
+import { get_campaign_readiness, get_campaigns } from '@helpers/api.minmatar.org/campaigns'
+
+let readiness:CampaignReadiness | null = null
+let campaigns:CampaignListItem[] = []
+let fetch_readiness_error:Error | false = false
+
+try {
+    readiness = await get_campaign_readiness(auth_token as string)
+} catch (error) {
+    fetch_readiness_error = error
+}
+
+try {
+    campaigns = await get_campaigns(auth_token as string)
+} catch (error) {
+    console.error('Error fetching campaigns:', error)
+}
+
+const live_campaigns = campaigns.filter(campaign => campaign.status === 'active')
+const current_campaign = live_campaigns.find(campaign => campaign.is_enlisted) ?? live_campaigns[0]
+
+const READINESS_PARTIAL_URL = translatePath(`/partials/campaign_character_component${current_campaign ? `?slug=${current_campaign.slug}` : ''}`)
+
+const page_title = t('campaigns.readiness.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('campaigns.readiness.meta_description')}
+>
+    <PageDefault
+        cover={{
+            image: '/images/account-cover.jpg',
+            image_990: '/images/account-cover-990.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <Button size='sm' color='transparent' href={translatePath('/campaigns/')}>
+                {t('campaigns.page_title')}
+            </Button>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-l)'>
+            <p>{t('campaigns.readiness.leading_text')}</p>
+
+            <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                {fetch_readiness_error || !readiness ?
+                    <ErrorRefetch
+                        args={{
+                            partial: READINESS_PARTIAL_URL,
+                            error: fetch_readiness_error || new Error(t('campaigns.action_failed')),
+                            delay: 0,
+                            target: '#campaign-readiness',
+                        }}
+                    />
+                    :
+                    <CampaignReadinessTable
+                        readiness={readiness}
+                        campaign_slug={current_campaign ? current_campaign.slug : false}
+                    />
+                }
+            </ComponentBlock>
+        </Flexblock>
+    </PageDefault>
+</Viewport>

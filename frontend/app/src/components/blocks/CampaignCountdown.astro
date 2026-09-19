@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import { humanize_date_diff, format_date_short } from '@helpers/date'
+
+interface Props {
+    id:                 number;
+    date:               Date;
+    expired_text?:      string;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    date,
+    expired_text,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const now = new Date()
+const remaining_hours = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+const use_clock = remaining_hours > 0 && remaining_hours < 72
+const expired = remaining_hours <= 0
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Countdown from '@components/blocks/Countdown.astro'
+---
+
+<Flexblock gap='var(--space-3xs)' class:list={['[ campaign-countdown ]', Astro.props.class]} {...attributes}>
+    {use_clock ?
+        <Countdown id={id} date={date} expired_text={expired_text} />
+        :
+        <span class="[ campaign-countdown-text ]">
+            {expired ? (expired_text ?? t('campaigns.ended')) : humanize_date_diff(lang, now, date)}
+        </span>
+    }
+    <small>{format_date_short(lang, date)}</small>
+</Flexblock>
+
+<style lang="scss">
+    .campaign-countdown-text {
+        font-family: var(--countdown-font);
+        font-size: var(--step-2);
+        color: var(--fleet-yellow);
+        line-height: 1;
+        white-space: nowrap;
+    }
+</style>

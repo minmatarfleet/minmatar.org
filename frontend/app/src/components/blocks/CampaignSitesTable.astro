@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignSite } from '@dtypes/api.minmatar.org'
+import { format_date_time } from '@helpers/date'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    sites:              CampaignSite[];
+    [propName: string]: any;
+}
+
+const {
+    sites,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+{sites.length === 0 ?
+    <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.sites.none')}</small>
+    :
+    <CampaignTable
+        min_width='40rem'
+        template='minmax(8rem, 1fr) 7rem minmax(7rem, 1fr) 5rem 11rem'
+        numeric={[ 3 ]}
+        columns={[
+            t('campaigns.sites.kind'),
+            t('campaigns.sites.system'),
+            t('campaigns.sites.pilot'),
+            t('campaigns.sites.lp'),
+            t('campaigns.sites.when'),
+        ]}
+        class:list={[Astro.props.class]}
+        {...attributes}
+    >
+        {sites.map(site =>
+            <div class="[ campaign-table-row ]" role="row">
+                <Flexblock gap='0'>
+                    <span>{site.plex_class || site.site_kind}</span>
+                    {site.confidence && <small class="[ campaign-table-muted ]">{site.confidence}</small>}
+                </Flexblock>
+                <span>{site.system}</span>
+                <span>{site.username ?? '—'}</span>
+                <span class="[ campaign-table-numeric ]">{number_thousand_separator(site.amount_lp)}</span>
+                <small class="[ campaign-table-muted ]">{format_date_time(lang, site.occurred_at)}</small>
+            </div>
+        )}
+    </CampaignTable>
+}

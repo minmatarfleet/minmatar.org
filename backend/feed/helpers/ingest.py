@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.db import transaction
@@ -9,6 +10,8 @@ from feed.helpers.affiliations import apply_killmail_affiliations
 from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.monitored_systems import is_monitored_system
 from feed.models import FeedKillmail
+
+logger = logging.getLogger(__name__)
 
 
 def parse_r2z2_payload(
@@ -80,7 +83,31 @@ def upsert_feed_killmail_from_r2z2(
             },
         )
         apply_killmail_affiliations(raw, confirmed_at=killmail_time)
+
+    _attribute_to_campaigns(killmail)
     return killmail
+
+
+def _attribute_to_campaigns(killmail: FeedKillmail) -> None:
+    """Hand the mail to any campaign covering that system.
+
+    Campaigns have no backfill, so this runs on every ingest path including
+    the history and catch-up loaders. A failure here must never stop the feed
+    from recording the killmail, so it is logged and swallowed; the campaign
+    sweep re-attributes the last 48 hours anyway.
+    """
+    try:
+        # Imported here on purpose: the feed does not depend on campaigns,
+        # campaigns depends on the feed. A module-level import would make the
+        # cycle real.
+        # pylint: disable=import-outside-toplevel
+        from campaigns.services.attribution import attribute_feed_killmail
+
+        attribute_feed_killmail(killmail, source="stream")
+    except Exception:  # pragma: no cover - defensive
+        logger.exception(
+            "Campaign attribution failed for killmail %s", killmail.killmail_id
+        )
 
 
 def upsert_feed_killmail_from_raw(

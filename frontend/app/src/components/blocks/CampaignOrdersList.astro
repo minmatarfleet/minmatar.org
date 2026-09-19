@@ -1,0 +1,73 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignOrder } from '@dtypes/api.minmatar.org'
+import { clamp_percent } from '@helpers/fetching/campaigns'
+
+interface Props {
+    orders:             CampaignOrder[];
+    is_enlisted?:       boolean;
+    [propName: string]: any;
+}
+
+const {
+    orders,
+    is_enlisted = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+---
+
+<Flexblock gap='var(--space-s)' class:list={['[ campaign-orders ]', Astro.props.class]} {...attributes}>
+    {orders.length === 0 ?
+        <small>{is_enlisted ? t('campaigns.orders.none') : t('campaigns.orders.enlist_hint')}</small>
+        :
+        orders.map(order =>
+            <Flexblock gap='var(--space-3xs)' class="[ campaign-order ]">
+                <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
+                    <Flexblock gap='var(--space-3xs)'>
+                        <span class="[ text-[var(--highlight)] ]">{order.label}</span>
+                        {order.system && <small>{order.system}</small>}
+                    </Flexblock>
+                    <FlexInline gap='var(--space-2xs)'>
+                        {order.completed && <Tag text={t('campaigns.orders.done')} color='green' narrow={true} />}
+                        <Tag
+                            text={t('campaigns.orders.points').replace('{points}', String(order.points))}
+                            color='fleet-yellow'
+                            narrow={true}
+                        />
+                    </FlexInline>
+                </FlexInline>
+                <CampaignMeter
+                    percent={clamp_percent(order.progress * 100)}
+                    color={order.completed ? 'var(--green)' : 'var(--fleet-yellow)'}
+                    label={order.label}
+                />
+                {order.gap_share_pct > 0 &&
+                    <small>
+                        {t('campaigns.orders.gap_share').replace('{percent}', order.gap_share_pct.toFixed(1))}
+                    </small>
+                }
+            </Flexblock>
+        )
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-order {
+        padding-block-end: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .campaign-order:last-child {
+        border-bottom: none;
+        padding-block-end: 0;
+    }
+</style>

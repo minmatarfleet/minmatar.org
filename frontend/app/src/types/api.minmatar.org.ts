@@ -2377,3 +2377,299 @@ export interface CreatorAccount {
     token_invalid:      boolean;
     last_synced_at:     string | null;
 }
+
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'completed' | 'archived'
+export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
+export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
+export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
+export type CampaignLeaderboardMetric = 'points' | 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
+export type CampaignLeaderboardPeriod = 'week' | 'rolling7' | 'all'
+export type CampaignCharacterState = 'ready' | 'needs_update' | 'lapsed' | 'removed' | 'missing'
+export type CampaignKillmailOutcome = 'kill' | 'loss'
+
+export interface CampaignSystemTrendPoint {
+    captured_at:                string;
+    contested_percent:          number | null;
+    victory_points:             number | null;
+}
+
+export interface CampaignSystemSummary {
+    id:                         number;
+    name:                       string;
+    solar_system_id:            number;
+    role:                       string;
+    goal:                       string;
+    contested_percent:          number | null;
+    contested_change_24h:       number | null;
+    victory_points:             number | null;
+    victory_points_threshold:   number | null;
+    operational_state:          string;
+    owner_faction_id:           number | null;
+    advantage_basis:            CampaignAdvantageBasis;
+    advantage_our_pct:          number | null;
+    advantage_enemy_pct:        number | null;
+    advantage_net_pct:          number | null;
+    advantage_age_minutes:      number | null;
+    advantage_is_stale:         boolean;
+    kills_24h:                  number;
+    losses_24h:                 number;
+    kills_change_24h:           number;
+    trend:                      CampaignSystemTrendPoint[];
+    status_chip:                CampaignStatusChip;
+}
+
+export interface CampaignListItem {
+    slug:               string;
+    name:               string;
+    short_code:         string;
+    tagline:            string;
+    status:             CampaignStatus;
+    start_at:           string;
+    end_at:             string;
+    cover_image_url:    string;
+    systems:            CampaignSystemSummary[];
+    enlisted:           number;
+    kills:              number;
+    isk_destroyed:      number;
+    is_enlisted:        boolean;
+}
+
+export interface CampaignTotals {
+    enlisted:               number;
+    kills:                  number;
+    losses:                 number;
+    isk_destroyed:          number;
+    isk_lost:               number;
+    complexes:              number;
+    advantage_sites:        number;
+    advantage_generated:    number;
+    active_today:           number;
+}
+
+export interface CampaignDetail {
+    slug:                       string;
+    name:                       string;
+    short_code:                 string;
+    tagline:                    string;
+    description_md:             string;
+    cover_image_url:            string;
+    status:                     CampaignStatus;
+    start_at:                   string;
+    end_at:                     string;
+    commander_order_text:       string;
+    commander_order_is_draft:   boolean;
+    systems:                    CampaignSystemSummary[];
+    totals:                     CampaignTotals;
+    is_enlisted:                boolean;
+    my_points:                  number;
+    my_rank:                    number | null;
+    my_streak:                  number;
+    characters_included:        number;
+    characters_tracked:         number;
+    standing_fleet_up:          boolean;
+    standing_fleet_members:     number;
+    standing_fleet_boss:        string | null;
+}
+
+export interface CampaignHostileGang {
+    title:          string;
+    system:         string;
+    occurred_at:    string;
+}
+
+export interface CampaignTickerEntry {
+    killmail_id:    number;
+    outcome:        CampaignKillmailOutcome;
+    isk_value:      number;
+    killmail_time:  string;
+}
+
+export interface CampaignGangForming {
+    id?:                number;
+    ships?:             string;
+    system?:            string;
+    note?:              string;
+    created_by?:        string;
+    [propName: string]: any;
+}
+
+export interface CampaignRightNow {
+    active_pilots:          number;
+    system_heat:            number;
+    hostile_gangs:          CampaignHostileGang[];
+    standing_fleet_up:      boolean;
+    standing_fleet_members: number;
+    standing_fleet_boss:    string | null;
+    gangs_forming:          CampaignGangForming[];
+    my_streak:              number;
+    my_orders_done:         number;
+    my_orders_total:        number;
+    ticker:                 CampaignTickerEntry[];
+}
+
+export interface CampaignWeekTarget {
+    id:                     number;
+    system:                 string;
+    system_id:              number;
+    goal:                   string;
+    metric:                 string;
+    target:                 number;
+    progress:               number;
+    pace_expected:          number;
+    pace:                   CampaignPace;
+    proposed:               boolean;
+    last_week_actual:       number;
+    days_under_line:        number;
+    projected_arc_date:     string | null;
+}
+
+export interface CampaignWeekSummary {
+    week_start?:    string;
+    kills?:         number;
+    complexes?:     number;
+    points?:        number;
+    active_pilots?: number;
+}
+
+export interface CampaignWeek {
+    week_start:             string;
+    targets:                CampaignWeekTarget[];
+    commander_order_text:   string;
+    summary:                CampaignWeekSummary;
+}
+
+export interface CampaignOrder {
+    id:                 number;
+    kind:               string;
+    label:              string;
+    params:             Record<string, any>;
+    points:             number;
+    system:             string | null;
+    gap_share_pct:      number;
+    progress:           number;
+    completed:          boolean;
+}
+
+export interface CampaignLeaderboardRow {
+    rank:       number;
+    user_id:    number;
+    username:   string;
+    value:      number;
+    points:     number;
+}
+
+export interface CampaignKillmail {
+    killmail_id:                number;
+    killmail_time:              string;
+    outcome:                    CampaignKillmailOutcome;
+    solar_system_id:            number;
+    victim_character_name:      string;
+    victim_ship_type_id:        number | null;
+    isk_value:                  number;
+    enlisted_attacker_count:    number;
+    is_solo:                    boolean;
+}
+
+export interface CampaignSite {
+    id:             number;
+    occurred_at:    string;
+    site_kind:      string;
+    amount_lp:      number;
+    system:         string;
+    username:       string | null;
+    plex_class:     string;
+    confidence:     string;
+}
+
+export interface CampaignTimelineEvent {
+    id:             number;
+    kind:           string;
+    occurred_at:    string;
+    title:          string;
+    body:           string;
+    side:           string;
+    source:         string;
+    system:         string | null;
+    is_active:      boolean;
+}
+
+export interface CampaignRosterPilot {
+    user_id:                number;
+    username:               string;
+    primary_character:      string;
+    corporation_id:         number | null;
+    prime_time:             string;
+    observed_prime_time:    string;
+    last_active_day:        string | null;
+    streak_days:            number;
+    points:                 number;
+    characters_included:    number;
+    characters_tracked:     number;
+}
+
+export interface CampaignCoverageHour {
+    hour:               number;
+    our_active_days:    number;
+    hostile_activity:   number;
+}
+
+export interface CampaignRoster {
+    pilots:         CampaignRosterPilot[];
+    coverage:       CampaignCoverageHour[];
+    by_prime_time:  Record<string, number>;
+}
+
+export interface CampaignReadinessCharacter {
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number | null;
+    is_primary:         boolean;
+    token_type:         string;
+    counts_for:         string;
+    state:              CampaignCharacterState;
+    included:           boolean;
+    action_url:         string;
+}
+
+export interface CampaignReadiness {
+    characters: CampaignReadinessCharacter[];
+    tracked:    number;
+    total:      number;
+}
+
+export interface CampaignEnlistRequest {
+    source?:                    string;
+    notify_gang_forming?:       boolean;
+    notify_standing_fleet?:     boolean;
+    notify_activity_nearby?:    boolean;
+    notify_streak_at_risk?:     boolean;
+    digest_hour?:               number;
+}
+
+export interface CampaignEnlistResponse {
+    enlisted:                   boolean;
+    characters_included:        number;
+    characters_missing_scopes:  string[];
+    token_chain_url:            string;
+}
+
+export interface CampaignAdvantageRequest {
+    our_pct:    number;
+    enemy_pct:  number;
+}
+
+export interface CampaignAdvantageResponse {
+    accepted:   boolean;
+    status:     string;
+    our_pct:    number | null;
+    enemy_pct:  number | null;
+    net_pct:    number | null;
+    points:     number;
+}
+
+export interface CampaignGangRequest {
+    ships:              string;
+    solar_system_id?:   number | null;
+    note?:              string;
+    voice_channel_id?:  number | null;
+}

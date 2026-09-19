@@ -451,6 +451,81 @@ CELERYBEAT_SURVEYS = [
     ),
 ]
 
+CELERYBEAT_CAMPAIGNS = [
+    (
+        "[Campaigns] Sweep killmails",
+        {
+            "task": "campaigns.tasks.sweep_campaign_killmails",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Poll system snapshots",
+        {
+            "task": "campaigns.tasks.poll_campaign_snapshots",
+            "schedule": schedule(timedelta(minutes=30)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Poll LP payouts",
+        {
+            "task": "campaigns.tasks.poll_campaign_payouts",
+            "schedule": schedule(timedelta(minutes=20)),
+            "options": {"queue": "eveonline"},
+        },
+    ),
+    (
+        "[Campaigns] Materialise stats",
+        {
+            "task": "campaigns.tasks.materialise_campaign_stats",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Mirror feed events",
+        {
+            "task": "campaigns.tasks.mirror_campaign_feed_events",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Lifecycle",
+        {
+            "task": "campaigns.tasks.run_campaign_lifecycle",
+            "schedule": schedule(timedelta(minutes=1)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Propose weekly plan",
+        {
+            "task": "campaigns.tasks.propose_campaign_week",
+            "schedule": crontab(hour=11, minute=0, day_of_week=4),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Generate daily orders",
+        {
+            "task": "campaigns.tasks.generate_campaign_orders",
+            "schedule": crontab(hour=11, minute=5),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Campaigns] Health",
+        {
+            "task": "campaigns.tasks.campaign_health",
+            "schedule": schedule(timedelta(minutes=5)),
+            "options": {"queue": "celery"},
+        },
+    ),
+]
+
 CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
@@ -461,5 +536,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_TRIBES
     + CELERYBEAT_FEED
     + CELERYBEAT_SURVEYS
+    + CELERYBEAT_CAMPAIGNS
     + CELERYBEAT_OTHER
 )

@@ -1,0 +1,115 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    CampaignLeaderboardRow,
+    CampaignLeaderboardMetric,
+    CampaignLeaderboardPeriod,
+} from '@dtypes/api.minmatar.org'
+import { format_isk } from '@helpers/numbers'
+
+interface Props {
+    slug:               string;
+    rows:               CampaignLeaderboardRow[];
+    metric:             CampaignLeaderboardMetric;
+    period:             CampaignLeaderboardPeriod;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    rows,
+    metric,
+    period,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const metrics:CampaignLeaderboardMetric[] = [ 'points', 'kills', 'isk', 'sites', 'advantage', 'fleets' ]
+const periods:CampaignLeaderboardPeriod[] = [ 'week', 'rolling7', 'all' ]
+
+const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:CampaignLeaderboardPeriod) =>
+    translatePath(`/partials/campaign_leaderboard_component?slug=${slug}&metric=${next_metric}&period=${next_period}`)
+
+const format_value = (value:number) => metric === 'isk' ? format_isk(value) : value.toFixed(0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+<Flexblock
+    id='campaign-leaderboard'
+    gap='var(--space-s)'
+    class:list={['[ campaign-leaderboard ]', Astro.props.class]}
+    {...attributes}
+>
+    <FlexInline gap='var(--space-3xs)'>
+        {metrics.map(item =>
+            <Button
+                size='sm'
+                color='transparent'
+                class={item === metric ? 'is-active' : undefined}
+                aria-pressed={item === metric ? 'true' : 'false'}
+                hx-get={partial_url(item, period)}
+                hx-target='#campaign-leaderboard'
+                hx-swap='outerHTML'
+                hx-indicator='.loader'
+            >
+                {t(`campaigns.leaderboard.metric.${item}` as any)}
+            </Button>
+        )}
+    </FlexInline>
+
+    <FlexInline gap='var(--space-3xs)'>
+        {periods.map(item =>
+            <Button
+                size='sm'
+                color='transparent'
+                class={item === period ? 'is-active' : undefined}
+                aria-pressed={item === period ? 'true' : 'false'}
+                hx-get={partial_url(metric, item)}
+                hx-target='#campaign-leaderboard'
+                hx-swap='outerHTML'
+                hx-indicator='.loader'
+            >
+                {t(`campaigns.leaderboard.period.${item}` as any)}
+            </Button>
+        )}
+    </FlexInline>
+
+    {rows.length === 0 ?
+        <small>{t('campaigns.leaderboard.none')}</small>
+        :
+        <CampaignTable
+            min_width='24rem'
+            template='3rem 1fr 6rem 6rem'
+            numeric={[ 0, 2, 3 ]}
+            columns={[
+                t('campaigns.leaderboard.rank'),
+                t('campaigns.leaderboard.pilot'),
+                t('campaigns.leaderboard.value'),
+                t('campaigns.leaderboard.points'),
+            ]}
+        >
+            {rows.map(row =>
+                <div class="[ campaign-table-row ]" role="row">
+                    <span class="[ campaign-table-numeric ]">{row.rank}</span>
+                    <span>{row.username}</span>
+                    <span class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
+                    <span class="[ campaign-table-numeric ]">{row.points}</span>
+                </div>
+            )}
+        </CampaignTable>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-leaderboard :global(button.button.is-active) {
+        border-color: var(--alliance-blue);
+        color: var(--highlight);
+    }
+</style>

@@ -1,0 +1,191 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignReadiness, CampaignCharacterState } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { get_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
+import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
+
+interface Props {
+    readiness:          CampaignReadiness;
+    campaign_slug?:     string | false;
+    flash?:             string | false;
+    [propName: string]: any;
+}
+
+const {
+    readiness,
+    campaign_slug = false,
+    flash = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const account_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const RETURN_URL = get_app_url(translatePath('/account/campaigns/'))
+
+const build_action_url = (action_url:string, redirect_to:string) => {
+    const url = new URL(action_url, get_api_url())
+    url.searchParams.set('redirect_url', redirect_to)
+
+    return `${url.toString()}${account_query}`
+}
+
+const pending = readiness.characters.filter(character => character.action_url)
+
+/** Chain every pending character so one sign-in hands over to the next. */
+let update_all_url = RETURN_URL
+for (const character of [ ...pending ].reverse())
+    update_all_url = build_action_url(character.action_url, update_all_url)
+
+const state_color = (state:CampaignCharacterState):TagColors => {
+    switch (state) {
+        case 'ready': return 'green'
+        case 'needs_update': return 'fleet-yellow'
+        case 'lapsed': return 'fleet-red'
+        default: return 'militia-purple'
+    }
+}
+
+const CHARACTER_PARTIAL_URL = campaign_slug
+    ? translatePath(`/partials/campaign_character_component?slug=${campaign_slug}`)
+    : ''
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+<Flexblock
+    id='campaign-readiness'
+    gap='var(--space-s)'
+    class:list={['[ campaign-readiness ]', Astro.props.class]}
+    {...attributes}
+>
+    <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+        <small>
+            {t('campaigns.readiness.tracked_count')
+                .replace('{tracked}', String(readiness.tracked))
+                .replace('{total}', String(readiness.total))}
+        </small>
+        {pending.length > 0 &&
+            <Flexblock gap='var(--space-3xs)' class="[ items-end ]">
+                <FlexInline gap='var(--space-2xs)'>
+                    <Button size='sm' color='green' href={update_all_url} external={false}>
+                        {t('campaigns.readiness.update_all')}
+                    </Button>
+                </FlexInline>
+                <small>{t('campaigns.readiness.update_all_hint')}</small>
+            </Flexblock>
+        }
+    </FlexInline>
+
+    {flash && <small class="[ text-[var(--highlight)] ]">{flash}</small>}
+    {!campaign_slug && <small>{t('campaigns.readiness.no_campaign_hint')}</small>}
+
+    {readiness.characters.length === 0 ?
+        <small>{t('campaigns.readiness.none')}</small>
+        :
+        <CampaignTable
+            min_width='54rem'
+            template='minmax(12rem, 1fr) 7rem 7rem minmax(10rem, 1fr) 7rem 8rem 8rem'
+            columns={[
+                t('campaigns.readiness.character'),
+                t('campaigns.readiness.corporation'),
+                t('campaigns.readiness.token'),
+                t('campaigns.readiness.counts_for'),
+                t('campaigns.readiness.state'),
+                t('campaigns.readiness.in_campaign'),
+                t('campaigns.readiness.action'),
+            ]}
+        >
+            {readiness.characters.map(character =>
+                <div class="[ campaign-table-row ]" role="row">
+                    <div class="[ campaign-cell-media ]">
+                        <img
+                            loading='lazy'
+                            width='32'
+                            height='32'
+                            src={get_player_icon(character.character_id, 32)}
+                            alt={character.character_name}
+                        />
+                        <Flexblock gap='0' class="[ min-w-0 ]">
+                            <span>{character.character_name}</span>
+                            {character.is_primary && <small class="[ campaign-table-muted ]">{t('campaigns.readiness.primary')}</small>}
+                        </Flexblock>
+                    </div>
+                    {character.corporation_id ?
+                        <img
+                            loading='lazy'
+                            width='32'
+                            height='32'
+                            src={get_corporation_logo(character.corporation_id, 32)}
+                            alt={t('campaigns.readiness.corporation')}
+                        />
+                        :
+                        <span class="[ campaign-table-muted ]">—</span>
+                    }
+                    <small class="[ campaign-table-muted ]">{character.token_type || t('campaigns.readiness.no_token')}</small>
+                    <small class="[ campaign-table-muted ]">{character.counts_for || '—'}</small>
+                    <Tag
+                        text={t(`campaigns.readiness.state.${character.state}` as any)}
+                        color={state_color(character.state)}
+                        narrow={true}
+                    />
+                    {campaign_slug ?
+                        <Button
+                            size='sm'
+                            color={character.included ? 'transparent' : 'green'}
+                            hx-post={`${CHARACTER_PARTIAL_URL}&character_id=${character.character_id}&included=${character.included ? 'false' : 'true'}`}
+                            hx-target='#campaign-readiness'
+                            hx-swap='outerHTML'
+                            hx-indicator='.loader'
+                        >
+                            {character.included ? t('campaigns.readiness.included') : t('campaigns.readiness.excluded')}
+                        </Button>
+                        :
+                        <span class="[ campaign-table-muted ]">{character.included ? t('campaigns.readiness.included') : '—'}</span>
+                    }
+                    {character.action_url ?
+                        <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
+                            {t('campaigns.readiness.update')}
+                        </Button>
+                        :
+                        <small class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
+                    }
+                </div>
+            )}
+        </CampaignTable>
+    }
+</Flexblock>
+
+<style lang="scss">
+    img {
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-cell-media img {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media span {
+        overflow-wrap: anywhere;
+    }
+</style>

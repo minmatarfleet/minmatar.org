@@ -1,0 +1,356 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
+
+import type {
+    CampaignDetail,
+    CampaignRightNow,
+    CampaignWeek,
+    CampaignOrder,
+    CampaignLeaderboardRow,
+    CampaignKillmail,
+    CampaignSite,
+    CampaignTimelineEvent,
+    CampaignRoster,
+} from '@dtypes/api.minmatar.org'
+import type { CampaignStat } from '@components/blocks/CampaignStatBar.astro'
+import {
+    get_campaign,
+    get_campaign_now,
+    get_campaign_week,
+    get_campaign_orders,
+    get_campaign_leaderboard,
+    get_campaign_killmails,
+    get_campaign_sites,
+    get_campaign_timeline,
+    get_campaign_roster,
+} from '@helpers/api.minmatar.org/campaigns'
+import { sort_systems_by_contest } from '@helpers/fetching/campaigns'
+import { format_isk } from '@helpers/numbers'
+
+const slug = Astro.params.slug as string
+
+let campaign:CampaignDetail | null = null
+let fetch_campaign_error:Error | false = false
+
+try {
+    campaign = await get_campaign(slug, auth_token as string)
+} catch (error) {
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+
+    fetch_campaign_error = error
+}
+
+let now:CampaignRightNow | null = null
+let week:CampaignWeek | null = null
+let orders:CampaignOrder[] = []
+let leaderboard:CampaignLeaderboardRow[] = []
+let killmails:CampaignKillmail[] = []
+let sites:CampaignSite[] = []
+let timeline:CampaignTimelineEvent[] = []
+let roster:CampaignRoster | null = null
+
+if (campaign) {
+    const results = await Promise.allSettled([
+        get_campaign_now(slug, auth_token as string),
+        get_campaign_week(slug, auth_token as string),
+        get_campaign_orders(slug, auth_token as string),
+        get_campaign_leaderboard(slug, auth_token as string, 'points', 'week'),
+        get_campaign_killmails(slug, auth_token as string, '', 15),
+        get_campaign_sites(slug, auth_token as string, 10),
+        get_campaign_timeline(slug, auth_token as string, 10),
+        get_campaign_roster(slug, auth_token as string),
+    ])
+
+    now = results[0].status === 'fulfilled' ? results[0].value : null
+    week = results[1].status === 'fulfilled' ? results[1].value : null
+    orders = results[2].status === 'fulfilled' ? results[2].value : []
+    leaderboard = results[3].status === 'fulfilled' ? results[3].value : []
+    killmails = results[4].status === 'fulfilled' ? results[4].value : []
+    sites = results[5].status === 'fulfilled' ? results[5].value : []
+    timeline = results[6].status === 'fulfilled' ? results[6].value : []
+    roster = results[7].status === 'fulfilled' ? results[7].value : null
+}
+
+const systems = campaign ? sort_systems_by_contest(campaign.systems) : []
+
+const stats:CampaignStat[] = campaign ? [
+    { label: t('campaigns.stat.enlisted'), value: String(campaign.totals.enlisted) },
+    { label: t('campaigns.stat.kills'), value: String(campaign.totals.kills) },
+    { label: t('campaigns.stat.losses'), value: String(campaign.totals.losses) },
+    { label: t('campaigns.stat.isk_destroyed'), value: format_isk(campaign.totals.isk_destroyed) },
+    { label: t('campaigns.stat.complexes'), value: String(campaign.totals.complexes) },
+    { label: t('campaigns.stat.advantage_generated'), value: campaign.totals.advantage_generated.toFixed(1) },
+    { label: t('campaigns.stat.active_today'), value: String(campaign.totals.active_today) },
+] : []
+
+const CAMPAIGN_PARTIAL_URL = translatePath(`/partials/campaign_list_component`)
+const NOW_PARTIAL_URL = translatePath(`/partials/campaign_now_component?slug=${slug}`)
+
+const page_title = campaign ? campaign.name : t('campaigns.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+import CampaignActions from '@components/blocks/CampaignActions.astro'
+import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import CampaignNowStrip from '@components/blocks/CampaignNowStrip.astro'
+import CampaignOrdersList from '@components/blocks/CampaignOrdersList.astro'
+import CampaignWeekPlan from '@components/blocks/CampaignWeekPlan.astro'
+import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
+import CampaignSitesTable from '@components/blocks/CampaignSitesTable.astro'
+import CampaignLeaderboard from '@components/blocks/CampaignLeaderboard.astro'
+import CampaignKillfeed from '@components/blocks/CampaignKillfeed.astro'
+import CampaignTimeline from '@components/blocks/CampaignTimeline.astro'
+import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
+import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={campaign ? campaign.tagline : t('campaigns.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/warzone-cover.jpg',
+            image_990: '/images/warzone-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                {campaign &&
+                    <>
+                        <Tag text={campaign.short_code} color='alliance-blue' />
+                        {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
+                    </>
+                }
+            </FlexInline>
+        </FlexInline>
+
+        {fetch_campaign_error || !campaign ?
+            <ErrorRefetch
+                args={{
+                    partial: CAMPAIGN_PARTIAL_URL,
+                    error: fetch_campaign_error || new Error(t('campaigns.action_failed')),
+                    delay: 0,
+                }}
+            />
+            :
+            <Flexblock gap='var(--space-xl)'>
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <Flexblock gap='var(--space-m)'>
+                        <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
+                            <Flexblock gap='var(--space-2xs)'>
+                                {campaign.tagline && <p class="[ campaign-tagline ]">{campaign.tagline}</p>}
+                                {campaign.description_md &&
+                                    <Markdown
+                                        markdown={campaign.description_md}
+                                        inline={true}
+                                        inline_element='small'
+                                    />
+                                }
+                            </Flexblock>
+                            <Flexblock gap='var(--space-3xs)' class="[ campaign-countdown ]">
+                                <small>{t('campaigns.ends_in')}</small>
+                                <CampaignCountdown
+                                    id={1}
+                                    date={new Date(campaign.end_at)}
+                                    expired_text={t('campaigns.ended')}
+                                />
+                            </Flexblock>
+                        </FlexInline>
+
+                        {campaign.commander_order_text &&
+                            <Flexblock gap='var(--space-3xs)' class="[ campaign-order-text ]">
+                                <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                                    <small>{t('campaigns.commander_order')}</small>
+                                    {campaign.commander_order_is_draft &&
+                                        <Tag text={t('campaigns.commander_order_draft')} color='militia-purple' narrow={true} />
+                                    }
+                                </FlexInline>
+                                <p class="[ text-[var(--highlight)] ]">{campaign.commander_order_text}</p>
+                            </Flexblock>
+                        }
+
+                        <CampaignActions
+                            slug={campaign.slug}
+                            variant='hero'
+                            is_enlisted={campaign.is_enlisted}
+                            standing_fleet_up={campaign.standing_fleet_up}
+                            systems={systems}
+                        />
+                    </Flexblock>
+                </ComponentBlock>
+
+                <CampaignStatBar stats={stats} />
+
+                <div
+                    id="campaign-now"
+                    hx-get={NOW_PARTIAL_URL}
+                    hx-trigger="load, every 60s"
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    {now && <CampaignNowStrip slug={campaign.slug} now={now} />}
+                </div>
+
+                <FixedFluid width='22rem' gap='var(--space-l)' breakpoint='60%'>
+                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                        <Flexblock gap='var(--space-s)'>
+                            <h3>{t('campaigns.orders.title')}</h3>
+                            <div id="campaign-orders">
+                                <CampaignOrdersList orders={orders} is_enlisted={campaign.is_enlisted} />
+                            </div>
+                        </Flexblock>
+                    </ComponentBlock>
+
+                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                        <Flexblock gap='var(--space-s)'>
+                            <h3>{t('campaigns.week.title')}</h3>
+                            {week ?
+                                <CampaignWeekPlan week={week} />
+                                :
+                                <small>{t('campaigns.week.none')}</small>
+                            }
+                        </Flexblock>
+                    </ComponentBlock>
+                </FixedFluid>
+
+                <Flexblock gap='var(--space-m)'>
+                    <h3>{t('campaigns.systems.title')}</h3>
+                    {systems.length === 0 ?
+                        <small>{t('campaigns.systems.none')}</small>
+                        :
+                        <Flexblock gap='var(--space-m)'>
+                            {systems.map(system =>
+                                <CampaignSystemCard system={system} slug={campaign.slug} can_report={true} />
+                            )}
+                        </Flexblock>
+                    }
+                </Flexblock>
+
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <Flexblock gap='var(--space-s)'>
+                        <h3>{t('campaigns.sites.title')}</h3>
+                        <CampaignSitesTable sites={sites} />
+                    </Flexblock>
+                </ComponentBlock>
+
+                <Grid min_item_width='26rem' row_gap='var(--space-m)' column_gap='var(--space-m)'>
+                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                        <Flexblock gap='var(--space-s)'>
+                            <h3>{t('campaigns.leaderboard.title')}</h3>
+                            <CampaignLeaderboard
+                                slug={campaign.slug}
+                                rows={leaderboard}
+                                metric='points'
+                                period='week'
+                            />
+                        </Flexblock>
+                    </ComponentBlock>
+
+                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                        <Flexblock gap='var(--space-s)'>
+                            <h3>{t('campaigns.timeline.title')}</h3>
+                            <CampaignTimeline events={timeline} />
+                        </Flexblock>
+                    </ComponentBlock>
+                </Grid>
+
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <Flexblock gap='var(--space-s)'>
+                        <h3>{t('campaigns.killfeed.title')}</h3>
+                        <CampaignKillfeed
+                            slug={campaign.slug}
+                            killmails={killmails}
+                            outcome=''
+                            systems={campaign.systems}
+                        />
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <Flexblock gap='var(--space-m)'>
+                        <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+                            <h3>{t('campaigns.roster.title')}</h3>
+                            <Button size='sm' color='transparent' href={translatePath(`/campaigns/${campaign.slug}/roster/`)}>
+                                {t('campaigns.roster.view_full')}
+                            </Button>
+                        </FlexInline>
+                        <CampaignRosterTable pilots={roster?.pilots ?? []} limit={10} />
+                        <CampaignCoverageChart coverage={roster?.coverage ?? []} />
+                    </Flexblock>
+                </ComponentBlock>
+            </Flexblock>
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .campaign-tagline {
+        color: var(--highlight);
+        font-size: var(--step-1);
+    }
+
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    @media screen and (min-width: 768px) {
+        .campaign-countdown {
+            text-align: right;
+        }
+    }
+
+    .campaign-order-text {
+        border-left: solid 2px var(--fleet-yellow);
+        padding-inline-start: var(--space-s);
+    }
+</style>

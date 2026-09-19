@@ -23,6 +23,7 @@ const primary_character = Astro.cookies.has('primary_pilot')
 const can_view_intel = user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')
 const can_view_posts = user_is_superadmin || user_permissions.includes('posts.add_evepost')
 const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
+const can_view_campaigns = user_is_superadmin || user_permissions.includes('campaigns.view_campaign')
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -34,6 +35,7 @@ import UserAuth from '@components/UserAuth.astro';
 
 import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
+import CampaignsEvEIcon from '@components/icons/CampaignsEvEIcon.astro';
 import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
@@ -119,6 +121,16 @@ const page = Astro.url.pathname
                             href={translatePath('/fleets/upcoming/')}
                         >
                             <FleetEvEIcon />
+                        </NeocomButton>
+                    }
+                    {can_view_campaigns &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/campaigns'))}
+                            title='neocom.campaigns'
+                            description='campaigns.description'
+                            href={translatePath('/campaigns/')}
+                        >
+                            <CampaignsEvEIcon />
                         </NeocomButton>
                     }
                     <NeocomButton

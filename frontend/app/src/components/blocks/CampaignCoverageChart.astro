@@ -1,0 +1,121 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignCoverageHour } from '@dtypes/api.minmatar.org'
+import { coverage_bars } from '@helpers/fetching/campaigns'
+
+interface Props {
+    coverage:           CampaignCoverageHour[];
+    [propName: string]: any;
+}
+
+const {
+    coverage,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const bars = coverage_bars(coverage)
+const has_data = bars.some(bar => bar.our_active_days > 0 || bar.hostile_activity > 0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<Flexblock gap='var(--space-2xs)' class:list={['[ campaign-coverage ]', Astro.props.class]} {...attributes}>
+    <small>{t('campaigns.coverage.subtitle')}</small>
+
+    {bars.length === 0 || !has_data ?
+        <small>{t('campaigns.coverage.none')}</small>
+        :
+        <Flexblock gap='var(--space-2xs)'>
+            <div class="[ campaign-coverage-chart ]">
+                {bars.map(bar =>
+                    <div
+                        class="[ campaign-coverage-hour ]"
+                        title={`${t('campaigns.coverage.hour_label').replace('{hour}', String(bar.hour).padStart(2, '0'))} · ${t('campaigns.coverage.ours')} ${bar.our_active_days} · ${t('campaigns.coverage.hostiles')} ${bar.hostile_activity}`}
+                    >
+                        <div class="[ campaign-coverage-bars ]">
+                            <span class="[ campaign-coverage-ours ]" style={`height: ${bar.our_percent.toFixed(1)}%;`} />
+                            <span class="[ campaign-coverage-hostiles ]" style={`height: ${bar.hostile_percent.toFixed(1)}%;`} />
+                        </div>
+                        <small class="[ campaign-coverage-label ]">{String(bar.hour).padStart(2, '0')}</small>
+                    </div>
+                )}
+            </div>
+
+            <FlexInline gap='var(--space-s)'>
+                <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                    <span class="[ campaign-coverage-key campaign-coverage-key-ours ]" />
+                    <small>{t('campaigns.coverage.ours')}</small>
+                </FlexInline>
+                <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                    <span class="[ campaign-coverage-key campaign-coverage-key-hostiles ]" />
+                    <small>{t('campaigns.coverage.hostiles')}</small>
+                </FlexInline>
+            </FlexInline>
+        </Flexblock>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-coverage-chart {
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        gap: var(--space-3xs);
+        align-items: end;
+        width: 100%;
+    }
+
+    .campaign-coverage-hour {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .campaign-coverage-bars {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 1px;
+        height: var(--space-2xl);
+        width: 100%;
+    }
+
+    .campaign-coverage-bars span {
+        display: block;
+        width: 50%;
+        min-height: 1px;
+    }
+
+    .campaign-coverage-ours {
+        background-color: var(--fleet-yellow);
+    }
+
+    .campaign-coverage-hostiles {
+        background-color: var(--fleet-red);
+    }
+
+    .campaign-coverage-label {
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .campaign-coverage-key {
+        display: block;
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+    }
+
+    .campaign-coverage-key-ours {
+        background-color: var(--fleet-yellow);
+    }
+
+    .campaign-coverage-key-hostiles {
+        background-color: var(--fleet-red);
+    }
+</style>

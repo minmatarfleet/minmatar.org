@@ -1,0 +1,81 @@
+---
+interface Props {
+    columns:            string[];
+    template:           string;
+    numeric?:           number[];
+    min_width?:         string;
+    [propName: string]: any;
+}
+
+const {
+    columns,
+    template,
+    numeric = [],
+    min_width = '38rem',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+<XFadeScroll>
+    <div
+        class:list={['[ campaign-table ]', Astro.props.class]}
+        role="table"
+        style={`min-width: ${min_width}; --campaign_table_template: ${template};`}
+        {...attributes}
+    >
+        <div class="[ campaign-table-row campaign-table-head ]" role="row">
+            {columns.map((column, index) =>
+                <span
+                    role="columnheader"
+                    class:list={{ 'campaign-table-numeric': numeric.includes(index) }}
+                >{column}</span>
+            )}
+        </div>
+        <slot />
+    </div>
+</XFadeScroll>
+
+<style lang="scss" is:global>
+    .campaign-table {
+        width: 100%;
+        font-size: var(--step--1);
+    }
+
+    .campaign-table-row {
+        display: grid;
+        grid-template-columns: var(--campaign_table_template);
+        gap: var(--space-2xs);
+        align-items: center;
+        padding: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+    }
+
+    .campaign-table-row:last-child {
+        border-bottom: none;
+    }
+
+    .campaign-table-head {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+    }
+
+    .campaign-table-head span {
+        white-space: nowrap;
+    }
+
+    .campaign-table-numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-table-muted {
+        color: var(--foreground);
+    }
+</style>

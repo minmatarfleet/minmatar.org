@@ -1,0 +1,168 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignRightNow } from '@dtypes/api.minmatar.org'
+import { format_isk } from '@helpers/numbers'
+import { format_date_time, format_time } from '@helpers/date'
+
+interface Props {
+    slug:               string;
+    now:                CampaignRightNow;
+    flash?:             string | false;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    now,
+    flash = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const NOW_PARTIAL_URL = translatePath(`/partials/campaign_now_component?slug=${slug}`)
+
+const standing_fleet_action = now.standing_fleet_up ? 'standing_fleet_join' : 'standing_fleet_take'
+const standing_fleet_label = now.standing_fleet_up ? t('campaigns.join_standing_fleet') : t('campaigns.take_standing_fleet')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock gap='var(--space-s)' class:list={['[ campaign-now ]', Astro.props.class]} {...attributes}>
+    <h2>{t('campaigns.now.title')}</h2>
+
+    <Grid min_item_width='12rem' row_gap='var(--space-s)' column_gap='var(--space-s)'>
+        <ComponentBlock padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('campaigns.now.active_pilots')}</small>
+                <span class="[ campaign-figure ]">{now.active_pilots}</span>
+                <small>{t('campaigns.now.system_heat')}: {now.system_heat}</small>
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <Flexblock gap='var(--space-2xs)'>
+                <small>{t('campaigns.now.hostile_gangs')}</small>
+                {now.hostile_gangs.length > 0 ?
+                    <Flexblock gap='var(--space-3xs)'>
+                        {now.hostile_gangs.slice(0, 3).map(gang =>
+                            <Flexblock gap='0'>
+                                <span class="[ text-[var(--highlight)] ]">{gang.title}</span>
+                                <small>{gang.system} · {format_date_time(lang, gang.occurred_at)}</small>
+                            </Flexblock>
+                        )}
+                    </Flexblock>
+                    :
+                    <small>{t('campaigns.now.no_hostile_gangs')}</small>
+                }
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <Flexblock gap='var(--space-2xs)'>
+                <FlexInline gap='var(--space-2xs)' justification='space-between'>
+                    <small>{t('campaigns.now.standing_fleet')}</small>
+                    <Tag
+                        text={now.standing_fleet_up ? t('campaigns.now.standing_fleet_up') : t('campaigns.now.standing_fleet_down')}
+                        color={now.standing_fleet_up ? 'green' : 'fleet-red'}
+                        narrow={true}
+                    />
+                </FlexInline>
+                <small>{t('campaigns.now.members')}: {now.standing_fleet_members}</small>
+                {now.standing_fleet_boss && <small>{t('campaigns.now.standing_fleet_boss')}: {now.standing_fleet_boss}</small>}
+                <Button
+                    size='sm'
+                    color={now.standing_fleet_up ? 'fleet-red' : 'green'}
+                    hx-post={`${NOW_PARTIAL_URL}&action=${standing_fleet_action}`}
+                    hx-target='#campaign-now'
+                    hx-swap='innerHTML'
+                    hx-indicator='.loader'
+                >
+                    {standing_fleet_label}
+                </Button>
+                {now.gangs_forming.length > 0 &&
+                    <small>{t('campaigns.now.gangs_forming')}: {now.gangs_forming.length}</small>
+                }
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('campaigns.now.your_streak')}</small>
+                <span class="[ campaign-figure ]">
+                    {t(now.my_streak === 1 ? 'campaigns.now.streak_day' : 'campaigns.now.streak_days')
+                        .replace('{count}', String(now.my_streak))}
+                </span>
+                <small>{t('campaigns.now.your_orders')}</small>
+                <span class="[ text-[var(--highlight)] ]">
+                    {t('campaigns.now.orders_done')
+                        .replace('{done}', String(now.my_orders_done))
+                        .replace('{total}', String(now.my_orders_total))}
+                </span>
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline='var(--space-s)' padding_block='var(--space-s)'>
+            <Flexblock gap='var(--space-2xs)'>
+                <small>{t('campaigns.now.ticker')}</small>
+                {now.ticker.length > 0 ?
+                    <Flexblock gap='var(--space-3xs)' class="[ campaign-now-ticker ]">
+                        {now.ticker.slice(0, 5).map(entry =>
+                            <div class="[ campaign-now-ticker-row ]">
+                                <Tag
+                                    text={entry.outcome === 'kill' ? t('campaigns.killfeed.kill') : t('campaigns.killfeed.loss')}
+                                    color={entry.outcome === 'kill' ? 'green' : 'fleet-red'}
+                                    narrow={true}
+                                />
+                                <small>{format_isk(entry.isk_value)}</small>
+                                <small class="[ campaign-now-ticker-time ]">{format_time(lang, entry.killmail_time)}</small>
+                            </div>
+                        )}
+                    </Flexblock>
+                    :
+                    <small>{t('campaigns.now.no_ticker')}</small>
+                }
+            </Flexblock>
+        </ComponentBlock>
+    </Grid>
+
+    {flash && <small class="[ text-[var(--highlight)] ]">{flash}</small>}
+</Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .campaign-figure {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+        line-height: 1;
+    }
+
+    .campaign-now-ticker-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: var(--space-2xs);
+        align-items: center;
+    }
+
+    .campaign-now-ticker-row small {
+        white-space: nowrap;
+    }
+
+    .campaign-now-ticker-time {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+</style>

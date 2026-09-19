@@ -1,0 +1,77 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignListItem } from '@dtypes/api.minmatar.org'
+import type { CampaignMeta } from '@/data/campaigns'
+import { group_campaigns } from '@helpers/fetching/campaigns'
+
+interface Props {
+    campaigns:          CampaignListItem[];
+    retrospectives:     CampaignMeta[];
+    [propName: string]: any;
+}
+
+const {
+    campaigns,
+    retrospectives,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const groups = group_campaigns(campaigns)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import CampaignCard from '@components/blocks/CampaignCard.astro'
+import CampaignPostCard from '@components/blocks/CampaignPostCard.astro'
+---
+
+<Flexblock gap='var(--space-2xl)' class:list={['[ campaign-list ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap='var(--space-m)'>
+        <h2>{t('campaigns.live_section_title')}</h2>
+        {groups.live.length === 0 ?
+            <p>{t('campaigns.no_live_campaigns')}</p>
+            :
+            groups.live.map((campaign, index) =>
+                <CampaignCard campaign={campaign} index={index} />
+            )
+        }
+    </Flexblock>
+
+    <Flexblock gap='var(--space-m)'>
+        <h2>{t('campaigns.upcoming_section_title')}</h2>
+        {groups.upcoming.length === 0 ?
+            <p>{t('campaigns.no_upcoming_campaigns')}</p>
+            :
+            groups.upcoming.map((campaign, index) =>
+                <CampaignCard campaign={campaign} index={100 + index} />
+            )
+        }
+    </Flexblock>
+
+    <Flexblock gap='var(--space-m)'>
+        <h2>{t('campaigns.past_section_title')}</h2>
+        {groups.past.map((campaign, index) =>
+            <CampaignCard campaign={campaign} index={200 + index} />
+        )}
+        {groups.past.length === 0 && retrospectives.length === 0 &&
+            <p>{t('campaigns.no_past_campaigns')}</p>
+        }
+        <Grid min_item_width='18rem' row_gap='var(--space-m)' column_gap='var(--space-m)'>
+            {retrospectives.map(retrospective =>
+                <CampaignPostCard campaign={retrospective} />
+            )}
+        </Grid>
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+</style>

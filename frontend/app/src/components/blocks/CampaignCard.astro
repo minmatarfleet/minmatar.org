@@ -1,0 +1,136 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignListItem } from '@dtypes/api.minmatar.org'
+import type { CampaignStat } from '@components/blocks/CampaignStatBar.astro'
+import { sort_systems_by_contest } from '@helpers/fetching/campaigns'
+import { format_isk } from '@helpers/numbers'
+import { format_date } from '@helpers/date'
+
+interface Props {
+    campaign:           CampaignListItem;
+    index:              number;
+    standing_fleet_up?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    index,
+    standing_fleet_up = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const is_live = campaign.status === 'active'
+const is_upcoming = campaign.status === 'scheduled' || campaign.status === 'draft'
+const systems = sort_systems_by_contest(campaign.systems)
+
+const countdown_date = new Date(is_upcoming ? campaign.start_at : campaign.end_at)
+const countdown_label = is_upcoming ? t('campaigns.starts_in') : t('campaigns.ends_in')
+
+const stats:CampaignStat[] = [
+    { label: t('campaigns.stat.enlisted'), value: String(campaign.enlisted) },
+    { label: t('campaigns.stat.kills'), value: String(campaign.kills) },
+    { label: t('campaigns.stat.isk_destroyed'), value: format_isk(campaign.isk_destroyed) },
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
+import CampaignSystemRow from '@components/blocks/CampaignSystemRow.astro'
+import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import CampaignActions from '@components/blocks/CampaignActions.astro'
+---
+
+<ComponentBlock
+    class:list={['[ campaign-card ]', Astro.props.class]}
+    padding_inline='var(--space-m)'
+    padding_block='var(--space-m)'
+    {...attributes}
+>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-2xs)'>
+            <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
+                <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                    <h2>
+                        <a href={translatePath(`/campaigns/${campaign.slug}/`)}>{campaign.name}</a>
+                    </h2>
+                    <Tag text={campaign.short_code} color='alliance-blue' />
+                    {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
+                </FlexInline>
+                <Flexblock gap='var(--space-3xs)' class="[ campaign-card-countdown ]">
+                    <small>{countdown_label}</small>
+                    {is_live || is_upcoming ?
+                        <CampaignCountdown
+                            id={index}
+                            date={countdown_date}
+                            expired_text={t('campaigns.ended')}
+                        />
+                        :
+                        <span class="[ text-[var(--highlight)] ]">{format_date(lang, campaign.end_at)}</span>
+                    }
+                </Flexblock>
+            </FlexInline>
+            {campaign.tagline && <p>{campaign.tagline}</p>}
+        </Flexblock>
+
+        {systems.length > 0 &&
+            <Flexblock gap='0' class="[ campaign-card-systems ]">
+                {systems.map(system => <CampaignSystemRow system={system} />)}
+            </Flexblock>
+        }
+
+        <CampaignStatBar stats={stats} />
+
+        {is_live ?
+            <CampaignActions
+                slug={campaign.slug}
+                variant='card'
+                is_enlisted={campaign.is_enlisted}
+                standing_fleet_up={standing_fleet_up}
+                systems={systems}
+            />
+            :
+            <FlexInline gap='var(--space-2xs)'>
+                <Button color='transparent' href={translatePath(`/campaigns/${campaign.slug}/`)}>
+                    {t('campaigns.open')}
+                </Button>
+            </FlexInline>
+        }
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    h2 a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    @media (hover: hover) {
+        h2 a:hover {
+            text-decoration: underline;
+        }
+    }
+
+    @media screen and (min-width: 768px) {
+        .campaign-card-countdown {
+            text-align: right;
+        }
+    }
+
+    .campaign-card-systems {
+        border-bottom: solid 1px var(--border-color);
+    }
+</style>

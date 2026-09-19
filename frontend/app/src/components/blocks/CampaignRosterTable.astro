@@ -1,0 +1,99 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignRosterPilot } from '@dtypes/api.minmatar.org'
+import { format_date_short } from '@helpers/date'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    pilots:             CampaignRosterPilot[];
+    limit?:             number | false;
+    [propName: string]: any;
+}
+
+const {
+    pilots,
+    limit = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const rows = limit ? pilots.slice(0, limit) : pilots
+
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+{rows.length === 0 ?
+    <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.roster.none')}</small>
+    :
+    <CampaignTable
+        min_width='46rem'
+        template='minmax(12rem, 1fr) 8rem 9rem 5rem 6rem 6rem'
+        numeric={[ 3, 4, 5 ]}
+        columns={[
+            t('campaigns.roster.pilot'),
+            t('campaigns.roster.prime_time'),
+            t('campaigns.roster.last_active'),
+            t('campaigns.roster.streak'),
+            t('campaigns.roster.points'),
+            t('campaigns.roster.characters'),
+        ]}
+        class:list={[Astro.props.class]}
+        {...attributes}
+    >
+        {rows.map(pilot =>
+            <div class="[ campaign-table-row ]" role="row">
+                <div class="[ campaign-cell-media ]">
+                    {pilot.corporation_id &&
+                        <img
+                            loading='lazy'
+                            width='32'
+                            height='32'
+                            src={get_corporation_logo(pilot.corporation_id, 32)}
+                            alt={t('campaigns.roster.corporation')}
+                        />
+                    }
+                    <span>{pilot.primary_character || pilot.username}</span>
+                </div>
+                <small class="[ campaign-table-muted ]">
+                    {pilot.prime_time || pilot.observed_prime_time || t('campaigns.roster.unknown_prime_time')}
+                </small>
+                <small class="[ campaign-table-muted ]">
+                    {pilot.last_active_day ? format_date_short(lang, pilot.last_active_day) : '—'}
+                </small>
+                <span class="[ campaign-table-numeric ]">{pilot.streak_days}</span>
+                <span class="[ campaign-table-numeric ]">{number_thousand_separator(pilot.points)}</span>
+                <span class="[ campaign-table-numeric ]">{pilot.characters_included}</span>
+            </div>
+        )}
+    </CampaignTable>
+}
+
+<style lang="scss">
+    img {
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-cell-media img {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media span {
+        overflow-wrap: anywhere;
+    }
+</style>

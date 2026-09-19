@@ -248,3 +248,6 @@ export function get_date_progress_percent(start_date: Date | string, end_date: D
 
     return (elapsed / total_duration) * 100
 }
+export const format_time = (locale, date):string => {
+    return new Date(date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+}

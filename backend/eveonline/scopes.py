@@ -68,6 +68,14 @@ FLEET_COMMANDER_SCOPES = [
     "esi-fittings.write_fittings.v1",
 ]
 
+# Lets us read a pilot's Faction Warfare LP payout notifications, which are
+# the only per-pilot record that a complex, advantage site or battlefield was
+# completed. Added on top of Basic so campaign participants do not need the
+# full Director set.
+CAMPAIGN_SCOPES = [
+    "esi-characters.read_notifications.v1",
+]
+
 
 class TokenType(Enum):
     DIRECTOR = "Director"
@@ -77,6 +85,7 @@ class TokenType(Enum):
     MARKET = "Market"
     EXECUTOR = "Executor"
     FLEET_COMMANDER = "FleetCommander"
+    CAMPAIGN = "Campaign"
 
 
 def scopes_for(token_type: TokenType):
@@ -90,6 +99,8 @@ def scopes_for(token_type: TokenType):
             return BASIC_SCOPES + INDUSTRY_SCOPES
         case TokenType.FLEET_COMMANDER:
             return BASIC_SCOPES + FLEET_COMMANDER_SCOPES
+        case TokenType.CAMPAIGN:
+            return BASIC_SCOPES + CAMPAIGN_SCOPES
         case TokenType.PUBLIC:
             return ["publicData"]
         case TokenType.MARKET:
@@ -139,7 +150,7 @@ def scope_group(token: Token) -> str | None:
     if "esi-corporations.read_corporation_membership.v1" in token_scopes:
         return TokenType.DIRECTOR.value
     if "esi-characters.read_notifications.v1" in token_scopes:
-        return TokenType.DIRECTOR.value
+        return TokenType.CAMPAIGN.value
     if "esi-characters.read_blueprints.v1" in token_scopes:
         return TokenType.INDUSTRY.value
     if "esi-fittings.write_fittings.v1" in token_scopes:

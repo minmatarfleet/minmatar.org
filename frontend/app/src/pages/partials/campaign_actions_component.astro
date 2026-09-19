@@ -1,0 +1,109 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
+
+import type { CampaignDetail } from '@dtypes/api.minmatar.org'
+import {
+    get_campaign,
+    enlist_campaign,
+    leave_campaign,
+    take_campaign_standing_fleet,
+    join_campaign_standing_fleet,
+    create_campaign_gang,
+} from '@helpers/api.minmatar.org/campaigns'
+
+const slug = Astro.url.searchParams.get('slug') as string
+const variant = (Astro.url.searchParams.get('variant') ?? 'hero') as 'card' | 'hero'
+const action = Astro.url.searchParams.get('action') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let flash:string | false = false
+
+if (Astro.request.method === 'POST') {
+    try {
+        switch (action) {
+            case 'enlist':
+                await enlist_campaign(slug, auth_token as string)
+                flash = t('campaigns.enlist_success')
+                break
+            case 'leave':
+                await leave_campaign(slug, auth_token as string)
+                flash = t('campaigns.left_success')
+                break
+            case 'standing_fleet_take':
+                await take_campaign_standing_fleet(slug, auth_token as string)
+                flash = t('campaigns.standing_fleet_taken')
+                break
+            case 'standing_fleet_join':
+                await join_campaign_standing_fleet(slug, auth_token as string)
+                flash = t('campaigns.standing_fleet_joined')
+                break
+            case 'gang': {
+                const data = await Astro.request.formData()
+                await create_campaign_gang(slug, auth_token as string, {
+                    ships: (data.get('ships') as string) ?? '',
+                    note: (data.get('note') as string) ?? '',
+                })
+                flash = t('campaigns.gang.posted')
+                break
+            }
+        }
+    } catch (error) {
+        flash = t('campaigns.action_failed')
+    }
+}
+
+let fetch_campaign_error:Error | false = false
+let campaign:CampaignDetail | null = null
+
+try {
+    campaign = await get_campaign(slug, auth_token as string)
+} catch (error) {
+    fetch_campaign_error = error
+}
+
+const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}&variant=${variant}`)
+
+import CampaignActions from '@components/blocks/CampaignActions.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_campaign_error || !campaign ?
+    <ErrorRefetch
+        args={{
+            partial: ACTIONS_PARTIAL_URL,
+            error: fetch_campaign_error || new Error(t('campaigns.action_failed')),
+            delay: delay,
+            target: `#campaign-actions-${slug}`,
+        }}
+    />
+    :
+    <CampaignActions
+        slug={slug}
+        variant={variant}
+        is_enlisted={campaign.is_enlisted}
+        standing_fleet_up={campaign.standing_fleet_up}
+        systems={campaign.systems}
+        flash={flash}
+    />
+}

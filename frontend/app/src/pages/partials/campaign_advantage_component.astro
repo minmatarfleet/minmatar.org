@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
+
+import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+import { get_campaign_systems, report_campaign_advantage } from '@helpers/api.minmatar.org/campaigns'
+
+const slug = Astro.url.searchParams.get('slug') as string
+const system_id = parseInt(Astro.url.searchParams.get('system_id') ?? '0')
+
+if (!slug || !system_id)
+    return HTTP_400_Bad_Request()
+
+if (Astro.request.method === 'POST') {
+    try {
+        const data = await Astro.request.formData()
+
+        await report_campaign_advantage(slug, auth_token as string, system_id, {
+            our_pct: parseFloat((data.get('our_pct') as string) ?? '0'),
+            enemy_pct: parseFloat((data.get('enemy_pct') as string) ?? '0'),
+        })
+    } catch (error) {
+        console.error('Error reporting campaign advantage:', error)
+    }
+}
+
+let systems:CampaignSystemSummary[] = []
+
+try {
+    systems = await get_campaign_systems(slug, auth_token as string)
+} catch (error) {
+    console.error('Error fetching campaign systems:', error)
+}
+
+const system = systems.find(item => item.id === system_id)
+
+if (!system)
+    return HTTP_400_Bad_Request()
+
+import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
+---
+
+<CampaignSystemCard system={system} slug={slug} can_report={true} />
