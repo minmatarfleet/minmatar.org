@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from ninja import Schema
+from pydantic import Field
 
 
 class CampaignSystemSummary(Schema):
@@ -165,6 +167,17 @@ class SiteOut(Schema):
     confidence: str = ""
 
 
+class AwardOut(Schema):
+    code: str
+    label: str
+    scope: str
+    week_start: date | None = None
+    awarded_at: datetime
+    username: str
+    value: float | None = None
+    metric: str = ""
+
+
 class TimelineEvent(Schema):
     id: int
     kind: str
@@ -216,12 +229,12 @@ class ReadinessOut(Schema):
 
 
 class EnlistRequest(Schema):
-    source: str = "web"
+    source: Literal["fleet_prompt", "gang_ping", "web", "admin"] = "web"
     notify_gang_forming: bool = True
     notify_standing_fleet: bool = True
     notify_activity_nearby: bool = False
     notify_streak_at_risk: bool = True
-    digest_hour: int = 18
+    digest_hour: int = Field(default=18, ge=0, le=23)
 
 
 class EnlistResponse(Schema):
@@ -232,8 +245,8 @@ class EnlistResponse(Schema):
 
 
 class AdvantageRequest(Schema):
-    our_pct: float
-    enemy_pct: float
+    our_pct: float = Field(ge=0, le=100)
+    enemy_pct: float = Field(ge=0, le=100)
 
 
 class AdvantageResponse(Schema):
@@ -246,21 +259,35 @@ class AdvantageResponse(Schema):
 
 
 class GangRequest(Schema):
-    ships: str
+    # These land in a CampaignEvent title and body, both of which are bounded
+    # columns, so they are bounded here rather than at the database.
+    ships: str = Field(min_length=1, max_length=120)
     solar_system_id: int | None = None
-    note: str = ""
+    note: str = Field(default="", max_length=280)
     voice_channel_id: int | None = None
 
 
 class CampaignCreateRequest(Schema):
-    name: str
-    slug: str
-    short_code: str
-    tagline: str = ""
+    name: str = Field(min_length=1, max_length=128)
+    slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=64)
+    short_code: str = Field(pattern=r"^[A-Za-z0-9]{2,12}$")
+    tagline: str = Field(default="", max_length=200)
     description_md: str = ""
     start_at: datetime
     end_at: datetime
     system_ids: list[int] = []
+
+
+class CampaignCreated(Schema):
+    slug: str
+    short_code: str
+    name: str
+    status: str
+    systems: list[str] = []
+
+
+class CommanderOrderRequest(Schema):
+    text: str = Field(max_length=280)
 
 
 class WeekTargetPatch(Schema):

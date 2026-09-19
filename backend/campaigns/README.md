@@ -17,8 +17,10 @@ records what the code actually does today.
 | Contested percent, victory points | public ESI FW systems feed → `services.snapshots` | Stored durably per campaign system; the feed's own table keeps eight days and discards victory points. |
 | Operational state | `services.jump_graph` | Needs the warzone jump-graph fixture. Without it every system reports `unknown` and complex inference drops to low confidence. |
 | Advantage | `services.advantage` | Our contribution is exact from payouts. The absolute value is crowd-read from pilot reports, with consensus, staleness and outlier holds. |
-| Timeline | `services.snapshots.mirror_feed_events` | The activity feed's own events, mirrored. Detections, never scoring input. |
+| Fleets | `services.fleets` | Attendance and fleet-linked kills come from the fleet instance members the existing ESI poller already writes, so campaigns add no polling of their own. A fleet counts once someone sets `campaign` on it. |
+| Timeline | `services.snapshots.mirror_feed_events` | The activity feed's own events, mirrored per campaign. Detections, never scoring input. |
 | Points | `services.scoring` + `services.stats` | Recomputed from source into `CampaignParticipantDay`, never incremented. Every board reads those rows. |
+| Awards | `services.awards` | Six weekly awards decided from the same day rows every Thursday, three campaign awards at close-out. |
 
 ## Deliberate limits
 
@@ -34,7 +36,29 @@ records what the code actually does today.
   with one untracked pilot pay the same. Those rows keep their candidate list
   and stay unnamed; only an unambiguous tier gets a class.
 - **Estimated advantage never scores.** A reading older than three hours is
-  shown as an estimate and is excluded from objectives.
+  shown as an estimate and is excluded from objectives. Re-reporting the same
+  system only scores once every two hours.
+- **Pods never score**, on either side. The ship loss already cost the pilot.
+- **Every read is gated on the campaign's visibility.** The roster names
+  pilots and the coverage chart shows when the alliance is *not* online, so
+  only a campaign explicitly marked `public` is readable without the
+  `campaigns.view` feature.
+- **Being in the alliance is not being in the campaign.** Reporting
+  advantage, taking the standing fleet and forming a gang all require an
+  active enlistment in that campaign, and are refused once it has ended.
+
+## Known limits
+
+- ESI reports when a pilot **joined** a fleet but never when they left, so
+  standing-fleet minutes are bounded by the last time the poller confirmed
+  the fleet existed rather than measured exactly.
+- Complex class can only be called certain for base tiers that are not a
+  multiple of another tier, because a solo capture and a shared larger one
+  pay identically. Everything else keeps its candidate list and stays
+  unnamed.
+- Operational state needs the SDE jump-graph fixture. Without it, or for a
+  system the fixture predates, the state is `unknown` and inference drops to
+  low confidence rather than guessing.
 
 ## Not implemented yet
 

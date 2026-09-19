@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
     dispatch_uid="campaigns_monitor_system",
 )
 def monitor_campaign_system(sender, instance: CampaignSystem, **kwargs):
-    _, created = FeedMonitoredSystem.objects.get_or_create(
+    monitored, created = FeedMonitoredSystem.objects.get_or_create(
         solar_system_id=instance.solar_system_id,
         defaults={
             "name": instance.name,
@@ -32,6 +32,13 @@ def monitor_campaign_system(sender, instance: CampaignSystem, **kwargs):
             "is_active": True,
         },
     )
+    # A row left over from an earlier campaign may have been switched off,
+    # which is exactly the silent no-kills failure this guards against.
+    if not created and not monitored.is_active:
+        monitored.is_active = True
+        monitored.save(update_fields=["is_active"])
+        logger.info("Re-enabled feed monitoring for %s", instance.name)
+
     if created:
         logger.info(
             "Added %s to the feed's monitored systems for campaign %s",

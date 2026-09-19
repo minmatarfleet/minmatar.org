@@ -85,6 +85,20 @@ EVENT_CODE_SEED: list[dict] = [
     },
 ]
 
+# How much advantage one completed site is worth, as
+# (ours generated, theirs removed) percentage points. Keyed by SiteKind.
+# The 10,000 LP family is credited as a Rendezvous Point, the common case,
+# until the event codes are calibrated well enough to tell them apart.
+ADVANTAGE_DELTA_BY_SITE_KIND = {
+    "rendezvous_point": (2.0, 0.0),
+    "propaganda_beacon": (2.0, 0.0),
+    "advantage_site": (2.0, 0.0),
+    "listening_outpost": (0.0, 2.0),
+    "supply_cache": (0.0, 2.0),
+    "battlefield": (15.0, 0.0),
+}
+
+
 # --- Scoring ---------------------------------------------------------------
 DEFAULT_SCORING: dict = {
     "kill_base": 10,
@@ -93,7 +107,6 @@ DEFAULT_SCORING: dict = {
     "solo_bonus": 10,
     "fleet_kill_bonus": 5,
     "gang_kill_bonus": 5,
-    "gang_fc_bonus": 2,
     "gang_size_max": 10,
     "loss_penalty": -3,
     "loss_penalty_in_fleet": -1,
@@ -106,7 +119,6 @@ DEFAULT_SCORING: dict = {
     "battlefield": 60,
     "site_soft_cap": 8,  # sites per pilot per day at full value
     "advantage_reading": 5,
-    "advantage_sweep": 15,
     "fleet_attended": 15,
     "fleet_attended_primary": 30,
     "standing_fleet_day": 15,
@@ -119,7 +131,6 @@ DEFAULT_SCORING: dict = {
     "off_peak_hours": list(range(3, 14)),
     "contribution_mix_bonus": 0.20,
     "order_full_set": 50,
-    "order_weekly": 100,
 }
 
 # Points added on top of complex_base, by base LP tier.
@@ -162,6 +173,7 @@ ADVANTAGE_READING_STALE_MINUTES = 180
 ADVANTAGE_READING_HIDE_MINUTES = 720
 
 # --- Awards ----------------------------------------------------------------
+# (code, label, the CampaignParticipantDay column it is decided on)
 WEEKLY_AWARDS = [
     ("top_gun", "Top Gun", "kills"),
     ("plex_marathon", "Plex Marathon", "complexes"),
@@ -171,6 +183,7 @@ WEEKLY_AWARDS = [
     ("saboteur", "Saboteur", "enemy_advantage_removed"),
 ]
 
+# (code, label, the CampaignParticipantStat column it is decided on)
 CAMPAIGN_AWARDS = [
     ("warlord", "Warlord", "points"),
     ("closer", "Closer", "complexes"),

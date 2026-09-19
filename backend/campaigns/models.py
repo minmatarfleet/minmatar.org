@@ -12,6 +12,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
+from campaigns.constants import ADVANTAGE_DELTA_BY_SITE_KIND
+
 # The campaign week and campaign day both roll over at 11:00 UTC, which is
 # shortly after EVE's daily downtime and the moment FW victory points reset.
 DAY_BOUNDARY_HOUR = 11
@@ -371,6 +373,11 @@ class CampaignEnlistmentCharacter(models.Model):
     )
     included_from = models.DateTimeField(default=timezone.now)
     included_until = models.DateTimeField(null=True, blank=True)
+    payouts_polled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Drives the polling rotation so every character is read.",
+    )
 
     class Meta:
         ordering = ["character__character_name"]
@@ -696,6 +703,11 @@ class CampaignSiteCompletion(models.Model):
         blank=True,
         related_name="payouts",
     )
+    scored = models.BooleanField(
+        default=True,
+        help_text="False while the payout's event code is unconfirmed. The "
+        "completion is still shown, it just cannot move anyone's standing.",
+    )
 
     class Meta:
         ordering = ["-occurred_at"]
@@ -707,24 +719,7 @@ class CampaignSiteCompletion(models.Model):
     @property
     def advantage_delta(self) -> tuple[float, float]:
         """(our advantage generated, enemy advantage removed)."""
-        if self.site_kind in (
-            SiteKind.RENDEZVOUS_POINT,
-            SiteKind.PROPAGANDA_BEACON,
-        ):
-            return (2.0, 0.0)
-        if self.site_kind in (
-            SiteKind.LISTENING_OUTPOST,
-            SiteKind.SUPPLY_CACHE,
-        ):
-            return (0.0, 2.0)
-        if self.site_kind == SiteKind.BATTLEFIELD:
-            return (15.0, 0.0)
-        if self.site_kind == SiteKind.ADVANTAGE_SITE:
-            # 10,000 LP family: Rendezvous Point, beacon or outpost. We do not
-            # know which until the event codes are calibrated, so credit the
-            # common case and never claim more than that.
-            return (2.0, 0.0)
-        return (0.0, 0.0)
+        return ADVANTAGE_DELTA_BY_SITE_KIND.get(self.site_kind, (0.0, 0.0))
 
 
 class CampaignComplexCompletion(models.Model):
@@ -923,12 +918,12 @@ class CampaignEvent(models.Model):
         choices=(("campaign", "Campaign"), ("feed", "Feed")),
         default="campaign",
     )
-    feed_event = models.OneToOneField(
+    feed_event = models.ForeignKey(
         "feed.FeedEvent",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="campaign_event",
+        related_name="campaign_events",
     )
     fleet = models.ForeignKey(
         "fleets.EveFleet", on_delete=models.SET_NULL, null=True, blank=True
@@ -938,6 +933,12 @@ class CampaignEvent(models.Model):
     class Meta:
         ordering = ["-occurred_at", "-id"]
         indexes = [models.Index(fields=["campaign", "-occurred_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "feed_event"],
+                name="campaign_feed_event_unique",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.kind} {self.occurred_at:%Y-%m-%d %H:%M}"

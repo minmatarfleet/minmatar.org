@@ -461,6 +461,14 @@ CELERYBEAT_CAMPAIGNS = [
         },
     ),
     (
+        "[Campaigns] Deep sweep killmails",
+        {
+            "task": "campaigns.tasks.deep_sweep_campaign_killmails",
+            "schedule": schedule(timedelta(hours=1)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
         "[Campaigns] Poll system snapshots",
         {
             "task": "campaigns.tasks.poll_campaign_snapshots",
@@ -474,6 +482,14 @@ CELERYBEAT_CAMPAIGNS = [
             "task": "campaigns.tasks.poll_campaign_payouts",
             "schedule": schedule(timedelta(minutes=20)),
             "options": {"queue": "eveonline"},
+        },
+    ),
+    (
+        "[Campaigns] Link fleets",
+        {
+            "task": "campaigns.tasks.link_campaign_fleets",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"queue": "celery"},
         },
     ),
     (
@@ -501,10 +517,18 @@ CELERYBEAT_CAMPAIGNS = [
         },
     ),
     (
+        "[Campaigns] Close the week",
+        {
+            "task": "campaigns.tasks.close_campaign_week",
+            "schedule": crontab(hour=11, minute=2, day_of_week=4),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
         "[Campaigns] Propose weekly plan",
         {
             "task": "campaigns.tasks.propose_campaign_week",
-            "schedule": crontab(hour=11, minute=0, day_of_week=4),
+            "schedule": crontab(hour=11, minute=4, day_of_week=4),
             "options": {"queue": "celery"},
         },
     ),

@@ -16,6 +16,7 @@ from campaigns.models import (
     CampaignWeekTarget,
 )
 from campaigns.services import plan
+from feed.models import FeedMonitoredSystem
 from groups.helpers.feature_access import require_feature
 
 CREATE_FEATURE = "campaigns.create"
@@ -23,11 +24,24 @@ MANAGE_FEATURE = "campaigns.manage"
 
 
 def _can_manage(user, campaign: Campaign) -> bool:
-    if user.is_superuser or user.is_staff:
+    """Superusers, holders of the manage feature, and the creator.
+
+    `is_staff` alone is deliberately not enough: it is a Django-admin login
+    flag, not a campaigns role. The creator keeps manage rights on their own
+    campaign only while they can still create campaigns at all.
+    """
+    if user.is_superuser:
         return True
-    if campaign.created_by_id == user.id:
+    if require_feature(user, MANAGE_FEATURE) is None:
         return True
-    return require_feature(user, MANAGE_FEATURE) is None
+    return (
+        campaign.created_by_id == user.id
+        and require_feature(user, CREATE_FEATURE) is None
+    )
+
+
+def _denied():
+    return 403, {"detail": "feature_denied", "feature": MANAGE_FEATURE}
 
 
 @router.post(
@@ -36,13 +50,35 @@ def _can_manage(user, campaign: Campaign) -> bool:
     auth=AuthBearer(),
 )
 def create_campaign(request, payload: schemas.CampaignCreateRequest):
+    """Create a draft. Systems are named from the feed's monitored list."""
     denied = require_feature(request.user, CREATE_FEATURE)
     if denied:
         return denied
 
+    if payload.end_at <= payload.start_at:
+        return 400, {"detail": "end_at must be after start_at"}
+
+    short_code = payload.short_code.upper()
+    if Campaign.objects.filter(slug=payload.slug).exists():
+        return 400, {"detail": f"slug {payload.slug} is already taken"}
+    if Campaign.objects.filter(short_code=short_code).exists():
+        return 400, {"detail": f"short code {short_code} is already taken"}
+
+    known = dict(
+        FeedMonitoredSystem.objects.filter(
+            solar_system_id__in=payload.system_ids
+        ).values_list("solar_system_id", "name")
+    )
+    unknown = [sid for sid in payload.system_ids if sid not in known]
+    if unknown:
+        return 400, {
+            "detail": "unknown solar system ids: "
+            + ", ".join(str(sid) for sid in unknown)
+        }
+
     campaign = Campaign.objects.create(
         slug=payload.slug,
-        short_code=payload.short_code.upper(),
+        short_code=short_code,
         name=payload.name,
         tagline=payload.tagline,
         description_md=payload.description_md,
@@ -56,12 +92,31 @@ def create_campaign(request, payload: schemas.CampaignCreateRequest):
         CampaignSystem.objects.create(
             campaign=campaign,
             solar_system_id=solar_system_id,
-            name=str(solar_system_id),
+            name=known[solar_system_id],
         )
 
-    from campaigns.endpoints.public import get_campaign
+    return {
+        "slug": campaign.slug,
+        "short_code": campaign.short_code,
+        "name": campaign.name,
+        "status": campaign.status,
+        "systems": [system.name for system in campaign.systems.all()],
+    }
 
-    return get_campaign(request, campaign.slug)
+
+@router.post(
+    "/{slug}/week/propose",
+    response={200: dict, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def propose_week(request, slug: str):
+    """Re-run this week's proposal. Accepted targets are left alone."""
+    campaign = get_object_or_404(Campaign, slug=slug)
+    if not _can_manage(request.user, campaign):
+        return _denied()
+    proposed = plan.propose_week(campaign)
+    plan.update_week_progress(campaign)
+    return {"proposed": proposed}
 
 
 @router.patch(
@@ -75,16 +130,17 @@ def accept_week_target(
     """Accept the proposal, or nudge the number. One click either way."""
     campaign = get_object_or_404(Campaign, slug=slug)
     if not _can_manage(request.user, campaign):
-        return 403, {"detail": "feature_denied", "feature": MANAGE_FEATURE}
+        return _denied()
 
     row = get_object_or_404(
         CampaignWeekTarget, id=target_id, campaign_system__campaign=campaign
     )
+    # Touching the number at all makes it the operator's, or the next
+    # proposal would quietly overwrite what they just typed.
     row.target = payload.target
-    if payload.accept:
-        row.proposed = False
-        row.accepted_by = request.user
-        row.accepted_at = timezone.now()
+    row.proposed = False
+    row.accepted_by = request.user
+    row.accepted_at = timezone.now()
     row.save()
 
     return {
@@ -104,24 +160,19 @@ def accept_week_target(
     }
 
 
-@router.post("/{slug}/week/propose", response={200: dict}, auth=AuthBearer())
-def propose_week(request, slug: str):
-    campaign = get_object_or_404(Campaign, slug=slug)
-    if not _can_manage(request.user, campaign):
-        return 403, {"detail": "feature_denied", "feature": MANAGE_FEATURE}
-    proposed = plan.propose_week(campaign)
-    plan.update_week_progress(campaign)
-    return {"proposed": proposed}
-
-
 @router.post(
-    "/{slug}/commander-order", response={200: dict}, auth=AuthBearer()
+    "/{slug}/commander-order",
+    response={200: dict, 403: ErrorResponse},
+    auth=AuthBearer(),
 )
-def set_commander_order(request, slug: str, text: str):
+def set_commander_order(
+    request, slug: str, payload: schemas.CommanderOrderRequest
+):
+    """The one line above today's orders, when a human writes it."""
     campaign = get_object_or_404(Campaign, slug=slug)
     if not _can_manage(request.user, campaign):
-        return 403, {"detail": "feature_denied", "feature": MANAGE_FEATURE}
-    campaign.commander_order_text = text[:280]
+        return _denied()
+    campaign.commander_order_text = payload.text
     campaign.commander_order_set_at = timezone.now()
     campaign.commander_order_is_draft = False
     campaign.save(

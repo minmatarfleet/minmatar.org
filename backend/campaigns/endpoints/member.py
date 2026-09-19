@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -33,16 +34,50 @@ logger = logging.getLogger(__name__)
 ENLIST_FEATURE = "campaigns.enlist"
 GANG_FEATURE = "campaigns.form_gang"
 
+DEFAULT_REDIRECT = "/account/campaigns/"
+
 TOKEN_CHAIN_URL = (
     "/api/eveonline/characters/add"
     "?token_type=Campaign&character_id={character_id}&redirect_url={redirect}"
 )
 
 
+WRITABLE_STATUSES = (CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE)
+
+
 def _campaign(slug: str) -> Campaign:
     return get_object_or_404(
         Campaign.objects.exclude(status=CampaignStatus.DRAFT), slug=slug
     )
+
+
+def _enlisted(user, campaign: Campaign) -> bool:
+    return CampaignEnlistment.objects.filter(
+        campaign=campaign, user=user, status="active"
+    ).exists()
+
+
+def _may_act(request, campaign: Campaign, feature: str):
+    """Holding the feature is not enough; you have to be in this campaign.
+
+    Otherwise anyone in the alliance could take another campaign's standing
+    fleet, or feed its advantage consensus without flying in it.
+    """
+    denied = require_feature(request.user, feature)
+    if denied:
+        return denied
+    if campaign.status not in WRITABLE_STATUSES:
+        return 409, {"detail": f"campaign is {campaign.status}"}
+    if not _enlisted(request.user, campaign):
+        return 403, {"detail": "not_enlisted"}
+    return None
+
+
+def _safe_redirect(redirect_url: str) -> str:
+    """Only ever hand our own paths to the SSO round trip."""
+    if redirect_url.startswith("/") and not redirect_url.startswith("//"):
+        return redirect_url
+    return DEFAULT_REDIRECT
 
 
 def _character_state(character: EveCharacter) -> tuple[str, str]:
@@ -58,8 +93,13 @@ def _character_state(character: EveCharacter) -> tuple[str, str]:
 
 
 @router.get("/readiness", response=schemas.ReadinessOut, auth=AuthBearer())
-def get_readiness(request, redirect_url: str = "/account/campaigns/"):
+def get_readiness(request, redirect_url: str = DEFAULT_REDIRECT):
     """Every character on one row, with the one action each of them needs."""
+    denied = require_feature(request.user, ENLIST_FEATURE)
+    if denied:
+        return denied
+
+    redirect_url = _safe_redirect(redirect_url)
     characters = EveCharacter.objects.filter(
         user=request.user, esi_deleted=False
     ).select_related("token")
@@ -76,6 +116,11 @@ def get_readiness(request, redirect_url: str = "/account/campaigns/"):
             enlistment__user=request.user, included_until__isnull=True
         ).values_list("character__character_id", flat=True)
     )
+    # Before enlisting nobody is included or excluded yet, and every
+    # character would count on the first enlist.
+    enlisted_anywhere = CampaignEnlistmentCharacter.objects.filter(
+        enlistment__user=request.user
+    ).exists()
 
     rows = []
     tracked = 0
@@ -92,8 +137,10 @@ def get_readiness(request, redirect_url: str = "/account/campaigns/"):
                 "token_type": character.esi_token_level or "",
                 "counts_for": counts_for,
                 "state": state,
-                "included": character.character_id in included_ids
-                or not included_ids,
+                "included": (
+                    character.character_id in included_ids
+                    or not enlisted_anywhere
+                ),
                 "action_url": (
                     TOKEN_CHAIN_URL.format(
                         character_id=character.character_id,
@@ -147,19 +194,23 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
     included = 0
     for character in characters:
         # A character can have several inclusion periods, so we look for an
-        # open one rather than assuming a single row per character.
-        has_open_period = CampaignEnlistmentCharacter.objects.filter(
-            enlistment=enlistment,
-            character=character,
-            included_until__isnull=True,
-        ).exists()
-        if not has_open_period:
+        # open one rather than assuming a single row per character. A closed
+        # period means the pilot deliberately parked that alt, and re-enlisting
+        # must not quietly undo that.
+        periods = CampaignEnlistmentCharacter.objects.filter(
+            enlistment=enlistment, character=character
+        )
+        if periods.filter(included_until__isnull=True).exists():
+            included += 1
+        elif not periods.exists():
             CampaignEnlistmentCharacter.objects.create(
                 enlistment=enlistment,
                 character=character,
                 included_from=timezone.now(),
             )
-        included += 1
+            included += 1
+        else:
+            continue
         state, _ = _character_state(character)
         if state != "ready":
             missing.append(character.character_name)
@@ -186,8 +237,16 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
     }
 
 
-@router.delete("/{slug}/enlist", response={200: dict}, auth=AuthBearer())
+@router.delete(
+    "/{slug}/enlist",
+    response={200: dict, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
 def leave(request, slug: str):
+    denied = require_feature(request.user, ENLIST_FEATURE)
+    if denied:
+        return denied
+
     campaign = _campaign(slug)
     enlistment = CampaignEnlistment.objects.filter(
         campaign=campaign, user=request.user
@@ -251,18 +310,22 @@ def exclude_character(request, slug: str, character_id: int):
 
 @router.post(
     "/{slug}/systems/{system_id}/advantage",
-    response={200: schemas.AdvantageResponse, 403: ErrorResponse},
+    response={
+        200: schemas.AdvantageResponse,
+        403: ErrorResponse,
+        409: ErrorResponse,
+    },
     auth=AuthBearer(),
 )
 def report_advantage(
     request, slug: str, system_id: int, payload: schemas.AdvantageRequest
 ):
     """One tap from a pilot in space. ESI will not tell us this."""
-    denied = require_feature(request.user, ENLIST_FEATURE)
+    campaign = _campaign(slug)
+    denied = _may_act(request, campaign, ENLIST_FEATURE)
     if denied:
         return denied
 
-    campaign = _campaign(slug)
     campaign_system = get_object_or_404(
         CampaignSystem, campaign=campaign, id=system_id
     )
@@ -287,31 +350,38 @@ def report_advantage(
 
 
 @router.post(
-    "/{slug}/standing-fleet/take", response={200: dict}, auth=AuthBearer()
+    "/{slug}/standing-fleet/take",
+    response={200: dict, 403: ErrorResponse, 409: ErrorResponse},
+    auth=AuthBearer(),
 )
 def take_standing_fleet(request, slug: str):
     """Any enlisted pilot may take the fleet when nobody is boss."""
-    denied = require_feature(request.user, ENLIST_FEATURE)
+    campaign = _campaign(slug)
+    denied = _may_act(request, campaign, ENLIST_FEATURE)
     if denied:
         return denied
 
-    campaign = _campaign(slug)
-    standing, _ = CampaignStandingFleet.objects.get_or_create(
-        campaign=campaign
-    )
-
-    if standing.is_up and standing.current_boss_user_id != request.user.id:
-        return {"taken": False, "reason": "Someone already has it."}
-
     character = EveCharacter.objects.filter(user=request.user).first()
-    standing.current_boss_user = request.user
-    standing.current_boss_character_id = (
-        character.character_id if character else None
-    )
-    standing.taken_at = timezone.now()
-    standing.last_seen_at = timezone.now()
-    standing.handovers += 1
-    standing.save()
+
+    # Two pilots pressing this at once must not both end up holding it, so
+    # the row is locked for the read and the write.
+    with transaction.atomic():
+        CampaignStandingFleet.objects.get_or_create(campaign=campaign)
+        standing = CampaignStandingFleet.objects.select_for_update().get(
+            campaign=campaign
+        )
+
+        if standing.is_up and standing.current_boss_user_id != request.user.id:
+            return {"taken": False, "reason": "Someone already has it."}
+
+        standing.current_boss_user = request.user
+        standing.current_boss_character_id = (
+            character.character_id if character else None
+        )
+        standing.taken_at = timezone.now()
+        standing.last_seen_at = timezone.now()
+        standing.handovers += 1
+        standing.save()
 
     CampaignEvent.objects.create(
         campaign=campaign,
@@ -334,6 +404,10 @@ def join_standing_fleet(request, slug: str):
     is no boss the honest answer is to offer the fleet instead of failing.
     """
     campaign = _campaign(slug)
+    denied = _may_act(request, campaign, ENLIST_FEATURE)
+    if denied:
+        return denied
+
     standing = getattr(campaign, "standing_fleet", None)
     if not standing or not standing.is_up:
         return {
@@ -350,16 +424,16 @@ def join_standing_fleet(request, slug: str):
 
 @router.post(
     "/{slug}/gangs",
-    response={200: dict, 403: ErrorResponse},
+    response={200: dict, 403: ErrorResponse, 409: ErrorResponse},
     auth=AuthBearer(),
 )
 def form_gang(request, slug: str, payload: schemas.GangRequest):
     """Four fields and a line. Anyone enlisted can start one."""
-    denied = require_feature(request.user, GANG_FEATURE)
+    campaign = _campaign(slug)
+    denied = _may_act(request, campaign, GANG_FEATURE)
     if denied:
         return denied
 
-    campaign = _campaign(slug)
     system = None
     if payload.solar_system_id:
         system = CampaignSystem.objects.filter(

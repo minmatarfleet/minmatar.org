@@ -5,13 +5,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from datetime import timezone as datetime_timezone
 
-from django.db.models import Q
 from django.utils import timezone
 
 from campaigns.models import (
     DAY_BOUNDARY_HOUR,
     Campaign,
-    CampaignEnlistment,
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
 )
@@ -26,11 +24,15 @@ def campaign_day(moment: datetime | None = None) -> date:
     return moment.date()
 
 
-def campaign_week_start(moment: datetime | None = None) -> date:
-    """The Thursday that opened the campaign week containing ``moment``."""
-    day = campaign_day(moment)
+def week_start_for(day: date) -> date:
+    """The Thursday that opened the campaign week containing ``day``."""
     # Monday is 0, Thursday is 3.
     return day - timedelta(days=(day.weekday() - 3) % 7)
+
+
+def campaign_week_start(moment: datetime | None = None) -> date:
+    """The Thursday that opened the campaign week containing ``moment``."""
+    return week_start_for(campaign_day(moment))
 
 
 def day_bounds(day: date) -> tuple[datetime, datetime]:
@@ -146,43 +148,3 @@ class CampaignRoster:
 
     def __bool__(self) -> bool:
         return bool(self._characters)
-
-
-def included_character_map(campaign: Campaign, moment: datetime) -> dict:
-    """``{character_id: user}`` for characters counting at ``moment``."""
-    roster = CampaignRoster(campaign)
-    resolved = {}
-    for character_id in roster.character_ids():
-        user = roster.user_for(character_id, moment)
-        if user is not None:
-            resolved[character_id] = user
-    return resolved
-
-
-def models_included_until_q(moment: datetime):
-    return Q(included_until__isnull=True) | Q(included_until__gt=moment)
-
-
-def was_enlisted_at(enlistment: CampaignEnlistment, moment: datetime) -> bool:
-    """True when the pilot was enlisted at that moment."""
-    for period in enlistment.periods.all():
-        if period.enlisted_at > moment:
-            continue
-        if period.left_at is None or period.left_at > moment:
-            return True
-    return False
-
-
-def active_enlistments(campaign: Campaign):
-    return CampaignEnlistment.objects.filter(
-        campaign=campaign, status="active"
-    ).select_related("user")
-
-
-def prime_time_label(hour_utc: int) -> str:
-    """Rough timezone label for an hour of activity."""
-    if 0 <= hour_utc < 8:
-        return "AUTZ"
-    if 8 <= hour_utc < 16:
-        return "EUTZ"
-    return "USTZ"

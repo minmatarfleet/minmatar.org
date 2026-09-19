@@ -212,9 +212,10 @@ def mirror_feed_events(campaign: Campaign, hours: int = 48) -> int:
 
     since = timezone.now() - timedelta(hours=hours)
     mirrored = 0
-    events = FeedEvent.objects.filter(occurred_at__gte=since).exclude(
-        campaign_event__isnull=False
-    )
+    # Every pass re-reads the window rather than skipping events we have
+    # already copied: `is_active` is what drives the hostile-gang signal, and
+    # it goes false on the feed's side, not ours.
+    events = FeedEvent.objects.filter(occurred_at__gte=since)
     for event in events:
         payload = event.payload or {}
         # The feed writes the system as ``system_id``; accept both spellings.
@@ -246,9 +247,9 @@ def mirror_feed_events(campaign: Campaign, hours: int = 48) -> int:
             kind = CampaignEvent.Kind.HOSTILE_GANG
 
         CampaignEvent.objects.update_or_create(
+            campaign=campaign,
             feed_event=event,
             defaults={
-                "campaign": campaign,
                 "kind": kind,
                 "occurred_at": event.occurred_at,
                 "ended_at": event.expires_at,

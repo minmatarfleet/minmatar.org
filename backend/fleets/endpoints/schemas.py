@@ -12,6 +12,10 @@ class EveFleetType(str, Enum):
     NON_STRATEGIC = "non_strategic"
     TRAINING = "training"
     NPSI = "npsi"
+    # Campaign fleets. Valid on a response, but deliberately absent from
+    # GET /types so the fleet form cannot create one.
+    STANDING = "standing"
+    GANG = "gang"
 
 
 class EveFleetChannelResponse(BaseModel):

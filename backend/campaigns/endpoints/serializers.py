@@ -219,7 +219,8 @@ def coverage_by_hour(campaign: Campaign, days: int = 7) -> list[dict]:
 
 
 def roster_rows(campaign: Campaign) -> list[dict]:
-    enlistments = (
+    """The roster, in a handful of queries rather than three per pilot."""
+    enlistments = list(
         CampaignEnlistment.objects.filter(campaign=campaign, status="active")
         .select_related("user")
         .annotate(
@@ -228,23 +229,35 @@ def roster_rows(campaign: Campaign) -> list[dict]:
             )
         )
     )
+    if not enlistments:
+        return []
+
+    user_ids = [enlistment.user_id for enlistment in enlistments]
+
+    players = {
+        player.user_id: player
+        for player in EvePlayer.objects.filter(
+            user_id__in=user_ids
+        ).select_related("primary_character")
+    }
     stats_by_user = {
         row.user_id: row
         for row in CampaignParticipantStat.objects.filter(campaign=campaign)
     }
+    tracked_by_user = dict(
+        EveCharacter.objects.filter(
+            user_id__in=user_ids,
+            token__scopes__name="esi-characters.read_notifications.v1",
+        )
+        .values_list("user_id")
+        .annotate(n=Count("id", distinct=True))
+        .values_list("user_id", "n")
+    )
 
     rows = []
     for enlistment in enlistments:
-        player = EvePlayer.objects.filter(user=enlistment.user).first()
+        player = players.get(enlistment.user_id)
         primary = player.primary_character if player else None
-        tracked = (
-            EveCharacter.objects.filter(
-                user=enlistment.user,
-                token__scopes__name="esi-characters.read_notifications.v1",
-            )
-            .distinct()
-            .count()
-        )
         stat = stats_by_user.get(enlistment.user_id)
 
         rows.append(
@@ -263,7 +276,9 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 "streak_days": stat.streak_days if stat else 0,
                 "points": stat.points if stat else 0,
                 "characters_included": enlistment.included,
-                "characters_tracked": tracked,
+                "characters_tracked": tracked_by_user.get(
+                    enlistment.user_id, 0
+                ),
             }
         )
 

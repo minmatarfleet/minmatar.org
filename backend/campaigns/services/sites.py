@@ -25,7 +25,7 @@ from campaigns.constants import (
     SUPPRESSION_MULTIPLIER,
     TIER_TOLERANCE,
 )
-from campaigns.helpers import counting_campaigns, included_character_map
+from campaigns.helpers import CampaignRoster, counting_campaigns
 from campaigns.models import (
     CampaignComplexCompletion,
     CampaignSiteCompletion,
@@ -121,13 +121,16 @@ def classify_payout(payout: EveCharacterFwLpPayout) -> tuple[str, bool]:
 def attribute_payouts(payouts) -> dict:
     """Attribute stored payouts to campaigns, systems and pilots."""
     stats = {"attributed": 0, "skipped": 0, "unmapped": 0}
+    # Rosters are small and change rarely; building one per payout would be a
+    # query per row.
+    rosters: dict[int, CampaignRoster] = {}
 
     for payout in payouts:
         if not payout.location_id:
             stats["skipped"] += 1
             continue
 
-        kind = classify_payout(payout)[0]
+        kind, scorable = classify_payout(payout)
         if kind == SiteKind.KILL:
             # Kill payouts are the cross-check for missed kills, not a site.
             stats["skipped"] += 1
@@ -138,8 +141,11 @@ def attribute_payouts(payouts) -> dict:
         for campaign in counting_campaigns(
             payout.location_id, payout.occurred_at
         ):
-            included = included_character_map(campaign, payout.occurred_at)
-            user = included.get(payout.character.character_id)
+            if campaign.id not in rosters:
+                rosters[campaign.id] = CampaignRoster(campaign)
+            user = rosters[campaign.id].user_for(
+                payout.character.character_id, payout.occurred_at
+            )
             if user is None:
                 continue
             campaign_system = CampaignSystem.objects.filter(
@@ -161,6 +167,7 @@ def attribute_payouts(payouts) -> dict:
                     "amount_lp": payout.amount_lp,
                     "event_code": payout.event_code or 0,
                     "site_kind": kind,
+                    "scored": scorable,
                 },
             )
             if created:
@@ -294,24 +301,39 @@ def infer_complex_class(
 def build_complex_completions(since_hours: int = 6) -> dict:
     """Group complex payouts by site instance and infer the class."""
     since = timezone.now() - timedelta(hours=since_hours)
+
+    # Pilots in the same plex are polled at different times, so a second
+    # payout for a site we have already grouped arrives on a later run. Every
+    # site touched in the window is regrouped from all of its payouts, or the
+    # split count would stay stuck at whatever the first poll saw.
+    touched = set(
+        CampaignSiteCompletion.objects.filter(
+            site_kind=SiteKind.COMPLEX, occurred_at__gte=since
+        ).values_list("campaign_id", "payout__ref_id")
+    )
+    touched = {(cid, ref) for cid, ref in touched if ref}
+    if not touched:
+        return {"groups": 0, "built": 0}
+
     rows = CampaignSiteCompletion.objects.filter(
         site_kind=SiteKind.COMPLEX,
-        occurred_at__gte=since,
-        complex__isnull=True,
+        payout__ref_id__in=[ref for _, ref in touched],
     ).select_related("campaign", "campaign_system", "payout")
 
     groups: dict = {}
     for row in rows:
-        site_ref = row.payout.ref_id
-        if not site_ref:
+        key = (row.campaign_id, row.payout.ref_id)
+        if key not in touched:
             continue
-        key = (row.campaign_id, site_ref)
         groups.setdefault(key, []).append(row)
 
     built = 0
     for (campaign_id, site_ref), members in groups.items():
+        # The model orders newest first; the capture happened at the earliest
+        # payout, and every member of a split is paid the same amount.
+        members.sort(key=lambda row: row.occurred_at)
         first = members[0]
-        moment = min(m.occurred_at for m in members)
+        moment = first.occurred_at
         campaign_system = first.campaign_system
         snapshot = (
             CampaignSystemSnapshot.objects.filter(

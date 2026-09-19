@@ -15,6 +15,7 @@ from django.db.models import Avg, Count
 from django.utils import timezone
 
 from campaigns.constants import (
+    ADVANTAGE_DELTA_BY_SITE_KIND,
     ADVANTAGE_READING_HIDE_MINUTES,
     ADVANTAGE_READING_STALE_MINUTES,
 )
@@ -125,17 +126,21 @@ def contribution_since(
 ) -> tuple[float, float]:
     """Advantage our tracked pilots generated and removed since a moment."""
     queryset = CampaignSiteCompletion.objects.filter(
-        campaign_system=campaign_system
+        campaign_system=campaign_system, scored=True
     )
     if since:
         queryset = queryset.filter(occurred_at__gte=since)
 
     generated = 0.0
     removed = 0.0
-    for completion in queryset:
-        ours, theirs = completion.advantage_delta
-        generated += ours
-        removed += theirs
+    for site_kind, count in (
+        queryset.values_list("site_kind")
+        .annotate(n=Count("id"))
+        .values_list("site_kind", "n")
+    ):
+        ours, theirs = ADVANTAGE_DELTA_BY_SITE_KIND.get(site_kind, (0.0, 0.0))
+        generated += ours * count
+        removed += theirs * count
     return round(generated, 1), round(removed, 1)
 
 

@@ -9,9 +9,9 @@ from campaigns.helpers import (
     campaign_day,
     campaign_week_start,
     day_bounds,
-    prime_time_label,
     week_bounds,
 )
+from campaigns.services.stats import prime_time_label
 
 
 def moment(year, month, day, hour, minute=0):

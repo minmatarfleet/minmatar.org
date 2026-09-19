@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 MOTD_MAX_LENGTH = 4000
 
 
+# Campaign fleets are tracked like any other fleet but never scheduled, so
+# the catalog and the schedule filter them out.
+CAMPAIGN_FLEET_TYPES = ("standing", "gang")
+
+
 class EveFleet(models.Model):
     """
     Model for storing a fleet in our database
@@ -33,6 +38,10 @@ class EveFleet(models.Model):
         ("non_strategic", "Non Strategic Operation"),
         ("training", "Training Operation"),
         ("npsi", "NPSI"),
+        # Campaign fleets. Neither appears on the schedule: a standing fleet
+        # is always up and a gang is formed on the spot.
+        ("standing", "Campaign Standing Fleet"),
+        ("gang", "Campaign Gang"),
     )
     description = models.TextField(blank=True)
     objective = models.CharField(
@@ -73,6 +82,15 @@ class EveFleet(models.Model):
     )
     status = models.CharField(
         max_length=32, choices=fleet_statuses, default="unknown"
+    )
+
+    campaign = models.ForeignKey(
+        "campaigns.Campaign",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fleets",
+        help_text="Counts this fleet towards a Faction Warfare campaign.",
     )
 
     # Link to After Action Report in Discord

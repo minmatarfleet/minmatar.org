@@ -9,19 +9,23 @@ from __future__ import annotations
 import logging
 from datetime import date, timedelta
 
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
+from campaigns.constants import ADVANTAGE_DELTA_BY_SITE_KIND
 from campaigns.helpers import (
     campaign_day,
     campaign_week_start,
     day_bounds,
+    week_start_for,
 )
 from campaigns.models import (
     Campaign,
     CampaignAdvantageReading,
+    CampaignDailyOrder,
     CampaignKillmail,
     CampaignKillmailParticipant,
+    CampaignOrderProgress,
     CampaignParticipantDay,
     CampaignParticipantStat,
     CampaignSiteCompletion,
@@ -29,10 +33,13 @@ from campaigns.models import (
     SiteKind,
     SystemRole,
 )
-from campaigns.services import scoring
+from campaigns.services import fleets, scoring
 from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
+
+# Long enough to cover any streak a shield could bridge.
+STREAK_LOOKBACK_DAYS = 60
 
 BOARD_METRICS = {
     "points": "points",
@@ -62,6 +69,11 @@ def _blank_row() -> dict:
         "enemy_advantage_removed": 0.0,
         "advantage_readings": 0,
         "fleets_attended": 0,
+        "fleets_led": 0,
+        "gangs_led": 0,
+        "standing_fleet_minutes": 0,
+        "standing_fleet_day": False,
+        "orders_completed": 0,
         "points": 0.0,
         "site_index": 0,
     }
@@ -81,23 +93,27 @@ def _add_killmails(campaign, rows: dict, start, end) -> None:
         .order_by("killmail__killmail_time")
     )
 
+    gang_size_max = scoring.weights(campaign)["gang_size_max"]
+
     for participant in participants:
         mail = participant.killmail
         row = rows.setdefault(participant.user_id, _blank_row())
         multiplier = scoring.day_multiplier(campaign, mail.killmail_time.hour)
 
+        # Pods are listed in the killfeed but never scored, on either side:
+        # the ship loss already cost the pilot.
+        if mail.is_pod:
+            continue
+
         if (
             mail.outcome == KillmailOutcome.KILL
             and participant.role == "attacker"
         ):
-            # Pods are listed in the killfeed but never scored.
-            if mail.is_pod:
-                continue
             row["kills"] += 1
             row["isk_destroyed"] += mail.isk_value
             row["final_blows"] += int(participant.final_blow)
             row["solo_kills"] += int(mail.is_solo)
-            if 2 <= mail.enlisted_attacker_count <= 10:
+            if 2 <= mail.enlisted_attacker_count <= gang_size_max:
                 row["gang_kills"] += 1
             row["points"] += (
                 scoring.kill_points(
@@ -140,11 +156,14 @@ def _add_sites(campaign, rows: dict, start, end) -> None:
         )
     )
 
+    # An unconfirmed event code is shown on the site list but must never
+    # move anyone's standing, so it is excluded here entirely.
     completions = CampaignSiteCompletion.objects.filter(
         campaign=campaign,
         occurred_at__gte=start,
         occurred_at__lt=end,
         user__isnull=False,
+        scored=True,
     ).order_by("occurred_at")
 
     for completion in completions:
@@ -180,12 +199,134 @@ def _add_advantage_readings(campaign, rows: dict, start, end) -> None:
         reported_at__lt=end,
         status="accepted",
         reported_by__isnull=False,
-    )
+    ).order_by("reported_at")
+
     points = scoring.weights(campaign)["advantage_reading"]
+    # Re-reporting the same system every minute helps nobody, so only the
+    # first reading per system per pilot in each two-hour block scores.
+    scored_slots: set[tuple] = set()
+
     for reading in readings:
         row = rows.setdefault(reading.reported_by_id, _blank_row())
         row["advantage_readings"] += 1
+        slot = (
+            reading.reported_by_id,
+            reading.campaign_system_id,
+            int(reading.reported_at.timestamp() // (2 * 3600)),
+        )
+        if slot in scored_slots:
+            continue
+        scored_slots.add(slot)
         row["points"] += points
+
+
+def _add_fleets(campaign, rows: dict, day) -> None:
+    """Fleet time only counts through fleets somebody attached to a campaign."""
+    weights = scoring.weights(campaign)
+
+    for user_id, values in fleets.attendance_for_day(campaign, day).items():
+        row = rows.setdefault(user_id, _blank_row())
+        row["fleets_attended"] += values["attended"]
+        row["fleets_led"] += values["led"]
+        row["gangs_led"] += values["gangs_led"]
+        row["standing_fleet_minutes"] += values["standing_minutes"]
+        row["standing_fleet_day"] = (
+            row["standing_fleet_day"] or values["standing_day"]
+        )
+
+        # A fleet that reached a primary system is worth more than one that
+        # never left the staging system.
+        in_primary = values["attended_primary"]
+        elsewhere = values["attended"] - in_primary
+        row["points"] += in_primary * weights["fleet_attended_primary"]
+        row["points"] += elsewhere * weights["fleet_attended"]
+        row["points"] += values["led"] * weights["fleet_led"]
+        row["points"] += values["gangs_led"] * weights["gang_led"]
+        if values["standing_day"]:
+            row["points"] += weights["standing_fleet_day"]
+
+
+def _add_orders(campaign, rows: dict, day) -> None:
+    """Orders are only worth points once attribution says they were done."""
+    weights = scoring.weights(campaign)
+    completed = CampaignOrderProgress.objects.filter(
+        order__campaign=campaign,
+        order__day=day,
+        completed_at__isnull=False,
+    ).select_related("order")
+
+    per_user: dict[int, int] = {}
+    for progress in completed:
+        row = rows.setdefault(progress.user_id, _blank_row())
+        row["orders_completed"] += 1
+        row["points"] += progress.order.points
+        per_user[progress.user_id] = per_user.get(progress.user_id, 0) + 1
+
+    if not per_user:
+        return
+
+    total_today = CampaignDailyOrder.objects.filter(
+        campaign=campaign, day=day
+    ).count()
+    for user_id, done in per_user.items():
+        if total_today and done >= total_today:
+            rows[user_id]["points"] += weights["order_full_set"]
+
+
+def _run_ending_on(active_days: set, day: date) -> int:
+    """How many consecutive active days end on ``day``, inclusive."""
+    length = 1
+    cursor = day - timedelta(days=1)
+    while cursor in active_days:
+        length += 1
+        cursor -= timedelta(days=1)
+    return length
+
+
+def _streak_length(campaign, user_id: int, day) -> int:
+    """The streak a pilot is on, counting the day being materialised."""
+    previous = set(
+        CampaignParticipantDay.objects.filter(
+            campaign=campaign,
+            user_id=user_id,
+            active=True,
+            day__lt=day,
+            day__gte=day - timedelta(days=STREAK_LOOKBACK_DAYS),
+        ).values_list("day", flat=True)
+    )
+    return _run_ending_on(previous, day)
+
+
+WAYS_OF_CONTRIBUTING = (
+    ("kills", "losses"),
+    ("complexes", "advantage_sites", "supply_caches", "battlefields"),
+    ("fleets_attended", "standing_fleet_minutes"),
+    ("advantage_readings",),
+    ("supply_isk_delivered",),
+)
+
+
+def _ways_scored_this_week(campaign, user_id: int, day, today: dict) -> int:
+    """How many different kinds of work a pilot did this campaign week."""
+    week_start = week_start_for(day)
+    earlier = CampaignParticipantDay.objects.filter(
+        campaign=campaign, user_id=user_id, day__gte=week_start, day__lte=day
+    ).values(*[field for group in WAYS_OF_CONTRIBUTING for field in group])
+
+    totals = {
+        field: today.get(field, 0)
+        for group in WAYS_OF_CONTRIBUTING
+        for field in group
+    }
+    for record in earlier:
+        for field, value in record.items():
+            totals[field] = totals.get(field, 0) + (value or 0)
+
+    return sum(
+        1
+        for group in WAYS_OF_CONTRIBUTING
+        if any(totals.get(field) for field in group)
+    )
 
 
 ACTIVITY_FIELDS = (
@@ -197,6 +338,7 @@ ACTIVITY_FIELDS = (
     "battlefields",
     "advantage_readings",
     "fleets_attended",
+    "orders_completed",
 )
 
 
@@ -208,17 +350,27 @@ def materialise_day(campaign: Campaign, day: date) -> int:
     _add_killmails(campaign, rows, start, end)
     _add_sites(campaign, rows, start, end)
     _add_advantage_readings(campaign, rows, start, end)
+    _add_fleets(campaign, rows, day)
+    _add_orders(campaign, rows, day)
 
     active_day_points = scoring.weights(campaign)["active_day"]
     written = 0
 
     for user_id, values in rows.items():
         values.pop("site_index", None)
-        # A day never goes negative: a bad night should not punish undocking.
-        points = int(max(0, round(values.pop("points"))))
+        raw_points = values.pop("points")
         active = any(values[field] for field in ACTIVITY_FIELDS)
+
         if active:
-            points += active_day_points
+            raw_points += active_day_points
+            raw_points += scoring.streak_points(
+                campaign, _streak_length(campaign, user_id, day)
+            )
+            ways = _ways_scored_this_week(campaign, user_id, day, values)
+            raw_points *= 1 + scoring.contribution_mix_bonus(campaign, ways)
+
+        # A day never goes negative: a bad night should not punish undocking.
+        points = int(max(0, round(raw_points)))
 
         CampaignParticipantDay.objects.update_or_create(
             campaign=campaign,
@@ -227,6 +379,27 @@ def materialise_day(campaign: Campaign, day: date) -> int:
             defaults={**values, "points": points, "active": active},
         )
         written += 1
+
+    # Recomputed, never incremented: a pilot whose only activity for the day
+    # was withdrawn keeps a row, but an empty one.
+    CampaignParticipantDay.objects.filter(campaign=campaign, day=day).exclude(
+        user_id__in=rows.keys()
+    ).exclude(points=0, active=False).update(
+        **{field: 0 for field in ACTIVITY_FIELDS},
+        points=0,
+        active=False,
+        isk_destroyed=0,
+        isk_lost=0,
+        solo_kills=0,
+        final_blows=0,
+        gang_kills=0,
+        advantage_generated=0,
+        enemy_advantage_removed=0,
+        standing_fleet_minutes=0,
+        standing_fleet_day=False,
+        fleets_led=0,
+        gangs_led=0,
+    )
 
     return written
 
@@ -273,6 +446,7 @@ def rebuild_stats(campaign: Campaign) -> int:
 
         streak, best = _streaks([d.day for d in days if d.active], today)
         last_active = next((d.day for d in days if d.active), None)
+        active_hours, prime_time = observed_activity(campaign, user_id)
 
         CampaignParticipantStat.objects.update_or_create(
             campaign=campaign,
@@ -282,6 +456,8 @@ def rebuild_stats(campaign: Campaign) -> int:
                 "streak_days": streak,
                 "best_streak_days": best,
                 "last_active_day": last_active,
+                "active_hours_utc": active_hours,
+                "observed_prime_time": prime_time,
             },
         )
         updated += 1
@@ -300,34 +476,21 @@ def rebuild_stats(campaign: Campaign) -> int:
 
 
 def _streaks(active_days: list[date], today: date) -> tuple[int, int]:
-    """Current and best run of consecutive active campaign days."""
+    """The streak a pilot is on now, and the best one they have had."""
     if not active_days:
         return 0, 0
-    days = sorted(set(active_days), reverse=True)
 
-    current = 0
-    cursor = today
-    # Yesterday still counts: the day is not over until 11:00 UTC.
-    if days[0] not in (today, today - timedelta(days=1)):
-        current = 0
-    else:
-        cursor = days[0]
-        for day in days:
-            if day == cursor:
-                current += 1
-                cursor -= timedelta(days=1)
-            elif day < cursor:
-                break
+    days = set(active_days)
+    latest = max(days)
 
-    best = 1
-    run = 1
-    ordered = sorted(set(active_days))
-    for previous, day in zip(ordered, ordered[1:]):
-        if (day - previous).days == 1:
-            run += 1
-            best = max(best, run)
-        else:
-            run = 1
+    # Yesterday still counts: the campaign day does not end until 11:00 UTC,
+    # so a pilot who flew last night has not broken anything yet.
+    current = (
+        _run_ending_on(days, latest)
+        if latest in (today, today - timedelta(days=1))
+        else 0
+    )
+    best = max(_run_ending_on(days, day) for day in days)
     return current, max(best, current)
 
 
@@ -371,10 +534,19 @@ def campaign_totals(campaign: Campaign) -> dict:
     kills = mails.filter(outcome=KillmailOutcome.KILL)
     losses = mails.filter(outcome=KillmailOutcome.LOSS)
     sites = CampaignSiteCompletion.objects.filter(campaign=campaign)
+    scored_sites = sites.filter(scored=True)
 
-    advantage = sum(
-        completion.advantage_delta[0] for completion in sites.only("site_kind")
-    )
+    # Advantage is a sum over a handful of site kinds, so count the kinds
+    # rather than walking every completion ever recorded.
+    advantage = 0.0
+    for site_kind, count in (
+        scored_sites.values_list("site_kind")
+        .annotate(n=Count("id"))
+        .values_list("site_kind", "n")
+    ):
+        advantage += (
+            ADVANTAGE_DELTA_BY_SITE_KIND.get(site_kind, (0.0, 0.0))[0] * count
+        )
 
     return {
         "enlisted": campaign.enlistments.filter(status="active").count(),
@@ -382,8 +554,10 @@ def campaign_totals(campaign: Campaign) -> dict:
         "losses": losses.count(),
         "isk_destroyed": kills.aggregate(v=Sum("isk_value"))["v"] or 0,
         "isk_lost": losses.aggregate(v=Sum("isk_value"))["v"] or 0,
-        "complexes": sites.filter(site_kind=SiteKind.COMPLEX).count(),
-        "advantage_sites": sites.exclude(site_kind=SiteKind.COMPLEX).count(),
+        "complexes": scored_sites.filter(site_kind=SiteKind.COMPLEX).count(),
+        "advantage_sites": scored_sites.exclude(
+            site_kind=SiteKind.COMPLEX
+        ).count(),
         "advantage_generated": round(advantage, 1),
         "active_today": CampaignParticipantDay.objects.filter(
             campaign=campaign, day=campaign_day(), active=True
@@ -434,3 +608,40 @@ def week_summary(campaign: Campaign) -> dict:
         .distinct()
         .count(),
     }
+
+
+def observed_activity(campaign: Campaign, user_id: int) -> tuple[list, str]:
+    """Which UTC hours a pilot actually plays, and their prime time.
+
+    Stated prime time is often out of date or never filled in, so the roster
+    shows what the campaign has seen as well: the hours this pilot got kills
+    or ran sites in.
+    """
+    hours: dict[int, int] = {}
+
+    kill_times = CampaignKillmailParticipant.objects.filter(
+        killmail__campaign=campaign, user_id=user_id, enlisted=True
+    ).values_list("killmail__killmail_time", flat=True)
+    site_times = CampaignSiteCompletion.objects.filter(
+        campaign=campaign, user_id=user_id
+    ).values_list("occurred_at", flat=True)
+
+    for moment in list(kill_times) + list(site_times):
+        hours[moment.hour] = hours.get(moment.hour, 0) + 1
+
+    if not hours:
+        return [], ""
+
+    ordered = [
+        hour for hour, _ in sorted(hours.items(), key=lambda kv: -kv[1])
+    ]
+    return ordered[:6], prime_time_label(ordered[0])
+
+
+def prime_time_label(hour_utc: int) -> str:
+    """The timezone a pilot plays in, from the hour they are most active."""
+    if 0 <= hour_utc < 8:
+        return "AUTZ"
+    if 8 <= hour_utc < 16:
+        return "EUTZ"
+    return "USTZ"

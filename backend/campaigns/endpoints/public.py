@@ -14,6 +14,7 @@ from campaigns.endpoints import schemas, serializers
 from campaigns.helpers import campaign_week_start
 from campaigns.models import (
     Campaign,
+    CampaignAward,
     CampaignEvent,
     CampaignKillmail,
     CampaignParticipantStat,
@@ -25,6 +26,8 @@ from campaigns.services import plan, stats
 from groups.helpers.feature_access import require_feature
 
 VIEW_FEATURE = "campaigns.view"
+MAX_LIMIT = 200
+HOSTILE_GANG_WINDOW_HOURS = 2
 
 
 def _visible(request):
@@ -40,6 +43,24 @@ def _visible(request):
 
 def _get(request, slug: str) -> Campaign:
     return get_object_or_404(_visible(request), slug=slug)
+
+
+def _may_read(request, campaign: Campaign):
+    """Gate every read on the campaign's own visibility.
+
+    A campaign's sub-resources are as sensitive as the campaign itself: the
+    roster names pilots, the coverage chart shows the hours the alliance is
+    not online, and the strip says which gang is forming right now. Only a
+    campaign explicitly marked public is readable without the feature.
+    """
+    if campaign.visibility == "public":
+        return None
+    return require_feature(request.user, VIEW_FEATURE)
+
+
+def _clamp(limit: int) -> int:
+    """A page size the database can actually serve."""
+    return max(1, min(limit, MAX_LIMIT))
 
 
 @router.get(
@@ -78,7 +99,7 @@ def list_campaigns(request, status: str = ""):
 
 @router.get(
     "/{slug}",
-    response={200: schemas.CampaignDetail, 403: ErrorResponse},
+    response={200: schemas.CampaignDetail, 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
 )
 def get_campaign(request, slug: str):
@@ -141,21 +162,36 @@ def get_campaign(request, slug: str):
     }
 
 
-@router.get("/{slug}/now", response=schemas.RightNow, auth=AuthOptional())
+@router.get(
+    "/{slug}/now",
+    response={200: schemas.RightNow, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
 def get_right_now(request, slug: str):
     """Why undock in the next ten minutes."""
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
     user = (
         request.user
         if getattr(request.user, "is_authenticated", False)
         else None
     )
 
-    hostile = CampaignEvent.objects.filter(
-        campaign=campaign,
-        kind=CampaignEvent.Kind.HOSTILE_GANG,
-        is_active=True,
-    ).order_by("-occurred_at")[:3]
+    # "Right now" means right now: an event the feed still calls active but
+    # that started hours ago is history, not a reason to undock.
+    live_since = timezone.now() - timedelta(hours=HOSTILE_GANG_WINDOW_HOURS)
+    hostile = (
+        CampaignEvent.objects.filter(
+            campaign=campaign,
+            kind=CampaignEvent.Kind.HOSTILE_GANG,
+            is_active=True,
+            occurred_at__gte=live_since,
+        )
+        .select_related("campaign_system")
+        .order_by("-occurred_at")[:3]
+    )
 
     # A gang is only worth joining while it is still forming up.
     forming_since = timezone.now() - timedelta(hours=2)
@@ -233,9 +269,16 @@ def get_right_now(request, slug: str):
     }
 
 
-@router.get("/{slug}/week", response=schemas.WeekPlan, auth=AuthOptional())
+@router.get(
+    "/{slug}/week",
+    response={200: schemas.WeekPlan, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
 def get_week(request, slug: str):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
     week_start = campaign_week_start()
 
     targets = [
@@ -268,10 +311,15 @@ def get_week(request, slug: str):
 
 
 @router.get(
-    "/{slug}/orders", response=list[schemas.OrderOut], auth=AuthOptional()
+    "/{slug}/orders",
+    response={200: list[schemas.OrderOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
 )
 def get_orders(request, slug: str):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
     user = (
         request.user
         if getattr(request.user, "is_authenticated", False)
@@ -282,16 +330,28 @@ def get_orders(request, slug: str):
 
 @router.get(
     "/{slug}/systems",
-    response=list[schemas.CampaignSystemSummary],
+    response={
+        200: list[schemas.CampaignSystemSummary],
+        403: ErrorResponse,
+        404: None,
+    },
     auth=AuthOptional(),
 )
 def get_systems(request, slug: str):
-    return serializers.campaign_systems(_get(request, slug))
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    return serializers.campaign_systems(campaign)
 
 
 @router.get(
     "/{slug}/leaderboard",
-    response=list[schemas.LeaderboardRow],
+    response={
+        200: list[schemas.LeaderboardRow],
+        403: ErrorResponse,
+        404: None,
+    },
     auth=AuthOptional(),
 )
 def get_leaderboard(
@@ -302,34 +362,48 @@ def get_leaderboard(
     limit: int = 25,
 ):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
     return stats.leaderboard(
-        campaign, metric=metric, period=period, limit=limit
+        campaign, metric=metric, period=period, limit=_clamp(limit)
     )
 
 
 @router.get(
     "/{slug}/killmails",
-    response=list[schemas.KillmailOut],
+    response={200: list[schemas.KillmailOut], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
 )
 def get_killmails(request, slug: str, outcome: str = "", limit: int = 50):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
     queryset = CampaignKillmail.objects.filter(campaign=campaign).exclude(
         outcome="unscored"
     )
     if outcome:
         queryset = queryset.filter(outcome=outcome)
-    return [serializers.killmail_out(mail) for mail in queryset[:limit]]
+    return [
+        serializers.killmail_out(mail) for mail in queryset[: _clamp(limit)]
+    ]
 
 
 @router.get(
-    "/{slug}/sites", response=list[schemas.SiteOut], auth=AuthOptional()
+    "/{slug}/sites",
+    response={200: list[schemas.SiteOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
 )
 def get_sites(request, slug: str, limit: int = 50):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
     rows = CampaignSiteCompletion.objects.filter(
         campaign=campaign
-    ).select_related("campaign_system", "user", "complex")[:limit]
+    ).select_related("campaign_system", "user", "complex")[: _clamp(limit)]
     return [
         {
             "id": row.id,
@@ -349,14 +423,18 @@ def get_sites(request, slug: str, limit: int = 50):
 
 @router.get(
     "/{slug}/timeline",
-    response=list[schemas.TimelineEvent],
+    response={200: list[schemas.TimelineEvent], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
 )
 def get_timeline(request, slug: str, limit: int = 50):
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
     rows = CampaignEvent.objects.filter(campaign=campaign).select_related(
         "campaign_system"
-    )[:limit]
+    )[: _clamp(limit)]
     return [
         {
             "id": event.id,
@@ -375,10 +453,48 @@ def get_timeline(request, slug: str, limit: int = 50):
     ]
 
 
-@router.get("/{slug}/roster", response=schemas.Roster, auth=AuthOptional())
+@router.get(
+    "/{slug}/awards",
+    response={200: list[schemas.AwardOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_awards(request, slug: str, limit: int = 50):
+    """Weekly winners newest first, then the campaign awards."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    rows = CampaignAward.objects.filter(campaign=campaign).select_related(
+        "user"
+    )[: _clamp(limit)]
+    return [
+        {
+            "code": award.code,
+            "label": award.label,
+            "scope": award.scope,
+            "week_start": award.week_start,
+            "awarded_at": award.awarded_at,
+            "username": award.user.username,
+            "value": (award.payload or {}).get("value"),
+            "metric": (award.payload or {}).get("metric", ""),
+        }
+        for award in rows
+    ]
+
+
+@router.get(
+    "/{slug}/roster",
+    response={200: schemas.Roster, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
 def get_roster(request, slug: str):
     """Who is in, when they play, and where the coverage hole is."""
     campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
     rows = serializers.roster_rows(campaign)
 
     by_prime_time: dict[str, int] = {}

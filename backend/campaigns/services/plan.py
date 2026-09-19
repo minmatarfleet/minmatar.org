@@ -21,7 +21,12 @@ from campaigns.constants import (
     MOMENTUM_BEST_WEEK_CAP,
     MOMENTUM_FACTOR,
 )
-from campaigns.helpers import campaign_day, campaign_week_start, week_bounds
+from campaigns.helpers import (
+    campaign_day,
+    campaign_week_start,
+    week_bounds,
+    week_start_for,
+)
 from campaigns.models import (
     Campaign,
     CampaignDailyOrder,
@@ -35,6 +40,9 @@ from campaigns.models import (
 from campaigns.services import advantage
 
 logger = logging.getLogger(__name__)
+
+# Three from the week's gap, plus the two that are always available.
+MAX_SYSTEM_ORDERS_PER_DAY = 3
 
 
 def propose_week(campaign: Campaign, week_start: date | None = None) -> int:
@@ -84,7 +92,7 @@ def _capture_target(
 ) -> float:
     """Last week's gain times 1.2, floored so it is reachable, capped so a
     good week does not set an impossible bar."""
-    history = _weekly_gains(campaign_system, weeks=6)
+    history = _weekly_gains(campaign_system, week_start, weeks=6)
     last_gain = history[-1] if history else 0.0
     best = max(history) if history else 0.0
 
@@ -107,11 +115,12 @@ def _capture_target(
 
 
 def _weekly_gains(
-    campaign_system: CampaignSystem, weeks: int = 6
+    campaign_system: CampaignSystem, week_start: date, weeks: int = 6
 ) -> list[float]:
+    """Victory points gained in each of the weeks before ``week_start``."""
     gains = []
     for index in range(weeks, 0, -1):
-        start = campaign_week_start() - timedelta(weeks=index)
+        start = week_start - timedelta(weeks=index)
         window_start, window_end = week_bounds(start)
         first = (
             CampaignSystemSnapshot.objects.filter(
@@ -268,7 +277,14 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
     pool = dict(DEFAULT_ORDER_POINTS)
     pool.update(campaign.order_pool or {})
 
+    # Work on the systems that are furthest behind first, and stop once the
+    # day has enough orders: a wall of twelve is not a plan, and the
+    # full-set bonus has to stay reachable.
+    targets.sort(key=lambda row: row.progress - row.target)
+
     for target in targets:
+        if created >= MAX_SYSTEM_ORDERS_PER_DAY:
+            break
         gap = max(0.0, target.target - target.progress)
         share = gap / days_left / active_pilots if gap else 0.0
         gap_share_pct = (
@@ -327,6 +343,18 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
                     {"count": 1, "system": system.name, "defensive": True},
                     gap_share_pct,
                 )
+
+    # One order that spans the week, created on the day the week opens.
+    if day == week_start:
+        created += _make_order(
+            campaign,
+            day,
+            CampaignDailyOrder.Kind.WEEKLY_ACTIVE,
+            pool["weekly_active"],
+            None,
+            {"count": 5},
+            0,
+        )
 
     # Always something to do that does not depend on the plan.
     created += _make_order(
@@ -413,28 +441,69 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
     if not orders:
         return 0
 
-    day_rows = CampaignParticipantDay.objects.filter(
-        campaign=campaign, day=day
+    day_rows = list(
+        CampaignParticipantDay.objects.filter(campaign=campaign, day=day)
     )
+    existing = {
+        (row.order_id, row.user_id): row
+        for row in CampaignOrderProgress.objects.filter(
+            order__campaign=campaign, order__day=day
+        )
+    }
+
     completed = 0
+    to_create = []
+    to_update = []
+    now = timezone.now()
 
     for row in day_rows:
         for order in orders:
+            # A personal order belongs to one pilot; everyone else is not
+            # failing it, they simply do not have it.
+            if order.scope == "user" and order.user_id != row.user_id:
+                continue
+
             achieved = _order_progress(order, row)
             required = float(order.params.get("count", 1) or 1)
-            progress_row, _ = CampaignOrderProgress.objects.get_or_create(
-                order=order, user_id=row.user_id
-            )
+            progress_row = existing.get((order.id, row.user_id))
+
+            if progress_row is None:
+                progress_row = CampaignOrderProgress(
+                    order=order, user_id=row.user_id
+                )
+                to_create.append(progress_row)
+            else:
+                to_update.append(progress_row)
+
             progress_row.progress = min(achieved, required)
             if achieved >= required and not progress_row.completed_at:
-                progress_row.completed_at = timezone.now()
+                progress_row.completed_at = now
                 completed += 1
-            progress_row.save()
+
+    if to_create:
+        CampaignOrderProgress.objects.bulk_create(
+            to_create, ignore_conflicts=True
+        )
+    if to_update:
+        CampaignOrderProgress.objects.bulk_update(
+            to_update, ["progress", "completed_at"]
+        )
 
     return completed
 
 
 def _order_progress(order: CampaignDailyOrder, row) -> float:
+    if order.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE:
+        # Measured across the week, not the day it was issued on.
+        return float(
+            CampaignParticipantDay.objects.filter(
+                campaign_id=order.campaign_id,
+                user_id=row.user_id,
+                day__gte=week_start_for(order.day),
+                active=True,
+            ).count()
+        )
+
     kind = order.kind
     mapping = {
         CampaignDailyOrder.Kind.KILL: row.kills,

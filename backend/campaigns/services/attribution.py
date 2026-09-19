@@ -16,11 +16,7 @@ from django.utils import timezone
 
 from feed.models import FeedKillmail
 
-from campaigns.helpers import (
-    CampaignRoster,
-    campaign_day,
-    counting_campaigns,
-)
+from campaigns.helpers import CampaignRoster, counting_campaigns
 from campaigns.models import (
     Campaign,
     CampaignKillmail,
@@ -229,7 +225,3 @@ def sweep_recent(hours: int = 48) -> dict:
             feed_killmail, source="sweep", rosters=rosters
         )
     return {"scanned": scanned, "attributed": attributed}
-
-
-def recent_day_for(mail: CampaignKillmail):
-    return campaign_day(mail.killmail_time)

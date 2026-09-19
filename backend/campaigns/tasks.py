@@ -10,10 +10,11 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
+from django.db.models import F
 from django.utils import timezone
 
 from app.celery import app
-from campaigns.helpers import campaign_day
+from campaigns.helpers import campaign_day, campaign_week_start
 from campaigns.models import (
     Campaign,
     CampaignEnlistmentCharacter,
@@ -23,7 +24,9 @@ from campaigns.models import (
 )
 from campaigns.services import (
     attribution,
+    awards,
     esi_gate,
+    fleets,
     names,
     plan,
     sites,
@@ -43,9 +46,20 @@ def _live_campaigns():
 
 
 @app.task()
-def sweep_campaign_killmails(hours: int = 48) -> dict:
-    """Re-attribute recent feed killmails so nothing is lost."""
+def sweep_campaign_killmails(hours: int = 4) -> dict:
+    """Re-attribute recent feed killmails so nothing is lost.
+
+    The frequent pass only needs to cover the stream's catch-up lag. The
+    deep pass below covers the two days the plan asks for, where a character
+    changing hands or a late enlistment can still change an outcome.
+    """
     return attribution.sweep_recent(hours=hours)
+
+
+@app.task()
+def deep_sweep_campaign_killmails() -> dict:
+    """Hourly 48-hour re-attribution, the plan's safety net."""
+    return attribution.sweep_recent(hours=48)
 
 
 @app.task()
@@ -65,22 +79,31 @@ def poll_campaign_payouts(limit: int = 200) -> dict:
     minutes, so one character costs a fifth of its budget per poll and the
     gate holds the rest back for everything else.
     """
-    characters = (
+    # Least-recently-polled first, so a campaign larger than one batch still
+    # gets every character read instead of the same alphabetical prefix.
+    rows = (
         CampaignEnlistmentCharacter.objects.filter(
             enlistment__status="active",
             enlistment__campaign__status__in=["scheduled", "active"],
             included_until__isnull=True,
         )
         .select_related("character")
-        .distinct()[:limit]
+        .order_by(F("payouts_polled_at").asc(nulls_first=True))
     )
 
     polled = 0
     stored = 0
     skipped = 0
+    seen: set[int] = set()
 
-    for row in characters:
+    for row in rows.iterator():
         character = row.character
+        # A pilot can have the same character in two campaigns; ESI does not
+        # care, and neither should our budget.
+        if character.character_id in seen:
+            continue
+        if polled >= limit:
+            break
         if character.esi_suspended or character.esi_deleted:
             skipped += 1
             continue
@@ -88,7 +111,20 @@ def poll_campaign_payouts(limit: int = 200) -> dict:
             skipped += 1
             continue
 
-        response = EsiClient(character).get_character_notifications()
+        seen.add(character.character_id)
+        CampaignEnlistmentCharacter.objects.filter(character=character).update(
+            payouts_polled_at=timezone.now()
+        )
+
+        try:
+            response = EsiClient(character).get_character_notifications()
+        except Exception:  # pragma: no cover - one bad row, not the batch
+            logger.exception(
+                "Notification poll raised for %s", character.character_name
+            )
+            esi_gate.record_error()
+            continue
+
         esi_gate.spend("char-notification", character.character_id)
         polled += 1
 
@@ -127,14 +163,30 @@ def attribute_new_payouts(hours: int = 72) -> dict:
 
 
 @app.task()
+def link_campaign_fleets() -> dict:
+    """Attach campaign mails to the fleet their pilots were flying in."""
+    linked = 0
+    for campaign in _live_campaigns():
+        fleets.refresh_standing_fleet(campaign)
+        for offset in range(2):
+            linked += fleets.link_killmails_to_fleets(
+                campaign, campaign_day() - timedelta(days=offset)
+            )
+    return {"linked": linked}
+
+
+@app.task()
 def materialise_campaign_stats() -> dict:
     """Rebuild today's and yesterday's rows, then the roll-ups and ranks."""
     written = 0
     rebuilt = 0
     for campaign in _live_campaigns():
+        # Two passes: the first gives the orders something to be judged on,
+        # the second folds the completed orders back into the day's points.
+        stats.materialise_recent(campaign, days=2)
+        plan.evaluate_orders(campaign)
         written += stats.materialise_recent(campaign, days=2)
         rebuilt += stats.rebuild_stats(campaign)
-        plan.evaluate_orders(campaign)
     named = names.backfill_victim_names()
     return {
         "days_written": written,
@@ -149,6 +201,17 @@ def mirror_campaign_feed_events() -> dict:
     for campaign in _live_campaigns():
         mirrored += snapshots.mirror_feed_events(campaign)
     return {"mirrored": mirrored}
+
+
+@app.task()
+def close_campaign_week() -> dict:
+    """Thursday: freeze last week and hand out its six awards."""
+    awarded = 0
+    for campaign in Campaign.objects.filter(status=CampaignStatus.ACTIVE):
+        last_week = campaign_week_start() - timedelta(days=7)
+        stats.materialise_recent(campaign, days=9)
+        awarded += awards.close_week(campaign, last_week)
+    return {"awarded": awarded}
 
 
 @app.task()
@@ -221,6 +284,8 @@ def run_campaign_lifecycle() -> dict:
         campaign.status = CampaignStatus.COMPLETED
         campaign.save(update_fields=["status"])
         stats.rebuild_stats(campaign)
+        awards.close_week(campaign)
+        awards.close_campaign(campaign)
         CampaignEvent.objects.get_or_create(
             campaign=campaign,
             kind=CampaignEvent.Kind.CAMPAIGN_COMPLETED,

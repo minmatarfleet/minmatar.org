@@ -77,6 +77,11 @@ def classify_system(
     )
 
     direct = neighbours(solar_system_id)
+    if not direct:
+        # The fixture predates this system. Saying "rearguard" would apply a
+        # 0.01 LP multiplier and make every complex there uninferable.
+        return OperationalState.UNKNOWN
+
     if any(owners.get(neighbour) == enemy for neighbour in direct):
         return OperationalState.FRONTLINE
 
