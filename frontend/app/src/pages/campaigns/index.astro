@@ -49,6 +49,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
 import CampaignList from '@components/blocks/CampaignList.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 ---
 
 <Viewport
@@ -86,4 +87,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             <CampaignList campaigns={campaigns} retrospectives={retrospectives} />
         }
     </PageWide>
+
+    <CampaignSwapInit />
 </Viewport>

@@ -78,4 +78,34 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
     .campaign-table-muted {
         color: var(--foreground);
     }
+
+    /*
+     * Wrapper for cells holding an element with its own role (img, button, link):
+     * `role="cell"` on those would erase the role the assistive tech needs.
+     */
+    .campaign-cell {
+        display: grid;
+        align-items: center;
+        min-width: 0;
+    }
+
+    /* Shared by every table cell that pairs an EVE portrait/icon with a label. */
+    .campaign-cell-media {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-cell-media img {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .campaign-cell-media span {
+        overflow-wrap: anywhere;
+    }
 </style>

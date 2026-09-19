@@ -2,13 +2,24 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
 
 import type { CampaignReadiness, CampaignListItem } from '@dtypes/api.minmatar.org'
 import { get_campaign_readiness, get_campaigns } from '@helpers/api.minmatar.org/campaigns'
@@ -49,6 +60,7 @@ import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
 import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
+import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 ---
 
 <Viewport
@@ -95,4 +107,6 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
             </ComponentBlock>
         </Flexblock>
     </PageDefault>
+
+    <CampaignSwapInit />
 </Viewport>

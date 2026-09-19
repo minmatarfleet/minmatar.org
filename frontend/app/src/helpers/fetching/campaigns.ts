@@ -5,6 +5,7 @@ import type {
     CampaignCoverageHour,
     CampaignPace,
     CampaignStatusChip,
+    CampaignTotals,
     CampaignWeekTarget,
 } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
@@ -19,6 +20,20 @@ export interface SparklinePath {
     line:   string;
     area:   string;
     empty:  boolean;
+}
+
+export type CampaignTotalsLabelKey =
+    | 'campaigns.stat.enlisted'
+    | 'campaigns.stat.kills'
+    | 'campaigns.stat.losses'
+    | 'campaigns.stat.isk_destroyed'
+    | 'campaigns.stat.complexes'
+    | 'campaigns.stat.advantage_generated'
+    | 'campaigns.stat.active_today'
+
+export interface CampaignTotalsStat {
+    label:  string;
+    value:  string;
 }
 
 export interface CoverageBar {
@@ -89,7 +104,27 @@ export const coverage_bars = (coverage:CampaignCoverageHour[]):CoverageBar[] => 
     }))
 }
 
-export const pace_i18n_key = (pace:CampaignPace):string => {
+export type CampaignPaceKey =
+    | 'campaigns.pace.ahead'
+    | 'campaigns.pace.behind'
+    | 'campaigns.pace.on_pace'
+
+export type CampaignStatusChipKey =
+    | 'campaigns.chip.gaining'
+    | 'campaigns.chip.losing'
+    | 'campaigns.chip.holding'
+
+export type CampaignWeekMetricKey =
+    | 'campaigns.week.metric.victory_points'
+    | 'campaigns.week.metric.days_under_line'
+    | 'campaigns.week.metric.advantage'
+
+export type CampaignActionErrorKey =
+    | 'campaigns.not_enlisted_error'
+    | 'campaigns.not_live_error'
+    | 'campaigns.action_failed'
+
+export const pace_i18n_key = (pace:CampaignPace):CampaignPaceKey => {
     switch (pace) {
         case 'ahead': return 'campaigns.pace.ahead'
         case 'behind': return 'campaigns.pace.behind'
@@ -105,7 +140,7 @@ export const pace_color = (pace:CampaignPace):TagColors => {
     }
 }
 
-export const status_chip_i18n_key = (chip:CampaignStatusChip):string => {
+export const status_chip_i18n_key = (chip:CampaignStatusChip):CampaignStatusChipKey => {
     switch (chip) {
         case 'gaining': return 'campaigns.chip.gaining'
         case 'losing': return 'campaigns.chip.losing'
@@ -129,4 +164,51 @@ export const week_target_progress = (target:CampaignWeekTarget) => {
         progress_percent: clamp_percent((target.progress / goal) * 100),
         pace_percent: clamp_percent((target.pace_expected / goal) * 100),
     }
+}
+
+/** Week targets carry a backend slug; map it to a label the UI can translate. */
+export const week_metric_i18n_key = (metric:string):CampaignWeekMetricKey | false => {
+    switch (metric) {
+        case 'victory_points': return 'campaigns.week.metric.victory_points'
+        case 'days_under_line': return 'campaigns.week.metric.days_under_line'
+        case 'advantage': return 'campaigns.week.metric.advantage'
+        default: return false
+    }
+}
+
+/**
+ * Campaign mutations answer 403 `not_enlisted` and 409 `not scheduled/active`.
+ * Both deserve their own message instead of the generic failure.
+ */
+export const campaign_action_error_key = (error:unknown):CampaignActionErrorKey => {
+    const status = (error as { cause?: unknown })?.cause
+    const message = String((error as { message?: unknown })?.message ?? '')
+
+    if (status === 403 && message.includes('not_enlisted'))
+        return 'campaigns.not_enlisted_error'
+
+    if (status === 409)
+        return 'campaigns.not_live_error'
+
+    return 'campaigns.action_failed'
+}
+
+/**
+ * The detail page and the actions partial both render the stat bar, so the
+ * label/value pairing lives here instead of being written out twice.
+ */
+export const campaign_totals_stats = (
+    totals:CampaignTotals,
+    t:(key:CampaignTotalsLabelKey) => string,
+    format_isk:(value:number) => string,
+):CampaignTotalsStat[] => {
+    return [
+        { label: t('campaigns.stat.enlisted'), value: String(totals.enlisted) },
+        { label: t('campaigns.stat.kills'), value: String(totals.kills) },
+        { label: t('campaigns.stat.losses'), value: String(totals.losses) },
+        { label: t('campaigns.stat.isk_destroyed'), value: format_isk(totals.isk_destroyed) },
+        { label: t('campaigns.stat.complexes'), value: String(totals.complexes) },
+        { label: t('campaigns.stat.advantage_generated'), value: totals.advantage_generated.toFixed(1) },
+        { label: t('campaigns.stat.active_today'), value: String(totals.active_today) },
+    ]
 }

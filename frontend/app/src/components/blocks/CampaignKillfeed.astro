@@ -84,7 +84,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         >
             {killmails.map(killmail =>
                 <div class="[ campaign-table-row ]" role="row">
-                    <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                    <FlexInline role="cell" gap='var(--space-3xs)' class="[ items-center ]">
                         <Tag
                             text={killmail.outcome === 'kill' ? t('campaigns.killfeed.kill') : t('campaigns.killfeed.loss')}
                             color={killmail.outcome === 'kill' ? 'green' : 'fleet-red'}
@@ -92,14 +92,14 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         />
                         {killmail.is_solo && <Tag text={t('campaigns.killfeed.solo')} color='alliance-blue' narrow={true} />}
                     </FlexInline>
-                    <div class="[ campaign-cell-media ]">
+                    <div class="[ campaign-cell-media ]" role="cell">
                         {killmail.victim_ship_type_id &&
                             <img
                                 loading='lazy'
                                 width='32'
                                 height='32'
                                 src={get_item_icon(killmail.victim_ship_type_id, 32)}
-                                alt={String(killmail.victim_ship_type_id)}
+                                alt=''
                             />
                         }
                         <Flexblock gap='0'>
@@ -109,9 +109,9 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             </small>
                         </Flexblock>
                     </div>
-                    <span>{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
-                    <span class="[ campaign-table-numeric ]">{format_isk(killmail.isk_value)}</span>
-                    <small class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
+                    <span role="cell">{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{format_isk(killmail.isk_value)}</span>
+                    <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
                 </div>
             )}
         </CampaignTable>
@@ -123,29 +123,4 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         border-color: var(--alliance-blue);
         color: var(--highlight);
     }
-
-    .campaign-killfeed img {
-        width: var(--space-m);
-        height: var(--space-m);
-    }
-
-    .campaign-cell-media {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-width: 0;
-    }
-
-    .campaign-cell-media img {
-        flex: none;
-        width: var(--space-m);
-        height: var(--space-m);
-    }
-
-    .campaign-cell-media span {
-        overflow-wrap: anywhere;
-    }
-
 </style>

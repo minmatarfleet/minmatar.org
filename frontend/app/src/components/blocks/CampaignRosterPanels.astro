@@ -1,0 +1,73 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignRoster } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    roster:             CampaignRoster;
+    [propName: string]: any;
+}
+
+const {
+    roster,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const prime_times = Object.entries(roster.by_prime_time ?? {})
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
+import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
+---
+
+<Flexblock gap='var(--space-l)' class:list={['[ campaign-roster-panels ]', Astro.props.class]} {...attributes}>
+    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+        <Flexblock gap='var(--space-s)'>
+            <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+                <h2>{t('campaigns.roster.title')}</h2>
+                <small>{t('campaigns.roster.pilot_count').replace('{count}', String(roster.pilots.length))}</small>
+            </FlexInline>
+            <CampaignRosterTable pilots={roster.pilots} />
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+        <Flexblock gap='var(--space-s)'>
+            <h2>{t('campaigns.coverage.title')}</h2>
+            <CampaignCoverageChart coverage={roster.coverage} />
+        </Flexblock>
+    </ComponentBlock>
+
+    {prime_times.length > 0 &&
+        <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+            <Flexblock gap='var(--space-s)'>
+                <h2>{t('campaigns.roster.by_prime_time')}</h2>
+                <FlexInline gap='var(--space-2xs)'>
+                    {prime_times.map(([ label, count ]) =>
+                        <Tag
+                            text={`${label || t('campaigns.roster.unknown_prime_time')}: ${count}`}
+                            color='alliance-blue'
+                        />
+                    )}
+                </FlexInline>
+            </Flexblock>
+        </ComponentBlock>
+    }
+</Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+</style>

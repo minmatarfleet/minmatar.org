@@ -32,10 +32,10 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
     <Flexblock gap='var(--space-3xs)' class="[ campaign-system-row-name ]">
         <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
             <span class="[ text-[var(--highlight)] ]">{system.name}</span>
-            <Tag text={t(goal_key as any)} color='militia-purple' narrow={true} />
+            <Tag text={t(goal_key)} color='militia-purple' narrow={true} />
         </FlexInline>
         <Tag
-            text={t(status_chip_i18n_key(system.status_chip) as any)}
+            text={t(status_chip_i18n_key(system.status_chip))}
             color={status_chip_color(system.status_chip)}
             narrow={true}
         />

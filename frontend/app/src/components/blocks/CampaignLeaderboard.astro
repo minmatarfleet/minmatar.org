@@ -59,7 +59,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                 hx-swap='outerHTML'
                 hx-indicator='.loader'
             >
-                {t(`campaigns.leaderboard.metric.${item}` as any)}
+                {t(`campaigns.leaderboard.metric.${item}`)}
             </Button>
         )}
     </FlexInline>
@@ -76,7 +76,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                 hx-swap='outerHTML'
                 hx-indicator='.loader'
             >
-                {t(`campaigns.leaderboard.period.${item}` as any)}
+                {t(`campaigns.leaderboard.period.${item}`)}
             </Button>
         )}
     </FlexInline>
@@ -97,10 +97,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         >
             {rows.map(row =>
                 <div class="[ campaign-table-row ]" role="row">
-                    <span class="[ campaign-table-numeric ]">{row.rank}</span>
-                    <span>{row.username}</span>
-                    <span class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
-                    <span class="[ campaign-table-numeric ]">{row.points}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{row.rank}</span>
+                    <span role="cell">{row.username}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{row.points}</span>
                 </div>
             )}
         </CampaignTable>

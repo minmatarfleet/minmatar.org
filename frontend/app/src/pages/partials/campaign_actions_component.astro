@@ -31,6 +31,7 @@ import {
     join_campaign_standing_fleet,
     create_campaign_gang,
 } from '@helpers/api.minmatar.org/campaigns'
+import { campaign_action_error_key } from '@helpers/fetching/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
 const variant = (Astro.url.searchParams.get('variant') ?? 'hero') as 'card' | 'hero'
@@ -69,7 +70,7 @@ if (Astro.request.method === 'POST') {
             }
         }
     } catch (error) {
-        flash = t('campaigns.action_failed')
+        flash = t(campaign_action_error_key(error))
     }
 }
 
@@ -85,6 +86,7 @@ try {
 const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}&variant=${variant}`)
 
 import CampaignActions from '@components/blocks/CampaignActions.astro'
+import Tag from '@components/blocks/Tag.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -98,12 +100,20 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }}
     />
     :
-    <CampaignActions
-        slug={slug}
-        variant={variant}
-        is_enlisted={campaign.is_enlisted}
-        standing_fleet_up={campaign.standing_fleet_up}
-        systems={campaign.systems}
-        flash={flash}
-    />
+    <>
+        <CampaignActions
+            slug={slug}
+            variant={variant}
+            is_enlisted={campaign.is_enlisted}
+            standing_fleet_up={campaign.standing_fleet_up}
+            systems={campaign.systems}
+            flash={flash}
+        />
+        {/* The detail page header carries an enlisted tag that enlisting/leaving invalidates. */}
+        {variant === 'hero' &&
+            <span id="campaign-enlisted-tag" class="[ contents ]" hx-swap-oob="true">
+                {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
+            </span>
+        }
+    </>
 }

@@ -2485,12 +2485,12 @@ export interface CampaignTickerEntry {
 }
 
 export interface CampaignGangForming {
-    id?:                number;
-    ships?:             string;
-    system?:            string;
-    note?:              string;
-    created_by?:        string;
-    [propName: string]: any;
+    id:             number;
+    ships:          string;
+    system:         string | null;
+    note:           string;
+    started_by:     string;
+    occurred_at:    string;
 }
 
 export interface CampaignRightNow {

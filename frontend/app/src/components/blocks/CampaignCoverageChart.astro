@@ -22,6 +22,7 @@ const has_data = bars.some(bar => bar.our_active_days > 0 || bar.hostile_activit
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 ---
 
 <Flexblock gap='var(--space-2xs)' class:list={['[ campaign-coverage ]', Astro.props.class]} {...attributes}>
@@ -31,20 +32,22 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         <small>{t('campaigns.coverage.none')}</small>
         :
         <Flexblock gap='var(--space-2xs)'>
-            <div class="[ campaign-coverage-chart ]">
-                {bars.map(bar =>
-                    <div
-                        class="[ campaign-coverage-hour ]"
-                        title={`${t('campaigns.coverage.hour_label').replace('{hour}', String(bar.hour).padStart(2, '0'))} · ${t('campaigns.coverage.ours')} ${bar.our_active_days} · ${t('campaigns.coverage.hostiles')} ${bar.hostile_activity}`}
-                    >
-                        <div class="[ campaign-coverage-bars ]">
-                            <span class="[ campaign-coverage-ours ]" style={`height: ${bar.our_percent.toFixed(1)}%;`} />
-                            <span class="[ campaign-coverage-hostiles ]" style={`height: ${bar.hostile_percent.toFixed(1)}%;`} />
+            <XFadeScroll>
+                <div class="[ campaign-coverage-chart ]" role="img" aria-label={t('campaigns.coverage.subtitle')}>
+                    {bars.map(bar =>
+                        <div
+                            class="[ campaign-coverage-hour ]"
+                            title={`${t('campaigns.coverage.hour_label').replace('{hour}', String(bar.hour).padStart(2, '0'))} · ${t('campaigns.coverage.ours')} ${bar.our_active_days} · ${t('campaigns.coverage.hostiles')} ${bar.hostile_activity}`}
+                        >
+                            <div class="[ campaign-coverage-bars ]">
+                                <span class="[ campaign-coverage-ours ]" style={`height: ${bar.our_percent.toFixed(1)}%;`} />
+                                <span class="[ campaign-coverage-hostiles ]" style={`height: ${bar.hostile_percent.toFixed(1)}%;`} />
+                            </div>
+                            <small class="[ campaign-coverage-label ]">{String(bar.hour).padStart(2, '0')}</small>
                         </div>
-                        <small class="[ campaign-coverage-label ]">{String(bar.hour).padStart(2, '0')}</small>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            </XFadeScroll>
 
             <FlexInline gap='var(--space-s)'>
                 <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
@@ -67,6 +70,9 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         gap: var(--space-3xs);
         align-items: end;
         width: 100%;
+        /* 24 hour columns need room to stay readable; scroll instead of squashing. */
+        min-width: 32rem;
+        padding-block-end: var(--space-3xs);
     }
 
     .campaign-coverage-hour {

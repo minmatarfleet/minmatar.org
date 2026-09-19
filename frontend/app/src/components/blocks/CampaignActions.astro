@@ -86,7 +86,7 @@ import Textarea from '@components/blocks/Textarea.astro'
                             hx-target={`#${actions_id}`}
                             hx-swap='outerHTML'
                             hx-indicator='.loader'
-                            @htmx:after-request="close_dialog()"
+                            x-on:submit="close_dialog()"
                         >
                             <Flexblock gap='var(--space-s)'>
                                 <label>
@@ -118,24 +118,24 @@ import Textarea from '@components/blocks/Textarea.astro'
                 </DialogButton>
             </FlexInline>
 
-            <FlexInline gap='var(--space-s)' class="[ campaign-actions-links ]">
+            <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-links ]">
                 {is_enlisted ?
-                    <button type='button' class="[ campaign-actions-link ]" {...hx_attributes('leave')}>
+                    <Button size='sm' color='transparent' {...hx_attributes('leave')}>
                         {t('campaigns.leave')}
-                    </button>
+                    </Button>
                     :
-                    <button type='button' class="[ campaign-actions-link ]" {...hx_attributes('enlist')}>
+                    <Button size='sm' color='transparent' {...hx_attributes('enlist')}>
                         {t('campaigns.enlist')}
-                    </button>
+                    </Button>
                 }
-                <a class="[ campaign-actions-link ]" href={translatePath('/account/')}>
+                <Button size='sm' color='transparent' href={translatePath('/account/')}>
                     {t('campaigns.alert_settings')}
-                </a>
+                </Button>
             </FlexInline>
         </Flexblock>
     }
 
-    {flash && <small class="[ campaign-actions-flash ]">{flash}</small>}
+    {flash && <small class="[ campaign-actions-flash ]" role="status">{flash}</small>}
 </Flexblock>
 
 <style lang="scss">
@@ -143,14 +143,8 @@ import Textarea from '@components/blocks/Textarea.astro'
         align-items: stretch;
     }
 
-    .campaign-actions-link {
-        background: none;
-        border: none;
-        padding: 0;
-        color: var(--foreground);
-        font-size: var(--step--1);
-        text-decoration: underline;
-        cursor: pointer;
+    .campaign-actions-links {
+        align-items: stretch;
     }
 
     .campaign-actions-flash {

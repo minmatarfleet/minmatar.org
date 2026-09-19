@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
 import type { CampaignWeek } from '@dtypes/api.minmatar.org'
-import { pace_color, pace_i18n_key, week_target_progress } from '@helpers/fetching/campaigns'
+import { pace_color, pace_i18n_key, week_metric_i18n_key, week_target_progress } from '@helpers/fetching/campaigns'
 import { format_date_short } from '@helpers/date'
 
 interface Props {
@@ -32,17 +32,18 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
         :
         week.targets.map(target => {
             const { progress_percent, pace_percent } = week_target_progress(target)
+            const metric_key = week_metric_i18n_key(target.metric)
 
             return (
                 <Flexblock gap='var(--space-3xs)' class="[ campaign-week-target ]">
                     <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
                         <Flexblock gap='var(--space-3xs)'>
                             <span class="[ text-[var(--highlight)] ]">{target.system}</span>
-                            <small>{target.metric.replaceAll('_', ' ')}</small>
+                            <small>{metric_key ? t(metric_key) : target.metric.replaceAll('_', ' ')}</small>
                         </Flexblock>
                         <FlexInline gap='var(--space-2xs)'>
                             {target.proposed && <Tag text={t('campaigns.week.proposed')} color='alliance-blue' narrow={true} />}
-                            <Tag text={t(pace_i18n_key(target.pace) as any)} color={pace_color(target.pace)} narrow={true} />
+                            <Tag text={t(pace_i18n_key(target.pace))} color={pace_color(target.pace)} narrow={true} />
                         </FlexInline>
                     </FlexInline>
 

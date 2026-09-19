@@ -16,22 +16,27 @@ const {
 } = Astro.props
 
 delete attributes.class
+
+import Grid from '@components/compositions/Grid.astro'
 ---
 
-<div class:list={['[ campaign-stat-bar ][ light-transparency ]', Astro.props.class]} {...attributes}>
+<Grid
+    min_item_width='7rem'
+    row_gap='var(--space-3xs)'
+    column_gap='var(--space-3xs)'
+    class:list={['[ campaign-stat-bar ][ light-transparency ]', Astro.props.class]}
+    {...attributes}
+>
     {stats.map(stat =>
         <div class="[ campaign-stat ]" title={stat.title}>
             <span class="[ campaign-stat-value ]">{stat.value}</span>
             <small class="[ campaign-stat-label ]">{stat.label}</small>
         </div>
     )}
-</div>
+</Grid>
 
 <style lang="scss">
     .campaign-stat-bar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
-        gap: var(--space-3xs);
         border: solid 1px var(--border-color);
         padding: var(--space-2xs);
         width: 100%;

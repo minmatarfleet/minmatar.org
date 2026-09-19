@@ -28,6 +28,7 @@ import {
     take_campaign_standing_fleet,
     join_campaign_standing_fleet,
 } from '@helpers/api.minmatar.org/campaigns'
+import { campaign_action_error_key } from '@helpers/fetching/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
 const action = Astro.url.searchParams.get('action') ?? ''
@@ -45,7 +46,7 @@ if (Astro.request.method === 'POST') {
             flash = t('campaigns.standing_fleet_joined')
         }
     } catch (error) {
-        flash = t('campaigns.action_failed')
+        flash = t(campaign_action_error_key(error))
     }
 }
 

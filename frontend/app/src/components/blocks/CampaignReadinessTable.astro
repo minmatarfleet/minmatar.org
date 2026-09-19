@@ -106,7 +106,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         >
             {readiness.characters.map(character =>
                 <div class="[ campaign-table-row ]" role="row">
-                    <div class="[ campaign-cell-media ]">
+                    <div class="[ campaign-cell-media ]" role="cell">
                         <img
                             loading='lazy'
                             width='32'
@@ -120,43 +120,50 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         </Flexblock>
                     </div>
                     {character.corporation_id ?
-                        <img
-                            loading='lazy'
-                            width='32'
-                            height='32'
-                            src={get_corporation_logo(character.corporation_id, 32)}
-                            alt={t('campaigns.readiness.corporation')}
-                        />
+                        <span role="cell" class="[ campaign-cell ]">
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_corporation_logo(character.corporation_id, 32)}
+                                alt={t('campaigns.readiness.corporation')}
+                            />
+                        </span>
                         :
-                        <span class="[ campaign-table-muted ]">—</span>
+                        <span role="cell" class="[ campaign-table-muted ]">—</span>
                     }
-                    <small class="[ campaign-table-muted ]">{character.token_type || t('campaigns.readiness.no_token')}</small>
-                    <small class="[ campaign-table-muted ]">{character.counts_for || '—'}</small>
+                    <small role="cell" class="[ campaign-table-muted ]">{character.token_type || t('campaigns.readiness.no_token')}</small>
+                    <small role="cell" class="[ campaign-table-muted ]">{character.counts_for || '—'}</small>
                     <Tag
-                        text={t(`campaigns.readiness.state.${character.state}` as any)}
+                        role="cell"
+                        text={t(`campaigns.readiness.state.${character.state}`)}
                         color={state_color(character.state)}
                         narrow={true}
                     />
                     {campaign_slug ?
-                        <Button
-                            size='sm'
-                            color={character.included ? 'transparent' : 'green'}
-                            hx-post={`${CHARACTER_PARTIAL_URL}&character_id=${character.character_id}&included=${character.included ? 'false' : 'true'}`}
-                            hx-target='#campaign-readiness'
-                            hx-swap='outerHTML'
-                            hx-indicator='.loader'
-                        >
-                            {character.included ? t('campaigns.readiness.included') : t('campaigns.readiness.excluded')}
-                        </Button>
+                        <span role="cell" class="[ campaign-cell ]">
+                            <Button
+                                size='sm'
+                                color={character.included ? 'transparent' : 'green'}
+                                hx-post={`${CHARACTER_PARTIAL_URL}&character_id=${character.character_id}&included=${character.included ? 'false' : 'true'}`}
+                                hx-target='#campaign-readiness'
+                                hx-swap='outerHTML'
+                                hx-indicator='.loader'
+                            >
+                                {character.included ? t('campaigns.readiness.included') : t('campaigns.readiness.excluded')}
+                            </Button>
+                        </span>
                         :
-                        <span class="[ campaign-table-muted ]">{character.included ? t('campaigns.readiness.included') : '—'}</span>
+                        <span role="cell" class="[ campaign-table-muted ]">{character.included ? t('campaigns.readiness.included') : '—'}</span>
                     }
                     {character.action_url ?
-                        <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
-                            {t('campaigns.readiness.update')}
-                        </Button>
+                        <span role="cell" class="[ campaign-cell ]">
+                            <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
+                                {t('campaigns.readiness.update')}
+                            </Button>
+                        </span>
                         :
-                        <small class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
+                        <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
                     }
                 </div>
             )}
@@ -168,24 +175,5 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     img {
         width: var(--space-m);
         height: var(--space-m);
-    }
-
-    .campaign-cell-media {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-width: 0;
-    }
-
-    .campaign-cell-media img {
-        flex: none;
-        width: var(--space-m);
-        height: var(--space-m);
-    }
-
-    .campaign-cell-media span {
-        overflow-wrap: anywhere;
     }
 </style>

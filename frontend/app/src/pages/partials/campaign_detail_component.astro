@@ -11,7 +11,8 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user)
+    return HTTP_403_Forbidden()
 
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
@@ -44,7 +45,8 @@ import {
     get_campaign_roster,
 } from '@helpers/api.minmatar.org/campaigns'
 
-const slug = Astro.params.slug as string
+const slug = Astro.url.searchParams.get('slug') as string
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 let campaign:CampaignDetail | null = null
 let fetch_campaign_error:Error | false = false
@@ -67,7 +69,7 @@ let sites:CampaignSite[] = []
 let timeline:CampaignTimelineEvent[] = []
 let roster:CampaignRoster | null = null
 
-/** Sub-resources answer 403 without `campaigns.view`; each section degrades on its own. */
+/** Sub-resources answer 403 without `campaigns.view`; the page still renders. */
 if (campaign) {
     const results = await Promise.allSettled([
         get_campaign_now(slug, auth_token as string),
@@ -92,77 +94,28 @@ if (campaign) {
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
-const page_title = campaign ? campaign.name : t('campaigns.page_title')
-
-import Viewport from '@layouts/Viewport.astro'
-
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-
-import FlexInline from '@components/compositions/FlexInline.astro'
-
-import Tag from '@components/blocks/Tag.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-<Viewport
-    title={page_title}
-    meta_description={campaign ? campaign.tagline : t('campaigns.meta_description')}
-    components={{
-        alert_dialog: true,
-        confirm_dialog: true,
-    }}
->
-    <PageWide
-        cover={{
-            image: '/images/warzone-cover.jpg',
-            image_990: '/images/warzone-cover.jpg',
-            animated: false,
-            scrollable: true,
-            overlay: true,
+{fetch_campaign_error || !campaign ?
+    <ErrorRefetch
+        args={{
+            partial: CAMPAIGN_DETAIL_PARTIAL_URL,
+            error: fetch_campaign_error || new Error(t('campaigns.action_failed')),
+            delay: delay,
         }}
-    >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                {campaign &&
-                    <>
-                        <Tag text={campaign.short_code} color='alliance-blue' />
-                        <span id="campaign-enlisted-tag" class="[ contents ]">
-                            {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
-                        </span>
-                    </>
-                }
-            </FlexInline>
-        </FlexInline>
-
-        {fetch_campaign_error || !campaign ?
-            <ErrorRefetch
-                args={{
-                    partial: CAMPAIGN_DETAIL_PARTIAL_URL,
-                    error: fetch_campaign_error || new Error(t('campaigns.action_failed')),
-                    delay: 0,
-                }}
-            />
-            :
-            <CampaignDetailBody
-                campaign={campaign}
-                now={now}
-                week={week}
-                orders={orders}
-                leaderboard={leaderboard}
-                killmails={killmails}
-                sites={sites}
-                timeline={timeline}
-                roster={roster}
-            />
-        }
-    </PageWide>
-
-    <CampaignSwapInit />
-</Viewport>
+    />
+    :
+    <CampaignDetailBody
+        campaign={campaign}
+        now={now}
+        week={week}
+        orders={orders}
+        leaderboard={leaderboard}
+        killmails={killmails}
+        sites={sites}
+        timeline={timeline}
+        roster={roster}
+    />
+}

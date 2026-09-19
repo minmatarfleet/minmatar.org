@@ -9,6 +9,7 @@ interface Props {
     system:             CampaignSystemSummary;
     slug:               string;
     can_report?:        boolean;
+    flash?:             string | false;
     [propName: string]: any;
 }
 
@@ -16,6 +17,7 @@ const {
     system,
     slug,
     can_report = false,
+    flash = false,
     ...attributes
 } = Astro.props
 
@@ -57,13 +59,15 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
     {...attributes}
 >
     <Flexblock gap='var(--space-s)'>
+        {flash && <small class="[ campaign-system-flash ]" role="status">{flash}</small>}
+
         <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ items-start ]">
             <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
                 <h3>{system.name}</h3>
-                <Tag text={t(goal_key as any)} color='militia-purple' />
+                <Tag text={t(goal_key)} color='militia-purple' />
             </FlexInline>
             <Tag
-                text={t(status_chip_i18n_key(system.status_chip) as any)}
+                text={t(status_chip_i18n_key(system.status_chip))}
                 color={status_chip_color(system.status_chip)}
             />
         </FlexInline>
@@ -113,7 +117,7 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                                 hx-target={`#campaign-system-${system.id}`}
                                 hx-swap='outerHTML'
                                 hx-indicator='.loader'
-                                @htmx:after-request="close_dialog()"
+                                x-on:submit="close_dialog()"
                             >
                                 <Flexblock gap='var(--space-s)'>
                                     <label>
@@ -162,6 +166,10 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         font-size: var(--step-2);
         color: var(--highlight);
         line-height: 1;
+    }
+
+    .campaign-system-flash {
+        color: var(--highlight);
     }
 
     label {

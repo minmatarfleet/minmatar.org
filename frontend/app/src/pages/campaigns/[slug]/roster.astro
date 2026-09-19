@@ -40,9 +40,7 @@ try {
     fetch_roster_error = error
 }
 
-const prime_times = Object.entries(roster?.by_prime_time ?? {})
-
-const ROSTER_PARTIAL_URL = translatePath('/partials/campaign_list_component')
+const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
 
 const page_title = campaign ? `${campaign.name} · ${t('campaigns.roster.title')}` : t('campaigns.roster.page_title')
 
@@ -51,16 +49,13 @@ import Viewport from '@layouts/Viewport.astro'
 import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
-import Tag from '@components/blocks/Tag.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
-import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
-import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
+import CampaignRosterPanels from '@components/blocks/CampaignRosterPanels.astro'
+import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 ---
 
 <Viewport
@@ -94,49 +89,9 @@ import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astr
                 }}
             />
             :
-            <Flexblock gap='var(--space-l)'>
-                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
-                    <Flexblock gap='var(--space-s)'>
-                        <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                            <h2>{t('campaigns.roster.title')}</h2>
-                            <small>{t('campaigns.roster.pilot_count').replace('{count}', String(roster.pilots.length))}</small>
-                        </FlexInline>
-                        <CampaignRosterTable pilots={roster.pilots} />
-                    </Flexblock>
-                </ComponentBlock>
-
-                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
-                    <Flexblock gap='var(--space-s)'>
-                        <h2>{t('campaigns.coverage.title')}</h2>
-                        <CampaignCoverageChart coverage={roster.coverage} />
-                    </Flexblock>
-                </ComponentBlock>
-
-                {prime_times.length > 0 &&
-                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
-                        <Flexblock gap='var(--space-s)'>
-                            <h2>{t('campaigns.roster.by_prime_time')}</h2>
-                            <FlexInline gap='var(--space-2xs)'>
-                                {prime_times.map(([ label, count ]) =>
-                                    <Tag
-                                        text={`${label || t('campaigns.roster.unknown_prime_time')}: ${count}`}
-                                        color='alliance-blue'
-                                    />
-                                )}
-                            </FlexInline>
-                        </Flexblock>
-                    </ComponentBlock>
-                }
-            </Flexblock>
+            <CampaignRosterPanels roster={roster} />
         }
     </PageDefault>
-</Viewport>
 
-<style lang="scss">
-    h2 {
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        color: var(--highlight);
-        text-transform: uppercase;
-    }
-</style>
+    <CampaignSwapInit />
+</Viewport>

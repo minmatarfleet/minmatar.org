@@ -9,8 +9,17 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
 import type { CampaignReadiness } from '@dtypes/api.minmatar.org'
@@ -19,6 +28,7 @@ import {
     include_campaign_character,
     exclude_campaign_character,
 } from '@helpers/api.minmatar.org/campaigns'
+import { campaign_action_error_key } from '@helpers/fetching/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
 const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
@@ -33,7 +43,7 @@ if (Astro.request.method === 'POST' && slug && character_id) {
         else
             await exclude_campaign_character(slug, auth_token as string, character_id)
     } catch (error) {
-        flash = t('campaigns.action_failed')
+        flash = t(campaign_action_error_key(error))
     }
 }
 

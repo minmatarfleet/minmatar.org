@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -22,43 +22,38 @@ const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-import type { CampaignDetail, CampaignOrder } from '@dtypes/api.minmatar.org'
-import { get_campaign, get_campaign_orders } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignRoster } from '@dtypes/api.minmatar.org'
+import { get_campaign_roster } from '@helpers/api.minmatar.org/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-let fetch_orders_error:Error | false = false
-let orders:CampaignOrder[] = []
-let campaign:CampaignDetail | null = null
+let roster:CampaignRoster | null = null
+let fetch_roster_error:Error | false = false
 
 try {
-    orders = await get_campaign_orders(slug, auth_token as string)
+    roster = await get_campaign_roster(slug, auth_token as string)
 } catch (error) {
-    fetch_orders_error = error
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+
+    fetch_roster_error = error
 }
 
-/** Only drives the "enlist to get orders" hint, so a miss must not break the list. */
-try {
-    campaign = await get_campaign(slug, auth_token as string)
-} catch (error) {
-    console.error('Error fetching campaign for orders partial:', error)
-}
+const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
 
-const ORDERS_PARTIAL_URL = translatePath(`/partials/campaign_orders_component?slug=${slug}`)
-
-import CampaignOrdersList from '@components/blocks/CampaignOrdersList.astro'
+import CampaignRosterPanels from '@components/blocks/CampaignRosterPanels.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{fetch_orders_error ?
+{fetch_roster_error || !roster ?
     <ErrorRefetch
         args={{
-            partial: ORDERS_PARTIAL_URL,
-            error: fetch_orders_error,
+            partial: ROSTER_PARTIAL_URL,
+            error: fetch_roster_error || new Error(t('campaigns.action_failed')),
             delay: delay,
         }}
     />
     :
-    <CampaignOrdersList orders={orders} is_enlisted={campaign?.is_enlisted ?? true} />
+    <CampaignRosterPanels roster={roster} />
 }
