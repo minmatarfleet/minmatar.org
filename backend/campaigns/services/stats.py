@@ -79,6 +79,20 @@ def _blank_row() -> dict:
     }
 
 
+def owned_day_counters() -> dict:
+    """The counters ``materialise_day`` computes, at their empty value.
+
+    The community-layer columns are written elsewhere and are deliberately
+    absent: clearing a withdrawn day is not licence to clear someone else's
+    numbers.
+    """
+    return {
+        field: default
+        for field, default in _blank_row().items()
+        if field not in ("site_index", "points")
+    }
+
+
 def _add_killmails(campaign, rows: dict, start, end) -> None:
     """Fold every mail an enlisted pilot was on into their day row."""
     participants = (
@@ -381,24 +395,13 @@ def materialise_day(campaign: Campaign, day: date) -> int:
         written += 1
 
     # Recomputed, never incremented: a pilot whose only activity for the day
-    # was withdrawn keeps a row, but an empty one.
+    # was withdrawn keeps a row, but an empty one. Only the counters this
+    # function owns are cleared; the community-layer columns are written
+    # elsewhere and are not ours to reset.
     CampaignParticipantDay.objects.filter(campaign=campaign, day=day).exclude(
         user_id__in=rows.keys()
     ).exclude(points=0, active=False).update(
-        **{field: 0 for field in ACTIVITY_FIELDS},
-        points=0,
-        active=False,
-        isk_destroyed=0,
-        isk_lost=0,
-        solo_kills=0,
-        final_blows=0,
-        gang_kills=0,
-        advantage_generated=0,
-        enemy_advantage_removed=0,
-        standing_fleet_minutes=0,
-        standing_fleet_day=False,
-        fleets_led=0,
-        gangs_led=0,
+        **owned_day_counters(), points=0, active=False
     )
 
     return written

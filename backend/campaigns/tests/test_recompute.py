@@ -315,3 +315,45 @@ class StreakTests(TestCase):
                 campaign=self.campaign, streak_days__gt=0
             ).exists()
         )
+
+
+class ZeroOutTests(TestCase):
+    """Clearing a withdrawn day must not clear what it does not own."""
+
+    def setUp(self):
+        self.campaign = make_campaign()
+        self.user, _ = enlist(self.campaign, "quartermaster", 8501)
+        self.today = campaign_day()
+
+    def test_every_counter_this_function_writes_is_cleared(self):
+        feed_killmail = make_feed_killmail(
+            901, victim_character_id=9999, attacker_ids=[8501]
+        )
+        attribute_feed_killmail(feed_killmail)
+        stats.materialise_day(self.campaign, self.today)
+        CampaignKillmail.objects.all().delete()
+        stats.materialise_day(self.campaign, self.today)
+
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=self.today
+        )
+        for field in stats.owned_day_counters():
+            self.assertFalse(getattr(row, field), field)
+
+    def test_community_layer_columns_are_left_alone(self):
+        """Supply and corp-project figures are written by other code."""
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign,
+            user=self.user,
+            day=self.today,
+            supply_isk_delivered=5_000_000,
+            points=10,
+            active=True,
+        )
+        stats.materialise_day(self.campaign, self.today)
+
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=self.today
+        )
+        self.assertEqual(row.supply_isk_delivered, 5_000_000)
+        self.assertEqual(row.points, 0)
