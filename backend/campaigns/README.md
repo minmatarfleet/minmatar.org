@@ -62,11 +62,34 @@ records what the code actually does today.
 
 ## Not implemented yet
 
-Wired to the contract but not doing the work: the ESI fleet invite for
-`standing-fleet/join` (ticket 10), gang fleet creation through the quick-start
-path (ticket 11), notifications (ticket 14) and the whole Phase 1b community
-layer. `services.esi_gate` keeps its own ledger and reads ESI's headers where
-it can see them, but the platform-wide limiter is still a separate job.
+An FC attributes a fleet to a campaign from the fleet form, and everything
+downstream of that works: attendance, fleet-linked kills, the fleet bonus and
+the softer loss penalty. What is still only a contract is the campaign
+creating a fleet *for* you: the ESI invite behind `standing-fleet/join`
+(ticket 10) and gang fleets through the quick-start path (ticket 11). Until
+then `form_gang` announces a gang on the timeline rather than creating a
+tracked fleet, and the standing fleet records who holds it rather than
+opening one in game.
+
+Also outstanding: notifications (ticket 14) and the whole Phase 1b community
+layer, whose columns (`supply_isk_delivered`, `project_isk_earned`) exist but
+are written by nothing yet. `services.esi_gate` keeps its own ledger and
+reads ESI's headers where it can see them, but the platform-wide limiter is
+still a separate job.
+
+## Calibration
+
+Event codes ship unconfirmed and unconfirmed codes never score. When somebody
+establishes what a code actually is:
+
+```bash
+python manage.py confirm_fw_event_code 516 \
+    --site-kind rendezvous_point --by "BearThatCares deployed one, 20 Sep"
+```
+
+That confirms the code and rescores the completions already recorded with it.
+The table is also in the Django admin, but prefer the command: editing
+`confirmed` by hand leaves the existing sites unscored.
 
 ## Running it locally
 

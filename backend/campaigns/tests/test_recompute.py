@@ -119,6 +119,36 @@ class UnconfirmedCodeTests(TestCase):
         self.assertGreater(row.points, 0)
         self.assertEqual(row.advantage_sites, 1)
 
+    def test_confirming_a_code_rescores_what_it_already_covered(self):
+        """Confirming is the point of the calibration table.
+
+        The sites recorded while a code was unknown have to start counting,
+        or a campaign would have to be re-run to benefit from the answer.
+        """
+        sites.attribute_payouts([self._payout(516, 10_000, 4)])
+        self.assertFalse(CampaignSiteCompletion.objects.get().scored)
+
+        FwPayoutEventCode.objects.filter(event_code=516).update(
+            confirmed=True, site_kind=SiteKind.RENDEZVOUS_POINT
+        )
+        result = sites.rescore_completions(event_code=516)
+
+        self.assertEqual(result["changed"], 1)
+        completion = CampaignSiteCompletion.objects.get()
+        self.assertTrue(completion.scored)
+        self.assertEqual(completion.site_kind, SiteKind.RENDEZVOUS_POINT)
+
+    def test_unconfirming_a_code_takes_the_points_back(self):
+        FwPayoutEventCode.objects.filter(event_code=516).update(confirmed=True)
+        sites.attribute_payouts([self._payout(516, 10_000, 5)])
+        self.assertTrue(CampaignSiteCompletion.objects.get().scored)
+
+        FwPayoutEventCode.objects.filter(event_code=516).update(
+            confirmed=False
+        )
+        sites.rescore_completions(event_code=516)
+        self.assertFalse(CampaignSiteCompletion.objects.get().scored)
+
     def test_the_stat_bar_ignores_unconfirmed_completions(self):
         sites.attribute_payouts([self._payout(516, 10_000, 3)])
         totals = stats.campaign_totals(self.campaign)
