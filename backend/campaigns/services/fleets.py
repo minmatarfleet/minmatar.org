@@ -8,10 +8,8 @@ so campaigns add no polling of their own.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 
 from django.db.models import Q
-from django.utils import timezone
 
 from campaigns.helpers import CampaignRoster, day_bounds
 from campaigns.models import Campaign, CampaignKillmail, CampaignStandingFleet
@@ -37,10 +35,13 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     standing_minutes, standing_day}}``. A pilot counts once per fleet,
     however many times they rejoined it.
 
-    ESI reports when a pilot joined a fleet but never when they left, so a
-    day is credited whenever the fleet was up that day and the pilot had
-    joined by then, and minutes are bounded by the last time the poller
-    actually saw the fleet rather than assumed to run to the present.
+    ESI reports when a pilot joined a fleet but never when they left. The
+    fleet poller rewrites a member row every pass while that pilot is still
+    in the fleet, so ``updated_at`` is the last moment we actually saw them
+    and ``[join_time, updated_at]`` is the window they were present for. A
+    standing fleet stays open for days, so bounding by the fleet's lifetime
+    instead would credit someone who joined once and logged off for every
+    day after.
     """
     start, end = day_bounds(day)
     roster = CampaignRoster(campaign)
@@ -82,10 +83,13 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     ).select_related("eve_fleet_instance__eve_fleet")
 
     for member in members:
-        instance = member.eve_fleet_instance
-        fleet = instance.eve_fleet
-        seen_at = max(member.join_time, start)
-        user = roster.user_for(member.character_id, seen_at)
+        fleet = member.eve_fleet_instance.eve_fleet
+        window = _presence_window(member, start, end)
+        if window is None:
+            continue
+
+        present_from, present_to = window
+        user = roster.user_for(member.character_id, present_from)
         if user is None:
             continue
 
@@ -94,12 +98,10 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
         if member.solar_system_id in primary_system_ids:
             row["attended_primary"].add(fleet.id)
         if fleet.type == STANDING_FLEET_TYPE:
-            minutes = _minutes_in_window(
-                member.join_time, instance, start, end
+            row["standing_day"] = True
+            row["standing_minutes"] += int(
+                (present_to - present_from).total_seconds() // 60
             )
-            if minutes:
-                row["standing_day"] = True
-                row["standing_minutes"] += minutes
 
     for instance in instances:
         fleet = instance.eve_fleet
@@ -124,20 +126,25 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     }
 
 
-def _minutes_in_window(joined_at: datetime, instance, start, end) -> int:
-    """Minutes a pilot was in the fleet, clipped to the campaign day.
+def _presence_window(member, start, end):
+    """When this pilot was in the fleet, clipped to the campaign day.
 
-    ESI has no leave time, so the upper bound is when the fleet ended or,
-    for one still open, when the poller last confirmed it existed. Using the
-    present instead would credit a pilot for every minute since a fleet
-    stopped being tracked.
+    The poller rewrites the row on every pass, so ``updated_at`` is the last
+    time we actually saw them. Returns None when that window does not reach
+    into the day at all. A pilot seen by a single poll gets the attendance
+    but no minutes, which is exactly what we know.
     """
-    last_known = instance.end_time or instance.last_updated or timezone.now()
-    began = max(joined_at, start)
-    finished = min(last_known, end)
-    if finished <= began:
-        return 0
-    return int((finished - began).total_seconds() // 60)
+    joined_at = member.join_time
+    last_seen = member.updated_at or joined_at
+    instance = member.eve_fleet_instance
+    if instance.end_time:
+        last_seen = min(last_seen, instance.end_time)
+    last_seen = max(last_seen, joined_at)
+
+    if last_seen < start or joined_at >= end:
+        return None
+
+    return max(joined_at, start), min(last_seen, end)
 
 
 def link_killmails_to_fleets(campaign: Campaign, day) -> int:

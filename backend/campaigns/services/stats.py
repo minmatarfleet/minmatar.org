@@ -48,7 +48,9 @@ BOARD_METRICS = {
     "sites": "complexes",
     "advantage": "advantage_generated",
     "fleets": "fleets_attended",
-    "supply": "supply_isk_delivered",
+    # "supply" arrives with the community layer, which writes
+    # supply_isk_delivered. Offering the board before then would be a
+    # permanently empty column.
 }
 
 

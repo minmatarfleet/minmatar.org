@@ -1,10 +1,13 @@
 """Fleet attendance, which ESI only half tells us about."""
 
+import json
 from datetime import timedelta
+from unittest import mock
 
 import factory
+from django.contrib.auth.models import User
 from django.db.models import signals
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.utils import timezone
 
 from campaigns.helpers import campaign_day, day_bounds
@@ -17,7 +20,17 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from campaigns.tests.test_api import auth_headers
+from fleets.tests import (
+    disconnect_fleet_signals,
+    setup_fleet_reference_data,
+)
+from fleets.models import (
+    EveFleet,
+    EveFleetAudience,
+    EveFleetInstance,
+    EveFleetInstanceMember,
+)
 
 
 class FleetAttendanceTests(TestCase):
@@ -48,7 +61,14 @@ class FleetAttendanceTests(TestCase):
         instance.refresh_from_db()
         return instance
 
-    def _member(self, instance, character_id, join_time, system=KAMELA):
+    def _member(
+        self,
+        instance,
+        character_id,
+        join_time,
+        system=KAMELA,
+        last_seen=None,
+    ):
         member = EveFleetInstanceMember.objects.create(
             eve_fleet_instance=instance,
             character_id=character_id,
@@ -62,8 +82,10 @@ class FleetAttendanceTests(TestCase):
             squad_id=1,
             wing_id=1,
         )
+        # join_time and updated_at are both auto fields, so the poller's
+        # view of this pilot has to be written after the fact.
         EveFleetInstanceMember.objects.filter(pk=member.pk).update(
-            join_time=join_time
+            join_time=join_time, updated_at=last_seen or join_time
         )
         member.refresh_from_db()
         return member
@@ -102,22 +124,52 @@ class FleetAttendanceTests(TestCase):
             start=self.start - timedelta(days=1),
             last_updated=self.start + timedelta(hours=3),
         )
-        self._member(instance, 6001, self.start - timedelta(hours=20))
+        self._member(
+            instance,
+            6001,
+            self.start - timedelta(hours=20),
+            last_seen=self.start + timedelta(hours=3),
+        )
 
         for day in (yesterday, self.today):
             rows = fleets.attendance_for_day(self.campaign, day)
             self.assertEqual(rows[self.user.id]["attended"], 1, day)
 
-    def test_minutes_stop_when_the_poller_stopped_looking(self):
-        """An untracked fleet must not accrue time for the rest of the day."""
+    def test_minutes_stop_when_the_pilot_was_last_seen(self):
+        """Time is counted up to the last poll that found them in the fleet."""
         fleet = self._fleet()
-        instance = self._instance(
-            fleet, last_updated=self.start + timedelta(minutes=45)
+        instance = self._instance(fleet)
+        self._member(
+            instance,
+            6001,
+            self.start,
+            last_seen=self.start + timedelta(minutes=45),
         )
-        self._member(instance, 6001, self.start)
 
         rows = fleets.attendance_for_day(self.campaign, self.today)
         self.assertEqual(rows[self.user.id]["standing_minutes"], 45)
+
+    def test_a_pilot_who_logged_off_is_not_credited_for_later_days(self):
+        """A standing fleet stays open for days; a pilot does not.
+
+        Bounding by the fleet's lifetime would hand someone who joined once
+        and never came back a full day of credit for every day after.
+        """
+        fleet = self._fleet()
+        instance = self._instance(
+            fleet,
+            start=self.start - timedelta(days=2),
+            last_updated=self.start + timedelta(hours=6),
+        )
+        self._member(
+            instance,
+            6001,
+            self.start - timedelta(days=2),
+            last_seen=self.start - timedelta(days=2, hours=-1),
+        )
+
+        rows = fleets.attendance_for_day(self.campaign, self.today)
+        self.assertEqual(rows, {})
 
     def test_a_fleet_in_a_primary_system_is_recognised(self):
         fleet = self._fleet()
@@ -205,3 +257,100 @@ class FleetKillmailLinkTests(TestCase):
         self.assertIsNone(
             CampaignKillmail.objects.get(killmail_id=702).fleet_id
         )
+
+
+class FleetCampaignApiTests(TestCase):
+    """An FC attributes a fleet to a campaign from the fleet form."""
+
+    def setUp(self):
+        # The fleets suite's own helpers: these signals would call Discord
+        # and ESI, which the runner refuses during tests.
+        disconnect_fleet_signals()
+        setup_fleet_reference_data()
+        patcher = mock.patch(
+            "fleets.helpers.schedule_fleet.send_discord_pre_ping"
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        self.client = Client()
+        self.campaign = make_campaign()
+        self.fc = User.objects.create(username="fc", is_superuser=True)
+        self.audience = EveFleetAudience.objects.get(name="Test Audience")
+
+    def _create(self, **overrides):
+        payload = {
+            "type": "strategic",
+            "description": "Bleak Lands push",
+            "start_time": timezone.now().isoformat(),
+            "audience_id": self.audience.id,
+        }
+        payload.update(overrides)
+        return self.client.post(
+            "/api/fleets",
+            data=json.dumps(payload),
+            content_type="application/json",
+            **auth_headers(self.fc),
+        )
+
+    def test_a_fleet_can_be_created_against_a_campaign(self):
+        response = self._create(campaign_id=self.campaign.id)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["campaign_slug"], self.campaign.slug)
+
+        fleet = EveFleet.objects.get(id=response.json()["id"])
+        self.assertEqual(fleet.campaign_id, self.campaign.id)
+
+    def test_a_fleet_without_a_campaign_is_unaffected(self):
+        response = self._create()
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIsNone(response.json()["campaign_id"])
+
+    def test_a_campaign_that_is_over_is_refused(self):
+        self.campaign.status = "completed"
+        self.campaign.save()
+        response = self._create(campaign_id=self.campaign.id)
+        self.assertEqual(response.status_code, 400)
+
+    def test_an_unknown_campaign_is_refused(self):
+        response = self._create(campaign_id=999999)
+        self.assertEqual(response.status_code, 400)
+
+    def test_a_campaign_can_be_attached_and_detached_later(self):
+        fleet_id = self._create().json()["id"]
+
+        response = self.client.patch(
+            f"/api/fleets/{fleet_id}",
+            data=json.dumps({"campaign_id": self.campaign.id}),
+            content_type="application/json",
+            **auth_headers(self.fc),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            EveFleet.objects.get(id=fleet_id).campaign_id, self.campaign.id
+        )
+
+        response = self.client.patch(
+            f"/api/fleets/{fleet_id}",
+            data=json.dumps({"campaign_id": None}),
+            content_type="application/json",
+            **auth_headers(self.fc),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(EveFleet.objects.get(id=fleet_id).campaign_id)
+
+    def test_campaign_fleets_stay_off_the_fleet_catalog(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            EveFleet.objects.create(
+                type="standing",
+                start_time=timezone.now(),
+                campaign=self.campaign,
+                audience=self.audience,
+                created_by=self.fc,
+            )
+
+        response = self.client.get(
+            "/api/fleets/v3?fleet_filter=recent", **auth_headers(self.fc)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("standing", [row["type"] for row in response.json()])

@@ -9,7 +9,7 @@ from authentication import AuthBearer
 from eveonline.models import EveCorporation, EvePlayer
 
 from fleets.endpoints.schemas import EveFleetCommanderMetric
-from fleets.models import EveFleet
+from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
 
 
 def _calendar_month_bounds():
@@ -40,6 +40,7 @@ def get_fleet_commander_metrics(request):
             created_by_id__isnull=False,
         )
         .exclude(status="cancelled")
+        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .values("created_by_id")
         .annotate(fleet_count=Count("id"))
         .order_by("-fleet_count", "created_by_id")

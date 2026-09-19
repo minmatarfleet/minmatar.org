@@ -69,12 +69,17 @@ def _clamp(limit: int) -> int:
     auth=AuthOptional(),
 )
 def list_campaigns(request, status: str = ""):
-    """Live campaigns first, then upcoming, then finished."""
-    denied = require_feature(request.user, VIEW_FEATURE)
-    if denied:
-        return denied
+    """Live campaigns first, then upcoming, then finished.
 
+    A viewer without the feature still sees campaigns marked public, and
+    nothing else.
+    """
+    permitted = require_feature(request.user, VIEW_FEATURE) is None
     queryset = _visible(request)
+    if not permitted:
+        queryset = queryset.filter(visibility="public")
+        if not queryset.exists():
+            return require_feature(request.user, VIEW_FEATURE)
     if status:
         queryset = queryset.filter(status=status)
 
@@ -103,11 +108,11 @@ def list_campaigns(request, status: str = ""):
     auth=AuthOptional(),
 )
 def get_campaign(request, slug: str):
-    denied = require_feature(request.user, VIEW_FEATURE)
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
     if denied:
         return denied
 
-    campaign = _get(request, slug)
     user = (
         request.user
         if getattr(request.user, "is_authenticated", False)
@@ -129,6 +134,7 @@ def get_campaign(request, slug: str):
     )
 
     return {
+        "id": campaign.id,
         "slug": campaign.slug,
         "name": campaign.name,
         "short_code": campaign.short_code,

@@ -13,6 +13,7 @@ from fleets.endpoints.helpers import (
     update_instance_endtime,
 )
 from fleets.endpoints.schemas import EveFleetResponse, UpdateEveFleetRequest
+from fleets.helpers.schedule_fleet import resolve_campaign
 from fleets.models import EveFleet
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,12 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         return 400, err
     _fleet_apply_optional_scalar_updates(fleet, payload)
 
+    if "campaign_id" in payload.model_fields_set:
+        campaign = resolve_campaign(payload.campaign_id)
+        if isinstance(campaign, tuple):
+            return 400, campaign[1]
+        fleet.campaign = campaign
+
     fleet.save()
 
     if "doctrine_id" in payload.model_fields_set:
@@ -57,6 +64,8 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "type": fleet.type,
         "description": fleet.description,
         "objective": fleet.objective or None,
+        "campaign_id": fleet.campaign_id,
+        "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else None,
         "location": (

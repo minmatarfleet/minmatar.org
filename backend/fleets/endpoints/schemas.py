@@ -50,6 +50,8 @@ class EveFleetResponse(BaseModel):
     disable_motd: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    campaign_id: Optional[int] = None
+    campaign_slug: Optional[str] = None
     roam_report_url: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
@@ -89,6 +91,7 @@ class CreateEveFleetRequest(BaseModel):
     disable_motd: bool = False
     immediate_ping: bool = False
     status: Optional[str] = None
+    campaign_id: Optional[int] = None
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -102,6 +105,7 @@ class UpdateEveFleetRequest(BaseModel):
     disable_motd: Optional[bool] = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    campaign_id: Optional[int] = None
 
 
 class EveFleetMetric(BaseModel):

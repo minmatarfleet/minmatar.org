@@ -92,7 +92,11 @@ def _character_state(character: EveCharacter) -> tuple[str, str]:
     return "needs_update", "kills and losses"
 
 
-@router.get("/readiness", response=schemas.ReadinessOut, auth=AuthBearer())
+@router.get(
+    "/readiness",
+    response={200: schemas.ReadinessOut, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
 def get_readiness(request, redirect_url: str = DEFAULT_REDIRECT):
     """Every character on one row, with the one action each of them needs."""
     denied = require_feature(request.user, ENLIST_FEATURE)
@@ -264,7 +268,7 @@ def leave(request, slug: str):
 
 @router.put(
     "/{slug}/characters/{character_id}",
-    response={200: dict},
+    response={200: dict, 403: ErrorResponse},
     auth=AuthBearer(),
 )
 def include_character(request, slug: str, character_id: int):
@@ -291,7 +295,7 @@ def include_character(request, slug: str, character_id: int):
 
 @router.delete(
     "/{slug}/characters/{character_id}",
-    response={200: dict},
+    response={200: dict, 403: ErrorResponse},
     auth=AuthBearer(),
 )
 def exclude_character(request, slug: str, character_id: int):
@@ -395,7 +399,9 @@ def take_standing_fleet(request, slug: str):
 
 
 @router.post(
-    "/{slug}/standing-fleet/join", response={200: dict}, auth=AuthBearer()
+    "/{slug}/standing-fleet/join",
+    response={200: dict, 403: ErrorResponse, 409: ErrorResponse},
+    auth=AuthBearer(),
 )
 def join_standing_fleet(request, slug: str):
     """Ask the current boss's client to invite this pilot.

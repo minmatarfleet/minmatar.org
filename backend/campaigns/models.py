@@ -966,7 +966,14 @@ class CampaignAward(models.Model):
             models.UniqueConstraint(
                 fields=["campaign", "code", "week_start"],
                 name="campaign_award_week_unique",
-            )
+            ),
+            # MySQL treats NULLs as distinct, so the constraint above does
+            # not cover the campaign awards, whose week_start is null.
+            models.UniqueConstraint(
+                fields=["campaign", "code"],
+                condition=models.Q(week_start__isnull=True),
+                name="campaign_award_final_unique",
+            ),
         ]
 
     def __str__(self) -> str:

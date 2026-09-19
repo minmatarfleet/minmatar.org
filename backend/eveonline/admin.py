@@ -12,6 +12,8 @@ from fittings.models import FittingTag
 from esi.models import CallbackRedirect, Scope, Token
 
 from .models import (
+    EveCharacterFwLpPayout,
+    FwPayoutEventCode,
     EvePlayer,
     EveAlliance,
     EveCharacter,
@@ -994,3 +996,37 @@ def _grouped_get_app_list(self, request, app_label=None):  # noqa: C901
 
 
 admin.AdminSite.get_app_list = _grouped_get_app_list
+
+
+@admin.register(FwPayoutEventCode)
+class FwPayoutEventCodeAdmin(admin.ModelAdmin):
+    """The Faction Warfare payout calibration table.
+
+    An unconfirmed code is stored and displayed but never scored. Use
+    `manage.py confirm_fw_event_code` rather than editing `confirmed` here,
+    so the sites already recorded are rescored with it.
+    """
+
+    list_display = (
+        "event_code",
+        "site_kind",
+        "label",
+        "confirmed",
+        "confirmed_by",
+    )
+    list_filter = ("confirmed", "site_kind")
+    search_fields = ("event_code", "label", "notes")
+
+
+@admin.register(EveCharacterFwLpPayout)
+class EveCharacterFwLpPayoutAdmin(admin.ModelAdmin):
+    list_display = (
+        "occurred_at",
+        "character",
+        "event_code",
+        "amount_lp",
+        "location_id",
+    )
+    list_filter = ("event_code", "notification_type")
+    search_fields = ("character__character_name", "notification_id")
+    raw_id_fields = ("character",)

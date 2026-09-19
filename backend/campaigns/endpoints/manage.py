@@ -46,7 +46,11 @@ def _denied():
 
 @router.post(
     "",
-    response={200: schemas.CampaignDetail, 403: ErrorResponse},
+    response={
+        200: schemas.CampaignCreated,
+        400: ErrorResponse,
+        403: ErrorResponse,
+    },
     auth=AuthBearer(),
 )
 def create_campaign(request, payload: schemas.CampaignCreateRequest):

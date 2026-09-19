@@ -149,6 +149,7 @@ def campaign_systems(
 def list_item(campaign: Campaign, user=None) -> dict:
     totals = stats.campaign_totals(campaign)
     return {
+        "id": campaign.id,
         "slug": campaign.slug,
         "name": campaign.name,
         "short_code": campaign.short_code,

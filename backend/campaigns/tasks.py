@@ -158,7 +158,7 @@ def attribute_new_payouts(hours: int = 72) -> dict:
         occurred_at__gte=since, campaignsitecompletion__isnull=True
     ).select_related("character")
     result = sites.attribute_payouts(payouts)
-    result.update(sites.build_complex_completions(since_hours=hours))
+    result.update(sites.build_complex_completions(since_hours=6))
     return result
 
 

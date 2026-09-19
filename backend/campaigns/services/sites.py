@@ -394,6 +394,30 @@ def build_complex_completions(since_hours: int = 6) -> dict:
     return {"groups": len(groups), "built": built}
 
 
+def rescore_completions(event_code: int | None = None) -> dict:
+    """Re-apply the event-code table to completions already recorded.
+
+    Confirming a code is the whole point of the calibration table, so there
+    has to be a way to make the sites it covers count without waiting for
+    the next payout.
+    """
+    queryset = CampaignSiteCompletion.objects.select_related("payout")
+    if event_code is not None:
+        queryset = queryset.filter(event_code=event_code)
+
+    changed = 0
+    for completion in queryset.iterator():
+        kind, scorable = classify_payout(completion.payout)
+        if (kind, scorable) == (completion.site_kind, completion.scored):
+            continue
+        completion.site_kind = kind
+        completion.scored = scorable
+        completion.save(update_fields=["site_kind", "scored"])
+        changed += 1
+
+    return {"changed": changed}
+
+
 def seed_event_codes() -> int:
     """Seed the calibration table. Never overwrites a human confirmation."""
     created = 0

@@ -35,6 +35,7 @@ class CampaignSystemSummary(Schema):
 
 
 class CampaignListItem(Schema):
+    id: int
     slug: str
     name: str
     short_code: str
@@ -63,6 +64,7 @@ class CampaignTotals(Schema):
 
 
 class CampaignDetail(Schema):
+    id: int
     slug: str
     name: str
     short_code: str
