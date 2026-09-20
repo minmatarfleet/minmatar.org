@@ -41,6 +41,20 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-20 — Fishermen bot kicked FL33T people
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Reconciler kicked everyone in the secondary guild
+  who held Minmatar Fleet Alliance and did not have a seat. That role is
+  shared with FL33T guests; exclusive access is Fisherman. Seats went
+  `present` → `pending_join` (unknown member) after the kick.
+**Durable rule:** Never guild-scan-kick on a shared role. Dump
+  `member_role_id` vs Discord role names and seat statuses first.
+**Skill update:** fishermen stray-kick / Alliance-vs-Fisherman row.
+
 ## 2026-09-18 — Buyback Match stock extra ores + non-100 lots
 
 **Category:** pulse.technology
