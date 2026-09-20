@@ -16,8 +16,14 @@ from campaigns.models import (
     CampaignStandingFleet,
     CampaignStatus,
 )
+from campaigns.endpoints import serializers
 from campaigns.services import advantage
-from campaigns.tests.helpers import enlist, make_campaign
+from campaigns.services.attribution import attribute_feed_killmail
+from campaigns.tests.helpers import (
+    enlist,
+    make_campaign,
+    make_feed_killmail,
+)
 from eveonline.models import EveCharacter
 
 
@@ -517,3 +523,50 @@ class AdvantageConsensusTests(TestCase):
             self.system, self.loud, 80.0, 5.0
         )
         self.assertEqual(reading.status, "accepted")
+
+
+class CoverageWindowTests(TestCase):
+    """The chart has to show the fighting, not the calendar."""
+
+    def setUp(self):
+        # A campaign long enough to have a quiet fortnight in it.
+        self.campaign = make_campaign(
+            start_at=timezone.now() - timedelta(days=40)
+        )
+        self.user, _ = enlist(self.campaign, "pilot", 7401)
+        grant(self.user, "view_campaign")
+        self.client = Client()
+
+        # The fighting happened a fortnight ago and then stopped.
+        self.when = timezone.now() - timedelta(days=14)
+        for index in range(3):
+            feed_killmail = make_feed_killmail(
+                760 + index,
+                victim_character_id=9999,
+                attacker_ids=[7401],
+                killmail_time=self.when + timedelta(hours=index),
+            )
+            attribute_feed_killmail(feed_killmail)
+
+    def test_a_quiet_fortnight_does_not_blank_the_chart(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+
+        coverage = response.json()["coverage"]
+        self.assertEqual(len(coverage), 24)
+        self.assertTrue(
+            any(row["our_active_days"] for row in coverage),
+            "coverage is empty for a campaign that did its fighting earlier",
+        )
+
+    def test_the_window_ends_at_the_last_thing_that_happened(self):
+        since, until = serializers.coverage_window(self.campaign, days=7)
+        self.assertLessEqual(until, timezone.now())
+        self.assertEqual((until - since).days, 7)
+        self.assertGreaterEqual(until, self.when)
+
+    def test_the_window_never_starts_before_the_campaign(self):
+        _, until = serializers.coverage_window(self.campaign, days=7)
+        self.assertGreaterEqual(until, self.campaign.start_at)

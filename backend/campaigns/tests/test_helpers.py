@@ -12,6 +12,7 @@ from campaigns.helpers import (
     week_bounds,
 )
 from campaigns.services.stats import prime_time_label
+from eveonline.models import EvePlayer
 
 
 def moment(year, month, day, hour, minute=0):
@@ -65,7 +66,19 @@ class CampaignWeekTests(TestCase):
 
 
 class PrimeTimeTests(TestCase):
-    def test_hours_map_to_a_timezone_label(self):
-        self.assertEqual(prime_time_label(2), "AUTZ")
-        self.assertEqual(prime_time_label(12), "EUTZ")
-        self.assertEqual(prime_time_label(20), "USTZ")
+    """The codes a pilot picks on their profile, and EVE's bands."""
+
+    def test_the_evening_peak_reads_as_european(self):
+        # The alliance peaks at 19:00 UTC, which is EU evening.
+        self.assertEqual(prime_time_label(19), "EU")
+
+    def test_the_small_hours_read_as_american(self):
+        self.assertEqual(prime_time_label(2), "US")
+
+    def test_the_middle_of_the_day_reads_as_asia_pacific(self):
+        self.assertEqual(prime_time_label(12), "AP")
+
+    def test_every_hour_maps_to_a_code_a_pilot_could_have_picked(self):
+        stated = {code for code, _ in EvePlayer.prime_choices}
+        for hour in range(24):
+            self.assertIn(prime_time_label(hour), stated, hour)

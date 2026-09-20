@@ -186,16 +186,35 @@ def killmail_out(mail: CampaignKillmail) -> dict:
     }
 
 
+def coverage_window(campaign: Campaign, days: int = 7):
+    """The last ``days`` of fighting, not the last ``days`` of wall clock.
+
+    A campaign that finished last month, or one whose feed has been quiet
+    for a week, would otherwise render an empty chart. The window ends at
+    the most recent thing that happened in the campaign.
+    """
+    latest = (
+        CampaignKillmail.objects.filter(campaign=campaign)
+        .order_by("-killmail_time")
+        .values_list("killmail_time", flat=True)
+        .first()
+    )
+    anchor = min(latest or timezone.now(), timezone.now())
+    anchor = max(anchor, campaign.start_at)
+    return anchor - timedelta(days=days), anchor
+
+
 def coverage_by_hour(campaign: Campaign, days: int = 7) -> list[dict]:
     """Enlisted activity per UTC hour against hostile activity per hour.
 
     The hole where they play and we do not is the point of this chart.
     """
-    since = timezone.now() - timedelta(days=days)
+    since, until = coverage_window(campaign, days)
 
     ours = CampaignKillmailParticipant.objects.filter(
         killmail__campaign=campaign,
         killmail__killmail_time__gte=since,
+        killmail__killmail_time__lte=until,
         enlisted=True,
     ).values_list("killmail__killmail_time", flat=True)
     our_hours: dict[int, set] = {hour: set() for hour in range(24)}
@@ -204,7 +223,9 @@ def coverage_by_hour(campaign: Campaign, days: int = 7) -> list[dict]:
 
     hostile_counts = {hour: 0 for hour in range(24)}
     hostile = FeedKillmail.objects.filter(
-        solar_system_id__in=campaign.system_ids(), killmail_time__gte=since
+        solar_system_id__in=campaign.system_ids(),
+        killmail_time__gte=since,
+        killmail_time__lte=until,
     ).values_list("killmail_time", flat=True)
     for moment in hostile:
         hostile_counts[moment.hour] += 1

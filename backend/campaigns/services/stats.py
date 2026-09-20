@@ -668,9 +668,15 @@ def observed_activity(campaign: Campaign, user_id: int) -> tuple[list, str]:
 
 
 def prime_time_label(hour_utc: int) -> str:
-    """The timezone a pilot plays in, from the hour they are most active."""
+    """The timezone a pilot plays in, from the hour they are most active.
+
+    Uses the same codes a pilot picks for themselves on their profile, so the
+    roster can show a stated and an observed prime time side by side without
+    two vocabularies. The bands are EVE's, not the clock's: the alliance
+    peaks at 19:00 UTC, which is European evening.
+    """
     if 0 <= hour_utc < 8:
-        return "AUTZ"
+        return "US"
     if 8 <= hour_utc < 16:
-        return "EUTZ"
-    return "USTZ"
+        return "AP"
+    return "EU"
