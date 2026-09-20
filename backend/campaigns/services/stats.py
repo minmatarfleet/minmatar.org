@@ -7,6 +7,7 @@ re-resolved character or a corrected outcome never leaves a stale total.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from datetime import date, timedelta
 
 from django.db.models import Count, Sum
@@ -300,7 +301,11 @@ def _run_ending_on(active_days: set, day: date) -> int:
 
 
 def _streak_length(campaign, user_id: int, day) -> int:
-    """The streak a pilot is on, counting the day being materialised."""
+    """The streak a pilot is on, counting the day being materialised.
+
+    Read from the day rows already stored, so the days before this one have
+    to exist: always materialise a window oldest first.
+    """
     previous = set(
         CampaignParticipantDay.objects.filter(
             campaign=campaign,
@@ -359,7 +364,11 @@ ACTIVITY_FIELDS = (
 
 
 def materialise_day(campaign: Campaign, day: date) -> int:
-    """Rebuild every pilot's row for one campaign day."""
+    """Rebuild every pilot's row for one campaign day.
+
+    The streak bonus is read from the day rows before this one, so those have
+    to already be correct. Use ``materialise_days`` for a window; it sorts.
+    """
     start, end = day_bounds(day)
     rows: dict[int, dict] = {}
 
@@ -409,12 +418,27 @@ def materialise_day(campaign: Campaign, day: date) -> int:
     return written
 
 
-def materialise_recent(campaign: Campaign, days: int = 2) -> int:
-    today = campaign_day()
+def materialise_days(campaign: Campaign, days: Iterable[date]) -> int:
+    """Rebuild a set of campaign days, always oldest first.
+
+    Order matters, which is why this sorts rather than trusting the caller: a
+    day's streak bonus is read from the days before it, so walking a window
+    backwards would score the older days as if the ones before them had never
+    happened, and every later recompute would quietly change history. Prefer
+    this over calling ``materialise_day`` in a loop.
+    """
     written = 0
-    for offset in range(days):
-        written += materialise_day(campaign, today - timedelta(days=offset))
+    for day in sorted(set(days)):
+        written += materialise_day(campaign, day)
     return written
+
+
+def materialise_recent(campaign: Campaign, days: int = 2) -> int:
+    """Rebuild the last ``days`` campaign days."""
+    today = campaign_day()
+    return materialise_days(
+        campaign, (today - timedelta(days=offset) for offset in range(days))
+    )
 
 
 def rebuild_stats(campaign: Campaign) -> int:

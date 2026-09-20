@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from django.db.models import Avg, Count
+from django.db.models import Count
 from django.utils import timezone
 
 from campaigns.constants import (
@@ -38,21 +38,31 @@ def record_reading(
     our_pct: float,
     enemy_pct: float,
     source: str = "pilot",
-) -> CampaignAdvantageReading:
-    """Store a pilot's reading, holding it when it disagrees wildly."""
+) -> tuple[CampaignAdvantageReading, CampaignAdvantageState]:
+    """Store a pilot's reading, holding it when it disagrees wildly.
+
+    Returns the reading and the state it produced. Callers want both, and
+    re-reading the state off the system would hand them the stale one that
+    Django cached before the reading existed.
+    """
     status = "accepted"
 
-    recent = CampaignAdvantageReading.objects.filter(
-        campaign_system=campaign_system,
-        status="accepted",
-        reported_at__gte=timezone.now()
-        - timedelta(minutes=CONSENSUS_WINDOW_MINUTES),
-    ).aggregate(our=Avg("our_pct"), enemy=Avg("enemy_pct"), n=Count("id"))
+    window = timezone.now() - timedelta(minutes=CONSENSUS_WINDOW_MINUTES)
+    others = (
+        CampaignAdvantageReading.objects.filter(
+            campaign_system=campaign_system,
+            status="accepted",
+            reported_at__gte=window,
+        )
+        .exclude(reported_by=user)
+        .exists()
+    )
 
-    if recent["n"] and source != "manager":
+    if others and source != "manager":
+        agreed_ours, agreed_theirs = _consensus(campaign_system, window)
         if (
-            abs(our_pct - (recent["our"] or 0)) > OUTLIER_TOLERANCE
-            or abs(enemy_pct - (recent["enemy"] or 0)) > OUTLIER_TOLERANCE
+            abs(our_pct - agreed_ours) > OUTLIER_TOLERANCE
+            or abs(enemy_pct - agreed_theirs) > OUTLIER_TOLERANCE
         ):
             status = "held"
 
@@ -64,8 +74,7 @@ def record_reading(
         source=source,
         status=status,
     )
-    recompute_state(campaign_system)
-    return reading
+    return reading, recompute_state(campaign_system)
 
 
 def recompute_state(campaign_system: CampaignSystem) -> CampaignAdvantageState:
@@ -97,13 +106,9 @@ def recompute_state(campaign_system: CampaignSystem) -> CampaignAdvantageState:
             window = latest.reported_at - timedelta(
                 minutes=CONSENSUS_WINDOW_MINUTES
             )
-            consensus = CampaignAdvantageReading.objects.filter(
-                campaign_system=campaign_system,
-                status="accepted",
-                reported_at__gte=window,
-            ).aggregate(our=Avg("our_pct"), enemy=Avg("enemy_pct"))
-            state.our_pct = round(consensus["our"] or latest.our_pct, 1)
-            state.enemy_pct = round(consensus["enemy"] or latest.enemy_pct, 1)
+            consensus = _consensus(campaign_system, window)
+            state.our_pct = round(consensus[0] or latest.our_pct, 1)
+            state.enemy_pct = round(consensus[1] or latest.enemy_pct, 1)
             state.reading_age_minutes = age
             state.basis = (
                 "reading"
@@ -118,7 +123,38 @@ def recompute_state(campaign_system: CampaignSystem) -> CampaignAdvantageState:
     state.enemy_removed_since_reading = removed
     state.as_of = now
     state.save()
+
+    # Django caches a reverse one-to-one on the instance, so anything still
+    # holding this campaign_system would otherwise keep seeing the state as
+    # it was before this reading.
+    campaign_system.advantage_state = state
     return state
+
+
+def _consensus(campaign_system, window) -> tuple[float, float]:
+    """The agreed reading, counting each pilot once.
+
+    Averaging every row would let one pilot who taps Report twenty times
+    outvote the rest of the alliance, so only each reporter's most recent
+    reading in the window is counted.
+    """
+    latest_per_pilot: dict = {}
+    rows = CampaignAdvantageReading.objects.filter(
+        campaign_system=campaign_system,
+        status="accepted",
+        reported_at__gte=window,
+    ).order_by("reported_at")
+
+    for reading in rows:
+        latest_per_pilot[reading.reported_by_id] = reading
+
+    if not latest_per_pilot:
+        return (0.0, 0.0)
+
+    readings = list(latest_per_pilot.values())
+    ours = sum(reading.our_pct for reading in readings) / len(readings)
+    theirs = sum(reading.enemy_pct for reading in readings) / len(readings)
+    return (ours, theirs)
 
 
 def contribution_since(
@@ -144,9 +180,8 @@ def contribution_since(
     return round(generated, 1), round(removed, 1)
 
 
-def state_for(campaign_system: CampaignSystem) -> dict:
+def as_card(state: CampaignAdvantageState | None) -> dict:
     """What a system card shows, with the estimate clearly labelled."""
-    state = getattr(campaign_system, "advantage_state", None)
     if state is None:
         return {
             "basis": "unknown",
@@ -168,3 +203,8 @@ def state_for(campaign_system: CampaignSystem) -> dict:
         "our_generated_since_reading": state.our_generated_since_reading,
         "enemy_removed_since_reading": state.enemy_removed_since_reading,
     }
+
+
+def state_for(campaign_system: CampaignSystem) -> dict:
+    """The card for a system, read off whatever state it currently has."""
+    return as_card(getattr(campaign_system, "advantage_state", None))

@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from campaigns.helpers import campaign_day
+from campaigns.helpers import campaign_day, day_bounds
 from campaigns.models import (
     CampaignAward,
     CampaignComplexCompletion,
@@ -387,3 +387,75 @@ class ZeroOutTests(TestCase):
         )
         self.assertEqual(row.supply_isk_delivered, 5_000_000)
         self.assertEqual(row.points, 0)
+
+
+class MaterialisationOrderTests(TestCase):
+    """Points must be a function of the activity, not of processing order."""
+
+    def setUp(self):
+        self.campaign = make_campaign()
+        self.user, _ = enlist(self.campaign, "streaker", 8601)
+        self.today = campaign_day()
+        self.days = [
+            self.today - timedelta(days=offset) for offset in (2, 1, 0)
+        ]
+
+        for index, day in enumerate(self.days):
+            start, _ = day_bounds(day)
+            feed_killmail = make_feed_killmail(
+                950 + index,
+                victim_character_id=9000 + index,
+                attacker_ids=[8601],
+                killmail_time=start + timedelta(hours=1),
+            )
+            attribute_feed_killmail(feed_killmail)
+
+    def _points(self):
+        return {
+            row.day: row.points
+            for row in CampaignParticipantDay.objects.filter(
+                campaign=self.campaign
+            )
+        }
+
+    def test_a_window_scores_the_same_whichever_end_you_pass_in(self):
+        """A streak is read from the days before it.
+
+        Walking a window backwards scores the older days as if the ones
+        before them had never happened, so the first pass under-awards and
+        every later recompute quietly rewrites history. materialise_days
+        sorts so a caller cannot get this wrong.
+        """
+        stats.materialise_days(self.campaign, self.days)
+        ascending = self._points()
+
+        CampaignParticipantDay.objects.all().delete()
+        stats.materialise_days(self.campaign, list(reversed(self.days)))
+
+        self.assertEqual(ascending, self._points())
+
+    def test_rebuilding_the_whole_campaign_changes_nothing(self):
+        stats.materialise_days(self.campaign, self.days)
+        before = self._points()
+
+        stats.materialise_days(self.campaign, self.days)
+        self.assertEqual(before, self._points())
+
+    def test_materialise_recent_walks_oldest_first(self):
+        stats.materialise_recent(self.campaign, days=3)
+        first_pass = self._points()
+
+        stats.materialise_recent(self.campaign, days=3)
+        self.assertEqual(first_pass, self._points())
+
+    def test_the_streak_bonus_is_actually_being_paid(self):
+        """Otherwise this test would pass on two equally broken runs."""
+        stats.materialise_recent(self.campaign, days=3)
+        rows = CampaignParticipantDay.objects.filter(
+            campaign=self.campaign
+        ).order_by("day")
+
+        self.assertEqual(rows.count(), 3)
+        # Day three of a streak is the first that pays, so it must be worth
+        # more than day one despite identical activity.
+        self.assertGreater(rows[2].points, rows[0].points)

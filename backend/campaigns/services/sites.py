@@ -58,10 +58,35 @@ def parse_payout_text(text: str) -> dict:
     return fields
 
 
-def store_payout(
-    character, notification: dict
-) -> EveCharacterFwLpPayout | None:
+# The columns these land in are 32- and 64-bit; anything larger is not a
+# real payout, it is the format having changed under us.
+MAX_INT_FIELD = 2**31 - 1
+MAX_BIGINT_FIELD = 2**63 - 1
+
+
+def _as_int(value, limit: int = MAX_BIGINT_FIELD) -> int | None:
+    """Coerce a parsed notification field to something a column will take.
+
+    The body is text CCP renders, so a field can arrive as a word, a float in
+    exponent notation, or a number far larger than the column. None of that
+    may take down the poll for every other character in the batch.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = int(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if abs(number) > limit:
+        return None
+    return number
+
+
+def store_payout(character, notification) -> EveCharacterFwLpPayout | None:
     """Store one FacWarLPPayout* notification. Idempotent on notification id."""
+    if not isinstance(notification, dict):
+        return None
+
     notification_type = notification.get("type") or ""
     if not notification_type.startswith("FacWarLPPayout"):
         return None
@@ -71,24 +96,28 @@ def store_payout(
         return None
 
     fields = parse_payout_text(notification.get("text") or "")
-    timestamp = notification.get("timestamp")
+    timestamp = notification.get("timestamp") or timezone.now()
+
+    notification_id = _as_int(notification_id)
+    if notification_id is None:
+        return None
 
     payout, _ = EveCharacterFwLpPayout.objects.update_or_create(
         notification_id=notification_id,
         defaults={
             "character": character,
-            "notification_type": notification_type,
+            "notification_type": notification_type[:64],
             "occurred_at": timestamp,
-            "amount_lp": fields.get("amount") or 0,
-            "corp_id": fields.get("corpID"),
-            "event_code": fields.get("event"),
-            "location_id": fields.get("locationID"),
-            "ref_id": fields.get("itemRefID"),
-            "char_ref_id": fields.get("charRefID"),
+            "amount_lp": _as_int(fields.get("amount"), MAX_INT_FIELD) or 0,
+            "corp_id": _as_int(fields.get("corpID")),
+            "event_code": _as_int(fields.get("event"), MAX_INT_FIELD),
+            "location_id": _as_int(fields.get("locationID")),
+            "ref_id": _as_int(fields.get("itemRefID")),
+            "char_ref_id": _as_int(fields.get("charRefID")),
             "disqualification_type": str(
                 fields.get("disqualificationType") or ""
-            ),
-            "raw_text": notification.get("text") or "",
+            )[:64],
+            "raw_text": (notification.get("text") or "")[:20000],
         },
     )
     return payout

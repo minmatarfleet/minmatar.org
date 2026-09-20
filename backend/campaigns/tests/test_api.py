@@ -11,9 +11,12 @@ from django.utils import timezone
 from campaigns.models import (
     CampaignEnlistment,
     CampaignEnlistmentCharacter,
+    CampaignEnlistmentPeriod,
     CampaignEvent,
+    CampaignStandingFleet,
     CampaignStatus,
 )
+from campaigns.services import advantage
 from campaigns.tests.helpers import enlist, make_campaign
 from eveonline.models import EveCharacter
 
@@ -396,3 +399,121 @@ class CampaignWriteGuardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         for row in response.json()["characters"]:
             self.assertNotIn("evil.example", row["action_url"])
+
+
+class StandingFleetTests(TestCase):
+    """The fleet has to be flyable by whoever is recorded as holding it."""
+
+    def setUp(self):
+        self.client = Client()
+        self.campaign = make_campaign()
+        self.pilot, self.character = enlist(self.campaign, "boss", 7201)
+        grant(self.pilot, "view_campaign", "add_campaignenlistment")
+
+        self.no_character = User.objects.create(username="lurker")
+        grant(self.no_character, "view_campaign", "add_campaignenlistment")
+        enlistment = CampaignEnlistment.objects.create(
+            campaign=self.campaign, user=self.no_character, status="active"
+        )
+        CampaignEnlistmentPeriod.objects.create(
+            enlistment=enlistment, enlisted_at=self.campaign.start_at
+        )
+
+    def _take(self, user):
+        return self.client.post(
+            f"{BASE}/{self.campaign.slug}/standing-fleet/take",
+            **auth_headers(user),
+        )
+
+    def test_a_pilot_with_a_character_can_take_it(self):
+        response = self._take(self.pilot)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["taken"])
+
+        standing = CampaignStandingFleet.objects.get(campaign=self.campaign)
+        self.assertEqual(standing.current_boss_user_id, self.pilot.id)
+        self.assertEqual(standing.current_boss_character_id, 7201)
+        self.assertTrue(standing.is_up)
+
+    def test_a_pilot_with_no_character_is_refused(self):
+        """Otherwise the fleet is held by somebody who cannot boss it."""
+        response = self._take(self.no_character)
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(
+            CampaignStandingFleet.objects.filter(
+                campaign=self.campaign,
+                current_boss_user=self.no_character,
+            ).exists()
+        )
+
+    def test_retaking_a_fleet_you_already_hold_is_not_a_handover(self):
+        """Uptime and handovers are launch KPIs, so they cannot be inflated."""
+        self._take(self.pilot)
+        first = CampaignStandingFleet.objects.get(
+            campaign=self.campaign
+        ).handovers
+
+        for _ in range(5):
+            self._take(self.pilot)
+
+        self.assertEqual(
+            CampaignStandingFleet.objects.get(
+                campaign=self.campaign
+            ).handovers,
+            first,
+        )
+
+
+class AdvantageConsensusTests(TestCase):
+    """One pilot, one vote."""
+
+    def setUp(self):
+        self.campaign = make_campaign()
+        self.system = self.campaign.systems.first()
+        self.loud, _ = enlist(self.campaign, "loud", 7301)
+        self.quiet, _ = enlist(self.campaign, "quiet", 7302)
+
+    def test_repeating_a_reading_does_not_outvote_the_alliance(self):
+        advantage.record_reading(self.system, self.quiet, 20.0, 10.0)
+        for _ in range(20):
+            advantage.record_reading(self.system, self.loud, 40.0, 10.0)
+
+        _, state_row = advantage.record_reading(
+            self.system, self.loud, 40.0, 10.0
+        )
+        state = advantage.as_card(state_row)
+        # Two pilots, so the agreed reading sits between them, not on top of
+        # whoever pressed the button most.
+        self.assertAlmostEqual(state["our_pct"], 30.0, places=1)
+
+    def test_a_wild_reading_is_still_held(self):
+        advantage.record_reading(self.system, self.quiet, 20.0, 10.0)
+        reading, _ = advantage.record_reading(
+            self.system, self.loud, 99.0, 0.0
+        )
+        self.assertEqual(reading.status, "held")
+
+    def test_reporting_returns_the_reading_you_just_made(self):
+        """Not the one from before it.
+
+        Django caches a reverse one-to-one on the instance, so reading the
+        state back off the system after writing it hands you the stale row.
+        """
+        client = Client()
+        grant(self.loud, "view_campaign", "add_campaignenlistment")
+
+        response = client.post(
+            f"{BASE}/{self.campaign.slug}/systems/{self.system.id}/advantage",
+            data={"our_pct": 65.0, "enemy_pct": 5.0},
+            content_type="application/json",
+            **auth_headers(self.loud),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["our_pct"], 65.0)
+        self.assertEqual(response.json()["net_pct"], 60.0)
+
+    def test_the_first_reading_of_a_system_is_accepted(self):
+        reading, _ = advantage.record_reading(
+            self.system, self.loud, 80.0, 5.0
+        )
+        self.assertEqual(reading.status, "accepted")

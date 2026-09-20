@@ -334,10 +334,10 @@ def report_advantage(
         CampaignSystem, campaign=campaign, id=system_id
     )
 
-    reading = advantage.record_reading(
+    reading, state_row = advantage.record_reading(
         campaign_system, request.user, payload.our_pct, payload.enemy_pct
     )
-    state = advantage.state_for(campaign_system)
+    state = advantage.as_card(state_row)
 
     return {
         "accepted": reading.status == "accepted",
@@ -365,7 +365,13 @@ def take_standing_fleet(request, slug: str):
     if denied:
         return denied
 
-    character = EveCharacter.objects.filter(user=request.user).first()
+    character = EveCharacter.objects.filter(
+        user=request.user, esi_deleted=False
+    ).first()
+    if not character:
+        # Without a character the fleet would be recorded as held by someone
+        # who cannot boss it, and would never come up.
+        return 409, {"detail": "no_character_to_fly_it"}
 
     # Two pilots pressing this at once must not both end up holding it, so
     # the row is locked for the read and the write.
@@ -378,13 +384,15 @@ def take_standing_fleet(request, slug: str):
         if standing.is_up and standing.current_boss_user_id != request.user.id:
             return {"taken": False, "reason": "Someone already has it."}
 
+        changed_hands = standing.current_boss_user_id != request.user.id
         standing.current_boss_user = request.user
-        standing.current_boss_character_id = (
-            character.character_id if character else None
-        )
+        standing.current_boss_character_id = character.character_id
         standing.taken_at = timezone.now()
         standing.last_seen_at = timezone.now()
-        standing.handovers += 1
+        # Uptime and handovers are launch KPIs; re-taking a fleet you already
+        # hold is not a handover.
+        if changed_hands:
+            standing.handovers += 1
         standing.save()
 
     CampaignEvent.objects.create(
