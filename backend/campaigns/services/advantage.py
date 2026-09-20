@@ -205,6 +205,6 @@ def as_card(state: CampaignAdvantageState | None) -> dict:
     }
 
 
-def state_for(campaign_system: CampaignSystem) -> dict:
+def card_for(campaign_system: CampaignSystem) -> dict:
     """The card for a system, read off whatever state it currently has."""
     return as_card(getattr(campaign_system, "advantage_state", None))

@@ -9,8 +9,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
 from campaigns.endpoints.base import router
-from campaigns.tests.helpers import make_campaign
-from campaigns.tests.test_api import auth_headers
+from campaigns.tests.helpers import auth_headers, make_campaign
 
 BASE = "/api/campaigns"
 

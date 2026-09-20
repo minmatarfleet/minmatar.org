@@ -11,7 +11,7 @@ from campaigns.helpers import (
     day_bounds,
     week_bounds,
 )
-from campaigns.services.stats import prime_time_label
+from campaigns.services.streaks import prime_time_label
 from eveonline.models import EvePlayer
 
 

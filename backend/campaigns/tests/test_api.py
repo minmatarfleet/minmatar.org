@@ -2,9 +2,7 @@
 
 from datetime import timedelta
 
-import jwt
-from django.conf import settings
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
 
@@ -20,32 +18,15 @@ from campaigns.endpoints import serializers
 from campaigns.services import advantage
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tests.helpers import (
+    auth_headers,
     enlist,
+    grant,
     make_campaign,
     make_feed_killmail,
 )
 from eveonline.models import EveCharacter
 
-
-def grant(user: User, *codenames: str) -> None:
-    """Give a user the legacy permissions a campaign feature falls back to."""
-    for codename in codenames:
-        permission = Permission.objects.filter(
-            content_type__app_label="campaigns", codename=codename
-        ).first()
-        if permission:
-            user.user_permissions.add(permission)
-    user.refresh_from_db()
-
-
 BASE = "/api/campaigns"
-
-
-def auth_headers(user: User) -> dict:
-    token = jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 class CampaignApiTests(TestCase):

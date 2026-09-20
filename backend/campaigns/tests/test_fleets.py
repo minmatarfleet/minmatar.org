@@ -15,12 +15,12 @@ from campaigns.models import CampaignKillmail
 from campaigns.services import fleets
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tests.helpers import (
+    auth_headers,
     KAMELA,
     enlist,
     make_campaign,
     make_feed_killmail,
 )
-from campaigns.tests.test_api import auth_headers
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,

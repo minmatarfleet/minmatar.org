@@ -71,7 +71,7 @@ def system_summary(
         killmail_time__lt=now - timedelta(hours=24),
     ).count()
 
-    advantage_state = advantage.state_for(campaign_system)
+    advantage_state = advantage.card_for(campaign_system)
 
     return {
         "id": campaign_system.id,

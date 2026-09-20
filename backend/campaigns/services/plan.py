@@ -312,7 +312,7 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
                 gap_share_pct / 2,
             )
         else:
-            state = advantage.state_for(system)
+            state = advantage.card_for(system)
             arc = getattr(system, "arc", None)
             floor = arc.advantage_floor if arc else 0.0
             net = state.get("net_pct")
