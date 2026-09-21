@@ -130,6 +130,10 @@ try {
     fetch_doctrines_error = error
 }
 
+// A campaign page links here with its id so the picker opens on that campaign.
+const preselected_campaign = parseInt(Astro.url.searchParams.get('campaign_id') ?? '')
+const default_campaign_id = Number.isFinite(preselected_campaign) ? preselected_campaign : null
+
 const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
 
 import Viewport from '@layouts/Viewport.astro';
@@ -216,6 +220,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                     locations={locations}
                     doctrines={doctrines}
                     campaigns={campaigns}
+                    default_campaign_id={default_campaign_id}
                     fleet_commander={fleet_commander as CharacterBasic}
                     eve_date={eve_date}
                     eve_time={eve_time}

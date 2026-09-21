@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
-import { clamp_percent, status_chip_color, status_chip_i18n_key } from '@helpers/fetching/campaigns'
+import { clamp_percent, status_chip_color, status_chip_i18n_key, MINMATAR_FACTION_ID, AMARR_FACTION_ID } from '@helpers/fetching/campaigns'
 
 interface Props {
     system:             CampaignSystemSummary;
@@ -21,62 +21,155 @@ const contested = clamp_percent(system.contested_percent)
 const change = system.contested_change_24h ?? 0
 const net = system.advantage_net_pct ?? 0
 const goal_key = system.goal === 'capture' ? 'campaigns.goal.capture' : 'campaigns.goal.defend'
+const status_color = status_chip_color(system.status_chip)
+const owner = system.owner_faction_id === MINMATAR_FACTION_ID ? 'minmatar'
+    : system.owner_faction_id === AMARR_FACTION_ID ? 'amarr'
+    : null
+const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
+    : owner === 'amarr' ? t('campaigns.system.held_by_amarr')
+    : t('campaigns.system.held_by_unknown')
+const row_title = `${t(goal_key)} · ${t(status_chip_i18n_key(system.status_chip))} · ${owner_name}`
+const change_glyph = change > 0 ? '▲' : change < 0 ? '▼' : '—'
+const change_text = change === 0 ? '' : Math.abs(change).toFixed(1)
 
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import Tag from '@components/blocks/Tag.astro'
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
 ---
 
 <div class:list={['[ campaign-system-row ]', Astro.props.class]} {...attributes}>
-    <Flexblock gap='var(--space-3xs)' class="[ campaign-system-row-name ]">
-        <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-            <span class="[ text-[var(--highlight)] ]">{system.name}</span>
-            <Tag text={t(goal_key)} color='militia-purple' narrow={true} />
-        </FlexInline>
-        <Tag
-            text={t(status_chip_i18n_key(system.status_chip))}
-            color={status_chip_color(system.status_chip)}
-            narrow={true}
-        />
-    </Flexblock>
+    <div class="[ campaign-system-row-name ]" title={row_title}>
+        <CampaignPriorityIcon priority={system.priority} />
+        <span
+            class:list={['[ campaign-system-owner ]', owner && `campaign-system-owner-${owner}`]}
+            role="img"
+            aria-label={owner_name}
+        >
+            {owner === 'minmatar' && <MinmatarLogo />}
+            {owner === 'amarr' && <AmarrLogo />}
+        </span>
+        <span class="[ campaign-system-name ]">{system.name}</span>
+    </div>
 
-    <Flexblock gap='var(--space-3xs)' class="[ campaign-system-row-contest ]">
-        <FlexInline gap='var(--space-3xs)' justification='space-between'>
-            <small>{t('campaigns.system.contested')}</small>
-            <small class="[ text-[var(--highlight)] ]">
-                {contested.toFixed(1)}% <span class="[ campaign-change ]">{change >= 0 ? '+' : ''}{change.toFixed(1)}</span>
-            </small>
-        </FlexInline>
+    <div class="[ campaign-system-row-contest ]">
         <CampaignMeter
             percent={contested}
+            color={`var(--${status_color})`}
             label={`${system.name} ${t('campaigns.system.contested')}`}
         />
-    </Flexblock>
+        <span class="[ campaign-figure ]">{contested.toFixed(1)}%</span>
+        <span
+            class="[ campaign-change ]"
+            title={t('campaigns.system.change_24h')}
+            data-direction={change > 0 ? 'up' : change < 0 ? 'down' : 'flat'}
+        >
+            <span aria-hidden="true">{change_glyph}</span> {change_text}
+        </span>
+    </div>
 
-    <Flexblock gap='var(--space-3xs)' class="[ campaign-system-row-advantage ]">
-        <small>{t('campaigns.system.advantage')}</small>
-        <small class="[ text-[var(--highlight)] ]">{net >= 0 ? '+' : ''}{net.toFixed(1)}%</small>
-    </Flexblock>
+    <div class="[ campaign-system-row-advantage ]" data-label={t('campaigns.system.advantage')}>
+        <span class="[ campaign-figure ]">{net >= 0 ? '+' : ''}{net.toFixed(1)}%</span>
+    </div>
 
-    <Flexblock gap='var(--space-3xs)' class="[ campaign-system-row-kills ]">
-        <small>{t('campaigns.system.kills_losses')}</small>
-        <small class="[ text-[var(--highlight)] ]">{system.kills_24h} / {system.losses_24h}</small>
-    </Flexblock>
+    <div class="[ campaign-system-row-kills ]" data-label={t('campaigns.system.column_kills')}>
+        <span>
+            <span class="[ campaign-figure ]">{system.kills_24h}</span>
+            <span class="[ campaign-slash ]">/</span>
+            <span class="[ campaign-figure ]">{system.losses_24h}</span>
+        </span>
+    </div>
 </div>
 
 <style lang="scss">
     .campaign-system-row {
         display: grid;
-        grid-template-columns: minmax(8rem, 1fr) minmax(10rem, 2fr) minmax(5rem, auto) minmax(6rem, auto);
-        gap: var(--space-xs);
+        grid-template-columns: var(--campaign-system-columns, minmax(12rem, 1fr) minmax(14rem, 2.5fr) 7rem 9rem);
+        column-gap: var(--space-s);
+        row-gap: var(--space-2xs);
         align-items: center;
         padding-block: var(--space-2xs);
         border-top: solid 1px var(--border-color);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-system-row-name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-system-owner {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 1.25rem;
+        height: 1.25rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        :global(path) {
+            fill: var(--foreground);
+        }
+
+        &.campaign-system-owner-minmatar :global(path) {
+            fill: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        }
+
+        &.campaign-system-owner-amarr :global(path) {
+            fill: var(--fleet-yellow);
+        }
+    }
+
+    .campaign-system-name {
+        color: var(--highlight);
+    }
+
+    .campaign-system-row-contest {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+
+        :global(.campaign-meter) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .campaign-system-row-contest .campaign-figure {
+        flex: 0 0 4em;
+        text-align: right;
+    }
+
+    .campaign-figure {
+        color: var(--highlight);
     }
 
     .campaign-change {
+        flex: 0 0 4.5em;
+        font-size: var(--step--1);
         color: var(--foreground);
+        white-space: nowrap;
+
+        &[data-direction="flat"] {
+            opacity: 0.5;
+        }
+    }
+
+    .campaign-slash {
+        color: var(--foreground);
+        padding-inline: var(--space-3xs);
+    }
+
+    .campaign-system-row-advantage,
+    .campaign-system-row-kills {
+        text-align: right;
+        white-space: nowrap;
     }
 
     @media screen and (max-width: 767px) {
@@ -84,9 +177,29 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
             grid-template-columns: 1fr 1fr;
         }
 
+        .campaign-system-row-name,
         .campaign-system-row-contest {
             grid-column: 1 / -1;
-            order: 3;
+        }
+
+        .campaign-system-row-advantage,
+        .campaign-system-row-kills {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+
+            &::before {
+                content: attr(data-label);
+                font-size: var(--step--2);
+                color: var(--foreground);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+        }
+
+        .campaign-system-row-kills {
+            align-items: flex-end;
         }
     }
 </style>

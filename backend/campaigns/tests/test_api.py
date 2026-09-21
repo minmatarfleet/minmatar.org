@@ -3,28 +3,36 @@
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.db.models import signals
 from django.test import Client, TestCase
 from django.utils import timezone
+
+import factory
 
 from campaigns.models import (
     CampaignEnlistment,
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
     CampaignEvent,
+    CampaignKillmail,
+    CampaignParticipantDay,
     CampaignStandingFleet,
     CampaignStatus,
+    KillmailOutcome,
 )
 from campaigns.endpoints import serializers
-from campaigns.services import advantage
+from campaigns.services import advantage, plan
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tests.helpers import (
+    KAMELA,
     auth_headers,
     enlist,
     grant,
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePlayer
+from fleets.models import EveFleet
 
 BASE = "/api/campaigns"
 
@@ -184,6 +192,73 @@ class CampaignApiTests(TestCase):
         body = response.json()
         self.assertTrue(body["accepted"])
         self.assertEqual(body["net_pct"], 25.0)
+
+    def test_the_week_carries_its_position_and_my_contribution(self):
+        plan.propose_week(self.campaign)
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("week_index", body)
+        self.assertIn("week_count", body)
+        self.assertIn("day_index", body)
+        self.assertEqual(len(body["targets"]), 1)
+        self.assertEqual(body["targets"][0]["my_complexes"], 0)
+
+    def test_fleets_lists_campaign_fleets_with_their_impact(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            fleet = EveFleet.objects.create(
+                type="strategic",
+                description="Kamela push",
+                start_time=timezone.now() - timedelta(hours=1),
+                campaign=self.campaign,
+                created_by=self.user,
+            )
+            EveFleet.objects.create(
+                type="strategic",
+                description="Unrelated",
+                start_time=timezone.now(),
+                created_by=self.user,
+            )
+        CampaignKillmail.objects.create(
+            campaign=self.campaign,
+            killmail_id=9001,
+            killmail_time=timezone.now(),
+            solar_system_id=KAMELA,
+            outcome=KillmailOutcome.KILL,
+            isk_value=50_000_000,
+            fleet=fleet,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/fleets", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual([row["description"] for row in body], ["Kamela push"])
+        self.assertEqual(body[0]["kills"], 1)
+        self.assertEqual(body[0]["isk_destroyed"], 50_000_000)
+        self.assertFalse(body[0]["is_live"])
+
+    def test_the_leaderboard_names_the_pilots_main_character(self):
+        EvePlayer.objects.create(
+            user=self.user, nickname="pilot", primary_character=self.character
+        )
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign,
+            user=self.user,
+            day=timezone.now().date(),
+            points=10,
+            active=True,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        row = response.json()[0]
+        self.assertEqual(row["character_id"], self.character.character_id)
+        self.assertEqual(row["character_name"], self.character.character_name)
 
     def test_leaderboard_and_timeline_respond(self):
         for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):

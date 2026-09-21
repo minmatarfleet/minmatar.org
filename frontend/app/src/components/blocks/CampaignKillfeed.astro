@@ -3,15 +3,23 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignKillmail, CampaignKillmailOutcome, CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+import { MINMATAR_FACTION_ID, AMARR_FACTION_ID } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
 import { format_date_time } from '@helpers/date'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_type_names } from '@helpers/sde/items'
 
+/**
+ * When, where, what died and who killed it. The killer's militia logo says
+ * which way the fight went, so the outcome needs no tag of its own.
+ */
 interface Props {
     slug:               string;
     killmails:          CampaignKillmail[];
     outcome:            CampaignKillmailOutcome | '';
     systems?:           CampaignSystemSummary[];
+    page?:              number;
+    has_more?:          boolean;
     [propName: string]: any;
 }
 
@@ -20,12 +28,16 @@ const {
     killmails,
     outcome,
     systems = [],
+    page = 1,
+    has_more = false,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
 const system_names = new Map(systems.map(system => [ system.solar_system_id, system.name ]))
+const ship_names = await get_type_names(killmails.map(killmail => killmail.victim_ship_type_id ?? 0))
+
 const filters:(CampaignKillmailOutcome | '')[] = [ '', 'kill', 'loss' ]
 
 const filter_label = (item:CampaignKillmailOutcome | '') => {
@@ -34,14 +46,23 @@ const filter_label = (item:CampaignKillmailOutcome | '') => {
     return t('campaigns.killfeed.all')
 }
 
-const partial_url = (item:CampaignKillmailOutcome | '') =>
-    translatePath(`/partials/campaign_killfeed_component?slug=${slug}&outcome=${item}`)
+const partial_url = (item:CampaignKillmailOutcome | '', next_page:number = 1) =>
+    translatePath(`/partials/campaign_killfeed_component?slug=${slug}&outcome=${item}&page=${next_page}`)
+
+type Militia = 'minmatar' | 'amarr' | 'neutral'
+
+const militia = (faction_id:number | null):Militia =>
+    faction_id === MINMATAR_FACTION_ID ? 'minmatar' : faction_id === AMARR_FACTION_ID ? 'amarr' : 'neutral'
+
+const militia_name = (side:Militia) => t(`campaigns.killfeed.faction_${side}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import Tag from '@components/blocks/Tag.astro'
 import CampaignTable from '@components/blocks/CampaignTable.astro'
+import CampaignPager from '@components/blocks/CampaignPager.astro'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
 ---
 
 <Flexblock
@@ -50,7 +71,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     class:list={['[ campaign-killfeed ]', Astro.props.class]}
     {...attributes}
 >
-    <FlexInline gap='var(--space-3xs)'>
+    <FlexInline gap='var(--space-3xs)' class="[ campaign-segmented ]" role="group">
         {filters.map(item =>
             <Button
                 size='sm'
@@ -71,56 +92,121 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         <small>{t('campaigns.killfeed.none')}</small>
         :
         <CampaignTable
-            min_width='42rem'
-            template='7rem minmax(12rem, 1fr) 7rem 7rem 11rem'
-            numeric={[ 3 ]}
+            min_width='44rem'
+            template='11rem 8rem minmax(12rem, 1fr) minmax(12rem, 1fr)'
             columns={[
-                t('campaigns.killfeed.outcome'),
-                t('campaigns.killfeed.victim'),
-                t('campaigns.sites.system'),
-                t('campaigns.stat.isk_destroyed'),
-                t('campaigns.sites.when'),
+                t('campaigns.killfeed.column_when'),
+                t('campaigns.killfeed.column_where'),
+                t('campaigns.killfeed.column_what'),
+                t('campaigns.killfeed.column_who'),
             ]}
         >
-            {killmails.map(killmail =>
-                <div class="[ campaign-table-row ]" role="row">
-                    <FlexInline role="cell" gap='var(--space-3xs)' class="[ items-center ]">
-                        <Tag
-                            text={killmail.outcome === 'kill' ? t('campaigns.killfeed.kill') : t('campaigns.killfeed.loss')}
-                            color={killmail.outcome === 'kill' ? 'green' : 'fleet-red'}
-                            narrow={true}
-                        />
-                        {killmail.is_solo && <Tag text={t('campaigns.killfeed.solo')} color='alliance-blue' narrow={true} />}
-                    </FlexInline>
-                    <div class="[ campaign-cell-media ]" role="cell">
-                        {killmail.victim_ship_type_id &&
-                            <img
-                                loading='lazy'
-                                width='32'
-                                height='32'
-                                src={get_item_icon(killmail.victim_ship_type_id, 32)}
-                                alt=''
-                            />
-                        }
-                        <Flexblock gap='0'>
-                            <span>{killmail.victim_character_name || t('campaigns.killfeed.unknown_pilot')}</span>
-                            <small class="[ campaign-table-muted ]">
-                                {t('campaigns.killfeed.attackers').replace('{count}', String(killmail.enlisted_attacker_count))}
-                            </small>
-                        </Flexblock>
+            {killmails.map(killmail => {
+                const killer_side = militia(killmail.killer_faction_id)
+
+                return (
+                    <div class="[ campaign-table-row ]" role="row" data-outcome={killmail.outcome}>
+                        <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
+                        <span role="cell">{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
+                        <div class="[ campaign-cell-media ]" role="cell">
+                            {killmail.victim_ship_type_id &&
+                                <img
+                                    loading='lazy'
+                                    width='32'
+                                    height='32'
+                                    src={get_item_icon(killmail.victim_ship_type_id, 32)}
+                                    alt=''
+                                />
+                            }
+                            <Flexblock gap='0' class="[ min-w-0 ]">
+                                <span>{ship_names.get(killmail.victim_ship_type_id ?? 0) ?? t('campaigns.killfeed.unknown_ship')}</span>
+                                <small class="[ campaign-table-muted ]">
+                                    {t('campaigns.killfeed.flown_by').replace('{pilot}', killmail.victim_character_name || t('campaigns.killfeed.unknown_pilot'))}
+                                </small>
+                            </Flexblock>
+                        </div>
+                        <div class="[ campaign-cell-media ]" role="cell">
+                            <span
+                                class:list={['[ campaign-militia ]', `campaign-militia-${killer_side}`]}
+                                role="img"
+                                aria-label={militia_name(killer_side)}
+                                title={militia_name(killer_side)}
+                            >
+                                {killer_side === 'minmatar' && <MinmatarLogo />}
+                                {killer_side === 'amarr' && <AmarrLogo />}
+                                {killer_side === 'neutral' &&
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="12" cy="12" r="2.5" fill="currentColor" /></svg>
+                                }
+                            </span>
+                            {killmail.killer_character_id &&
+                                <img
+                                    loading='lazy'
+                                    width='32'
+                                    height='32'
+                                    src={get_player_icon(killmail.killer_character_id, 32)}
+                                    alt=''
+                                />
+                            }
+                            <Flexblock gap='0' class="[ min-w-0 ]">
+                                <span>{killmail.killer_character_name || t('campaigns.killfeed.unknown_pilot')}</span>
+                                <small class="[ campaign-table-muted ]">{format_isk(killmail.isk_value)} ISK</small>
+                            </Flexblock>
+                        </div>
                     </div>
-                    <span role="cell">{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
-                    <span role="cell" class="[ campaign-table-numeric ]">{format_isk(killmail.isk_value)}</span>
-                    <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
-                </div>
-            )}
+                )
+            })}
         </CampaignTable>
     }
+
+    <CampaignPager page={page} has_more={has_more} url_for={next => partial_url(outcome, next)} target='#campaign-killfeed' />
 </Flexblock>
 
 <style lang="scss">
-    .campaign-killfeed :global(button.button.is-active) {
-        border-color: var(--alliance-blue);
+    .campaign-militia {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 1.25rem;
+        height: 1.25rem;
+        color: var(--foreground);
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        :global(path) {
+            fill: var(--foreground);
+        }
+
+        &.campaign-militia-minmatar :global(path) {
+            fill: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        }
+
+        &.campaign-militia-amarr :global(path) {
+            fill: var(--fleet-yellow);
+        }
+    }
+
+    .campaign-segmented {
+        gap: 0 !important;
+        border: solid 1px var(--border-color-hover);
+        width: fit-content;
+    }
+
+    .campaign-segmented :global(.button) {
+        border: none;
+        border-radius: 0;
+        padding-block: var(--space-3xs);
+    }
+
+    .campaign-segmented :global(.button + .button) {
+        border-inline-start: solid 1px var(--border-color-hover);
+    }
+
+    .campaign-segmented :global(.button.is-active) {
+        background-color: var(--fleet-red);
         color: var(--highlight);
     }
 </style>

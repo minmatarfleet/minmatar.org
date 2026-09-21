@@ -5,7 +5,9 @@ const { lang, t } = i18n(Astro.url)
 import type { CampaignSite } from '@dtypes/api.minmatar.org'
 import { format_date_time } from '@helpers/date'
 import { number_thousand_separator } from '@helpers/numbers'
+import { get_player_icon } from '@helpers/eve_image_server'
 
+/** When, where, who and what kind of site; the LP figure is a hover, not a column. */
 interface Props {
     sites:              CampaignSite[];
     [propName: string]: any;
@@ -18,7 +20,39 @@ const {
 
 delete attributes.class
 
-import Flexblock from '@components/compositions/Flexblock.astro'
+type SiteKindKey =
+    | 'campaigns.sites.kind.advantage_site'
+    | 'campaigns.sites.kind.rendezvous_point'
+    | 'campaigns.sites.kind.propaganda_beacon'
+    | 'campaigns.sites.kind.listening_outpost'
+    | 'campaigns.sites.kind.supply_cache'
+    | 'campaigns.sites.kind.battlefield'
+
+const KIND_KEYS:Record<string, SiteKindKey> = {
+    advantage_site: 'campaigns.sites.kind.advantage_site',
+    rendezvous_point: 'campaigns.sites.kind.rendezvous_point',
+    propaganda_beacon: 'campaigns.sites.kind.propaganda_beacon',
+    listening_outpost: 'campaigns.sites.kind.listening_outpost',
+    supply_cache: 'campaigns.sites.kind.supply_cache',
+    battlefield: 'campaigns.sites.kind.battlefield',
+}
+
+const what = (site:CampaignSite):string => {
+    if (site.site_kind === 'complex')
+        return site.plex_size
+            ? t('campaigns.sites.kind.complex').replace('{size}', site.plex_size)
+            : t('campaigns.sites.kind.complex_unknown')
+    const key = KIND_KEYS[site.site_kind]
+    return key ? t(key) : site.site_kind.replaceAll('_', ' ')
+}
+
+const detail = (site:CampaignSite):string =>
+    [
+        t('campaigns.sites.lp_tooltip').replace('{lp}', number_thousand_separator(site.amount_lp)),
+        site.plex_class,
+        site.confidence && site.site_kind === 'complex' ? `${site.confidence} confidence` : '',
+    ].filter(Boolean).join(' · ')
+
 import CampaignTable from '@components/blocks/CampaignTable.astro'
 ---
 
@@ -27,28 +61,33 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     :
     <CampaignTable
         min_width='40rem'
-        template='minmax(8rem, 1fr) 7rem minmax(7rem, 1fr) 5rem 11rem'
-        numeric={[ 3 ]}
+        template='11rem 8rem minmax(12rem, 1fr) minmax(10rem, 1fr)'
         columns={[
-            t('campaigns.sites.kind'),
-            t('campaigns.sites.system'),
-            t('campaigns.sites.pilot'),
-            t('campaigns.sites.lp'),
             t('campaigns.sites.when'),
+            t('campaigns.sites.system'),
+            t('campaigns.sites.column_who'),
+            t('campaigns.sites.column_what'),
         ]}
         class:list={[Astro.props.class]}
         {...attributes}
     >
         {sites.map(site =>
             <div class="[ campaign-table-row ]" role="row">
-                <Flexblock role="cell" gap='0'>
-                    <span>{site.plex_class || site.site_kind}</span>
-                    {site.confidence && <small class="[ campaign-table-muted ]">{site.confidence}</small>}
-                </Flexblock>
-                <span role="cell">{site.system}</span>
-                <span role="cell">{site.username ?? '—'}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{number_thousand_separator(site.amount_lp)}</span>
                 <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, site.occurred_at)}</small>
+                <span role="cell">{site.system}</span>
+                <div class="[ campaign-cell-media ]" role="cell">
+                    {site.character_id &&
+                        <img
+                            loading='lazy'
+                            width='32'
+                            height='32'
+                            src={get_player_icon(site.character_id, 32)}
+                            alt=''
+                        />
+                    }
+                    <span>{site.character_name || site.username || '—'}</span>
+                </div>
+                <span role="cell" title={detail(site)}>{what(site)}</span>
             </div>
         )}
     </CampaignTable>

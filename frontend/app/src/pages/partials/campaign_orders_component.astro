@@ -22,43 +22,42 @@ const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-import type { CampaignDetail, CampaignOrder } from '@dtypes/api.minmatar.org'
-import { get_campaign, get_campaign_orders } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignDetail, CampaignWeek } from '@dtypes/api.minmatar.org'
+import { get_campaign, get_campaign_week } from '@helpers/api.minmatar.org/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-let fetch_orders_error:Error | false = false
-let orders:CampaignOrder[] = []
+let fetch_error:Error | false = false
 let campaign:CampaignDetail | null = null
+let week:CampaignWeek | null = null
 
+/** The week gives the objectives and the campaign gives the systems; the table needs both. */
 try {
-    orders = await get_campaign_orders(slug, auth_token as string)
+    const [ campaign_result, week_result ] = await Promise.all([
+        get_campaign(slug, auth_token as string),
+        get_campaign_week(slug, auth_token as string),
+    ])
+    campaign = campaign_result
+    week = week_result
 } catch (error) {
-    fetch_orders_error = error
-}
-
-/** Only drives the "enlist to get orders" hint, so a miss must not break the list. */
-try {
-    campaign = await get_campaign(slug, auth_token as string)
-} catch (error) {
-    console.error('Error fetching campaign for orders partial:', error)
+    fetch_error = error
 }
 
 const ORDERS_PARTIAL_URL = translatePath(`/partials/campaign_orders_component?slug=${slug}`)
 
-import CampaignOrdersList from '@components/blocks/CampaignOrdersList.astro'
+import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{fetch_orders_error ?
+{fetch_error || !campaign ?
     <ErrorRefetch
         args={{
             partial: ORDERS_PARTIAL_URL,
-            error: fetch_orders_error,
+            error: fetch_error || new Error(t('campaigns.action_failed')),
             delay: delay,
         }}
     />
     :
-    <CampaignOrdersList orders={orders} is_enlisted={campaign?.is_enlisted ?? true} />
+    <CampaignObjectivesTable week={week} systems={campaign.systems} />
 }

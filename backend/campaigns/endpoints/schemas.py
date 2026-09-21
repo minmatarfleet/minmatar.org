@@ -15,13 +15,17 @@ class CampaignSystemSummary(Schema):
     solar_system_id: int
     role: str
     goal: str
+    priority: str = "medium"
     contested_percent: float | None = None
     contested_change_24h: float | None = None
     victory_points: int | None = None
     victory_points_threshold: int | None = None
     operational_state: str = "unknown"
+    contested_updated_at: datetime | None = None
+    advantage_updated_at: datetime | None = None
     owner_faction_id: int | None = None
     advantage_basis: str = "unknown"
+    advantage_source: str = "pilot"
     advantage_our_pct: float | None = None
     advantage_enemy_pct: float | None = None
     advantage_net_pct: float | None = None
@@ -112,18 +116,46 @@ class WeekTargetOut(Schema):
     target: float
     progress: float
     pace_expected: float
+    baseline: float = 0
     pace: str
     proposed: bool
     last_week_actual: float = 0
     days_under_line: int = 0
     projected_arc_date: date | None = None
+    # The viewer's own contribution to this target this week.
+    my_complexes: int = 0
+    my_advantage_sites: int = 0
+    my_readings: int = 0
 
 
 class WeekPlan(Schema):
     week_start: date
+    week_end: date | None = None
+    week_index: int = 1
+    week_count: int = 1
+    day_index: int = 1
     targets: list[WeekTargetOut] = []
     commander_order_text: str = ""
     summary: dict = {}
+
+
+class CampaignFleetOut(Schema):
+    """One fleet attributed to the campaign and what it did."""
+
+    id: int
+    type: str
+    description: str = ""
+    objective: str = ""
+    start_time: datetime | None = None
+    status: str = "unknown"
+    fleet_commander: str | None = None
+    fleet_commander_id: int | None = None
+    doctrine: str | None = None
+    is_live: bool = False
+    pilots: int = 0
+    kills: int = 0
+    losses: int = 0
+    isk_destroyed: int = 0
 
 
 class OrderOut(Schema):
@@ -142,6 +174,8 @@ class LeaderboardRow(Schema):
     rank: int
     user_id: int
     username: str
+    character_id: int | None = None
+    character_name: str = ""
     value: float
     points: int
 
@@ -152,7 +186,12 @@ class KillmailOut(Schema):
     outcome: str
     solar_system_id: int
     victim_character_name: str = ""
+    victim_character_id: int | None = None
+    victim_faction_id: int | None = None
     victim_ship_type_id: int | None = None
+    killer_character_id: int | None = None
+    killer_character_name: str = ""
+    killer_faction_id: int | None = None
     isk_value: int = 0
     enlisted_attacker_count: int = 0
     is_solo: bool = False
@@ -165,7 +204,11 @@ class SiteOut(Schema):
     amount_lp: int
     system: str
     username: str | None = None
+    character_id: int | None = None
+    character_name: str = ""
     plex_class: str = ""
+    # Scout / Small / Medium / Large / Open, without the NVY-5 variant noise.
+    plex_size: str = ""
     confidence: str = ""
 
 
@@ -196,7 +239,9 @@ class RosterRow(Schema):
     user_id: int
     username: str
     primary_character: str = ""
+    character_id: int | None = None
     corporation_id: int | None = None
+    corporation_name: str = ""
     prime_time: str = ""
     observed_prime_time: str = ""
     last_active_day: date | None = None

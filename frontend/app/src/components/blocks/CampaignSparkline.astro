@@ -1,6 +1,10 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
 import type { CampaignSystemTrendPoint } from '@dtypes/api.minmatar.org'
 import { trend_sparkline } from '@helpers/fetching/campaigns'
+import { format_date_time } from '@helpers/date'
 
 interface Props {
     trend:              CampaignSystemTrendPoint[];
@@ -18,13 +22,17 @@ const {
 
 delete attributes.class
 
-const sparkline = trend_sparkline(trend)
+const WIDTH = 100
+const HEIGHT = 32
+const sparkline = trend_sparkline(trend, WIDTH, HEIGHT)
+/** Each reading owns the column around it, so hovering anywhere names the nearest one. */
+const column = sparkline.points.length > 1 ? WIDTH / (sparkline.points.length - 1) : WIDTH
 ---
 
 {!sparkline.empty &&
     <svg
         class:list={['[ campaign-sparkline ]', Astro.props.class]}
-        viewBox="0 0 100 32"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         preserveAspectRatio="none"
         role="img"
         aria-label={title}
@@ -32,6 +40,17 @@ const sparkline = trend_sparkline(trend)
     >
         <polygon class="[ campaign-sparkline-area ]" points={sparkline.area} />
         <polyline class="[ campaign-sparkline-line ]" points={sparkline.line} />
+        {sparkline.points.map(point =>
+            <rect
+                class="[ campaign-sparkline-hit ]"
+                x={Math.max(0, point.x - column / 2)}
+                y="0"
+                width={column}
+                height={HEIGHT}
+            >
+                <title>{format_date_time(lang, point.captured_at)} · {point.value.toFixed(1)}%</title>
+            </rect>
+        )}
     </svg>
 }
 
@@ -47,10 +66,22 @@ const sparkline = trend_sparkline(trend)
         stroke: var(--campaign_sparkline_color);
         stroke-width: 2;
         vector-effect: non-scaling-stroke;
+        pointer-events: none;
     }
 
     .campaign-sparkline-area {
         fill: var(--campaign_sparkline_color);
         opacity: 0.15;
+        pointer-events: none;
+    }
+
+    .campaign-sparkline-hit {
+        fill: transparent;
+        cursor: help;
+    }
+
+    .campaign-sparkline-hit:hover {
+        fill: var(--campaign_sparkline_color);
+        opacity: 0.25;
     }
 </style>

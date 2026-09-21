@@ -27,6 +27,7 @@ from campaigns.services import (
     awards,
     esi_gate,
     fleets,
+    frontlines,
     names,
     plan,
     sites,
@@ -66,8 +67,21 @@ def deep_sweep_campaign_killmails() -> dict:
 def poll_campaign_snapshots() -> dict:
     """Contested percentage, victory points and operational state."""
     result = snapshots.record_snapshots()
+    result["advantage"] = frontlines.record_advantage()
     for campaign in _live_campaigns():
         plan.update_week_progress(campaign)
+    return result
+
+
+@app.task()
+def poll_frontlines_advantage() -> dict:
+    """Advantage per system, read off CCP's frontlines page instead of pilots."""
+    result = frontlines.record_advantage()
+    # An advantage target is measured against this number, so the week's
+    # pace has to move with it.
+    if result.get("written"):
+        for campaign in _live_campaigns():
+            plan.update_week_progress(campaign)
     return result
 
 

@@ -1,0 +1,173 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignObjectiveRow as ObjectiveRow } from '@helpers/fetching/campaigns'
+import { objective_status_color, objective_status_i18n_key, MINMATAR_FACTION_ID, AMARR_FACTION_ID } from '@helpers/fetching/campaigns'
+
+interface Props {
+    row:                ObjectiveRow;
+    [propName: string]: any;
+}
+
+const {
+    row,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const owner = row.system?.owner_faction_id === MINMATAR_FACTION_ID ? 'minmatar'
+    : row.system?.owner_faction_id === AMARR_FACTION_ID ? 'amarr'
+    : null
+const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
+    : owner === 'amarr' ? t('campaigns.system.held_by_amarr')
+    : t('campaigns.system.held_by_unknown')
+const change_glyph = row.change_direction === 'up' ? '▲' : row.change_direction === 'down' ? '▼' : ''
+const color = objective_status_color(row.status)
+const system_anchor = row.system ? `#campaign-system-${row.system.id}` : undefined
+
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
+---
+
+<div
+    class:list={['[ campaign-objective ]', Astro.props.class]}
+    data-kind={row.kind}
+    data-status={row.status}
+    title={t(objective_status_i18n_key(row.status))}
+    {...attributes}
+>
+    <div class="[ campaign-objective-where ]" title={owner_name}>
+        {row.system && <CampaignPriorityIcon priority={row.system.priority} />}
+        <span
+            class:list={['[ campaign-system-owner ]', owner && `campaign-system-owner-${owner}`]}
+            role="img"
+            aria-label={owner_name}
+        >
+            {owner === 'minmatar' && <MinmatarLogo />}
+            {owner === 'amarr' && <AmarrLogo />}
+        </span>
+        {system_anchor ?
+            <a href={system_anchor} class="[ campaign-objective-system ]">{row.system_name}</a>
+            :
+            <span class="[ campaign-objective-system ]">{row.system_name}</span>
+        }
+    </div>
+
+    <div class="[ campaign-objective-what ]">{row.label}</div>
+
+    <div class="[ campaign-objective-progress ]">
+        <CampaignMeter
+            percent={row.meter_percent}
+            marker_percent={row.marker_percent}
+            delta_from_percent={row.delta_from_percent}
+            fill_title={`${t('campaigns.objective.scale_now')} · ${row.now_text}`}
+            delta_title={row.change_text ? `${t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')} · ${change_glyph} ${row.change_text}`.trim() : undefined}
+            marker_title={row.target_text ? `${t('campaigns.objective.scale_target')} · ${row.target_text}` : undefined}
+            color={`var(--${color})`}
+            height='var(--space-s)'
+            label={`${row.system_name} · ${row.label} · ${row.now_text}${row.target_text ? ` → ${row.target_text}` : ''}`}
+        />
+        <span class="[ campaign-objective-figure ]" title={`${t('campaigns.objective.scale_now')} · ${row.now_text}`}>{row.now_text}</span>
+    </div>
+</div>
+
+<style lang="scss">
+    .campaign-objective {
+        display: grid;
+        grid-template-columns: var(--campaign-objective-columns);
+        column-gap: var(--space-s);
+        row-gap: var(--space-2xs);
+        align-items: center;
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--border-color);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-objective-where {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-objective-system {
+        color: var(--highlight);
+        font-size: var(--step-0);
+        text-decoration: none;
+    }
+
+    @media (hover: hover) {
+        a.campaign-objective-system:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .campaign-objective-what {
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .campaign-system-owner {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 1.25rem;
+        height: 1.25rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        :global(path) {
+            fill: var(--foreground);
+        }
+
+        &.campaign-system-owner-minmatar :global(path) {
+            fill: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        }
+
+        &.campaign-system-owner-amarr :global(path) {
+            fill: var(--fleet-yellow);
+        }
+    }
+
+    .campaign-objective-progress {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+
+        :global(.campaign-meter) {
+            flex: 1 1 auto;
+            cursor: help;
+        }
+    }
+
+    .campaign-objective-figure {
+        flex: 0 0 6.5em;
+        text-align: right;
+        white-space: nowrap;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    @media screen and (max-width: 991px) {
+        .campaign-objective {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .campaign-objective-what {
+            color: var(--foreground);
+        }
+
+        .campaign-objective-progress {
+            grid-column: 1 / -1;
+        }
+    }
+</style>

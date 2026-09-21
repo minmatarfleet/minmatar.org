@@ -156,6 +156,7 @@ def accept_week_target(
         "target": row.target,
         "progress": row.progress,
         "pace_expected": row.pace_expected,
+        "baseline": row.baseline,
         "pace": row.pace,
         "proposed": row.proposed,
         "last_week_actual": row.last_week_actual,

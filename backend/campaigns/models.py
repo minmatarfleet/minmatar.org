@@ -40,6 +40,14 @@ class SystemRole(models.TextChoices):
     SUPPORT = "support", "Support"
 
 
+class SystemPriority(models.TextChoices):
+    """How urgently a system needs people; orders the boards."""
+
+    HIGH = "high", "High"
+    MEDIUM = "medium", "Medium"
+    LOW = "low", "Low"
+
+
 class SiteKind(models.TextChoices):
     COMPLEX = "complex", "Complex"
     ADVANTAGE_SITE = "advantage_site", "Advantage site"
@@ -163,6 +171,11 @@ class CampaignSystem(models.Model):
     role = models.CharField(
         max_length=16, choices=SystemRole.choices, default=SystemRole.PRIMARY
     )
+    priority = models.CharField(
+        max_length=8,
+        choices=SystemPriority.choices,
+        default=SystemPriority.MEDIUM,
+    )
     goal = models.CharField(
         max_length=16, choices=SystemGoal.choices, default=SystemGoal.CAPTURE
     )
@@ -200,7 +213,38 @@ class CampaignSystemArc(models.Model):
     advantage_floor = models.FloatField(
         default=0.0, help_text="Defend: keep our net advantage above this."
     )
+
+    class AdvantageTask(models.TextChoices):
+        NONE = "none", "No advantage task"
+        GAIN = "gain", "Gain advantage (build ours up to a level)"
+        DESTROY = "destroy", "Destroy advantage (knock theirs down to a level)"
+        MAINTAIN = "maintain", "Maintain advantage (keep ours at or above)"
+
+    # Advantage is a separate job from plexing, and it comes in three
+    # shapes a pilot can act on. The target is a level on the 0-100 scale
+    # the in-game panel shows; each task has a sensible default.
+    advantage_task = models.CharField(
+        max_length=8,
+        choices=AdvantageTask.choices,
+        default=AdvantageTask.NONE,
+    )
+    advantage_target = models.FloatField(null=True, blank=True)
     vp_needed_at_start = models.BigIntegerField(null=True, blank=True)
+
+    DEFAULT_ADVANTAGE_TARGETS = {
+        "gain": 75.0,
+        "destroy": 50.0,
+        "maintain": 90.0,
+    }
+
+    @property
+    def advantage_level(self) -> float | None:
+        """The level the advantage task aims at, defaulted per task."""
+        if self.advantage_task == self.AdvantageTask.NONE:
+            return None
+        if self.advantage_target is not None:
+            return self.advantage_target
+        return self.DEFAULT_ADVANTAGE_TARGETS[self.advantage_task]
 
     def __str__(self) -> str:
         return f"Arc for {self.campaign_system}"
@@ -213,6 +257,17 @@ class CampaignWeekTarget(models.Model):
         VICTORY_POINTS = "victory_points", "Victory points"
         DAYS_UNDER_LINE = "days_under_line", "Days under contest line"
         ADVANTAGE = "advantage", "Advantage generated"
+        # Levels, not flows: where our (or their) advantage stands on the
+        # 0-100 scale against the level the task aims at.
+        ADVANTAGE_GAIN = "advantage_gain", "Gain advantage"
+        ADVANTAGE_DESTROY = "advantage_destroy", "Destroy advantage"
+        ADVANTAGE_MAINTAIN = "advantage_maintain", "Maintain advantage"
+
+    ADVANTAGE_METRICS = (
+        "advantage_gain",
+        "advantage_destroy",
+        "advantage_maintain",
+    )
 
     campaign_system = models.ForeignKey(
         CampaignSystem, on_delete=models.CASCADE, related_name="week_targets"
@@ -232,6 +287,8 @@ class CampaignWeekTarget(models.Model):
 
     progress = models.FloatField(default=0)
     pace_expected = models.FloatField(default=0)
+    # Where a level metric stood when the week opened; pace ramps from here.
+    baseline = models.FloatField(default=0)
     days_under_line = models.PositiveSmallIntegerField(default=0)
     last_week_actual = models.FloatField(default=0)
     projected_arc_date = models.DateField(null=True, blank=True)
@@ -252,13 +309,26 @@ class CampaignWeekTarget(models.Model):
         return f"{self.campaign_system} {self.week_start} {self.metric}"
 
     @property
+    def lower_is_better(self) -> bool:
+        return self.metric == self.Metric.ADVANTAGE_DESTROY
+
+    @property
     def pace(self) -> str:
         """on_pace / behind / ahead — never red before the week is done."""
         if self.target <= 0:
             return "on_pace"
-        if self.pace_expected <= 0:
-            return "on_pace"
-        ratio = self.progress / self.pace_expected
+        if self.lower_is_better:
+            # Knocking a level down: progress is the enemy's level, and
+            # the ramp runs from the baseline down to the target.
+            want = max(0.0, self.baseline - self.pace_expected)
+            done = max(0.0, self.baseline - self.progress)
+            if want <= 0:
+                return "on_pace" if self.progress <= self.target else "behind"
+            ratio = done / want
+        else:
+            if self.pace_expected <= 0:
+                return "on_pace"
+            ratio = self.progress / self.pace_expected
         if ratio >= 1.1:
             return "ahead"
         if ratio < 0.8:
@@ -533,7 +603,13 @@ class CampaignAdvantageReading(models.Model):
     enemy_pct = models.FloatField()
     source = models.CharField(
         max_length=16,
-        choices=(("pilot", "Pilot"), ("manager", "Manager")),
+        choices=(
+            ("pilot", "Pilot"),
+            ("manager", "Manager"),
+            # CCP's frontlines page publishes advantage per system; a
+            # reading from there is exact and needs no consensus.
+            ("frontlines", "Frontlines"),
+        ),
         default="pilot",
     )
     status = models.CharField(
@@ -572,6 +648,7 @@ class CampaignAdvantageState(models.Model):
         default="unknown",
     )
     reading_age_minutes = models.IntegerField(null=True, blank=True)
+    source = models.CharField(max_length=16, default="pilot")
     our_generated_since_reading = models.FloatField(default=0)
     enemy_removed_since_reading = models.FloatField(default=0)
 
@@ -601,7 +678,14 @@ class CampaignKillmail(models.Model):
     )
     victim_corporation_id = models.BigIntegerField(null=True, blank=True)
     victim_alliance_id = models.BigIntegerField(null=True, blank=True)
+    victim_faction_id = models.BigIntegerField(null=True, blank=True)
     victim_ship_type_id = models.BigIntegerField(null=True, blank=True)
+    # Whoever landed the final blow; the feed names them by id only.
+    killer_character_id = models.BigIntegerField(null=True, blank=True)
+    killer_character_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    killer_faction_id = models.BigIntegerField(null=True, blank=True)
 
     isk_value = models.BigIntegerField(default=0)
     is_pod = models.BooleanField(default=False)

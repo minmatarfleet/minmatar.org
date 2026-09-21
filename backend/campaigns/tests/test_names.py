@@ -35,10 +35,12 @@ class VictimNameTests(TestCase):
             result = names.backfill_victim_names()
             resolver.assert_not_called()
 
-        self.assertEqual(result["named"], 1)
+        # The victim and the killer are both our pilot, so both are named.
+        self.assertEqual(result["named"], 2)
         self.assertEqual(result["from_esi"], 0)
         mail = CampaignKillmail.objects.get(killmail_id=1)
         self.assertEqual(mail.victim_character_name, "Pilot")
+        self.assertEqual(mail.killer_character_name, "Pilot")
 
     def test_a_stranger_is_resolved_from_esi(self):
         self._make_kill(2, 9001)
@@ -72,9 +74,12 @@ class VictimNameTests(TestCase):
         ):
             result = names.backfill_victim_names()
 
-        self.assertEqual(result["named"], 0)
+        # The killer is our own pilot and needs no lookup; the stranger
+        # who died stays unnamed until the next pass.
+        self.assertEqual(result["named"], 1)
         mail = CampaignKillmail.objects.get(killmail_id=3)
         self.assertEqual(mail.victim_character_name, "")
+        self.assertEqual(mail.killer_character_name, "Pilot")
 
     def test_nothing_to_do_makes_no_calls(self):
         with mock.patch(

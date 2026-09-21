@@ -52,39 +52,115 @@ def propose_week(campaign: Campaign, week_start: date | None = None) -> int:
 
     for campaign_system in campaign.systems.filter(retired_at__isnull=True):
         arc = getattr(campaign_system, "arc", None)
+        wanted: list[tuple[str, float]] = []
         if campaign_system.goal == SystemGoal.CAPTURE:
-            metric = CampaignWeekTarget.Metric.VICTORY_POINTS
-            target = _capture_target(campaign_system, week_start)
+            wanted.append(
+                (
+                    CampaignWeekTarget.Metric.VICTORY_POINTS,
+                    _capture_target(campaign_system, week_start),
+                )
+            )
         elif campaign_system.goal == SystemGoal.DEFEND:
-            metric = CampaignWeekTarget.Metric.DAYS_UNDER_LINE
-            target = 7.0
-        else:
-            continue
+            wanted.append((CampaignWeekTarget.Metric.DAYS_UNDER_LINE, 7.0))
+        # Advantage is its own job, in one of three shapes the operator
+        # picks on the arc: build ours up, knock theirs down, or hold ours.
+        advantage_row = _advantage_target(campaign_system, arc)
+        if advantage_row:
+            wanted.append(advantage_row)
 
-        last_week = _actual_last_week(campaign_system, week_start, metric)
-
-        row, created = CampaignWeekTarget.objects.get_or_create(
-            campaign_system=campaign_system,
-            week_start=week_start,
-            metric=metric,
-            defaults={
-                "target": target,
-                "proposed": True,
-                "last_week_actual": last_week,
-            },
-        )
-        if created:
-            proposed += 1
-        elif row.proposed:
-            row.target = target
-            row.last_week_actual = last_week
-            row.save(update_fields=["target", "last_week_actual"])
-
-        if arc and arc.due_at:
-            row.projected_arc_date = _project_arc_date(campaign_system, row)
-            row.save(update_fields=["projected_arc_date"])
+        for metric, target in wanted:
+            row, created = _propose_target(
+                campaign_system, week_start, metric, target
+            )
+            if created:
+                proposed += 1
+            # The baseline is where the week opened; a re-proposal later in
+            # the week must not move it, or the ramp forgets the ground
+            # already covered.
+            if metric in CampaignWeekTarget.ADVANTAGE_METRICS and created:
+                row.baseline = _advantage_level_now(campaign_system, metric)
+                row.save(update_fields=["baseline"])
+            if (
+                arc
+                and arc.due_at
+                and metric == CampaignWeekTarget.Metric.VICTORY_POINTS
+            ):
+                row.projected_arc_date = _project_arc_date(
+                    campaign_system, row
+                )
+                row.save(update_fields=["projected_arc_date"])
 
     return proposed
+
+
+ADVANTAGE_METRIC_FOR_TASK = {
+    "gain": CampaignWeekTarget.Metric.ADVANTAGE_GAIN,
+    "destroy": CampaignWeekTarget.Metric.ADVANTAGE_DESTROY,
+    "maintain": CampaignWeekTarget.Metric.ADVANTAGE_MAINTAIN,
+}
+
+
+def _advantage_target(campaign_system, arc) -> tuple[str, float] | None:
+    """The advantage row the arc asks for, or None when it asks for none."""
+    if not arc or arc.advantage_task not in ADVANTAGE_METRIC_FOR_TASK:
+        return None
+    return ADVANTAGE_METRIC_FOR_TASK[arc.advantage_task], float(
+        arc.advantage_level
+    )
+
+
+def _advantage_level_now(campaign_system, metric) -> float:
+    """Ours for gain and maintain, theirs for destroy; 0 when unread."""
+    card = advantage.card_for(campaign_system)
+    key = (
+        "enemy_pct"
+        if metric == CampaignWeekTarget.Metric.ADVANTAGE_DESTROY
+        else "our_pct"
+    )
+    value = card.get(key)
+    return float(value) if value is not None else 0.0
+
+
+def _propose_target(campaign_system, week_start, metric, target):
+    last_week = _actual_last_week(campaign_system, week_start, metric)
+
+    row, created = CampaignWeekTarget.objects.get_or_create(
+        campaign_system=campaign_system,
+        week_start=week_start,
+        metric=metric,
+        defaults={
+            "target": target,
+            "proposed": True,
+            "last_week_actual": last_week,
+        },
+    )
+    if not created and row.proposed:
+        row.target = target
+        row.last_week_actual = last_week
+        row.save(update_fields=["target", "last_week_actual"])
+    return row, created
+
+
+def week_position(campaign: Campaign, week_start: date | None = None) -> dict:
+    """Where this week sits in the campaign: week n of N, day d of 7.
+
+    Weeks are campaign weeks (Thursday to Wednesday), so the first one
+    is the week the campaign opened in, however far into it that was.
+    """
+    week_start = week_start or campaign_week_start()
+    first_week = week_start_for(campaign_day(campaign.start_at))
+    last_week = week_start_for(campaign_day(campaign.end_at))
+    week_count = max(1, (last_week - first_week).days // 7 + 1)
+    week_index = (week_start - first_week).days // 7 + 1
+    week_index = min(week_count, max(1, week_index))
+    day_index = min(7, max(1, (campaign_day() - week_start).days + 1))
+    return {
+        "week_start": week_start,
+        "week_end": week_start + timedelta(days=6),
+        "week_index": week_index,
+        "week_count": week_count,
+        "day_index": day_index,
+    }
 
 
 def _capture_target(
@@ -218,6 +294,22 @@ def update_week_progress(campaign: Campaign) -> int:
                 if first and last
                 else 0.0
             )
+        elif row.metric in CampaignWeekTarget.ADVANTAGE_METRICS:
+            # Level targets: progress is the level right now. Gain and
+            # destroy ramp linearly from where the week opened to the
+            # target; maintain expects the whole level from day one.
+            row.progress = _advantage_level_now(
+                row.campaign_system, row.metric
+            )
+            if row.metric == CampaignWeekTarget.Metric.ADVANTAGE_MAINTAIN:
+                row.pace_expected = row.target
+            else:
+                row.pace_expected = (
+                    row.baseline + (row.target - row.baseline) * elapsed
+                )
+            row.save(update_fields=["progress", "pace_expected"])
+            updated += 1
+            continue
         else:
             arc = getattr(row.campaign_system, "arc", None)
             ceiling = arc.contest_ceiling if arc else 25.0
@@ -282,6 +374,12 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
     # full-set bonus has to stay reachable.
     targets.sort(key=lambda row: row.progress - row.target)
 
+    systems_with_advantage_target = {
+        target.campaign_system_id
+        for target in targets
+        if target.metric in CampaignWeekTarget.ADVANTAGE_METRICS
+    }
+
     for target in targets:
         if created >= MAX_SYSTEM_ORDERS_PER_DAY:
             break
@@ -292,7 +390,11 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
         )
         system = target.campaign_system
 
-        if system.goal == SystemGoal.CAPTURE:
+        if target.metric in CampaignWeekTarget.ADVANTAGE_METRICS:
+            created += _advantage_orders(
+                campaign, day, pool, system, target, gap_share_pct
+            )
+        elif system.goal == SystemGoal.CAPTURE:
             created += _make_order(
                 campaign,
                 day,
@@ -312,29 +414,13 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
                 gap_share_pct / 2,
             )
         else:
-            state = advantage.card_for(system)
-            arc = getattr(system, "arc", None)
-            floor = arc.advantage_floor if arc else 0.0
-            net = state.get("net_pct")
-            if net is None or net < floor:
-                created += _make_order(
-                    campaign,
-                    day,
-                    CampaignDailyOrder.Kind.ADVANTAGE_SITE,
-                    pool["advantage_site"],
-                    system,
-                    {"system": system.name},
-                    gap_share_pct,
-                )
-            if net is not None and net < floor:
-                created += _make_order(
-                    campaign,
-                    day,
-                    CampaignDailyOrder.Kind.ADVANTAGE_GENERATED,
-                    pool["advantage_generated"],
-                    system,
-                    {"count": 6, "system": system.name},
-                    gap_share_pct,
+            # A system with its own advantage target gets those orders
+            # from that row, so this one only asks for defensive plexing.
+            if system.id not in systems_with_advantage_target:
+                arc = getattr(system, "arc", None)
+                floor = arc.advantage_floor if arc else 0.0
+                created += _floor_orders(
+                    campaign, day, pool, system, floor, gap_share_pct
                 )
 
             snapshot = (
@@ -387,6 +473,71 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
         0,
     )
 
+    return created
+
+
+def _advantage_orders(campaign, day, pool, system, target, gap_share_pct):
+    """Orders for an advantage task row, while it is not yet met.
+
+    Gain and maintain ask for our advantage sites and generation; destroy
+    asks for the sites that remove theirs (the same in-game family, so the
+    same order kind), until the enemy level is at or under the target.
+    """
+    level = _advantage_level_now(system, target.metric)
+    unmet = (
+        level > target.target
+        if target.lower_is_better
+        else level < target.target
+    )
+    if not unmet:
+        return 0
+    created = _make_order(
+        campaign,
+        day,
+        CampaignDailyOrder.Kind.ADVANTAGE_SITE,
+        pool["advantage_site"],
+        system,
+        {"system": system.name, "task": target.metric},
+        gap_share_pct,
+    )
+    if not target.lower_is_better:
+        created += _make_order(
+            campaign,
+            day,
+            CampaignDailyOrder.Kind.ADVANTAGE_GENERATED,
+            pool["advantage_generated"],
+            system,
+            {"count": 6, "system": system.name},
+            gap_share_pct,
+        )
+    return created
+
+
+def _floor_orders(campaign, day, pool, system, floor, gap_share_pct):
+    """Run a site when we do not know where we stand; generate when we
+    know we are under the floor."""
+    net = advantage.card_for(system).get("net_pct")
+    created = 0
+    if net is None or net < floor:
+        created += _make_order(
+            campaign,
+            day,
+            CampaignDailyOrder.Kind.ADVANTAGE_SITE,
+            pool["advantage_site"],
+            system,
+            {"system": system.name},
+            gap_share_pct,
+        )
+    if net is not None and net < floor:
+        created += _make_order(
+            campaign,
+            day,
+            CampaignDailyOrder.Kind.ADVANTAGE_GENERATED,
+            pool["advantage_generated"],
+            system,
+            {"count": 6, "system": system.name},
+            gap_share_pct,
+        )
     return created
 
 

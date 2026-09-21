@@ -477,6 +477,14 @@ CELERYBEAT_CAMPAIGNS = [
         },
     ),
     (
+        "[Campaigns] Poll frontlines advantage",
+        {
+            "task": "campaigns.tasks.poll_frontlines_advantage",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
         "[Campaigns] Poll LP payouts",
         {
             "task": "campaigns.tasks.poll_campaign_payouts",

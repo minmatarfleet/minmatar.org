@@ -13,6 +13,7 @@ interface Props {
     locations:                      Location[];
     doctrines:                      DoctrineType[];
     campaigns?:                     CampaignListItem[];
+    default_campaign_id?:           number | null;
     fleet_commander:                CharacterBasic | null;
     eve_date:                       string;
     eve_time:                       string;
@@ -26,6 +27,7 @@ const {
     locations: locations_prop,
     doctrines: doctrines_prop,
     campaigns: campaigns_prop = [],
+    default_campaign_id = null,
     fleet_commander,
     eve_date,
     eve_time,
@@ -133,8 +135,10 @@ if (fleet) {
 
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
+// The fleet's own campaign wins; a new fleet takes the one the page asked for.
+const wanted_campaign_id = fleet?.campaign_id ?? default_campaign_id
 const default_campaign = campaigns_select_options.find(
-    (option) => option.value === fleet?.campaign_id
+    (option) => option.value === wanted_campaign_id
 )?.value ?? campaigns_select_options[0].value
 const default_audience = fleet_audience_id ?? (
     audiences.length === 1

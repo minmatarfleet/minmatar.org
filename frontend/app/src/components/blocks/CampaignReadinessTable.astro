@@ -11,6 +11,14 @@ import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server
 interface Props {
     readiness:          CampaignReadiness;
     campaign_slug?:     string | false;
+    /** Where the ESI sign-in round trip lands afterwards; the account page by default. */
+    return_url?:        string | false;
+    /**
+     * account: the full table with the include/exclude toggle.
+     * campaign: one "Add to campaign" action per character that sorts the
+     * token and the inclusion in one go; nothing can be excluded here.
+     */
+    mode?:              'account' | 'campaign';
     flash?:             string | false;
     [propName: string]: any;
 }
@@ -18,6 +26,8 @@ interface Props {
 const {
     readiness,
     campaign_slug = false,
+    return_url = false,
+    mode = 'account',
     flash = false,
     ...attributes
 } = Astro.props
@@ -25,7 +35,15 @@ const {
 delete attributes.class
 
 const account_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
-const RETURN_URL = get_app_url(translatePath('/account/campaigns/'))
+const RETURN_URL = get_app_url(return_url || translatePath('/account/campaigns/'))
+const show_inclusion = mode === 'account'
+
+/** After the token sign-in the campaign page includes the character itself, so the return trip carries its id. */
+const include_on_return = (character_id:number) => {
+    const [ path, hash ] = RETURN_URL.split('#')
+    const joiner = path.includes('?') ? '&' : '?'
+    return `${path}${joiner}include=${character_id}${hash ? `#${hash}` : ''}`
+}
 
 const build_action_url = (action_url:string, redirect_to:string) => {
     const url = new URL(action_url, get_api_url())
@@ -51,7 +69,7 @@ const state_color = (state:CampaignCharacterState):TagColors => {
 }
 
 const CHARACTER_PARTIAL_URL = campaign_slug
-    ? translatePath(`/partials/campaign_character_component?slug=${campaign_slug}`)
+    ? translatePath(`/partials/campaign_character_component?slug=${campaign_slug}&mode=${mode}`)
     : ''
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -73,7 +91,11 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                 .replace('{tracked}', String(readiness.tracked))
                 .replace('{total}', String(readiness.total))}
         </small>
-        {pending.length > 0 &&
+        {pending.length > 0 && (mode === 'campaign' ?
+            <Button size='sm' color='transparent' narrow={true} href={update_all_url} external={false} title={t('campaigns.readiness.update_all_hint')}>
+                {t('campaigns.readiness.update_all')}
+            </Button>
+            :
             <Flexblock gap='var(--space-3xs)' class="[ items-end ]">
                 <FlexInline gap='var(--space-2xs)'>
                     <Button size='sm' color='green' href={update_all_url} external={false}>
@@ -82,7 +104,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                 </FlexInline>
                 <small>{t('campaigns.readiness.update_all_hint')}</small>
             </Flexblock>
-        }
+        )}
     </FlexInline>
 
     {flash && <small class="[ text-[var(--highlight)] ]">{flash}</small>}
@@ -92,15 +114,17 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         <small>{t('campaigns.readiness.none')}</small>
         :
         <CampaignTable
-            min_width='54rem'
-            template='minmax(12rem, 1fr) 7rem 7rem minmax(10rem, 1fr) 7rem 8rem 8rem'
+            min_width={show_inclusion ? '54rem' : '46rem'}
+            template={show_inclusion
+                ? 'minmax(12rem, 1fr) 7rem 7rem minmax(10rem, 1fr) 7rem 8rem 8rem'
+                : 'minmax(12rem, 1fr) 7.5rem 7rem minmax(10rem, 1fr) 6rem 10rem'}
             columns={[
                 t('campaigns.readiness.character'),
                 t('campaigns.readiness.corporation'),
                 t('campaigns.readiness.token'),
                 t('campaigns.readiness.counts_for'),
                 t('campaigns.readiness.state'),
-                t('campaigns.readiness.in_campaign'),
+                ...(show_inclusion ? [ t('campaigns.readiness.in_campaign') ] : []),
                 t('campaigns.readiness.action'),
             ]}
         >
@@ -140,7 +164,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         color={state_color(character.state)}
                         narrow={true}
                     />
-                    {campaign_slug ?
+                    {show_inclusion && (campaign_slug ?
                         <span role="cell" class="[ campaign-cell ]">
                             <Button
                                 size='sm'
@@ -155,16 +179,40 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         </span>
                         :
                         <span role="cell" class="[ campaign-table-muted ]">{character.included ? t('campaigns.readiness.included') : '—'}</span>
-                    }
-                    {character.action_url ?
-                        <span role="cell" class="[ campaign-cell ]">
-                            <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
-                                {t('campaigns.readiness.update')}
-                            </Button>
-                        </span>
+                    )}
+                    {mode === 'campaign' ? (
+                        character.action_url ?
+                            <span role="cell" class="[ campaign-cell campaign-cell-action ]">
+                                <Button size='sm' color='green' narrow={true} href={build_action_url(character.action_url, include_on_return(character.character_id))}>
+                                    {t('campaigns.readiness.add_to_campaign')}
+                                </Button>
+                            </span>
+                        : !character.included && campaign_slug ?
+                            <span role="cell" class="[ campaign-cell campaign-cell-action ]">
+                                <Button
+                                    size='sm'
+                                    color='green'
+                                    narrow={true}
+                                    hx-post={`${CHARACTER_PARTIAL_URL}&character_id=${character.character_id}&included=true`}
+                                    hx-target='#campaign-readiness'
+                                    hx-swap='outerHTML'
+                                    hx-indicator='.loader'
+                                >
+                                    {t('campaigns.readiness.add_to_campaign')}
+                                </Button>
+                            </span>
                         :
-                        <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
-                    }
+                            <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.in_campaign_ok')}</small>
+                    ) : (
+                        character.action_url ?
+                            <span role="cell" class="[ campaign-cell ]">
+                                <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
+                                    {t('campaigns.readiness.update')}
+                                </Button>
+                            </span>
+                        :
+                            <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
+                    )}
                 </div>
             )}
         </CampaignTable>
@@ -175,5 +223,11 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     img {
         width: var(--space-m);
         height: var(--space-m);
+    }
+
+    .campaign-cell-action :global(.button) {
+        white-space: nowrap;
+        padding-block: var(--space-3xs);
+        font-size: var(--step--1);
     }
 </style>

@@ -1,0 +1,226 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignFleet } from '@dtypes/api.minmatar.org'
+import { fleet_type_i18n_key } from '@helpers/fetching/campaigns'
+import { format_isk } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    fleets:             CampaignFleet[];
+    [propName: string]: any;
+}
+
+const {
+    fleets,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fleet_title = (fleet:CampaignFleet):string =>
+    fleet.objective || fleet.description || t('campaigns.fleets.untitled').replace('{id}', String(fleet.id))
+
+const fleet_type = (fleet:CampaignFleet):string => {
+    const key = fleet_type_i18n_key(fleet.type)
+    return key ? t(key) : fleet.type.replaceAll('_', ' ')
+}
+
+import Tag from '@components/blocks/Tag.astro'
+import StratopIcon from '@components/icons/StratopIcon.astro'
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro'
+import TrainingIcon from '@components/icons/TrainingIcon.astro'
+import NpsiIcon from '@components/icons/NpsiIcon.astro'
+import FleetIcon from '@components/icons/FleetIcon.astro'
+---
+
+<div class:list={['[ campaign-fleets ]', Astro.props.class]} {...attributes}>
+    {fleets.length === 0 ?
+        <small>{t('campaigns.fleets.none')}</small>
+        :
+        <>
+            <div class="[ campaign-fleets-header ]" aria-hidden="true">
+                <small>{t('campaigns.fleets.column_fleet')}</small>
+                <small>{t('campaigns.fleets.column_fc')}</small>
+                <small>{t('campaigns.fleets.column_when')}</small>
+                <small class="[ campaign-fleets-numeric ]">{t('campaigns.fleets.column_pilots')}</small>
+                <small class="[ campaign-fleets-numeric ]">{t('campaigns.fleets.column_kills')}</small>
+                <small class="[ campaign-fleets-numeric ]">{t('campaigns.fleets.column_isk')}</small>
+            </div>
+            {fleets.map(fleet =>
+                <div class="[ campaign-fleet ]">
+                    <div class="[ campaign-fleet-name ]">
+                        <span class="[ campaign-fleet-type ]" role="img" aria-label={fleet_type(fleet)} title={fleet_type(fleet)}>
+                            {fleet.type === 'strategic' ? <StratopIcon />
+                                : fleet.type === 'non_strategic' ? <NonStrategicIcon />
+                                : fleet.type === 'training' ? <TrainingIcon />
+                                : fleet.type === 'npsi' ? <NpsiIcon />
+                                : <FleetIcon size={16} />}
+                        </span>
+                        <span class="[ text-[var(--highlight)] ]">{fleet_title(fleet)}</span>
+                        {fleet.is_live && <Tag text={t('campaigns.fleets.live')} color='green' narrow={true} />}
+                    </div>
+                    <div class="[ campaign-fleet-fc ]" data-label={t('campaigns.fleets.column_fc')}>
+                        {fleet.fleet_commander_id &&
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_player_icon(fleet.fleet_commander_id, 32)}
+                                alt=''
+                            />
+                        }
+                        <span>{fleet.fleet_commander ?? '—'}</span>
+                    </div>
+                    <div class="[ campaign-fleet-when ]" data-label={t('campaigns.fleets.column_when')}>
+                        {fleet.start_time ? format_date_time(lang, fleet.start_time) : '—'}
+                    </div>
+                    <div class="[ campaign-fleets-numeric ]" data-label={t('campaigns.fleets.column_pilots')}>
+                        <span class="[ campaign-figure ]">{fleet.pilots}</span>
+                    </div>
+                    <div class="[ campaign-fleets-numeric ]" data-label={t('campaigns.fleets.column_kills')}>
+                        <span class="[ campaign-figure ]">{fleet.kills}</span>
+                        <span class="[ campaign-slash ]">/</span>
+                        <span class="[ campaign-figure ]">{fleet.losses}</span>
+                    </div>
+                    <div class="[ campaign-fleets-numeric ]" data-label={t('campaigns.fleets.column_isk')}>
+                        <span class="[ campaign-figure ]">{format_isk(fleet.isk_destroyed)}</span>
+                    </div>
+                </div>
+            )}
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .campaign-fleets {
+        --campaign-fleet-columns: minmax(12rem, 2fr) minmax(10rem, 1fr) minmax(9rem, 1fr) 5rem 8rem 8rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-fleets-header,
+    .campaign-fleet {
+        display: grid;
+        grid-template-columns: var(--campaign-fleet-columns);
+        column-gap: var(--space-s);
+        align-items: center;
+    }
+
+    .campaign-fleets-header {
+        padding-block: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+        }
+    }
+
+    .campaign-fleet {
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--border-color);
+        row-gap: var(--space-2xs);
+    }
+
+    .campaign-fleet-name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .campaign-fleet-type {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 1.5rem;
+        height: 1.5rem;
+        color: var(--foreground);
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .campaign-fleet-fc {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+        color: var(--highlight);
+
+        img {
+            flex: none;
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .campaign-fleet-when {
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+
+    .campaign-fleets-numeric {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .campaign-figure {
+        color: var(--highlight);
+    }
+
+    .campaign-slash {
+        color: var(--foreground);
+        padding-inline: var(--space-3xs);
+    }
+
+    @media screen and (max-width: 991px) {
+        .campaign-fleets-header {
+            display: none;
+        }
+
+        .campaign-fleet {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .campaign-fleet-name {
+            grid-column: 1 / -1;
+        }
+
+        .campaign-fleet-fc,
+        .campaign-fleet-when,
+        .campaign-fleet .campaign-fleets-numeric {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            text-align: left;
+
+            &::before {
+                content: attr(data-label);
+                font-size: var(--step--2);
+                color: var(--foreground);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+        }
+
+        .campaign-fleet-fc {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+    }
+</style>

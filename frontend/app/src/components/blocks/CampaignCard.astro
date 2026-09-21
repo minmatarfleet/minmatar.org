@@ -11,14 +11,12 @@ import { format_date } from '@helpers/date'
 interface Props {
     campaign:           CampaignListItem;
     index:              number;
-    standing_fleet_up?: boolean;
     [propName: string]: any;
 }
 
 const {
     campaign,
     index,
-    standing_fleet_up = false,
     ...attributes
 } = Astro.props
 
@@ -45,7 +43,6 @@ import Button from '@components/blocks/Button.astro'
 import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
 import CampaignSystemRow from '@components/blocks/CampaignSystemRow.astro'
 import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
-import CampaignActions from '@components/blocks/CampaignActions.astro'
 ---
 
 <ComponentBlock
@@ -61,11 +58,10 @@ import CampaignActions from '@components/blocks/CampaignActions.astro'
                     <h2>
                         <a href={translatePath(`/campaigns/${campaign.slug}/`)}>{campaign.name}</a>
                     </h2>
-                    <Tag text={campaign.short_code} color='alliance-blue' />
                     {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
                 </FlexInline>
                 <Flexblock gap='var(--space-3xs)' class="[ campaign-card-countdown ]">
-                    <small>{countdown_label}</small>
+                    <small class="[ campaign-card-countdown-label ]">{countdown_label}</small>
                     {is_live || is_upcoming ?
                         <CampaignCountdown
                             id={index}
@@ -81,28 +77,24 @@ import CampaignActions from '@components/blocks/CampaignActions.astro'
         </Flexblock>
 
         {systems.length > 0 &&
-            <Flexblock gap='0' class="[ campaign-card-systems ]">
+            <div class="[ campaign-card-systems ]">
+                <div class="[ campaign-card-systems-header ]" aria-hidden="true">
+                    <small>{t('campaigns.system.column_system')}</small>
+                    <small>{t('campaigns.system.column_contested')}</small>
+                    <small class="[ campaign-card-systems-header-numeric ]">{t('campaigns.system.advantage')}</small>
+                    <small class="[ campaign-card-systems-header-numeric ]">{t('campaigns.system.column_kills')}</small>
+                </div>
                 {systems.map(system => <CampaignSystemRow system={system} />)}
-            </Flexblock>
+            </div>
         }
 
-        <CampaignStatBar stats={stats} />
+        <div class="[ campaign-card-footer ]">
+            <CampaignStatBar stats={stats} variant='inline' />
 
-        {is_live ?
-            <CampaignActions
-                slug={campaign.slug}
-                variant='card'
-                is_enlisted={campaign.is_enlisted}
-                standing_fleet_up={standing_fleet_up}
-                systems={systems}
-            />
-            :
-            <FlexInline gap='var(--space-2xs)'>
-                <Button color='transparent' href={translatePath(`/campaigns/${campaign.slug}/`)}>
-                    {t('campaigns.open')}
-                </Button>
-            </FlexInline>
-        }
+            <Button href={translatePath(`/campaigns/${campaign.slug}/`)}>
+                {t('campaigns.view_campaign')}
+            </Button>
+        </div>
     </Flexblock>
 </ComponentBlock>
 
@@ -124,6 +116,12 @@ import CampaignActions from '@components/blocks/CampaignActions.astro'
         }
     }
 
+    .campaign-card-countdown-label {
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
     @media screen and (min-width: 768px) {
         .campaign-card-countdown {
             text-align: right;
@@ -131,6 +129,48 @@ import CampaignActions from '@components/blocks/CampaignActions.astro'
     }
 
     .campaign-card-systems {
-        border-bottom: solid 1px var(--border-color);
+        --campaign-system-columns: minmax(12rem, 1fr) minmax(14rem, 2.5fr) 7rem 9rem;
+    }
+
+    .campaign-card-systems-header {
+        display: grid;
+        grid-template-columns: var(--campaign-system-columns);
+        column-gap: var(--space-s);
+        padding-block: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+        }
+
+        .campaign-card-systems-header-numeric {
+            text-align: right;
+        }
+    }
+
+    .campaign-card-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s) var(--space-m);
+        padding-top: var(--space-s);
+        border-top: solid 1px var(--border-color);
+    }
+
+    @media screen and (max-width: 767px) {
+        .campaign-card-systems-header {
+            display: none;
+        }
+
+        .campaign-card-countdown,
+        .campaign-card-countdown :global(.campaign-countdown) {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-2xs);
+        }
     }
 </style>

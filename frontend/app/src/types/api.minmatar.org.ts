@@ -2386,6 +2386,7 @@ export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'completed' | 'a
 export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
+export type CampaignSystemPriority = 'high' | 'medium' | 'low'
 export type CampaignLeaderboardMetric = 'points' | 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
 export type CampaignLeaderboardPeriod = 'week' | 'rolling7' | 'all'
 export type CampaignCharacterState = 'ready' | 'needs_update' | 'lapsed' | 'removed' | 'missing'
@@ -2403,13 +2404,17 @@ export interface CampaignSystemSummary {
     solar_system_id:            number;
     role:                       string;
     goal:                       string;
+    priority:                   CampaignSystemPriority;
     contested_percent:          number | null;
     contested_change_24h:       number | null;
     victory_points:             number | null;
     victory_points_threshold:   number | null;
     operational_state:          string;
+    contested_updated_at:       string | null;
+    advantage_updated_at:       string | null;
     owner_faction_id:           number | null;
     advantage_basis:            CampaignAdvantageBasis;
+    advantage_source:           'pilot' | 'manager' | 'frontlines';
     advantage_our_pct:          number | null;
     advantage_enemy_pct:        number | null;
     advantage_net_pct:          number | null;
@@ -2521,11 +2526,15 @@ export interface CampaignWeekTarget {
     target:                 number;
     progress:               number;
     pace_expected:          number;
+    baseline:               number;
     pace:                   CampaignPace;
     proposed:               boolean;
     last_week_actual:       number;
     days_under_line:        number;
     projected_arc_date:     string | null;
+    my_complexes:           number;
+    my_advantage_sites:     number;
+    my_readings:            number;
 }
 
 export interface CampaignWeekSummary {
@@ -2538,6 +2547,10 @@ export interface CampaignWeekSummary {
 
 export interface CampaignWeek {
     week_start:             string;
+    week_end:               string | null;
+    week_index:             number;
+    week_count:             number;
+    day_index:              number;
     targets:                CampaignWeekTarget[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
@@ -2555,12 +2568,31 @@ export interface CampaignOrder {
     completed:          boolean;
 }
 
+export interface CampaignFleet {
+    id:                 number;
+    type:               string;
+    description:        string;
+    objective:          string;
+    start_time:         string | null;
+    status:             string;
+    fleet_commander:    string | null;
+    fleet_commander_id: number | null;
+    doctrine:           string | null;
+    is_live:            boolean;
+    pilots:             number;
+    kills:              number;
+    losses:             number;
+    isk_destroyed:      number;
+}
+
 export interface CampaignLeaderboardRow {
-    rank:       number;
-    user_id:    number;
-    username:   string;
-    value:      number;
-    points:     number;
+    rank:           number;
+    user_id:        number;
+    username:       string;
+    character_id:   number | null;
+    character_name: string;
+    value:          number;
+    points:         number;
 }
 
 export interface CampaignKillmail {
@@ -2569,7 +2601,12 @@ export interface CampaignKillmail {
     outcome:                    CampaignKillmailOutcome;
     solar_system_id:            number;
     victim_character_name:      string;
+    victim_character_id:        number | null;
+    victim_faction_id:          number | null;
     victim_ship_type_id:        number | null;
+    killer_character_id:        number | null;
+    killer_character_name:      string;
+    killer_faction_id:          number | null;
     isk_value:                  number;
     enlisted_attacker_count:    number;
     is_solo:                    boolean;
@@ -2582,7 +2619,10 @@ export interface CampaignSite {
     amount_lp:      number;
     system:         string;
     username:       string | null;
+    character_id:   number | null;
+    character_name: string;
     plex_class:     string;
+    plex_size:      string;
     confidence:     string;
 }
 
@@ -2602,7 +2642,9 @@ export interface CampaignRosterPilot {
     user_id:                number;
     username:               string;
     primary_character:      string;
+    character_id:           number | null;
     corporation_id:         number | null;
+    corporation_name:       string;
     prime_time:             string;
     observed_prime_time:    string;
     last_active_day:        string | null;

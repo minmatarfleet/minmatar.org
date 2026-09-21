@@ -106,6 +106,7 @@ def _attribute_one(
 
     ship_type_id = victim.get("ship_type_id")
     is_pod = ship_type_id in POD_GROUP_TYPE_IDS
+    killer = final_blow(attackers)
 
     with transaction.atomic():
         mail, created = CampaignKillmail.objects.get_or_create(
@@ -118,7 +119,10 @@ def _attribute_one(
                 "victim_character_id": victim_character_id,
                 "victim_corporation_id": victim.get("corporation_id"),
                 "victim_alliance_id": victim.get("alliance_id"),
+                "victim_faction_id": victim.get("faction_id"),
                 "victim_ship_type_id": ship_type_id,
+                "killer_character_id": killer.get("character_id"),
+                "killer_faction_id": killer.get("faction_id"),
                 "isk_value": int(zkb.get("totalValue") or 0),
                 "is_pod": is_pod,
                 "is_solo": bool(zkb.get("solo")),
@@ -156,6 +160,16 @@ def _attribute_one(
         _write_participants(mail, victim, attackers, included)
 
     return created
+
+
+def final_blow(attackers: list) -> dict:
+    """The attacker who landed the final blow, else the top damage dealer."""
+    for attacker in attackers:
+        if attacker.get("final_blow"):
+            return attacker
+    if attackers:
+        return max(attackers, key=lambda row: int(row.get("damage_done") or 0))
+    return {}
 
 
 def _write_participants(mail, victim: dict, attackers: list, included: dict):

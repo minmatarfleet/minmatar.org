@@ -40,6 +40,7 @@ from campaigns.services.streaks import (
     streak_length,
     streaks,
 )
+from eveonline.models import EvePlayer
 from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
@@ -494,22 +495,43 @@ def leaderboard(
     elif period == "rolling7":
         queryset = queryset.filter(day__gte=campaign_day() - timedelta(days=7))
 
-    rows = (
+    rows = list(
         queryset.values("user_id", "user__username")
         .annotate(value=Sum(field), points=Sum("points"))
         .order_by("-value")[:limit]
     )
+    primaries = primary_characters([row["user_id"] for row in rows])
 
     return [
         {
             "rank": index,
             "user_id": row["user_id"],
             "username": row["user__username"],
+            "character_id": primaries.get(row["user_id"], (None, ""))[0],
+            "character_name": primaries.get(row["user_id"], (None, ""))[1],
             "value": float(row["value"] or 0),
             "points": int(row["points"] or 0),
         }
         for index, row in enumerate(rows, start=1)
     ]
+
+
+def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
+    """``{user_id: (character_id, character_name)}`` for each pilot's main.
+
+    A board shows the pilot's face and in-game name, not their web login.
+    A pilot without a primary character falls back to the username in the
+    caller, so they are simply absent here.
+    """
+    return {
+        player.user_id: (
+            player.primary_character.character_id,
+            player.primary_character.character_name,
+        )
+        for player in EvePlayer.objects.filter(
+            user_id__in=list(user_ids), primary_character__isnull=False
+        ).select_related("primary_character")
+    }
 
 
 def campaign_totals(campaign: Campaign) -> dict:

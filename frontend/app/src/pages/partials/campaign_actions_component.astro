@@ -22,25 +22,25 @@ const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-import type { CampaignDetail } from '@dtypes/api.minmatar.org'
+import type { CampaignDetail, CampaignWeek, CampaignReadiness } from '@dtypes/api.minmatar.org'
 import {
     get_campaign,
+    get_campaign_week,
+    get_campaign_readiness,
     enlist_campaign,
     leave_campaign,
-    take_campaign_standing_fleet,
-    join_campaign_standing_fleet,
-    create_campaign_gang,
 } from '@helpers/api.minmatar.org/campaigns'
 import { campaign_action_error_key } from '@helpers/fetching/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
-const variant = (Astro.url.searchParams.get('variant') ?? 'hero') as 'card' | 'hero'
 const action = Astro.url.searchParams.get('action') ?? ''
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 let flash:string | false = false
+let acted = false
 
 if (Astro.request.method === 'POST') {
+    acted = true
     try {
         switch (action) {
             case 'enlist':
@@ -51,23 +51,6 @@ if (Astro.request.method === 'POST') {
                 await leave_campaign(slug, auth_token as string)
                 flash = t('campaigns.left_success')
                 break
-            case 'standing_fleet_take':
-                await take_campaign_standing_fleet(slug, auth_token as string)
-                flash = t('campaigns.standing_fleet_taken')
-                break
-            case 'standing_fleet_join':
-                await join_campaign_standing_fleet(slug, auth_token as string)
-                flash = t('campaigns.standing_fleet_joined')
-                break
-            case 'gang': {
-                const data = await Astro.request.formData()
-                await create_campaign_gang(slug, auth_token as string, {
-                    ships: (data.get('ships') as string) ?? '',
-                    note: (data.get('note') as string) ?? '',
-                })
-                flash = t('campaigns.gang.posted')
-                break
-            }
         }
     } catch (error) {
         flash = t(campaign_action_error_key(error))
@@ -76,6 +59,8 @@ if (Astro.request.method === 'POST') {
 
 let fetch_campaign_error:Error | false = false
 let campaign:CampaignDetail | null = null
+let week:CampaignWeek | null = null
+let readiness:CampaignReadiness | null = null
 
 try {
     campaign = await get_campaign(slug, auth_token as string)
@@ -83,10 +68,21 @@ try {
     fetch_campaign_error = error
 }
 
-const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}&variant=${variant}`)
+/** Enlisting or leaving changes the table and the You tab, so both ride along; a miss only skips that refresh. */
+if (campaign && acted) {
+    const extras = await Promise.allSettled([
+        get_campaign_week(slug, auth_token as string),
+        get_campaign_readiness(auth_token as string),
+    ])
+    week = extras[0].status === 'fulfilled' ? extras[0].value : null
+    readiness = extras[1].status === 'fulfilled' ? extras[1].value : null
+}
+
+const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}`)
 
 import CampaignActions from '@components/blocks/CampaignActions.astro'
-import Tag from '@components/blocks/Tag.astro'
+import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
+import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -101,19 +97,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     />
     :
     <>
-        <CampaignActions
-            slug={slug}
-            variant={variant}
-            is_enlisted={campaign.is_enlisted}
-            standing_fleet_up={campaign.standing_fleet_up}
-            systems={campaign.systems}
-            flash={flash}
-        />
-        {/* The detail page header carries an enlisted tag that enlisting/leaving invalidates. */}
-        {variant === 'hero' &&
-            <span id="campaign-enlisted-tag" class="[ contents ]" hx-swap-oob="true">
-                {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
-            </span>
+        <CampaignActions slug={slug} is_enlisted={campaign.is_enlisted} flash={flash} />
+        {acted &&
+            <>
+                {week &&
+                    <div id="campaign-orders" hx-swap-oob="innerHTML">
+                        <CampaignObjectivesTable week={week} systems={campaign.systems} />
+                    </div>
+                }
+                <CampaignYouPanel campaign={campaign} readiness={readiness} hx-swap-oob="true" />
+            </>
         }
     </>
 }

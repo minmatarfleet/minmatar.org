@@ -1,9 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
 import { clamp_percent, status_chip_color, status_chip_i18n_key } from '@helpers/fetching/campaigns'
+import { format_date_time, from_now_diff } from '@helpers/date'
 
 interface Props {
     system:             CampaignSystemSummary;
@@ -36,44 +37,61 @@ const advantage_age_text = system.advantage_basis === 'unknown' || system.advant
     : system.advantage_is_stale
         ? t('campaigns.system.reading_stale')
         : t('campaigns.system.reading_age').replace('{minutes}', String(system.advantage_age_minutes))
+const from_frontlines = system.advantage_source === 'frontlines' && system.advantage_basis !== 'unknown'
+/** CCP publishes the number itself; a pilot's eyeballed reading is only a fallback while that feed is stale. */
+const show_report = can_report && !(from_frontlines && !system.advantage_is_stale)
 
 const ADVANTAGE_PARTIAL_URL = translatePath(`/partials/campaign_advantage_component?slug=${slug}&system_id=${system.id}`)
 
+/** The quiet "last updated" stack: when each figure on the card was last pulled, full date on hover. */
+const updated = [
+    {
+        key: 'campaigns.system.updated_contested' as const,
+        at: system.contested_updated_at,
+    },
+    {
+        key: 'campaigns.system.updated_advantage' as const,
+        at: system.advantage_updated_at,
+    },
+].map(item => ({
+    text: t(item.key).replace('{ago}', item.at ? from_now_diff(lang, new Date(item.at)) : t('campaigns.system.updated_never')),
+    title: item.at ? format_date_time(lang, item.at) : undefined,
+}))
+
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Tag from '@components/blocks/Tag.astro'
 import Button from '@components/blocks/Button.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Input from '@components/blocks/Input.astro'
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
 import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
 ---
 
 <ComponentBlock
     id={`campaign-system-${system.id}`}
     class:list={['[ campaign-system-card ]', Astro.props.class]}
-    padding_inline='var(--space-s)'
-    padding_block='var(--space-s)'
+    padding_inline='var(--space-m)'
+    padding_block='var(--space-m)'
     {...attributes}
 >
-    <Flexblock gap='var(--space-s)'>
+    <Flexblock gap='var(--space-m)'>
         {flash && <small class="[ campaign-system-flash ]" role="status">{flash}</small>}
 
-        <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ items-start ]">
+        <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-baseline ]">
             <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-                <h3>{system.name}</h3>
-                <Tag text={t(goal_key)} color='militia-purple' />
+                <CampaignPriorityIcon priority={system.priority} />
+                <h3 title={`${t(goal_key)} · ${t(status_chip_i18n_key(system.status_chip))}`}>{system.name}</h3>
             </FlexInline>
-            <Tag
-                text={t(status_chip_i18n_key(system.status_chip))}
-                color={status_chip_color(system.status_chip)}
-            />
+            <div class="[ campaign-system-updated ]">
+                {updated.map(item => <small title={item.title}>{item.text}</small>)}
+                <small>{t('campaigns.system.updated_kills')}</small>
+            </div>
         </FlexInline>
 
-        <Grid min_item_width='15rem' row_gap='var(--space-s)' column_gap='var(--space-l)'>
-            <Flexblock gap='var(--space-3xs)'>
+        <div class="[ campaign-system-columns ]">
+            <Flexblock gap='var(--space-2xs)'>
                 <small>{t('campaigns.system.contested')}</small>
                 <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
                     <span class="[ campaign-figure ]">{contested.toFixed(1)}%</span>
@@ -90,7 +108,7 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                 </small>
             </Flexblock>
 
-            <Flexblock gap='var(--space-3xs)'>
+            <Flexblock gap='var(--space-2xs)'>
                 <small>{t('campaigns.system.advantage')}</small>
                 <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
                     <span class="[ campaign-figure ]">{net_pct >= 0 ? '+' : ''}{net_pct.toFixed(1)}%</span>
@@ -103,10 +121,11 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                     <CampaignMeter percent={enemy_pct} color='var(--fleet-red)' label={t('campaigns.system.enemy')} />
                 </Flexblock>
                 <small>
+                    {from_frontlines && `${t('campaigns.system.from_frontlines')} · `}
                     {advantage_age_text}
                     {system.advantage_basis === 'estimate' && ` · ${t('campaigns.system.estimated')}`}
                 </small>
-                {can_report &&
+                {show_report &&
                     <DialogButton size='sm' color='transparent' max_width='420px'>
                         {t('campaigns.system.report_advantage')}
                         <Flexblock slot='dialog' gap='var(--space-s)'>
@@ -138,7 +157,7 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                 }
             </Flexblock>
 
-            <Flexblock gap='var(--space-3xs)'>
+            <Flexblock gap='var(--space-2xs)'>
                 <small>{t('campaigns.system.kills_losses')}</small>
                 <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
                     <span class="[ campaign-figure ]">{system.kills_24h}</span>
@@ -150,7 +169,7 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                 </FlexInline>
                 <small>{kills_change >= 0 ? '+' : ''}{kills_change} · {t('campaigns.system.change_24h')}</small>
             </Flexblock>
-        </Grid>
+        </div>
     </Flexblock>
 </ComponentBlock>
 
@@ -170,6 +189,61 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
 
     .campaign-system-flash {
         color: var(--highlight);
+    }
+
+    .campaign-system-updated {
+        display: flex;
+        gap: var(--space-2xs);
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        font-size: var(--step--2);
+        color: var(--foreground);
+        opacity: 0.7;
+
+        small + small::before {
+            content: '·';
+            padding-inline-end: var(--space-2xs);
+        }
+
+        small[title] {
+            cursor: help;
+        }
+    }
+
+    .campaign-system-columns {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-m) var(--space-l);
+        align-items: start;
+    }
+
+    .campaign-system-columns > :global(.flex-block) {
+        min-width: 0;
+        padding-inline-start: var(--space-m);
+        border-inline-start: solid 1px var(--border-color);
+    }
+
+    .campaign-system-columns > :global(.flex-block:first-child) {
+        padding-inline-start: 0;
+        border-inline-start: none;
+    }
+
+    @media screen and (max-width: 991px) {
+        .campaign-system-columns {
+            grid-template-columns: 1fr;
+        }
+
+        .campaign-system-columns > :global(.flex-block) {
+            padding-inline-start: 0;
+            border-inline-start: none;
+            padding-top: var(--space-s);
+            border-top: solid 1px var(--border-color);
+        }
+
+        .campaign-system-columns > :global(.flex-block:first-child) {
+            padding-top: 0;
+            border-top: none;
+        }
     }
 
     label {

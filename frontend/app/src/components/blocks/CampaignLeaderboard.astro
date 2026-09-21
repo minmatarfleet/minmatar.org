@@ -8,6 +8,7 @@ import type {
     CampaignLeaderboardPeriod,
 } from '@dtypes/api.minmatar.org'
 import { format_isk } from '@helpers/numbers'
+import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
     slug:               string;
@@ -35,9 +36,12 @@ const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:Campaign
 
 const format_value = (value:number) => metric === 'isk' ? format_isk(value) : value.toFixed(0)
 
+const haystack = (row:CampaignLeaderboardRow) => `${row.character_name} ${row.username}`.toLowerCase()
+
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
 import CampaignTable from '@components/blocks/CampaignTable.astro'
 ---
 
@@ -45,9 +49,24 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     id='campaign-leaderboard'
     gap='var(--space-s)'
     class:list={['[ campaign-leaderboard ]', Astro.props.class]}
+    x-data={`{
+        q: '',
+        matches: ${rows.length},
+        apply() {
+            const q = this.q.trim().toLowerCase()
+            let matched = 0
+            this.$root.querySelectorAll('[data-pilot]').forEach(row => {
+                const ok = !q || row.dataset.pilot.includes(q)
+                row.hidden = !ok
+                if (ok) matched++
+            })
+            this.matches = matched
+        },
+        init() { this.$watch('q', () => this.apply()) },
+    }`}
     {...attributes}
 >
-    <FlexInline gap='var(--space-3xs)'>
+    <FlexInline gap='var(--space-3xs)' class="[ campaign-segmented ]" role="group">
         {metrics.map(item =>
             <Button
                 size='sm'
@@ -64,7 +83,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         )}
     </FlexInline>
 
-    <FlexInline gap='var(--space-3xs)'>
+    <FlexInline gap='var(--space-3xs)' class="[ campaign-segmented ]" role="group">
         {periods.map(item =>
             <Button
                 size='sm'
@@ -81,12 +100,23 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         )}
     </FlexInline>
 
+    {rows.length > 0 &&
+        <Input
+            type='search'
+            size='sm'
+            width='14rem'
+            placeholder={t('campaigns.leaderboard.search')}
+            aria-label={t('campaigns.leaderboard.search')}
+            x-model.debounce.150ms='q'
+        />
+    }
+
     {rows.length === 0 ?
         <small>{t('campaigns.leaderboard.none')}</small>
         :
         <CampaignTable
             min_width='24rem'
-            template='3rem 1fr 6rem 6rem'
+            template='2.5rem 1fr 6rem 6rem'
             numeric={[ 0, 2, 3 ]}
             columns={[
                 t('campaigns.leaderboard.rank'),
@@ -96,20 +126,57 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             ]}
         >
             {rows.map(row =>
-                <div class="[ campaign-table-row ]" role="row">
+                <div class="[ campaign-table-row ]" role="row" data-pilot={haystack(row)}>
                     <span role="cell" class="[ campaign-table-numeric ]">{row.rank}</span>
-                    <span role="cell">{row.username}</span>
+                    <div class="[ campaign-cell-media ]" role="cell">
+                        {row.character_id &&
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_player_icon(row.character_id, 32)}
+                                alt=''
+                            />
+                        }
+                        <span>{row.character_name || row.username}</span>
+                    </div>
                     <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
                     <span role="cell" class="[ campaign-table-numeric ]">{row.points}</span>
                 </div>
             )}
         </CampaignTable>
     }
+
+    {rows.length > 0 && <small class="[ campaign-leaderboard-empty ]" x-show="matches === 0" x-cloak>{t('campaigns.leaderboard.no_match')}</small>}
 </Flexblock>
 
 <style lang="scss">
-    .campaign-leaderboard :global(button.button.is-active) {
-        border-color: var(--alliance-blue);
+    .campaign-leaderboard :global(.campaign-table-row[hidden]) {
+        display: none;
+    }
+
+    .campaign-leaderboard-empty {
+        color: var(--foreground);
+    }
+
+    .campaign-segmented {
+        gap: 0 !important;
+        border: solid 1px var(--border-color-hover);
+        width: fit-content;
+    }
+
+    .campaign-segmented :global(.button) {
+        border: none;
+        border-radius: 0;
+        padding-block: var(--space-3xs);
+    }
+
+    .campaign-segmented :global(.button + .button) {
+        border-inline-start: solid 1px var(--border-color-hover);
+    }
+
+    .campaign-segmented :global(.button.is-active) {
+        background-color: var(--fleet-red);
         color: var(--highlight);
     }
 </style>

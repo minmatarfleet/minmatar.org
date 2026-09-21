@@ -10,21 +10,26 @@ from __future__ import annotations
 import random
 from datetime import timedelta
 
+import factory
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+from django.db.models import signals
 from django.utils import timezone
 
+from campaigns.helpers import campaign_day
 from campaigns.models import (
     Campaign,
     CampaignAdvantageReading,
     CampaignEnlistment,
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
+    CampaignKillmail,
     CampaignStandingFleet,
     CampaignStatus,
     CampaignSystem,
     CampaignSystemArc,
     CampaignSystemSnapshot,
+    KillmailOutcome,
     OperationalState,
     SystemGoal,
     SystemRole,
@@ -32,14 +37,16 @@ from campaigns.models import (
 from campaigns.services import (
     advantage,
     attribution,
+    fleets,
     plan,
     sites,
     snapshots,
     stats,
 )
 from campaigns.services.sites import attribute_payouts, contested_factor
-from eveonline.models import EveCharacter, EveCharacterFwLpPayout
+from eveonline.models import EveCharacter, EveCharacterFwLpPayout, EvePlayer
 from feed.models import FeedKillmail, FeedMonitoredSystem
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 SYSTEMS = [
     ("Kamela", SystemGoal.CAPTURE, SystemRole.PRIMARY, "flip"),
@@ -70,7 +77,9 @@ class Command(BaseCommand):
         self._systems(campaign)
         self._snapshots(campaign)
         enlisted = self._enlist(campaign, options["pilots"], options["days"])
+        self._personas(campaign)
         attributed = self._attribute(campaign, options["days"])
+        self._fleets(campaign)
         self._advantage(campaign)
         sites.seed_event_codes()
         payouts = self._payouts(campaign)
@@ -229,6 +238,58 @@ class Command(BaseCommand):
 
         return enlisted
 
+    def _personas(self, campaign: Campaign) -> int:
+        """Give every enlisted pilot a face.
+
+        The boards show a pilot's primary character, so a synthetic pilot
+        with no character would render as a bare username. The dev database
+        carries real characters nobody has claimed; each faceless pilot
+        adopts one as their main. No token is involved, so nothing about
+        them is tracked; they only exist to be looked at.
+        """
+        user_ids = list(
+            CampaignEnlistment.objects.filter(
+                campaign=campaign, status="active"
+            ).values_list("user_id", flat=True)
+        )
+        faced = set(
+            EvePlayer.objects.filter(
+                user_id__in=user_ids, primary_character__isnull=False
+            ).values_list("user_id", flat=True)
+        )
+        faceless = [
+            user
+            for user in User.objects.filter(id__in=user_ids).order_by("id")
+            if user.id not in faced
+        ]
+        if not faceless:
+            return 0
+
+        spare = list(
+            EveCharacter.objects.filter(user__isnull=True, esi_deleted=False)
+            .exclude(character_name="")
+            .order_by("character_id")[: len(faceless)]
+        )
+        adopted = 0
+        for user, character in zip(faceless, spare):
+            character.user = user
+            character.save(update_fields=["user"])
+            player, _ = EvePlayer.objects.get_or_create(
+                user=user, defaults={"nickname": user.username}
+            )
+            player.primary_character = character
+            player.save(update_fields=["primary_character"])
+            enlistment = CampaignEnlistment.objects.get(
+                campaign=campaign, user=user
+            )
+            CampaignEnlistmentCharacter.objects.get_or_create(
+                enlistment=enlistment,
+                character=character,
+                defaults={"included_from": campaign.start_at},
+            )
+            adopted += 1
+        return adopted
+
     def _attribute(self, campaign: Campaign, days: int) -> int:
         since = timezone.now() - timedelta(days=days)
         attributed = 0
@@ -241,6 +302,99 @@ class Command(BaseCommand):
                 mail, source="seed", rosters=rosters
             )
         return attributed
+
+    SEEDED_FLEET_MARK = "Seeded campaign fleet"
+
+    def _fleets(self, campaign: Campaign) -> int:
+        """Fleets that flew the fights the killmails already record.
+
+        Take the three busiest kill hours in the campaign, put a strategic
+        fleet up around each one led by the pilot with the most kills, seat
+        every enlisted pilot who was on those mails in it, and let the real
+        fleet linker attach the kills. The Fleets tab then shows pilots and
+        ISK the way it would after a real op.
+        """
+        if campaign.fleets.filter(description=self.SEEDED_FLEET_MARK).exists():
+            return 0
+
+        mails = list(
+            CampaignKillmail.objects.filter(
+                campaign=campaign, outcome=KillmailOutcome.KILL
+            ).prefetch_related("participants")
+        )
+        if not mails:
+            return 0
+
+        by_hour: dict = {}
+        for mail in mails:
+            hour = mail.killmail_time.replace(
+                minute=0, second=0, microsecond=0
+            )
+            by_hour.setdefault(hour, []).append(mail)
+        busiest = sorted(by_hour.items(), key=lambda item: -len(item[1]))[:3]
+
+        created = 0
+        for index, (hour, hour_mails) in enumerate(busiest):
+            pilots: dict = {}
+            for mail in hour_mails:
+                for participant in mail.participants.all():
+                    if participant.role == "attacker" and participant.user_id:
+                        pilots.setdefault(participant.user_id, set()).add(
+                            participant.character_id
+                        )
+            if not pilots:
+                continue
+            leader_id = max(pilots.items(), key=lambda item: len(item[1]))[0]
+            start = hour - timedelta(minutes=30)
+            end = hour + timedelta(hours=2)
+
+            with factory.django.mute_signals(
+                signals.pre_save, signals.post_save
+            ):
+                fleet = EveFleet.objects.create(
+                    type="strategic",
+                    description=self.SEEDED_FLEET_MARK,
+                    objective=f"{campaign.name} op {index + 1}",
+                    start_time=start,
+                    status="complete",
+                    campaign=campaign,
+                    created_by_id=leader_id,
+                )
+            instance = EveFleetInstance.objects.create(
+                id=900_000_000 + fleet.id, eve_fleet=fleet, end_time=end
+            )
+            EveFleetInstance.objects.filter(pk=instance.pk).update(
+                start_time=start, last_updated=end
+            )
+            names = dict(
+                EveCharacter.objects.filter(
+                    character_id__in=[
+                        cid for cids in pilots.values() for cid in cids
+                    ]
+                ).values_list("character_id", "character_name")
+            )
+            system = hour_mails[0].solar_system_id
+            for cids in pilots.values():
+                for character_id in cids:
+                    member = EveFleetInstanceMember.objects.create(
+                        eve_fleet_instance=instance,
+                        character_id=character_id,
+                        character_name=names.get(character_id, ""),
+                        role="squad_member",
+                        role_name="Squad Member",
+                        ship_type_id=587,
+                        ship_name="Rifter",
+                        solar_system_id=system,
+                        solar_system_name="",
+                        squad_id=1,
+                        wing_id=1,
+                    )
+                    EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+                        join_time=start, updated_at=end
+                    )
+            fleets.link_killmails_to_fleets(campaign, campaign_day(hour))
+            created += 1
+        return created
 
     def _advantage(self, campaign: Campaign):
         operator = User.objects.filter(is_superuser=True).first()

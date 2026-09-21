@@ -5,6 +5,7 @@ import type {
     CampaignWeek,
     CampaignOrder,
     CampaignSystemSummary,
+    CampaignFleet,
     CampaignLeaderboardRow,
     CampaignLeaderboardMetric,
     CampaignLeaderboardPeriod,
@@ -143,9 +144,11 @@ export async function get_campaign_killmails(
     access_token:string | false = false,
     outcome:CampaignKillmailOutcome | '' = '',
     limit:number = 25,
+    offset:number = 0,
 ) {
     const params = new URLSearchParams({ limit: String(limit) })
     if (outcome) params.set('outcome', outcome)
+    if (offset > 0) params.set('offset', String(offset))
 
     return await request_json<CampaignKillmail[]>(
         `${API_ENDPOINT}/${slug}/killmails?${params.toString()}`,
@@ -154,9 +157,9 @@ export async function get_campaign_killmails(
     )
 }
 
-export async function get_campaign_sites(slug:string, access_token:string | false = false, limit:number = 25) {
+export async function get_campaign_sites(slug:string, access_token:string | false = false, limit:number = 25, offset:number = 0) {
     return await request_json<CampaignSite[]>(
-        `${API_ENDPOINT}/${slug}/sites?limit=${limit}`,
+        `${API_ENDPOINT}/${slug}/sites?limit=${limit}${offset > 0 ? `&offset=${offset}` : ''}`,
         access_token,
         'campaign sites',
     )
@@ -167,6 +170,14 @@ export async function get_campaign_timeline(slug:string, access_token:string | f
         `${API_ENDPOINT}/${slug}/timeline?limit=${limit}`,
         access_token,
         'campaign timeline',
+    )
+}
+
+export async function get_campaign_fleets(slug:string, access_token:string | false = false, limit:number = 25) {
+    return await request_json<CampaignFleet[]>(
+        `${API_ENDPOINT}/${slug}/fleets?limit=${limit}`,
+        access_token,
+        'campaign fleets',
     )
 }
 

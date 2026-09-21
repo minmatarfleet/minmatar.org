@@ -97,18 +97,26 @@ def recompute_state(campaign_system: CampaignSystem) -> CampaignAdvantageState:
         state.our_pct = 0
         state.enemy_pct = 0
         state.reading_age_minutes = None
+        state.source = "pilot"
     else:
         age = int((now - latest.reported_at).total_seconds() // 60)
+        state.source = latest.source
         if age > ADVANTAGE_READING_HIDE_MINUTES:
             state.basis = "unknown"
             state.reading_age_minutes = age
         else:
-            window = latest.reported_at - timedelta(
-                minutes=CONSENSUS_WINDOW_MINUTES
-            )
-            consensus = _consensus(campaign_system, window)
-            state.our_pct = round(consensus[0] or latest.our_pct, 1)
-            state.enemy_pct = round(consensus[1] or latest.enemy_pct, 1)
+            if latest.source == "frontlines":
+                # CCP's own number: exact, so no averaging with pilots'
+                # eyeballed readings.
+                state.our_pct = round(latest.our_pct, 1)
+                state.enemy_pct = round(latest.enemy_pct, 1)
+            else:
+                window = latest.reported_at - timedelta(
+                    minutes=CONSENSUS_WINDOW_MINUTES
+                )
+                consensus = _consensus(campaign_system, window)
+                state.our_pct = round(consensus[0] or latest.our_pct, 1)
+                state.enemy_pct = round(consensus[1] or latest.enemy_pct, 1)
             state.reading_age_minutes = age
             state.basis = (
                 "reading"
@@ -190,11 +198,19 @@ def as_card(state: CampaignAdvantageState | None) -> dict:
             "net_pct": None,
             "reading_age_minutes": None,
             "is_stale": True,
+            "source": "pilot",
+            "read_at": None,
             "our_generated_since_reading": 0,
             "enemy_removed_since_reading": 0,
         }
     return {
         "basis": state.basis,
+        "source": state.source,
+        "read_at": (
+            state.as_of - timedelta(minutes=state.reading_age_minutes)
+            if state.reading_age_minutes is not None
+            else None
+        ),
         "our_pct": state.our_pct if state.basis != "unknown" else None,
         "enemy_pct": state.enemy_pct if state.basis != "unknown" else None,
         "net_pct": state.net_pct if state.basis != "unknown" else None,

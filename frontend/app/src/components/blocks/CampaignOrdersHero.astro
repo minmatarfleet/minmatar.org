@@ -1,0 +1,119 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignDetail, CampaignWeek } from '@dtypes/api.minmatar.org'
+import { clamp_percent } from '@helpers/fetching/campaigns'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    campaign:           CampaignDetail;
+    week:               CampaignWeek | null;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    week,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const ORDERS_PARTIAL_URL = translatePath(`/partials/campaign_orders_component?slug=${campaign.slug}`)
+
+const week_range = week?.week_end
+    ? `${format_date_short(lang, new Date(`${week.week_start}T11:00:00Z`))} – ${format_date_short(lang, new Date(`${week.week_end}T11:00:00Z`))}`
+    : ''
+const week_percent = week ? clamp_percent((week.week_index / Math.max(1, week.week_count)) * 100) : 0
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
+import CampaignActions from '@components/blocks/CampaignActions.astro'
+---
+
+<ComponentBlock
+    padding_inline='var(--space-m)'
+    padding_block='var(--space-m)'
+    class:list={['[ campaign-hero ]', Astro.props.class]}
+    {...attributes}
+>
+    <Flexblock gap='var(--space-m)'>
+        <div class="[ campaign-hero-head ]">
+            <Flexblock gap='var(--space-3xs)' class="[ campaign-hero-title ]">
+                <h2>{t('campaigns.week.heading')}</h2>
+            </Flexblock>
+
+            {week &&
+                <Flexblock gap='var(--space-3xs)' class="[ campaign-hero-week ]">
+                    <small class="[ campaign-hero-label ]">
+                        {t('campaigns.week.position').replace('{index}', String(week.week_index)).replace('{count}', String(week.week_count))}
+                        {week_range && ` · ${week_range}`}
+                    </small>
+                    <CampaignMeter
+                        percent={week_percent}
+                        color='var(--highlight)'
+                        label={t('campaigns.week.progress_meter')}
+                        class="[ campaign-hero-week-meter ]"
+                    />
+                </Flexblock>
+            }
+        </div>
+
+        <div
+            id="campaign-orders"
+            hx-get={ORDERS_PARTIAL_URL}
+            hx-trigger="every 300s"
+            hx-swap="innerHTML"
+        >
+            <CampaignObjectivesTable week={week} systems={campaign.systems} />
+        </div>
+
+        <CampaignActions slug={campaign.slug} is_enlisted={campaign.is_enlisted} />
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    .campaign-hero-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-m);
+        flex-wrap: wrap;
+    }
+
+    .campaign-hero-title {
+        min-width: 0;
+        flex: 1 1 20rem;
+    }
+
+    .campaign-hero-label {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+        white-space: nowrap;
+    }
+
+    .campaign-hero-week {
+        align-items: flex-end;
+        flex: 0 0 auto;
+    }
+
+    .campaign-hero-week :global(.campaign-hero-week-meter) {
+        width: 100%;
+    }
+
+    @media screen and (max-width: 767px) {
+        .campaign-hero-week {
+            align-items: flex-start;
+        }
+    }
+</style>

@@ -2,32 +2,38 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
-
+/**
+ * The foot of the orders card. A pilot who is not in the campaign gets the
+ * one thing they can do here: enlist. Once enlisted there is nothing to
+ * press; leaving lives on the You tab. Every action posts back here and this
+ * block is swapped, along with the header tag and the You tab.
+ */
 interface Props {
-    slug:               string;
-    variant:            'card' | 'hero';
-    is_enlisted:        boolean;
-    standing_fleet_up:  boolean;
-    systems?:           CampaignSystemSummary[];
-    flash?:             string | false;
+    slug:                       string;
+    is_enlisted:                boolean;
+    flash?:                     string | false;
     [propName: string]: any;
 }
 
 const {
     slug,
-    variant,
     is_enlisted,
-    standing_fleet_up,
-    systems = [],
     flash = false,
     ...attributes
 } = Astro.props
 
 delete attributes.class
+delete attributes.variant
+delete attributes.systems
+delete attributes.standing_fleet_up
+delete attributes.standing_fleet_members
+delete attributes.standing_fleet_boss
+delete attributes.my_points
+delete attributes.my_rank
+delete attributes.my_streak
 
 const actions_id = `campaign-actions-${slug}`
-const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}&variant=${variant}`)
+const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}`)
 
 const hx_attributes = (action:string) => ({
     'hx-post': `${PARTIAL_URL}&action=${action}`,
@@ -36,135 +42,65 @@ const hx_attributes = (action:string) => ({
     'hx-indicator': '.loader',
 })
 
-const standing_fleet_label = standing_fleet_up ? t('campaigns.join_standing_fleet') : t('campaigns.take_standing_fleet')
-const standing_fleet_action = standing_fleet_up ? 'standing_fleet_join' : 'standing_fleet_take'
-
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import DialogButton from '@components/blocks/DialogButton.astro'
-import Input from '@components/blocks/Input.astro'
-import Textarea from '@components/blocks/Textarea.astro'
 ---
 
-<Flexblock
+<div
     id={actions_id}
-    gap='var(--space-2xs)'
-    class:list={['[ campaign-actions ]', Astro.props.class]}
+    class:list={['[ campaign-hero-footer ]', { 'is-empty': is_enlisted && !flash }, Astro.props.class]}
     {...attributes}
 >
-    {variant === 'card' ?
-        <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-row ]">
-            {is_enlisted ?
-                <Button color='transparent' {...hx_attributes('leave')}>
-                    {t('campaigns.leave')}
-                </Button>
-                :
-                <Button color='green' {...hx_attributes('enlist')}>
-                    {t('campaigns.enlist')}
-                </Button>
-            }
-            <Button color='fleet-red' {...hx_attributes(standing_fleet_action)}>
-                {standing_fleet_label}
+    {!is_enlisted &&
+        <div class="[ campaign-enlist ][ light-transparency ]">
+            <span class="[ campaign-enlist-text ]">{t('campaigns.you.enlist_hint')}</span>
+            <Button color='green' class="[ campaign-primary-action ]" {...hx_attributes('enlist')}>
+                {t('campaigns.enlist')}
             </Button>
-            <Button color='transparent' href={translatePath(`/campaigns/${slug}/`)}>
-                {t('campaigns.open')}
-            </Button>
-        </FlexInline>
-        :
-        <Flexblock gap='var(--space-2xs)'>
-            <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-row ]">
-                <Button color='fleet-red' {...hx_attributes(standing_fleet_action)}>
-                    {standing_fleet_label}
-                </Button>
-                <DialogButton color='transparent' max_width='460px'>
-                    {t('campaigns.form_gang')}
-                    <Flexblock slot='dialog' gap='var(--space-s)'>
-                        <h3>{t('campaigns.gang.dialog_title')}</h3>
-                        <form
-                            hx-post={`${PARTIAL_URL}&action=gang`}
-                            hx-target={`#${actions_id}`}
-                            hx-swap='outerHTML'
-                            hx-indicator='.loader'
-                            x-on:submit="close_dialog()"
-                        >
-                            <Flexblock gap='var(--space-s)'>
-                                <label>
-                                    <small>{t('campaigns.gang.ships')}</small>
-                                    <Input type='text' name='ships' placeholder={t('campaigns.gang.ships_placeholder')} required />
-                                </label>
-                                <label>
-                                    <small>{t('campaigns.gang.note')}</small>
-                                    <Textarea name='note' rows='3' />
-                                </label>
-                                <Button size='sm' color='green' type='submit'>
-                                    {t('campaigns.gang.submit')}
-                                </Button>
-                            </Flexblock>
-                        </form>
-                    </Flexblock>
-                </DialogButton>
-                <DialogButton color='transparent' max_width='460px'>
-                    {t('campaigns.undock_solo')}
-                    <Flexblock slot='dialog' gap='var(--space-s)'>
-                        <h3>{t('campaigns.undock_solo')}</h3>
-                        <p>{t('campaigns.undock_solo_hint')}</p>
-                        <FlexInline gap='var(--space-2xs)'>
-                            {systems.map(system =>
-                                <span class="[ campaign-actions-system ]">{system.name}</span>
-                            )}
-                        </FlexInline>
-                    </Flexblock>
-                </DialogButton>
-            </FlexInline>
-
-            <FlexInline gap='var(--space-2xs)' class="[ campaign-actions-links ]">
-                {is_enlisted ?
-                    <Button size='sm' color='transparent' {...hx_attributes('leave')}>
-                        {t('campaigns.leave')}
-                    </Button>
-                    :
-                    <Button size='sm' color='transparent' {...hx_attributes('enlist')}>
-                        {t('campaigns.enlist')}
-                    </Button>
-                }
-                <Button size='sm' color='transparent' href={translatePath('/account/')}>
-                    {t('campaigns.alert_settings')}
-                </Button>
-            </FlexInline>
-        </Flexblock>
+        </div>
     }
 
     {flash && <small class="[ campaign-actions-flash ]" role="status">{flash}</small>}
-</Flexblock>
+</div>
 
 <style lang="scss">
-    .campaign-actions-row {
-        align-items: stretch;
+    .campaign-hero-footer {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        &.is-empty {
+            display: none;
+        }
     }
 
-    .campaign-actions-links {
-        align-items: stretch;
+    .campaign-enlist {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--border-color-hover);
+        border-inline-start: solid 3px var(--green);
+    }
+
+    .campaign-enlist-text {
+        color: var(--highlight);
     }
 
     .campaign-actions-flash {
         color: var(--highlight);
+        text-align: right;
     }
 
-    .campaign-actions-system {
-        font-size: var(--step--1);
-        color: var(--highlight);
-    }
+    @media screen and (max-width: 767px) {
+        .campaign-enlist {
+            flex-direction: column;
+            align-items: stretch;
+        }
 
-    h3 {
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        color: var(--highlight);
-    }
-
-    label {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
+        .campaign-enlist :global(.campaign-primary-action) {
+            width: 100%;
+            text-align: center;
+        }
     }
 </style>

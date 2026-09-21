@@ -19,7 +19,7 @@ from campaigns.models import (
     SystemGoal,
 )
 from campaigns.services import advantage, snapshots, stats
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.models import EveCorporation, EveCharacter, EvePlayer
 from feed.models import FeedKillmail
 
 
@@ -79,6 +79,7 @@ def system_summary(
         "solar_system_id": campaign_system.solar_system_id,
         "role": campaign_system.role,
         "goal": campaign_system.goal,
+        "priority": campaign_system.priority,
         "contested_percent": (
             round(contested, 2) if contested is not None else None
         ),
@@ -88,8 +89,11 @@ def system_summary(
             latest.victory_points_threshold if latest else None
         ),
         "operational_state": latest.operational_state if latest else "unknown",
+        "contested_updated_at": latest.captured_at if latest else None,
+        "advantage_updated_at": advantage_state["read_at"],
         "owner_faction_id": latest.owner_faction_id if latest else None,
         "advantage_basis": advantage_state["basis"],
+        "advantage_source": advantage_state["source"],
         "advantage_our_pct": advantage_state["our_pct"],
         "advantage_enemy_pct": advantage_state["enemy_pct"],
         "advantage_net_pct": advantage_state["net_pct"],
@@ -172,6 +176,40 @@ def is_enlisted(campaign: Campaign, user) -> bool:
     return campaign.enlistments.filter(user=user, status="active").exists()
 
 
+COMPLEX_SIZES = ("Scout", "Small", "Medium", "Large", "Open", "FRF")
+# When a payout tier fits several variants, the plainest one wins: NVY-1
+# plexes are by far the most run, then NVY-5, then the advanced variants.
+VARIANT_PREFERENCE = ("NVY-1", "NVY-5", "ADV-1", "ADV-5", "ELT-5", "")
+
+
+def complex_size(candidates: list | None) -> str:
+    """One size class for a capture, picked from the inferred candidates.
+
+    A pilot wants to read "Medium complex", not the list of variants a
+    payout could have come from, so the tier is resolved to its most likely
+    variant and that variant's size is what shows. The candidates stay in
+    the API for the hover text.
+    """
+    best_rank = len(VARIANT_PREFERENCE)
+    best_size = ""
+    for name in candidates or []:
+        name = str(name)
+        size = next((s for s in COMPLEX_SIZES if name.startswith(s)), None)
+        if not size:
+            continue
+        rank = next(
+            (
+                index
+                for index, variant in enumerate(VARIANT_PREFERENCE)
+                if variant and variant in name
+            ),
+            len(VARIANT_PREFERENCE) - 1,
+        )
+        if rank < best_rank:
+            best_rank, best_size = rank, size
+    return best_size
+
+
 def killmail_out(mail: CampaignKillmail) -> dict:
     return {
         "killmail_id": mail.killmail_id,
@@ -179,7 +217,12 @@ def killmail_out(mail: CampaignKillmail) -> dict:
         "outcome": mail.outcome,
         "solar_system_id": mail.solar_system_id,
         "victim_character_name": mail.victim_character_name or "",
+        "victim_character_id": mail.victim_character_id,
+        "victim_faction_id": mail.victim_faction_id,
         "victim_ship_type_id": mail.victim_ship_type_id,
+        "killer_character_id": mail.killer_character_id,
+        "killer_character_name": mail.killer_character_name or "",
+        "killer_faction_id": mail.killer_faction_id,
         "isk_value": mail.isk_value,
         "enlisted_attacker_count": mail.enlisted_attacker_count,
         "is_solo": mail.is_solo,
@@ -266,6 +309,16 @@ def roster_rows(campaign: Campaign) -> list[dict]:
         row.user_id: row
         for row in CampaignParticipantStat.objects.filter(campaign=campaign)
     }
+    corporation_names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=[
+                player.primary_character.corporation_id
+                for player in players.values()
+                if player.primary_character
+                and player.primary_character.corporation_id
+            ]
+        ).values_list("corporation_id", "name")
+    )
     tracked_by_user = dict(
         EveCharacter.objects.filter(
             user_id__in=user_ids,
@@ -289,7 +342,13 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 "primary_character": (
                     primary.character_name if primary else ""
                 ),
+                "character_id": primary.character_id if primary else None,
                 "corporation_id": primary.corporation_id if primary else None,
+                "corporation_name": (
+                    corporation_names.get(primary.corporation_id, "")
+                    if primary
+                    else ""
+                ),
                 "prime_time": (player.prime_time if player else "") or "",
                 "observed_prime_time": (
                     stat.observed_prime_time if stat else ""

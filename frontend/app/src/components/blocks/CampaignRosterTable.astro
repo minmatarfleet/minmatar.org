@@ -4,9 +4,14 @@ const { lang, t } = i18n(Astro.url)
 
 import type { CampaignRosterPilot } from '@dtypes/api.minmatar.org'
 import { format_date_short } from '@helpers/date'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
 
+/**
+ * Every pilot is rendered; a search box and a corporation picker hide the
+ * rows that do not match, and `limit` caps how many matches show at once.
+ * Without JavaScript the first `limit` rows are what you get.
+ */
 interface Props {
     pilots:             CampaignRosterPilot[];
     limit?:             number | false;
@@ -21,53 +26,129 @@ const {
 
 delete attributes.class
 
-const rows = limit ? pilots.slice(0, limit) : pilots
+const corporations = [ ...new Map(
+    pilots
+        .filter(pilot => pilot.corporation_id && pilot.corporation_name)
+        .map(pilot => [ pilot.corporation_id as number, pilot.corporation_name ])
+).entries() ].sort((a, b) => a[1].localeCompare(b[1]))
 
+const haystack = (pilot:CampaignRosterPilot) =>
+    `${pilot.primary_character} ${pilot.username} ${pilot.corporation_name}`.toLowerCase()
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import CampaignTable from '@components/blocks/CampaignTable.astro'
 ---
 
-{rows.length === 0 ?
+{pilots.length === 0 ?
     <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.roster.none')}</small>
     :
-    <CampaignTable
-        min_width='46rem'
-        template='minmax(12rem, 1fr) 8rem 9rem 5rem 6rem 6rem'
-        numeric={[ 3, 4, 5 ]}
-        columns={[
-            t('campaigns.roster.pilot'),
-            t('campaigns.roster.prime_time'),
-            t('campaigns.roster.last_active'),
-            t('campaigns.roster.streak'),
-            t('campaigns.roster.points'),
-            t('campaigns.roster.characters'),
-        ]}
-        class:list={[Astro.props.class]}
+    <div
+        class:list={['[ campaign-roster ]', Astro.props.class]}
+        x-data={`{
+            q: '',
+            corp: '',
+            limit: ${limit || 0},
+            matches: ${pilots.length},
+            apply() {
+                const q = this.q.trim().toLowerCase()
+                let shown = 0
+                let matched = 0
+                this.$root.querySelectorAll('[data-pilot]').forEach(row => {
+                    const ok = (!q || row.dataset.pilot.includes(q)) && (!this.corp || row.dataset.corp === this.corp)
+                    if (ok) matched++
+                    row.hidden = !(ok && (!this.limit || shown < this.limit))
+                    if (ok) shown++
+                })
+                this.matches = matched
+            },
+            init() {
+                this.$watch('q', () => this.apply())
+                this.$watch('corp', () => this.apply())
+            },
+        }`}
         {...attributes}
     >
-        {rows.map(pilot =>
-            <div class="[ campaign-table-row ]" role="row">
-                <div class="[ campaign-cell-media ]" role="cell">
-                    {pilot.corporation_id &&
-                        <img
-                            loading='lazy'
-                            width='32'
-                            height='32'
-                            src={get_corporation_logo(pilot.corporation_id, 32)}
-                            alt={t('campaigns.roster.corporation')}
-                        />
-                    }
-                    <span>{pilot.primary_character || pilot.username}</span>
+        <FlexInline gap='var(--space-2xs)' class="[ campaign-roster-filters ]">
+            <Input
+                type='search'
+                size='sm'
+                width='14rem'
+                placeholder={t('campaigns.roster.search')}
+                aria-label={t('campaigns.roster.search')}
+                x-model.debounce.150ms='q'
+            />
+            {corporations.length > 1 &&
+                <Select size='sm' width='16rem' aria-label={t('campaigns.roster.corporation')} x-model='corp'>
+                    <option value=''>{t('campaigns.roster.all_corporations')}</option>
+                    {corporations.map(([ id, name ]) => <option value={String(id)}>{name}</option>)}
+                </Select>
+            }
+        </FlexInline>
+
+        <CampaignTable
+            min_width='46rem'
+            template='minmax(12rem, 1fr) 8rem 9rem 5rem 6rem 6rem'
+            numeric={[ 3, 4, 5 ]}
+            columns={[
+                t('campaigns.roster.pilot'),
+                t('campaigns.roster.prime_time'),
+                t('campaigns.roster.last_active'),
+                t('campaigns.roster.streak'),
+                t('campaigns.roster.points'),
+                t('campaigns.roster.characters'),
+            ]}
+        >
+            {pilots.map((pilot, index) =>
+                <div
+                    class="[ campaign-table-row ]"
+                    role="row"
+                    data-pilot={haystack(pilot)}
+                    data-corp={pilot.corporation_id ? String(pilot.corporation_id) : ''}
+                    hidden={limit !== false && index >= limit}
+                >
+                    <div class="[ campaign-cell-media ]" role="cell" title={pilot.corporation_name || undefined}>
+                        {pilot.character_id &&
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_player_icon(pilot.character_id, 32)}
+                                alt=''
+                            />
+                        }
+                        <span>{pilot.primary_character || pilot.username}</span>
+                    </div>
+                    <small role="cell" class="[ campaign-table-muted ]">
+                        {pilot.prime_time || pilot.observed_prime_time || t('campaigns.roster.unknown_prime_time')}
+                    </small>
+                    <small role="cell" class="[ campaign-table-muted ]">
+                        {pilot.last_active_day ? format_date_short(lang, pilot.last_active_day) : '—'}
+                    </small>
+                    <span role="cell" class="[ campaign-table-numeric ]">{pilot.streak_days}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{number_thousand_separator(pilot.points)}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{pilot.characters_included}</span>
                 </div>
-                <small role="cell" class="[ campaign-table-muted ]">
-                    {pilot.prime_time || pilot.observed_prime_time || t('campaigns.roster.unknown_prime_time')}
-                </small>
-                <small role="cell" class="[ campaign-table-muted ]">
-                    {pilot.last_active_day ? format_date_short(lang, pilot.last_active_day) : '—'}
-                </small>
-                <span role="cell" class="[ campaign-table-numeric ]">{pilot.streak_days}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{number_thousand_separator(pilot.points)}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{pilot.characters_included}</span>
-            </div>
-        )}
-    </CampaignTable>
+            )}
+        </CampaignTable>
+
+        <small class="[ campaign-roster-empty ]" x-show="matches === 0" x-cloak>{t('campaigns.roster.no_match')}</small>
+    </div>
 }
+
+<style lang="scss">
+    .campaign-roster {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .campaign-roster :global(.campaign-table-row[hidden]) {
+        display: none;
+    }
+
+    .campaign-roster-empty {
+        color: var(--foreground);
+    }
+</style>

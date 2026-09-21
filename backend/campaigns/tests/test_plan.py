@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from campaigns.models import (
+    CampaignAdvantageState,
     CampaignDailyOrder,
     CampaignSystemArc,
     CampaignSystemSnapshot,
@@ -60,6 +61,92 @@ class WeeklyPlanTests(TestCase):
         row = CampaignWeekTarget.objects.get(campaign_system=self.system)
         self.assertEqual(row.metric, CampaignWeekTarget.Metric.DAYS_UNDER_LINE)
         self.assertEqual(row.target, 7.0)
+
+    def _advantage(self, ours, theirs):
+        CampaignAdvantageState.objects.update_or_create(
+            campaign_system=self.system,
+            defaults={
+                "our_pct": ours,
+                "enemy_pct": theirs,
+                "basis": "reading",
+                "reading_age_minutes": 5,
+            },
+        )
+        self.system.refresh_from_db()
+
+    def _task(self, task, target=None):
+        self.system.arc.advantage_task = task
+        self.system.arc.advantage_target = target
+        self.system.arc.save()
+
+    def test_an_arc_without_an_advantage_task_proposes_no_advantage_row(
+        self,
+    ):
+        self._snapshot(1, 900, 30.0)
+        plan.propose_week(self.campaign)
+        metrics = set(
+            CampaignWeekTarget.objects.filter(
+                campaign_system=self.system
+            ).values_list("metric", flat=True)
+        )
+        self.assertEqual(metrics, {CampaignWeekTarget.Metric.VICTORY_POINTS})
+
+    def test_gain_advantage_builds_ours_up_to_a_level(self):
+        self._task("gain")
+        self._advantage(10.0, 40.0)
+        self._snapshot(1, 900, 30.0)
+        plan.propose_week(self.campaign)
+
+        row = CampaignWeekTarget.objects.get(
+            campaign_system=self.system,
+            metric=CampaignWeekTarget.Metric.ADVANTAGE_GAIN,
+        )
+        self.assertEqual(row.target, 75.0)  # the default level
+        self.assertEqual(row.baseline, 10.0)
+        plan.update_week_progress(self.campaign)
+        row.refresh_from_db()
+        self.assertEqual(row.progress, 10.0)
+        self.assertGreaterEqual(row.pace_expected, 10.0)
+
+    def test_destroy_advantage_knocks_theirs_down_and_lower_is_better(self):
+        self._task("destroy", 50.0)
+        self._advantage(30.0, 75.0)
+        plan.propose_week(self.campaign)
+        row = CampaignWeekTarget.objects.get(
+            campaign_system=self.system,
+            metric=CampaignWeekTarget.Metric.ADVANTAGE_DESTROY,
+        )
+        self.assertEqual(row.baseline, 75.0)
+
+        # Their level has not moved: behind once the ramp expects movement.
+        row.progress = 75.0
+        row.pace_expected = 65.0
+        self.assertEqual(row.pace, "behind")
+        # Already at the target: ahead of any ramp.
+        row.progress = 50.0
+        self.assertEqual(row.pace, "ahead")
+
+    def test_maintain_advantage_expects_the_level_from_day_one(self):
+        self._task("maintain", 90.0)
+        self._advantage(81.0, 10.0)
+        plan.propose_week(self.campaign)
+        plan.update_week_progress(self.campaign)
+        row = CampaignWeekTarget.objects.get(
+            campaign_system=self.system,
+            metric=CampaignWeekTarget.Metric.ADVANTAGE_MAINTAIN,
+        )
+        self.assertEqual(row.pace_expected, 90.0)
+        self.assertEqual(row.progress, 81.0)
+        self.assertEqual(row.pace, "on_pace")
+
+    def test_week_position_counts_campaign_weeks(self):
+        position = plan.week_position(self.campaign)
+        self.assertGreaterEqual(position["week_index"], 1)
+        self.assertLessEqual(position["week_index"], position["week_count"])
+        self.assertEqual(
+            position["week_end"], position["week_start"] + timedelta(days=6)
+        )
+        self.assertTrue(1 <= position["day_index"] <= 7)
 
     def test_progress_and_pace_are_computed_from_snapshots(self):
         # A baseline from before the week opened, then this week's reading.

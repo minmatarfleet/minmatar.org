@@ -58,4 +58,10 @@ try {
 import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
 ---
 
-<CampaignReadinessTable readiness={readiness} campaign_slug={slug} flash={flash} />
+<CampaignReadinessTable
+    readiness={readiness}
+    campaign_slug={slug}
+    flash={flash}
+    mode={Astro.url.searchParams.get('mode') === 'campaign' ? 'campaign' : 'account'}
+    return_url={Astro.url.searchParams.get('mode') === 'campaign' ? translatePath(`/campaigns/${slug}/#you`) : false}
+/>

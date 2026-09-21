@@ -1,0 +1,195 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignDetail, CampaignReadiness } from '@dtypes/api.minmatar.org'
+
+/**
+ * The You tab: your standing in the campaign, every character you own and
+ * whether it counts, and the one way out. Enlisting and leaving post to the
+ * actions partial, which swaps this panel back in along with the hero footer.
+ */
+interface Props {
+    campaign:           CampaignDetail;
+    readiness:          CampaignReadiness | null;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    readiness,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+delete attributes.week
+
+const actions_id = `campaign-actions-${campaign.slug}`
+const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${campaign.slug}`)
+const RETURN_URL = translatePath(`/campaigns/${campaign.slug}/#you`)
+
+const hx_attributes = (action:string) => ({
+    'hx-post': `${PARTIAL_URL}&action=${action}`,
+    'hx-target': `#${actions_id}`,
+    'hx-swap': 'outerHTML',
+    'hx-indicator': '.loader',
+})
+
+const rank_text = campaign.my_rank
+    ? t('campaigns.you.rank_only').replace('{rank}', String(campaign.my_rank))
+    : t('campaigns.you.unranked')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
+---
+
+<div id="campaign-you" class:list={['[ campaign-you-panel ]', Astro.props.class]} {...attributes}>
+    {campaign.is_enlisted ?
+        <Flexblock gap='var(--space-m)'>
+            <div class="[ campaign-you-overview ][ light-transparency ]">
+                <div class="[ campaign-you-stat ]">
+                    <small class="[ campaign-you-label ]">{t('campaigns.you.points')}</small>
+                    <span class="[ campaign-you-figure ]">{campaign.my_points.toLocaleString()}</span>
+                    <small class="[ campaign-you-sub ]">{rank_text}</small>
+                </div>
+                <div class="[ campaign-you-stat ]">
+                    <small class="[ campaign-you-label ]">{t('campaigns.you.streak_title')}</small>
+                    <span class="[ campaign-you-figure ]">{campaign.my_streak}</span>
+                    <small class="[ campaign-you-sub ]">{t('campaigns.you.streak_sub').replace('{next}', String(campaign.my_streak + 1))}</small>
+                </div>
+                <div class="[ campaign-you-stat ]">
+                    <small class="[ campaign-you-label ]">{t('campaigns.you.characters_title')}</small>
+                    <span class="[ campaign-you-figure ]">{campaign.characters_included}</span>
+                    <small class="[ campaign-you-sub ]">
+                        {t('campaigns.you.characters_sub')
+                            .replace('{included}', String(campaign.characters_included))
+                            .replace('{total}', String(readiness?.total ?? campaign.characters_included))}
+                    </small>
+                </div>
+            </div>
+
+            <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                <Flexblock gap='var(--space-s)'>
+                    <h3>{t('campaigns.you.manage_title')}</h3>
+                    {readiness ?
+                        <CampaignReadinessTable readiness={readiness} campaign_slug={campaign.slug} return_url={RETURN_URL} mode='campaign' />
+                        :
+                        <small>{t('campaigns.action_failed')}</small>
+                    }
+                </Flexblock>
+            </ComponentBlock>
+
+            <div class="[ campaign-you-leave ]">
+                <Button
+                    color='fleet-red'
+                    x-data="{}"
+                    x-on:click.prevent={`show_confirm_dialog({
+                        title: ${JSON.stringify(t('campaigns.you.leave_confirm_title'))},
+                        content: ${JSON.stringify(`<p>${t('campaigns.you.leave_confirm_text')}</p>`)},
+                        hx: {
+                            method: 'post',
+                            url: ${JSON.stringify(`${PARTIAL_URL}&action=leave`)},
+                            target: ${JSON.stringify(`#${actions_id}`)},
+                            swap: 'outerHTML',
+                        },
+                    })`}
+                >
+                    {t('campaigns.leave_campaign')}
+                </Button>
+            </div>
+        </Flexblock>
+        :
+        <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+            <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+                <span>{t('campaigns.you.enlist_hint')}</span>
+                <Button color='green' {...hx_attributes('enlist')}>
+                    {t('campaigns.enlist')}
+                </Button>
+            </FlexInline>
+        </ComponentBlock>
+    }
+</div>
+
+<style lang="scss">
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .campaign-you-overview {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border: solid 1px var(--border-color-hover);
+    }
+
+    .campaign-you-stat {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m) var(--space-l);
+        border-inline-start: solid 1px var(--border-color-hover);
+        min-width: 0;
+
+        &:first-child {
+            border-inline-start: none;
+        }
+    }
+
+    .campaign-you-label {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .campaign-you-figure {
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-you-sub {
+        color: var(--foreground);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .campaign-you-leave {
+        display: flex;
+        justify-content: center;
+        padding-top: var(--space-s);
+        border-top: solid 1px var(--border-color);
+    }
+
+    .campaign-you-leave :global(.button) {
+        min-width: 18rem;
+        padding-block: var(--space-s);
+    }
+
+    @media screen and (max-width: 767px) {
+        .campaign-you-overview {
+            grid-template-columns: 1fr;
+        }
+
+        .campaign-you-stat {
+            border-inline-start: none;
+            border-top: solid 1px var(--border-color-hover);
+            padding: var(--space-s) var(--space-m);
+
+            &:first-child {
+                border-top: none;
+            }
+        }
+
+        .campaign-you-leave :global(.button) {
+            width: 100%;
+        }
+    }
+</style>

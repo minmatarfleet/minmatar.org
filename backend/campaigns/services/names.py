@@ -21,22 +21,27 @@ BATCH_SIZE = 500
 
 
 def backfill_victim_names(limit: int = 1000) -> dict:
-    """Name the victims of campaign killmails that have none yet."""
-    rows = list(
+    """Name the victims and killers of campaign killmails that have none."""
+    victims = list(
         CampaignKillmail.objects.filter(
             victim_character_name="", victim_character_id__isnull=False
         ).values_list("id", "victim_character_id")[:limit]
     )
-    if not rows:
+    killers = list(
+        CampaignKillmail.objects.filter(
+            killer_character_name="", killer_character_id__isnull=False
+        ).values_list("id", "killer_character_id")[:limit]
+    )
+    if not victims and not killers:
         return {"pending": 0, "named": 0, "from_esi": 0}
 
-    wanted = {character_id for _, character_id in rows}
+    wanted = {character_id for _, character_id in victims + killers}
     known = _names_we_already_have(wanted)
     from_esi = _resolve_missing(wanted - set(known))
     known.update(from_esi)
 
     named = 0
-    for row_id, character_id in rows:
+    for row_id, character_id in victims:
         name = known.get(character_id)
         if not name:
             continue
@@ -44,10 +49,22 @@ def backfill_victim_names(limit: int = 1000) -> dict:
             victim_character_name=name
         )
         named += 1
+    for row_id, character_id in killers:
+        name = known.get(character_id)
+        if not name:
+            continue
+        CampaignKillmail.objects.filter(id=row_id).update(
+            killer_character_name=name
+        )
+        named += 1
 
     _name_participants(known)
 
-    return {"pending": len(rows), "named": named, "from_esi": len(from_esi)}
+    return {
+        "pending": len(victims) + len(killers),
+        "named": named,
+        "from_esi": len(from_esi),
+    }
 
 
 def _names_we_already_have(character_ids: set[int]) -> dict[int, str]:

@@ -11,9 +11,10 @@ from app.errors import ErrorResponse
 from authentication import AuthOptional
 from campaigns.endpoints.base import router
 from campaigns.endpoints import schemas, serializers
-from campaigns.helpers import campaign_week_start
+from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
     Campaign,
+    CampaignAdvantageReading,
     CampaignAward,
     CampaignEvent,
     CampaignKillmail,
@@ -21,13 +22,33 @@ from campaigns.models import (
     CampaignSiteCompletion,
     CampaignStatus,
     CampaignWeekTarget,
+    KillmailOutcome,
+    SiteKind,
 )
 from campaigns.services import plan, stats
+from eveonline.models import EveCharacter
+from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from groups.helpers.feature_access import require_feature
 
 VIEW_FEATURE = "campaigns.view"
 MAX_LIMIT = 200
 HOSTILE_GANG_WINDOW_HOURS = 2
+
+
+def _boss_name(standing) -> str | None:
+    """The standing fleet boss by name; the id is what ESI gives us."""
+    if not standing or not standing.current_boss_character_id:
+        return None
+    character = (
+        EveCharacter.objects.filter(
+            character_id=standing.current_boss_character_id
+        )
+        .only("character_name")
+        .first()
+    )
+    if character and character.character_name:
+        return character.character_name
+    return str(standing.current_boss_character_id)
 
 
 def _visible(request):
@@ -160,11 +181,7 @@ def get_campaign(request, slug: str):
         "characters_tracked": my_stat.characters_tracked if my_stat else 0,
         "standing_fleet_up": bool(standing and standing.is_up),
         "standing_fleet_members": standing.member_count if standing else 0,
-        "standing_fleet_boss": (
-            str(standing.current_boss_character_id)
-            if standing and standing.current_boss_character_id
-            else None
-        ),
+        "standing_fleet_boss": _boss_name(standing),
     }
 
 
@@ -248,11 +265,7 @@ def get_right_now(request, slug: str):
         ],
         "standing_fleet_up": bool(standing and standing.is_up),
         "standing_fleet_members": standing.member_count if standing else 0,
-        "standing_fleet_boss": (
-            str(standing.current_boss_character_id)
-            if standing and standing.current_boss_character_id
-            else None
-        ),
+        "standing_fleet_boss": _boss_name(standing),
         "gangs_forming": [
             {
                 "id": event.id,
@@ -286,34 +299,163 @@ def get_week(request, slug: str):
     if denied:
         return denied
     week_start = campaign_week_start()
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+    window = week_bounds(week_start)
 
-    targets = [
-        {
-            "id": row.id,
-            "system": row.campaign_system.name,
-            "system_id": row.campaign_system_id,
-            "goal": row.campaign_system.goal,
-            "metric": row.metric,
-            "target": row.target,
-            "progress": row.progress,
-            "pace_expected": row.pace_expected,
-            "pace": row.pace,
-            "proposed": row.proposed,
-            "last_week_actual": row.last_week_actual,
-            "days_under_line": row.days_under_line,
-            "projected_arc_date": row.projected_arc_date,
-        }
-        for row in CampaignWeekTarget.objects.filter(
-            campaign_system__campaign=campaign, week_start=week_start
-        ).select_related("campaign_system")
-    ]
+    targets = []
+    for row in CampaignWeekTarget.objects.filter(
+        campaign_system__campaign=campaign, week_start=week_start
+    ).select_related("campaign_system"):
+        mine = _my_contribution(row.campaign_system, user, window)
+        targets.append(
+            {
+                "id": row.id,
+                "system": row.campaign_system.name,
+                "system_id": row.campaign_system_id,
+                "goal": row.campaign_system.goal,
+                "metric": row.metric,
+                "target": row.target,
+                "progress": row.progress,
+                "pace_expected": row.pace_expected,
+                "baseline": row.baseline,
+                "pace": row.pace,
+                "proposed": row.proposed,
+                "last_week_actual": row.last_week_actual,
+                "days_under_line": row.days_under_line,
+                "projected_arc_date": row.projected_arc_date,
+                **mine,
+            }
+        )
 
     return {
-        "week_start": week_start,
+        **plan.week_position(campaign, week_start),
         "targets": targets,
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
+
+
+ADVANTAGE_SITE_KINDS = (
+    SiteKind.ADVANTAGE_SITE,
+    SiteKind.RENDEZVOUS_POINT,
+    SiteKind.PROPAGANDA_BEACON,
+    SiteKind.LISTENING_OUTPOST,
+    SiteKind.SUPPLY_CACHE,
+    SiteKind.BATTLEFIELD,
+)
+
+
+def _my_contribution(campaign_system, user, window) -> dict:
+    """What the viewer did towards one system this week."""
+    if user is None:
+        return {"my_complexes": 0, "my_advantage_sites": 0, "my_readings": 0}
+    start, end = window
+    sites = CampaignSiteCompletion.objects.filter(
+        campaign_system=campaign_system,
+        user=user,
+        occurred_at__gte=start,
+        occurred_at__lt=end,
+        scored=True,
+    )
+    return {
+        "my_complexes": sites.filter(site_kind=SiteKind.COMPLEX).count(),
+        "my_advantage_sites": sites.filter(
+            site_kind__in=ADVANTAGE_SITE_KINDS
+        ).count(),
+        "my_readings": CampaignAdvantageReading.objects.filter(
+            campaign_system=campaign_system,
+            reported_by=user,
+            reported_at__gte=start,
+            reported_at__lt=end,
+            status="accepted",
+        ).count(),
+    }
+
+
+@router.get(
+    "/{slug}/fleets",
+    response={
+        200: list[schemas.CampaignFleetOut],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_fleets(request, slug: str, limit: int = 50):
+    """Every fleet attributed to the campaign, newest first, with its impact."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    fleets = list(
+        campaign.fleets.select_related("created_by", "doctrine").order_by(
+            "-start_time"
+        )[: _clamp(limit)]
+    )
+    if not fleets:
+        return []
+    fleet_ids = [fleet.id for fleet in fleets]
+
+    live_ids = set(
+        EveFleetInstance.objects.filter(
+            eve_fleet_id__in=fleet_ids, end_time__isnull=True
+        ).values_list("eve_fleet_id", flat=True)
+    )
+    pilots: dict[int, set] = {}
+    for fleet_id, character_id in EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance__eve_fleet_id__in=fleet_ids
+    ).values_list("eve_fleet_instance__eve_fleet_id", "character_id"):
+        pilots.setdefault(fleet_id, set()).add(character_id)
+
+    impact: dict[int, dict] = {}
+    for fleet_id, outcome, isk in CampaignKillmail.objects.filter(
+        campaign=campaign, fleet_id__in=fleet_ids
+    ).values_list("fleet_id", "outcome", "isk_value"):
+        row = impact.setdefault(
+            fleet_id, {"kills": 0, "losses": 0, "isk_destroyed": 0}
+        )
+        if outcome == KillmailOutcome.KILL:
+            row["kills"] += 1
+            row["isk_destroyed"] += isk
+        elif outcome == KillmailOutcome.LOSS:
+            row["losses"] += 1
+
+    return [
+        {
+            "id": fleet.id,
+            "type": fleet.type,
+            "description": fleet.description or "",
+            "objective": fleet.objective or "",
+            "start_time": fleet.start_time,
+            "status": fleet.status,
+            "fleet_commander": _commander_name(fleet),
+            "fleet_commander_id": _commander_id(fleet),
+            "doctrine": fleet.doctrine.name if fleet.doctrine else None,
+            "is_live": fleet.id in live_ids,
+            "pilots": len(pilots.get(fleet.id, ())),
+            **impact.get(
+                fleet.id, {"kills": 0, "losses": 0, "isk_destroyed": 0}
+            ),
+        }
+        for fleet in fleets
+    ]
+
+
+def _commander_id(fleet) -> int | None:
+    character = fleet.fleet_commander
+    return character.character_id if character else None
+
+
+def _commander_name(fleet) -> str | None:
+    character = fleet.fleet_commander
+    if character:
+        return character.character_name
+    return fleet.created_by.username if fleet.created_by else None
 
 
 @router.get(
@@ -381,7 +523,9 @@ def get_leaderboard(
     response={200: list[schemas.KillmailOut], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
 )
-def get_killmails(request, slug: str, outcome: str = "", limit: int = 50):
+def get_killmails(
+    request, slug: str, outcome: str = "", limit: int = 50, offset: int = 0
+):
     campaign = _get(request, slug)
     denied = _may_read(request, campaign)
     if denied:
@@ -391,8 +535,10 @@ def get_killmails(request, slug: str, outcome: str = "", limit: int = 50):
     )
     if outcome:
         queryset = queryset.filter(outcome=outcome)
+    start = max(0, offset)
     return [
-        serializers.killmail_out(mail) for mail in queryset[: _clamp(limit)]
+        serializers.killmail_out(mail)
+        for mail in queryset[start : start + _clamp(limit)]
     ]
 
 
@@ -401,15 +547,27 @@ def get_killmails(request, slug: str, outcome: str = "", limit: int = 50):
     response={200: list[schemas.SiteOut], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
 )
-def get_sites(request, slug: str, limit: int = 50):
+def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
     campaign = _get(request, slug)
     denied = _may_read(request, campaign)
     if denied:
         return denied
 
-    rows = CampaignSiteCompletion.objects.filter(
-        campaign=campaign
-    ).select_related("campaign_system", "user", "complex")[: _clamp(limit)]
+    start = max(0, offset)
+    rows = list(
+        CampaignSiteCompletion.objects.filter(
+            campaign=campaign
+        ).select_related("campaign_system", "user", "complex")[
+            start : start + _clamp(limit)
+        ]
+    )
+    names = dict(
+        EveCharacter.objects.filter(
+            character_id__in=[
+                row.character_id for row in rows if row.character_id
+            ]
+        ).values_list("character_id", "character_name")
+    )
     return [
         {
             "id": row.id,
@@ -418,8 +576,15 @@ def get_sites(request, slug: str, limit: int = 50):
             "amount_lp": row.amount_lp,
             "system": row.campaign_system.name,
             "username": row.user.username if row.user else None,
+            "character_id": row.character_id,
+            "character_name": names.get(row.character_id, ""),
             "plex_class": (
                 row.complex.inferred_plex_class if row.complex else ""
+            ),
+            "plex_size": (
+                serializers.complex_size(row.complex.class_candidates)
+                if row.complex
+                else ""
             ),
             "confidence": row.complex.confidence if row.complex else "",
         }

@@ -22,43 +22,40 @@ const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-import type { CampaignKillmail, CampaignKillmailOutcome, CampaignSystemSummary } from '@dtypes/api.minmatar.org'
-import { get_campaign_killmails, get_campaign_systems } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignSite } from '@dtypes/api.minmatar.org'
+import { get_campaign_sites } from '@helpers/api.minmatar.org/campaigns'
 import { ACTIVITY_PAGE_SIZE, paginate } from '@helpers/fetching/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
-const outcome = (Astro.url.searchParams.get('outcome') ?? '') as CampaignKillmailOutcome | ''
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1') || 1)
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-let fetch_killfeed_error:Error | false = false
-let killmails:CampaignKillmail[] = []
+let fetch_sites_error:Error | false = false
+let sites:CampaignSite[] = []
 let has_more = false
-let systems:CampaignSystemSummary[] = []
 
 try {
-    const fetched = await get_campaign_killmails(slug, auth_token as string, outcome, ACTIVITY_PAGE_SIZE + 1, (page - 1) * ACTIVITY_PAGE_SIZE)
-    ;({ rows: killmails, has_more } = paginate(fetched))
-    systems = await get_campaign_systems(slug, auth_token as string)
+    const fetched = await get_campaign_sites(slug, auth_token as string, ACTIVITY_PAGE_SIZE + 1, (page - 1) * ACTIVITY_PAGE_SIZE)
+    ;({ rows: sites, has_more } = paginate(fetched))
 } catch (error) {
-    fetch_killfeed_error = error
+    fetch_sites_error = error
 }
 
-const KILLFEED_PARTIAL_URL = translatePath(`/partials/campaign_killfeed_component?slug=${slug}&outcome=${outcome}&page=${page}`)
+const SITES_PARTIAL_URL = translatePath(`/partials/campaign_sites_component?slug=${slug}&page=${page}`)
 
-import CampaignKillfeed from '@components/blocks/CampaignKillfeed.astro'
+import CampaignSites from '@components/blocks/CampaignSites.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{fetch_killfeed_error ?
+{fetch_sites_error ?
     <ErrorRefetch
         args={{
-            partial: KILLFEED_PARTIAL_URL,
-            error: fetch_killfeed_error,
+            partial: SITES_PARTIAL_URL,
+            error: fetch_sites_error,
             delay: delay,
-            target: '#campaign-killfeed',
+            target: '#campaign-sites',
         }}
     />
     :
-    <CampaignKillfeed slug={slug} killmails={killmails} outcome={outcome} systems={systems} page={page} has_more={has_more} />
+    <CampaignSites slug={slug} sites={sites} page={page} has_more={has_more} />
 }
