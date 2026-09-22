@@ -281,7 +281,9 @@ class ExternalGuildSeatTestCase(TestCase):
         send_dm.assert_called_once()
 
     @patch("tribes.helpers.external_guild.client_for_binding")
-    def test_reconciler_kicks_stray_role_holders(self, client_for_binding):
+    def test_reconciler_does_not_kick_unseated_role_holders(
+        self, client_for_binding
+    ):
         client = client_for_binding.return_value
         client.get_members.return_value = [
             {
@@ -294,8 +296,33 @@ class ExternalGuildSeatTestCase(TestCase):
             },
         ]
         stats = reconcile_external_guilds()
-        self.assertEqual(stats["kicked"], 1)
-        client.kick_guild_member.assert_called_with(999)
+        self.assertEqual(stats["kicked"], 0)
+        client.kick_guild_member.assert_not_called()
+
+    @patch("tribes.helpers.external_guild.send_pending_join_dm")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_reconciler_dms_when_present_seat_leaves_guild(
+        self, client_for_binding, send_dm
+    ):
+        client = client_for_binding.return_value
+        client.get_user.side_effect = _unknown_member_error()
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        seat = TribeExternalGuildSeat.objects.get()
+        seat.status = TribeExternalGuildSeat.STATUS_PRESENT
+        seat.save(update_fields=["status", "updated_at"])
+        send_dm.reset_mock()
+
+        stats = reconcile_external_guilds()
+        self.assertEqual(stats["kicked"], 0)
+        seat.refresh_from_db()
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_PENDING_JOIN
+        )
+        send_dm.assert_called_once()
 
     @patch("tribes.helpers.external_guild.client_for_binding")
     def test_oauth_join_targets_binding_guild_only(self, client_for_binding):

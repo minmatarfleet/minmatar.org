@@ -41,6 +41,20 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-20 — Fishermen bot kicked FL33T people
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A guild-scan kicked anyone holding Minmatar Fleet
+  Alliance without a seat. That role is the correct grant for entitled
+  seats, not a kick filter. Dev bot with Kick on the hardcoded live guild
+  did the removals; seats went `present` → `pending_join`.
+**Durable rule:** Only kick unentitled seats. Never guild-scan-kick on
+  member_role. Fishermen member_role stays Minmatar Fleet Alliance.
+**Skill update:** fishermen stray-kick row; Alliance is the grant role.
+
 ## 2026-09-18 — Buyback Match stock extra ores + non-100 lots
 
 **Category:** pulse.technology
