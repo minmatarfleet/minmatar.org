@@ -243,14 +243,7 @@ class ExternalGuildSeatTestCase(TestCase):
         existing_id = self.binding.pk
         binding = seed_fishermen_external_guild()
         self.assertEqual(binding.pk, existing_id)
-        self.assertEqual(binding.member_role_id, FISHERMEN_MEMBER_ROLE_ID)
-
-    def test_seed_fishermen_external_guild_heals_alliance_member_role(self):
-        self.binding.member_role_id = 1543301902375329922
-        self.binding.save(update_fields=["member_role_id"])
-        binding = seed_fishermen_external_guild()
-        self.assertEqual(binding.pk, self.binding.pk)
-        self.assertEqual(binding.member_role_id, FISHERMEN_MEMBER_ROLE_ID)
+        self.assertEqual(binding.member_role_id, 111)
 
     def test_seed_fishermen_external_guild_creates_missing_binding(self):
         self.binding.delete()

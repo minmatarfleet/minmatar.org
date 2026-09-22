@@ -30,12 +30,10 @@ OAUTH_STATE_SALT = "tribes.external_guild.oauth"
 OAUTH_STATE_MAX_AGE = 60 * 60 * 24 * 7
 
 # Pulse / Fishermen secondary guild. Approve DMs no-op without this binding.
-# member_role is the exclusive Fisherman role (Secure access), not the shared
-# Minmatar Fleet Alliance role. That alliance role is also held by FL33T
-# guests in the public/external side of this Discord.
+# Entitled seats get Minmatar Fleet Alliance (grant only — never a kick filter).
 FISHERMEN_GROUP_CODE = "pulse.fishermen"
 FISHERMEN_GUILD_ID = 834087499658952735
-FISHERMEN_MEMBER_ROLE_ID = 834088082541379615  # Fisherman
+FISHERMEN_MEMBER_ROLE_ID = 1543301902375329922  # Minmatar Fleet Alliance
 FISHERMEN_ALERT_CHANNEL_ID = 1543302547157286972  # info-fl33t
 
 # Secondary guild nicks are alliance-branded, not corp ticker.
@@ -89,14 +87,6 @@ def seed_fishermen_external_guild() -> TribeExternalGuild | None:
             "Seeded Fishermen external guild binding %s → %s",
             group.code,
             guild.name,
-        )
-        return binding
-    if binding.member_role_id != FISHERMEN_MEMBER_ROLE_ID:
-        binding.member_role_id = FISHERMEN_MEMBER_ROLE_ID
-        binding.save(update_fields=["member_role_id", "updated_at"])
-        logger.info(
-            "Healed Fishermen member_role_id on binding %s to Fisherman",
-            binding.pk,
         )
     return binding
 
@@ -621,10 +611,8 @@ def _reconcile_seats(
 ) -> dict:
     """Join/nick entitled seats. Kick only seats that lost entitlement.
 
-    Never guild-scan for unseated role holders. This Discord is shared
-    (FL33T guests in public/external plus Fisherman-gated Secure). The
-    previous stray-kick treated Minmatar Fleet Alliance as exclusive and
-    removed guests — and anyone the bot had just given that role.
+    Never guild-scan for unseated role holders. member_role is granted to
+    entitled seats; it is not a "kick everyone else who has this role" filter.
     """
     result = {"joined": 0, "kicked": 0, "alerts": 0, "nicks_updated": 0}
     seats = list(

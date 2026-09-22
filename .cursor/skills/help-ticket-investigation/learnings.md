@@ -47,13 +47,13 @@ do not duplicate it — one clarifying clause at most.
 **Verdict:** bug
 **Discord:** fix + PR URL
 **PR:** fix+skill
-**Symptom vs cause:** Reconciler kicked everyone in the secondary guild
-  who held Minmatar Fleet Alliance and did not have a seat. That role is
-  shared with FL33T guests; exclusive access is Fisherman. Seats went
-  `present` → `pending_join` (unknown member) after the kick.
-**Durable rule:** Never guild-scan-kick on a shared role. Dump
-  `member_role_id` vs Discord role names and seat statuses first.
-**Skill update:** fishermen stray-kick / Alliance-vs-Fisherman row.
+**Symptom vs cause:** A guild-scan kicked anyone holding Minmatar Fleet
+  Alliance without a seat. That role is the correct grant for entitled
+  seats, not a kick filter. Dev bot with Kick on the hardcoded live guild
+  did the removals; seats went `present` → `pending_join`.
+**Durable rule:** Only kick unentitled seats. Never guild-scan-kick on
+  member_role. Fishermen member_role stays Minmatar Fleet Alliance.
+**Skill update:** fishermen stray-kick row; Alliance is the grant role.
 
 ## 2026-09-18 — Buyback Match stock extra ores + non-100 lots
 
