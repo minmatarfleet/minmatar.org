@@ -1,0 +1,227 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { BreadcrumbLinkProps } from '@dtypes/layout_components'
+
+import { is_prod_mode } from '@helpers/env'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+import type { PageFinderUI, Pages } from '@dtypes/layout_components'
+import sitemap from '@json/sitemap.json'
+
+interface Props {
+    breadcrumbs?:               BreadcrumbLinkProps[];
+    breadcrumb_page_title?:     string
+    path?:                      string;
+    is_landing_page?:           boolean;
+    [propName: string]:         any;
+}
+
+const {
+    breadcrumbs: manual_breadcrumbs,
+    breadcrumb_page_title,
+    path,
+    is_landing_page = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const current_page = path ? path : `${Astro.url.pathname}${Astro.url.search}${Astro.url.hash}`
+
+const { lang, t } = i18n(Astro.url)
+
+const pages = sitemap.map( (page:PageFinderUI):Pages => {
+    if (!page.publish && is_prod_mode()) {
+        return {
+            accumulated_path: page.path,
+            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            available: false,
+            reason: t('not_published')
+        }
+    }
+
+    if (user && user?.is_superuser) {
+        return {
+            accumulated_path: page.path,
+            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            available: true,
+        }
+    }
+
+    if (!page?.permissions) {
+        return {
+            accumulated_path: page.path,
+            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            available: true,
+        }
+    }
+
+    if (page.permissions?.auth && !user) {
+        return {
+            accumulated_path: page.path,
+            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            available: false,
+            reason: t('authentication_required')
+        }
+    }
+
+    if (page.permissions?.user && (!user || (page.permissions.user.filter( (i) => user_permissions.includes(i) ).length !== page.permissions.user.length) )) {
+        return {
+            accumulated_path: page.path,
+            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            available: false,
+            reason: t('missing_permissions')
+        }
+    }
+
+    return {
+        accumulated_path: page.path,
+        page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+        available: true
+    }
+})
+
+const pathname = current_page.split(/[?#]/)[0]
+const segments = pathname.split('/').filter(segment => segment && segment !== lang)
+
+const generated_breadcrumbs = segments.map((_, index) => {
+    const accumulated_path = `/${segments.slice(0, index + 1).join('/')}/`
+    const dotted = segments.slice(0, index + 1).map(segment => segment.replaceAll('-', '_'))
+    const candidates = dotted.map((_, start) => `${dotted.slice(start).join('.')}.page_title`)
+    const page_candidate = pages
+        .filter(page => page.accumulated_path === accumulated_path)
+        .map(page => page.page_title)
+
+    let page_title:string = candidates.map(candidate => t(candidate as any)).find(translation => translation) ?? t(page_candidate[0] as any) ?? page_candidate[0] ?? `${dotted.join('.')}.page_title`
+
+    if (breadcrumb_page_title && index === segments.length - 1)
+        page_title = breadcrumb_page_title
+    return { accumulated_path, page_title }
+})
+
+const breadcrumbs = manual_breadcrumbs ?? generated_breadcrumbs
+
+import BreadcrumbLink from '@components/page/BreadcrumbLink.astro';
+import BreadcrumbHub from '@components/page/BreadcrumbHub.astro';
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import XFadeScroll from '@components/compositions/XFadeScroll.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import TextBadge from '@components/blocks/TextBadge.astro';
+
+import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
+---
+
+<div
+    class:list={[ 'component border-bottom', { 'is-landing-page': is_landing_page }, Astro.props.class ]}
+    {...attributes}
+>
+    <Wrapper
+        class="[ main-bar ][ w-full ]"
+        padding_block="var(--space-2xs)"
+        padding_inline={is_landing_page ? '0' : undefined}
+        max_width='var(--max-content-width)'
+        neocom={is_landing_page ? false : true}
+        centered={true}
+    >
+        <div class="[ mobile-padding ]">
+            <XFadeScroll flex>
+                <FixedFluid width='32px' gap='0' class="[ breadcrumbs ][ items-center! ]">
+                    <StylessButton x-on:click="show_pages_finder()" data-tippy-content={t('quick_navigation')}>
+                        <SystemsEvEIcon />
+                    </StylessButton>
+                    <FlexInline gap='0' class="[ flex-nowrap! ]">
+                        {breadcrumbs.map(({ accumulated_path, page_title }) => {
+                            const depth = accumulated_path.split('/').filter(segment => segment).length
+                            console.log(accumulated_path.split('/'))
+                            console.log(accumulated_path.split('/').filter(segment => segment))
+                            console.log(depth)
+
+                            const hub_links = pages
+                                .filter(page =>
+                                    page.available &&
+                                    page.accumulated_path.startsWith(accumulated_path) && 
+                                    page.accumulated_path.split('/').filter(segment => segment).length -1 === depth)
+                                //.map(({ accumulated_path, page_title }) => ({ accumulated_path, page_title }))
+
+                            if (hub_links.length > 0) {
+                                return (
+                                    <BreadcrumbHub {page_title} {hub_links}>
+                                        <Flexblock gap='0'>
+                                            <a href={translatePath(accumulated_path)}>
+                                                <Wrapper padding_block='var(--space-2xs)' padding_inline='var(--space-2xs)'>
+                                                    <TextBadge title={page_title}>
+                                                        <small class="[ text-foreground ]">{t('hub_page')}</small>
+                                                    </TextBadge>
+                                                </Wrapper>
+                                            </a>
+                                            <hr class="[ border-bottom ]" />
+                                            {hub_links.map(page =>
+                                                <>{page.available ?
+                                                    <a href={translatePath(page.accumulated_path)} x-on:click="close()">
+                                                        <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-2xs)'>
+                                                            <small class="[ text-highlight ]">{page.page_title}</small>
+                                                        </Wrapper>
+                                                    </a> :
+                                                    <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-2xs)'>
+                                                        <Flexblock gap='0'>
+                                                            <small class="[ text-muted ]">{page.page_title}</small>
+                                                            <small>{page.reason}</small>
+                                                        </Flexblock>
+                                                    </Wrapper>
+                                                }</>
+                                            )}
+                                        </Flexblock>
+                                    </BreadcrumbHub>
+                                )
+                            } else {
+                                return (
+                                    <BreadcrumbLink {accumulated_path} {page_title} />
+                                )
+                            }
+                        })}
+                    </FlexInline>
+                </FixedFluid>
+            </XFadeScroll>
+        </div>
+    </Wrapper>
+</div>
+<style lang="scss">
+    .breadcrumbs {
+        width: fit-content;
+    }
+
+    .is-landing-page {
+        .breadcrumbs {
+            margin: 0;
+        }
+
+        .mobile-padding {
+            padding-inline: 0;
+        }
+    }
+
+    @media screen and (max-width: 890px) {
+        .breadcrumbs {
+            margin: 0 auto;
+        }
+
+        .mobile-padding {
+            padding-inline: var(--space-xl);
+        }
+    }
+</style>

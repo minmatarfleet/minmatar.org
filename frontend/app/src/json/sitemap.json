@@ -98,7 +98,7 @@
         ]
     },
     {
-        "slug": "alliance.content",
+        "slug": "content",
         "path": "/alliance/content/",
         "publish": true,
         "description": "page_finder.content.description",

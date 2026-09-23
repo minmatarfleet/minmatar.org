@@ -10,19 +10,23 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 import { marked } from 'marked';
 
-import type { PageCoverOptions } from '@dtypes/layout_components'
+import type { PageCoverOptions, BreadcrumbLinkProps } from '@dtypes/layout_components'
 
 interface Props {
-    cover?:                 false | PageCoverOptions;
-    neocom?:                boolean;
-    sticky?:                boolean;
-    [propName: string]:     any;
+    cover?:                     false | PageCoverOptions;
+    neocom?:                    boolean;
+    sticky?:                    boolean;
+    breadcrumbs?:               BreadcrumbLinkProps[];
+    breadcrumb_page_title?:     string;
+    [propName: string]:         any;
 }
 
 const {
     cover,
     neocom = true,
     sticky = false,
+    breadcrumbs,
+    breadcrumb_page_title,
     ...attributes
 } = Astro.props;
 
@@ -30,6 +34,7 @@ import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
 import Wrapper from '@components/compositions/Wrapper.astro';
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageHeader from '@components/page/partials/PageHeader.astro';
 import PageBody from '@components/page/partials/PageBody.astro';
 import PageCover from '@components/page/partials/PageCover.astro';
@@ -48,6 +53,8 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
     }
 
     {cover && <PageCover {...cover} /> }
+
+    <PageBreadcrumbs breadcrumbs={breadcrumbs} breadcrumb_page_title={breadcrumb_page_title} />
 
     <PageHeader max_width="var(--max-content-width)" neocom={neocom} sticky={sticky}>
         <slot name="header">

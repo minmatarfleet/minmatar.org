@@ -260,6 +260,10 @@ ul {
     color: var(--highlight)
 }
 
+.text-muted {
+    color: var(--faded)
+}
+
 .card-animated {
     picture.animated {
         overflow: hidden;

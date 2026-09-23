@@ -49,16 +49,15 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('industry.orders.history.page_title');
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
-    { label: t('industry.orders.breadcrumb.history') },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.orders.page_title'), accumulated_path: '/industry/orders/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -80,6 +79,7 @@ const breadcrumb_items = [
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             orders_count: ${orders_count},
             item_name_filter: '',
@@ -106,7 +106,6 @@ const breadcrumb_items = [
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}

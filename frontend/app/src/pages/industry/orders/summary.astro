@@ -7,12 +7,14 @@ import { get_orders_profit_summary } from '@helpers/api.minmatar.org/industry'
 import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
 
 import Viewport from '@layouts/Viewport.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageLanding from '@components/page/PageLanding.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import OpenOrdersProfitSummary from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 
 function isoDate(d: Date): string {
     return d.toISOString().slice(0, 10)
@@ -64,10 +66,10 @@ const canonical_url = new URL(
     site_origin,
 ).href
 const meta_image = new URL('/images/industry-cover.jpg', site_origin).href
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
-    { label: t('industry.orders.breadcrumb.summary') },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: translatePath('/market/') },
+    { page_title: t('industry.orders.page_title'), accumulated_path: translatePath('/industry/orders/') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 
 import {
@@ -86,7 +88,6 @@ import {
     og_type="article"
     components={{
         alert_dialog: true,
-        tippy: true,
     }}
 >
     <PageLanding
@@ -113,11 +114,14 @@ import {
         <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
             <Flexblock gap="var(--space-xl)" class="[ w-full ]">
                 <Flexblock gap="var(--space-3xs)">
-                    <Breadcrumb items={breadcrumb_items} />
+                    <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                 </Flexblock>
-                <p class="[ excerpt ]">{page_description}</p>
             </Flexblock>
+            
+            <TextBox>
+                <p class="[ excerpt ]">{page_description}</p>
+            </TextBox>
 
             {
                 fetching_error !== false ? (
@@ -155,6 +159,5 @@ import {
     :global(.excerpt p) {
         font-size: var(--step-1);
         line-height: 1.6;
-        max-width: 48rem;
     }
 </style>

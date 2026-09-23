@@ -17,13 +17,12 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
 
 const page_title = t('freight_contracts.page_title');
-const breadcrumb_items = [
-    { label: t('freight.calculator.page_title'), href: translatePath('/market/freight/calculator/') },
-    { label: t('freight_contracts.page_title') },
+const breadcrumbs = [
+    { page_title: t('freight.calculator.page_title'), accumulated_path: '/market/freight/calculator/' },
+    { page_title: t('freight_contracts.page_title'), accumulated_path: Astro.url.pathname },
 ]
 const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0')
 ---
@@ -44,6 +43,7 @@ const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             contracts_count: 0,
             last_updated_text: '',
@@ -71,7 +71,6 @@ const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}

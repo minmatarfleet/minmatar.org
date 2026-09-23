@@ -29,16 +29,15 @@ import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
-import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Button from '@components/blocks/Button.astro'
 import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
 
 const page_title = t('staging_supply.ops.contracts.page_title')
 
-const breadcrumb_items = [
-    { label: t('staging_supply.ops.page_title'), href: ops_redirect_path(translatePath, 'monitor') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('staging_supply.ops.page_title'), accumulated_path: '/market/ops/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 
 const CONTRACTS_PARTIAL = translatePath(
@@ -66,10 +65,10 @@ const CONTRACTS_PARTIAL = translatePath(
         }}
         padding_block="var(--space-m) var(--space-xl)"
         sticky={true}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
             <Button size="sm" href={translatePath('/market/fitting_orders/')}>

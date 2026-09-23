@@ -3859,5 +3859,9 @@ export const ui = {
         'solaris_description_fallback': 'Solaris Expeditionary Corps helps newer pilots break into J-space and lowsec with experienced mentorship, strong infrastructure, and room to learn through experience. We focus on building self-sufficient pilots who can make ISK, find content, and operate confidently on their own.',
         'compact_mode': 'Compact mode',
         'card_style': 'Card style',
+        'not_published': 'Not published',
+        'authentication_required': 'Authentication required',
+        'missing_permissions': 'Missing permissions',
+        'hub_page': 'Hub page',
     },
 } as const;
