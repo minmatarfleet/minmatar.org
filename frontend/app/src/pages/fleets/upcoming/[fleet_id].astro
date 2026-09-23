@@ -148,15 +148,14 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FleetDetails from '@components/blocks/FleetDetails.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Breadcrumb from '@components/blocks/Breadcrumb.astro';
 import FleetManageMenu from '@components/blocks/FleetManageMenu.astro';
 
 
 const page_title = `${t('fleet')} ${fleet_id}`;
-const breadcrumb_items = [
-    { label: t('fleets'), href: translatePath('/fleets/upcoming/') },
-    { label: t('upcoming_fleets_short'), href: translatePath('/fleets/upcoming/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: t('upcoming_fleets_short'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -182,10 +181,10 @@ const breadcrumb_items = [
             motd_alert ? `show_alert_dialog(${JSON.stringify(motd_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
         ].filter(Boolean).join('; ') || undefined}
         data-clean-url={motd_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>
                     {page_title}
                 </PageTitle>

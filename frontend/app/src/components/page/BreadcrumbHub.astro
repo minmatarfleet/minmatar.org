@@ -1,0 +1,109 @@
+---
+import type { Pages } from '@dtypes/layout_components'
+
+interface Props {
+    page_title:     string;
+    hub_links:      Pages[];
+}
+
+const {
+    page_title,
+    hub_links,
+} = Astro.props
+
+console.log(hub_links)
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import CaretIcon from '@components/icons/CaretIcon.astro';
+---
+
+<div
+    x-bind:class="{ 'is-open': expanded }"
+    x-data={`{
+        id: $id('dropdown'),
+        expanded: false,
+        close() {
+            this.expanded = false
+        },
+        toggle() {
+            this.expanded = !this.expanded
+        },
+        close_if_outside(event) {
+            if (this.$refs.trigger?.contains(event.target)) return
+            this.close()
+        },
+    }`}
+    @keydown.escape.prevent.stop="close()"
+>
+    <StylessButton
+        @click="toggle()"
+        :id="id"
+        x-ref="trigger"
+        x-bind:aria-expanded="expanded.toString()"
+        aria-haspopup="true"
+    >
+        <small class="[ inline-block ]">{page_title} <CaretIcon x-bind:class="expanded ? 'expanded' : 'collapsed'" /></small>
+    </StylessButton>
+ 
+    <template x-teleport="body">
+        <div
+            class:list={[
+                '[ dropdown-panel solid-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]',
+            ]}
+            x-ref="panel"
+            x-show="expanded"
+            x-cloak
+            x-anchor.fixed.bottom-start="$refs.trigger"
+            x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
+            @mousedown.outside="expanded && close_if_outside($event)"
+            @keydown.escape.prevent.stop="close()"
+            x-init="if (typeof htmx !== 'undefined') htmx.process($el); $watch('expanded', v => { if (v && typeof htmx !== 'undefined') htmx.process($el) })"
+            style="display: none"
+            x-trap="expanded"
+            tabindex="-1"
+        >
+            <slot />
+        </div>
+    </template>
+</div>
+
+<style lang="scss">
+    button {
+        display: inline-block;
+        background-color: var(--fleet-red);
+        color: var(--button-color);
+        text-decoration: none;
+        padding: 2px 20px 2px 20px;
+        text-wrap: nowrap;
+        
+        clip-path: polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%);
+
+        .expanded {
+            transform: rotate(180deg);
+        }
+
+        .collapsed {
+            transform: rotate(0);
+        }
+    }
+
+    button:focus-within,
+    button:focus-visible,
+    button:hover {
+        outline: none;
+
+        small {
+            transform: scale(1.07);
+        }
+    }
+
+    .dropdown-panel {
+        z-index: var(--tooltips-z-index);
+
+        &:focus-visible {
+            outline: none;
+        }
+    }
+</style>

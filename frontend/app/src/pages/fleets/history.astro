@@ -84,6 +84,10 @@ const page_description = t('page_finder.fleets.history.description');
         x-data={`{
             fleets_count: ${fleets.length}
         }`}
+        breadcrumbs={[{
+            accumulated_path: '/fleets/upcoming/',
+            page_title: page_title
+        }]}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>

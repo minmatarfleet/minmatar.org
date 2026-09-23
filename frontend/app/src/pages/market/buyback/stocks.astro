@@ -58,7 +58,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import BuybackStockLedger from '@components/blocks/BuybackStockLedger.astro'
 import BuybackStockMetrics from '@components/blocks/BuybackStockMetrics.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -71,6 +70,10 @@ import Switch from '@components/blocks/Switch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = t('buyback_stocks.page_title')
+const breadcrumbs = [
+    { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
 const default_refine = facilities.find((facility) => facility.key === default_facility)
     ?.reprocessing?.refine_rate
 const default_refine_pct = default_refine != null
@@ -102,6 +105,7 @@ const refine_hx = {
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             init() {
                 ${alert ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
@@ -110,10 +114,6 @@ const refine_hx = {
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={[
-                    { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
-                    { label: page_title },
-                ]} />
                 <PageTitle>
                     {page_title}
                 </PageTitle>

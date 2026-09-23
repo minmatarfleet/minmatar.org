@@ -98,7 +98,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Input from '@components/blocks/Input.astro';
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
 import GroupLeadership from '@components/blocks/GroupLeadership.astro';
@@ -107,20 +106,17 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('tribes.groups.membership.page_title').replace('{group}', tribe_group?.name ?? '')
-const group_hub_url = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`)
-const tribe_filter_url = translatePath(
-    `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}`,
-)
-const breadcrumb_items = [
-    { label: t('alliance.page_title'), href: translatePath('/alliance/') },
-    { label: t('tribes.page_title'), href: translatePath('/alliance/tribes/') },
+
+const breadcrumbs = [
+    { page_title: t('alliance.page_title'), accumulated_path: translatePath('/alliance/') },
+    { page_title: t('tribes.page_title'), accumulated_path: translatePath('/alliance/tribes/') },
     ...(tribe_group
         ? [
-            { label: tribe_group.tribe_name, href: tribe_filter_url },
-            { label: tribe_group.name, href: group_hub_url },
+            { page_title: tribe_group.tribe_name, accumulated_path: `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}` },
+            { page_title: tribe_group.name, accumulated_path: `/alliance/tribes/${tribe_id}/${group_id}/` },
         ]
         : []),
-    { label: t('manage_membership') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -141,6 +137,7 @@ const breadcrumb_items = [
         }}
         sticky={true}
         wide={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             count_text: '${count_text}',
             item_name_filter: '',
@@ -153,7 +150,6 @@ const breadcrumb_items = [
     >
         <FlexInline id="header-oob" slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}

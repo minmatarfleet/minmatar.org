@@ -1,0 +1,42 @@
+---
+import FlexInline from '@components/compositions/FlexInline.astro';
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    accumulated_path:   string;
+    page_title:         string;
+}
+
+const {
+    accumulated_path,
+    page_title,
+} = Astro.props
+---
+
+<a href={translatePath(accumulated_path)}>
+    <small class="[ inline-block ]">{page_title}</small>
+</a>
+
+<style lang="scss">
+    a {
+        display: inline-block;
+        background-color: var(--fleet-red);
+        color: var(--button-color);
+        text-decoration: none;
+        padding: 2px 20px 2px 20px;
+        text-wrap: nowrap;
+        
+        clip-path: polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%);
+    }
+
+    a:focus-within,
+    a:focus-visible,
+    a:hover {
+        outline: none;
+
+        small {
+            transform: scale(1.07);
+        }
+    }
+</style>

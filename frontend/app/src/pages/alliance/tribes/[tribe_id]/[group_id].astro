@@ -143,16 +143,18 @@ const has_token_requirement = Boolean((tribe_group?.required_token_type ?? '').t
 const has_any_requirements = has_qualification_requirements
     || has_membership_requirements
     || has_token_requirement
-const breadcrumb_items = [
-    { label: t('alliance.page_title'), href: translatePath('/alliance/') },
-    { label: t('tribes.page_title'), href: tribes_url },
+const breadcrumbs = [
+    { page_title: t('alliance.page_title'), accumulated_path: translatePath('/alliance/') },
+    { page_title: t('tribes.page_title'), accumulated_path: tribes_url },
     ...(tribe
-        ? [{ label: tribe.name, href: tribe_filter_url }]
+        ? [{ page_title: tribe.name, accumulated_path: tribe_filter_url }]
         : []),
-    { label: page_title },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 
 import Viewport from '@layouts/Viewport.astro'
+
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageLanding from '@components/page/PageLanding.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
@@ -200,7 +202,7 @@ import Button from '@components/blocks/Button.astro'
         <Flexblock gap="var(--space-l)">
             <FlexInline class="[ w-full !items-start ]" justification="space-between">
                 <Flexblock gap="var(--space-s)">
-                    <Breadcrumb items={breadcrumb_items} />
+                    <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <FlexInline gap="var(--space-xs)" class="[ tribe-group-title-row ]">
                         {chief &&
                             <div class="[ tribe-group-chief-portrait ]">

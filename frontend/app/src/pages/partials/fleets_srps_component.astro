@@ -60,7 +60,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import RadioCheckPill from '@components/blocks/RadioCheckPill.astro';
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
 import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -92,9 +92,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
     >
         {can_view_all_srp && ship_types.length > 0 &&
             <FlexInline>
-                <label>{t('filters')}</label>
                 <>{ship_types.map(type =>
-                    <UnstyledRadioCheckButton
+                    <RadioCheckPill
                         type='checkbox'
                         name="srp_ship_type_filter"
                         x-model="srp_ship_type_filter"

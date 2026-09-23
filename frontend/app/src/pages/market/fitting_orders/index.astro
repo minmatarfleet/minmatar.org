@@ -48,15 +48,14 @@ import TextBox from '@components/layout/TextBox.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Table from '@components/blocks/Table.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FittingBuyOrderItem from '@components/blocks/FittingBuyOrderItem.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
 const page_title = t('fitting_buy.page_title')
 const leading_text = t('fitting_buy.leading_text')
-const breadcrumb_items = [
-    { label: t('intel.page_title'), href: translatePath('/intel/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -70,6 +69,7 @@ const breadcrumb_items = [
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             orders_count: ${orders_count},
             item_name_filter: '',
@@ -93,7 +93,6 @@ const breadcrumb_items = [
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>{page_title}</PageTitle>
                     <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">
