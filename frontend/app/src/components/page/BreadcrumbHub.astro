@@ -38,6 +38,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
     @keydown.escape.prevent.stop="close()"
 >
     <StylessButton
+        class="[ hub-button ]"
         @click="toggle()"
         :id="id"
         x-ref="trigger"
@@ -70,7 +71,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 </div>
 
 <style lang="scss">
-    button {
+    .hub-button {
         display: inline-block;
         background-color: var(--fleet-red);
         color: var(--button-color);
@@ -89,9 +90,9 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
         }
     }
 
-    button:focus-within,
-    button:focus-visible,
-    button:hover {
+    .hub-button:focus-within,
+    .hub-button:focus-visible,
+    .hub-button:hover {
         outline: none;
 
         small {
