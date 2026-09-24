@@ -102,6 +102,14 @@ class FittingBuyOrder(models.Model):
         default=FittingBuyContractType.ALLIANCE,
         help_text="Contract availability; public contracts pay a broker fee.",
     )
+    hull_industry_sources = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Hull price source when no open industry ask exists: "
+            '{ "<ship_type_id>": <industry_order_id> } or 0 to use Jita.'
+        ),
+    )
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 

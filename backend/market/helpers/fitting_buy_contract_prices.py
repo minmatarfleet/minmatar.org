@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable
 
@@ -135,6 +136,19 @@ class IndustryAsk:
     unit_price: Decimal
     order_id: int
     public_short_code: str
+    quantity: int = 0
+    fulfilled: bool = False
+    created_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class HullPriceDecision:
+    """How to price one hull type when it was not pasted."""
+
+    ask: IndustryAsk | None
+    needs_choice: bool
+    choices: tuple[IndustryAsk, ...]
+    use_jita: bool
 
 
 def _line_ask_decimal(item: IndustryOrderItem) -> Decimal | None:
@@ -186,8 +200,112 @@ def latest_open_industry_asks(
             unit_price=ask,
             order_id=order.id,
             public_short_code=order.public_short_code or "",
+            quantity=int(item.quantity or 0),
+            fulfilled=order.fulfilled_at is not None,
+            created_at=order.created_at,
         )
     return result
+
+
+def industry_asks_for_types(
+    type_ids: Iterable[int],
+) -> dict[int, list[IndustryAsk]]:
+    """Priced industry lines for each type, newest order first."""
+    unique_ids = list({int(tid) for tid in type_ids if tid})
+    if not unique_ids:
+        return {}
+
+    assignment_qs = IndustryOrderItemAssignment.objects.only(
+        "id",
+        "order_item_id",
+        "target_unit_price",
+    )
+    items = (
+        IndustryOrderItem.objects.filter(eve_type_id__in=unique_ids)
+        .select_related("order")
+        .prefetch_related(Prefetch("assignments", queryset=assignment_qs))
+        .order_by("-order__created_at", "-order_id", "id")
+    )
+
+    grouped: dict[int, list[IndustryAsk]] = {}
+    seen: set[tuple[int, int]] = set()
+    for item in items:
+        type_id = int(item.eve_type_id)
+        order = item.order
+        key = (type_id, int(order.id))
+        if key in seen:
+            continue
+        ask = _line_ask_decimal(item)
+        if ask is None:
+            continue
+        seen.add(key)
+        grouped.setdefault(type_id, []).append(
+            IndustryAsk(
+                type_id=type_id,
+                unit_price=ask,
+                order_id=order.id,
+                public_short_code=order.public_short_code or "",
+                quantity=int(item.quantity or 0),
+                fulfilled=order.fulfilled_at is not None,
+                created_at=order.created_at,
+            )
+        )
+    return grouped
+
+
+def _pinned_order_id(raw) -> int | None:
+    """Stored choice: positive industry order id, 0 for Jita, None if unset."""
+    if raw is None or raw == "":
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if value < 0:
+        return None
+    return value
+
+
+def resolve_hull_price(
+    type_id: int,
+    *,
+    sources: dict | None,
+    asks_by_type: dict[int, list[IndustryAsk]],
+) -> HullPriceDecision:
+    """
+    Open industry ask wins when the owner has not picked a source.
+
+    Fulfilled orders are not guessed: the owner chooses one, or Jita.
+    """
+    rows = list(asks_by_type.get(int(type_id), []))
+    past = tuple(row for row in rows if row.fulfilled)
+    pin = _pinned_order_id((sources or {}).get(str(int(type_id))))
+    if pin == 0:
+        return HullPriceDecision(None, False, past, True)
+    if pin:
+        pinned = next((row for row in rows if row.order_id == pin), None)
+        if pinned is not None:
+            return HullPriceDecision(pinned, False, past, False)
+    open_rows = [row for row in rows if not row.fulfilled]
+    if open_rows:
+        return HullPriceDecision(open_rows[0], False, past, False)
+    if past:
+        return HullPriceDecision(None, True, past, False)
+    return HullPriceDecision(None, False, (), True)
+
+
+def hull_source_choice(ask: IndustryAsk) -> dict:
+    created = ""
+    if ask.created_at is not None:
+        created = ask.created_at.date().isoformat()
+    return {
+        "order_id": ask.order_id,
+        "public_short_code": ask.public_short_code,
+        "unit_price": _isk_str(ask.unit_price),
+        "quantity": ask.quantity,
+        "fulfilled": ask.fulfilled,
+        "created_at": created,
+    }
 
 
 def _stock_covered_type_ids(order: FittingBuyOrder) -> set[int]:
@@ -323,15 +441,23 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
     industry_asks = latest_open_industry_asks(
         all_type_ids - set(pasted) - stock_covered
     )
-    jita_prices = get_prices_by_type_id(list(all_type_ids))
-    type_names = dict(
-        EveType.objects.filter(id__in=all_type_ids).values_list("id", "name")
-    )
     ship_ids = {
         int(line.fitting.ship_id)
         for line, copy, per_ship in per_copy_boms
         if line.fitting.ship_id
     }
+    hull_decisions = {
+        ship_id: resolve_hull_price(
+            ship_id,
+            sources=order.hull_industry_sources,
+            asks_by_type=industry_asks_for_types(ship_ids),
+        )
+        for ship_id in ship_ids
+    }
+    jita_prices = get_prices_by_type_id(list(all_type_ids))
+    type_names = dict(
+        EveType.objects.filter(id__in=all_type_ids).values_list("id", "name")
+    )
     ship_names = dict(
         EveType.objects.filter(id__in=ship_ids).values_list("id", "name")
     )
@@ -353,6 +479,20 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         hull_industry_short_code = ""
         hull_from_jita = False
         fitting_uses_stock = False
+        hull_decision = hull_decisions.get(ship_id)
+        hull_source_needed = bool(hull_decision and hull_decision.needs_choice)
+        hull_source_choices = (
+            [hull_source_choice(ask) for ask in hull_decision.choices]
+            if hull_decision
+            and (
+                hull_decision.needs_choice
+                or _pinned_order_id(
+                    (order.hull_industry_sources or {}).get(str(ship_id))
+                )
+                is not None
+            )
+            else []
+        )
 
         for type_id, qty in sorted(per_ship.items()):
             # qty is items on one hull — never multiply by line/copy quantity.
@@ -362,6 +502,18 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
             unit = pasted.get(type_id)
             source = None
             from_jita = False
+            if (
+                is_hull
+                and unit is None
+                and hull_decision is not None
+                and hull_decision.ask is not None
+            ):
+                unit = hull_decision.ask.unit_price
+                source = hull_decision.ask
+            elif is_hull and unit is None and hull_source_needed:
+                landed_complete = False
+                hull_complete = False
+                continue
             if unit is None and type_id not in stock_covered:
                 ask = industry_asks.get(type_id)
                 if ask is not None:
@@ -450,6 +602,8 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
                 "hull_cost_source": hull_cost_source,
                 "hull_cost_industry_order_id": hull_industry_order_id,
                 "hull_cost_industry_short_code": hull_industry_short_code,
+                "hull_source_needed": hull_source_needed,
+                "hull_source_choices": hull_source_choices,
                 "fitting_cost": _isk_str(fitting_value),
                 "fitting_uses_stock": fitting_uses_stock,
                 "landed_per_ship": _isk_str(landed_value),

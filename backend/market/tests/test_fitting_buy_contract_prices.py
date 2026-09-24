@@ -236,6 +236,46 @@ class FittingBuyContractPricesTestCase(TestCase):
         rows = build_contract_prices(self.order)
         self.assertEqual(rows[0]["landed_per_ship"], "200000002")
         self.assertEqual(rows[0]["industry_sources"][0]["order_id"], newer.id)
+        self.assertFalse(rows[0]["hull_source_needed"])
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_fulfilled_only_asks_which_order(self, mock_jita):
+        mock_jita.return_value = {
+            self.hull.id: 50_000_000,
+            self.mod_a.id: 1,
+            self.mod_b.id: 1,
+        }
+        apply_landed_prices(
+            self.order,
+            f"{self.mod_a.name}\t1\n{self.mod_b.name}\t1",
+        )
+        older = self._industry_ask(self.hull, "2100000000", fulfilled=True)
+        newer = self._industry_ask(self.hull, "2200000000", fulfilled=True)
+
+        row = build_contract_prices(self.order)[0]
+        self.assertTrue(row["hull_source_needed"])
+        self.assertFalse(row["landed_complete"])
+        self.assertIsNone(row["hull_cost"])
+        self.assertEqual(row["hull_cost_source"], "")
+        self.assertEqual(
+            [choice["order_id"] for choice in row["hull_source_choices"]],
+            [newer.id, older.id],
+        )
+
+        self.order.hull_industry_sources = {str(self.hull.id): older.id}
+        self.order.save(update_fields=["hull_industry_sources"])
+        chosen = build_contract_prices(self.order)[0]
+        self.assertFalse(chosen["hull_source_needed"])
+        self.assertEqual(chosen["hull_cost"], "2100000000")
+        self.assertEqual(chosen["hull_cost_source"], "industry")
+        self.assertEqual(chosen["hull_cost_industry_order_id"], older.id)
+
+        self.order.hull_industry_sources = {str(self.hull.id): 0}
+        self.order.save(update_fields=["hull_industry_sources"])
+        declined = build_contract_prices(self.order)[0]
+        self.assertEqual(declined["hull_cost_source"], "jita")
+        self.assertEqual(declined["hull_cost"], "50000000")
+        self.assertFalse(declined["hull_source_needed"])
 
     @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
     def test_pasted_hull_beats_industry(self, mock_jita):

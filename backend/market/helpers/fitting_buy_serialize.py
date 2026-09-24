@@ -181,6 +181,15 @@ class FittingBuyContractFeeRatesSchema(Schema):
     sales_tax_rate: str
 
 
+class FittingBuyHullSourceChoiceSchema(Schema):
+    order_id: int
+    public_short_code: str = ""
+    unit_price: str | None = None
+    quantity: int = 0
+    fulfilled: bool = False
+    created_at: str = ""
+
+
 class FittingBuyContractPriceSchema(Schema):
     line_id: int
     fitting_id: int
@@ -196,6 +205,8 @@ class FittingBuyContractPriceSchema(Schema):
     hull_cost_source: str = ""
     hull_cost_industry_order_id: int | None = None
     hull_cost_industry_short_code: str = ""
+    hull_source_needed: bool = False
+    hull_source_choices: list[FittingBuyHullSourceChoiceSchema] = []
     fitting_cost: str | None = None
     fitting_uses_stock: bool = False
     landed_per_ship: str | None = None

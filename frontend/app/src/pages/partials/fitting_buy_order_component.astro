@@ -131,6 +131,17 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
             }
             break
         }
+        case 'hull_source': {
+            const hull_type_id = parseInt(String(form.get('hull_type_id') ?? ''), 10)
+            const hull_industry_order_id = parseInt(String(form.get('hull_industry_order_id') ?? ''), 10)
+            order = Number.isFinite(hull_type_id) && Number.isFinite(hull_industry_order_id)
+                ? await patch_fitting_buy_order(token, order_id, {
+                    hull_type_id,
+                    hull_industry_order_id,
+                })
+                : await get_fitting_buy_order(token, order_id)
+            break
+        }
         case 'contract_settings': {
             const selected = String(form.get('contract_markup_pct') ?? '').trim()
             const markup = selected === 'custom'
