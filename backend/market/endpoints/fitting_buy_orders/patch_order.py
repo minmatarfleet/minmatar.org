@@ -2,10 +2,12 @@
 
 from decimal import Decimal, InvalidOperation
 
+from django.db.models import Q
 from ninja import Schema
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from industry.models import IndustryOrderItem
 from market.endpoints.fitting_buy_orders.common import (
     get_order_or_404,
     require_owner,
@@ -44,6 +46,8 @@ class PatchFittingBuyOrderRequest(Schema):
     include_hull: bool | None = None
     contract_markup_pct: str | float | int | None = None
     contract_type: str | None = None
+    hull_type_id: int | None = None
+    hull_industry_order_id: int | None = None
 
 
 def _parse_markup_pct(raw) -> Decimal | None:
@@ -103,6 +107,42 @@ def _apply_contract_settings(order, payload: PatchFittingBuyOrderRequest):
     return fields, None
 
 
+def _apply_hull_source(order, payload: PatchFittingBuyOrderRequest):
+    if payload.hull_type_id is None and payload.hull_industry_order_id is None:
+        return [], None
+    if payload.hull_type_id is None or payload.hull_industry_order_id is None:
+        return None, (
+            400,
+            ErrorResponse(detail="Hull type and industry order are required."),
+        )
+    type_id = int(payload.hull_type_id)
+    order_id = int(payload.hull_industry_order_id)
+    if type_id < 1 or order_id < 0:
+        return None, (400, ErrorResponse(detail="Invalid hull source."))
+    if (
+        order_id
+        and not IndustryOrderItem.objects.filter(
+            order_id=order_id,
+            eve_type_id=type_id,
+        )
+        .filter(
+            Q(target_unit_price__isnull=False)
+            | Q(assignments__target_unit_price__isnull=False)
+        )
+        .exists()
+    ):
+        return None, (
+            400,
+            ErrorResponse(
+                detail="That industry order has no price for this hull."
+            ),
+        )
+    sources = dict(order.hull_industry_sources or {})
+    sources[str(type_id)] = order_id
+    order.hull_industry_sources = sources
+    return ["hull_industry_sources"], None
+
+
 def patch_fitting_buy_order(
     request, order_id: int, payload: PatchFittingBuyOrderRequest
 ):
@@ -132,6 +172,10 @@ def patch_fitting_buy_order(
     if contract_err:
         return contract_err
     fields.extend(contract_fields)
+    hull_fields, hull_err = _apply_hull_source(order, payload)
+    if hull_err:
+        return hull_err
+    fields.extend(hull_fields)
 
     if fields:
         fields.append("updated_at")
