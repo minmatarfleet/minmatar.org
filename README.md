@@ -65,14 +65,35 @@ Install these before the quickstart. Versions match CI and `backend/Pipfile` unl
 
 | Requirement | Version | Install |
 | --- | --- | --- |
-| Python | 3.10 | [pyenv](https://github.com/pyenv/pyenv#installation) (recommended) or [python.org](https://www.python.org/downloads/) |
-| Node.js | LTS (20+) | [nodejs.org](https://nodejs.org/) or [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) |
+| Python | 3.10 | [asdf](https://asdf-vm.com/guide/getting-started.html) / [mise](https://mise.jdx.dev/getting-started.html) (see [Toolchain versions](#toolchain-versions)), [pyenv](https://github.com/pyenv/pyenv#installation), or [python.org](https://www.python.org/downloads/) |
+| Node.js | 22 LTS | [asdf](https://asdf-vm.com/guide/getting-started.html) / [mise](https://mise.jdx.dev/getting-started.html) (see [Toolchain versions](#toolchain-versions)), [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), or [nodejs.org](https://nodejs.org/) |
 | Docker | current | [Get Docker](https://docs.docker.com/get-docker/) (includes Compose on Mac/Windows; [Linux Compose install](https://docs.docker.com/compose/install/linux/) if needed) |
 | Pipenv | latest | [pipenv installation](https://pipenv.pypa.io/en/latest/installation.html) |
 | pre-commit | latest | [pre-commit installation](https://pre-commit.com/#install), then from repo root: `pre-commit install` |
 | MariaDB client libs | system package | Required to build `mysqlclient` — [Django MySQL notes](https://docs.djangoproject.com/en/stable/ref/databases/#mysql-notes) (e.g. `sudo apt install libmariadb-dev` on Debian/Ubuntu) |
 
 On WSL, use [Docker Desktop WSL integration](https://docs.docker.com/desktop/features/wsl/) or run Docker inside your WSL distro.
+
+## Toolchain versions
+
+Python and Node versions are pinned in [`.tool-versions`](.tool-versions) at
+the repo root. The file is the asdf format, and [mise](https://mise.jdx.dev/)
+reads it too, so either manager works:
+
+```bash
+# asdf (one-time plugin setup)
+asdf plugin add nodejs
+asdf plugin add python
+asdf install
+
+# or mise
+mise install
+```
+
+Using a version manager is optional, but **Node 22 is not**: newer majors
+(24, 26) have no prebuilt `better-sqlite3` binary, and building it from
+source fails, so `npm i` in `frontend/app` breaks. Check with `node -v`
+before installing frontend dependencies.
 
 ## ESI
 
@@ -119,6 +140,7 @@ From the repo root:
    - `DISCORD_GUILD_ID` is from right-click your server icon → Copy Server ID
    - `DISCORD_PEOPLE_TEAM_CHANNEL_ID` (and other channel IDs) are from Copy Channel ID; you can point them all at the same channel for local dev
 1. `cd backend/`
+1. `cp app/settings.py.example app/settings.py` — `settings.py` is gitignored, so this step is required
 1. `pipenv install --dev`
 1. `pipenv run python manage.py migrate`
 
@@ -138,3 +160,16 @@ From the repo root:
 Or `make dev`. See [Local development](#local-development) for individual service commands.
 
 If the database user was never created (e.g. you had an old Docker volume from before init scripts), reset infra with `docker compose down -v` and run `docker compose up -d` again.
+
+# Troubleshooting
+
+Symptoms seen when a quickstart step was skipped:
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `ImportError: Couldn't import Django` | Backend dependencies were never installed into the pipenv virtualenv | `cd backend && pipenv install --dev` (or `pipenv sync --dev` to install exactly what `Pipfile.lock` pins) |
+| `ModuleNotFoundError: No module named 'app.settings'` | `backend/app/settings.py` is gitignored and was never created | `cp backend/app/settings.py.example backend/app/settings.py` |
+| `npm i` fails building `better-sqlite3` with `node-gyp` / `make` errors | Node is newer than 22; no prebuilt binary exists | Switch to Node 22 — see [Toolchain versions](#toolchain-versions) |
+| `[mobile] Port 8081 is being used by another process` | Something else holds Expo's port | Free port 8081, or ignore it — mobile is optional and the rest of the stack still runs |
+
+To see which ports the stack wants: `8000` (Django), `4321` (frontend), `8081` (Expo), `3306` (MariaDB), `6379` (Redis).
