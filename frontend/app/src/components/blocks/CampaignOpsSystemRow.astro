@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    system:             CampaignSystemSummary;
+    [propName: string]: any;
+}
+
+const {
+    system,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
+---
+
+<div
+    id={`campaign-system-${system.id}`}
+    class:list={['[ campaign-ops-system ]', Astro.props.class]}
+    {...attributes}
+>
+    <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+        <CampaignPriorityIcon priority={system.priority} />
+        <span class="[ campaign-ops-system-name ]">{system.name}</span>
+        <small class="[ campaign-ops-system-badge ]">{t('campaigns.theater.ops')}</small>
+    </FlexInline>
+    <small class="[ campaign-ops-system-hint ]">{t('campaigns.theater.ops_system_hint')}</small>
+</div>
+
+<style lang="scss">
+    .campaign-ops-system {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--border-color);
+    }
+
+    .campaign-ops-system-name {
+        color: var(--highlight);
+        font-size: var(--step-0);
+    }
+
+    .campaign-ops-system-badge {
+        color: var(--fleet-yellow);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
+    }
+
+    .campaign-ops-system-hint {
+        color: var(--foreground);
+        flex: 1 1 100%;
+    }
+</style>

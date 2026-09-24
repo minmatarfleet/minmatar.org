@@ -16,6 +16,7 @@ class CampaignSystemSummary(Schema):
     role: str
     goal: str
     priority: str = "medium"
+    is_fw_objective: bool = True
     contested_percent: float | None = None
     contested_change_24h: float | None = None
     victory_points: int | None = None
@@ -23,6 +24,7 @@ class CampaignSystemSummary(Schema):
     operational_state: str = "unknown"
     contested_updated_at: datetime | None = None
     advantage_updated_at: datetime | None = None
+    occupier_faction_id: int | None = None
     owner_faction_id: int | None = None
     advantage_basis: str = "unknown"
     advantage_source: str = "pilot"
@@ -38,17 +40,73 @@ class CampaignSystemSummary(Schema):
     status_chip: str = "holding"
 
 
+class CampaignAreaOut(Schema):
+    id: int
+    scope: str
+    name: str
+    constellation_id: int | None = None
+    region_id: int | None = None
+
+
+class CampaignOpponentOut(Schema):
+    id: int
+    name: str
+    ticker: str = ""
+    alliance_id: int | None = None
+    corporation_id: int | None = None
+    faction_id: int | None = None
+
+
+class CampaignFittingOut(Schema):
+    id: int
+    fitting_id: int
+    name: str
+    ship_name: str = ""
+    role_label: str = ""
+    srp_eligible: bool = True
+    order: int = 0
+
+
+class CampaignStructureOut(Schema):
+    id: int
+    name: str
+    structure_type: str
+    type_id: int | None = None
+    solar_system_id: int
+    system_name: str
+    corporation_id: int | None = None
+    corporation_name: str = ""
+    alliance_id: int | None = None
+    alliance_name: str = ""
+    related_alliance_id: int | None = None
+    related_alliance_name: str = ""
+    status: str
+    source: str
+    fitting: str = ""
+    reinforce_hour: int | None = None
+    timer_id: int | None = None
+    timer_at: datetime | None = None
+    destroyed_at: datetime | None = None
+    killmail_id: int | None = None
+
+
 class CampaignListItem(Schema):
     id: int
     slug: str
     name: str
     short_code: str
     tagline: str = ""
+    kind: str = "faction_warfare"
     status: str
     start_at: datetime
     end_at: datetime
     cover_image_url: str = ""
     systems: list[CampaignSystemSummary] = []
+    areas: list[CampaignAreaOut] = []
+    opponents: list[CampaignOpponentOut] = []
+    structures_remaining: int = 0
+    structures_destroyed: int = 0
+    next_timer_at: datetime | None = None
     enlisted: int = 0
     kills: int = 0
     isk_destroyed: int = 0
@@ -64,6 +122,10 @@ class CampaignTotals(Schema):
     complexes: int = 0
     advantage_sites: int = 0
     advantage_generated: float = 0
+    structure_kills: int = 0
+    capital_kills: int = 0
+    structures_destroyed: int = 0
+    structures_remaining: int = 0
     active_today: int = 0
 
 
@@ -75,12 +137,17 @@ class CampaignDetail(Schema):
     tagline: str = ""
     description_md: str = ""
     cover_image_url: str = ""
+    kind: str = "faction_warfare"
     status: str
     start_at: datetime
     end_at: datetime
     commander_order_text: str = ""
     commander_order_is_draft: bool = True
     systems: list[CampaignSystemSummary] = []
+    areas: list[CampaignAreaOut] = []
+    opponents: list[CampaignOpponentOut] = []
+    structures: list[CampaignStructureOut] = []
+    fittings: list[CampaignFittingOut] = []
     totals: CampaignTotals
     is_enlisted: bool = False
     my_points: int = 0
@@ -126,6 +193,7 @@ class WeekTargetOut(Schema):
     my_complexes: int = 0
     my_advantage_sites: int = 0
     my_readings: int = 0
+    my_structures_reported: int = 0
 
 
 class WeekPlan(Schema):
@@ -151,6 +219,7 @@ class CampaignFleetOut(Schema):
     fleet_commander: str | None = None
     fleet_commander_id: int | None = None
     doctrine: str | None = None
+    aar_link: str | None = None
     is_live: bool = False
     pilots: int = 0
     kills: int = 0
@@ -187,6 +256,8 @@ class KillmailOut(Schema):
     solar_system_id: int
     victim_character_name: str = ""
     victim_character_id: int | None = None
+    victim_corporation_id: int | None = None
+    victim_alliance_id: int | None = None
     victim_faction_id: int | None = None
     victim_ship_type_id: int | None = None
     killer_character_id: int | None = None
@@ -195,6 +266,9 @@ class KillmailOut(Schema):
     isk_value: int = 0
     enlisted_attacker_count: int = 0
     is_solo: bool = False
+    is_structure: bool = False
+    is_capital: bool = False
+    structure_id: int | None = None
 
 
 class SiteOut(Schema):
@@ -318,6 +392,7 @@ class CampaignCreateRequest(Schema):
     name: str = Field(min_length=1, max_length=128)
     slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=64)
     short_code: str = Field(pattern=r"^[A-Za-z0-9]{2,12}$")
+    kind: Literal["faction_warfare", "strategic"] = "faction_warfare"
     tagline: str = Field(default="", max_length=200)
     description_md: str = ""
     start_at: datetime
@@ -325,12 +400,58 @@ class CampaignCreateRequest(Schema):
     system_ids: list[int] = []
 
 
+class CampaignSystemPatch(Schema):
+    is_fw_objective: bool | None = None
+    goal: str | None = None
+    role: str | None = None
+    priority: str | None = None
+
+
+class CampaignAreaCreateRequest(Schema):
+    scope: Literal["constellation", "region"]
+    name: str = Field(min_length=1, max_length=128)
+    constellation_id: int | None = None
+    region_id: int | None = None
+
+
 class CampaignCreated(Schema):
     slug: str
     short_code: str
     name: str
+    kind: str
     status: str
     systems: list[str] = []
+
+
+class StructureAttachRequest(Schema):
+    name: str = Field(min_length=1, max_length=255)
+    structure_type: str = Field(min_length=1, max_length=64)
+    system_name: str = Field(min_length=1, max_length=128)
+    solar_system_id: int | None = None
+    corporation_name: str = Field(default="", max_length=255)
+    corporation_id: int | None = None
+    alliance_name: str = Field(default="", max_length=255)
+    alliance_id: int | None = None
+    related_alliance_name: str = Field(default="", max_length=255)
+    related_alliance_id: int | None = None
+    selected_item_window: str = ""
+    fitting: str = ""
+    reinforce_hour: int | None = None
+    # Optional live timer created alongside the recon row.
+    timer_at: datetime | None = None
+    timer_state: str | None = None
+
+
+class OpponentAttachRequest(Schema):
+    name: str = Field(min_length=1, max_length=255)
+    ticker: str = Field(default="", max_length=16)
+    alliance_id: int | None = None
+    corporation_id: int | None = None
+    faction_id: int | None = None
+
+
+class TimerAttachRequest(Schema):
+    timer_id: int
 
 
 class CommanderOrderRequest(Schema):

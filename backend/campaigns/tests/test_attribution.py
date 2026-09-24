@@ -7,8 +7,13 @@ from django.utils import timezone
 
 from campaigns.models import (
     CampaignKillmail,
+    CampaignKind,
     CampaignStatus,
+    CampaignStructure,
     KillmailOutcome,
+    StructureSource,
+    StructureStatus,
+    SystemGoal,
 )
 from campaigns.services.attribution import (
     attribute_feed_killmail,
@@ -139,3 +144,51 @@ class AttributionTests(TestCase):
         result = sweep_recent(hours=48)
         self.assertEqual(result["attributed"], 1)
         self.assertEqual(CampaignKillmail.objects.count(), 1)
+
+
+class OpsTheaterAttributionTests(TestCase):
+    """Ops theaters do not score ship kills unless a structure is on grid."""
+
+    def setUp(self):
+        self.campaign = make_campaign(
+            kind=CampaignKind.STRATEGIC,
+            slug="ops-attr",
+            short_code="OPA",
+        )
+        self.system = self.campaign.systems.first()
+        self.system.is_fw_objective = False
+        self.system.goal = SystemGoal.NONE
+        self.system.save(update_fields=["is_fw_objective", "goal"])
+        self.user, self.character = enlist(self.campaign, "scout", 2001)
+
+    def test_ship_kill_in_ops_theater_without_structure_is_ignored(self):
+        feed_killmail = make_feed_killmail(
+            101, victim_character_id=9999, attacker_ids=[2001]
+        )
+        self.assertEqual(attribute_feed_killmail(feed_killmail), 0)
+        self.assertEqual(CampaignKillmail.objects.count(), 0)
+
+    def test_ship_kill_in_ops_theater_with_structure_is_attributed(self):
+        CampaignStructure.objects.create(
+            campaign=self.campaign,
+            name="Enemy Fort",
+            structure_type="fortizar",
+            solar_system_id=self.system.solar_system_id,
+            system_name=self.system.name,
+            status=StructureStatus.ANCHORED,
+            source=StructureSource.RECON,
+        )
+        feed_killmail = make_feed_killmail(
+            102, victim_character_id=9999, attacker_ids=[2001]
+        )
+        self.assertEqual(attribute_feed_killmail(feed_killmail), 1)
+        self.assertEqual(CampaignKillmail.objects.count(), 1)
+
+    def test_fw_objective_still_attributes_ship_kills(self):
+        self.system.is_fw_objective = True
+        self.system.goal = SystemGoal.CAPTURE
+        self.system.save(update_fields=["is_fw_objective", "goal"])
+        feed_killmail = make_feed_killmail(
+            103, victim_character_id=9999, attacker_ids=[2001]
+        )
+        self.assertEqual(attribute_feed_killmail(feed_killmail), 1)

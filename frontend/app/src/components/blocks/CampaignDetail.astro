@@ -12,7 +12,7 @@ import type {
     CampaignRoster,
     CampaignReadiness,
 } from '@dtypes/api.minmatar.org'
-import { campaign_totals_stats, sort_systems_by_contest } from '@helpers/fetching/campaigns'
+import { campaign_totals_stats, sort_systems_by_contest, fw_objective_systems, ops_theater_systems } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
 
 interface Props {
@@ -45,13 +45,34 @@ delete attributes.orders
 delete attributes.timeline
 
 const systems = sort_systems_by_contest(campaign.systems)
+const fw_systems = fw_objective_systems(systems)
+const ops_systems = ops_theater_systems(systems)
+const areas = campaign.areas ?? []
 /** The two zero-heavy figures (advantage generated, active today) stay on their own boards. */
-const stats = campaign_totals_stats(campaign.totals, t, format_isk).slice(0, 5)
+const is_strategic = campaign.kind === 'strategic'
+const stats = campaign_totals_stats(campaign.totals, t, format_isk, campaign.kind).slice(0, 5)
+const structures = campaign.structures ?? []
+const structures_destroyed = campaign.totals.structures_destroyed
+const structures_remaining = campaign.totals.structures_remaining
+const structures_tracking = t('campaigns.structures.tracking')
+    .replace('{destroyed}', String(structures_destroyed))
+    .replace('{remaining}', String(structures_remaining))
+const has_systems = systems.length > 0 || areas.length > 0
+/** Structures lead strategic; FW systems (and any theater systems) show when attached. */
+const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'you' )[] = [
+    ...(is_strategic ? ['structures'] as const : []),
+    ...(has_systems || !is_strategic ? ['systems'] as const : []),
+    'fleets',
+    'activity',
+    'pilots',
+    'you',
+]
+const tab_label = (tab:string) => t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
+const default_tab = TABS[0]
+const show_systems_tab = TABS.includes('systems')
+const show_structures_tab = TABS.includes('structures')
 
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
-
-const TABS = [ 'systems', 'fleets', 'activity', 'pilots', 'you' ] as const
-const tab_label = (tab:string) => t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -62,6 +83,9 @@ import Button from '@components/blocks/Button.astro'
 import CampaignOrdersHero from '@components/blocks/CampaignOrdersHero.astro'
 import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
 import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
+import CampaignOpsSystemRow from '@components/blocks/CampaignOpsSystemRow.astro'
+import CampaignOpsAreas from '@components/blocks/CampaignOpsAreas.astro'
+import CampaignStructuresTable from '@components/blocks/CampaignStructuresTable.astro'
 import CampaignFleetsTable from '@components/blocks/CampaignFleetsTable.astro'
 import CampaignSites from '@components/blocks/CampaignSites.astro'
 import CampaignLeaderboard from '@components/blocks/CampaignLeaderboard.astro'
@@ -78,7 +102,7 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
         class="[ campaign-tabs ]"
         x-data={`{
             tabs: ${JSON.stringify(TABS)},
-            tab: 'systems',
+            tab: '${default_tab}',
             init() {
                 const hash = window.location.hash.replace('#', '')
                 if (this.tabs.includes(hash)) this.tab = hash
@@ -120,25 +144,76 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
             )}
         </div>
 
-        <section
-            id="campaign-panel-systems"
-            role="tabpanel"
-            aria-labelledby="campaign-tab-systems"
-            class="[ campaign-panel ]"
-            x-bind:hidden="tab !== 'systems'"
-        >
-            {systems.length === 0 ?
-                <small>{t('campaigns.systems.none')}</small>
-                :
-                <Flexblock gap='var(--space-m)'>
-                    {systems.map(system =>
-                        <div id={`campaign-system-${system.id}`}>
-                            <CampaignSystemCard system={system} slug={campaign.slug} can_report={campaign.is_enlisted} />
-                        </div>
-                    )}
-                </Flexblock>
-            }
-        </section>
+        {show_systems_tab &&
+            <section
+                id="campaign-panel-systems"
+                role="tabpanel"
+                aria-labelledby="campaign-tab-systems"
+                class="[ campaign-panel ]"
+                x-bind:hidden="tab !== 'systems'"
+                hidden={default_tab !== 'systems'}
+            >
+                {systems.length === 0 && areas.length === 0 ?
+                    <small>{t('campaigns.systems.none')}</small>
+                    :
+                    <Flexblock gap='var(--space-m)'>
+                        {fw_systems.length > 0 &&
+                            <Flexblock gap='var(--space-s)'>
+                                <h3>{t('campaigns.theater.fw_objectives')}</h3>
+                                {fw_systems.map(system =>
+                                    <div id={`campaign-system-${system.id}`}>
+                                        <CampaignSystemCard system={system} slug={campaign.slug} can_report={campaign.is_enlisted} />
+                                    </div>
+                                )}
+                            </Flexblock>
+                        }
+                        {(ops_systems.length > 0 || areas.length > 0) &&
+                            <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                                <Flexblock gap='var(--space-s)'>
+                                    <Flexblock gap='var(--space-3xs)'>
+                                        <h3>{t('campaigns.theater.ops_theaters')}</h3>
+                                        <small>{t('campaigns.theater.ops_hint')}</small>
+                                    </Flexblock>
+                                    <CampaignOpsAreas areas={areas} />
+                                    {ops_systems.map(system =>
+                                        <CampaignOpsSystemRow system={system} />
+                                    )}
+                                </Flexblock>
+                            </ComponentBlock>
+                        }
+                        {!is_strategic && structures.length > 0 &&
+                            <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                                <CampaignStructuresTable
+                                    structures={structures}
+                                    slug={campaign.slug}
+                                    show_add_timer={true}
+                                />
+                            </ComponentBlock>
+                        }
+                    </Flexblock>
+                }
+            </section>
+        }
+
+        {show_structures_tab &&
+            <section
+                id="campaign-panel-structures"
+                role="tabpanel"
+                aria-labelledby="campaign-tab-structures"
+                class="[ campaign-panel ]"
+                hidden={default_tab !== 'structures'}
+                x-bind:hidden="tab !== 'structures'"
+            >
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <CampaignStructuresTable
+                        structures={structures}
+                        slug={campaign.slug}
+                        show_add_timer={true}
+                        tracking={structures_tracking}
+                    />
+                </ComponentBlock>
+            </section>
+        }
 
         <section
             id="campaign-panel-fleets"
@@ -187,12 +262,14 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     </Flexblock>
                 </ComponentBlock>
 
-                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
-                    <Flexblock gap='var(--space-s)'>
-                        <h3>{t('campaigns.sites.title')}</h3>
-                        <CampaignSites slug={campaign.slug} sites={sites.rows} has_more={sites.has_more} />
-                    </Flexblock>
-                </ComponentBlock>
+                {!is_strategic &&
+                    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                        <Flexblock gap='var(--space-s)'>
+                            <h3>{t('campaigns.sites.title')}</h3>
+                            <CampaignSites slug={campaign.slug} sites={sites.rows} has_more={sites.has_more} />
+                        </Flexblock>
+                    </ComponentBlock>
+                }
             </Flexblock>
         </section>
 

@@ -30,7 +30,9 @@ const week_percent = week ? clamp_percent((week.week_index / Math.max(1, week.we
 import Flexblock from '@components/compositions/Flexblock.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+import CampaignCommanderOrder from '@components/blocks/CampaignCommanderOrder.astro'
 import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
+import CampaignFittings from '@components/blocks/CampaignFittings.astro'
 import CampaignActions from '@components/blocks/CampaignActions.astro'
 ---
 
@@ -68,8 +70,16 @@ import CampaignActions from '@components/blocks/CampaignActions.astro'
             hx-trigger="every 300s"
             hx-swap="innerHTML"
         >
-            <CampaignObjectivesTable week={week} systems={campaign.systems} />
+            <Flexblock gap='var(--space-m)'>
+                <CampaignCommanderOrder
+                    text={campaign.commander_order_text}
+                    is_draft={campaign.commander_order_is_draft}
+                />
+                <CampaignObjectivesTable week={week} systems={campaign.systems} />
+            </Flexblock>
         </div>
+
+        <CampaignFittings fittings={campaign.fittings ?? []} />
 
         <CampaignActions slug={campaign.slug} is_enlisted={campaign.is_enlisted} />
     </Flexblock>

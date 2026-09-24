@@ -112,9 +112,17 @@ class EveStructureTimer(models.Model):
     system_name = models.CharField(max_length=255)
     corporation_name = models.CharField(max_length=255, null=True, blank=True)
     alliance_name = models.CharField(max_length=255, null=True, blank=True)
+    fitting = models.TextField(blank=True, null=True)
 
     structure = models.ForeignKey(
         EveStructure, on_delete=models.SET_NULL, null=True
+    )
+    campaign = models.ForeignKey(
+        "campaigns.Campaign",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="structure_timers",
     )
 
     def __str__(self):

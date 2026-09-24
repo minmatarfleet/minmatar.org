@@ -3,174 +3,152 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignListItem } from '@dtypes/api.minmatar.org'
-import type { CampaignStat } from '@components/blocks/CampaignStatBar.astro'
-import { sort_systems_by_contest } from '@helpers/fetching/campaigns'
-import { format_isk } from '@helpers/numbers'
-import { format_date } from '@helpers/date'
+import type { TagColors } from '@dtypes/layout_components'
+import { format_date_short } from '@helpers/date'
+import { number_thousand_separator, number_name } from '@helpers/numbers'
 
 interface Props {
     campaign:           CampaignListItem;
-    index:              number;
+    index?:             number;
     [propName: string]: any;
 }
 
 const {
     campaign,
-    index,
     ...attributes
 } = Astro.props
 
 delete attributes.class
+delete attributes.index
 
-const is_live = campaign.status === 'active'
 const is_upcoming = campaign.status === 'scheduled' || campaign.status === 'draft'
-const systems = sort_systems_by_contest(campaign.systems)
+const is_strategic = campaign.kind === 'strategic'
+const href = translatePath(`/campaigns/${campaign.slug}/`)
+const cover = campaign.cover_image_url || (
+    is_strategic ? '/images/home-auga-cover.jpg' : '/images/warzone-card.jpg'
+)
 
-const countdown_date = new Date(is_upcoming ? campaign.start_at : campaign.end_at)
-const countdown_label = is_upcoming ? t('campaigns.starts_in') : t('campaigns.ends_in')
+const start_label = format_date_short(lang, campaign.start_at)
+const end_label = format_date_short(lang, campaign.end_at)
+const period = is_upcoming
+    ? `${t('campaigns.starts_in')} ${start_label}`
+    : `${start_label} – ${end_label}`
 
-const stats:CampaignStat[] = [
-    { label: t('campaigns.stat.enlisted'), value: String(campaign.enlisted) },
-    { label: t('campaigns.stat.kills'), value: String(campaign.kills) },
-    { label: t('campaigns.stat.isk_destroyed'), value: format_isk(campaign.isk_destroyed) },
-]
+const kind_label = t(`campaigns.kind.${campaign.kind}` as any)
+const kind_color: TagColors = is_strategic ? 'fleet-red' : 'alliance-blue'
+const isk_label = t('destroyed')
+const opponent_names = (campaign.opponents ?? [])
+    .map(opponent => {
+        const ticker = (opponent.ticker || '').trim()
+        if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
+            return ticker
+        return opponent.name
+    })
+    .filter(Boolean)
+    .slice(0, 3)
+const opponents_label = opponent_names.length
+    ? `${t('campaigns.opponents.label')} ${opponent_names.join(', ')}`
+    : ''
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Tag from '@components/blocks/Tag.astro'
+import PictureCard from '@components/blocks/PictureCard.astro'
 import Button from '@components/blocks/Button.astro'
-import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
-import CampaignSystemRow from '@components/blocks/CampaignSystemRow.astro'
-import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import Tag from '@components/blocks/Tag.astro'
 ---
 
-<ComponentBlock
-    class:list={['[ campaign-card ]', Astro.props.class]}
-    padding_inline='var(--space-m)'
-    padding_block='var(--space-m)'
+<PictureCard
+    class:list={['[ campaign-post-card ]', Astro.props.class]}
+    src={cover}
+    alt={campaign.name}
+    narrow={true}
+    thumbnail={true}
     {...attributes}
 >
-    <Flexblock gap='var(--space-m)'>
-        <Flexblock gap='var(--space-2xs)'>
-            <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
-                <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-                    <h2>
-                        <a href={translatePath(`/campaigns/${campaign.slug}/`)}>{campaign.name}</a>
-                    </h2>
-                    {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
-                </FlexInline>
-                <Flexblock gap='var(--space-3xs)' class="[ campaign-card-countdown ]">
-                    <small class="[ campaign-card-countdown-label ]">{countdown_label}</small>
-                    {is_live || is_upcoming ?
-                        <CampaignCountdown
-                            id={index}
-                            date={countdown_date}
-                            expired_text={t('campaigns.ended')}
-                        />
-                        :
-                        <span class="[ text-[var(--highlight)] ]">{format_date(lang, campaign.end_at)}</span>
-                    }
-                </Flexblock>
-            </FlexInline>
-            {campaign.tagline && <p>{campaign.tagline}</p>}
-        </Flexblock>
+    <FlexInline slot="header" gap='var(--space-3xs)' class="[ items-center ]">
+        <Tag text={kind_label} color={kind_color} />
+        {campaign.is_enlisted && <Tag text={t('campaigns.enlisted_already')} color='green' />}
+    </FlexInline>
 
-        {systems.length > 0 &&
-            <div class="[ campaign-card-systems ]">
-                <div class="[ campaign-card-systems-header ]" aria-hidden="true">
-                    <small>{t('campaigns.system.column_system')}</small>
-                    <small>{t('campaigns.system.column_contested')}</small>
-                    <small class="[ campaign-card-systems-header-numeric ]">{t('campaigns.system.advantage')}</small>
-                    <small class="[ campaign-card-systems-header-numeric ]">{t('campaigns.system.column_kills')}</small>
-                </div>
-                {systems.map(system => <CampaignSystemRow system={system} />)}
-            </div>
+    <Flexblock gap='var(--space-2xs)'>
+        <small>{period}</small>
+        <a href={href}>
+            <h3>{campaign.name}</h3>
+        </a>
+        {campaign.tagline &&
+            <p class="[ campaign-card-tagline ]">{campaign.tagline}</p>
         }
-
-        <div class="[ campaign-card-footer ]">
-            <CampaignStatBar stats={stats} variant='inline' />
-
-            <Button href={translatePath(`/campaigns/${campaign.slug}/`)}>
+        {opponents_label &&
+            <small class="[ campaign-card-opponents ]">{opponents_label}</small>
+        }
+        <Flexblock gap='0'>
+            <small>{isk_label}</small>
+            <p
+                class="[ isk-stat ]"
+                data-tippy-content={number_name(campaign.isk_destroyed, lang)}
+            >
+                {number_thousand_separator(campaign.isk_destroyed)}&nbsp;ISK
+            </p>
+        </Flexblock>
+        <FlexInline>
+            <Button href={href} size='sm'>
                 {t('campaigns.view_campaign')}
             </Button>
-        </div>
+        </FlexInline>
     </Flexblock>
-</ComponentBlock>
+</PictureCard>
 
 <style lang="scss">
-    h2 {
+    h3 {
+        font-size: var(--step-1);
         font-family: var(--heading-font);
-        font-size: var(--step-2);
-        color: var(--highlight);
+        line-height: 1.15;
     }
 
-    h2 a {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    @media (hover: hover) {
-        h2 a:hover {
-            text-decoration: underline;
-        }
-    }
-
-    .campaign-card-countdown-label {
+    .campaign-card-tagline {
+        margin: 0;
+        font-size: var(--step--1);
+        line-height: 1.35;
         color: var(--foreground);
+    }
+
+    .campaign-card-opponents {
+        color: var(--fleet-red);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
     }
 
-    @media screen and (min-width: 768px) {
-        .campaign-card-countdown {
-            text-align: right;
-        }
+    .isk-stat {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        margin: 0;
     }
 
-    .campaign-card-systems {
-        --campaign-system-columns: minmax(12rem, 1fr) minmax(14rem, 2.5fr) 7rem 9rem;
-    }
+    :global(.campaign-post-card) {
+        position: relative;
 
-    .campaign-card-systems-header {
-        display: grid;
-        grid-template-columns: var(--campaign-system-columns);
-        column-gap: var(--space-s);
-        padding-block: var(--space-3xs);
-
-        small {
-            color: var(--foreground);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: var(--step--2);
-        }
-
-        .campaign-card-systems-header-numeric {
-            text-align: right;
-        }
-    }
-
-    .campaign-card-footer {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-s) var(--space-m);
-        padding-top: var(--space-s);
-        border-top: solid 1px var(--border-color);
-    }
-
-    @media screen and (max-width: 767px) {
-        .campaign-card-systems-header {
-            display: none;
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to top,
+                rgb(0 0 0 / 88%) 0%,
+                rgb(0 0 0 / 55%) 42%,
+                rgb(0 0 0 / 25%) 68%,
+                rgb(0 0 0 / 12%) 100%
+            );
         }
 
-        .campaign-card-countdown,
-        .campaign-card-countdown :global(.campaign-countdown) {
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: baseline;
-            gap: var(--space-2xs);
+        :global(.card-body),
+        :global(.card-header),
+        :global(.card-actions),
+        :global(.visible-actions) {
+            z-index: 2;
         }
     }
 </style>

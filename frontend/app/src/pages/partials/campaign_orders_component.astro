@@ -46,6 +46,8 @@ try {
 
 const ORDERS_PARTIAL_URL = translatePath(`/partials/campaign_orders_component?slug=${slug}`)
 
+import Flexblock from '@components/compositions/Flexblock.astro'
+import CampaignCommanderOrder from '@components/blocks/CampaignCommanderOrder.astro'
 import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
@@ -59,5 +61,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }}
     />
     :
-    <CampaignObjectivesTable week={week} systems={campaign.systems} />
+    <Flexblock gap='var(--space-m)'>
+        <CampaignCommanderOrder
+            text={campaign.commander_order_text}
+            is_draft={campaign.commander_order_is_draft}
+        />
+        <CampaignObjectivesTable week={week} systems={campaign.systems} />
+    </Flexblock>
 }

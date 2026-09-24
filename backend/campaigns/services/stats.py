@@ -52,6 +52,8 @@ BOARD_METRICS = {
     "sites": "complexes",
     "advantage": "advantage_generated",
     "fleets": "fleets_attended",
+    "structures": "structure_kills",
+    "capitals": "capital_kills",
     # "supply" arrives with the community layer, which writes
     # supply_isk_delivered. Offering the board before then would be a
     # permanently empty column.
@@ -65,6 +67,10 @@ def _blank_row() -> dict:
         "solo_kills": 0,
         "final_blows": 0,
         "gang_kills": 0,
+        "structure_kills": 0,
+        "structure_losses": 0,
+        "capital_kills": 0,
+        "capital_losses": 0,
         "isk_destroyed": 0,
         "isk_lost": 0,
         "complexes": 0,
@@ -133,6 +139,10 @@ def _add_killmails(campaign, rows: dict, start, end) -> None:
             row["isk_destroyed"] += mail.isk_value
             row["final_blows"] += int(participant.final_blow)
             row["solo_kills"] += int(mail.is_solo)
+            if mail.is_structure:
+                row["structure_kills"] += 1
+            if mail.is_capital:
+                row["capital_kills"] += 1
             if 2 <= mail.enlisted_attacker_count <= gang_size_max:
                 row["gang_kills"] += 1
             row["points"] += (
@@ -152,6 +162,10 @@ def _add_killmails(campaign, rows: dict, start, end) -> None:
         ):
             row["losses"] += 1
             row["isk_lost"] += mail.isk_value
+            if mail.is_structure:
+                row["structure_losses"] += 1
+            if mail.is_capital:
+                row["capital_losses"] += 1
             row["points"] += scoring.loss_points(
                 campaign, in_fleet_or_gang=mail.fleet_id is not None
             )
@@ -565,6 +579,14 @@ def campaign_totals(campaign: Campaign) -> dict:
             site_kind=SiteKind.COMPLEX
         ).count(),
         "advantage_generated": round(advantage, 1),
+        "structure_kills": kills.filter(is_structure=True).count(),
+        "capital_kills": kills.filter(is_capital=True).count(),
+        "structures_destroyed": campaign.structures.filter(
+            status="destroyed"
+        ).count(),
+        "structures_remaining": campaign.structures.exclude(
+            status="destroyed"
+        ).count(),
         "active_today": CampaignParticipantDay.objects.filter(
             campaign=campaign, day=campaign_day(), active=True
         ).count(),

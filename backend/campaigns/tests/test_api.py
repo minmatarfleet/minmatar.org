@@ -14,6 +14,7 @@ from campaigns.models import (
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
     CampaignEvent,
+    CampaignFitting,
     CampaignKillmail,
     CampaignParticipantDay,
     CampaignStandingFleet,
@@ -32,6 +33,7 @@ from campaigns.tests.helpers import (
     make_feed_killmail,
 )
 from eveonline.models import EveCharacter, EvePlayer
+from fittings.models import EveFitting
 from fleets.models import EveFleet
 
 BASE = "/api/campaigns"
@@ -77,6 +79,32 @@ class CampaignApiTests(TestCase):
         self.assertEqual(
             [system["name"] for system in body["systems"]], ["Kamela"]
         )
+        self.assertIn("fittings", body)
+        self.assertEqual(body["fittings"], [])
+
+    def test_detail_includes_role_labelled_fittings(self):
+        fitting = EveFitting.objects.create(
+            name="Campaign Thrasher",
+            ship_id=16240,
+            description="Campaign fit",
+            eft_format="[Thrasher, Campaign Thrasher]\n",
+        )
+        CampaignFitting.objects.create(
+            campaign=self.campaign,
+            fitting=fitting,
+            role_label="Hunter",
+            srp_eligible=True,
+            order=1,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.staff)
+        )
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()["fittings"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["fitting_id"], fitting.id)
+        self.assertEqual(rows[0]["role_label"], "Hunter")
+        self.assertTrue(rows[0]["srp_eligible"])
 
     def test_draft_campaigns_are_hidden_from_ordinary_pilots(self):
         self.campaign.status = CampaignStatus.DRAFT

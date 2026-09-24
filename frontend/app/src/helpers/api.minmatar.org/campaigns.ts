@@ -20,6 +20,8 @@ import type {
     CampaignAdvantageRequest,
     CampaignAdvantageResponse,
     CampaignGangRequest,
+    CampaignStructure,
+    CampaignStructureAttachRequest,
 } from '@dtypes/api.minmatar.org'
 import { parse_response_error } from '@helpers/string'
 
@@ -286,5 +288,19 @@ export async function create_campaign_gang(slug:string, access_token:string, gan
         'campaign gang',
         'POST',
         gang,
+    )
+}
+
+export async function attach_campaign_structure(
+    slug:string,
+    access_token:string,
+    structure:CampaignStructureAttachRequest,
+) {
+    return await request_json<CampaignStructure>(
+        `${API_ENDPOINT}/${slug}/structures`,
+        access_token,
+        'campaign structure',
+        'POST',
+        structure,
     )
 }

@@ -27,6 +27,26 @@ class CampaignStatus(models.TextChoices):
     ARCHIVED = "archived", "Archived"
 
 
+class CampaignKind(models.TextChoices):
+    """How the campaign page reads. Theaters (systems, structures) are separate."""
+
+    FACTION_WARFARE = "faction_warfare", "Faction Warfare"
+    STRATEGIC = "strategic", "Strategic"
+
+
+class StructureStatus(models.TextChoices):
+    ANCHORED = "anchored", "Anchored"
+    REINFORCED = "reinforced", "Reinforced"
+    DESTROYED = "destroyed", "Destroyed"
+    UNANCHORED = "unanchored", "Unanchored"
+
+
+class StructureSource(models.TextChoices):
+    RECON = "recon", "Recon"
+    TIMER = "timer", "Timer"
+    KILLMAIL = "killmail", "Killmail"
+
+
 class SystemGoal(models.TextChoices):
     CAPTURE = "capture", "Capture"
     DEFEND = "defend", "Defend"
@@ -46,6 +66,13 @@ class SystemPriority(models.TextChoices):
     HIGH = "high", "High"
     MEDIUM = "medium", "Medium"
     LOW = "low", "Low"
+
+
+class AreaScope(models.TextChoices):
+    """Constellation or region included as an ops theater (never FW)."""
+
+    CONSTELLATION = "constellation", "Constellation"
+    REGION = "region", "Region"
 
 
 class SiteKind(models.TextChoices):
@@ -75,7 +102,7 @@ class OperationalState(models.TextChoices):
 
 
 class Campaign(models.Model):
-    """One named operation over a set of warzone systems."""
+    """One named operation. Theaters may be systems, structures, or both."""
 
     slug = models.SlugField(max_length=64, unique=True)
     short_code = models.CharField(
@@ -89,6 +116,13 @@ class Campaign(models.Model):
     description_md = models.TextField(blank=True, default="")
     cover_image_url = models.CharField(max_length=512, blank=True, default="")
 
+    kind = models.CharField(
+        max_length=24,
+        choices=CampaignKind.choices,
+        default=CampaignKind.FACTION_WARFARE,
+        db_index=True,
+        help_text="Display preset. Does not change how activity is matched.",
+    )
     status = models.CharField(
         max_length=16,
         choices=CampaignStatus.choices,
@@ -160,6 +194,163 @@ class Campaign(models.Model):
             )
         )
 
+    @property
+    def is_faction_warfare(self) -> bool:
+        return self.kind == CampaignKind.FACTION_WARFARE
+
+    @property
+    def is_strategic(self) -> bool:
+        return self.kind == CampaignKind.STRATEGIC
+
+
+class CampaignOpponent(models.Model):
+    """An entity this campaign is fought against, for labeling and boards."""
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="opponents"
+    )
+    alliance_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    corporation_id = models.BigIntegerField(null=True, blank=True)
+    faction_id = models.IntegerField(null=True, blank=True)
+    name = models.CharField(max_length=255)
+    ticker = models.CharField(max_length=16, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "alliance_id"],
+                name="campaign_opponent_alliance_unique",
+                condition=models.Q(alliance_id__isnull=False),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.campaign.slug})"
+
+
+class CampaignStructure(models.Model):
+    """A structure under recon for a campaign: timer, kill, or paste."""
+
+    # Same string keys as EveStructureTimer.type_choices / frontend get_structure_id.
+    TYPE_CHOICES = (
+        ("astrahus", "Astrahus"),
+        ("fortizar", "Fortizar"),
+        ("keepstar", "Keepstar"),
+        ("raitaru", "Raitaru"),
+        ("azbel", "Azbel"),
+        ("sotiyo", "Sotiyo"),
+        ("athanor", "Athanor"),
+        ("tatara", "Tatara"),
+        ("tenebrex_cyno_jammer", "Tenebrex Cyno Jammer"),
+        ("pharolux_cyno_beacon", "Pharolux Cyno Beacon"),
+        ("ansiblex_jump_gate", "Ansiblex Jump Gate"),
+        ("orbital_skyhook", "Orbital Skyhook"),
+        ("metenox_moon_drill", "Metenox Moon Drill"),
+        ("player_owned_customs_office", "Player Owned Customs Office"),
+        ("player_owned_starbase", "Player Owned Starbase"),
+        ("mercenary_den", "Mercenary Den"),
+    )
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="structures"
+    )
+    name = models.CharField(max_length=255)
+    structure_type = models.CharField(max_length=64, choices=TYPE_CHOICES)
+    type_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="ESI type id when known; used to match killmails.",
+    )
+    solar_system_id = models.BigIntegerField(db_index=True)
+    system_name = models.CharField(max_length=128)
+    corporation_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="ESI corporation id of the structure's legal owner.",
+    )
+    corporation_name = models.CharField(max_length=255, blank=True, default="")
+    alliance_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    alliance_name = models.CharField(max_length=255, blank=True, default="")
+    related_alliance_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Inferred enemy alliance (e.g. CVA when the owner is an alt corp).",
+    )
+    related_alliance_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Scout-entered related alliance name.",
+    )
+    eve_structure_id = models.BigIntegerField(null=True, blank=True)
+    fitting = models.TextField(
+        blank=True,
+        default="",
+        help_text="Scouted structure fit paste (high slots, services, etc.).",
+    )
+    reinforce_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="EVE reinforce hour (0–23), e.g. 18 for 18:00.",
+    )
+
+    status = models.CharField(
+        max_length=16,
+        choices=StructureStatus.choices,
+        default=StructureStatus.ANCHORED,
+        db_index=True,
+    )
+    source = models.CharField(
+        max_length=16,
+        choices=StructureSource.choices,
+        default=StructureSource.RECON,
+    )
+    timer = models.ForeignKey(
+        "structures.EveStructureTimer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="campaign_structures",
+    )
+    destroyed_at = models.DateTimeField(null=True, blank=True)
+    killmail = models.ForeignKey(
+        "CampaignKillmail",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="destroyed_structures",
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["system_name", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "campaign",
+                    "solar_system_id",
+                    "structure_type",
+                    "name",
+                ],
+                name="campaign_structure_identity_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["campaign", "status"]),
+            models.Index(fields=["campaign", "solar_system_id"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.system_name})"
+
 
 class CampaignSystem(models.Model):
     campaign = models.ForeignKey(
@@ -179,6 +370,14 @@ class CampaignSystem(models.Model):
     goal = models.CharField(
         max_length=16, choices=SystemGoal.choices, default=SystemGoal.CAPTURE
     )
+    is_fw_objective = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text=(
+            "FW contest objective (plex/VP/advantage). "
+            "Off = ops theater only (structure hunt / member guide; no kill scoring)."
+        ),
+    )
     added_at = models.DateTimeField(default=timezone.now)
     retired_at = models.DateTimeField(null=True, blank=True)
 
@@ -193,6 +392,44 @@ class CampaignSystem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.campaign.slug})"
+
+
+class CampaignArea(models.Model):
+    """Constellation or region in the campaign as an ops theater.
+
+    Never an FW objective: guidance for members and structure hunting only.
+    Does not pull kill attribution.
+    """
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="areas"
+    )
+    scope = models.CharField(max_length=16, choices=AreaScope.choices)
+    constellation_id = models.BigIntegerField(
+        null=True, blank=True, db_index=True
+    )
+    region_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    name = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "scope", "constellation_id"],
+                condition=models.Q(scope="constellation"),
+                name="campaign_area_constellation_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["campaign", "scope", "region_id"],
+                condition=models.Q(scope="region"),
+                name="campaign_area_region_unique",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.scope}, {self.campaign.slug})"
 
 
 class CampaignSystemArc(models.Model):
@@ -262,6 +499,8 @@ class CampaignWeekTarget(models.Model):
         ADVANTAGE_GAIN = "advantage_gain", "Gain advantage"
         ADVANTAGE_DESTROY = "advantage_destroy", "Destroy advantage"
         ADVANTAGE_MAINTAIN = "advantage_maintain", "Maintain advantage"
+        # Strategic / structure campaigns: scout and paste enemy structures.
+        STRUCTURES_REPORTED = "structures_reported", "Structures reported"
 
     ADVANTAGE_METRICS = (
         "advantage_gain",
@@ -690,6 +929,15 @@ class CampaignKillmail(models.Model):
     isk_value = models.BigIntegerField(default=0)
     is_pod = models.BooleanField(default=False)
     is_solo = models.BooleanField(default=False)
+    is_structure = models.BooleanField(default=False, db_index=True)
+    is_capital = models.BooleanField(default=False, db_index=True)
+    structure = models.ForeignKey(
+        "CampaignStructure",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="killmails",
+    )
     attacker_count = models.PositiveIntegerField(default=0)
     enlisted_attacker_count = models.PositiveIntegerField(default=0)
     outcome = models.CharField(
@@ -866,6 +1114,10 @@ class CampaignParticipantDay(models.Model):
     solo_kills = models.PositiveIntegerField(default=0)
     final_blows = models.PositiveIntegerField(default=0)
     gang_kills = models.PositiveIntegerField(default=0)
+    structure_kills = models.PositiveIntegerField(default=0)
+    structure_losses = models.PositiveIntegerField(default=0)
+    capital_kills = models.PositiveIntegerField(default=0)
+    capital_losses = models.PositiveIntegerField(default=0)
     isk_destroyed = models.BigIntegerField(default=0)
     isk_lost = models.BigIntegerField(default=0)
 

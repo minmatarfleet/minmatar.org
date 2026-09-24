@@ -7,20 +7,7 @@ import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
-
 import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
-
-if (!can_view_campaigns)
-    return HTTP_403_Forbidden()
-
 import type {
     CampaignDetail,
     CampaignWeek,
@@ -43,6 +30,35 @@ import {
     include_campaign_character,
 } from '@helpers/api.minmatar.org/campaigns'
 import { ACTIVITY_PAGE_SIZE, paginate } from '@helpers/fetching/campaigns'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
+import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+const user_is_staff = Boolean(user && user.is_staff)
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+const can_edit_in_admin = user_is_staff || is_superuser || user_permissions.includes('campaigns.change_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
 
 const slug = Astro.params.slug as string
 
@@ -102,21 +118,15 @@ if (campaign) {
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
 const page_title = campaign ? campaign.name : t('campaigns.page_title')
+const api_base = import.meta.env.API_URL || ''
+const admin_campaign_url = campaign
+    ? `${api_base}/admin/campaigns/campaign/${campaign.id}/change/`
+    : null
 
-import Viewport from '@layouts/Viewport.astro'
-
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-
-import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
-import Markdown from '@components/blocks/Markdown.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-
-import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+const breadcrumbs = [
+    { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
+    { page_title, accumulated_path: `/campaigns/${slug}/` },
+]
 ---
 
 <Viewport
@@ -135,26 +145,55 @@ import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full items-end ]">
             <Flexblock gap='var(--space-3xs)' class="[ campaign-header-title ]">
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                {campaign?.description_md &&
+                {campaign?.tagline && (
+                    <p class="[ campaign-header-tagline ]">{campaign.tagline}</p>
+                )}
+                {campaign?.opponents?.length > 0 && (
+                    <p class="[ campaign-header-opponents ]">
+                        {t('campaigns.opponents.label')}{' '}
+                        {campaign.opponents.map(opponent => {
+                            const ticker = (opponent.ticker || '').trim()
+                            if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
+                                return ticker
+                            return opponent.name
+                        }).join(', ')}
+                    </p>
+                )}
+                {campaign?.description_md && (
                     <Markdown markdown={campaign.description_md} inline={true} inline_element='p' class="[ campaign-header-description ]" />
-                }
+                )}
             </Flexblock>
-            {campaign &&
-                <Flexblock gap='var(--space-3xs)' class="[ campaign-header-countdown ]">
-                    <small class="[ campaign-header-countdown-label ]">{t('campaigns.ends_in')}</small>
-                    <CampaignCountdown
-                        id={1}
-                        date={new Date(campaign.end_at)}
-                        expired_text={t('campaigns.ended')}
-                    />
-                </Flexblock>
-            }
+            <PageActions class="[ !items-end ]">
+                {campaign && (
+                    <Flexblock gap='var(--space-3xs)' class="[ campaign-header-countdown ]">
+                        <small class="[ campaign-header-countdown-label ]">{t('campaigns.ends_in')}</small>
+                        <CampaignCountdown
+                            id={1}
+                            date={new Date(campaign.end_at)}
+                            expired_text={t('campaigns.ended')}
+                        />
+                    </Flexblock>
+                )}
+                {can_edit_in_admin && admin_campaign_url && (
+                    <Button
+                        href={admin_campaign_url}
+                        color="transparent"
+                        narrow={true}
+                        new_tab={true}
+                        aria-label={t('campaigns.edit_in_admin')}
+                        title={t('campaigns.edit_in_admin')}
+                    >
+                        <CogIcon slot="icon" />
+                    </Button>
+                )}
+            </PageActions>
         </FlexInline>
 
         {fetch_campaign_error || !campaign ?
@@ -186,6 +225,23 @@ import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
     .campaign-header-title {
         min-width: 0;
         flex: 1 1 24rem;
+    }
+
+    .campaign-header-tagline {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        line-height: 1.35;
+        color: var(--highlight);
+        max-width: 60ch;
+    }
+
+    .campaign-header-opponents {
+        margin: 0;
+        color: var(--fleet-red);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
     }
 
     .campaign-header-title :global(.campaign-header-description) {

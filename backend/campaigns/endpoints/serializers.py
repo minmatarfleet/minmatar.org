@@ -21,6 +21,7 @@ from campaigns.models import (
 from campaigns.services import advantage, snapshots, stats
 from eveonline.models import EveCorporation, EveCharacter, EvePlayer
 from feed.models import FeedKillmail
+from fittings.models import EveFitting
 
 
 def system_summary(
@@ -80,6 +81,7 @@ def system_summary(
         "role": campaign_system.role,
         "goal": campaign_system.goal,
         "priority": campaign_system.priority,
+        "is_fw_objective": campaign_system.is_fw_objective,
         "contested_percent": (
             round(contested, 2) if contested is not None else None
         ),
@@ -91,6 +93,11 @@ def system_summary(
         "operational_state": latest.operational_state if latest else "unknown",
         "contested_updated_at": latest.captured_at if latest else None,
         "advantage_updated_at": advantage_state["read_at"],
+        # Warzone "holder" is ESI occupier (see feed/warzone); owner is the
+        # longer-lived ownership CCP flips when VP crosses the threshold.
+        "occupier_faction_id": (
+            latest.occupier_faction_id if latest else None
+        ),
         "owner_faction_id": latest.owner_faction_id if latest else None,
         "advantage_basis": advantage_state["basis"],
         "advantage_source": advantage_state["source"],
@@ -152,21 +159,109 @@ def campaign_systems(
 
 def list_item(campaign: Campaign, user=None) -> dict:
     totals = stats.campaign_totals(campaign)
+    next_timer = (
+        campaign.structure_timers.filter(timer__gte=timezone.now())
+        .order_by("timer")
+        .values_list("timer", flat=True)
+        .first()
+    )
     return {
         "id": campaign.id,
         "slug": campaign.slug,
         "name": campaign.name,
         "short_code": campaign.short_code,
         "tagline": campaign.tagline,
+        "kind": campaign.kind,
         "status": campaign.status,
         "start_at": campaign.start_at,
         "end_at": campaign.end_at,
         "cover_image_url": campaign.cover_image_url,
         "systems": campaign_systems(campaign, with_trend=False),
+        "areas": campaign_areas(campaign),
+        "opponents": [opponent_out(row) for row in campaign.opponents.all()],
+        "structures_remaining": totals["structures_remaining"],
+        "structures_destroyed": totals["structures_destroyed"],
+        "next_timer_at": next_timer,
         "enlisted": totals["enlisted"],
         "kills": totals["kills"],
         "isk_destroyed": totals["isk_destroyed"],
         "is_enlisted": is_enlisted(campaign, user),
+    }
+
+
+def area_out(area) -> dict:
+    return {
+        "id": area.id,
+        "scope": area.scope,
+        "name": area.name,
+        "constellation_id": area.constellation_id,
+        "region_id": area.region_id,
+    }
+
+
+def campaign_areas(campaign: Campaign) -> list[dict]:
+    return [area_out(area) for area in campaign.areas.all()]
+
+
+def opponent_out(opponent) -> dict:
+    return {
+        "id": opponent.id,
+        "name": opponent.name,
+        "ticker": opponent.ticker or "",
+        "alliance_id": opponent.alliance_id,
+        "corporation_id": opponent.corporation_id,
+        "faction_id": opponent.faction_id,
+    }
+
+
+def fitting_out(row) -> dict:
+    fitting = row.fitting
+    ship_name = ""
+    if fitting and fitting.eft_format:
+        ship_name = EveFitting.ship_name_from_eft(fitting.eft_format) or ""
+    return {
+        "id": row.id,
+        "fitting_id": fitting.id if fitting else 0,
+        "name": fitting.name if fitting else "",
+        "ship_name": ship_name,
+        "role_label": row.role_label or "",
+        "srp_eligible": row.srp_eligible,
+        "order": row.order,
+    }
+
+
+def campaign_fittings(campaign: Campaign) -> list[dict]:
+    return [
+        fitting_out(row)
+        for row in campaign.fittings.select_related("fitting").all()
+    ]
+
+
+def structure_out(structure) -> dict:
+    timer = structure.timer
+    return {
+        "id": structure.id,
+        "name": structure.name,
+        "structure_type": structure.structure_type,
+        "type_id": structure.type_id,
+        "solar_system_id": structure.solar_system_id,
+        "system_name": structure.system_name,
+        "corporation_id": structure.corporation_id,
+        "corporation_name": structure.corporation_name or "",
+        "alliance_id": structure.alliance_id,
+        "alliance_name": structure.alliance_name or "",
+        "related_alliance_id": structure.related_alliance_id,
+        "related_alliance_name": structure.related_alliance_name or "",
+        "status": structure.status,
+        "source": structure.source,
+        "fitting": structure.fitting or "",
+        "reinforce_hour": structure.reinforce_hour,
+        "timer_id": timer.id if timer else None,
+        "timer_at": timer.timer if timer else None,
+        "destroyed_at": structure.destroyed_at,
+        "killmail_id": (
+            structure.killmail.killmail_id if structure.killmail_id else None
+        ),
     }
 
 
@@ -218,6 +313,8 @@ def killmail_out(mail: CampaignKillmail) -> dict:
         "solar_system_id": mail.solar_system_id,
         "victim_character_name": mail.victim_character_name or "",
         "victim_character_id": mail.victim_character_id,
+        "victim_corporation_id": mail.victim_corporation_id,
+        "victim_alliance_id": mail.victim_alliance_id,
         "victim_faction_id": mail.victim_faction_id,
         "victim_ship_type_id": mail.victim_ship_type_id,
         "killer_character_id": mail.killer_character_id,
@@ -226,6 +323,9 @@ def killmail_out(mail: CampaignKillmail) -> dict:
         "isk_value": mail.isk_value,
         "enlisted_attacker_count": mail.enlisted_attacker_count,
         "is_solo": mail.is_solo,
+        "is_structure": mail.is_structure,
+        "is_capital": mail.is_capital,
+        "structure_id": mail.structure_id,
     }
 
 

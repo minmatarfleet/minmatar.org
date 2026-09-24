@@ -5,14 +5,20 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from datetime import timezone as datetime_timezone
 
+from django.db.models import Q
 from django.utils import timezone
 
+from app.errors import ErrorResponse
 from campaigns.models import (
     DAY_BOUNDARY_HOUR,
     Campaign,
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
+    CampaignStatus,
+    CampaignSystemArc,
+    SystemGoal,
 )
+from feed.models import FeedMonitoredSystem
 
 
 def campaign_day(moment: datetime | None = None) -> date:
@@ -57,13 +63,21 @@ def counting_campaigns(solar_system_id: int, moment: datetime):
 
     Scheduled campaigns count too: a campaign is created before it starts so
     the ingest hook is already live, and the plan forbids backfilling.
+
+    A campaign matches when the system is listed as an FW objective, or when
+    a structure under recon sits in that system (ops theaters alone do not
+    score ship kills; citadel grids still match via structures).
     """
     return Campaign.objects.filter(
+        Q(
+            systems__solar_system_id=solar_system_id,
+            systems__retired_at__isnull=True,
+            systems__is_fw_objective=True,
+        )
+        | Q(structures__solar_system_id=solar_system_id),
         status__in=["scheduled", "active"],
         start_at__lte=moment,
         end_at__gte=moment,
-        systems__solar_system_id=solar_system_id,
-        systems__retired_at__isnull=True,
     ).distinct()
 
 
@@ -148,3 +162,75 @@ class CampaignRoster:
 
     def __bool__(self) -> bool:
         return bool(self._characters)
+
+
+def resolve_attachable_campaign(campaign_id):
+    """Resolve an optional campaign id for fleets, orders, posts, timers.
+
+    Returns the campaign, ``None`` when no id was given, or a Ninja
+    ``(status, ErrorResponse)`` tuple when the id is unknown or the campaign
+    is not open for attachment (scheduled or active only).
+    """
+    if not campaign_id:
+        return None
+
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    if not campaign:
+        return 400, ErrorResponse.new(f"No campaign with id {campaign_id}")
+    if campaign.status not in (
+        CampaignStatus.SCHEDULED,
+        CampaignStatus.ACTIVE,
+    ):
+        return 400, ErrorResponse.new(
+            f"Campaign {campaign.slug} is {campaign.status}"
+        )
+    return campaign
+
+
+def fill_system_name_from_feed(campaign_system) -> bool:
+    """Fill blank names from FeedMonitoredSystem when the id is known."""
+    if campaign_system.name and campaign_system.name.strip():
+        return False
+    if not campaign_system.solar_system_id:
+        return False
+
+    known = (
+        FeedMonitoredSystem.objects.filter(
+            solar_system_id=campaign_system.solar_system_id
+        )
+        .values_list("name", flat=True)
+        .first()
+    )
+    if not known:
+        return False
+    campaign_system.name = known
+    return True
+
+
+def ensure_default_arc(campaign_system) -> bool:
+    """Create a one-shot arc when an FW objective system has a goal but no arc.
+
+    Operators set goal/role on the campaign change page; arcs live one click
+    deeper. Without an arc, advantage week targets never appear. This fills
+    the gap with the same defaults seed commands use.
+    """
+    if not campaign_system.is_fw_objective:
+        return False
+    if campaign_system.goal in (SystemGoal.NONE, ""):
+        return False
+    if CampaignSystemArc.objects.filter(
+        campaign_system_id=campaign_system.pk
+    ).exists():
+        return False
+
+    target_state = (
+        "hold" if campaign_system.goal == SystemGoal.DEFEND else "flip"
+    )
+    CampaignSystemArc.objects.create(
+        campaign_system=campaign_system,
+        target_state=target_state,
+        due_at=campaign_system.campaign.end_at,
+        contest_ceiling=25.0,
+        advantage_floor=10.0,
+    )
+    return True

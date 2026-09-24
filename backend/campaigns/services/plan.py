@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from campaigns.constants import (
     DEFAULT_ORDER_POINTS,
+    DEFAULT_STRUCTURES_REPORTED_TARGET,
     DEFENSIVE_PLEX_CONTEST_THRESHOLD,
     MIN_WEEKLY_VP_TARGET,
     MOMENTUM_BEST_WEEK_CAP,
@@ -32,6 +33,7 @@ from campaigns.models import (
     CampaignDailyOrder,
     CampaignOrderProgress,
     CampaignParticipantDay,
+    CampaignStructure,
     CampaignSystem,
     CampaignSystemSnapshot,
     CampaignWeekTarget,
@@ -53,20 +55,29 @@ def propose_week(campaign: Campaign, week_start: date | None = None) -> int:
     for campaign_system in campaign.systems.filter(retired_at__isnull=True):
         arc = getattr(campaign_system, "arc", None)
         wanted: list[tuple[str, float]] = []
-        if campaign_system.goal == SystemGoal.CAPTURE:
+        if campaign_system.is_fw_objective:
+            if campaign_system.goal == SystemGoal.CAPTURE:
+                wanted.append(
+                    (
+                        CampaignWeekTarget.Metric.VICTORY_POINTS,
+                        _capture_target(campaign_system, week_start),
+                    )
+                )
+            elif campaign_system.goal == SystemGoal.DEFEND:
+                wanted.append((CampaignWeekTarget.Metric.DAYS_UNDER_LINE, 7.0))
+            # Advantage is its own job, in one of three shapes the operator
+            # picks on the arc: build ours up, knock theirs down, or hold ours.
+            advantage_row = _advantage_target(campaign_system, arc)
+            if advantage_row:
+                wanted.append(advantage_row)
+        elif campaign.is_strategic:
+            # Ops theaters on structure campaigns: find and report citadels.
             wanted.append(
                 (
-                    CampaignWeekTarget.Metric.VICTORY_POINTS,
-                    _capture_target(campaign_system, week_start),
+                    CampaignWeekTarget.Metric.STRUCTURES_REPORTED,
+                    DEFAULT_STRUCTURES_REPORTED_TARGET,
                 )
             )
-        elif campaign_system.goal == SystemGoal.DEFEND:
-            wanted.append((CampaignWeekTarget.Metric.DAYS_UNDER_LINE, 7.0))
-        # Advantage is its own job, in one of three shapes the operator
-        # picks on the arc: build ours up, knock theirs down, or hold ours.
-        advantage_row = _advantage_target(campaign_system, arc)
-        if advantage_row:
-            wanted.append(advantage_row)
 
         for metric, target in wanted:
             row, created = _propose_target(
@@ -310,6 +321,19 @@ def update_week_progress(campaign: Campaign) -> int:
             row.save(update_fields=["progress", "pace_expected"])
             updated += 1
             continue
+        elif row.metric == CampaignWeekTarget.Metric.STRUCTURES_REPORTED:
+            row.progress = float(
+                CampaignStructure.objects.filter(
+                    campaign=campaign,
+                    solar_system_id=row.campaign_system.solar_system_id,
+                    created_at__gte=window_start,
+                    created_at__lt=window_end,
+                ).count()
+            )
+            row.pace_expected = row.target * elapsed
+            row.save(update_fields=["progress", "pace_expected"])
+            updated += 1
+            continue
         else:
             arc = getattr(row.campaign_system, "arc", None)
             ceiling = arc.contest_ceiling if arc else 25.0
@@ -383,6 +407,9 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
     for target in targets:
         if created >= MAX_SYSTEM_ORDERS_PER_DAY:
             break
+        if target.metric == CampaignWeekTarget.Metric.STRUCTURES_REPORTED:
+            # Ops theater scout objective; no daily plex/kill orders from it.
+            continue
         gap = max(0.0, target.target - target.progress)
         share = gap / days_left / active_pilots if gap else 0.0
         gap_share_pct = (

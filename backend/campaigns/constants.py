@@ -36,6 +36,32 @@ TIER_TOLERANCE = 0.04
 ADVANTAGE_SITE_LP = 10_000
 SUPPLY_CACHE_LP = 15_000
 
+# Structure type slug → ESI type id. Same catalog as EveStructureTimer.type
+# choices and frontend get_structure_id(); do not invent a second list.
+STRUCTURE_TYPE_IDS: dict[str, int] = {
+    "astrahus": 35832,
+    "fortizar": 35833,
+    "keepstar": 35834,
+    "raitaru": 35825,
+    "azbel": 35826,
+    "sotiyo": 35827,
+    "athanor": 35835,
+    "tatara": 35836,
+    "tenebrex_cyno_jammer": 37534,
+    "pharolux_cyno_beacon": 35840,
+    "ansiblex_jump_gate": 35841,
+    "orbital_skyhook": 81080,
+    "metenox_moon_drill": 81826,
+    "mercenary_den": 85230,
+    "player_owned_customs_office": 2233,
+    "player_owned_starbase": 20059,
+}
+
+STRUCTURE_TYPE_BY_ID: dict[int, str] = {
+    type_id: slug for slug, type_id in STRUCTURE_TYPE_IDS.items()
+}
+
+
 # --- Event codes -----------------------------------------------------------
 # Seeded from a live pull on BearThatCares, 18 Sep YC128. Everything except
 # the kill payout is unconfirmed: the wording is rendered client-side from the
@@ -167,6 +193,10 @@ DEFAULT_ORDER_POINTS = {
 MOMENTUM_FACTOR = 1.2
 MOMENTUM_BEST_WEEK_CAP = 1.5
 MIN_WEEKLY_VP_TARGET = 3_000
+
+# Structures a strategic campaign asks scouts to find and report each week
+# (per theater system). Operators can nudge after propose_week.
+DEFAULT_STRUCTURES_REPORTED_TARGET = 2.0
 DEFENSIVE_PLEX_CONTEST_THRESHOLD = 10.0
 ADVANTAGE_READING_STALE_MINUTES = 180
 ADVANTAGE_READING_HIDE_MINUTES = 720

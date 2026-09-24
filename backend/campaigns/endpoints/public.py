@@ -21,6 +21,7 @@ from campaigns.models import (
     CampaignParticipantStat,
     CampaignSiteCompletion,
     CampaignStatus,
+    CampaignStructure,
     CampaignWeekTarget,
     KillmailOutcome,
     SiteKind,
@@ -162,12 +163,24 @@ def get_campaign(request, slug: str):
         "tagline": campaign.tagline,
         "description_md": campaign.description_md,
         "cover_image_url": campaign.cover_image_url,
+        "kind": campaign.kind,
         "status": campaign.status,
         "start_at": campaign.start_at,
         "end_at": campaign.end_at,
         "commander_order_text": campaign.commander_order_text,
         "commander_order_is_draft": campaign.commander_order_is_draft,
         "systems": serializers.campaign_systems(campaign),
+        "areas": serializers.campaign_areas(campaign),
+        "opponents": [
+            serializers.opponent_out(row) for row in campaign.opponents.all()
+        ],
+        "structures": [
+            serializers.structure_out(row)
+            for row in campaign.structures.select_related(
+                "timer", "killmail"
+            ).all()
+        ],
+        "fittings": serializers.campaign_fittings(campaign),
         "totals": stats.campaign_totals(campaign),
         "is_enlisted": enlistment is not None,
         "my_points": my_stat.points if my_stat else 0,
@@ -351,8 +364,14 @@ ADVANTAGE_SITE_KINDS = (
 
 def _my_contribution(campaign_system, user, window) -> dict:
     """What the viewer did towards one system this week."""
+    empty = {
+        "my_complexes": 0,
+        "my_advantage_sites": 0,
+        "my_readings": 0,
+        "my_structures_reported": 0,
+    }
     if user is None:
-        return {"my_complexes": 0, "my_advantage_sites": 0, "my_readings": 0}
+        return empty
     start, end = window
     sites = CampaignSiteCompletion.objects.filter(
         campaign_system=campaign_system,
@@ -372,6 +391,13 @@ def _my_contribution(campaign_system, user, window) -> dict:
             reported_at__gte=start,
             reported_at__lt=end,
             status="accepted",
+        ).count(),
+        "my_structures_reported": CampaignStructure.objects.filter(
+            campaign=campaign_system.campaign,
+            solar_system_id=campaign_system.solar_system_id,
+            created_by=user,
+            created_at__gte=start,
+            created_at__lt=end,
         ).count(),
     }
 
@@ -429,13 +455,14 @@ def get_fleets(request, slug: str, limit: int = 50):
         {
             "id": fleet.id,
             "type": fleet.type,
-            "description": fleet.description or "",
+            "description": _fleet_description(fleet),
             "objective": fleet.objective or "",
             "start_time": fleet.start_time,
             "status": fleet.status,
             "fleet_commander": _commander_name(fleet),
             "fleet_commander_id": _commander_id(fleet),
             "doctrine": fleet.doctrine.name if fleet.doctrine else None,
+            "aar_link": fleet.aar_link or None,
             "is_live": fleet.id in live_ids,
             "pilots": len(pilots.get(fleet.id, ())),
             **impact.get(
@@ -444,6 +471,16 @@ def get_fleets(request, slug: str, limit: int = 50):
         }
         for fleet in fleets
     ]
+
+
+def _fleet_description(fleet) -> str:
+    """Drop the local ``[prod#…]`` import marker from the visible copy."""
+    text = fleet.description or ""
+    if text.startswith("[prod#"):
+        close = text.find("]")
+        if close != -1:
+            return text[close + 1 :].lstrip()
+    return text
 
 
 def _commander_id(fleet) -> int | None:

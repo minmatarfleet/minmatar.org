@@ -5,13 +5,18 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
+from campaigns.constants import DEFAULT_STRUCTURES_REPORTED_TARGET
 from campaigns.models import (
     CampaignAdvantageState,
     CampaignDailyOrder,
+    CampaignKind,
+    CampaignStructure,
     CampaignSystemArc,
     CampaignSystemSnapshot,
     CampaignWeekTarget,
     OperationalState,
+    StructureSource,
+    StructureStatus,
     SystemGoal,
 )
 from campaigns.services import plan
@@ -22,10 +27,12 @@ class WeeklyPlanTests(TestCase):
     def setUp(self):
         self.campaign = make_campaign()
         self.system = self.campaign.systems.first()
-        CampaignSystemArc.objects.create(
+        CampaignSystemArc.objects.update_or_create(
             campaign_system=self.system,
-            target_state="flip",
-            due_at=self.campaign.end_at,
+            defaults={
+                "target_state": "flip",
+                "due_at": self.campaign.end_at,
+            },
         )
 
     def _snapshot(self, hours_ago, victory_points, contested):
@@ -221,3 +228,89 @@ class OrderTests(TestCase):
         text = plan.draft_commander_order(self.campaign)
         self.assertTrue(text)
         self.assertLessEqual(len(text), 280)
+
+
+class StrategicStructuresReportedTests(TestCase):
+    """Structure campaigns get a weekly find-and-report objective."""
+
+    def setUp(self):
+        self.campaign = make_campaign(
+            kind=CampaignKind.STRATEGIC,
+            slug="cva-pressure-test",
+            short_code="CVT",
+        )
+        self.system = self.campaign.systems.first()
+        self.system.goal = SystemGoal.NONE
+        self.system.is_fw_objective = False
+        self.system.save(update_fields=["goal", "is_fw_objective"])
+
+    def test_strategic_ops_systems_get_a_structures_reported_target(self):
+        plan.propose_week(self.campaign)
+        row = CampaignWeekTarget.objects.get(campaign_system=self.system)
+        self.assertEqual(
+            row.metric, CampaignWeekTarget.Metric.STRUCTURES_REPORTED
+        )
+        self.assertEqual(row.target, DEFAULT_STRUCTURES_REPORTED_TARGET)
+        self.assertTrue(row.proposed)
+
+    def test_strategic_fw_objective_does_not_get_structures_reported(self):
+        self.system.is_fw_objective = True
+        self.system.goal = SystemGoal.CAPTURE
+        self.system.save(update_fields=["is_fw_objective", "goal"])
+        CampaignSystemSnapshot.objects.create(
+            campaign_system=self.system,
+            captured_at=timezone.now(),
+            victory_points=900,
+            victory_points_threshold=3000,
+            contested_percent=30.0,
+            operational_state=OperationalState.FRONTLINE,
+        )
+        plan.propose_week(self.campaign)
+        metrics = set(
+            CampaignWeekTarget.objects.filter(
+                campaign_system=self.system
+            ).values_list("metric", flat=True)
+        )
+        self.assertIn(CampaignWeekTarget.Metric.VICTORY_POINTS, metrics)
+        self.assertNotIn(
+            CampaignWeekTarget.Metric.STRUCTURES_REPORTED, metrics
+        )
+
+    def test_faction_warfare_does_not_get_structures_reported(self):
+        campaign = make_campaign(slug="fw-only", short_code="FWO")
+        system = campaign.systems.first()
+        CampaignSystemSnapshot.objects.create(
+            campaign_system=system,
+            captured_at=timezone.now(),
+            victory_points=900,
+            victory_points_threshold=3000,
+            contested_percent=30.0,
+            operational_state=OperationalState.FRONTLINE,
+        )
+        plan.propose_week(campaign)
+        metrics = set(
+            CampaignWeekTarget.objects.filter(
+                campaign_system=system
+            ).values_list("metric", flat=True)
+        )
+        self.assertNotIn(
+            CampaignWeekTarget.Metric.STRUCTURES_REPORTED, metrics
+        )
+
+    def test_progress_counts_structures_reported_this_week(self):
+        plan.propose_week(self.campaign)
+        CampaignStructure.objects.create(
+            campaign=self.campaign,
+            name="Enemy Fort",
+            structure_type="fortizar",
+            solar_system_id=self.system.solar_system_id,
+            system_name=self.system.name,
+            status=StructureStatus.ANCHORED,
+            source=StructureSource.RECON,
+        )
+        plan.update_week_progress(self.campaign)
+        row = CampaignWeekTarget.objects.get(
+            campaign_system=self.system,
+            metric=CampaignWeekTarget.Metric.STRUCTURES_REPORTED,
+        )
+        self.assertEqual(row.progress, 1.0)

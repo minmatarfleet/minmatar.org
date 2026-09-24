@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignObjectiveRow as ObjectiveRow } from '@helpers/fetching/campaigns'
-import { objective_status_color, objective_status_i18n_key, MINMATAR_FACTION_ID, AMARR_FACTION_ID } from '@helpers/fetching/campaigns'
+import { objective_status_color, objective_status_i18n_key, holder_militia } from '@helpers/fetching/campaigns'
 
 interface Props {
     row:                ObjectiveRow;
@@ -17,9 +17,7 @@ const {
 
 delete attributes.class
 
-const owner = row.system?.owner_faction_id === MINMATAR_FACTION_ID ? 'minmatar'
-    : row.system?.owner_faction_id === AMARR_FACTION_ID ? 'amarr'
-    : null
+const owner = holder_militia(row.system)
 const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
     : owner === 'amarr' ? t('campaigns.system.held_by_amarr')
     : t('campaigns.system.held_by_unknown')

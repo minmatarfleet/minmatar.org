@@ -94,6 +94,7 @@ def record_snapshots() -> dict:
 
     campaign_systems = CampaignSystem.objects.filter(
         retired_at__isnull=True,
+        is_fw_objective=True,
         campaign__status__in=["scheduled", "active"],
     ).select_related("campaign")
 

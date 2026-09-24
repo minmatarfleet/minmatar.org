@@ -2,55 +2,147 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { is_prod_mode } from '@helpers/env'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-if (is_prod_mode() && !user_is_superadmin)
-    return HTTP_404_Not_Found()
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-if (Astro.request.method === "POST") {
-    // TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"
-    console.log(`TODO: Call to add structure endpoint here with data from "await Astro.request.formData()"`)
+if (!is_superuser && !user_permissions.includes('structures.add_evestructuretimer'))
+    return HTTP_403_Forbidden()
 
-    return Astro.redirect(translatePath('/intel/structures'))
+import { attach_campaign_structure, get_campaigns } from '@helpers/api.minmatar.org/campaigns'
+import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
+import type {
+    CampaignListItem,
+    CampaignStructureAttachRequest,
+    StructureState,
+    StructureType,
+} from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+
+const campaign_slug = Astro.url.searchParams.get('campaign_slug') ?? ''
+let live_campaigns:CampaignListItem[] = []
+let selected_campaign_slug = campaign_slug
+
+try {
+    live_campaigns = (await get_campaigns(auth_token as string)).filter(
+        campaign => campaign.status === 'active' || campaign.status === 'scheduled'
+    )
+    if (campaign_slug && !live_campaigns.find(campaign => campaign.slug === campaign_slug))
+        selected_campaign_slug = ''
+} catch (error) {
+    console.log(error)
 }
 
-import structure from '@json/page/intel/structures/y9_mdg_blaster.json';
+let report_error:string | false = false
+let alert:Alert | false = false
 
-import { get_item_icon } from '@helpers/eve_image_server';
+const parse_reinforce_hour = (raw:string):number | null => {
+    if (!raw) return null
+    const hour = parseInt(raw.split(':')[0] ?? '', 10)
+    if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null
+    return hour
+}
 
-import PageAside from '@components/page/PageAside.astro';
-import PageActions from '@components/page/PageActions.astro';
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+        const slug = (data.get('campaign_slug') as string) || ''
+        if (!slug)
+            throw new Error(t('intel.add_structure.campaign_required'))
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-import Viewport from '@layouts/Viewport.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import TutorialIcon from '@components/icons/TutorialIcon.astro';
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
-import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
-import Button from '@components/blocks/Button.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+        const reinforce_raw = (data.get('reinforce_hour') as string) || ''
+        const reinforce_hour = parse_reinforce_hour(reinforce_raw)
+        if (reinforce_raw && reinforce_hour === null)
+            throw new Error(t('intel.add_structure.reinforce_hour_invalid'))
 
-import PageTitle from '@components/page/PageTitle.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Input from '@components/blocks/Input.astro';
-import Select from '@components/blocks/Select.astro';
-import Textarea from '@components/blocks/Textarea.astro';
-import ButtonStack from '@components/blocks/ButtonStack.astro';
+        const create_timer = data.get('create_timer') === 'on'
+        const timer_date = data.get('timer_date') as string
+        const timer_time = data.get('timer_time') as string
+        let timer_at:string | null = null
+        let timer_state:StructureState | null = null
 
-const page_title = t('intel.add_structure.page_title');
+        if (create_timer) {
+            if (!timer_date || !timer_time)
+                throw new Error(t('intel.add_structure.timer_required'))
+            const parsed = new Date(`${timer_date} ${timer_time}`)
+            if (Number.isNaN(parsed.getTime()))
+                throw new Error(t('intel.add_structure.timer_required'))
+            timer_at = parsed.toISOString()
+            timer_state = data.get('timer_state') as StructureState
+        }
+
+        const payload:CampaignStructureAttachRequest = {
+            name: data.get('structure_name') as string,
+            structure_type: data.get('structure_type') as StructureType,
+            system_name: data.get('system') as string,
+            corporation_name: (data.get('corporation_name') as string) || '',
+            related_alliance_name: (data.get('related_alliance_name') as string) || '',
+            fitting: (data.get('fitting') as string) || '',
+            reinforce_hour,
+            timer_at,
+            timer_state,
+        }
+
+        await attach_campaign_structure(slug, auth_token as string, payload)
+
+        return Astro.redirect(translatePath(`/campaigns/${slug}/#structures`))
+    } catch (error) {
+        report_error = error.message
+        alert = {
+            title: t('intel.add_structure.submit_error_title'),
+            content: report_error,
+        }
+    }
+}
+
+import { get_item_icon } from '@helpers/eve_image_server'
+import { get_structure_id } from '@helpers/eve'
+
+const STRUCTURE_ICONS = {}
+structure_types.forEach((type) => STRUCTURE_ICONS[type] = get_item_icon(get_structure_id(type)))
+
+import Viewport from '@layouts/Viewport.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageAside from '@components/page/PageAside.astro'
+import PageActions from '@components/page/PageActions.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ButtonStack from '@components/blocks/ButtonStack.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
+import FlatPicker from '@components/blocks/FlatPicker.astro'
+import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import TutorialIcon from '@components/icons/TutorialIcon.astro'
+import PlayIcon from '@components/icons/buttons/PlayIcon.astro'
+
+const page_title = t('intel.add_structure.page_title')
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true
+    }}
+>
     <PageAside
         cover={{
             image: "/images/intel-cover.jpg",
@@ -60,35 +152,34 @@ const page_title = t('intel.add_structure.page_title');
             overlay: true
         }}
         x-data={`{
-            structure_type: 'astrahus',
+            structure_type: 'fortizar',
             structure_name: '',
+            submitted: false,
             get_structure_icon(name) {
-                const structure_ids = {
-                    "astrahus": "${get_item_icon(35832)}",
-                    "fortizar": "${get_item_icon(35833)}",
-                    "keepstar": "${get_item_icon(35834)}",
-                    "raitaru": "${get_item_icon(35825)}",
-                    "azbel": "${get_item_icon(58735)}",
-                    "sotiyo": "${get_item_icon(35827)}",
-                    "athanor": "${get_item_icon(35835)}",
-                    "tatara": "${get_item_icon(35836)}",
-                    "ansiblex": "${get_item_icon(35841)}",
-                    "pharolux": "${get_item_icon(35840)}"
-                }
-
+                const structure_ids = ${JSON.stringify(STRUCTURE_ICONS)}
                 return structure_ids[name]
+            },
+            init() {
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
             }
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
-                <img loading="lazy" height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
+                <img
+                    loading="lazy"
+                    height="64"
+                    width="64"
+                    src={get_item_icon(get_structure_id('fortizar'))}
+                    x-bind:src={`get_structure_icon(structure_type)`}
+                    alt=""
+                />
                 <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />
             </FlexInline>
             <PageActions>
-                <Button href={translatePath('/intel/structures/')}>
+                <Button href={translatePath('/intel/timers/active/')}>
                     <MagnifierIcon slot="icon" />
-                    {t('view_structures')}
+                    {t('view_structure_timers')}
                 </Button>
             </PageActions>
         </FlexInline>
@@ -96,16 +187,33 @@ const page_title = t('intel.add_structure.page_title');
         <Flexblock gap='var(--space-xl)'>
             <ComponentBlock>
                 <Flexblock class="[ w-full ]" gap='var(--space-m)'>
-                    <h2>{t('structure_information')}</h2>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h2>{t('structure_information')}</h2>
+                        <p>{t('intel.add_structure.leading_text')}</p>
+                    </Flexblock>
 
                     <form
                         method="POST"
-                        x-data={`{
-                            'submitted': false
-                        }`}
-                        x-on:submit.prevent="submitted = true;"
+                        x-on:submit="submitted = true"
                     >
                         <Flexblock>
+                            <VerticalCenter>
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="campaign_slug">{t('intel.add_structure.campaign')}</label>
+                                    <Select id="campaign_slug" name="campaign_slug" required>
+                                        <option value="">{t('campaigns.structures.no_campaign')}</option>
+                                        {live_campaigns.map(campaign =>
+                                            <option
+                                                value={campaign.slug}
+                                                selected={campaign.slug === selected_campaign_slug}
+                                            >
+                                                {campaign.name}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </FixedFluid>
+                            </VerticalCenter>
+
                             <VerticalCenter>
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                     <label for="structure_name">{t('structure_name')}</label>
@@ -122,18 +230,18 @@ const page_title = t('intel.add_structure.page_title');
                                         width="64px"
                                         breakpoint="60%"
                                     >
-                                        <img loading="lazy" height="64" width="64" src={get_item_icon(35832)} x-bind:src={`get_structure_icon(structure_type)`} alt={structure.type} />
-                                        <Select id="structure_type" x-model="structure_type">
-                                            <option value="astrahus">Astrahus</option>
-                                            <option value="fortizar">Fortizar</option>
-                                            <option value="keepstar">Keepstar</option>
-                                            <option value="raitaru">Raitaru</option>
-                                            <option value="azbel">Azbel</option>
-                                            <option value="sotiyo">Sotiyo</option>
-                                            <option value="athanor">Athanor</option>
-                                            <option value="tatara">Tatara</option>
-                                            <option value="ansiblex">Ansiblex Jump Gate</option>
-                                            <option value="pharolux">Pharolux Cyno Beacon</option>
+                                        <img
+                                            loading="lazy"
+                                            height="64"
+                                            width="64"
+                                            src={get_item_icon(get_structure_id('fortizar'))}
+                                            x-bind:src={`get_structure_icon(structure_type)`}
+                                            alt=""
+                                        />
+                                        <Select id="structure_type" name="structure_type" x-model="structure_type" required>
+                                            {structure_types.map(type =>
+                                                <option value={type}>{t(type as any) ?? type}</option>
+                                            )}
                                         </Select>
                                     </FixedFluid>
                                 </FixedFluid>
@@ -148,61 +256,96 @@ const page_title = t('intel.add_structure.page_title');
 
                             <VerticalCenter>
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="corporation_name">{t('corporation_name')}</label>
-                                    <Input id="corporation_name" name="corporation_name" type="text" />
+                                    <label for="corporation_name">{t('intel.add_structure.owner_corporation')}</label>
+                                    <Input id="corporation_name" name="corporation_name" type="text" required />
                                 </FixedFluid>
                             </VerticalCenter>
+                            <small class="[ reinforce-hint ]">{t('intel.add_structure.owner_corporation_hint')}</small>
 
                             <VerticalCenter>
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="alliance_name">{t('alliance_name')}</label>
-                                    <Input id="alliance_name" name="alliance_name" type="text" />
-                                </FixedFluid>
-                            </VerticalCenter>
-
-                            <VerticalCenter>
-                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="related_alliance_name">{t('related_alliance_name')}</label>
+                                    <label for="related_alliance_name">{t('intel.add_structure.related_alliance')}</label>
                                     <Input id="related_alliance_name" name="related_alliance_name" type="text" required />
                                 </FixedFluid>
                             </VerticalCenter>
+                            <small class="[ reinforce-hint ]">{t('intel.add_structure.related_alliance_hint')}</small>
 
                             <VerticalCenter>
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="timer">{t('timer')}</label>
+                                    <label for="reinforce_hour">{t('intel.add_structure.reinforce_hour')}</label>
                                     <Input
-                                        id="timer"
-                                        name="timer"
-                                        type="text"
-                                        x-model="timer"
-                                        x-mask:dynamic="timer_mask($input)"
-                                        x-on:keyup="timer = (parseInt((timer.split(':')[1] ?? '').substring(0, 1)) > 5) ? timer.slice(0, -1) : timer"
-                                        x-data={`{
-                                            timer: '',
-                                            timer_mask(input) {
-                                                const slices = input.split(':')
-                                                                                                    
-                                                if (typeof slices[1] != typeof undefined)
-                                                    return slices[0]+':99'
-
-                                                return '999:99'
-                                            }
-                                            }`}
-                                        x-model="timer"
-                                        placeholder="HHH:MM"
-                                        required
+                                        id="reinforce_hour"
+                                        name="reinforce_hour"
+                                        type="time"
+                                        step="3600"
                                     />
                                 </FixedFluid>
                             </VerticalCenter>
+                            <small class="[ reinforce-hint ]">{t('intel.add_structure.reinforce_hour_hint')}</small>
 
                             <VerticalCenter>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="fitting">{t('fitting')}</label>
-                                    <Textarea id="fitting" name="fitting" rows="10" required />
-                                </FixedFluid>
+                                    <Textarea
+                                        id="fitting"
+                                        name="fitting"
+                                        rows="10"
+                                        placeholder={t('intel.add_structure.fitting_placeholder')}
+                                    />
+                                </Flexblock>
                             </VerticalCenter>
 
-                            <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('add_structure')}</Button>
+                            <SwitchSquare
+                                class="[ w-full ]"
+                                name="create_timer"
+                                label={t('intel.add_structure.create_timer_label')}
+                                description={t('intel.add_structure.create_timer_description')}
+                            />
+
+                            <Flexblock>
+                                <VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="timer_state">{t('state')}</label>
+                                        <Select id="timer_state" name="timer_state">
+                                            {structure_states.map(state =>
+                                                <option value={state}>{t(state as any) ?? state}</option>
+                                            )}
+                                        </Select>
+                                    </FixedFluid>
+                                </VerticalCenter>
+                                <VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="timer_date">{t('intel.add_structure.timer_date')}</label>
+                                        <FlatPicker
+                                            id="timer_date"
+                                            type="date"
+                                            name="timer_date"
+                                            options={{
+                                                minDate: "today",
+                                            } as any}
+                                        />
+                                    </FixedFluid>
+                                </VerticalCenter>
+                                <VerticalCenter>
+                                    <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                        <label for="timer_time">{t('intel.add_structure.timer_time')}</label>
+                                        <FlatPicker
+                                            id="timer_time"
+                                            name="timer_time"
+                                            options={{
+                                                enableTime: true,
+                                                noCalendar: true,
+                                                dateFormat: "H:i",
+                                                time_24hr: true,
+                                            } as any}
+                                        />
+                                    </FixedFluid>
+                                </VerticalCenter>
+                            </Flexblock>
+
+                            <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">
+                                {t('intel.add_structure.submit')}
+                            </Button>
                         </Flexblock>
                     </form>
                 </Flexblock>
@@ -216,7 +359,7 @@ const page_title = t('intel.add_structure.page_title');
                     <h2>{t('intel.tutrial.page_title')}</h2>
                 </FixedFluid>
 
-                <p>{t('intel.tutrial.leading_text')}</p>
+                <p>{t('intel.add_structure.aside_text')}</p>
 
                 <ButtonStack>
                     <Button href={translatePath('/intel/tutorial/')}>
@@ -230,7 +373,8 @@ const page_title = t('intel.add_structure.page_title');
 </Viewport>
 
 <style lang="scss">
-    h3 {
-        margin-block-start: var(--space-l);
+    .reinforce-hint {
+        color: var(--highlight);
+        margin-block-start: calc(-1 * var(--space-2xs));
     }
 </style>

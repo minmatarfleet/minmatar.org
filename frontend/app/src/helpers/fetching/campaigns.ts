@@ -41,6 +41,10 @@ export type CampaignTotalsLabelKey =
     | 'campaigns.stat.complexes'
     | 'campaigns.stat.advantage_generated'
     | 'campaigns.stat.active_today'
+    | 'campaigns.stat.structure_kills'
+    | 'campaigns.stat.capital_kills'
+    | 'campaigns.stat.structures_destroyed'
+    | 'campaigns.stat.structures_remaining'
 
 export interface CampaignTotalsStat {
     label:  string;
@@ -88,9 +92,31 @@ export const group_campaigns = (campaigns:CampaignListItem[]):CampaignGroups => 
 }
 
 /** Most contested system first so the fight that needs people leads the list. */
-/** EVE faction ids for the two warzone militias, as ESI reports them in owner_faction_id. */
+/** EVE faction ids for the two warzone militias. */
 export const MINMATAR_FACTION_ID = 500002
 export const AMARR_FACTION_ID = 500003
+
+/**
+ * Who holds the system right now: ESI occupier, falling back to owner.
+ * Matches warzone occupancy (holder = live ESI occupier).
+ */
+export const holder_faction_id = (
+    system: { occupier_faction_id?: number | null; owner_faction_id?: number | null } | null | undefined,
+): number | null => {
+    if (!system) return null
+
+    return system.occupier_faction_id ?? system.owner_faction_id ?? null
+}
+
+export const holder_militia = (
+    system: { occupier_faction_id?: number | null; owner_faction_id?: number | null } | null | undefined,
+): 'minmatar' | 'amarr' | null => {
+    const faction_id = holder_faction_id(system)
+    if (faction_id === MINMATAR_FACTION_ID) return 'minmatar'
+    if (faction_id === AMARR_FACTION_ID) return 'amarr'
+
+    return null
+}
 
 const PRIORITY_RANK:Record<string, number> = { high: 0, medium: 1, low: 2 }
 
@@ -102,6 +128,15 @@ export const sort_systems_by_contest = (systems:CampaignSystemSummary[]):Campaig
         priority_rank(a.priority) - priority_rank(b.priority)
         || (b.contested_percent ?? 0) - (a.contested_percent ?? 0))
 }
+
+export const is_fw_objective_system = (system:CampaignSystemSummary):boolean =>
+    system.is_fw_objective !== false
+
+export const fw_objective_systems = (systems:CampaignSystemSummary[]):CampaignSystemSummary[] =>
+    systems.filter(is_fw_objective_system)
+
+export const ops_theater_systems = (systems:CampaignSystemSummary[]):CampaignSystemSummary[] =>
+    systems.filter(system => !is_fw_objective_system(system))
 
 export const clamp_percent = (value:number | null | undefined):number => {
     if (value === null || value === undefined || Number.isNaN(value)) return 0
@@ -168,6 +203,7 @@ export type CampaignWeekMetricKey =
     | 'campaigns.week.metric.advantage_gain'
     | 'campaigns.week.metric.advantage_destroy'
     | 'campaigns.week.metric.advantage_maintain'
+    | 'campaigns.week.metric.structures_reported'
 
 export type CampaignActionErrorKey =
     | 'campaigns.not_enlisted_error'
@@ -225,6 +261,7 @@ export const week_metric_i18n_key = (metric:string):CampaignWeekMetricKey | fals
         case 'advantage_gain': return 'campaigns.week.metric.advantage_gain'
         case 'advantage_destroy': return 'campaigns.week.metric.advantage_destroy'
         case 'advantage_maintain': return 'campaigns.week.metric.advantage_maintain'
+        case 'structures_reported': return 'campaigns.week.metric.structures_reported'
         default: return false
     }
 }
@@ -254,7 +291,18 @@ export const campaign_totals_stats = (
     totals:CampaignTotals,
     t:(key:CampaignTotalsLabelKey) => string,
     format_isk:(value:number) => string,
+    kind:string = 'faction_warfare',
 ):CampaignTotalsStat[] => {
+    if (kind === 'strategic') {
+        return [
+            { label: t('campaigns.stat.enlisted'), value: String(totals.enlisted) },
+            { label: t('campaigns.stat.kills'), value: String(totals.kills) },
+            { label: t('campaigns.stat.capital_kills'), value: String(totals.capital_kills) },
+            { label: t('campaigns.stat.isk_destroyed'), value: format_isk(totals.isk_destroyed) },
+            { label: t('campaigns.stat.active_today'), value: String(totals.active_today) },
+        ]
+    }
+
     return [
         { label: t('campaigns.stat.enlisted'), value: String(totals.enlisted) },
         { label: t('campaigns.stat.kills'), value: String(totals.kills) },
@@ -266,7 +314,13 @@ export const campaign_totals_stats = (
     ]
 }
 
-export type CampaignObjectiveKind = 'offense' | 'defense' | 'advantage_gain' | 'advantage_destroy' | 'advantage_maintain'
+export type CampaignObjectiveKind =
+    | 'offense'
+    | 'defense'
+    | 'advantage_gain'
+    | 'advantage_destroy'
+    | 'advantage_maintain'
+    | 'structures_reported'
 export type CampaignObjectiveStatus = 'winning' | 'losing'
 
 /** One line of the weekly orders table: where, what, how far along, and whether we are winning it. */
@@ -301,6 +355,7 @@ const objective_kind = (metric:string, goal:string):CampaignObjectiveKind => {
     if (metric === 'advantage_gain') return 'advantage_gain'
     if (metric === 'advantage_destroy') return 'advantage_destroy'
     if (metric === 'advantage_maintain') return 'advantage_maintain'
+    if (metric === 'structures_reported') return 'structures_reported'
     if (metric === 'days_under_line') return 'defense'
     if (metric === 'victory_points') return 'offense'
     return goal === 'capture' ? 'offense' : 'defense'
@@ -312,7 +367,12 @@ const objective_label = (kind:CampaignObjectiveKind, t:ObjectiveT):string => {
         case 'defense': return t('campaigns.objective.defend_complexes')
         case 'advantage_gain': return t('campaigns.objective.gain_advantage')
         case 'advantage_destroy': return t('campaigns.objective.destroy_advantage')
-        default: return t('campaigns.objective.maintain_advantage')
+        case 'advantage_maintain': return t('campaigns.objective.maintain_advantage')
+        case 'structures_reported': return t('campaigns.objective.report_structures')
+        default: {
+            const _exhaustive: never = kind
+            return _exhaustive
+        }
     }
 }
 
@@ -360,7 +420,9 @@ export const campaign_objective_rows = (
     const targets = week?.targets ?? []
 
     if (targets.length === 0) {
-        return sort_systems_by_contest(systems)
+        // Fallback rows only for FW objectives; ops theaters wait for
+        // structures_reported targets from propose_week.
+        return sort_systems_by_contest(fw_objective_systems(systems))
             .map(system => {
                 const kind:CampaignObjectiveKind = system.goal === 'capture' ? 'offense' : 'defense'
                 const contested = clamp_percent(system.contested_percent)
@@ -436,6 +498,29 @@ export const campaign_objective_rows = (
                 direction = change_direction(change)
                 if (target.my_complexes > 0)
                     yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
+            } else if (kind === 'structures_reported') {
+                meter_percent = clamp_percent((target.progress / goal) * 100)
+                marker_percent = clamp_percent((target.pace_expected / goal) * 100)
+                now_text = count_text(
+                    Math.round(target.progress),
+                    'campaigns.objective.value_structure',
+                    'campaigns.objective.value_structures',
+                    t,
+                )
+                target_text = count_text(
+                    Math.round(target.target),
+                    'campaigns.objective.value_structure',
+                    'campaigns.objective.value_structures',
+                    t,
+                )
+                change_label = 'week'
+                if ((target.my_structures_reported ?? 0) > 0)
+                    yours_text = count_text(
+                        target.my_structures_reported,
+                        'campaigns.objective.yours_structure',
+                        'campaigns.objective.yours_structures',
+                        t,
+                    )
             } else {
                 // Levels on the 0-100 advantage scale: ours for gain and
                 // maintain, theirs for destroy. The bar is the level itself

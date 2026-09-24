@@ -20,7 +20,6 @@ const {
 
 const primary_character = Astro.cookies.has('primary_pilot')
 
-const can_view_intel = user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')
 const can_view_posts = user_is_superadmin || user_permissions.includes('posts.add_evepost')
 const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
 const can_view_campaigns = user_is_superadmin || user_permissions.includes('campaigns.view_campaign')
@@ -36,9 +35,9 @@ import UserAuth from '@components/UserAuth.astro';
 import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import CampaignsEvEIcon from '@components/icons/CampaignsEvEIcon.astro';
-import IntelEvEIcon from '@components/icons/IntelEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
+import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
@@ -97,6 +96,16 @@ const page = Astro.url.pathname
                     >
                         <AllianceEvEIcon />
                     </NeocomButton>
+                    {can_view_campaigns &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/campaigns'))}
+                            title='neocom.campaigns'
+                            description='campaigns.description'
+                            href={translatePath('/campaigns/')}
+                        >
+                            <CampaignsEvEIcon />
+                        </NeocomButton>
+                    }
                     <NeocomButton
                         active={page.startsWith(translatePath('/learning'))}
                         title='neocom.learning'
@@ -123,18 +132,8 @@ const page = Astro.url.pathname
                             <FleetEvEIcon />
                         </NeocomButton>
                     }
-                    {can_view_campaigns &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/campaigns'))}
-                            title='neocom.campaigns'
-                            description='campaigns.description'
-                            href={translatePath('/campaigns/')}
-                        >
-                            <CampaignsEvEIcon />
-                        </NeocomButton>
-                    }
                     <NeocomButton
-                        active={page.startsWith(translatePath('/market')) || page.startsWith(translatePath('/industry'))}
+                        active={page.startsWith(translatePath('/market')) || page.startsWith(translatePath('/industry/loyalty'))}
                         title='neocom.market'
                         description='market.description'
                         href={translatePath('/market/')}
@@ -142,12 +141,12 @@ const page = Astro.url.pathname
                         <MarketEvEIcon />
                     </NeocomButton>
                     <NeocomButton
-                        active={page.startsWith(translatePath('/intel'))}
-                        title='neocom.intel'
-                        description='intel.description'
-                        href={translatePath('/intel/')}
+                        active={page.startsWith(translatePath('/industry')) && !page.startsWith(translatePath('/industry/loyalty'))}
+                        title='neocom.industry'
+                        description='industry.description'
+                        href={translatePath('/industry/')}
                     >
-                        <IntelEvEIcon />
+                        <IndustryEVEIcon />
                     </NeocomButton>
                     {false && primary_character &&
                         <NeocomButton

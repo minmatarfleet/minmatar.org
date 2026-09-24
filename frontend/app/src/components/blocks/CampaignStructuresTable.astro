@@ -1,0 +1,177 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignStructure } from '@dtypes/api.minmatar.org'
+import { format_date_time } from '@helpers/date'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { get_structure_id } from '@helpers/eve'
+
+interface Props {
+    structures:         CampaignStructure[];
+    slug:               string;
+    show_add_timer?:    boolean;
+    tracking?:          string;
+    [propName: string]: any;
+}
+
+const {
+    structures,
+    slug,
+    show_add_timer = false,
+    tracking = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const ADD_TIMER_URL = translatePath(`/intel/timers/add/?campaign_slug=${slug}`)
+const REPORT_URL = translatePath(`/intel/add_structure/?campaign_slug=${slug}`)
+
+const status_color = (status:string) => {
+    if (status === 'destroyed') return 'green'
+    if (status === 'reinforced') return 'fleet-yellow'
+    return 'alliance-blue'
+}
+
+const format_reinforce_hour = (hour:number | null) => {
+    if (hour === null || hour === undefined) return ''
+    return `${String(hour).padStart(2, '0')}:00`
+}
+
+const structure_icon = (structure:CampaignStructure) => {
+    const type_id = structure.type_id || get_structure_id(structure.structure_type)
+    return type_id ? get_item_icon(type_id, 64) : ''
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock gap='var(--space-s)' class:list={['[ campaign-structures ]', Astro.props.class]} {...attributes}>
+    <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+        <Flexblock gap='var(--space-3xs)'>
+            <h3>{t('campaigns.structures.title')}</h3>
+            <small>{t('campaigns.structures.hint')}</small>
+            {tracking && <small class="[ campaign-structures-tracking ]">{tracking}</small>}
+        </Flexblock>
+        {show_add_timer &&
+            <FlexInline gap='var(--space-3xs)'>
+                <Button size='sm' href={REPORT_URL}>
+                    {t('campaigns.structures.report')}
+                </Button>
+                <Button size='sm' href={ADD_TIMER_URL}>
+                    {t('campaigns.structures.add_timer')}
+                </Button>
+            </FlexInline>
+        }
+    </FlexInline>
+
+    {structures.length === 0 ?
+        <small>{t('campaigns.structures.none')}</small>
+        :
+        <div class="[ campaign-structures-table ]" role="table" aria-label={t('campaigns.structures.title')}>
+            <div class="[ campaign-structures-head ]" role="row">
+                <span role="columnheader">{t('campaigns.structures.col.name')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.system')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.type')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.owner')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.related')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.status')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.rh')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.timer')}</span>
+            </div>
+            {structures.map(structure => {
+                const icon = structure_icon(structure)
+                return (
+                <div class="[ campaign-structures-row ]" role="row">
+                    <span role="cell">
+                        <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                            {icon &&
+                                <img
+                                    class="[ structure-icon ]"
+                                    loading="lazy"
+                                    height="32"
+                                    width="32"
+                                    src={icon}
+                                    alt=""
+                                />
+                            }
+                            <span>{structure.name}</span>
+                            {structure.fitting &&
+                                <Tag text={t('campaigns.structures.has_fit')} color='alliance-blue' />
+                            }
+                        </FlexInline>
+                    </span>
+                    <span role="cell">{structure.system_name}</span>
+                    <span role="cell">{t(structure.structure_type as any) ?? structure.structure_type}</span>
+                    <span role="cell">{structure.corporation_name || '—'}</span>
+                    <span role="cell">{structure.related_alliance_name || structure.alliance_name || '—'}</span>
+                    <span role="cell">
+                        <Tag
+                            text={t(`campaigns.structures.status.${structure.status}` as any)}
+                            color={status_color(structure.status)}
+                        />
+                    </span>
+                    <span role="cell">
+                        {structure.reinforce_hour !== null && structure.reinforce_hour !== undefined ?
+                            format_reinforce_hour(structure.reinforce_hour)
+                            : '—'}
+                    </span>
+                    <span role="cell">
+                        {structure.timer_at ?
+                            format_date_time(lang, structure.timer_at)
+                            : structure.destroyed_at ?
+                                format_date_time(lang, structure.destroyed_at)
+                                : '—'}
+                    </span>
+                </div>
+                )
+            })}
+        </div>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-structures-tracking {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .structure-icon {
+        flex-shrink: 0;
+    }
+
+    .campaign-structures-head,
+    .campaign-structures-row {
+        display: grid;
+        grid-template-columns: 1.5fr 0.9fr 0.9fr 1fr 1fr 0.7fr 0.5fr 0.9fr;
+        gap: var(--space-2xs);
+        align-items: center;
+    }
+
+    .campaign-structures-head {
+        font-size: var(--step--1);
+        color: var(--highlight);
+        border-bottom: solid 1px var(--border-color);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .campaign-structures-row {
+        font-size: var(--step--1);
+        padding-block: var(--space-3xs);
+    }
+
+    @media (max-width: 720px) {
+        .campaign-structures-head {
+            display: none;
+        }
+
+        .campaign-structures-row {
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+</style>

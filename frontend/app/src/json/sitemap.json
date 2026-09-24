@@ -149,6 +149,23 @@
         ]
     },
     {
+        "slug": "campaigns",
+        "path": "/campaigns/",
+        "publish": true,
+        "description": "page_finder.campaigns.description",
+        "permissions": {
+            "auth": true,
+            "user": ["campaigns.view_campaign"]
+        },
+        "keywords": [
+            "campaigns",
+            "faction warfare",
+            "live campaigns",
+            "orders",
+            "standings"
+        ]
+    },
+    {
         "slug": "campaigns.etherium_reach",
         "path": "/campaigns/etherium-reach/",
         "publish": true,
@@ -719,16 +736,30 @@
         ]
     },
     {
+        "slug": "fitting_buy",
+        "path": "/market/fitting_orders/",
+        "publish": true,
+        "description": "fitting_buy.leading_text",
+        "keywords": [
+            "fitting orders",
+            "fits",
+            "multibuy",
+            "contracts",
+            "market"
+        ]
+    },
+    {
         "slug": "industry",
         "alt": "icon.industry.alt",
         "path": "/industry/",
-        "publish": false,
+        "publish": true,
         "icon": "/images/icons/48px-Industry.png",
         "description": "page_finder.industry.description",
         "keywords": [
             "industry",
             "supply chain",
-            "manufacturing"
+            "manufacturing",
+            "orders"
         ]
     },
     {
@@ -836,12 +867,11 @@
         "slug": "intel",
         "alt": "icon.intel.alt",
         "path": "/intel/",
-        "publish": true,
+        "publish": false,
         "icon": "/images/icons/48px-Satellite.png",
         "description": "page_finder.intel.description",
         "keywords": [
             "tools",
-            "fitting orders",
             "timers",
             "moons",
             "combatlog"

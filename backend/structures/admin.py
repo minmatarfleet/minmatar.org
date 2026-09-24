@@ -5,6 +5,9 @@ from django.db.models import F, OrderBy
 from django.utils import timezone
 from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
 
+from campaigns.models import Campaign
+from campaigns.services import structures as structure_service
+
 from .forms import EveStructureTimerForm
 from .models import (
     EveStructure,
@@ -67,7 +70,30 @@ EveStructureAdmin.highlight_deleted_field.short_description = "Name"
 @admin.register(EveStructureTimer)
 class StructureTimerAdmin(admin.ModelAdmin):
     form = EveStructureTimerForm
-    list_display = ("name", "state")
+    list_display = ("name", "state", "system_name", "timer", "campaign")
+    search_fields = (
+        "name",
+        "system_name",
+        "alliance_name",
+        "corporation_name",
+    )
+    list_filter = ("state", "type")
+    raw_id_fields = ("structure", "campaign", "created_by", "updated_by")
+
+    def save_model(self, request, obj, form, change):
+        """Keep campaign recon in sync when an operator sets timer.campaign.
+
+        The public timer API already calls attach_timer; Django admin only
+        wrote the FK, so structures never appeared on the campaign page.
+        """
+        super().save_model(request, obj, form, change)
+        if not obj.campaign_id:
+            return
+        campaign = Campaign.objects.filter(id=obj.campaign_id).first()
+        if campaign:
+            structure_service.attach_timer(
+                campaign, obj, created_by=request.user
+            )
 
 
 @admin.register(EveStructurePing)

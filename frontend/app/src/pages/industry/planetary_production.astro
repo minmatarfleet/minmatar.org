@@ -1,8 +1,8 @@
 ---
-/* Unpublished — PI cut for now; industry landing is thin, send to Market hub */
+/* Unpublished — PI cut for now; send to Industry hub */
 
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-return Astro.redirect(`${translatePath('/market/')}${Astro.url.search}`, 301)
+return Astro.redirect(`${translatePath('/industry/')}${Astro.url.search}`, 301)
 ---

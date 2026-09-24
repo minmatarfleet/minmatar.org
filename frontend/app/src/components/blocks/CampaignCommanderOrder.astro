@@ -1,0 +1,67 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    text:               string;
+    is_draft?:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    text,
+    is_draft = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const order_text = (text ?? '').trim()
+---
+
+{order_text &&
+    <aside
+        class:list={['[ campaign-commander-order ]', 'light-transparency', Astro.props.class]}
+        {...attributes}
+    >
+        <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+            <small class="[ campaign-commander-order__label ]">{t('campaigns.commander_order')}</small>
+            {is_draft &&
+                <small class="[ campaign-commander-order__draft ]">{t('campaigns.commander_order_draft')}</small>
+            }
+        </FlexInline>
+        <p class="[ campaign-commander-order__text ]">{order_text}</p>
+    </aside>
+}
+
+<style lang="scss">
+    .campaign-commander-order {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding-block: var(--space-s);
+        padding-inline: var(--space-m);
+    }
+
+    .campaign-commander-order__label,
+    .campaign-commander-order__draft {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .campaign-commander-order__draft {
+        color: var(--fleet-yellow);
+    }
+
+    .campaign-commander-order__text {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1.3;
+        color: var(--highlight);
+    }
+</style>

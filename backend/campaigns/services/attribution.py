@@ -14,6 +14,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from feed.helpers.capital_ships import is_capital_ship_type
 from feed.models import FeedKillmail
 
 from campaigns.helpers import CampaignRoster, counting_campaigns
@@ -24,6 +25,7 @@ from campaigns.models import (
     CampaignSystem,
     KillmailOutcome,
 )
+from campaigns.services import structures as structure_service
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +103,24 @@ def _attribute_one(
         solar_system_id=feed_killmail.solar_system_id,
         retired_at__isnull=True,
     ).first()
-    if not campaign_system:
+    has_structure = campaign.structures.filter(
+        solar_system_id=feed_killmail.solar_system_id
+    ).exists()
+    # Ops theaters (is_fw_objective=False) do not score ship kills unless a
+    # campaign structure sits in the system (citadel bash path).
+    fw_objective = bool(campaign_system and campaign_system.is_fw_objective)
+    if not fw_objective and not has_structure:
         return False
 
     ship_type_id = victim.get("ship_type_id")
     is_pod = ship_type_id in POD_GROUP_TYPE_IDS
+    is_structure = structure_service.is_structure_type(ship_type_id)
+    is_capital = (not is_structure) and is_capital_ship_type(ship_type_id)
+    matched_structure = structure_service.match_structure_for_killmail(
+        campaign,
+        solar_system_id=feed_killmail.solar_system_id,
+        ship_type_id=ship_type_id,
+    )
     killer = final_blow(attackers)
 
     with transaction.atomic():
@@ -126,6 +141,9 @@ def _attribute_one(
                 "isk_value": int(zkb.get("totalValue") or 0),
                 "is_pod": is_pod,
                 "is_solo": bool(zkb.get("solo")),
+                "is_structure": is_structure,
+                "is_capital": is_capital,
+                "structure": matched_structure,
                 "attacker_count": len(attackers),
                 "enlisted_attacker_count": len(our_attackers),
                 "outcome": outcome,
@@ -137,8 +155,10 @@ def _attribute_one(
 
         if not created:
             changed = False
+            update_fields = []
             if source not in (mail.sources or []):
                 mail.sources = list(mail.sources or []) + [source]
+                update_fields.append("sources")
                 changed = True
             # Re-resolve: characters move between users and pilots enlist
             # mid-campaign, so a sweep can legitimately change the outcome.
@@ -147,17 +167,32 @@ def _attribute_one(
             ):
                 mail.outcome = outcome
                 mail.enlisted_attacker_count = len(our_attackers)
+                update_fields.extend(["outcome", "enlisted_attacker_count"])
+                changed = True
+            if (
+                mail.is_structure != is_structure
+                or mail.is_capital != is_capital
+            ):
+                mail.is_structure = is_structure
+                mail.is_capital = is_capital
+                update_fields.extend(["is_structure", "is_capital"])
+                changed = True
+            if matched_structure and mail.structure_id != matched_structure.id:
+                mail.structure = matched_structure
+                update_fields.append("structure")
                 changed = True
             if changed:
-                mail.save(
-                    update_fields=[
-                        "sources",
-                        "outcome",
-                        "enlisted_attacker_count",
-                    ]
-                )
+                mail.save(update_fields=update_fields)
 
         _write_participants(mail, victim, attackers, included)
+
+        if (
+            created
+            and matched_structure
+            and outcome == KillmailOutcome.KILL
+            and is_structure
+        ):
+            structure_service.mark_destroyed(matched_structure, mail)
 
     return created
 
