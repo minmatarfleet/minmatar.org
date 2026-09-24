@@ -25,7 +25,6 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 import FittingLink from "@components/blocks/FittingLink.astro";
-import Tag from "@components/blocks/Tag.astro";
 import DialogButton from "@components/blocks/DialogButton.astro";
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
@@ -57,7 +56,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
             </div>
             <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
                 <Flexblock gap='var(--space-3xs)'>
-                    <small>
+                    <small class="[ text-balance ]">
                         {semantic_list(lang, format_fitting_tags_line(ship_group.tags, t))}
                     </small>
                     <h3>{ship_group.ship_name}</h3>
