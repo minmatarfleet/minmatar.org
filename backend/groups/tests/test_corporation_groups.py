@@ -8,7 +8,7 @@ from groups.helpers import (
     RECRUITER_APPLICATION_PERMISSION_CODENAMES,
     ensure_corporation_groups_for_corp,
 )
-from groups.models import EveCorporationGroup
+from groups.models import AffiliationType, EveCorporationGroup, UserAffiliation
 from groups.tasks import sync_eve_corporation_groups
 
 
@@ -74,6 +74,17 @@ class CorporationGroupPermissionTestCase(TestCase):
             user=user,
         )
         corp.recruiters.add(char)
+
+        associate_group = Group.objects.create(name="Associate")
+        associate = AffiliationType.objects.create(
+            name="Associate",
+            description="",
+            image_url="",
+            group=associate_group,
+            priority=3,
+            requires_trial=False,
+        )
+        UserAffiliation.objects.create(user=user, affiliation=associate)
 
         self.assertFalse(
             user.has_perm("applications.change_evecorporationapplication")

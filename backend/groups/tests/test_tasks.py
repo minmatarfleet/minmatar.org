@@ -40,6 +40,31 @@ from groups.tasks import (
 from tribes.models import Tribe, TribeGroup
 
 
+def _attach_affiliation(
+    user,
+    name="Alliance",
+    *,
+    requires_trial=True,
+    priority=15,
+    default=False,
+):
+    group, _ = Group.objects.get_or_create(name=name)
+    affiliation, _ = AffiliationType.objects.get_or_create(
+        group=group,
+        defaults={
+            "name": name,
+            "description": "",
+            "image_url": "",
+            "priority": priority,
+            "requires_trial": requires_trial,
+            "default": default,
+        },
+    )
+    UserAffiliation.objects.filter(user=user).delete()
+    UserAffiliation.objects.create(user=user, affiliation=affiliation)
+    return affiliation
+
+
 class UserAffiliationTestCase(TestCase):
     """
     E2E tests for the UserAffiliation setting of auto groups
@@ -382,6 +407,7 @@ class GroupTasksTestCase(TestCase):
         )
         set_primary_character(self.user, char)
 
+        _attach_affiliation(self.user)
         self.assertEqual(0, self.user.groups.count())
 
         sync_eve_corporation_groups()
@@ -404,6 +430,7 @@ class GroupTasksTestCase(TestCase):
             corporation_id=other_corp.corporation_id,
         )
         set_primary_character(other_user, other_char)
+        _attach_affiliation(other_user)
 
         sync_eve_corporation_groups()
 
@@ -443,6 +470,7 @@ class GroupTasksTestCase(TestCase):
             user=self.user,
         )
 
+        _attach_affiliation(self.user)
         sync_eve_corporation_groups()
 
         self.assertEqual(
@@ -488,6 +516,7 @@ class GroupTasksTestCase(TestCase):
         )
         set_primary_character(self.user, char)
         self.user.groups.add(old_group)
+        _attach_affiliation(self.user)
 
         char.corporation_id = new_corp.corporation_id
         char.save(update_fields=["corporation_id"])
@@ -495,6 +524,38 @@ class GroupTasksTestCase(TestCase):
 
         self.assertEqual(
             [new_group.name],
+            list(self.user.groups.values_list("name", flat=True)),
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_eve_corporation_groups_strips_guest(self):
+        corp = EveCorporation.objects.create(
+            corporation_id=100013,
+            name="StillInCorp",
+        )
+        group = Group.objects.create(name="Corp STILL")
+        EveCorporationGroup.objects.create(corporation=corp, group=group)
+        char = EveCharacter.objects.create(
+            character_id=1013,
+            character_name="Leaver",
+            corporation_id=corp.corporation_id,
+        )
+        set_primary_character(self.user, char)
+        self.user.groups.add(group)
+        _attach_affiliation(
+            self.user,
+            name="Guest",
+            requires_trial=False,
+            priority=0,
+            default=True,
+        )
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(
+            [],
             list(self.user.groups.values_list("name", flat=True)),
         )
 
