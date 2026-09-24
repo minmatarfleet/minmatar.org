@@ -15,6 +15,7 @@
     "push": "drizzle-kit push",
     "preview": "astro preview",
     "warzone:extract": "node scripts/warzone_extract.mjs",
+    "amamake:extract": "node scripts/amamake_market_extract.mjs",
     "astro": "astro",
     "test": "export $(cat .env.BUILDONLY) && vitest",
     "coverage": "export $(cat .env.BUILDONLY) && vitest run --coverage",

@@ -15,7 +15,6 @@ import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import LearningCertificateDetail from '@components/blocks/LearningCertificateDetail.astro'
 
 const { slug } = Astro.params
@@ -64,9 +63,9 @@ const percent = certificateProgressPercent(
 )
 
 const page_title = certificate.title
-const breadcrumb_items = [
-    { label: t('learning.page_title'), href: translatePath(LEARNING_HUB_PATH) },
-    { label: certificate.title },
+const breadcrumbs = [
+    { page_title: t('learning.page_title'), accumulated_path: LEARNING_HUB_PATH },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -84,10 +83,10 @@ const breadcrumb_items = [
             overlay: true,
             scrollable: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
         </FlexInline>

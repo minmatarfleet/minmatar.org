@@ -10,8 +10,9 @@ description: >-
 
 # Warzone Report (monthly)
 
-A public, siege-style monthly report on the Amarr–Minmatar faction-warfare zone, at
-`/warzone/` (latest) and `/warzone/<slug>/`. All numbers come from public APIs; a
+A public, siege-style monthly **Frontline** report on the Amarr–Minmatar
+faction-warfare zone, at `/warzone/` (latest) and `/warzone/<slug>/`. It is one of
+two Warzone Reports (Frontline and Economic). All numbers come from public APIs; a
 single generated data file feeds one shared, data-driven component. **A new month is
 almost entirely: run one script, copy last month's issue file, edit the editorial
 prose, register it.** Do not rebuild the UI each month.
@@ -75,7 +76,8 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
 
 3. **Register the issue:** add it to `ISSUES` in `src/data/warzone/index.ts`
    (latest sorts first automatically) and to the content-hub list in
-   `src/data/campaigns/index.ts`.
+   `src/data/campaigns/index.ts` as `kind: 'warzone'` with `warzone_type: 'frontline'`.
+   Frontline and Amamake Economic reports share one **Warzone Reports** strip.
 
 4. **i18n + sitemap:** add `warzone.<slug_with_underscores>.*` strings in
    `src/i18n/ui.ts` (name, page_title, period, leading_text, meta_title,
@@ -154,4 +156,6 @@ Then preview `http://localhost:4321/warzone/` (dev server usually already runnin
   (Dotlan). "Holds today" per system is ESI-live and may differ from `taken_by` when a
   system flipped back after the snapshot — reflect that in the note text.
 - Keep the raw-page cache (`.cache/warzone/`) between runs; deleting it forces a full
-  re-fetch.
+  re-fetch. The Amamake Market Report extractor (`scripts/amamake_market_extract.mjs`,
+  skill `amamake-market-report`) reads the same per-system cache, so generate the
+  warzone month first and the market report's kill pass costs zero requests.

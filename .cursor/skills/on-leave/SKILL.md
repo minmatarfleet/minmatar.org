@@ -30,6 +30,9 @@ Tag every recommend **Away** or **OPSEC**. Same `on_leave` status either way.
 `on_leave` → Django **On Leave** group only (affiliation role stripped) via
 `sync_user_community_groups`. Most PilotFeatures deny `on_leave`.
 
+Leave is Alliance-only. Guest / Militia / Associate (or no affiliation)
+clears `on_leave`/`trial` to `active`. Corp groups require Alliance or Associate.
+
 Imposed leave only — do not invent declared LOA requests.
 
 ## Quick start

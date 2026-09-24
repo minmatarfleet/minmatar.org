@@ -131,10 +131,15 @@ import PageTitle from '@components/page/PageTitle.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import BuybackPurchaseOrderBook from '@components/blocks/BuybackPurchaseOrderBook.astro'
 import BuybackStockpileSales from '@components/blocks/BuybackStockpileSales.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+const breadcrumbs = [
+    { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
+    { page_title: t('buyback_stocks.page_title'), accumulated_path: '/market/buyback/stocks/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
 ---
 
 <Viewport
@@ -153,13 +158,9 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         <Flexblock slot="header" gap="var(--space-3xs)">
-            <Breadcrumb items={[
-                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
-                { label: t('buyback_stocks.page_title'), href: translatePath('/market/buyback/stocks/') },
-                { label: page_title },
-            ]} />
             <PageTitle>
                 {page_title}
             </PageTitle>

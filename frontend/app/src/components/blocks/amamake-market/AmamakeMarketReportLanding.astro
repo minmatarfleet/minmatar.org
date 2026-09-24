@@ -1,0 +1,135 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import { ALL_REPORTS_PATH } from '@/data/amamake-market'
+import { build_amamake_market_json_ld } from '@/data/amamake-market/seo'
+import { get_site_origin } from '@helpers/seo'
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import AmamakeMarketReportIssue from '@components/blocks/amamake-market/AmamakeMarketReportIssue.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+    canonical_path: string
+}
+
+const { issue, canonical_path } = Astro.props
+
+const i18n_prefix = `amamake_market.${issue.slug.replaceAll('-', '_')}`
+const page_title = t(`${i18n_prefix}.page_title` as any)
+const [title_kicker, title_period] = page_title.includes(' · ')
+    ? page_title.split(' · ')
+    : [page_title, '']
+const meta_title = t(`${i18n_prefix}.meta_title` as any).replace('{site}', t('index.page_title'))
+const meta_description = t(`${i18n_prefix}.meta_description` as any)
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath(canonical_path), site_origin).href
+const meta_image = new URL(issue.cover_image, site_origin).href
+
+const structured_data = build_amamake_market_json_ld({
+    canonical_url,
+    site_name: t('index.page_title'),
+    site_origin,
+    meta_title: page_title,
+    meta_description,
+    meta_image,
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            video: get_location_video_cover('amamake') ?? undefined,
+            video_thumb: get_location_video_cover_thumb('amamake') ?? undefined,
+            image: get_location_cover('amamake') ?? issue.cover_image,
+            image_990: get_location_cover_990('amamake') ?? issue.cover_image,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-xl)">
+            <TextBox class="[ mk-hero ]">
+                <Flexblock gap="var(--space-m)">
+                    <a class="[ mk-hero__back ]" href={translatePath(ALL_REPORTS_PATH)}>‹ {t('warzone.reports.section_title')}</a>
+                    <PageTitle is_landing={true}>
+                        <span class="[ mk-hero__kicker ]">{title_kicker}</span>
+                        {title_period && <span class="[ mk-hero__period ]">{title_period}</span>}
+                    </PageTitle>
+                </Flexblock>
+            </TextBox>
+
+            <AmamakeMarketReportIssue issue={issue} />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .mk-hero {
+        max-width: 60rem;
+    }
+
+    .mk-hero__back {
+        display: inline-block;
+        width: fit-content;
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fleet-yellow);
+        text-decoration: none;
+        opacity: 0.85;
+        transition: opacity 0.15s ease;
+    }
+
+    .mk-hero__back:hover {
+        opacity: 1;
+        text-decoration: underline;
+    }
+
+    .mk-hero :global(h1 > a),
+    .mk-hero :global(h1) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .mk-hero__kicker {
+        font-size: var(--step-5);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .mk-hero__period {
+        font-size: var(--step-2);
+        letter-spacing: 0.08em;
+        line-height: 1.1;
+        color: var(--fleet-yellow);
+    }
+</style>

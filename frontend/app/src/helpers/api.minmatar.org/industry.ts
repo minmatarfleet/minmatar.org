@@ -15,6 +15,7 @@ import type {
     OrderBlueprintCoordinator,
     OrderBlueprintCoordinatorEveType,
     RootSingleItem,
+    BuildPack,
     IndustryOrderCharacterStatistics,
     OrderCapabilities,
     CreateOrderRequest,
@@ -813,6 +814,36 @@ export async function get_order_orderitems(order_id: number) {
     } catch (error) {
         throw new Error(
             `Error fetching order items: ${error.message}`,
+            { cause: error.cause },
+        )
+    }
+}
+
+export async function get_order_item_build_packs(order_id: number, order_item_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/build-packs`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                get_error_message(response.status, `GET ${ENDPOINT}`),
+                { cause: response.status },
+            )
+        }
+
+        return (await response.json()) as BuildPack[]
+    } catch (error) {
+        throw new Error(
+            `Error fetching order build packs: ${error.message}`,
             { cause: error.cause },
         )
     }

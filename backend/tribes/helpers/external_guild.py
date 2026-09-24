@@ -30,6 +30,7 @@ OAUTH_STATE_SALT = "tribes.external_guild.oauth"
 OAUTH_STATE_MAX_AGE = 60 * 60 * 24 * 7
 
 # Pulse / Fishermen secondary guild. Approve DMs no-op without this binding.
+# Entitled seats get Minmatar Fleet Alliance (grant only — never a kick filter).
 FISHERMEN_GROUP_CODE = "pulse.fishermen"
 FISHERMEN_GUILD_ID = 834087499658952735
 FISHERMEN_MEMBER_ROLE_ID = 1543301902375329922  # Minmatar Fleet Alliance
@@ -607,7 +608,12 @@ def _ensure_seats_for_active_members(
 
 def _reconcile_seats(
     binding: TribeExternalGuild, active_user_ids: set[int]
-) -> tuple[dict, set[int]]:
+) -> dict:
+    """Join/nick entitled seats. Kick only seats that lost entitlement.
+
+    Never guild-scan for unseated role holders. member_role is granted to
+    entitled seats; it is not a "kick everyone else who has this role" filter.
+    """
     result = {"joined": 0, "kicked": 0, "alerts": 0, "nicks_updated": 0}
     seats = list(
         TribeExternalGuildSeat.objects.filter(binding=binding).exclude(
@@ -625,41 +631,16 @@ def _reconcile_seats(
             seat.refresh_from_db()
             if seat.discord_nickname != before_nick:
                 result["nicks_updated"] += 1
+        elif (
+            entitled
+            and status == TribeExternalGuildSeat.STATUS_PENDING_JOIN
+            and before == TribeExternalGuildSeat.STATUS_PRESENT
+        ):
+            send_pending_join_dm(seat)
         elif not entitled and status == TribeExternalGuildSeat.STATUS_REMOVED:
             result["kicked"] += 1
         elif status == TribeExternalGuildSeat.STATUS_CLEANUP_FAILED:
             result["alerts"] += 1
-    return result, {seat.discord_user_id for seat in seats}
-
-
-def _kick_stray_role_holders(
-    client: DiscordClient,
-    binding: TribeExternalGuild,
-    members_by_id: dict[int, dict],
-    seat_discord_ids: set[int],
-) -> dict:
-    result = {"kicked": 0, "errors": 0}
-    role_id = str(binding.member_role_id)
-    for member_id, member in members_by_id.items():
-        roles = [str(r) for r in member.get("roles", [])]
-        if role_id not in roles or member_id in seat_discord_ids:
-            continue
-        if member.get("user", {}).get("bot"):
-            continue
-        try:
-            client.kick_guild_member(member_id)
-            result["kicked"] += 1
-            logger.info(
-                "Kicked stray external-guild role holder %s from guild %s",
-                member_id,
-                binding.guild.guild_id,
-            )
-        except requests.exceptions.HTTPError as exc:
-            if is_discord_unknown_guild_member_error(exc):
-                continue
-            result["errors"] += 1
-        except (DiscordError, requests.RequestException):
-            result["errors"] += 1
     return result
 
 
@@ -672,7 +653,6 @@ def _reconcile_binding(binding: TribeExternalGuild) -> dict:
         "seats_ensured": 0,
         "nicks_updated": 0,
     }
-    client = client_for_binding(binding)
     active_user_ids = set(
         TribeGroupMembership.objects.filter(
             tribe_group_id=binding.tribe_group_id,
@@ -682,26 +662,8 @@ def _reconcile_binding(binding: TribeExternalGuild) -> dict:
     ensure_stats = _ensure_seats_for_active_members(binding, active_user_ids)
     for key, value in ensure_stats.items():
         result[key] = result.get(key, 0) + value
-
-    try:
-        members = client.get_members()
-    except (DiscordError, requests.RequestException) as exc:
-        logger.error(
-            "Failed listing members for external guild %s: %s",
-            binding.guild.guild_id,
-            exc,
-        )
-        result["errors"] += 1
-        return result
-
-    members_by_id = {int(m["user"]["id"]): m for m in members if m.get("user")}
-    seat_stats, seat_discord_ids = _reconcile_seats(binding, active_user_ids)
+    seat_stats = _reconcile_seats(binding, active_user_ids)
     for key, value in seat_stats.items():
-        result[key] += value
-    stray_stats = _kick_stray_role_holders(
-        client, binding, members_by_id, seat_discord_ids
-    )
-    for key, value in stray_stats.items():
         result[key] += value
     return result
 

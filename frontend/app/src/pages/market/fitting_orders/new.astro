@@ -78,14 +78,13 @@ import TextBox from '@components/layout/TextBox.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
 const page_title = t('fitting_buy.create_page_title')
-const breadcrumb_items = [
-    { label: t('intel.page_title'), href: translatePath('/intel/') },
-    { label: t('fitting_buy.page_title'), href: translatePath('/market/fitting_orders/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: t('fitting_buy.page_title'), accumulated_path: '/market/fitting_orders/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 const fittings_json = JSON.stringify(
     fittings.map((fit) => ({
@@ -107,10 +106,10 @@ const quantity_label = t('fitting_buy.quantity')
             overlay: true,
         }}
         padding_block="var(--space-m) var(--space-xl)"
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
         </FlexInline>

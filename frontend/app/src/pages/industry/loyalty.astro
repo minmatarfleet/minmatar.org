@@ -102,7 +102,6 @@ import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyRateCards from '@components/blocks/LoyaltyRateCards.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
@@ -111,9 +110,9 @@ import Button from '@components/blocks/Button.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const page_title = t('industry.loyalty.page_title')
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 const api_base = import.meta.env.API_URL || ''
 const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
@@ -135,10 +134,10 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
             scrollable: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
             <PageActions>

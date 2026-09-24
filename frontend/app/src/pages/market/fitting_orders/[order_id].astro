@@ -25,16 +25,15 @@ import PageTitle from '@components/page/PageTitle.astro'
 import PageActions from '@components/page/PageActions.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FittingBuyOrderSkeleton from '@components/blocks/FittingBuyOrderSkeleton.astro'
 import FittingBuyOrderAssets from '@components/blocks/FittingBuyOrderAssets.astro'
 
 const page_title = t('fitting_buy.order_id').replace('{id}', String(order_id))
 const PARTIAL = translatePath(`/partials/fitting_buy_order_component?order_id=${order_id}`)
-const breadcrumb_items = [
-    { label: t('intel.page_title'), href: translatePath('/intel/') },
-    { label: t('fitting_buy.page_title'), href: translatePath('/market/fitting_orders/') },
-    { label: `#${order_id}` },
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: t('fitting_buy.page_title'), accumulated_path: '/market/fitting_orders/' },
+    { page_title: `#${order_id}`, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -48,10 +47,10 @@ const breadcrumb_items = [
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-2xs)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
                 <div id="fitting-buy-order-meta" class="[ fitting-buy-order-meta-slot ]"></div>
             </Flexblock>

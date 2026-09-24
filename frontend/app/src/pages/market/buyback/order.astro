@@ -27,7 +27,6 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
@@ -101,6 +100,11 @@ if (data_fetching_error) {
 }
 
 const page_title = t('buyback.purchase.page_title')
+const breadcrumbs = [
+    { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
+    { page_title: t('buyback_stocks.page_title'), accumulated_path: '/market/buyback/stocks/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
 const can_place = !!(fill && fill.picks.length > 0 && fill.contract_total > 0)
 const contract_total = placed?.contract_total ?? fill?.contract_total ?? 0
 const refine_pct = fill
@@ -136,13 +140,9 @@ const refine_yield_text = fill
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         <Flexblock slot="header" gap="var(--space-s)">
-            <Breadcrumb items={[
-                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
-                { label: t('buyback_stocks.page_title'), href: translatePath('/market/buyback/stocks/') },
-                { label: page_title },
-            ]} />
             <PageTitle>
                 {page_title}
             </PageTitle>

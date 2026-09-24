@@ -20,7 +20,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Input from '@components/blocks/Input.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import Button from '@components/blocks/Button.astro'
 import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
 
@@ -31,10 +30,10 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const page_title = t('freight_contracts.history.page_title');
-const breadcrumb_items = [
-    { label: t('freight.calculator.page_title'), href: translatePath('/market/freight/calculator/') },
-    { label: t('freight_contracts.page_title'), href: translatePath('/market/freight/contracts/') },
-    { label: t('freight_contracts.history.page_title') },
+const breadcrumbs = [
+    { page_title: t('freight.calculator.page_title'), accumulated_path: '/market/freight/calculator/' },
+    { page_title: t('freight_contracts.page_title'), accumulated_path: '/market/freight/contracts/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0')
 const csv_url = freight_contracts_history_csv_url()
@@ -61,6 +60,7 @@ const can_download_csv = Boolean(auth_token && user)
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             contracts_count: 0,
             last_updated_text: '',
@@ -88,7 +88,6 @@ const can_download_csv = Boolean(auth_token && user)
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}

@@ -10,20 +10,23 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 import { marked } from 'marked';
 
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageHeader from '@components/page/partials/PageHeader.astro';
 import PageBody from '@components/page/partials/PageBody.astro';
 import PageCover from '@components/page/partials/PageCover.astro';
 
 import DebugTag from '@components/blocks/DebugTag.astro';
 
-import type { PageCoverOptions } from '@dtypes/layout_components'
+import type { PageCoverOptions, BreadcrumbLinkProps } from '@dtypes/layout_components'
 
 interface Props {
-    cover?:                 false | PageCoverOptions;
-    sticky?:                boolean;
-    padding_block?:         string;
-    no_main_padding?:       boolean;
-    [propName: string]:     any;
+    cover?:                     false | PageCoverOptions;
+    sticky?:                    boolean;
+    padding_block?:             string;
+    no_main_padding?:           boolean;
+    breadcrumbs?:               BreadcrumbLinkProps[];
+    breadcrumb_page_title?:     string;
+    [propName: string]:         any;
 }
 
 const {
@@ -31,6 +34,8 @@ const {
     sticky = false,
     padding_block = 'var(--space-xl)',
     no_main_padding = false,
+    breadcrumbs,
+    breadcrumb_page_title,
     ...attributes
 } = Astro.props;
 
@@ -50,6 +55,8 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
     }
 
     {cover && <PageCover {...cover} /> }
+
+    <PageBreadcrumbs breadcrumbs={breadcrumbs} breadcrumb_page_title={breadcrumb_page_title} />
 
     <PageHeader max_width="var(--max-content-width)" sticky={sticky}>
         <slot name="header">

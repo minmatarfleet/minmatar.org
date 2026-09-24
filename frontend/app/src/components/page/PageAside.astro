@@ -4,20 +4,25 @@ const { t } = i18n(Astro.url)
 
 import { marked } from 'marked';
 
-import type { PageCoverOptions } from '@dtypes/layout_components'
+import type { PageCoverOptions, BreadcrumbLinkProps } from '@dtypes/layout_components'
 
 interface Props {
-    cover?:                 false | PageCoverOptions;
-    sticky?:                boolean;
-    [propName: string]:     any;
+    cover?:                     false | PageCoverOptions;
+    sticky?:                    boolean;
+    breadcrumbs?:               BreadcrumbLinkProps[];
+    breadcrumb_page_title?:     string;
+    [propName: string]:         any;
 }
 
 const {
     cover,
     sticky = false,
+    breadcrumbs,
+    breadcrumb_page_title,
     ...attributes
 } = Astro.props;
 
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageHeader from '@components/page/partials/PageHeader.astro';
 import PageBody from '@components/page/partials/PageBody.astro';
 import PageCover from '@components/page/partials/PageCover.astro';
@@ -32,6 +37,8 @@ const subheader_content = await Astro.slots.render('subheader');
 
 <main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}>
     {cover && <PageCover {...cover} /> }
+
+    <PageBreadcrumbs breadcrumbs={breadcrumbs} breadcrumb_page_title={breadcrumb_page_title} />
 
     <PageHeader max_width="var(--max-content-width)" sticky={sticky}>
         <slot name="header">

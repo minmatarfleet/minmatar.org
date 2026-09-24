@@ -97,15 +97,14 @@ import FleetRoles from '@components/blocks/FleetRoles.astro'
 import FleetShips from '@components/blocks/FleetShips.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FleetManageMenu from '@components/blocks/FleetManageMenu.astro'
 
 const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_id.toString())
-const breadcrumb_items = [
-    { label: t('fleets'), href: translatePath('/fleets/upcoming/') },
-    { label: t('upcoming_fleets_short'), href: translatePath('/fleets/upcoming/') },
-    { label: `${t('fleet')} ${fleet_id}`, href: translatePath(`/fleets/upcoming/${fleet_id}`) },
-    { label: t('fleet_actions_volunteer') },
+const breadcrumbs = [
+    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: t('upcoming_fleets_short'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: `${t('fleet')} ${fleet_id}`, accumulated_path: `/fleets/upcoming/${fleet_id}` },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -123,10 +122,10 @@ const breadcrumb_items = [
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock id="header-oob" gap="var(--space-3xs)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
             <PageActions>

@@ -50,8 +50,8 @@ export function build_warzone_report_json_ld(options: WarzoneReportJsonLdOptions
                     {
                         '@type': 'ListItem',
                         position: 2,
-                        name: 'Warzone Report',
-                        item: `${site_origin}/warzone/`,
+                        name: 'Warzone Reports',
+                        item: `${site_origin}/alliance/content`,
                     },
                     {
                         '@type': 'ListItem',
@@ -80,6 +80,7 @@ export function build_warzone_report_json_ld(options: WarzoneReportJsonLdOptions
                 keywords: [
                     'EVE Online',
                     'Warzone Report',
+                    'Frontline Report',
                     'Amarr',
                     'Minmatar',
                     'faction warfare',

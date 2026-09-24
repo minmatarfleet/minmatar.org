@@ -36,9 +36,9 @@ delete attributes.class
         max-inline-size: var(--wrapper_max_width);
 
         &.compensate-neocom {
-            padding-inline-end: var(--space-l-xl) !important;
+            padding-inline-start: calc(var(--wrapper_padding_inline) + var(--neocom-width)) !important;
 
-            @media screen and (max-width: 600px) {
+            @media screen and (max-width: 890px) {
                 padding-inline-start: var(--space-2xs) !important;
                 padding-inline-end: var(--space-2xs) !important;
             }

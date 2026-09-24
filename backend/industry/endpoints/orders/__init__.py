@@ -38,6 +38,12 @@ from industry.endpoints.orders.get_order import (
     get_order,
     METHOD as get_order_method,
 )
+from industry.endpoints.orders.get_order_item_build_packs import (
+    PATH as get_order_item_build_packs_path,
+    ROUTE_SPEC as get_order_item_build_packs_spec,
+    get_order_item_build_packs,
+    METHOD as get_order_item_build_packs_method,
+)
 from industry.endpoints.orders.get_order_material_options import (
     PATH as get_order_material_options_path,
     ROUTE_SPEC as get_order_material_options_spec,
@@ -171,6 +177,12 @@ _ROUTES = (
         get_order_orderitems_path,
         get_order_orderitems_spec,
         get_order_orderitems,
+    ),
+    (
+        get_order_item_build_packs_method,
+        get_order_item_build_packs_path,
+        get_order_item_build_packs_spec,
+        get_order_item_build_packs,
     ),
     (
         post_order_item_assignment_method,

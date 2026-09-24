@@ -1,0 +1,8 @@
+---
+import { get_latest_issue, LATEST_PATH } from '@/data/amamake-market'
+import AmamakeMarketReportLanding from '@components/blocks/amamake-market/AmamakeMarketReportLanding.astro'
+
+const issue = get_latest_issue()
+---
+
+<AmamakeMarketReportLanding issue={issue} canonical_path={LATEST_PATH} />

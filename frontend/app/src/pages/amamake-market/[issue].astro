@@ -1,0 +1,14 @@
+---
+import { get_issue } from '@/data/amamake-market'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import AmamakeMarketReportLanding from '@components/blocks/amamake-market/AmamakeMarketReportLanding.astro'
+
+const slug = Astro.params.issue ?? ''
+const issue = get_issue(slug)
+
+if (!issue) {
+    return HTTP_404_Not_Found()
+}
+---
+
+<AmamakeMarketReportLanding issue={issue} canonical_path={issue.permalink_path} />

@@ -3,7 +3,10 @@ import logging
 from django.db.models import signals
 from django.dispatch import receiver
 
-from groups.helpers import sync_user_community_groups
+from groups.helpers import (
+    reconcile_community_status_for_affiliation,
+    sync_user_community_groups,
+)
 from groups.helpers.feature_access import clear_feature_cache
 from groups.models import (
     PilotFeature,
@@ -29,6 +32,7 @@ _previous_status_cache = {}
 def user_affiliation_post_delete(sender, instance, **kwargs):
     # Run after delete so sync_user_community_groups sees no affiliation row.
     logger.info("User affiliation deleted, syncing user community groups")
+    reconcile_community_status_for_affiliation(instance.user)
     sync_user_community_groups(instance.user)
     offboard_tribe_memberships_without_feature(instance.user)
 
@@ -44,18 +48,9 @@ def user_affiliation_post_save(sender, instance, created, **kwargs):
             user=instance.user,
             defaults={"status": UserCommunityStatus.STATUS_TRIAL},
         )
-    else:
-        # Current affiliation does not require trial; clear trial if they have it
-        # (e.g. they were Alliance and are now Guest/Militia).
-        try:
-            ucs = UserCommunityStatus.objects.get(user=instance.user)
-            if ucs.status == UserCommunityStatus.STATUS_TRIAL:
-                ucs.status = UserCommunityStatus.STATUS_ACTIVE
-                ucs.save(update_fields=["status"])
-        except UserCommunityStatus.DoesNotExist:
-            pass
     logger.info("User affiliation saved, syncing user community groups")
     instance.user.refresh_from_db()
+    reconcile_community_status_for_affiliation(instance.user)
     sync_user_community_groups(instance.user)
     offboard_tribe_memberships_without_feature(instance.user)
 

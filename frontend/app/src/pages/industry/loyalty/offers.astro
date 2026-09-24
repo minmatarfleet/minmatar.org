@@ -14,14 +14,13 @@ import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import LoyaltyOffersSkeleton from '@components/blocks/LoyaltyOffersSkeleton.astro'
 
 const page_title = t('industry.loyalty.offers.page_title')
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.loyalty.page_title'), href: translatePath('/industry/loyalty/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.loyalty.page_title'), accumulated_path: '/industry/loyalty/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{count}', '0')
 ---
@@ -41,6 +40,7 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
             scrollable: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             offers_count: 0,
             last_updated_text: '',
@@ -50,7 +50,6 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>{page_title}</PageTitle>
                     <small

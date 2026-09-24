@@ -8,7 +8,10 @@ from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.helpers.characters import set_primary_character
 from esi.models import Token
 
-from groups.helpers import sync_user_community_groups
+from groups.helpers import (
+    reconcile_community_status_for_affiliation,
+    sync_user_community_groups,
+)
 from groups.models import (
     AffiliationType,
     UserAffiliation,
@@ -81,6 +84,46 @@ class SyncUserCommunityGroupsTestCase(TestCase):
         self.assertNotIn("Alliance", group_names)
         self.assertNotIn("Trial", group_names)
         self.assertIn("On Leave", group_names)
+
+    def test_guest_on_leave_heals_to_active_guest(self):
+        """Former alliance members stuck on leave become Guest, not On Leave."""
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        guest_type = AffiliationType.objects.create(
+            name="Guest",
+            description="",
+            image_url="",
+            group=guest_group,
+            priority=0,
+            requires_trial=False,
+            default=True,
+        )
+        UserAffiliation.objects.create(user=self.user, affiliation=guest_type)
+        UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        self.user.groups.add(self.on_leave_group)
+        self.user.groups.add(self.affiliation_group)
+
+        reconcile_community_status_for_affiliation(self.user)
+        sync_user_community_groups(self.user)
+
+        ucs = UserCommunityStatus.objects.get(user=self.user)
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_ACTIVE)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertIn("Guest", group_names)
+        self.assertNotIn("On Leave", group_names)
+        self.assertNotIn("Alliance", group_names)
+        history = (
+            UserCommunityStatusHistory.objects.filter(
+                user=self.user,
+                from_status=UserCommunityStatus.STATUS_ON_LEAVE,
+                to_status=UserCommunityStatus.STATUS_ACTIVE,
+            )
+            .order_by("-id")
+            .first()
+        )
+        self.assertIsNotNone(history)
+        self.assertEqual(history.reason, "No longer Alliance")
 
     def test_no_status_treated_as_active(self):
         UserAffiliation.objects.create(
@@ -206,3 +249,32 @@ class RequiresTrialTestCase(TestCase):
         )
         ucs.refresh_from_db()
         self.assertEqual(ucs.status, UserCommunityStatus.STATUS_ACTIVE)
+
+    def test_affiliation_without_requires_trial_clears_on_leave_status(self):
+        """Alliance → Guest clears imposed leave so Discord drops On Leave."""
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.affiliation_type
+        )
+        ucs = UserCommunityStatus.objects.get(user=self.user)
+        ucs.status = UserCommunityStatus.STATUS_ON_LEAVE
+        ucs.save()
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_ON_LEAVE)
+
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        guest_affiliation = AffiliationType.objects.create(
+            name="Guest",
+            description="",
+            image_url="",
+            group=guest_group,
+            priority=0,
+            requires_trial=False,
+        )
+        UserAffiliation.objects.filter(user=self.user).delete()
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=guest_affiliation
+        )
+        ucs.refresh_from_db()
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_ACTIVE)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertIn("Guest", group_names)
+        self.assertNotIn("On Leave", group_names)

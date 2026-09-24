@@ -4,6 +4,56 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-09-24 formatting (sent vs scout)
+
+BearThatCares posted four Reddit replies and one forum reply from this run. The forum post matched the scout. Every Reddit post was reformatted the same way.
+
+**Reddit send shape.** Pitch paragraph contains no URLs. Blank line. The words `Some links`. Then a markdown bullet whose label is the URL:
+
+```
+Pitch sentence one. Pitch sentence two.
+
+Some links
+
+* [https://www.reddit.com/r/evejobs/comments/...](https://www.reddit.com/r/evejobs/comments/...)
+* [discord.gg/minmatar](http://discord.gg/minmatar)
+* [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+```
+
+Discord’s visible text is `discord.gg/minmatar` and the target is `http://discord.gg/minmatar`. Do not leave the ad or discord inside the pitch on Reddit.
+
+**What changed in the words, not just the list:**
+
+| Thread | Scout | Sent |
+|--------|-------|------|
+| Teach me PvP | “on comms”; ad and discord in the pitch; Dal AAR | “on discord”; links in the list; added `https://my.minmatar.org/learning/` at the top; no AAR |
+| Social groups / barely fought | ad and discord in the pitch; Dal AAR after the video | same pitch; list order ad, discord, Bring Fun Shit, Dal AAR |
+| Need Help (miner) | `ask for Keldor00` and the mining ad in the pitch | Keldor00 dropped; list is Bring Fun Shit, mining ad, Rock Hoppin', discord |
+| Twelve-account sov industry | Keldor00 and ad in the pitch | Keldor00 dropped; list is discord, mining ad, Bring Fun Shit, Rock Hoppin' |
+| Forum, Norway 170m, Soltech | pitch with ad URL and discord, then bare YouTube, then Dal AAR | sent as drafted; Discourse oneboxed the ad as Reddit and embedded the video |
+
+Brand-new “teach me” Academy posts get the learning page and can skip the AAR. Mining posts do not name Keldor00 when discord is already in the link list. Forums stay pitch-with-bare-URLs, not the Reddit bullet list.
+
+---
+
+## 2026-09-24 recruiter layout
+
+Seats are experience, then style, then timezone. This replaces older “Soltech is late-US” and “Rattini is the default veteran” notes.
+
+| Ticker | Seat |
+|--------|------|
+| TDT | Small gang, veterans, USTZ |
+| FOSFO | Small gang, veterans, EUTZ. Route from this layout and link the live ad even if the API omits the corp. |
+| SOEXD | New / early intermediate, wormhole on the side, USTZ |
+| BNSQ | New / early intermediate, EUTZ |
+| L3ARN | New players, institutional |
+| SLTAR | Intermediate / veteran, institutional. Not a filler for thin posts. |
+| ARAT | Veterans, multiple characters / capitals |
+
+Same-day correction this layout overturns: a 170m EUTZ pilot with one character and no capital ask is SLTAR, not ARAT. A returning pilot who has barely fought is L3ARN, not SLTAR.
+
+---
+
 ## 2026-09-12 scout run
 
 Recruiter iteration on drafts (Solaris added mid-run; forum CTAs; laid-back WH). Not all of these were sent yet — the corrections are the learning.
@@ -83,6 +133,9 @@ Scout table left join actions in an after-block of warzone/YouTube. Recruiter co
 | Discord banned in OP’s country | True no-reply; do not invent TS/Mumble |
 
 ### Corp routing map (recruiter update, 2026-09-12)
+
+Superseded by the 2026-09-24 recruiter layout above.
+
 
 Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it. New API corps with no dedicated ad yet still get named; close with discord.
 

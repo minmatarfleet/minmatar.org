@@ -1,0 +1,750 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import {
+    SOLD_CLASS_ALL,
+    format_markup_pct,
+    get_sold_class_names,
+    sold_class_label,
+    sold_class_slug,
+} from '@/data/amamake-market'
+import { percent } from '@/data/amamake-market/format'
+import { get_inferred_sales_monthly_types } from '@helpers/api.minmatar.org/market'
+import { query_string } from '@helpers/string'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import AmamakeMarketVolumeSkeleton from '@components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro'
+import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Input from '@components/blocks/Input.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+    page?: number
+    sold_class?: string
+    q?: string
+    access_token?: string | false
+    /** When true, render only the swappable body (chips + results). */
+    panel_only?: boolean
+}
+
+const {
+    issue,
+    page: page_param = 1,
+    sold_class: sold_class_param = SOLD_CLASS_ALL,
+    q: q_param = '',
+    access_token = false,
+    panel_only = false,
+} = Astro.props
+
+const page = Math.max(1, Number(page_param) || 1)
+const sold_class = (sold_class_param || SOLD_CLASS_ALL).trim() || SOLD_CLASS_ALL
+const q = (q_param || '').trim()
+const is_authed = Boolean(access_token)
+
+let login_required = false
+let fetch_error: string | null = null
+let volume: Awaited<ReturnType<typeof get_inferred_sales_monthly_types>> | null = null
+
+try {
+    volume = await get_inferred_sales_monthly_types(
+        issue.volume.location_id,
+        issue.volume.year,
+        issue.volume.month,
+        {
+            page,
+            sort: 'isk',
+            sold_class,
+            q,
+            access_token,
+        },
+    )
+} catch (error) {
+    const cause = (error as Error).cause
+    // Anonymous budget exhausted → ask to log in. Authed 429 stays an error.
+    if (cause === 401 || (cause === 429 && !is_authed)) {
+        login_required = true
+    } else {
+        fetch_error = (error as Error).message
+    }
+}
+
+function volume_partial(overrides: {
+    page?: number
+    sold_class?: string
+    q?: string
+}): string {
+    const params: Record<string, string | number> = {
+        issue: issue.slug,
+        page: overrides.page ?? page,
+        sold_class: overrides.sold_class ?? sold_class,
+    }
+    const next_q = overrides.q !== undefined ? overrides.q : q
+    if (next_q) params.q = next_q
+    return translatePath(
+        `/partials/amamake_market_volume_component?${query_string(params)}`,
+    )
+}
+
+const class_counts = new Map(
+    (volume?.classes ?? []).map((entry) => [entry.slug, entry.count]),
+)
+const all_count = volume
+    ? (volume.classes?.reduce((sum, entry) => sum + entry.count, 0) ?? volume.total)
+    : null
+const chips = [
+    {
+        slug: SOLD_CLASS_ALL,
+        label: 'All',
+        count: all_count,
+    },
+    ...get_sold_class_names(issue).map((name) => {
+        const slug = sold_class_slug(name)
+        return {
+            slug,
+            label: sold_class_label(name),
+            count: class_counts.get(slug) ?? null,
+        }
+    }),
+]
+
+const rows = volume?.rows ?? []
+const max_isk = Math.max(...rows.map((row) => row.isk), 1)
+const total_pages = volume?.total_pages ?? 1
+const total = volume?.total ?? 0
+const current_page = volume?.page ?? page
+const can_prev = current_page > 1
+const can_next = Boolean(volume) && current_page < total_pages
+const show_table = !login_required && !fetch_error && volume != null
+const search_url = volume_partial({ page: 1, q: '' })
+
+const hx_body = {
+    'hx-target': '#mk-volume-body',
+    'hx-swap': 'innerHTML',
+    'hx-indicator': '#mk-volume-indicator, .mk-volume__search',
+} as const
+---
+
+{panel_only ? (
+    <div class="[ mk-volume__panel ]">
+        {login_required && (
+            <div class="[ mk-volume__gate ]">
+                <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
+                <FlexInline gap="var(--space-2xs)">
+                    <ButtonAuth size="sm">Log in</ButtonAuth>
+                    <button
+                        type="button"
+                        class="[ mk-sold-chip ]"
+                        hx-get={volume_partial({ page: 1, q: '' })}
+                        {...hx_body}
+                    >
+                        Back to page 1
+                    </button>
+                </FlexInline>
+            </div>
+        )}
+
+        {!login_required && (
+            <>
+                <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
+                    <FlexInline gap="var(--space-2xs)">
+                        {chips.map((chip) => (
+                            <button
+                                type="button"
+                                class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
+                                hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                                {...hx_body}
+                                aria-pressed={chip.slug === sold_class}
+                            >
+                                {chip.label}
+                                {chip.count != null && (
+                                    <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
+                                )}
+                            </button>
+                        ))}
+                    </FlexInline>
+                </nav>
+
+                {fetch_error && (
+                    <p class="[ mk-volume__error ]">
+                        All Items Sold table unavailable right now.{' '}
+                        <button
+                            type="button"
+                            class="[ mk-volume__retry ]"
+                            hx-get={volume_partial({})}
+                            {...hx_body}
+                        >
+                            Try again
+                        </button>
+                    </p>
+                )}
+
+                {show_table && rows.length === 0 && (
+                    <p class="[ mk-volume__empty ]">
+                        {q
+                            ? `No types match “${q}”.`
+                            : 'No types in this filter.'}
+                    </p>
+                )}
+
+                {show_table && rows.length > 0 && (
+                    <>
+                        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
+                            <table class="[ mk-table mk-table--volume ]">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Type</th>
+                                        <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
+                                        <th scope="col" class="[ mk-table__num ]">Units</th>
+                                        <th scope="col" class="[ mk-table__num ]">Orders</th>
+                                        <th scope="col" class="[ mk-table__num ]">Markup</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map((row) => (
+                                        <tr>
+                                            <td class="[ mk-table__hull ]">
+                                                <span class="[ mk-table__owner ]">
+                                                    <span class="[ mk-table__icon ]">
+                                                        <ItemPicture item_id={row.type_id} item_name={row.name} size={32} icon_quality={64} />
+                                                    </span>
+                                                    <span>
+                                                        <span class="[ mk-table__system ]">{row.name}</span>
+                                                        <span class="[ mk-table__front ]">{row.category}</span>
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            <td class="[ mk-table__bar ]" data-label="ISK sold">
+                                                <div class="[ mk-bar ]">
+                                                    <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_isk)}%`}></span>
+                                                </div>
+                                                <b>{row.isk_label}</b>
+                                            </td>
+                                            <td class="[ mk-table__num ]" data-label="Units">{number_thousand_separator(row.units)}</td>
+                                            <td class="[ mk-table__num ]" data-label="Orders">{number_thousand_separator(row.fills)}</td>
+                                            <td class="[ mk-table__num ]" data-label="Markup">
+                                                {row.markup_pct === null ? (
+                                                    <span title="No Jita price for this type">—</span>
+                                                ) : (
+                                                    <span
+                                                        class:list={[
+                                                            'mk-markup',
+                                                            row.markup_pct > 0 && 'mk-delta--up',
+                                                            row.markup_pct < 0 && 'mk-delta--down',
+                                                        ]}
+                                                        title="After Jita and freight"
+                                                    >{format_markup_pct(row.markup_pct)}</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="[ mk-volume__pager ]">
+                            <p class="[ mk-volume__meta ]">
+                                Page {current_page} of {total_pages}
+                                {total > 0 && <> · {number_thousand_separator(total)} types</>}
+                                {q && <> · matching “{q}”</>}
+                            </p>
+                            <FlexInline gap="var(--space-2xs)">
+                                {can_prev ? (
+                                    <button
+                                        type="button"
+                                        class="[ mk-sold-chip ]"
+                                        hx-get={volume_partial({ page: current_page - 1 })}
+                                        {...hx_body}
+                                    >
+                                        ← Prev
+                                    </button>
+                                ) : (
+                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
+                                )}
+                                {can_next ? (
+                                    <button
+                                        type="button"
+                                        class="[ mk-sold-chip ]"
+                                        hx-get={volume_partial({ page: current_page + 1 })}
+                                        {...hx_body}
+                                    >
+                                        Next →
+                                    </button>
+                                ) : (
+                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
+                                )}
+                            </FlexInline>
+                        </div>
+                    </>
+                )}
+            </>
+        )}
+    </div>
+) : (
+    <div class="[ mk-volume ]" id="mk-volume">
+        {login_required && (
+            <div class="[ mk-volume__gate ]">
+                <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
+                <FlexInline gap="var(--space-2xs)">
+                    <ButtonAuth size="sm">Log in</ButtonAuth>
+                    <button
+                        type="button"
+                        class="[ mk-sold-chip ]"
+                        hx-get={volume_partial({ page: 1, q: '' })}
+                        {...hx_body}
+                    >
+                        Back to page 1
+                    </button>
+                </FlexInline>
+            </div>
+        )}
+
+        {!login_required && (
+            <>
+                <div class="[ mk-volume__toolbar ]">
+                    <label class="[ mk-volume__search ]">
+                        <span class="[ visually-hidden ]">Search types</span>
+                        <Input
+                            type="search"
+                            name="q"
+                            value={q}
+                            placeholder="Search types…"
+                            size="sm"
+                            width="22rem"
+                            autocomplete="off"
+                            hx-get={search_url}
+                            hx-trigger="keyup changed delay:400ms, search"
+                            {...hx_body}
+                        >
+                            <MagnifierIcon slot="icon" />
+                        </Input>
+                    </label>
+                    <span class="[ mk-volume__search-status visually-hidden ]" aria-live="polite">
+                        Searching…
+                    </span>
+                </div>
+
+                <div class="[ mk-volume__stage ]">
+                    <div
+                        id="mk-volume-indicator"
+                        class="[ mk-volume__indicator htmx-indicator ]"
+                        aria-hidden="true"
+                    >
+                        <AmamakeMarketVolumeSkeleton />
+                    </div>
+                    <div id="mk-volume-body" class="[ mk-volume__body ]" aria-live="polite">
+                        <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
+                            <FlexInline gap="var(--space-2xs)">
+                                {chips.map((chip) => (
+                                    <button
+                                        type="button"
+                                        class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
+                                        hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                                        {...hx_body}
+                                        aria-pressed={chip.slug === sold_class}
+                                    >
+                                        {chip.label}
+                                        {chip.count != null && (
+                                            <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </FlexInline>
+                        </nav>
+
+                        {fetch_error && (
+                            <p class="[ mk-volume__error ]">
+                                All Items Sold table unavailable right now.{' '}
+                                <button
+                                    type="button"
+                                    class="[ mk-volume__retry ]"
+                                    hx-get={volume_partial({})}
+                                    {...hx_body}
+                                >
+                                    Try again
+                                </button>
+                            </p>
+                        )}
+
+                        {show_table && rows.length === 0 && (
+                            <p class="[ mk-volume__empty ]">
+                                {q
+                                    ? `No types match “${q}”.`
+                                    : 'No types in this filter.'}
+                            </p>
+                        )}
+
+                        {show_table && rows.length > 0 && (
+                            <>
+                                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
+                                    <table class="[ mk-table mk-table--volume ]">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Type</th>
+                                                <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
+                                                <th scope="col" class="[ mk-table__num ]">Units</th>
+                                                <th scope="col" class="[ mk-table__num ]">Orders</th>
+                                                <th scope="col" class="[ mk-table__num ]">Markup</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rows.map((row) => (
+                                                <tr>
+                                                    <td class="[ mk-table__hull ]">
+                                                        <span class="[ mk-table__owner ]">
+                                                            <span class="[ mk-table__icon ]">
+                                                                <ItemPicture item_id={row.type_id} item_name={row.name} size={32} icon_quality={64} />
+                                                            </span>
+                                                            <span>
+                                                                <span class="[ mk-table__system ]">{row.name}</span>
+                                                                <span class="[ mk-table__front ]">{row.category}</span>
+                                                            </span>
+                                                        </span>
+                                                    </td>
+                                                    <td class="[ mk-table__bar ]" data-label="ISK sold">
+                                                        <div class="[ mk-bar ]">
+                                                            <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_isk)}%`}></span>
+                                                        </div>
+                                                        <b>{row.isk_label}</b>
+                                                    </td>
+                                                    <td class="[ mk-table__num ]" data-label="Units">{number_thousand_separator(row.units)}</td>
+                                                    <td class="[ mk-table__num ]" data-label="Orders">{number_thousand_separator(row.fills)}</td>
+                                                    <td class="[ mk-table__num ]" data-label="Markup">
+                                                        {row.markup_pct === null ? (
+                                                            <span title="No Jita price for this type">—</span>
+                                                        ) : (
+                                                            <span
+                                                                class:list={[
+                                                                    'mk-markup',
+                                                                    row.markup_pct > 0 && 'mk-delta--up',
+                                                                    row.markup_pct < 0 && 'mk-delta--down',
+                                                                ]}
+                                                                title="After Jita and freight"
+                                                            >{format_markup_pct(row.markup_pct)}</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="[ mk-volume__pager ]">
+                                    <p class="[ mk-volume__meta ]">
+                                        Page {current_page} of {total_pages}
+                                        {total > 0 && <> · {number_thousand_separator(total)} types</>}
+                                        {q && <> · matching “{q}”</>}
+                                    </p>
+                                    <FlexInline gap="var(--space-2xs)">
+                                        {can_prev ? (
+                                            <button
+                                                type="button"
+                                                class="[ mk-sold-chip ]"
+                                                hx-get={volume_partial({ page: current_page - 1 })}
+                                                {...hx_body}
+                                            >
+                                                ← Prev
+                                            </button>
+                                        ) : (
+                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
+                                        )}
+                                        {can_next ? (
+                                            <button
+                                                type="button"
+                                                class="[ mk-sold-chip ]"
+                                                hx-get={volume_partial({ page: current_page + 1 })}
+                                                {...hx_body}
+                                            >
+                                                Next →
+                                            </button>
+                                        ) : (
+                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
+                                        )}
+                                    </FlexInline>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </>
+        )}
+    </div>
+)}
+
+<style lang="scss" is:global>
+    .mk-volume {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .mk-volume__error,
+    .mk-volume__gate p,
+    .mk-volume__meta,
+    .mk-volume__empty {
+        margin: 0;
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+
+    .mk-volume__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .mk-volume__search {
+        display: block;
+        max-width: 22rem;
+        transition: box-shadow var(--fast-transition), border-color var(--fast-transition);
+
+        &.htmx-request {
+            .input-group input,
+            :global(.input-group input) {
+                border-color: var(--highlight);
+                box-shadow: 0 0 0 1px var(--highlight);
+            }
+        }
+    }
+
+    .mk-volume__stage {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+        min-height: 14rem;
+    }
+
+    .mk-volume__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+        transition: opacity var(--fast-transition);
+    }
+
+    .mk-volume__panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .mk-volume__indicator {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        padding-block: var(--space-3xs);
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+    }
+
+    .mk-volume__indicator.htmx-request {
+        display: block;
+    }
+
+    .mk-volume__stage:has(.mk-volume__indicator.htmx-request) .mk-volume__body {
+        opacity: 0.28;
+        pointer-events: none;
+    }
+
+    .mk-volume__retry {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--highlight);
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .mk-volume__gate {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        border: solid 1px var(--border-color);
+        background: var(--light-transparency-background-mobile);
+    }
+
+    .mk-volume__pager {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .mk-sold-chips {
+        min-width: 0;
+    }
+
+    .mk-sold-chip {
+        padding: var(--space-3xs) var(--space-s);
+        border: solid 1px var(--border-color);
+        border-radius: var(--space-l);
+        background: transparent;
+        color: var(--foreground);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: border-color var(--fast-transition), color var(--fast-transition), background-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--highlight);
+            color: var(--highlight);
+            background-color: var(--light-transparency-background-mobile);
+        }
+
+        &.is-disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(.is-disabled) {
+                border-color: var(--highlight);
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .mk-sold-chip__count {
+        margin-inline-start: var(--space-3xs);
+        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .mk-table-wrap {
+        overflow-x: auto;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .mk-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: solid 1px var(--mk-rule, var(--border-color));
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+            white-space: nowrap;
+        }
+    }
+
+    .mk-table__num {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-table__bar-head {
+        min-width: 12rem;
+    }
+
+    .mk-table__bar {
+        min-width: 12rem;
+
+        > b {
+            display: block;
+            margin-top: 0.3em;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .mk-table__owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .mk-table__icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+
+        img {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .mk-table__system {
+        display: block;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .mk-table__front {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .mk-bar {
+        width: 100%;
+        height: 0.75rem;
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+    }
+
+    .mk-bar__fill {
+        display: block;
+        height: 100%;
+        min-width: 2px;
+
+        &--sold {
+            background: var(--mk-sold, var(--green));
+        }
+    }
+
+    .mk-markup {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .mk-delta--up {
+        color: var(--green);
+    }
+
+    .mk-delta--down {
+        color: var(--fleet-red);
+    }
+</style>

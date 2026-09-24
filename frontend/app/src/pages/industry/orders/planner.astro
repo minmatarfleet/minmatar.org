@@ -134,7 +134,6 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
-import Breadcrumb from '@components/blocks/Breadcrumb.astro';
 
 const page_title = product
     ? (product.quantity > 1
@@ -148,13 +147,13 @@ const default_facility = facilities[0]?.key ?? 'amamake'
 const default_refine = facilities[0]?.reprocessing?.refine_rate ?? 0
 
 const order_code = order?.public_short_code ?? (order_id > 0 ? String(order_id) : null)
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.orders.page_title'), accumulated_path: '/industry/orders/' },
     ...(order_code
-        ? [{ label: order_code, href: translatePath(`/industry/orders/${order_id}/`) }]
+        ? [{ page_title: order_code, accumulated_path: `/industry/orders/${order_id}/` }]
         : []),
-    { label: t('industry.orders.planner.page_title') },
+    { page_title: t('industry.orders.planner.page_title'), accumulated_path: Astro.url.pathname },
 ]
 const refetch_query = product
     ? (has_type_id
@@ -214,11 +213,11 @@ const planner_copy = JSON.stringify({
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
         {alert && <ShowAlert alert={alert} />}
 
         <Flexblock slot="header" gap="var(--space-s)" class="[ w-full ]">
-            <Breadcrumb items={breadcrumb_items} />
             <PageTitle>
                 {page_title}
             </PageTitle>

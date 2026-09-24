@@ -54,6 +54,11 @@ const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${q
     ...(render === 'breakdown' ? { render: 'breakdown' } : {}),
 })}`)
 
+const ORDER_CLAIM_PACKS_PARTIAL_URL = translatePath(`/partials/order_claim_packs_component?${query_string({
+    order_id: order_id,
+    item_id: item.id,
+})}`)
+
 import { number_thousand_separator } from '@helpers/numbers'
 
 // Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
@@ -156,6 +161,20 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                         label={t('i_have_blueprints')}
                         checked={has_blueprints ? 'checked' : undefined}
                     />
+
+                    <Flexblock gap='var(--space-3xs)'>
+                        <small><b>{t('build_packs')}</b></small>
+                        <small
+                            class="[ loading ]"
+                            hx-get={ORDER_CLAIM_PACKS_PARTIAL_URL}
+                            hx-trigger="intersect"
+                            hx-indicator=".loader"
+                            hx-target="this"
+                            hx-swap="outerHTML transition:true"
+                            x-show="button_dialog_open"
+                            style="display: none;"
+                        >{t('fetching_build_packs')}</small>
+                    </Flexblock>
 
                     <Flexblock gap='var(--space-3xs)'>
                         <FlexInline justification='flex-end'>

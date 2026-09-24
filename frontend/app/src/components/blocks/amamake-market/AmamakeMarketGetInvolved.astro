@@ -1,0 +1,178 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+}
+
+const { issue } = Astro.props
+
+function step_href(href: string): string {
+    if (href.startsWith('#')) return href
+    return translatePath(href)
+}
+---
+
+<section id="get-involved" class="[ mk-section ]">
+    <header class="[ mk-section__head ]">
+        <h2>How to get involved</h2>
+        <p class="[ mk-dek ]">{issue.get_involved.dek}</p>
+    </header>
+
+    <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)" class="[ mk-equal mk-steps ]">
+        {issue.get_involved.steps.map((step, index) => (
+            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)" class="[ mk-step ]">
+                <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                    <div class="[ mk-step__head ]">
+                        <span class="[ mk-step__number ]" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                        <h3>{step.title}</h3>
+                    </div>
+                    <p class="[ mk-step__text push-bottom ]">{step.text}</p>
+                    <a class="[ mk-step__link ]" href={step_href(step.href)}>{step.label} →</a>
+                </Flexblock>
+            </ComponentBlock>
+        ))}
+    </Grid>
+
+    <ComponentBlock class="[ mk-cta ]" padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <div class="[ mk-cta__inner ]">
+            <div>
+                <h3>Ready to seed?</h3>
+                <p>Alliance freight is cheaper than PushX. The live book shows what is missing.</p>
+            </div>
+            <FlexInline gap="var(--space-2xs)">
+                {issue.get_involved.actions.map((link, index) => (
+                    <Button
+                        href={step_href(link.href)}
+                        size="sm"
+                        color={index === 0 ? 'fleet-red' : 'transparent'}
+                        class={index === 0 ? undefined : '[ mk-ghost ]'}
+                    >
+                        {link.label}
+                    </Button>
+                ))}
+            </FlexInline>
+        </div>
+    </ComponentBlock>
+</section>
+
+<style lang="scss">
+    .mk-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        scroll-margin-top: var(--sticky-top);
+    }
+
+    .mk-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .mk-dek {
+        color: var(--faded);
+        font-size: var(--step-0);
+        margin: 0;
+        max-width: var(--max-text-width);
+        line-height: 1.6;
+    }
+
+    h2 {
+        font-size: var(--step-3);
+        font-family: var(--heading-font);
+        margin: 0;
+    }
+
+    h3 {
+        font-size: var(--step-1);
+        font-family: var(--heading-font);
+        margin: 0;
+    }
+
+    .mk-equal {
+        align-items: stretch;
+    }
+
+    .mk-step {
+        position: relative;
+        overflow: hidden;
+
+        > :global(.flex-block) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .mk-step__head {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-s);
+    }
+
+    .mk-step__number {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--fleet-yellow);
+        opacity: 0.85;
+    }
+
+    .mk-step__text {
+        font-size: var(--step--1);
+        line-height: 1.65;
+        margin: 0;
+        margin-block-end: auto;
+        max-width: none;
+        color: var(--foreground);
+    }
+
+    .mk-step__link {
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none !important;
+        color: var(--highlight);
+
+        &:hover,
+        &:focus-visible {
+            text-decoration: underline !important;
+        }
+    }
+
+    .mk-cta {
+        border-left: solid 3px var(--fleet-red);
+    }
+
+    .mk-cta__inner {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s) var(--space-l);
+
+        p {
+            font-size: var(--step--1);
+            color: var(--faded);
+            margin: 0;
+            max-width: var(--max-text-width);
+            line-height: 1.6;
+        }
+    }
+
+    .mk-ghost {
+        border: solid 1px color-mix(in srgb, var(--highlight) 22%, transparent) !important;
+
+        &:hover,
+        &:focus-visible {
+            border-color: color-mix(in srgb, var(--highlight) 60%, transparent) !important;
+        }
+    }
+</style>
