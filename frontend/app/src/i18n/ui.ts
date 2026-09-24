@@ -3707,6 +3707,7 @@ export const ui = {
         'analyze': 'Analyze',
         'no_killmail_analysis_unexpected_error': 'An unexpected error occurred: No killmail analysis.',
         'ship_is_no_eligible_for_srp': '⚠️ The ship of your lost is not eligible for any of the current SRP programs.',
+        'srp_character_not_on_account': 'This killmail is for a character that is not on your account. Add that character on your Account page, then submit the request again.',
         'invalid_srp_program': 'The SRP program is not valid.',
         'wrong_srp_program': '⚠️ You are submitting a killmail for **{killmail_program}** on the **{program}**. Please, select the correct program to submit your killmail.',
         'select_srp_fleet': 'Can you see the fleet you lost your ship listed here?',
