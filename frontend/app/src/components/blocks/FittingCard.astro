@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
 import type { FittingItem } from '@dtypes/layout_components';
 
 interface Props {
@@ -16,6 +19,9 @@ const {
     tags,
     ...attributes
 } = Astro.props
+
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
+import { semantic_list } from '@helpers/array';
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from "@components/compositions/Wrapper.astro";
@@ -49,12 +55,9 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
         </div>
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='var(--space-3xs)'>
-                <FlexInline gap='var(--space-3xs)'>
-                    {tags?.map(tag =>
-                        <Tag text={tag} />
-                    )}
-                </FlexInline>
-                {subtitle && <small>{subtitle}</small>}
+                <small class="[ text-balance ]">
+                    {semantic_list(lang, format_fitting_tags_line(tags, t))}
+                </small>
                 <h3>{title ? title : fitting.fitting_name}</h3>
             </Flexblock>
         </Wrapper>
