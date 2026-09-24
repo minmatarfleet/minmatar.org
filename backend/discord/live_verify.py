@@ -858,9 +858,6 @@ class LiveVerifyRunner:
         ua = UserAffiliation.objects.get(user=user)
         ua.affiliation = guest
         ua.save()
-        ucs = UserCommunityStatus.objects.get(user=user)
-        ucs.status = UserCommunityStatus.STATUS_ACTIVE
-        ucs.save()
         django_names = self.django_groups(user)
         live = self.live_role_ids(self.discord_id())
         assert "Guest" in django_names

@@ -20,6 +20,9 @@ VALID_STATUSES = {"active", "trial", "on_leave"}
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
 
+# Corp <TICKER> groups: Alliance members and Associate recruiters.
+CORPORATION_GROUP_AFFILIATION_NAMES = frozenset({"Alliance", "Associate"})
+
 # Django auth group for Discord / permissions: anyone who is chief of an active tribe.
 TRIBE_CHIEF_GROUP_NAME = "Tribe - Chief"
 
@@ -200,6 +203,33 @@ def process_bulk_community_status_row(
     return (True, None, None)
 
 
+def reconcile_community_status_for_affiliation(user: User) -> None:
+    """Clear trial/on_leave when the user is no longer Alliance."""
+    affiliation = (
+        UserAffiliation.objects.filter(user=user)
+        .select_related("affiliation")
+        .first()
+    )
+    if affiliation and affiliation.affiliation.requires_trial:
+        return
+    ucs = UserCommunityStatus.objects.filter(user=user).first()
+    if ucs is None or ucs.status not in (
+        UserCommunityStatus.STATUS_TRIAL,
+        UserCommunityStatus.STATUS_ON_LEAVE,
+    ):
+        return
+    ucs.status = UserCommunityStatus.STATUS_ACTIVE
+    ucs.save(update_fields=["status"])
+    latest = (
+        UserCommunityStatusHistory.objects.filter(user=user)
+        .order_by("-changed_at")
+        .first()
+    )
+    if latest and not latest.reason:
+        latest.reason = "No longer Alliance"
+        latest.save(update_fields=["reason"])
+
+
 def sync_user_community_groups(user: User) -> None:
     """
     Set the user's Django groups based on UserCommunityStatus and UserAffiliation.
@@ -215,11 +245,8 @@ def sync_user_community_groups(user: User) -> None:
     affiliation = UserAffiliation.objects.filter(user=user).first()
     affiliation_group = affiliation.affiliation.group if affiliation else None
 
-    try:
-        ucs = user.community_status
-        status = ucs.status
-    except UserCommunityStatus.DoesNotExist:
-        status = UserCommunityStatus.STATUS_ACTIVE
+    ucs = UserCommunityStatus.objects.filter(user=user).first()
+    status = ucs.status if ucs else UserCommunityStatus.STATUS_ACTIVE
 
     # Include ALL affiliation type groups (not just the current one) so that
     # when a user moves from e.g. Alliance → Guest, the old Alliance group is

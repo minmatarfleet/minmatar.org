@@ -17,8 +17,10 @@ from eveonline.helpers.characters import (
 from eveonline.models import EveCharacter
 
 from .helpers import (
+    CORPORATION_GROUP_AFFILIATION_NAMES,
     ensure_recruiter_application_permissions,
     process_bulk_community_status_row,
+    reconcile_community_status_for_affiliation,
     sync_tribe_chief_group_membership,
     sync_user_community_groups,
 )
@@ -87,6 +89,7 @@ def update_affiliations():
             _update_affiliation_for_user(user, affiliation_rules)
             # Always reconcile community groups so Discord strips/adds retry
             # even when the affiliation row did not change.
+            reconcile_community_status_for_affiliation(user)
             sync_user_community_groups(user)
         except Exception as e:
             log_affiliation_update_error(user, e)
@@ -102,6 +105,7 @@ def sync_community_groups():
     """
     for user in User.objects.all().iterator(chunk_size=500):
         try:
+            reconcile_community_status_for_affiliation(user)
             sync_user_community_groups(user)
         except Exception as e:  # pylint: disable=broad-except
             log_affiliation_update_error(user, e)
@@ -230,6 +234,8 @@ def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
     try:
         _update_affiliation_for_user(user, _load_affiliation_rules())
+        reconcile_community_status_for_affiliation(user)
+        sync_user_community_groups(user)
     except Exception as e:  # pylint: disable=broad-except
         log_affiliation_update_error(user, e)
 
@@ -290,8 +296,13 @@ def log_affiliation_update_error(user: User, e):
 def _user_qualifies_for_corporation_group(user, corporation_group):
     """
     Return True if this user should be in the given corporation group
-    based on group_type and character ownership.
+    based on affiliation, group_type, and character ownership.
     """
+    if not UserAffiliation.objects.filter(
+        user=user,
+        affiliation__name__in=CORPORATION_GROUP_AFFILIATION_NAMES,
+    ).exists():
+        return False
     corp = corporation_group.corporation
     group_type = (
         corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
@@ -383,6 +394,11 @@ def sync_eve_corporation_groups():
         user__isnull=False, corporation_id__isnull=False
     ).values_list("user_id", "corporation_id"):
         user_corp_ids[user_id].add(corporation_id)
+    affiliated_user_ids = set(
+        UserAffiliation.objects.filter(
+            affiliation__name__in=CORPORATION_GROUP_AFFILIATION_NAMES
+        ).values_list("user_id", flat=True)
+    )
 
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
@@ -418,12 +434,15 @@ def sync_eve_corporation_groups():
             if user_id
         }
 
-        target_user_ids = _target_user_ids_for_corporation_group(
-            corporation_group,
-            user_corp_ids,
-            recruiter_user_ids,
-            director_user_ids,
-            steward_user_ids,
+        target_user_ids = (
+            _target_user_ids_for_corporation_group(
+                corporation_group,
+                user_corp_ids,
+                recruiter_user_ids,
+                director_user_ids,
+                steward_user_ids,
+            )
+            & affiliated_user_ids
         )
         to_add = target_user_ids - in_group_user_ids
         to_remove = in_group_user_ids - target_user_ids
