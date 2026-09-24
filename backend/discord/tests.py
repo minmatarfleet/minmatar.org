@@ -159,6 +159,16 @@ class DiscordSignalTests(TestCase):
     def test_cool_off_group_creates_muted_role(self, discord_mock):
         discord_mock.get_roles.return_value = []
         discord_mock.create_role.return_value.json.return_value = {"id": 99}
+        signals.post_save.connect(
+            group_post_save,
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        signals.pre_save.connect(
+            resolve_existing_discord_role_from_server,
+            sender=DiscordRole,
+            dispatch_uid="resolve_existing_discord_role_from_server",
+        )
 
         Group.objects.create(name="Cool Off")
 
