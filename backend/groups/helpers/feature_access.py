@@ -294,6 +294,8 @@ def can_use_feature(
         return False
     if not user.is_active:
         return False
+    if user_community_status(user) == UserCommunityStatus.STATUS_COOL_OFF:
+        return False
     if user.is_superuser:
         return True
 

@@ -444,6 +444,22 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
+    def deny_role_speak_on_channels(self, role_id):
+        """Deny send and speak for a role on every text, voice, and stage channel."""
+        send_messages = 1 << 11
+        speak = 1 << 21
+        add_reactions = 1 << 6
+        send_in_threads = 1 << 38
+        deny = str(send_messages | speak | add_reactions | send_in_threads)
+        channels = self.get(f"{BASE_URL}/guilds/{self.guild_id}/channels")
+        for channel in channels:
+            if channel.get("type") not in (0, 2, 5, 13, 15):
+                continue
+            self.put(
+                f"{BASE_URL}/channels/{channel['id']}/permissions/{role_id}",
+                json={"type": 0, "allow": "0", "deny": deny},
+            )
+
     def edit_role(self, role_id, name):
         """Edit a role on a discord server"""
         return self.patch(

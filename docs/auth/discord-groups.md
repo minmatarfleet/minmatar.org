@@ -35,7 +35,7 @@ Writing a **source** (tribe membership inactive, affiliation change, community s
 | Corp groups | Desired-state beat `sync_eve_corporation_groups` (~30m) |
 | Tribe - Chief | Desired-state beat `sync_tribe_chief_group` |
 | Tribe membership | `TribeGroupMembership.save` is `atomic()` so Discord failure rolls back status; inactive sweep also retries (~2h) |
-| Affiliation / community | `UserAffiliation` / `UserCommunityStatus` saves are `atomic()`; beats `update_affiliations` + `sync_community_groups` re-run `sync_user_community_groups` |
+| Affiliation / community | `UserAffiliation` / `UserCommunityStatus` saves are `atomic()`; beats `update_affiliations` + `sync_community_groups` re-run `sync_user_community_groups`. Cool Off strips every auth group except `Cool Off`, inactivates tribe memberships, and is not cleared by affiliation reconcile. Move someone off it by changing the status. |
 
 **When adding a new group source**, pick one:
 

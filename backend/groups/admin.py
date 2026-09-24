@@ -297,7 +297,18 @@ class UserCommunityStatusAdmin(admin.ModelAdmin):
             messages.SUCCESS,
         )
 
-    actions = [approve_trial, set_on_leave]
+    @admin.action(description="Set selected to Cool Off")
+    def set_cool_off(self, request, queryset):
+        for ucs in queryset:
+            ucs.status = UserCommunityStatus.STATUS_COOL_OFF
+            ucs.save()
+        self.message_user(
+            request,
+            f"Set {queryset.count()} member(s) to Cool Off.",
+            messages.SUCCESS,
+        )
+
+    actions = [approve_trial, set_on_leave, set_cool_off]
 
 
 @admin.register(UserCommunityStatusHistory)

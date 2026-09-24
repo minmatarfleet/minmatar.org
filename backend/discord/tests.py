@@ -156,6 +156,16 @@ class DiscordSignalTests(TestCase):
             discord_mock.create_role.assert_called_with("reversegroup")
 
     @patch("discord.signals.discord")
+    def test_cool_off_group_creates_muted_role(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 99}
+
+        Group.objects.create(name="Cool Off")
+
+        discord_mock.create_role.assert_called_with("Cool Off")
+        discord_mock.deny_role_speak_on_channels.assert_called_once_with(99)
+
+    @patch("discord.signals.discord")
     def test_group_post_save_relinks_existing_role_id(self, discord_mock):
         """HF: recreating a group with an existing Discord role_id must not IntegrityError."""
         discord_mock.get_roles.return_value = [

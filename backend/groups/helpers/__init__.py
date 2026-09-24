@@ -10,12 +10,13 @@ from groups.models import (
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
-from tribes.models import Tribe, TribeGroup
+from tribes.helpers.offboarding import inactivate_tribe_membership
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 from users.helpers import offboard_group
 
 logger = logging.getLogger(__name__)
 
-VALID_STATUSES = {"active", "trial", "on_leave"}
+VALID_STATUSES = {"active", "trial", "on_leave", "cool_off"}
 
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
@@ -25,6 +26,9 @@ CORPORATION_GROUP_AFFILIATION_NAMES = frozenset({"Alliance", "Associate"})
 
 # Django auth group for Discord / permissions: anyone who is chief of an active tribe.
 TRIBE_CHIEF_GROUP_NAME = "Tribe - Chief"
+
+# Discord role for a temporary ban. Channel overwrites deny speak and send.
+COOL_OFF_GROUP_NAME = "Cool Off"
 
 # Group type to display suffix for "Corp <TICKER> [Suffix]"
 CORPORATION_GROUP_SUFFIXES = {
@@ -153,11 +157,48 @@ def offboard_corporation_groups(corporation: EveCorporation) -> None:
         offboard_group(group_id)
 
 
-def _trial_and_on_leave_groups():
-    """Get or create Trial and On Leave groups in app context so signals (e.g. Discord role) trigger."""
+def _community_status_groups():
+    """Get or create status groups so signals (e.g. Discord role) trigger."""
     trial_group, _ = AuthGroup.objects.get_or_create(name="Trial")
     on_leave_group, _ = AuthGroup.objects.get_or_create(name="On Leave")
-    return trial_group, on_leave_group
+    cool_off_group, _ = AuthGroup.objects.get_or_create(
+        name=COOL_OFF_GROUP_NAME
+    )
+    return trial_group, on_leave_group, cool_off_group
+
+
+def user_is_on_cool_off(user: User) -> bool:
+    """True when the user is in a manual cool-off and must be moved off by hand."""
+    return UserCommunityStatus.objects.filter(
+        user=user,
+        status=UserCommunityStatus.STATUS_COOL_OFF,
+    ).exists()
+
+
+def _strip_for_cool_off(user: User, cool_off_group) -> None:
+    """Drop every auth group except Cool Off, and inactivate tribe memberships."""
+    # Local import: discord.signals imports COOL_OFF_GROUP_NAME from this module.
+    from discord.signals import (  # pylint: disable=import-outside-toplevel
+        ensure_cool_off_discord_role,
+    )
+
+    ensure_cool_off_discord_role(cool_off_group)
+    desired_pk = cool_off_group.pk
+    current_pks = set(user.groups.values_list("pk", flat=True))
+    for group in AuthGroup.objects.filter(pk__in=current_pks - {desired_pk}):
+        user.groups.remove(group)
+    if desired_pk not in current_pks:
+        user.groups.add(cool_off_group)
+
+    open_memberships = TribeGroupMembership.objects.filter(
+        user=user,
+        status__in=(
+            TribeGroupMembership.STATUS_ACTIVE,
+            TribeGroupMembership.STATUS_PENDING,
+        ),
+    )
+    for membership in open_memberships:
+        inactivate_tribe_membership(membership, reason="cool_off")
 
 
 def process_bulk_community_status_row(
@@ -204,7 +245,10 @@ def process_bulk_community_status_row(
 
 
 def reconcile_community_status_for_affiliation(user: User) -> None:
-    """Clear trial/on_leave when the user is no longer Alliance."""
+    """Clear trial/on_leave when the user is no longer Alliance.
+
+    Cool Off is left alone. Someone has to change that status by hand.
+    """
     affiliation = (
         UserAffiliation.objects.filter(user=user)
         .select_related("affiliation")
@@ -236,17 +280,23 @@ def sync_user_community_groups(user: User) -> None:
     Trial: affiliation group + Trial group.
     Active: affiliation group only.
     On Leave: On Leave group only (no affiliation group).
+    Cool Off: Cool Off group only. Every other auth group is removed, and
+    open tribe memberships are inactivated. The status is not cleared here.
     Only adds/removes groups when membership actually changes to avoid Discord overhead.
     Per-group add/remove so Discord fail-closed errors on one group do not skip
     the rest of this user's diff (reconciler retries remaining). See
     docs/auth/discord-groups.md.
     """
-    trial_group, on_leave_group = _trial_and_on_leave_groups()
+    trial_group, on_leave_group, cool_off_group = _community_status_groups()
     affiliation = UserAffiliation.objects.filter(user=user).first()
     affiliation_group = affiliation.affiliation.group if affiliation else None
 
     ucs = UserCommunityStatus.objects.filter(user=user).first()
     status = ucs.status if ucs else UserCommunityStatus.STATUS_ACTIVE
+
+    if status == UserCommunityStatus.STATUS_COOL_OFF:
+        _strip_for_cool_off(user, cool_off_group)
+        return
 
     # Include ALL affiliation type groups (not just the current one) so that
     # when a user moves from e.g. Alliance → Guest, the old Alliance group is
@@ -255,7 +305,7 @@ def sync_user_community_groups(user: User) -> None:
         AuthGroup.objects.filter(affiliationtype__isnull=False).distinct()
     )
     community_groups = list(
-        {g for g in (trial_group, on_leave_group) if g}
+        {g for g in (trial_group, on_leave_group, cool_off_group) if g}
         | set(all_affiliation_groups)
     )
     if not community_groups:
@@ -310,6 +360,12 @@ def sync_tribe_chief_group_membership() -> None:
         chief_id__isnull=False,
     ).values_list("chief_id", flat=True)
     desired_ids = set(tribe_chief_ids) | set(tribe_group_chief_ids)
+    cool_off_ids = set(
+        UserCommunityStatus.objects.filter(
+            status=UserCommunityStatus.STATUS_COOL_OFF
+        ).values_list("user_id", flat=True)
+    )
+    desired_ids -= cool_off_ids
     current_ids = set(chief_group.user_set.values_list("id", flat=True))
     to_add = desired_ids - current_ids
     to_remove = current_ids - desired_ids

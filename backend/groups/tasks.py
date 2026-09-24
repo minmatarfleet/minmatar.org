@@ -28,6 +28,7 @@ from .models import (
     AffiliationType,
     EveCorporationGroup,
     UserAffiliation,
+    UserCommunityStatus,
 )
 
 discord = DiscordClient()
@@ -399,6 +400,11 @@ def sync_eve_corporation_groups():
             affiliation__name__in=CORPORATION_GROUP_AFFILIATION_NAMES
         ).values_list("user_id", flat=True)
     )
+    cool_off_ids = set(
+        UserCommunityStatus.objects.filter(
+            status=UserCommunityStatus.STATUS_COOL_OFF
+        ).values_list("user_id", flat=True)
+    )
 
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
@@ -444,6 +450,7 @@ def sync_eve_corporation_groups():
             )
             & affiliated_user_ids
         )
+        target_user_ids -= cool_off_ids
         to_add = target_user_ids - in_group_user_ids
         to_remove = in_group_user_ids - target_user_ids
 
@@ -487,13 +494,17 @@ def sync_user_corporation_groups(user: User) -> None:
 
     Used by Discord role refresh so corp roles do not wait for the :19/:49 beat.
     """
+    on_cool_off = UserCommunityStatus.objects.filter(
+        user=user,
+        status=UserCommunityStatus.STATUS_COOL_OFF,
+    ).exists()
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
     ):
         if not corporation_group.corporation:
             continue
         group = corporation_group.group
-        qualifies = _user_qualifies_for_corporation_group(
+        qualifies = not on_cool_off and _user_qualifies_for_corporation_group(
             user, corporation_group
         )
         in_group = user.groups.filter(pk=group.id).exists()

@@ -30,15 +30,17 @@ class AffiliationType(models.Model):
 
 
 class UserCommunityStatus(models.Model):
-    """Current community status for a user (trial, active, on_leave). Overrides effective group."""
+    """Current community status for a user. Overrides effective group."""
 
     STATUS_ACTIVE = "active"
     STATUS_TRIAL = "trial"
     STATUS_ON_LEAVE = "on_leave"
+    STATUS_COOL_OFF = "cool_off"
     STATUS_CHOICES = [
         (STATUS_ACTIVE, "Active"),
         (STATUS_TRIAL, "Trial"),
         (STATUS_ON_LEAVE, "On Leave"),
+        (STATUS_COOL_OFF, "Cool Off"),
     ]
 
     user = models.OneToOneField(
@@ -70,10 +72,12 @@ class UserCommunityStatusHistory(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_TRIAL = "trial"
     STATUS_ON_LEAVE = "on_leave"
+    STATUS_COOL_OFF = "cool_off"
     STATUS_CHOICES = [
         (STATUS_ACTIVE, "Active"),
         (STATUS_TRIAL, "Trial"),
         (STATUS_ON_LEAVE, "On Leave"),
+        (STATUS_COOL_OFF, "Cool Off"),
     ]
 
     user = models.ForeignKey(

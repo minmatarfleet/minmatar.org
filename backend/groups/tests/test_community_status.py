@@ -1,9 +1,12 @@
 """Tests for UserCommunityStatus, sync_user_community_groups, and history."""
 
+from unittest.mock import patch
+
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
 from app.test import TestCase
+from discord.signals import group_post_save, user_group_changed
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.helpers.characters import set_primary_character
 from esi.models import Token
@@ -12,12 +15,27 @@ from groups.helpers import (
     reconcile_community_status_for_affiliation,
     sync_user_community_groups,
 )
+from groups.helpers.feature_access import can_use_feature
 from groups.models import (
     AffiliationType,
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+
+
+def _reconnect_discord_group_signals():
+    signals.post_save.connect(
+        group_post_save,
+        sender=Group,
+        dispatch_uid="group_post_save",
+    )
+    signals.m2m_changed.connect(
+        user_group_changed,
+        sender=User.groups.through,
+        dispatch_uid="user_group_changed",
+    )
 
 
 class SyncUserCommunityGroupsTestCase(TestCase):
@@ -45,6 +63,10 @@ class SyncUserCommunityGroupsTestCase(TestCase):
             group=self.affiliation_group,
             priority=1,
         )
+
+    def tearDown(self):
+        _reconnect_discord_group_signals()
+        super().tearDown()
 
     def test_active_adds_affiliation_group_only(self):
         UserAffiliation.objects.create(
@@ -125,6 +147,67 @@ class SyncUserCommunityGroupsTestCase(TestCase):
         self.assertIsNotNone(history)
         self.assertEqual(history.reason, "No longer Alliance")
 
+    def test_cool_off_strips_groups_roles_and_tribes(self):
+        extra_group = Group.objects.create(name="Mining Tribe")
+        self.user.groups.add(self.affiliation_group, extra_group)
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.affiliation_type
+        )
+        tribe = Tribe.objects.create(name="Supply", slug="supply-cool-off")
+        tribe_group = TribeGroup.objects.create(
+            tribe=tribe,
+            name="Mining",
+            code="supply.mining-cool-off",
+            group=extra_group,
+        )
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        with patch(
+            "discord.signals.ensure_cool_off_discord_role"
+        ) as ensure_role:
+            UserCommunityStatus.objects.create(
+                user=self.user, status=UserCommunityStatus.STATUS_COOL_OFF
+            )
+
+        ensure_role.assert_called_once()
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertEqual(group_names, {"Cool Off"})
+        membership = TribeGroupMembership.objects.get(user=self.user)
+        self.assertEqual(
+            membership.status, TribeGroupMembership.STATUS_INACTIVE
+        )
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_superuser"])
+        self.assertFalse(can_use_feature(self.user, "fleets.view"))
+
+    def test_cool_off_is_not_cleared_by_affiliation_reconcile(self):
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        guest_type = AffiliationType.objects.create(
+            name="Guest",
+            description="",
+            image_url="",
+            group=guest_group,
+            priority=2,
+            requires_trial=False,
+            default=True,
+        )
+        UserAffiliation.objects.create(user=self.user, affiliation=guest_type)
+        with patch("discord.signals.ensure_cool_off_discord_role"):
+            UserCommunityStatus.objects.create(
+                user=self.user, status=UserCommunityStatus.STATUS_COOL_OFF
+            )
+
+        reconcile_community_status_for_affiliation(self.user)
+
+        ucs = UserCommunityStatus.objects.get(user=self.user)
+        self.assertEqual(ucs.status, UserCommunityStatus.STATUS_COOL_OFF)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertEqual(group_names, {"Cool Off"})
+        self.assertNotIn("Guest", group_names)
+
     def test_no_status_treated_as_active(self):
         UserAffiliation.objects.create(
             user=self.user, affiliation=self.affiliation_type
@@ -148,6 +231,10 @@ class UserCommunityStatusHistoryTestCase(TestCase):
             dispatch_uid="user_group_changed",
         )
         super().setUp()
+
+    def tearDown(self):
+        _reconnect_discord_group_signals()
+        super().tearDown()
 
     def test_history_created_on_status_change(self):
         ucs = UserCommunityStatus.objects.create(
@@ -215,6 +302,10 @@ class RequiresTrialTestCase(TestCase):
         self.char.token = token
         self.char.save()
         set_primary_character(self.user, self.char)
+
+    def tearDown(self):
+        _reconnect_discord_group_signals()
+        super().tearDown()
 
     def test_requires_trial_creates_trial_status(self):
         self.assertFalse(

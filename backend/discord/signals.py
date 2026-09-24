@@ -21,6 +21,7 @@ from discord.helpers import (
     remove_all_roles_from_guild_member,
 )
 from discord.sync_context import is_discord_group_sync_disabled
+from groups.helpers import COOL_OFF_GROUP_NAME
 
 from .models import DiscordRole, DiscordUser
 
@@ -107,11 +108,31 @@ def _ensure_discord_role_for_group(group: Group) -> DiscordRole:
         return claimed
 
 
+def ensure_cool_off_discord_role(group: Group) -> DiscordRole:
+    """Create the Cool Off Discord role the first time it is missing, then mute it."""
+    had_role = (
+        DiscordRole.objects.filter(group=group).exclude(role_id=0).exists()
+    )
+    role = _ensure_discord_role_for_group(group)
+    if had_role or not role.role_id:
+        return role
+    try:
+        discord.deny_role_speak_on_channels(role.role_id)
+    except Exception:
+        logger.exception(
+            "Failed to deny speak for Cool Off role %s", role.role_id
+        )
+    return role
+
+
 @receiver(signals.post_save, sender=Group, dispatch_uid="group_post_save")
 def group_post_save(
     sender, instance, created, **kwargs
 ):  # pylint: disable=unused-argument
     logger.info("Group saved, creating / updating role")
+    if instance.name == COOL_OFF_GROUP_NAME:
+        ensure_cool_off_discord_role(instance)
+        return
     _ensure_discord_role_for_group(instance)
 
 
