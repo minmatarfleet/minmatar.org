@@ -1,4 +1,4 @@
-interface WarzoneReportJsonLdOptions {
+interface AmamakeMarketJsonLdOptions {
     canonical_url: string
     site_name: string
     site_origin: string
@@ -7,7 +7,7 @@ interface WarzoneReportJsonLdOptions {
     meta_image: string
 }
 
-export function build_warzone_report_json_ld(options: WarzoneReportJsonLdOptions) {
+export function build_amamake_market_json_ld(options: AmamakeMarketJsonLdOptions) {
     const {
         canonical_url,
         site_name,
@@ -79,13 +79,14 @@ export function build_warzone_report_json_ld(options: WarzoneReportJsonLdOptions
                 },
                 keywords: [
                     'EVE Online',
+                    'Amamake',
+                    'Amamake market',
+                    'amamake economic report',
                     'Warzone Report',
-                    'Frontline Report',
-                    'Amarr',
-                    'Minmatar',
+                    'market report',
+                    'structure market',
                     'faction warfare',
                     'YC128',
-                    'Hed',
                     'Minmatar Fleet',
                 ].join(', '),
                 inLanguage: 'en',

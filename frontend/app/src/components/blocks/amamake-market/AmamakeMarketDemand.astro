@@ -1,0 +1,500 @@
+---
+import type { AmamakeMarketIssue, MarketMilitiaId } from '@/data/amamake-market/types'
+import { percent } from '@/data/amamake-market/format'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+}
+
+const { issue } = Astro.props
+
+function militia_label(id: MarketMilitiaId): string {
+    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
+}
+
+const vs_label = `vs ${issue.previous_period_label}`
+const max_hull = Math.max(...issue.hulls.rows.flatMap((row) => [row.sold, row.lost]), 1)
+const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 1)
+---
+
+<section id="demand" class="[ mk-section ]">
+    <header class="[ mk-section__head ]">
+        <h2>Demand</h2>
+    </header>
+
+    <div class="[ mk-demand-block ]">
+        <header class="[ mk-subhead ]">
+            <h3>Sold vs lost</h3>
+            <p class="[ mk-dek ]">{issue.hulls.dek}</p>
+        </header>
+        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold in Amamake versus lost in the warzone">
+        <table class="[ mk-table mk-table--hulls ]">
+            <thead>
+                <tr>
+                    <th scope="col">Hull</th>
+                    <th scope="col" class="[ mk-table__bar-head ]">Sold in Amamake</th>
+                    <th scope="col" class="[ mk-table__bar-head ]">Died in the warzone</th>
+                    <th scope="col" class="[ mk-table__num ]">Sold per loss</th>
+                </tr>
+            </thead>
+            <tbody>
+                {issue.hulls.rows.map((row) => (
+                    <tr>
+                        <td class="[ mk-table__hull ]">
+                            <span class="[ mk-table__owner ]">
+                                <span class="[ mk-table__icon ]">
+                                    <ItemPicture item_id={row.typeId} item_name={row.name} size={32} icon_quality={64} />
+                                </span>
+                                <span>
+                                    <span class="[ mk-table__system ]">{row.name}</span>
+                                    <span class="[ mk-table__front ]">{row.group}</span>
+                                </span>
+                            </span>
+                        </td>
+                        <td class="[ mk-table__bar ]" data-label="Sold in Amamake">
+                            <div class="[ mk-bar ]">
+                                <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.sold, max_hull)}%`}></span>
+                            </div>
+                            <b>
+                                {number_thousand_separator(row.sold)}
+                                {row.sold_vs !== 0 && (
+                                    <span class:list={['mk-compare__trend', row.sold_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.sold_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.sold_vs))}</span>
+                                )}
+                            </b>
+                        </td>
+                        <td class="[ mk-table__bar ]" data-label="Died in the warzone">
+                            <div class="[ mk-bar ]">
+                                <span class="[ mk-bar__fill mk-bar__fill--lost ]" style={`width: ${percent(row.lost, max_hull)}%`}></span>
+                            </div>
+                            <b>
+                                {number_thousand_separator(row.lost)}
+                                {row.lost_vs !== 0 && (
+                                    <span class:list={['mk-compare__trend', row.lost_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.lost_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.lost_vs))}</span>
+                                )}
+                            </b>
+                        </td>
+                        <td class="[ mk-table__ratio ]">
+                            <span class="[ visually-hidden ]">Sold per loss</span>
+                            {row.ratio === null ? '—' : (
+                                <span class:list={['mk-ratio', row.ratio >= 1 ? 'mk-ratio--covered' : 'mk-ratio--short']}>{row.ratio.toFixed(1)}×</span>
+                            )}
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <div class="[ mk-demand-block ]">
+        <header class="[ mk-subhead ]">
+            <h3>Ships destroyed by system</h3>
+            <p class="[ mk-dek ]">{issue.catchment.dek}</p>
+        </header>
+        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
+            <table class="[ mk-table mk-table--traffic ]">
+            <thead>
+                <tr>
+                    <th scope="col">System</th>
+                    <th scope="col" class="[ mk-table__bar-head ]">Ships destroyed</th>
+                    <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
+                    <th scope="col" class="[ mk-table__num ]">ISK</th>
+                </tr>
+            </thead>
+            <tbody>
+                {issue.catchment.rows.map((row) => (
+                    <tr>
+                        <td>
+                            <span class="[ mk-table__owner ]">
+                                <span class:list={['mk-faction-mark', `mk-faction-mark--${row.holds_today}`]} title={`Held by ${militia_label(row.holds_today)}`} aria-label={`Held by ${militia_label(row.holds_today)}`} role="img">
+                                    {row.holds_today === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                </span>
+                                <span>
+                                    <span class="[ mk-table__system ]">
+                                        <a href={row.href} target="_blank" rel="nofollow noopener noreferrer">{row.system}</a>
+                                    </span>
+                                    <span class="[ mk-table__front ]">{row.region}</span>
+                                </span>
+                            </span>
+                        </td>
+                        <td class="[ mk-table__bar ]">
+                            <div class="[ mk-bar ]">
+                                <span class:list={['mk-bar__fill', `mk-bar__fill--${row.holds_today}`]} style={`width: ${percent(row.ships, max_catchment)}%`}></span>
+                            </div>
+                            <b>{number_thousand_separator(row.ships)}</b>
+                        </td>
+                        <td class="[ mk-table__num ]">
+                            <span class:list={['mk-delta', row.ships_vs >= 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                                <span class="[ mk-delta__arrow ]">{row.ships_vs >= 0 ? '▲' : '▼'}</span>
+                                <span class="[ mk-delta__num ]">{number_thousand_separator(Math.abs(row.ships_vs))}</span>
+                            </span>
+                        </td>
+                        <td class="[ mk-table__num ]">{row.isk_label}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</section>
+
+<style lang="scss">
+    .mk-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        scroll-margin-top: var(--sticky-top);
+    }
+
+    .mk-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .mk-dek {
+        color: var(--faded);
+        font-size: var(--step-0);
+        margin: 0;
+        max-width: var(--max-text-width);
+        line-height: 1.6;
+    }
+
+    h2 {
+        font-size: var(--step-3);
+        font-family: var(--heading-font);
+        margin: 0;
+    }
+
+    h3 {
+        font-size: var(--step-1);
+        font-family: var(--heading-font);
+        margin: 0;
+    }
+
+    .mk-demand-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .mk-demand-block + .mk-demand-block {
+        padding-top: var(--space-l);
+        border-top: solid 1px var(--mk-rule);
+    }
+
+    .mk-subhead {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .mk-compare__trend {
+        margin-inline: 0.4em;
+        font-size: var(--step--2);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-delta {
+        display: inline-grid;
+        grid-template-columns: 1em 5ch;
+        gap: 0.3em;
+        align-items: baseline;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-delta--up {
+        color: var(--green);
+    }
+
+    .mk-delta--down {
+        color: var(--fleet-red);
+    }
+
+    .mk-delta__arrow {
+        text-align: center;
+    }
+
+    .mk-delta__num {
+        text-align: right;
+    }
+
+    .mk-ratio {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+
+        &--covered {
+            color: var(--green);
+        }
+
+        &--short {
+            color: var(--fleet-red);
+        }
+    }
+
+    .mk-bar {
+        width: 100%;
+        height: 0.75rem;
+        background: var(--mk-track);
+    }
+
+    .mk-bar__fill {
+        display: block;
+        height: 100%;
+        min-width: 2px;
+
+        &--minmatar {
+            background: var(--mk-minmatar);
+        }
+
+        &--amarr {
+            background: var(--mk-amarr);
+        }
+
+        &--sold {
+            background: var(--mk-sold);
+        }
+
+        &--lost {
+            background: var(--mk-lost);
+        }
+    }
+
+    .mk-table-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        overflow-x: auto;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .mk-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: left;
+            vertical-align: middle;
+            background: transparent;
+            border: none;
+            border-bottom: solid 1px var(--mk-rule);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover td {
+            background: color-mix(in srgb, var(--highlight) 2.5%, transparent);
+        }
+
+        td:first-child {
+            white-space: nowrap;
+        }
+
+        @media screen and (max-width: 720px) {
+            th,
+            td {
+                padding: var(--space-xs) var(--space-2xs);
+            }
+        }
+    }
+
+    .mk-table__num,
+    .mk-table__ratio {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-table__bar-head {
+        min-width: 12rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 8rem;
+        }
+    }
+
+    .mk-table__bar {
+        width: 34%;
+        min-width: 12rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 0;
+            width: auto;
+        }
+
+        > b {
+            display: block;
+            margin-top: 0.3em;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .mk-table__system {
+        display: block;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .mk-table__front {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .mk-table__owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .mk-table__icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+
+        :global(img) {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .mk-faction-mark {
+        display: block;
+        flex: 0 0 auto;
+        width: 1.5rem;
+        height: 1.5rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        &--minmatar :global(path) {
+            fill: var(--mk-minmatar);
+        }
+
+        &--amarr :global(path) {
+            fill: var(--mk-amarr);
+        }
+    }
+
+    .mk-table--hulls {
+        @media screen and (max-width: 720px) {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-areas:
+                    'hull ratio'
+                    'sold sold'
+                    'lost lost';
+                column-gap: var(--space-s);
+                row-gap: var(--space-xs);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--mk-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                background: transparent;
+                white-space: normal !important;
+                min-width: 0;
+                width: auto;
+            }
+
+            td.mk-table__hull {
+                grid-area: hull;
+            }
+
+            td.mk-table__ratio {
+                grid-area: ratio;
+                align-self: center;
+                text-align: right !important;
+            }
+
+            td.mk-table__ratio .mk-ratio {
+                font-size: var(--step-1);
+            }
+
+            td[data-label='Sold in Amamake'] {
+                grid-area: sold;
+            }
+
+            td[data-label='Died in the warzone'] {
+                grid-area: lost;
+            }
+
+            td.mk-table__bar {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                grid-template-areas:
+                    'label value'
+                    'bar bar';
+                align-items: baseline;
+                column-gap: var(--space-s);
+                row-gap: var(--space-3xs);
+            }
+
+            td.mk-table__bar[data-label]::before {
+                grid-area: label;
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin: 0;
+            }
+
+            td.mk-table__bar[data-label='Sold in Amamake']::before {
+                content: 'Sold';
+            }
+
+            td.mk-table__bar[data-label='Died in the warzone']::before {
+                content: 'Lost';
+            }
+
+            td.mk-table__bar > .mk-bar {
+                grid-area: bar;
+            }
+
+            td.mk-table__bar > b {
+                grid-area: value;
+                margin: 0;
+                text-align: right;
+                font-size: var(--step-0);
+                font-variant-numeric: tabular-nums;
+            }
+        }
+    }
+</style>

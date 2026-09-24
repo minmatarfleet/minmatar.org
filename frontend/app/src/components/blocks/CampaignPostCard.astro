@@ -19,6 +19,7 @@ const href = translatePath(campaign.path)
 const name = t(campaign.nameKey as any)
 const period = t(campaign.periodKey as any)
 const view_label = t('campaigns.view_report')
+const isk_label = t((campaign.isk_label_key ?? 'destroyed') as any)
 
 let kind_label: string
 let kind_color: TagColors
@@ -32,8 +33,20 @@ switch (campaign.kind) {
         kind_color = 'fleet-yellow'
         break
     case 'warzone':
-        kind_label = t('content.kind.warzone')
-        kind_color = 'alliance-blue'
+        switch (campaign.warzone_type) {
+            case 'frontline':
+                kind_label = t('content.kind.warzone.frontline')
+                kind_color = 'alliance-blue'
+                break
+            case 'economic':
+                kind_label = t('content.kind.warzone.economic')
+                kind_color = 'fleet-yellow'
+                break
+            default: {
+                const _exhaustive: never = campaign.warzone_type
+                throw new Error(`Unhandled warzone report type: ${_exhaustive}`)
+            }
+        }
         break
     default: {
         const _exhaustive: never = campaign.kind
@@ -71,7 +84,7 @@ import Tag from '@components/blocks/Tag.astro'
         </a>
         {show_isk && (
             <Flexblock gap='0'>
-                <small>{t('destroyed')}</small>
+                <small>{isk_label}</small>
                 <p
                     class="[ isk-stat ]"
                     data-tippy-content={number_name(campaign.iskDestroyed, lang)}

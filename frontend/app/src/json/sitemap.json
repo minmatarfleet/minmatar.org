@@ -183,21 +183,35 @@
         "path": "/warzone/",
         "publish": true,
         "description": "page_finder.warzone.description",
-        "keywords": ["warzone", "faction warfare", "Minmatar", "Amarr", "YC128"]
+        "keywords": ["warzone", "frontline report", "faction warfare", "Minmatar", "Amarr", "YC128"]
     },
     {
         "slug": "warzone.yc128_07",
         "path": "/warzone/yc128-07/",
         "publish": true,
         "description": "page_finder.warzone.yc128_07.description",
-        "keywords": ["warzone", "July YC128", "Auga", "Hed", "faction warfare"]
+        "keywords": ["warzone", "frontline report", "July YC128", "Auga", "Hed", "faction warfare"]
     },
     {
         "slug": "warzone.yc128_08",
         "path": "/warzone/yc128-08/",
         "publish": true,
         "description": "page_finder.warzone.yc128_08.description",
-        "keywords": ["warzone", "August YC128", "Kamela", "Kourmonen", "faction warfare"]
+        "keywords": ["warzone", "frontline report", "August YC128", "Kamela", "Kourmonen", "faction warfare"]
+    },
+    {
+        "slug": "amamake_market",
+        "path": "/amamake-market/",
+        "publish": true,
+        "description": "page_finder.amamake_market.description",
+        "keywords": ["Amamake", "amamake economic report", "warzone", "Amamake market", "structure market", "faction warfare", "Minmatar Fleet"]
+    },
+    {
+        "slug": "amamake_market.yc128_08",
+        "path": "/amamake-market/yc128-08/",
+        "publish": true,
+        "description": "page_finder.amamake_market.yc128_08.description",
+        "keywords": ["Amamake", "amamake economic report", "August YC128", "market report", "keepstar", "warzone"]
     },
     {
         "slug": "campaigns.providence",

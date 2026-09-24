@@ -1637,6 +1637,44 @@ export interface InferredSalesVolume {
     top_movers:     InferredSalesTopMover[];
 }
 
+export interface InferredSalesMonthlyVolumeClass {
+    slug: string
+    label: string
+    count: number
+}
+
+export interface InferredSalesMonthlyVolumeRow {
+    type_id: number
+    name: string
+    group: string
+    category: string
+    fills: number
+    units: number
+    isk: number
+    isk_label: string
+    amamake_avg: number
+    jita: number | null
+    freight: number
+    markup_pct: number | null
+    extra_isk: number | null
+    extra_isk_label: string | null
+}
+
+export interface InferredSalesMonthlyVolumePage {
+    location_id: number
+    year: number
+    month: number
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+    sort: string
+    sold_class: string
+    q: string
+    classes: InferredSalesMonthlyVolumeClass[]
+    rows: InferredSalesMonthlyVolumeRow[]
+}
+
 export interface OrderAssignmentsBreakdownItem {
     name:                   string;
     type_id:                number;
