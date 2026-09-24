@@ -212,9 +212,9 @@ export const ui = {
         'amamake_market.yc128_08.name': 'Amamake Economic Report · August YC128',
         'amamake_market.yc128_08.page_title': 'Amamake Economic Report · August YC128',
         'amamake_market.yc128_08.period': '1–31 Aug YC128',
-        'amamake_market.yc128_08.leading_text': 'Kamela ate capitals. Amamake sold destroyers.',
+        'amamake_market.yc128_08.leading_text': 'What sold at the Amamake keepstar, and what died in the warzone.',
         'amamake_market.yc128_08.meta_title': 'Amamake Economic Report · August YC128 | {site}',
-        'amamake_market.yc128_08.meta_description': 'August YC128 Amamake Economic Report — inferred structure fills at New Eden’s sixth-largest station market, died vs sold, import vs local, and the warzone around the undock. Published by Minmatar Fleet.',
+        'amamake_market.yc128_08.meta_description': 'August YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone. Published by Minmatar Fleet.',
         'amamake_market.latest.page_title': 'Amamake Economic Report',
         'amamake_market.page_title': 'Amamake Economic Report',
 
@@ -2405,8 +2405,8 @@ export const ui = {
         'page_finder.warzone.description': 'Monthly Amarr–Minmatar Frontline Report — who won the month and where people fought.',
         'page_finder.warzone.yc128_07.description': 'July YC128 Frontline Report — Amarr +3 systems, Hed killmails, Auga siege.',
         'page_finder.warzone.yc128_08.description': 'August YC128 Frontline Report — Minmatar +3 systems, the push into Kourmonen and Kamela, and the 350B Kamela brawl.',
-        'page_finder.amamake_market.description': 'Monthly Amamake Economic Report — what sold at the Amamake freeport, what died on the undock, and what to haul or build.',
-        'page_finder.amamake_market.yc128_08.description': 'August YC128 Amamake Economic Report — inferred fills, died vs sold, import vs local, and the Kamela capital brawl one jump off the shop.',
+        'page_finder.amamake_market.description': 'Monthly Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
+        'page_finder.amamake_market.yc128_08.description': 'August YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':

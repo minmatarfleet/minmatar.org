@@ -38,7 +38,8 @@ Working dir for every command below: `frontend/app`.
    renders every section from an `AmamakeMarketIssue` object. A new month writes
    **data**, not markup. If a section needs a real change, change the one component.
 4. **Generated vs hand-authored.** `<slug>-boards.ts` is machine-generated (never hand
-   edit — re-run). `<slug>.ts` is the editorial layer: the opening and section deks.
+   edit — re-run). `<slug>.ts` is the editorial layer: short section deks,
+   How to get involved steps, and the footer Methodology entries.
    Interpolate generated
    numbers into prose (template strings) instead of typing them, so a regenerated
    extract never leaves stale figures in the text. There is no Focus section on
@@ -84,12 +85,16 @@ Example: September YC128 → year 2026, month 9, slug `yc128-09`.
 2. **Author the issue file** `src/data/amamake-market/yc128-09.ts`: copy the previous
    month's `.ts`, change the imports to `./yc128-09-boards`, update `SLUG`,
    `published_at` (last day of the month), `period_utc`, `previous_period_label`,
-   `context_as_of`. Rewrite the editorial fields: `headline`, `opening`, and section deks
-   and footnotes on the briefing (The month, Market sales overview, What sold,
-   Items worth seeding, Market Capture). Keep every number that exists in the boards
-   file interpolated, not typed.
-   The Amamake Economic report has no Focus, Build in Amamake, Loyalty points,
-   Contracts, Import vs local, Shelf, Use the hub, or About the numbers sections.
+   `context_as_of`. Rewrite short editorial deks (what the section is, not how
+   the numbers were counted), copy last month's How to get involved steps
+   (interpolate `FREIGHT_ISK_PER_M3` / `FREIGHT_ROUTE_LABEL`), plus the
+   Methodology entries in the footer.
+   Keep every number that exists in the boards file interpolated, not typed.
+   The Amamake Economic report has no The month, headline, Focus, Build in
+   Amamake, Loyalty points, Contracts, Import vs local, Shelf, or Use the hub
+   sections. Do not put method footnotes under sections — they live only in
+   the full-width footer. Filter SKINs and blueprints out of ranked sales
+   surfaces (`sales_filters.ts`); do not hand-edit `*-boards.ts`.
 
 3. **Register the issue:** add it to `ISSUES` in `src/data/amamake-market/index.ts`
    (latest sorts first automatically) and add a `kind: 'warzone'` /
@@ -108,37 +113,30 @@ Example: September YC128 → year 2026, month 9, slug `yc128-09`.
 
 ## What each section shows
 
-- **Hero**: three stat tiles — inferred ISK sold (▲/▼ % vs prior month), inferred profit
-  (markup vs Jita minus Jita→Amamake freight, ▲/▼ ISK vs prior month),
-  and ships destroyed at the hub (Amamake only — the shop fueling the warzone). No Focus tile.
-- **The month**: editorial opening paragraphs.
-- **Market sales overview**: a per-day ISK strip (one column per calendar day; hatched columns
-  are days with no snapshots — visible gaps are a feature) and a sell-orders-by-class table
-  (Ships / Rigs / Modules / Charges / …) with MoM ISK, fills, units, and volume-weighted
-  average markup versus Jita.
-- **What sold**: top types by inferred ISK with type icons, units × fills, MoM %, average
-  markup versus Jita (em-dash when Jita is missing), and a
-  NEW badge for types with no fills the prior month. Class chips (htmx) swap the
-  list: All is the overall top ten; each class is that bucket's top ten.
-  Classes come from `bucket_for_type` in the extractor: Ships / Rigs / Modules /
-  Charges / Drones / **PLEX adjacent** (skill injectors, Skill Extractor, PLEX, MPT) /
-  Implants / Materials (including harvested gas, fullerite, magmatic gas) / Other
-  (blueprints fold here — no Blueprints chip).
-- **Items worth seeding**: types whose inferred fill average beats Jita plus freight,
-  with enough volume that another hauler can participate without cooking the book
-  (25 inferred fills and 25 units — August 2026 participation floor; among
-  5%-over-Jita types, median fills were 29 and the units quartile was 21).
-  Ranked by extra ISK (spread × units), not fattest %. Blueprints excluded.
-- **Market Capture**: inferred sells at Amamake vs hulls lost in the Amarr–Minmatar
-  warzone (side-by-side bars, MoM deltas, sold-per-loss ratio) plus the catchment
-  around the shop — region share bar, warzone/pipe/Amamake stat line, and a
-  per-system table (holder mark, ships bar, vs prior month, ISK, capital share).
-  Same kill numbers as the Warzone Report's "Where the ships died". One section,
-  one jump-nav chip.
-- Bottom: previous / browse all / next report nav and a colophon.
+- **Hero**: ISK sold, profit, ships destroyed at the hub. No “inferred” in
+  main labels. No headline. No Focus tile.
+- **Market sales overview**: day strip + class table. Order count column is
+  **Orders** (the inferred fill count). Chart title **ISK sold by day**.
+- **Top Items Sold**: top types by ISK, class chips (htmx). Meta is `units · N orders`.
+  SKINs and blueprints omitted.
+- **All Items Sold**: paginated catalog of every non-SKIN/BP type that moved (5/page)
+  from `GET /api/market/inferred-sales/monthly/types`. Type name search (`q`) and class
+  chips. Ranked by ISK. Anonymous can page/filter within a small per-IP budget; further
+  use asks for login. Fixed page size, allowlisted class, Redis rate limits.
+  No full catalog in git or JSON dumps.
+- **Demand**: **Sold vs lost** (hulls listed here vs died in the warzone),
+  then **Ships destroyed by system**. No region bar or stat strip.
+- **How to get involved**: three step cards matching Frontline — find SKUs
+  (market ops coverage/gaps + All Items Sold above), haul on alliance
+  freight (cheaper than PushX; link `/market/freight/calculator/`), list on
+  the freeport. CTA buttons to freight and coverage. No featured guides.
+- **Footer**: Report / Period / Published by / Sources, then method notes.
+  Series nav sits above it. Deks are short and player-voiced — no
+  “high level overview” / “a look at the demand”.
 
-Do **not** re-author Focus of the month, Build in Amamake (cost indices), Loyalty
-points, Contracts, Import vs local, The shelf, Use the hub, or About the numbers.
+Do **not** re-author The month, a masthead headline, Focus of the month,
+Build in Amamake, Loyalty points, Contracts, Import vs local, The shelf, or
+Use the hub. Do not put methodology copy under sections.
 
 ## Verification
 
@@ -149,8 +147,11 @@ export $(cat .env.BUILDONLY) && npx vitest run testing/components/blocks/Amamake
 Backend (from `backend/`, sqlite test settings):
 ```bash
 set -a; . ./standalone.env; set +a; export SETUP_TEST_DATA= DJANGO_SETTINGS_MODULE=app.settings_test
-python manage.py test market.tests.test_inferred_sales_monthly
+pipenv run python manage.py test market.tests.test_inferred_sales_monthly --settings=app.settings_test
 ```
+The monthly dump endpoint requires a staff JWT (`AMAMAKE_EXTRACT_TOKEN`) with
+`include_types=true`. The Volume table uses `/inferred-sales/monthly/types`.
+Do **not** put the full type catalog in `*-boards.ts`.
 Then preview `http://localhost:4321/amamake-market/`. For screenshots use the Playwright
 approach in the memory note `reference-playwright-screenshots`.
 

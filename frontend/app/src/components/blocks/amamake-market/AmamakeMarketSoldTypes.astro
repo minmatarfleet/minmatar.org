@@ -11,6 +11,7 @@ import {
     sold_class_label,
     sold_class_slug,
 } from '@/data/amamake-market'
+import { percent } from '@/data/amamake-market/format'
 import { query_string } from '@helpers/string'
 import { number_thousand_separator } from '@helpers/numbers'
 
@@ -26,10 +27,6 @@ const { issue, sold_class = SOLD_CLASS_ALL } = Astro.props
 const resolved = resolve_sold_types(issue, sold_class)
 const class_names = get_sold_class_names(issue)
 const max_type_isk = Math.max(...resolved.rows.map((row) => row.isk), 1)
-
-function percent(part: number, total: number): number {
-    return total === 0 ? 0 : Math.round((part / total) * 1000) / 10
-}
 
 function sold_types_partial(class_slug: string): string {
     return translatePath(
@@ -47,7 +44,7 @@ const chips = [
 ---
 
 <div class="[ mk-sold-types ]">
-    <nav class="[ mk-sold-chips ]" aria-label="Filter What sold by class">
+    <nav class="[ mk-sold-chips ]" aria-label="Filter Top Items Sold by class">
         <FlexInline gap="var(--space-2xs)">
             {chips.map((chip) => (
                 <button
@@ -68,8 +65,8 @@ const chips = [
         class="[ mk-types ]"
         aria-live="polite"
         aria-label={resolved.class_name
-            ? `Top inferred ISK types in ${resolved.class_name}`
-            : 'Top inferred ISK types overall'}
+            ? `Top types sold in ${resolved.class_name}`
+            : 'Top types sold'}
     >
         {resolved.rows.map((row, index) => (
             <li class:list={['mk-type', index === 0 && 'mk-type--lead']}>
@@ -84,7 +81,7 @@ const chips = [
                             {row.is_new && <span class="[ mk-badge ]">NEW</span>}
                         </span>
                         <span class="[ mk-type__meta ]">
-                            {number_thousand_separator(row.units)} units · {number_thousand_separator(row.fills)} fills
+                            {number_thousand_separator(row.units)} units · {number_thousand_separator(row.fills)} orders
                             {row.isk_vs_pct !== null && row.isk_vs_pct !== 0 && (
                                 <span class:list={['mk-compare__trend', row.isk_vs_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.isk_vs_pct > 0 ? '▲' : '▼'}{Math.abs(row.isk_vs_pct)}%</span>
                             )}
@@ -94,7 +91,7 @@ const chips = [
                                     row.markup_pct !== null && row.markup_pct > 0 && 'mk-delta--up',
                                     row.markup_pct !== null && row.markup_pct < 0 && 'mk-delta--down',
                                 ]}
-                                title={row.markup_pct === null ? 'No Forge Jita average for this type' : 'Volume-weighted average fill versus Jita'}
+                                title={row.markup_pct === null ? 'No Jita price for this type' : 'Compared with Jita'}
                             >{row.markup_pct === null ? '—' : `${format_markup_pct(row.markup_pct)} vs Jita`}</span>
                         </span>
                         <b class="[ mk-type__isk ]">{row.isk_label}</b>

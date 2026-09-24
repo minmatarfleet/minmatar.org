@@ -40,8 +40,8 @@ describe('amamake market issue registry', () => {
         expect(issue.weeks.length).toBeGreaterThan(3)
         expect(issue.catchment.rows[0]?.system).toBe('Amamake')
         expect(issue.hulls.rows.length).toBeGreaterThan(0)
-        expect(issue.hulls.footnote).toMatch(/warzone/)
-        expect(issue.hulls.dek).toMatch(/warzone/)
+        expect(issue.hulls.dek).toMatch(/sold here versus what died/)
+        expect(issue.methodology.some((entry) => entry.label === 'Destruction')).toBe(true)
         expect(issue).not.toHaveProperty('focus')
         expect(issue).not.toHaveProperty('focus_name')
         expect(issue).not.toHaveProperty('industry')
@@ -61,20 +61,15 @@ describe('amamake market issue registry', () => {
         const lost = issue.hulls.rows.reduce((sum, row) => sum + row.lost, 0)
         expect(issue.catchment.warzone.ships).toBeGreaterThan(issue.catchment.amamake.ships)
         expect(lost).toBeGreaterThan(issue.catchment.amamake.ships)
-        expect(issue.hulls.dek).toMatch(/sold in Amamake/i)
-        expect(issue.hulls.footnote).toMatch(/Amarr–Minmatar warzone/)
+        expect(issue.hulls.dek).toMatch(/sold here versus what died/)
     })
 
-    it('has sell-order class totals with month-over-month and contracts by hull', () => {
+    it('has sell-order class totals with month-over-month', () => {
         const issue = get_latest_issue()
         const names = issue.categories.map((row) => row.name)
         expect(names).toEqual(expect.arrayContaining(['Ships', 'Modules', 'Rigs', 'Charges', 'Drones']))
         expect(names).not.toContain('Blueprints')
         expect(issue.categories.every((row) => typeof row.isk_vs === 'number')).toBe(true)
-        expect(issue.contracts).not.toBeNull()
-        expect(issue.contracts!.rows.length).toBeGreaterThan(0)
-        expect(issue.contracts!.rows[0]!.name).toBeTruthy()
-        expect(issue.contracts!.totals.count).toBeGreaterThan(0)
     })
 
     it('records volume-weighted markup versus Jita on types and classes', () => {
@@ -101,7 +96,7 @@ describe('amamake market issue registry', () => {
         expect(issue.sales.profit_unpriced_types).toBeGreaterThanOrEqual(0)
         expect(issue.sales.profit).not.toBe(issue.sales.isk)
         expect(typeof issue.sales_vs.profit).toBe('number')
-        const profit_entry = issue.methodology.find((entry) => entry.label === 'Inferred profit')
+        const profit_entry = issue.methodology.find((entry) => entry.label === 'Profit')
         expect(profit_entry?.text).toMatch(/Amamake fill average/)
         expect(profit_entry?.text).toMatch(/450 ISK\/m³/)
         expect(profit_entry?.text).toMatch(/Jita → Amamake/)
@@ -141,7 +136,9 @@ describe('amamake market issue registry', () => {
         expect(other_names).not.toContain('Small Skill Injector')
         expect(other_names).not.toContain('Skill Extractor')
         expect(other_names).not.toContain('Magmatic Gas')
-        expect(other_names).toContain('Rorqual Blueprint')
+        expect(other_names).not.toContain('Rorqual Blueprint')
+        expect(other_names).not.toContain('Loki Hrada-Oki Offender SKIN')
+        expect(other_names).toContain('Mobile Cynosural Beacon')
         expect(other.rows.every((row) => row.category === 'Other')).toBe(true)
         const materials = resolve_sold_types(issue, 'materials-commodities')
         expect(materials.class_name).toBe('Materials & commodities')
@@ -174,21 +171,55 @@ describe('amamake market issue registry', () => {
         expect(rows.every((row) => row.margin_pct >= 5)).toBe(true)
     })
 
+    it('describes All Items Sold as an API-backed paginated catalog', () => {
+        const { volume, methodology } = get_latest_issue()
+        expect(volume.dek).toContain('Everything that moved')
+        expect(volume.location_id).toBeGreaterThan(0)
+        expect(volume.year).toBe(2026)
+        expect(volume.month).toBe(8)
+        expect(methodology.some((entry) => entry.label === 'All Items Sold')).toBe(true)
+        expect(
+            methodology.find((entry) => entry.label === 'All Items Sold')!.text,
+        ).toContain('5 per page')
+        expect(
+            methodology.find((entry) => entry.label === 'All Items Sold')!.text,
+        ).toContain('browse budget')
+    })
+
+    it('has a three-step get-involved loop with freight and market ops', () => {
+        const { get_involved } = get_latest_issue()
+        expect(get_involved.steps).toHaveLength(3)
+        expect(get_involved.steps.map((step) => step.title)).toEqual([
+            'Find the holes',
+            'Haul it in',
+            'List it',
+        ])
+        expect(get_involved.steps[0]!.href).toBe('/market/ops/sell_orders/')
+        expect(get_involved.steps[0]!.text).toContain('All Items Sold')
+        expect(get_involved.steps[1]!.href).toBe('/market/freight/calculator/')
+        expect(get_involved.steps[1]!.text).toContain('450 ISK/m³')
+        expect(get_involved.dek).toContain('PushX')
+        expect(get_involved.actions.map((link) => link.href)).toEqual([
+            '/market/freight/calculator/',
+            '/market/ops/sell_orders/',
+        ])
+    })
+
     it('never publishes Type {id} fallback names for live market types', () => {
         const issue = get_latest_issue()
         const rows = [
             ...issue.top_types.rows,
             ...Object.values(issue.top_types.by_class).flat(),
             ...issue.hulls.rows,
-            ...(issue.contracts?.rows ?? []),
             ...issue.margins.rows,
         ]
         const names = rows.map((row) => row.name)
         expect(names.every((name) => Boolean(name) && !/^Type \d+$/.test(name))).toBe(true)
         expect(issue.top_types.by_class['Drones']?.map((row) => row.name)).toContain('Inshore EC-300-I')
-        expect(issue.top_types.by_class['Other']?.map((row) => row.name)).toContain(
+        expect(issue.top_types.by_class['Other']?.map((row) => row.name) ?? []).not.toContain(
             'Loki Hrada-Oki Offender SKIN',
         )
+        expect(issue.top_types.by_class['Other']?.map((row) => row.name) ?? []).not.toContain('Rorqual Blueprint')
     })
 })
 

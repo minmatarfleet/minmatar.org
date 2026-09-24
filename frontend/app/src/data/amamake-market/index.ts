@@ -2,6 +2,7 @@ import type { AmamakeMarketIssue, MarketTopTypeRow } from './types'
 import { YC128_08 } from './yc128-08'
 
 export type { AmamakeMarketIssue } from './types'
+export { is_skin_or_blueprint, without_skins_and_blueprints } from './sales_filters'
 
 export const SOLD_CLASS_ALL = 'all' as const
 

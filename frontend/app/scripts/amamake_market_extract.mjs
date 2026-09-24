@@ -20,9 +20,14 @@
  * newer than the bundled SDE never publish as "Type {id}".
  *
  * Usage:
- *   node scripts/amamake_market_extract.mjs --year 2026 --month 8 --slug yc128-08 \
+ *   AMAMAKE_EXTRACT_TOKEN=<staff JWT> node scripts/amamake_market_extract.mjs \
+ *       --year 2026 --month 8 --slug yc128-08 \
  *       [--api https://api.minmatar.org] [--top 10] [--hulls 8] [--systems 8] [--caps 6] \
  *       [--exclude 40520,40519] [--pipe Amamake,Auga,Siseide,Dal,Vard,Lantorn]
+ *
+ * The monthly sales endpoint requires a staff JWT (AMAMAKE_EXTRACT_TOKEN or
+ * AUTH_TOKEN) with include_types=true so the full by_type list is available
+ * for top-N boards. Closed months reuse .cache/amamake-market/sales-*.json.
  *
  * Output: src/data/amamake-market/<slug>-boards.ts   (do not hand-edit; re-run instead)
  */
@@ -38,6 +43,8 @@ const YEAR = Number(args.year)
 const MONTH = Number(args.month)
 const SLUG = args.slug
 const API = (args.api ?? 'https://api.minmatar.org').replace(/\/$/, '')
+/** Staff JWT for include_types on /inferred-sales/monthly (extractor only). */
+const EXTRACT_TOKEN = process.env.AMAMAKE_EXTRACT_TOKEN || process.env.AUTH_TOKEN || ''
 const TOP = Number(args.top ?? 10)
 const TOP_HULLS = Number(args.hulls ?? 8)
 const TOP_SYSTEMS = Number(args.systems ?? 8)
@@ -98,9 +105,15 @@ const today = new Date()
 const month_is_closed = new Date(Date.UTC(MONTH === 12 ? YEAR + 1 : YEAR, MONTH === 12 ? 0 : MONTH, 1)) <= today
 
 async function fetch_json(url, init = {}, attempt = 1) {
+    const headers = {
+        'User-Agent': USER_AGENT,
+        Accept: 'application/json',
+        ...(EXTRACT_TOKEN ? { Authorization: `Bearer ${EXTRACT_TOKEN}` } : {}),
+        ...(init.headers ?? {}),
+    }
     const res = await fetch(url, {
         ...init,
-        headers: { 'User-Agent': USER_AGENT, Accept: 'application/json', ...(init.headers ?? {}) },
+        headers,
     })
     if (res.status === 429 || res.status >= 500) {
         if (attempt > 6) throw new Error(`${url} failed (${res.status})`)
@@ -348,9 +361,10 @@ async function esi_hydrate_types(ids) {
 // ---------------------------------------------------------------- Sales feed
 async function monthly_sales(year, month) {
     const closed = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1)) <= today
+    const qs = `location_id=${LOCATION_ID}&year=${year}&month=${month}&include_types=true`
     return cached_json(
         `sales-${LOCATION_ID}-${year}-${pad2(month)}.json`,
-        `${API}/api/market/inferred-sales/monthly?location_id=${LOCATION_ID}&year=${year}&month=${month}`,
+        `${API}/api/market/inferred-sales/monthly?${qs}`,
         { cache: closed },
     )
 }
@@ -415,6 +429,12 @@ const bucket_for_type = (t) => {
     if (MATERIAL_CATEGORIES.has(category) || MATERIAL_GROUPS.has(group)) return 'Materials & commodities'
     return 'Other'
 }
+const is_skin_or_blueprint = (t) => {
+    const meta = type_meta(t.type_id)
+    const category = meta.category || t.category
+    const name = type_label(t)
+    return category === 'Blueprint' || /\bSKIN\b/i.test(name) || /blueprint/i.test(name)
+}
 const bucket_totals = (rows) => {
     const out = new Map()
     for (const t of rows) {
@@ -471,7 +491,7 @@ const to_type_row = (t) => {
     }
 }
 const ranked_types = sales.by_type
-    .filter((t) => !EXCLUDE_TYPE_IDS.has(t.type_id))
+    .filter((t) => !EXCLUDE_TYPE_IDS.has(t.type_id) && !is_skin_or_blueprint(t))
     .sort(by('isk'))
     .map(to_type_row)
 const TOP_TYPES = ranked_types.slice(0, TOP)
@@ -725,6 +745,7 @@ const MARGINS = (jita_payload ? sales.by_type : [])
     .map((t) => {
         const jita = jita_prices.get(t.type_id)
         if (!jita || jita <= 0) return null
+        if (is_skin_or_blueprint(t)) return null
         const sde_category = type_meta(t.type_id).category || t.category
         if (sde_category === 'Blueprint') return null
         const category = bucket_for_type(t)

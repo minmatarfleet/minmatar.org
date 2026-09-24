@@ -1,17 +1,16 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
-
-import type { AmamakeMarketIssue, MarketMilitiaId } from '@/data/amamake-market/types'
-import { ALL_REPORTS_PATH, format_markup_pct, get_adjacent_issues, issue_label } from '@/data/amamake-market'
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import { format_markup_pct } from '@/data/amamake-market'
+import { day_label, format_isk, percent } from '@/data/amamake-market/format'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
-import AmarrLogo from '@components/logos/AmarrLogo.astro'
-import ItemPicture from '@components/blocks/ItemPicture.astro'
+import AmamakeMarketDemand from '@components/blocks/amamake-market/AmamakeMarketDemand.astro'
+import AmamakeMarketFooter from '@components/blocks/amamake-market/AmamakeMarketFooter.astro'
+import AmamakeMarketGetInvolved from '@components/blocks/amamake-market/AmamakeMarketGetInvolved.astro'
 import AmamakeMarketSoldTypes from '@components/blocks/amamake-market/AmamakeMarketSoldTypes.astro'
+import AmamakeMarketVolume from '@components/blocks/amamake-market/AmamakeMarketVolume.astro'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -19,41 +18,16 @@ interface Props {
 
 const { issue } = Astro.props
 
-const { newer, older } = get_adjacent_issues(issue.slug)
-
 const SECTION_NAV = [
-    { id: 'month', label: 'The month' },
     { id: 'book', label: 'Market sales overview' },
-    { id: 'sold', label: 'Sold' },
-    { id: 'margins', label: 'Items worth seeding' },
-    { id: 'capture', label: 'Market Capture' },
+    { id: 'sold', label: 'Top Items Sold' },
+    { id: 'volume', label: 'All Items Sold' },
+    { id: 'demand', label: 'Demand' },
+    { id: 'get-involved', label: 'How to get involved' },
 ]
-
-function format_isk(value: number): string {
-    if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
-    if (value >= 100_000_000_000) return `${Math.round(value / 1_000_000_000)}B`
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`
-    return `${(value / 1_000).toFixed(0)}k`
-}
-
-function percent(part: number, total: number): number {
-    return total === 0 ? 0 : Math.round((part / total) * 1000) / 10
-}
-
-function militia_label(id: MarketMilitiaId): string {
-    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
-}
-
-/** "15 Aug" from an ISO date. */
-function day_label(date: string): string {
-    const d = new Date(`${date}T00:00:00Z`)
-    return `${d.getUTCDate()} ${d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}`
-}
 
 const vs_label = `vs ${issue.previous_period_label}`
 
-// Daily ISK strip: one column per calendar day so gaps in the feed stay visible.
 const first_day = issue.days[0]?.date ?? issue.published_at.toISOString().slice(0, 10)
 const [strip_year, strip_month] = first_day.split('-').map(Number)
 const days_in_month = new Date(Date.UTC(strip_year, strip_month, 0)).getUTCDate()
@@ -72,17 +46,11 @@ const strip = Array.from({ length: days_in_month }, (_, i) => {
         loudest: row?.date === loudest_day,
     }
 })
-const max_hull = Math.max(...issue.hulls.rows.flatMap((h) => [h.sold, h.lost]), 1)
-const max_catchment = Math.max(...issue.catchment.rows.map((r) => r.ships), 1)
-const region_total = issue.catchment.regions.reduce((sum, r) => sum + r.ships, 0)
 const max_category_isk = Math.max(...issue.categories.map((c) => c.isk), 1)
-const max_margin_extra = Math.max(...issue.margins.rows.map((r) => r.extra_isk), 1)
 
-function format_unit_isk(value: number): string {
-    if (value >= 1_000_000) return format_isk(value)
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`
-    return `${Math.round(value)}`
-}
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
 
 ---
 
@@ -94,7 +62,7 @@ function format_unit_isk(value: number): string {
                     <img src="/images/icons/64px-Wallet.png" alt="" width="64" height="64" loading="lazy" />
                 </span>
                 <div>
-                    <span class="[ mk-hero-stat__label ]">Inferred ISK sold</span>
+                    <span class="[ mk-hero-stat__label ]">ISK sold</span>
                     <b class="[ mk-hero-stat__value ]">{issue.sales.isk_label}</b>
                     {issue.sales_vs.isk_pct !== null && issue.sales_vs.isk_pct !== 0 && (
                         <span class:list={['mk-trend', issue.sales_vs.isk_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
@@ -108,7 +76,7 @@ function format_unit_isk(value: number): string {
                     <img src="/images/icons/48px-Market.png" alt="" width="64" height="64" loading="lazy" />
                 </span>
                 <div>
-                    <span class="[ mk-hero-stat__label ]">Inferred profit</span>
+                    <span class="[ mk-hero-stat__label ]">Profit</span>
                     <b class="[ mk-hero-stat__value ]">{issue.sales.profit_label}</b>
                     {issue.sales_vs.profit !== 0 && (
                         <span class:list={['mk-trend', issue.sales_vs.profit > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
@@ -132,23 +100,13 @@ function format_unit_isk(value: number): string {
                 </div>
             </div>
         </div>
+
+        <nav class="[ mk-jump ]" aria-label="Jump to section">
+            {SECTION_NAV.map((section) => (
+                <a class="[ mk-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+            ))}
+        </nav>
     </div>
-
-    <nav class="[ mk-jump ]" aria-label="Jump to section">
-        {SECTION_NAV.map((section) => (
-            <a class="[ mk-jump__link ]" href={`#${section.id}`}>{section.label}</a>
-        ))}
-    </nav>
-
-    <section id="month" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>The month</h2>
-            <p class="[ mk-dek ]">{issue.period_utc}. Inferred fills at the freeport, and the warzone around it.</p>
-        </header>
-        <div class="[ mk-story ]">
-            {issue.opening.map((paragraph) => <p>{paragraph}</p>)}
-        </div>
-    </section>
 
     <section id="book" class="[ mk-section ]">
         <header class="[ mk-section__head ]">
@@ -159,10 +117,10 @@ function format_unit_isk(value: number): string {
         <ComponentBlock>
             <Flexblock gap="var(--space-l)">
                 <div class="[ mk-chart ]">
-                    <h4>Inferred ISK sold by day</h4>
-                    <ol class="[ mk-strip ]" role="img" aria-label={`Inferred ISK sold per day. Loudest day ${loudest_day ? day_label(loudest_day) : 'n/a'} at ${format_isk(issue.sales.loudest_day?.isk ?? 0)}.`}>
+                    <h4>ISK sold by day</h4>
+                    <ol class="[ mk-strip ]" role="img" aria-label={`ISK sold per day. Loudest day ${loudest_day ? day_label(loudest_day) : 'n/a'} at ${format_isk(issue.sales.loudest_day?.isk ?? 0)}.`}>
                         {strip.map((day) => (
-                            <li class:list={['mk-strip__day', day.empty && 'is-empty', day.loudest && 'is-loudest']} title={day.empty ? `${day.dom}: no snapshots` : `${day.dom}: ${format_isk(day.isk)} · ${number_thousand_separator(day.fills)} fills`}>
+                            <li class:list={['mk-strip__day', day.empty && 'is-empty', day.loudest && 'is-loudest']} title={day.empty ? `${day.dom}: no data` : `${day.dom}: ${format_isk(day.isk)} · ${number_thousand_separator(day.fills)} orders`}>
                                 <span class="[ mk-strip__bar ]" style={`height: ${Math.max(day.empty ? 0 : 2, percent(day.isk, max_day_isk))}%`}></span>
                                 <span class:list={['mk-strip__label', day.labelled && 'is-visible']}>{day.dom}</span>
                             </li>
@@ -172,15 +130,13 @@ function format_unit_isk(value: number): string {
 
                 <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
                     <h4>Sell orders by class</h4>
-                    <p class="[ mk-dek ]">{issue.categories_dek}</p>
                     <table class="[ mk-table mk-table--weeks ]">
                         <thead>
                             <tr>
                                 <th scope="col">Class</th>
                                 <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
                                 <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
-                                <th scope="col" class="[ mk-table__num ]">Fills</th>
-                                <th scope="col" class="[ mk-table__num ]">Units</th>
+                                <th scope="col" class="[ mk-table__num ]">Orders</th>
                                 <th scope="col" class="[ mk-table__num ]">Markup</th>
                             </tr>
                         </thead>
@@ -205,14 +161,8 @@ function format_unit_isk(value: number): string {
                                     </td>
                                     <td class="[ mk-table__num ]">{number_thousand_separator(row.fills)}</td>
                                     <td class="[ mk-table__num ]">
-                                        {number_thousand_separator(row.units)}
-                                        {row.units_vs !== 0 && (
-                                            <span class:list={['mk-compare__trend', row.units_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.units_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.units_vs))}</span>
-                                        )}
-                                    </td>
-                                    <td class="[ mk-table__num ]">
                                         {row.markup_pct === null ? (
-                                            <span title="No Forge Jita average for types in this class">—</span>
+                                            <span title="No Jita price for types in this class">—</span>
                                         ) : (
                                             <span
                                                 class:list={[
@@ -220,7 +170,7 @@ function format_unit_isk(value: number): string {
                                                     row.markup_pct > 0 && 'mk-delta--up',
                                                     row.markup_pct < 0 && 'mk-delta--down',
                                                 ]}
-                                                title="Volume-weighted average fill versus Jita"
+                                                title="Compared with Jita"
                                             >{format_markup_pct(row.markup_pct)}</span>
                                         )}
                                     </td>
@@ -235,7 +185,7 @@ function format_unit_isk(value: number): string {
 
     <section id="sold" class="[ mk-section ]">
         <header class="[ mk-section__head ]">
-            <h2>What sold</h2>
+            <h2>Top Items Sold</h2>
             <p class="[ mk-dek ]">{issue.top_types.dek}</p>
         </header>
         <ComponentBlock padding_inline="var(--space-m)" class="[ mk-board ]">
@@ -245,241 +195,17 @@ function format_unit_isk(value: number): string {
         </ComponentBlock>
     </section>
 
-    {issue.margins.rows.length > 0 && (
-    <section id="margins" class="[ mk-section ]">
+    <section id="volume" class="[ mk-section ]">
         <header class="[ mk-section__head ]">
-            <h2>Items worth seeding</h2>
-            <p class="[ mk-dek ]">{issue.margins.dek}</p>
+            <h2>All Items Sold</h2>
+            <p class="[ mk-dek ]">{issue.volume.dek}</p>
         </header>
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="High-volume types with a healthy Amamake versus Jita spread">
-            <table class="[ mk-table mk-table--hulls ]">
-                <thead>
-                    <tr>
-                        <th scope="col">Type</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Extra ISK</th>
-                        <th scope="col" class="[ mk-table__num ]">Spread</th>
-                        <th scope="col" class="[ mk-table__num ]">Units</th>
-                        <th scope="col" class="[ mk-table__num ]">Fill / Jita</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {issue.margins.rows.map((row) => (
-                        <tr>
-                            <td class="[ mk-table__hull ]">
-                                <span class="[ mk-table__owner ]">
-                                    <span class="[ mk-table__icon ]">
-                                        <ItemPicture item_id={row.typeId} item_name={row.name} size={32} icon_quality={64} />
-                                    </span>
-                                    <span>
-                                        <span class="[ mk-table__system ]">{row.name}</span>
-                                        <span class="[ mk-table__front ]">{row.category}</span>
-                                    </span>
-                                </span>
-                            </td>
-                            <td class="[ mk-table__bar ]" data-label="Extra ISK">
-                                <div class="[ mk-bar ]">
-                                    <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.extra_isk, max_margin_extra)}%`}></span>
-                                </div>
-                                <b>{row.extra_isk_label}</b>
-                            </td>
-                            <td class="[ mk-table__num ]" data-label="Spread">
-                                <span class="[ mk-ratio mk-ratio--covered ]">{row.margin_pct.toFixed(1)}%</span>
-                            </td>
-                            <td class="[ mk-table__num ]" data-label="Units">{number_thousand_separator(row.units)}</td>
-                            <td class="[ mk-table__num ]" data-label="Fill / Jita">{format_unit_isk(row.amamake_avg)} / {format_unit_isk(row.jita)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-        <p class="[ mk-footnote ]">{issue.margins.footnote}</p>
-    </section>
-    )}
-
-    <section id="capture" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Market Capture</h2>
-            <p class="[ mk-dek ]">{issue.hulls.dek}</p>
-        </header>
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold in Amamake versus lost in the warzone">
-            <table class="[ mk-table mk-table--hulls ]">
-                <thead>
-                    <tr>
-                        <th scope="col">Hull</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Sold in Amamake</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Died in the warzone</th>
-                        <th scope="col" class="[ mk-table__num ]">Sold per loss</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {issue.hulls.rows.map((row) => (
-                        <tr>
-                            <td class="[ mk-table__hull ]">
-                                <span class="[ mk-table__owner ]">
-                                    <span class="[ mk-table__icon ]">
-                                        <ItemPicture item_id={row.typeId} item_name={row.name} size={32} icon_quality={64} />
-                                    </span>
-                                    <span>
-                                        <span class="[ mk-table__system ]">{row.name}</span>
-                                        <span class="[ mk-table__front ]">{row.group}</span>
-                                    </span>
-                                </span>
-                            </td>
-                            <td class="[ mk-table__bar ]" data-label="Sold in Amamake">
-                                <div class="[ mk-bar ]">
-                                    <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.sold, max_hull)}%`}></span>
-                                </div>
-                                <b>
-                                    {number_thousand_separator(row.sold)}
-                                    {row.sold_vs !== 0 && (
-                                        <span class:list={['mk-compare__trend', row.sold_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.sold_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.sold_vs))}</span>
-                                    )}
-                                </b>
-                            </td>
-                            <td class="[ mk-table__bar ]" data-label="Died in the warzone">
-                                <div class="[ mk-bar ]">
-                                    <span class="[ mk-bar__fill mk-bar__fill--lost ]" style={`width: ${percent(row.lost, max_hull)}%`}></span>
-                                </div>
-                                <b>
-                                    {number_thousand_separator(row.lost)}
-                                    {row.lost_vs !== 0 && (
-                                        <span class:list={['mk-compare__trend', row.lost_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.lost_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.lost_vs))}</span>
-                                    )}
-                                </b>
-                            </td>
-                            <td class="[ mk-table__num ]" data-label="Sold per loss">
-                                {row.ratio === null ? '—' : (
-                                    <span class:list={['mk-ratio', row.ratio >= 1 ? 'mk-ratio--covered' : 'mk-ratio--short']}>{row.ratio.toFixed(1)}×</span>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-        <p class="[ mk-footnote ]">{issue.hulls.footnote}</p>
-
-        <ComponentBlock>
-            <Flexblock gap="var(--space-m)">
-                <div class="[ mk-share ]" role="img" aria-label={issue.catchment.regions.map((r) => `${r.region}: ${number_thousand_separator(r.ships)} ships`).join('; ')}>
-                    <div class="[ mk-share__bar ]">
-                        {issue.catchment.regions.map((region, index) => (
-                            <span
-                                class:list={['mk-share__fill', region.front === 'Minmatar front' ? 'mk-share__fill--minmatar' : 'mk-share__fill--amarr']}
-                                style={`width: ${percent(region.ships, region_total)}%; opacity: ${index % 2 === 0 ? 1 : 0.7}`}
-                            >
-                                {percent(region.ships, region_total) >= 8 && <span class="[ mk-share__pct ]">{region.region} {Math.round(percent(region.ships, region_total))}%</span>}
-                            </span>
-                        ))}
-                    </div>
-                    <p class="[ mk-share__caption ]">Share of the warzone's ships destroyed, by region</p>
-                </div>
-
-                <dl class="[ mk-statline ]">
-                    <div>
-                        <dt>Warzone ships destroyed</dt>
-                        <dd>
-                            {number_thousand_separator(issue.catchment.warzone.ships)}
-                            {issue.catchment.warzone.ships_vs !== 0 && (
-                                <span class:list={['mk-compare__trend', issue.catchment.warzone.ships_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{issue.catchment.warzone.ships_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(issue.catchment.warzone.ships_vs))}</span>
-                            )}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Warzone ISK destroyed</dt>
-                        <dd>{issue.catchment.warzone.isk_label}</dd>
-                    </div>
-                    <div>
-                        <dt>Amamake share</dt>
-                        <dd>{issue.catchment.amamake.share_of_warzone}%</dd>
-                    </div>
-                    <div>
-                        <dt>Heimatar pipe</dt>
-                        <dd>{issue.catchment.pipe.share}%</dd>
-                    </div>
-                    <div>
-                        <dt>Characters on Amamake mails</dt>
-                        <dd>{number_thousand_separator(issue.catchment.amamake.unique_characters)}</dd>
-                    </div>
-                </dl>
-
-                <div class="[ mk-story mk-story--compact ]">
-                    {issue.catchment.dek.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-            </Flexblock>
-        </ComponentBlock>
-
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
-            <table class="[ mk-table mk-table--traffic ]">
-                <thead>
-                    <tr>
-                        <th scope="col">System</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Ships destroyed</th>
-                        <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
-                        <th scope="col" class="[ mk-table__num ]">ISK</th>
-                        <th scope="col" class="[ mk-table__num ]">Capital ISK</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {issue.catchment.rows.map((row) => (
-                        <tr>
-                            <td>
-                                <span class="[ mk-table__owner ]">
-                                    <span class:list={['mk-faction-mark', `mk-faction-mark--${row.holds_today}`]} title={`Held by ${militia_label(row.holds_today)}`} aria-label={`Held by ${militia_label(row.holds_today)}`} role="img">
-                                        {row.holds_today === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
-                                    </span>
-                                    <span>
-                                        <span class="[ mk-table__system ]">
-                                            <a href={row.href} target="_blank" rel="nofollow noopener noreferrer">{row.system}</a>
-                                        </span>
-                                        <span class="[ mk-table__front ]">{row.region}</span>
-                                    </span>
-                                </span>
-                            </td>
-                            <td class="[ mk-table__bar ]">
-                                <div class="[ mk-bar ]">
-                                    <span class:list={['mk-bar__fill', `mk-bar__fill--${row.holds_today}`]} style={`width: ${percent(row.ships, max_catchment)}%`}></span>
-                                </div>
-                                <b>{number_thousand_separator(row.ships)}</b>
-                            </td>
-                            <td class="[ mk-table__num ]">
-                                <span class:list={['mk-delta', row.ships_vs >= 0 ? 'mk-delta--up' : 'mk-delta--down']}>
-                                    <span class="[ mk-delta__arrow ]">{row.ships_vs >= 0 ? '▲' : '▼'}</span>
-                                    <span class="[ mk-delta__num ]">{number_thousand_separator(Math.abs(row.ships_vs))}</span>
-                                </span>
-                            </td>
-                            <td class="[ mk-table__num ]">{row.isk_label}</td>
-                            <td class="[ mk-table__num ]">{Math.round(row.capital_share)}%</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-        <p class="[ mk-footnote ]">{issue.catchment.footnote}</p>
+        <AmamakeMarketVolume issue={issue} access_token={auth_token} />
     </section>
 
-    <nav class="[ mk-more ]" aria-label="More warzone reports">
-        {older && (
-            <a class="[ mk-more__link mk-more__link--prev ]" href={translatePath(older.permalink_path)}>
-                <span class="[ mk-more__dir ]">← Previous report</span>
-                <span class="[ mk-more__title ]">{issue_label(older)}</span>
-            </a>
-        )}
-        <a class="[ mk-more__link mk-more__link--all ]" href={translatePath(ALL_REPORTS_PATH)}>
-            <span class="[ mk-more__dir ]">Series</span>
-            <span class="[ mk-more__title ]">Browse all reports</span>
-        </a>
-        {newer && (
-            <a class="[ mk-more__link mk-more__link--next ]" href={translatePath(newer.permalink_path)}>
-                <span class="[ mk-more__dir ]">Next report →</span>
-                <span class="[ mk-more__title ]">{issue_label(newer)}</span>
-            </a>
-        )}
-    </nav>
-
-    <p class="[ mk-footnote mk-colophon ]">
-        Amamake Economic Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: Minmatar Fleet order-book snapshots, zKillboard, EVE ESI.
-    </p>
+    <AmamakeMarketDemand issue={issue} />
+    <AmamakeMarketGetInvolved issue={issue} />
+    <AmamakeMarketFooter issue={issue} />
 </div>
 
 <style lang="scss">
@@ -488,25 +214,17 @@ function format_unit_isk(value: number): string {
         --mk-amarr: var(--fleet-yellow);
         --mk-sold: var(--green);
         --mk-lost: var(--fleet-red);
-        --mk-capital: var(--fleet-yellow);
-        --mk-subcap: var(--faded);
         --mk-track: color-mix(in srgb, var(--highlight) 6%, transparent);
         --mk-rule: color-mix(in srgb, var(--highlight) 8%, transparent);
 
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xl);
+        gap: var(--space-xl);
         width: 100%;
         min-width: 0;
 
         h2 {
             font-size: var(--step-3);
-            font-family: var(--heading-font);
-            margin: 0;
-        }
-
-        h3 {
-            font-size: var(--step-1);
             font-family: var(--heading-font);
             margin: 0;
         }
@@ -541,37 +259,12 @@ function format_unit_isk(value: number): string {
         }
     }
 
-    .mk-capital-text {
-        color: var(--mk-capital);
-    }
-
-    .mk-date {
-        display: inline-block;
-        padding: 0.2em 0.6em;
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: var(--foreground);
-        border: solid 1px color-mix(in srgb, var(--highlight) 18%, transparent);
-        white-space: nowrap;
-    }
-
-    .mk-ghost {
-        border: solid 1px color-mix(in srgb, var(--highlight) 22%, transparent) !important;
-
-        &:hover,
-        &:focus-visible {
-            border-color: color-mix(in srgb, var(--highlight) 60%, transparent) !important;
-        }
-    }
-
     /* Lede ---------------------------------------------------------------- */
 
     .mk-lede {
         display: flex;
         flex-direction: column;
-        gap: var(--space-l);
+        gap: var(--space-s);
     }
 
     .mk-hero-stats {
@@ -639,7 +332,7 @@ function format_unit_isk(value: number): string {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-2xs);
-        margin-bottom: var(--space-xl);
+        margin: 0;
     }
     .mk-jump__link {
         padding: var(--space-3xs) var(--space-s);
@@ -689,103 +382,6 @@ function format_unit_isk(value: number): string {
         font-size: var(--step-0);
     }
 
-    .mk-story {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        max-width: var(--max-text-width);
-        color: var(--foreground);
-
-        p {
-            margin: 0;
-        }
-
-        &--compact p {
-            font-size: var(--step--1);
-        }
-    }
-
-    .mk-footnote {
-        color: var(--faded);
-        font-size: var(--step--1);
-        max-width: var(--max-text-width);
-    }
-    .mk-colophon {
-        max-width: none;
-        text-align: center;
-        margin-top: var(--space-l);
-    }
-
-    .mk-subhead {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-
-        p {
-            color: var(--faded);
-        }
-    }
-
-    .mk-more {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-s);
-        margin-top: var(--space-xl);
-        padding-top: var(--space-l);
-        border-top: solid 1px var(--mk-rule);
-    }
-    .mk-more__link {
-        flex: 1 1 12rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: var(--space-3xs);
-        padding: var(--space-s) var(--space-m);
-        border: solid 1px var(--border-color);
-        background-color: var(--light-transparency-background-mobile);
-        text-decoration: none !important;
-        transition: border-color 0.15s ease, background-color 0.15s ease;
-
-        &:hover {
-            border-color: var(--highlight);
-            background-color: var(--light-transparency-background);
-        }
-    }
-    .mk-more__link--next {
-        text-align: right;
-        align-items: flex-end;
-    }
-    .mk-more__link--all {
-        text-align: center;
-        align-items: center;
-    }
-    .mk-more__dir {
-        font-size: var(--step--2);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--faded);
-    }
-    .mk-more__link--all .mk-more__dir {
-        color: var(--fleet-yellow);
-    }
-    .mk-more__title {
-        font-size: var(--step-1);
-        font-weight: 600;
-        color: var(--highlight);
-    }
-
-    @media (max-width: 45rem) {
-        .mk-more {
-            flex-direction: column;
-        }
-        .mk-more__link,
-        .mk-more__link--next,
-        .mk-more__link--all {
-            text-align: left;
-            align-items: flex-start;
-        }
-    }
-
     /* Trends and badges --------------------------------------------------- */
 
     .mk-trend {
@@ -824,21 +420,6 @@ function format_unit_isk(value: number): string {
     .mk-delta__num {
         text-align: right;
     }
-    .mk-badge {
-        display: inline-block;
-        margin-inline-start: 0.5em;
-        padding: 0.05em 0.4em;
-        border-radius: 0.25em;
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--green);
-        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
-        background: color-mix(in srgb, var(--green) 14%, transparent);
-        vertical-align: middle;
-        white-space: nowrap;
-    }
     .mk-ratio {
         font-weight: 600;
         font-variant-numeric: tabular-nums;
@@ -864,6 +445,7 @@ function format_unit_isk(value: number): string {
         list-style: none;
         margin: 0;
         padding: 0;
+        padding-bottom: var(--space-s);
         display: grid;
         grid-auto-flow: column;
         grid-auto-columns: 1fr;
@@ -919,94 +501,12 @@ function format_unit_isk(value: number): string {
         }
     }
 
-    .mk-strip + * {
-        margin-top: var(--space-s);
-    }
-
-    /* Share bars and legends ---------------------------------------------- */
-
-    .mk-share__bar {
-        display: flex;
-        height: 2rem;
-        gap: 2px;
-        background: var(--mk-track);
-    }
-
-    .mk-share__fill {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        min-width: 2px;
-        overflow: hidden;
-
-        &--minmatar {
-            background: var(--mk-minmatar);
-        }
-
-        &--amarr {
-            background: var(--mk-amarr);
-        }
-    }
-
-    .mk-share__pct {
-        font-size: var(--step--1);
-        font-weight: 600;
-        color: var(--background);
-        white-space: nowrap;
-    }
-
-    .mk-share__caption {
-        margin-top: var(--space-2xs);
-        font-size: var(--step--1);
-        color: var(--faded);
-        text-align: center;
-        max-width: none;
-    }
-
-    .mk-statline {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-        gap: var(--space-xs);
-        margin: 0;
-        padding-block: var(--space-xs);
-        border-block: solid 1px var(--mk-rule);
-
-        > div {
-            display: flex;
-            flex-direction: column;
-            gap: 0.1em;
-        }
-
-        dt {
-            font-size: var(--step--2);
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        dd {
-            margin: 0;
-            margin-top: auto;
-            font-size: var(--step-1);
-            font-weight: 600;
-            color: var(--highlight);
-            font-variant-numeric: tabular-nums;
-            line-height: 1.1;
-        }
-    }
-
     /* Bars and tables ----------------------------------------------------- */
 
     .mk-bar {
         width: 100%;
         height: 0.75rem;
         background: var(--mk-track);
-
-        &--stacked {
-            display: flex;
-            gap: 1px;
-        }
     }
 
     .mk-bar__fill {
@@ -1014,37 +514,15 @@ function format_unit_isk(value: number): string {
         height: 100%;
         min-width: 2px;
 
-        &--minmatar {
-            background: var(--mk-minmatar);
-        }
-
-        &--amarr {
-            background: var(--mk-amarr);
-        }
-
         &--sold {
             background: var(--mk-sold);
-        }
-
-        &--lost {
-            background: var(--mk-lost);
-        }
-
-        &--capital {
-            background: var(--mk-capital);
-        }
-
-        &--subcap {
-            background: var(--mk-subcap);
-        }
-
-        &--index {
-            background: color-mix(in srgb, var(--fleet-yellow) 60%, var(--highlight) 40%);
-            opacity: 0.85;
         }
     }
 
     .mk-table-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
         overflow-x: auto;
         min-width: 0;
         width: 100%;
@@ -1118,8 +596,7 @@ function format_unit_isk(value: number): string {
         }
     }
 
-    .mk-table--weeks .mk-table__bar,
-    .mk-table--traffic .mk-table__bar {
+    .mk-table--weeks .mk-table__bar {
         width: 45%;
     }
 
@@ -1159,36 +636,6 @@ function format_unit_isk(value: number): string {
             width: 100%;
             height: 100%;
         }
-    }
-
-    .mk-faction-mark {
-        display: block;
-        flex: 0 0 auto;
-        width: 1.5rem;
-        height: 1.5rem;
-
-        :global(svg) {
-            width: 100%;
-            height: 100%;
-        }
-
-        &--minmatar :global(path) {
-            fill: var(--mk-minmatar);
-        }
-
-        &--amarr :global(path) {
-            fill: var(--mk-amarr);
-        }
-    }
-
-    .mk-row--success td:first-child {
-        border-left: solid 3px var(--green);
-    }
-    .mk-row--danger td:first-child {
-        border-left: solid 3px var(--fleet-red);
-    }
-    .mk-row--info td:first-child {
-        border-left: solid 3px var(--alliance-blue);
     }
 
     .mk-table--hulls {
@@ -1231,275 +678,10 @@ function format_unit_isk(value: number): string {
                 margin-bottom: 0.15em;
             }
 
-            td[data-label="Sold per loss"] {
-                grid-column: 1 / -1;
-                text-align: left !important;
-            }
         }
     }
-
-    /* Top types board ----------------------------------------------------- */
 
     .mk-board {
         min-width: 0;
-    }
-
-    .mk-types {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-    }
-
-    .mk-type {
-        display: grid;
-        grid-template-columns: 1.5rem 2.5rem 1fr;
-        align-items: center;
-        gap: var(--space-xs);
-        padding-block: var(--space-2xs);
-        border-bottom: solid 1px var(--mk-rule);
-
-        &:last-child {
-            border-bottom: none;
-        }
-    }
-
-    .mk-type__rank {
-        font-family: var(--heading-font);
-        color: var(--faded);
-        text-align: center;
-
-        .mk-type--lead & {
-            color: var(--fleet-yellow);
-        }
-    }
-
-    .mk-type__icon {
-        display: block;
-        width: 2.5rem;
-        height: 2.5rem;
-
-        :global(img) {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-    }
-
-    .mk-type__body {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35em;
-        min-width: 0;
-    }
-
-    .mk-type__line {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-areas: 'name isk' 'meta isk';
-        column-gap: var(--space-s);
-        align-items: baseline;
-    }
-
-    .mk-type__name {
-        grid-area: name;
-        font-weight: 600;
-        color: var(--highlight);
-        font-size: var(--step-0);
-    }
-
-    .mk-type__meta {
-        grid-area: meta;
-        font-size: var(--step--2);
-        color: var(--faded);
-    }
-
-    .mk-type__isk {
-        grid-area: isk;
-        font-size: var(--step-1);
-        font-weight: 600;
-        color: var(--highlight);
-        white-space: nowrap;
-    }
-
-    .mk-shelf-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
-        gap: var(--space-3xs);
-    }
-
-    .mk-stat {
-        display: flex;
-        flex-direction: column;
-        gap: 0.15em;
-        padding: var(--space-s);
-        border: solid 1px var(--border-color);
-        background: color-mix(in srgb, var(--highlight) 2%, transparent);
-    }
-
-    .mk-stat__label {
-        font-size: var(--step--2);
-        color: var(--faded);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .mk-stat__value {
-        font-size: var(--step-2);
-        font-weight: 600;
-        line-height: 1.1;
-        color: var(--highlight);
-    }
-
-    .mk-stat__note {
-        font-size: var(--step--1);
-        color: var(--faded);
-    }
-
-    .mk-losses {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-
-        li {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-    }
-
-    .mk-losses__body {
-        flex: 1 1 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.3em;
-        min-width: 0;
-    }
-
-    .mk-losses__meta {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-s);
-        flex-wrap: wrap;
-        font-size: var(--step--1);
-
-        b {
-            color: var(--highlight);
-        }
-
-        > span {
-            color: var(--faded);
-        }
-    }
-
-    /* Steps and CTA ------------------------------------------------------- */
-
-    .mk-equal {
-        align-items: stretch;
-    }
-
-    .mk-step__head {
-        display: flex;
-        align-items: baseline;
-        gap: var(--space-xs);
-    }
-
-    .mk-step__number {
-        font-family: var(--heading-font);
-        font-size: var(--step-2);
-        color: var(--fleet-yellow);
-        line-height: 1;
-    }
-
-    .mk-step__text {
-        font-size: var(--step--1);
-        color: var(--foreground);
-    }
-
-    .mk-step__link {
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        text-decoration: none !important;
-    }
-
-    .mk-cta__inner {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-m);
-        flex-wrap: wrap;
-
-        p {
-            color: var(--faded);
-            font-size: var(--step--1);
-        }
-    }
-
-    /* About --------------------------------------------------------------- */
-
-    .mk-about__head {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: var(--space-s);
-        flex-wrap: wrap;
-        margin-bottom: var(--space-m);
-    }
-
-    .mk-about__sources {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        gap: var(--space-2xs);
-        flex-wrap: wrap;
-
-        li {
-            padding: 0.15em 0.6em;
-            border: solid 1px color-mix(in srgb, var(--highlight) 18%, transparent);
-            font-size: var(--step--2);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--faded);
-        }
-    }
-
-    .mk-method {
-        display: flex;
-        flex-direction: column;
-        margin: 0;
-    }
-
-    .mk-method__row {
-        display: grid;
-        grid-template-columns: minmax(8rem, 12rem) 1fr;
-        gap: var(--space-s);
-        padding-block: var(--space-xs);
-        border-top: solid 1px var(--mk-rule);
-
-        dt {
-            font-size: var(--step--1);
-            font-weight: 600;
-            color: var(--highlight);
-        }
-
-        dd {
-            margin: 0;
-            font-size: var(--step--1);
-            color: var(--foreground);
-            line-height: 1.6;
-        }
-
-        @media screen and (max-width: 720px) {
-            grid-template-columns: 1fr;
-            gap: var(--space-3xs);
-        }
     }
 </style>

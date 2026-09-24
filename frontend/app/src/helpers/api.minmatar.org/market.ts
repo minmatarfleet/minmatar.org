@@ -1,6 +1,7 @@
 import type {
     Contract,
     ContractMetrics,
+    InferredSalesMonthlyVolumePage,
     InferredSalesVolume,
     LiveSellOrderSupply,
     MarketHealth,
@@ -115,6 +116,51 @@ export async function get_sell_order_supply(location_id: number) {
         return await response.json() as LiveSellOrderSupply
     } catch (error) {
         throw new Error(`Error fetching sell-order supply: ${error.message}`, {
+            cause: error.cause,
+        })
+    }
+}
+
+export async function get_inferred_sales_monthly_types(
+    location_id: number,
+    year: number,
+    month: number,
+    options: {
+        page?: number
+        sort?: string
+        sold_class?: string
+        q?: string
+        access_token?: string | false
+    } = {},
+): Promise<InferredSalesMonthlyVolumePage> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    if (options.access_token) {
+        headers['Authorization'] = `Bearer ${options.access_token}`
+    }
+
+    const params = new URLSearchParams()
+    params.set('location_id', String(location_id))
+    params.set('year', String(year))
+    params.set('month', String(month))
+    if (options.page != null) params.set('page', String(options.page))
+    if (options.sort) params.set('sort', options.sort)
+    if (options.sold_class) params.set('sold_class', options.sold_class)
+    if (options.q) params.set('q', options.q)
+
+    const ENDPOINT = `${API_ENDPOINT}/inferred-sales/monthly/types?${params.toString()}`
+
+    try {
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok) {
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status,
+            })
+        }
+        return await response.json() as InferredSalesMonthlyVolumePage
+    } catch (error) {
+        throw new Error(`Error fetching monthly volume page: ${error.message}`, {
             cause: error.cause,
         })
     }

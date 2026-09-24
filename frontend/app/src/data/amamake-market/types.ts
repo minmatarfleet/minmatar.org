@@ -238,24 +238,6 @@ export type MarketHubHealth = {
 // Editorial layer (hand-authored per issue in `<slug>.ts`)
 // ---------------------------------------------------------------------------
 
-export type MarketLink = {
-    href: string
-    label: string
-}
-
-export type MarketStat = {
-    label: string
-    value: string
-    note?: string
-}
-
-/** A hand-authored table (import vs local). */
-export type MarketTable = {
-    headers: readonly string[]
-    rows: readonly { cells: readonly string[]; tone?: 'success' | 'danger' | 'info' }[]
-    footnote: string
-}
-
 export type MarketMethodologyEntry = {
     label: string
     text: string
@@ -264,6 +246,11 @@ export type MarketMethodologyEntry = {
 export type MarketInvolvementStep = {
     title: string
     text: string
+    href: string
+    label: string
+}
+
+export type MarketLink = {
     href: string
     label: string
 }
@@ -278,17 +265,12 @@ export type AmamakeMarketIssue = {
     previous_period_label: string
     /** When the live context (hub health, Jita guide) was captured. */
     context_as_of: string
-    /** One-line verdict shown on the hub card and under the masthead. */
-    headline: string
-    opening: readonly string[]
-
     sales: MarketSalesTotals
     sales_vs: MarketSalesTotalsVs
     days: readonly MarketDayRow[]
     weeks: readonly MarketWeekRow[]
     weeks_dek: string
     categories: readonly MarketCategoryRow[]
-    categories_dek: string
 
     top_types: {
         rows: readonly MarketTopTypeRow[]
@@ -299,7 +281,6 @@ export type AmamakeMarketIssue = {
     hulls: {
         rows: readonly MarketHullRow[]
         dek: string
-        footnote: string
     }
 
     catchment: {
@@ -308,40 +289,27 @@ export type AmamakeMarketIssue = {
         rows: readonly MarketCatchmentRow[]
         regions: readonly MarketRegionRow[]
         pipe: MarketPipe
-        dek: readonly string[]
-        footnote: string
-    }
-
-    contracts: {
-        totals: MarketContractTotals
-        rows: readonly MarketContractHullRow[]
         dek: string
-        footnote: string
-    } | null
+    }
 
     margins: {
         rows: readonly MarketMarginRow[]
         dek: string
-        footnote: string
         jita_as_of: string | null
     }
 
-    import_vs_local: {
-        dek: readonly string[]
-        table: MarketTable
-    }
-
-    shelf: {
-        dek: readonly string[]
-        stats: readonly MarketStat[]
-        actions: readonly MarketLink[]
+    /** Paginated volume table — rows come from the API, not boards. */
+    volume: {
+        dek: string
+        location_id: number
+        year: number
+        month: number
     }
 
     get_involved: {
+        dek: string
         steps: readonly MarketInvolvementStep[]
         actions: readonly MarketLink[]
-        /** Guide slugs from the learning catalog, in display order. */
-        featured_guides: readonly string[]
     }
 
     methodology: readonly MarketMethodologyEntry[]

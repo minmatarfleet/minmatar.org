@@ -81,7 +81,6 @@ const structured_data = build_amamake_market_json_ld({
                         <span class="[ mk-hero__kicker ]">{title_kicker}</span>
                         {title_period && <span class="[ mk-hero__period ]">{title_period}</span>}
                     </PageTitle>
-                    <p class="[ mk-hero__headline ]">{issue.headline}</p>
                 </Flexblock>
             </TextBox>
 
@@ -132,13 +131,5 @@ const structured_data = build_amamake_market_json_ld({
         letter-spacing: 0.08em;
         line-height: 1.1;
         color: var(--fleet-yellow);
-    }
-
-    .mk-hero__headline {
-        margin: 0;
-        font-size: var(--step-1);
-        line-height: 1.4;
-        color: var(--foreground);
-        max-width: 40ch;
     }
 </style>
