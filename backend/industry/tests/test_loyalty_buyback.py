@@ -1373,10 +1373,17 @@ class LpBuybackThreadCloseSignalTestCase(AppTestCase):
         enqueue_mock.assert_called_once_with(555)
 
     @patch("industry.signals._close_market_order_discord_thread")
-    def test_delete_user_enqueues_thread_close(self, enqueue_mock):
-        self._open_order(thread_id=666)
+    def test_delete_user_keeps_order_and_does_not_close_thread(
+        self, enqueue_mock
+    ):
+        # created_by is SET_NULL on user delete — the order survives, so the
+        # pre_delete close-thread signal does not run.
+        order = self._open_order(thread_id=666)
         self.user.delete()
-        enqueue_mock.assert_called_once_with(666)
+        order.refresh_from_db()
+        self.assertIsNone(order.created_by_id)
+        self.assertEqual(order.discord_thread_id, 666)
+        enqueue_mock.assert_not_called()
 
     @patch("industry.signals._close_market_order_discord_thread")
     def test_cancel_enqueues_thread_close(self, enqueue_mock):
