@@ -26,8 +26,8 @@ class LoyaltyMarketOrderClaimResponse(Schema):
     amount: int
     destination_character_name: str = ""
     destination_corporation_name: str = ""
-    claimed_by_user_id: int
-    claimed_by_name: str
+    claimed_by_user_id: Optional[int] = None
+    claimed_by_name: Optional[str] = None
     claimed_by_character_id: Optional[int] = None
     created_at: datetime
 
@@ -43,8 +43,8 @@ class LoyaltyMarketOrderResponse(Schema):
     quantity_remaining: int = 0
     isk_per_lp: int
     status: str
-    created_by_user_id: int
-    created_by_name: str
+    created_by_user_id: Optional[int] = None
+    created_by_name: Optional[str] = None
     created_by_character_id: Optional[int] = None
     claimed_by_user_id: Optional[int] = None
     claimed_by_name: Optional[str] = None

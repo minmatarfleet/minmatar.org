@@ -107,7 +107,7 @@ class EveMoon(models.Model):
     moon = models.IntegerField()
     monthly_revenue = models.BigIntegerField(default=0)
     reported_by = models.ForeignKey(
-        "auth.User", on_delete=models.CASCADE, null=True, blank=True
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
     )
 
     def __str__(self):

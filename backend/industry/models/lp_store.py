@@ -522,7 +522,9 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="loyalty_point_market_orders_created",
     )
     claimed_by = models.ForeignKey(
@@ -573,7 +575,9 @@ class IndustryLoyaltyPointMarketOrderClaim(models.Model):
     destination_corporation_name = models.CharField(max_length=128, blank=True)
     claimed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="loyalty_point_market_order_claims",
     )
     created_at = models.DateTimeField(auto_now_add=True)

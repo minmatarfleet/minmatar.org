@@ -1,8 +1,11 @@
+import importlib
 from unittest.mock import patch
 
-from django.contrib.auth.models import Permission
+from django.apps import apps
+from django.contrib.auth.models import Permission, User
 from django.db.models import signals
 from django.test import Client
+from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase
 from applications.discord import notify_application_transferred
@@ -21,6 +24,10 @@ from applications.signals import eve_corporation_application_post_save
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import set_primary_character, user_player
+
+restore_deleted_applications = importlib.import_module(
+    "applications.migrations.0005_restore_deleted_corporation_applications"
+).restore_deleted_applications
 
 BASE_URL = "/api/applications/"
 
@@ -569,3 +576,80 @@ class ApplicationPrimeTimeTest(TestCase):
         self.assertEqual(response.status_code, 200)
         player.refresh_from_db()
         self.assertEqual(player.prime_time, "AP")
+
+
+class ProcessedByDeleteTest(TestCase):
+    """processed_by is cleared when that user is deleted; the applicant is not."""
+
+    def setUp(self):
+        signals.post_save.disconnect(
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+        super().setUp()
+
+    def test_deleting_processor_keeps_the_application(self):
+        recruiter = User.objects.create(username="recruiter")
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=98838663,
+            description="keep me",
+            status="accepted",
+            processed_by=recruiter,
+            discord_thread_id=1,
+        )
+
+        recruiter.delete()
+
+        application.refresh_from_db()
+        self.assertIsNone(application.processed_by_id)
+        self.assertEqual(application.status, "accepted")
+        self.assertEqual(application.user_id, self.user.id)
+
+    def test_deleting_applicant_still_removes_the_application(self):
+        applicant = User.objects.create(username="applicant")
+        application = EveCorporationApplication.objects.create(
+            user=applicant,
+            corporation_id=98838663,
+            description="gone",
+        )
+        application_id = application.id
+
+        applicant.delete()
+
+        self.assertFalse(
+            EveCorporationApplication.objects.filter(
+                pk=application_id
+            ).exists()
+        )
+
+    def test_restore_migration_inserts_missing_application(self):
+        applicant = User.objects.create(id=3094, username="maurdakar")
+
+        restore_deleted_applications(apps, None)
+
+        application = EveCorporationApplication.objects.get(pk=1958)
+        self.assertEqual(application.user_id, applicant.id)
+        self.assertEqual(application.corporation_id, 98838663)
+        self.assertEqual(application.status, "accepted")
+        self.assertEqual(application.discord_thread_id, 1533166091159867522)
+        self.assertIsNone(application.processed_by_id)
+        self.assertTrue(
+            application.description.startswith("Mining with MRECK")
+        )
+        self.assertEqual(
+            application.created_at,
+            parse_datetime("2026-08-01T17:34:40.981000+00:00"),
+        )
+        self.assertEqual(
+            EveCorporationApplication.objects.filter(
+                discord_thread_id=1533166091159867522
+            ).count(),
+            1,
+        )
+
+        restore_deleted_applications(apps, None)
+
+        self.assertEqual(
+            EveCorporationApplication.objects.filter(pk=1958).count(), 1
+        )
