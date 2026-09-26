@@ -41,6 +41,22 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-24 — SRP warning with no reason
+
+**Category:** pulse.technology
+**Verdict:** bug (blank error) + clarify (character not on account)
+**Discord:** fix + PR URL, plus why the killmail was rejected
+**PR:** fix+skill
+**Symptom vs cause:** SRP wizard showed a warning and the retry buttons
+  with no text. Resolve returned 403 because the victim
+  `EveCharacter.user` was null. The partial rendered an unused
+  `endpoint_error` instead of `fetching_error`. The hull was already on
+  `ShipReimbursementProgram`.
+**Durable rule:** A blank SRP warning is a swallowed resolve error.
+  Dump the victim character’s `user_id` before treating the hull as
+  uncovered.
+**Skill update:** SRP blank-warning row.
+
 ## 2026-09-20 — Fishermen bot kicked FL33T people
 
 **Category:** pulse.technology

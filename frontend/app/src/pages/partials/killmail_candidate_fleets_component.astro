@@ -29,6 +29,7 @@ if (
 import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
 import { srp_frontend_programs } from '@dtypes/layout_components'
 import { analyze_killmail } from '@helpers/fetching/srp'
+import { srp_resolve_blocked_message, srp_resolve_is_blocked } from '@helpers/srp_resolve_error'
 
 const query_program = Astro.url.searchParams.get('program')
 
@@ -41,7 +42,6 @@ if (Astro.request.method === "POST") {
 
 let killmail_analysis:KillmailAnalysis | null = null
 let fetching_error: Error | false = false
-let endpoint_error: Error | false = false
 let program:SRPFrontendPrograms | null = null
 
 try {
@@ -76,9 +76,9 @@ import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{((fetching_error && fetching_error?.cause) || !external_killmail_link || !program) ?
+{srp_resolve_is_blocked(fetching_error, external_killmail_link, program) ?
     <Flexblock centered={true}>
-        <p class="[ w-fit animate-rubber-band ]">⚠️ {endpoint_error}</p>
+        <p class="[ w-fit animate-rubber-band ]">⚠️ {srp_resolve_blocked_message(fetching_error, external_killmail_link, program, t)}</p>
         <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
     </Flexblock> :
     <>{fetching_error !== false ?
