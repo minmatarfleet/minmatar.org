@@ -794,7 +794,7 @@ class EveFittingModuleSubstitutionTestCase(TestCase):
             row.full_clean()
         self.assertIn("substitute_module", ctx.exception.message_dict)
 
-    def test_unique_preferred_per_fitting(self):
+    def test_unique_pair_per_fitting(self):
         EveFittingModuleSubstitution.objects.create(
             fitting=self.fitting,
             preferred_module=self.preferred,
@@ -806,6 +806,27 @@ class EveFittingModuleSubstitutionTestCase(TestCase):
                 preferred_module=self.preferred,
                 substitute_module=self.substitute,
             )
+
+    def test_multiple_substitutes_for_one_preferred(self):
+        other, _ = EveType.objects.get_or_create(
+            id=435,
+            defaults={
+                "name": "5MN Abyssal Microwarpdrive",
+                "eve_group": self.preferred.eve_group,
+                "published": True,
+            },
+        )
+        EveFittingModuleSubstitution.objects.create(
+            fitting=self.fitting,
+            preferred_module=self.preferred,
+            substitute_module=self.substitute,
+        )
+        EveFittingModuleSubstitution.objects.create(
+            fitting=self.fitting,
+            preferred_module=self.preferred,
+            substitute_module=other,
+        )
+        self.assertEqual(2, self.fitting.module_substitutions.count())
 
 
 class EveFittingModuleSubstitutionAdminTestCase(TestCase):
