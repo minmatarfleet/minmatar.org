@@ -1035,7 +1035,7 @@ export interface IndustryOrderUI {
     needed_by:          Date;
     fulfilled_at:       Date | null;
     public_short_code:  string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootItem[];

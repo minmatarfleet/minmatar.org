@@ -58,7 +58,7 @@ def patch_order_item_assignment(
             return 404, ErrorResponse(detail="Assignment not found.")
 
         order = assignment.order_item.order
-        owner_uid = order.character.user_id
+        owner_uid = order.character.user_id if order.character else None
         assignee_uid = assignment.character.user_id
         if request.user.id not in (owner_uid, assignee_uid):
             return 403, ErrorResponse(

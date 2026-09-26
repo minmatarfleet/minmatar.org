@@ -24,7 +24,7 @@ class EveCorporationApplication(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     processed_by = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="processed_by",
         blank=True,
         null=True,

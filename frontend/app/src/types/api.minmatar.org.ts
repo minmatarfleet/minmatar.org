@@ -1103,7 +1103,7 @@ export interface IndustryOrder {
     needed_by:          Date;
     fulfilled_at:       Date | null;
     public_short_code:  string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootItem[];
@@ -1731,7 +1731,7 @@ export interface IndustrySingleOrder {
     fulfilled_at:       Date | null;
     public_short_code:  string;
     contract_to:        string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootSingleItem[];
@@ -1778,8 +1778,8 @@ export interface LoyaltyMarketOrderClaim {
     amount:                          number;
     destination_character_name:      string;
     destination_corporation_name:    string;
-    claimed_by_user_id:              number;
-    claimed_by_name:                 string;
+    claimed_by_user_id:              number | null;
+    claimed_by_name:                 string | null;
     claimed_by_character_id:         number | null;
     created_at:                      Date | string;
 }
@@ -1795,8 +1795,8 @@ export interface LoyaltyMarketOrder {
     quantity_remaining:         number;
     isk_per_lp:                 number;
     status:                     string;
-    created_by_user_id:         number;
-    created_by_name:            string;
+    created_by_user_id:         number | null;
+    created_by_name:            string | null;
     created_by_character_id:    number | null;
     claimed_by_user_id:         number | null;
     claimed_by_name:            string | null;
