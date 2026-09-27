@@ -10,12 +10,16 @@ from esi.models import CallbackRedirect, Token
 from app.test import TestCase
 from discord.client import DiscordError
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import (
     set_primary_character,
     user_primary_character,
 )
-from users.helpers import LEGACY_MUMBLE_ACCESS_TABLE, offboard_user
+from users.helpers import (
+    LEGACY_MUMBLE_ACCESS_TABLE,
+    make_user_objects,
+    offboard_user,
+)
 from users.router import callback
 
 # Create your tests here.
@@ -362,3 +366,50 @@ class OffboardUserTestCase(TestCase):
         offboard_user(self.user.id)
 
         self.assertFalse(User.objects.filter(id=self.user.id).exists())
+
+
+class MakeUserObjectsTestCase(TestCase):
+    """Login must not fail when EvePlayer nicknames collide case-insensitively."""
+
+    def test_eve_player_created_when_nickname_case_collides(self):
+        owner = User.objects.create(username="AdminDude")
+        EvePlayer.objects.create(user=owner, nickname="BearThatCares")
+
+        django_user = make_user_objects(
+            {
+                "id": 999001,
+                "username": "bearthatcares",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+        )
+
+        player = EvePlayer.objects.get(user=django_user)
+        self.assertEqual(player.nickname, f"bearthatcares__u{django_user.pk}")
+        self.assertNotEqual(player.user_id, owner.id)
+
+    def test_eve_player_reuses_existing_for_same_user(self):
+        django_user = make_user_objects(
+            {
+                "id": 999002,
+                "username": "freshpilot",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+        )
+        first = EvePlayer.objects.get(user=django_user)
+
+        again = make_user_objects(
+            {
+                "id": 999002,
+                "username": "freshpilot",
+                "discriminator": "0",
+                "avatar": "def",
+            }
+        )
+
+        self.assertEqual(again.id, django_user.id)
+        self.assertEqual(EvePlayer.objects.filter(user=again).count(), 1)
+        self.assertEqual(
+            EvePlayer.objects.get(user=again).nickname, first.nickname
+        )

@@ -16,10 +16,12 @@ from campaigns.models import (
     Campaign,
     CampaignArea,
     CampaignKind,
-    CampaignOpponent,
+    CampaignParty,
     CampaignStatus,
     CampaignSystem,
     CampaignWeekTarget,
+    PartyKind,
+    PartySide,
     SystemGoal,
     SystemPriority,
     SystemRole,
@@ -202,26 +204,44 @@ def create_area(
     if payload.scope == AreaScope.CONSTELLATION:
         if not payload.constellation_id:
             return 400, {"detail": "constellation_id required"}
+        defaults = {
+            "name": payload.name,
+            "region_id": None,
+        }
+        if payload.goal is not None:
+            if payload.goal not in SystemGoal.values:
+                return 400, {"detail": f"unknown goal: {payload.goal}"}
+            defaults["goal"] = payload.goal
+        if payload.priority is not None:
+            if payload.priority not in SystemPriority.values:
+                return 400, {"detail": f"unknown priority: {payload.priority}"}
+            defaults["priority"] = payload.priority
         area, _ = CampaignArea.objects.update_or_create(
             campaign=campaign,
             scope=AreaScope.CONSTELLATION,
             constellation_id=payload.constellation_id,
-            defaults={
-                "name": payload.name,
-                "region_id": None,
-            },
+            defaults=defaults,
         )
     else:
         if not payload.region_id:
             return 400, {"detail": "region_id required"}
+        defaults = {
+            "name": payload.name,
+            "constellation_id": None,
+        }
+        if payload.goal is not None:
+            if payload.goal not in SystemGoal.values:
+                return 400, {"detail": f"unknown goal: {payload.goal}"}
+            defaults["goal"] = payload.goal
+        if payload.priority is not None:
+            if payload.priority not in SystemPriority.values:
+                return 400, {"detail": f"unknown priority: {payload.priority}"}
+            defaults["priority"] = payload.priority
         area, _ = CampaignArea.objects.update_or_create(
             campaign=campaign,
             scope=AreaScope.REGION,
             region_id=payload.region_id,
-            defaults={
-                "name": payload.name,
-                "constellation_id": None,
-            },
+            defaults=defaults,
         )
     return serializers.area_out(area)
 
@@ -449,40 +469,52 @@ def attach_structure_timer(
 
 
 @router.post(
-    "/{slug}/opponents",
+    "/{slug}/parties",
     response={
-        200: schemas.CampaignOpponentOut,
+        200: schemas.CampaignPartyOut,
         400: ErrorResponse,
         403: ErrorResponse,
     },
     auth=AuthBearer(),
 )
-def attach_opponent(
-    request, slug: str, payload: schemas.OpponentAttachRequest
-):
-    """Declare who this campaign is fought against."""
+def attach_party(request, slug: str, payload: schemas.PartyAttachRequest):
+    """Add an enemy or ally party (character, corp, alliance, or faction)."""
     campaign = get_object_or_404(Campaign, slug=slug)
     if not _can_manage(request.user, campaign):
         return _denied()
 
-    if payload.alliance_id:
-        existing = campaign.opponents.filter(
-            alliance_id=payload.alliance_id
-        ).first()
-        if existing:
-            existing.name = payload.name
-            existing.ticker = payload.ticker
-            existing.corporation_id = payload.corporation_id
-            existing.faction_id = payload.faction_id
-            existing.save()
-            return serializers.opponent_out(existing)
+    if payload.kind not in PartyKind.values:
+        return 400, {"detail": f"unknown party kind: {payload.kind}"}
+    if payload.side not in PartySide.values:
+        return 400, {"detail": f"unknown party side: {payload.side}"}
 
-    opponent = CampaignOpponent.objects.create(
-        campaign=campaign,
-        name=payload.name,
-        ticker=payload.ticker,
-        alliance_id=payload.alliance_id,
-        corporation_id=payload.corporation_id,
-        faction_id=payload.faction_id,
-    )
-    return serializers.opponent_out(opponent)
+    lookup = {}
+    if payload.kind == PartyKind.ALLIANCE and payload.alliance_id:
+        lookup["alliance_id"] = payload.alliance_id
+    elif payload.kind == PartyKind.CORPORATION and payload.corporation_id:
+        lookup["corporation_id"] = payload.corporation_id
+    elif payload.kind == PartyKind.CHARACTER and payload.character_id:
+        lookup["character_id"] = payload.character_id
+    elif payload.kind == PartyKind.FACTION and payload.faction_id:
+        lookup["faction_id"] = payload.faction_id
+
+    defaults = {
+        "name": payload.name,
+        "ticker": payload.ticker,
+        "kind": payload.kind,
+        "side": payload.side,
+        "character_id": payload.character_id,
+        "corporation_id": payload.corporation_id,
+        "alliance_id": payload.alliance_id,
+        "faction_id": payload.faction_id,
+    }
+    if lookup:
+        party, _created = CampaignParty.objects.update_or_create(
+            campaign=campaign,
+            **lookup,
+            defaults=defaults,
+        )
+        return serializers.party_out(party)
+
+    party = CampaignParty.objects.create(campaign=campaign, **defaults)
+    return serializers.party_out(party)

@@ -1,14 +1,27 @@
 """Django admin for live campaigns.
 
-Operators configure theaters, structures, opponents, week targets and the
+Operators configure theaters, structures, parties, week targets and the
 rest from here; the frontend cog opens the campaign change page.
+
+The campaign change form uses django-admin-tabs so operators work through
+focused tabs (story, theaters, structures) instead of one long page.
 """
 
 from django.contrib import admin, messages
 from django.utils import timezone
+from django_admin_tabs import AdminChangeListTab, AdminTab, TabbedModelAdmin
 
+from campaigns.forms import (
+    PRIORITY_TO_ROLE,
+    CampaignConstellationTheaterForm,
+    CampaignRegionTheaterForm,
+    CampaignSystemTheaterForm,
+    cover_image_formfield,
+)
 from campaigns.services import plan
+from campaigns.services import structures as structure_service
 from campaigns.models import (
+    AreaScope,
     Campaign,
     CampaignAdvantageReading,
     CampaignAdvantageState,
@@ -23,100 +36,444 @@ from campaigns.models import (
     CampaignFitting,
     CampaignKillmail,
     CampaignKillmailParticipant,
-    CampaignOpponent,
+    CampaignParty,
     CampaignOrderProgress,
     CampaignParticipantDay,
     CampaignParticipantStat,
     CampaignSiteCompletion,
-    CampaignStandingFleet,
     CampaignStructure,
     CampaignSystem,
     CampaignSystemArc,
     CampaignSystemInsurgency,
     CampaignSystemSnapshot,
     CampaignWeekTarget,
+    SystemRole,
 )
+from eveuniverse.models import EveConstellation, EveRegion, EveSolarSystem
 
-# --- Inlines on Campaign ----------------------------------------------------
+# --- Map lookups (autocomplete; extend eveuniverse registration) ------------
+
+
+def _ensure_map_autocomplete(model, search):
+    """Unregister stock eveuniverse admin and re-register with search_fields."""
+    if admin.site.is_registered(model):
+        admin.site.unregister(model)
+
+    class MapEntityAdmin(admin.ModelAdmin):
+        list_display = ("name", "id")
+
+        def has_module_permission(self, request):
+            return False
+
+    MapEntityAdmin.search_fields = search
+    admin.site.register(model, MapEntityAdmin)
+
+
+_ensure_map_autocomplete(EveSolarSystem, ("name", "=id"))
+_ensure_map_autocomplete(EveConstellation, ("name", "=id"))
+_ensure_map_autocomplete(EveRegion, ("name", "=id"))
+
+
+# --- Inlines (theater tab) --------------------------------------------------
 
 
 class CampaignSystemInline(admin.TabularInline):
     model = CampaignSystem
-    extra = 0
+    form = CampaignSystemTheaterForm
+    extra = 1
     show_change_link = True
+    autocomplete_fields = ("eve_solar_system",)
     fields = (
-        "name",
-        "solar_system_id",
-        "region_id",
-        "role",
+        "eve_solar_system",
         "priority",
         "goal",
         "is_fw_objective",
         "retired_at",
     )
+    verbose_name = "System"
+    verbose_name_plural = "Systems"
 
 
-class CampaignAreaInline(admin.TabularInline):
+class CampaignConstellationInline(admin.TabularInline):
     model = CampaignArea
-    extra = 0
+    form = CampaignConstellationTheaterForm
+    extra = 1
     show_change_link = True
-    fields = ("name", "scope", "constellation_id", "region_id")
+    autocomplete_fields = ("eve_constellation",)
+    fields = ("eve_constellation", "goal", "priority")
+    verbose_name = "Constellation"
+    verbose_name_plural = "Constellations"
+
+    def get_queryset(self, request):
+        return (
+            super().get_queryset(request).filter(scope=AreaScope.CONSTELLATION)
+        )
 
 
-class CampaignOpponentInline(admin.TabularInline):
-    model = CampaignOpponent
-    extra = 0
+class CampaignRegionInline(admin.TabularInline):
+    model = CampaignArea
+    form = CampaignRegionTheaterForm
+    extra = 1
     show_change_link = True
+    autocomplete_fields = ("eve_region",)
+    fields = ("eve_region", "goal", "priority")
+    verbose_name = "Region"
+    verbose_name_plural = "Regions"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(scope=AreaScope.REGION)
+
+
+# --- Campaign change tabs ---------------------------------------------------
+
+
+class CampaignOverviewTab(AdminTab, admin.ModelAdmin):
+    """Read-only pulse of the campaign — edit on Story / Theater / Settings."""
+
+    admin_tab_name = "Overview"
+    readonly_fields = (
+        "name",
+        "kind",
+        "status",
+        "visibility",
+        "short_code",
+        "start_at",
+        "end_at",
+        "created_by",
+        "created_at",
+        "updated_at",
+        "overview_system_count",
+        "overview_area_count",
+        "overview_structure_count",
+        "overview_party_count",
+        "overview_enlistment_count",
+        "overview_commander_order",
+    )
+    fieldsets = (
+        (
+            "At a glance",
+            {
+                "fields": (
+                    "name",
+                    "kind",
+                    "status",
+                    "visibility",
+                    "short_code",
+                ),
+                "description": (
+                    "Read-only summary. Edit the title and story on Story, "
+                    "theaters on Theater, and status or Discord on Settings."
+                ),
+            },
+        ),
+        (
+            "Schedule",
+            {
+                "fields": ("start_at", "end_at"),
+            },
+        ),
+        (
+            "Pulse",
+            {
+                "fields": (
+                    "overview_system_count",
+                    "overview_area_count",
+                    "overview_structure_count",
+                    "overview_party_count",
+                    "overview_enlistment_count",
+                    "overview_commander_order",
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "classes": ("collapse",),
+                "fields": ("created_at", "updated_at", "created_by"),
+            },
+        ),
+    )
+
+    @admin.display(description="Systems")
+    def overview_system_count(self, obj: Campaign) -> int:
+        if obj is None or not obj.pk:
+            return 0
+        return obj.systems.filter(retired_at__isnull=True).count()
+
+    @admin.display(description="Constellations / regions")
+    def overview_area_count(self, obj: Campaign) -> int:
+        if obj is None or not obj.pk:
+            return 0
+        return obj.areas.count()
+
+    @admin.display(description="Structures")
+    def overview_structure_count(self, obj: Campaign) -> int:
+        if obj is None or not obj.pk:
+            return 0
+        return obj.structures.count()
+
+    @admin.display(description="Parties")
+    def overview_party_count(self, obj: Campaign) -> int:
+        if obj is None or not obj.pk:
+            return 0
+        return obj.parties.count()
+
+    @admin.display(description="Enlisted pilots")
+    def overview_enlistment_count(self, obj: Campaign) -> int:
+        if obj is None or not obj.pk:
+            return 0
+        return obj.enlistments.count()
+
+    @admin.display(description="Commander's order")
+    def overview_commander_order(self, obj: Campaign) -> str:
+        if obj is None:
+            return "—"
+        text = (obj.commander_order_text or "").strip()
+        if not text:
+            return "Not set"
+        status = "draft" if obj.commander_order_is_draft else "published"
+        preview = text if len(text) <= 80 else f"{text[:77]}…"
+        return f"{status}: {preview}"
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        extra_context.update(
+            {
+                "show_save": False,
+                "show_save_and_continue": False,
+                "show_save_and_add_another": False,
+            }
+        )
+        return super().change_view(
+            request, object_id, form_url, extra_context=extra_context
+        )
+
+
+class CampaignStoryTab(AdminTab, admin.ModelAdmin):
+    admin_tab_name = "Story"
+    fieldsets = (
+        (
+            "Member-facing story",
+            {
+                "fields": (
+                    "name",
+                    "tagline",
+                    "description_md",
+                    "cover_image_url",
+                ),
+                "description": (
+                    "Title and tagline show on the campaign list and detail "
+                    "header. Description is the longer story under them; "
+                    "cover is the hero art from the site gallery."
+                ),
+            },
+        ),
+        (
+            "Commander's order",
+            {
+                "fields": (
+                    "commander_order_text",
+                    "commander_order_is_draft",
+                    "commander_order_set_at",
+                ),
+                "description": (
+                    "Shown above this week's objectives on the campaign "
+                    "page. Leave as draft until you are ready to publish, or "
+                    "use the list actions to auto-draft from the week plan."
+                ),
+            },
+        ),
+    )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "cover_image_url":
+            current = ""
+            object_id = (request.resolver_match.kwargs or {}).get("object_id")
+            if object_id:
+                current = (
+                    Campaign.objects.filter(pk=object_id)
+                    .values_list("cover_image_url", flat=True)
+                    .first()
+                    or ""
+                )
+            return cover_image_formfield(current_value=current)
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == "name" and formfield is not None:
+            formfield.label = "Title"
+        return formfield
+
+
+class CampaignTheatersTab(AdminTab, admin.ModelAdmin):
+    """Systems, constellations, and regions for this campaign."""
+
+    admin_tab_name = "Theater"
+    inlines = [
+        CampaignSystemInline,
+        CampaignConstellationInline,
+        CampaignRegionInline,
+    ]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (),
+                "description": (
+                    "Add theaters in three sections. Use the type-ahead to "
+                    "pick a system, constellation, or region by name. Set a "
+                    "goal on each so members know the focus."
+                ),
+            },
+        ),
+    )
+
+
+class CampaignPartiesTab(AdminChangeListTab, admin.ModelAdmin):
+    admin_tab_name = "Parties"
+    model = CampaignParty
+    parent_model = Campaign
+    fk_field = "campaign"
+    list_display = (
+        "name",
+        "ticker",
+        "kind",
+        "side",
+        "character_id",
+        "corporation_id",
+        "alliance_id",
+        "faction_id",
+    )
+    list_filter = ("kind", "side")
+    list_editable = ("kind", "side")
+    search_fields = ("name", "ticker", "alliance_id", "corporation_id")
     fields = (
         "name",
         "ticker",
-        "alliance_id",
+        "kind",
+        "side",
+        "character_id",
         "corporation_id",
+        "alliance_id",
         "faction_id",
     )
 
 
-class CampaignStructureInline(admin.TabularInline):
+class CampaignStructuresTab(AdminChangeListTab, admin.ModelAdmin):
+    admin_tab_name = "Structures"
     model = CampaignStructure
-    extra = 0
-    show_change_link = True
-    fields = (
+    parent_model = Campaign
+    fk_field = "campaign"
+    list_display = (
         "name",
         "structure_type",
         "system_name",
-        "solar_system_id",
+        "corporation_name",
+        "related_alliance_name",
+        "structure_affiliation",
         "status",
-        "source",
+        "reinforce_hour",
+    )
+    list_filter = ("status", "structure_type", "source")
+    list_editable = ("status", "reinforce_hour")
+    search_fields = (
+        "name",
+        "system_name",
         "corporation_name",
         "alliance_name",
         "related_alliance_name",
-        "reinforce_hour",
-        "timer",
     )
     raw_id_fields = ("timer", "killmail", "created_by")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "updated_at", "structure_affiliation")
+    fields = (
+        "name",
+        "structure_type",
+        "type_id",
+        "status",
+        "source",
+        "structure_affiliation",
+        "system_name",
+        "solar_system_id",
+        "eve_structure_id",
+        "corporation_id",
+        "corporation_name",
+        "alliance_id",
+        "alliance_name",
+        "related_alliance_id",
+        "related_alliance_name",
+        "fitting",
+        "reinforce_hour",
+        "timer",
+        "destroyed_at",
+        "killmail",
+        "created_by",
+    )
+
+    @admin.display(description="Affiliation")
+    def structure_affiliation(self, obj: CampaignStructure) -> str:
+        if obj is None or not obj.pk:
+            return "—"
+        return structure_service.structure_affiliation(obj)
 
 
-class CampaignFittingInline(admin.TabularInline):
-    model = CampaignFitting
-    extra = 0
-    show_change_link = True
-    fields = ("fitting", "role_label", "srp_eligible", "order")
-    raw_id_fields = ("fitting",)
-
-
-class CampaignStandingFleetInline(admin.StackedInline):
-    model = CampaignStandingFleet
-    extra = 0
-    max_num = 1
-    can_delete = True
+class CampaignSettingsTab(AdminTab, admin.ModelAdmin):
+    admin_tab_name = "Settings"
+    raw_id_fields = ("created_by", "default_fleet_audience")
+    fieldsets = (
+        (
+            "Identity",
+            {
+                "fields": ("slug", "short_code", "kind"),
+                "description": (
+                    "URL slug, donation short code, and display kind. "
+                    "Title and cover live on the Story tab."
+                ),
+            },
+        ),
+        (
+            "Lifecycle",
+            {
+                "fields": (
+                    "status",
+                    "visibility",
+                    "start_at",
+                    "end_at",
+                    "created_by",
+                ),
+            },
+        ),
+        (
+            "Discord and fleets",
+            {
+                "fields": (
+                    "discord_channel_id",
+                    "voice_channel_ids",
+                    "default_fleet_audience",
+                ),
+            },
+        ),
+        (
+            "Scoring and orders",
+            {
+                "fields": ("scoring", "order_pool"),
+                "description": (
+                    "JSON overrides for scoring weights and the daily order "
+                    "point pool. Leave empty to use defaults."
+                ),
+            },
+        ),
+        (
+            "Donations",
+            {
+                "fields": ("donation_corporation_id", "donation_division"),
+            },
+        ),
+    )
 
 
 # --- Campaign ---------------------------------------------------------------
 
 
 @admin.register(Campaign)
-class CampaignAdmin(admin.ModelAdmin):
+class CampaignAdmin(TabbedModelAdmin, admin.ModelAdmin):
     list_display = (
         "name",
         "slug",
@@ -140,14 +497,7 @@ class CampaignAdmin(admin.ModelAdmin):
         "draft_commander_orders",
         "publish_commander_orders",
     )
-    inlines = [
-        CampaignSystemInline,
-        CampaignAreaInline,
-        CampaignOpponentInline,
-        CampaignStructureInline,
-        CampaignFittingInline,
-        CampaignStandingFleetInline,
-    ]
+    # Add form only — change redirects into tabs.
     fieldsets = (
         (
             "Identity",
@@ -160,10 +510,6 @@ class CampaignAdmin(admin.ModelAdmin):
                     "tagline",
                     "description_md",
                     "cover_image_url",
-                ),
-                "description": (
-                    "Tagline is the one-line focus on the campaign list and "
-                    "detail header. Description is the longer story under it."
                 ),
             },
         ),
@@ -179,57 +525,20 @@ class CampaignAdmin(admin.ModelAdmin):
                 ),
             },
         ),
-        (
-            "Commander's order",
-            {
-                "fields": (
-                    "commander_order_text",
-                    "commander_order_is_draft",
-                    "commander_order_set_at",
-                ),
-                "description": (
-                    "Shown above this week's objectives on the campaign "
-                    "page. Leave as draft until you are ready to publish, or "
-                    "use the list actions to auto-draft from the week plan."
-                ),
-            },
-        ),
-        (
-            "Discord and fleets",
-            {
-                "fields": (
-                    "discord_channel_id",
-                    "voice_channel_ids",
-                    "default_fleet_audience",
-                ),
-            },
-        ),
-        (
-            "Scoring and orders",
-            {
-                "classes": ("collapse",),
-                "fields": ("scoring", "order_pool"),
-                "description": (
-                    "JSON overrides for scoring weights and the daily order "
-                    "point pool. Leave empty to use defaults."
-                ),
-            },
-        ),
-        (
-            "Donations",
-            {
-                "classes": ("collapse",),
-                "fields": ("donation_corporation_id", "donation_division"),
-            },
-        ),
-        (
-            "Timestamps",
-            {
-                "classes": ("collapse",),
-                "fields": ("created_at", "updated_at"),
-            },
-        ),
     )
+    admin_tabs = [
+        CampaignOverviewTab,
+        CampaignStoryTab,
+        CampaignTheatersTab,
+        CampaignPartiesTab,
+        CampaignStructuresTab,
+        CampaignSettingsTab,
+    ]
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "cover_image_url":
+            return cover_image_formfield()
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     @admin.display(description="Systems")
     def system_count(self, obj: Campaign) -> int:
@@ -316,11 +625,11 @@ class CampaignWeekTargetInline(admin.TabularInline):
 
 @admin.register(CampaignSystem)
 class CampaignSystemAdmin(admin.ModelAdmin):
+    form = CampaignSystemTheaterForm
     list_display = (
         "name",
         "campaign",
         "solar_system_id",
-        "role",
         "priority",
         "goal",
         "is_fw_objective",
@@ -328,14 +637,14 @@ class CampaignSystemAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "campaign",
-        "role",
         "priority",
         "goal",
         "is_fw_objective",
     )
-    list_editable = ("role", "priority", "goal", "is_fw_objective")
+    list_editable = ("priority", "goal", "is_fw_objective")
     search_fields = ("name", "solar_system_id", "campaign__slug")
     raw_id_fields = ("campaign",)
+    autocomplete_fields = ("eve_solar_system",)
     inlines = [CampaignSystemArcInline, CampaignWeekTargetInline]
     fieldsets = (
         (
@@ -343,6 +652,7 @@ class CampaignSystemAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "campaign",
+                    "eve_solar_system",
                     "name",
                     "solar_system_id",
                     "region_id",
@@ -350,12 +660,11 @@ class CampaignSystemAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Theater role",
+            "Theater focus",
             {
                 "fields": (
                     "is_fw_objective",
                     "goal",
-                    "role",
                     "priority",
                     "added_at",
                     "retired_at",
@@ -363,11 +672,17 @@ class CampaignSystemAdmin(admin.ModelAdmin):
                 "description": (
                     "FW objectives drive plex/VP/advantage and kill scoring. "
                     "Ops theaters (is_fw_objective off) are for structure "
-                    "hunting and member guidance only."
+                    "hunting and member guidance only. Priority orders the "
+                    "member boards (high first)."
                 ),
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        obj.sync_from_eve_solar_system()
+        obj.role = PRIORITY_TO_ROLE.get(obj.priority, SystemRole.SECONDARY)
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(CampaignArea)
@@ -376,30 +691,42 @@ class CampaignAreaAdmin(admin.ModelAdmin):
         "name",
         "scope",
         "campaign",
+        "goal",
+        "priority",
         "constellation_id",
         "region_id",
     )
-    list_filter = ("campaign", "scope")
+    list_filter = ("campaign", "scope", "goal", "priority")
+    list_editable = ("goal", "priority")
     search_fields = ("name", "campaign__slug")
     raw_id_fields = ("campaign",)
+    autocomplete_fields = ("eve_constellation", "eve_region")
     fieldsets = (
         (
             None,
             {
                 "fields": (
                     "campaign",
-                    "name",
                     "scope",
+                    "eve_constellation",
+                    "eve_region",
+                    "name",
                     "constellation_id",
                     "region_id",
+                    "goal",
+                    "priority",
                 ),
                 "description": (
-                    "Constellation or region ops theater. Never an FW "
-                    "objective; guidance and structure hunting only."
+                    "Constellation or region ops theater. Prefer the "
+                    "type-ahead fields; ids and name fill in automatically."
                 ),
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        obj.sync_from_eve_lookups()
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(CampaignSystemArc)
@@ -459,21 +786,25 @@ class CampaignSystemInsurgencyAdmin(admin.ModelAdmin):
     raw_id_fields = ("campaign_system",)
 
 
-# --- Structures and opponents -----------------------------------------------
+# --- Structures and parties -------------------------------------------------
 
 
-@admin.register(CampaignOpponent)
-class CampaignOpponentAdmin(admin.ModelAdmin):
+@admin.register(CampaignParty)
+class CampaignPartyAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "ticker",
+        "kind",
+        "side",
         "campaign",
-        "alliance_id",
+        "character_id",
         "corporation_id",
+        "alliance_id",
         "faction_id",
     )
-    list_filter = ("campaign",)
-    search_fields = ("name", "ticker", "alliance_id")
+    list_filter = ("campaign", "kind", "side")
+    list_editable = ("kind", "side")
+    search_fields = ("name", "ticker", "alliance_id", "corporation_id")
     raw_id_fields = ("campaign",)
 
 
@@ -485,6 +816,7 @@ class CampaignStructureAdmin(admin.ModelAdmin):
         "system_name",
         "corporation_name",
         "related_alliance_name",
+        "structure_affiliation",
         "status",
         "reinforce_hour",
         "campaign",
@@ -499,7 +831,7 @@ class CampaignStructureAdmin(admin.ModelAdmin):
         "related_alliance_name",
     )
     raw_id_fields = ("campaign", "timer", "killmail", "created_by")
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "structure_affiliation")
     fieldsets = (
         (
             None,
@@ -511,6 +843,7 @@ class CampaignStructureAdmin(admin.ModelAdmin):
                     "type_id",
                     "status",
                     "source",
+                    "structure_affiliation",
                 ),
             },
         ),
@@ -534,6 +867,11 @@ class CampaignStructureAdmin(admin.ModelAdmin):
                     "alliance_name",
                     "related_alliance_id",
                     "related_alliance_name",
+                ),
+                "description": (
+                    "Affiliation (hostile / friendly / neutral) is derived "
+                    "from campaign parties matching owner or affiliated "
+                    "alliance."
                 ),
             },
         ),
@@ -559,6 +897,12 @@ class CampaignStructureAdmin(admin.ModelAdmin):
         ),
     )
 
+    @admin.display(description="Affiliation")
+    def structure_affiliation(self, obj: CampaignStructure) -> str:
+        if obj is None or not obj.pk:
+            return "—"
+        return structure_service.structure_affiliation(obj)
+
 
 @admin.register(CampaignFitting)
 class CampaignFittingAdmin(admin.ModelAdmin):
@@ -572,24 +916,6 @@ class CampaignFittingAdmin(admin.ModelAdmin):
     list_filter = ("campaign", "srp_eligible")
     list_editable = ("role_label", "srp_eligible", "order")
     raw_id_fields = ("campaign", "fitting")
-
-
-@admin.register(CampaignStandingFleet)
-class CampaignStandingFleetAdmin(admin.ModelAdmin):
-    list_display = (
-        "campaign",
-        "advert_name",
-        "member_count",
-        "current_boss_character_id",
-        "last_seen_at",
-        "is_up_display",
-    )
-    search_fields = ("advert_name", "campaign__slug")
-    raw_id_fields = ("campaign", "fleet", "current_boss_user")
-
-    @admin.display(description="Up", boolean=True)
-    def is_up_display(self, obj: CampaignStandingFleet) -> bool:
-        return obj.is_up
 
 
 # --- Plan / week ------------------------------------------------------------

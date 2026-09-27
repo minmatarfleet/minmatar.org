@@ -46,14 +46,19 @@ class CampaignAreaOut(Schema):
     name: str
     constellation_id: int | None = None
     region_id: int | None = None
+    goal: str = "recon"
+    priority: str = "medium"
 
 
-class CampaignOpponentOut(Schema):
+class CampaignPartyOut(Schema):
     id: int
     name: str
     ticker: str = ""
-    alliance_id: int | None = None
+    kind: str = "alliance"
+    side: str = "enemy"
+    character_id: int | None = None
     corporation_id: int | None = None
+    alliance_id: int | None = None
     faction_id: int | None = None
 
 
@@ -80,6 +85,7 @@ class CampaignStructureOut(Schema):
     alliance_name: str = ""
     related_alliance_id: int | None = None
     related_alliance_name: str = ""
+    affiliation: str = "neutral"
     status: str
     source: str
     fitting: str = ""
@@ -103,7 +109,7 @@ class CampaignListItem(Schema):
     cover_image_url: str = ""
     systems: list[CampaignSystemSummary] = []
     areas: list[CampaignAreaOut] = []
-    opponents: list[CampaignOpponentOut] = []
+    parties: list[CampaignPartyOut] = []
     structures_remaining: int = 0
     structures_destroyed: int = 0
     next_timer_at: datetime | None = None
@@ -145,7 +151,7 @@ class CampaignDetail(Schema):
     commander_order_is_draft: bool = True
     systems: list[CampaignSystemSummary] = []
     areas: list[CampaignAreaOut] = []
-    opponents: list[CampaignOpponentOut] = []
+    parties: list[CampaignPartyOut] = []
     structures: list[CampaignStructureOut] = []
     fittings: list[CampaignFittingOut] = []
     totals: CampaignTotals
@@ -412,6 +418,8 @@ class CampaignAreaCreateRequest(Schema):
     name: str = Field(min_length=1, max_length=128)
     constellation_id: int | None = None
     region_id: int | None = None
+    goal: str | None = None
+    priority: str | None = None
 
 
 class CampaignCreated(Schema):
@@ -442,9 +450,12 @@ class StructureAttachRequest(Schema):
     timer_state: str | None = None
 
 
-class OpponentAttachRequest(Schema):
+class PartyAttachRequest(Schema):
     name: str = Field(min_length=1, max_length=255)
     ticker: str = Field(default="", max_length=16)
+    kind: str = "alliance"
+    side: str = "enemy"
+    character_id: int | None = None
     alliance_id: int | None = None
     corporation_id: int | None = None
     faction_id: int | None = None

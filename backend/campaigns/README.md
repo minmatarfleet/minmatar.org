@@ -24,8 +24,10 @@ The campaign list and detail pages show a cog for staff (or anyone with
 `campaigns.change_campaign`) that opens the change form. From one campaign
 change page you can edit identity (name, tagline, description), lifecycle,
 commander's order, Discord, scoring JSON, systems (including `is_fw_objective`),
-areas, opponents, structures, fittings and the standing fleet. Saving an FW
-objective system with a goal auto-creates a default arc when none exists.
+areas, parties (enemy/ally characters, corps, alliances, factions), structures,
+and fittings. Saving an FW objective system with a goal auto-creates a default
+arc when none exists. Structure affiliation (hostile / friendly / neutral) is
+derived from matching owner or affiliated alliance against campaign parties.
 
 List actions on the campaign changelist:
 
@@ -34,7 +36,7 @@ List actions on the campaign changelist:
 - **Publish commander's order** — clears the draft flag so members see it live
 
 Week targets, arcs, enlistments and activity rows also have their own
-changelists for deeper tweaks. Tagline, opponents, commander's order and
+changelists for deeper tweaks. Tagline, parties, commander's order and
 campaign fittings appear on the member-facing campaign pages; leave the
 order as draft until you publish it. Linking a structure timer to a campaign
 in admin (or via the timer API) creates the recon row and grows the theater.

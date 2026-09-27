@@ -12,7 +12,10 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
-from campaigns.constants import ADVANTAGE_DELTA_BY_SITE_KIND
+from campaigns.constants import (
+    ADVANTAGE_DELTA_BY_SITE_KIND,
+    CAMPAIGN_COVER_CHOICES,
+)
 
 # The campaign week and campaign day both roll over at 11:00 UTC, which is
 # shortly after EVE's daily downtime and the moment FW victory points reset.
@@ -48,9 +51,11 @@ class StructureSource(models.TextChoices):
 
 
 class SystemGoal(models.TextChoices):
-    CAPTURE = "capture", "Capture"
-    DEFEND = "defend", "Defend"
-    CONTEST = "contest", "Contest"
+    TAKE = "take", "Take"
+    HOLD = "hold", "Hold"
+    PRESSURE = "pressure", "Pressure"
+    DISRUPT = "disrupt", "Disrupt"
+    RECON = "recon", "Recon"
     NONE = "none", "No goal"
 
 
@@ -114,7 +119,14 @@ class Campaign(models.Model):
     name = models.CharField(max_length=128)
     tagline = models.CharField(max_length=200, blank=True, default="")
     description_md = models.TextField(blank=True, default="")
-    cover_image_url = models.CharField(max_length=512, blank=True, default="")
+    cover_image_url = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        choices=CAMPAIGN_COVER_CHOICES,
+        help_text="Pick from the site cover gallery. Leave default to use "
+        "the kind fallback on the campaign card.",
+    )
 
     kind = models.CharField(
         max_length=24,
@@ -203,31 +215,92 @@ class Campaign(models.Model):
         return self.kind == CampaignKind.STRATEGIC
 
 
-class CampaignOpponent(models.Model):
-    """An entity this campaign is fought against, for labeling and boards."""
+class PartyKind(models.TextChoices):
+    CHARACTER = "character", "Character"
+    CORPORATION = "corporation", "Corporation"
+    ALLIANCE = "alliance", "Alliance"
+    FACTION = "faction", "Faction"
+
+
+class PartySide(models.TextChoices):
+    ENEMY = "enemy", "Enemy"
+    ALLY = "ally", "Ally"
+
+
+class StructureAffiliation(models.TextChoices):
+    HOSTILE = "hostile", "Hostile"
+    FRIENDLY = "friendly", "Friendly"
+    NEUTRAL = "neutral", "Neutral"
+
+
+class CampaignParty(models.Model):
+    """A character, corp, alliance, or faction on our side or theirs."""
 
     campaign = models.ForeignKey(
-        Campaign, on_delete=models.CASCADE, related_name="opponents"
+        Campaign, on_delete=models.CASCADE, related_name="parties"
+    )
+    kind = models.CharField(
+        max_length=16,
+        choices=PartyKind.choices,
+        default=PartyKind.ALLIANCE,
+        db_index=True,
+    )
+    side = models.CharField(
+        max_length=8,
+        choices=PartySide.choices,
+        default=PartySide.ENEMY,
+        db_index=True,
+    )
+    character_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    corporation_id = models.BigIntegerField(
+        null=True, blank=True, db_index=True
     )
     alliance_id = models.BigIntegerField(null=True, blank=True, db_index=True)
-    corporation_id = models.BigIntegerField(null=True, blank=True)
-    faction_id = models.IntegerField(null=True, blank=True)
+    faction_id = models.IntegerField(null=True, blank=True, db_index=True)
     name = models.CharField(max_length=255)
     ticker = models.CharField(max_length=16, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["side", "name"]
+        verbose_name_plural = "parties"
         constraints = [
             models.UniqueConstraint(
                 fields=["campaign", "alliance_id"],
-                name="campaign_opponent_alliance_unique",
+                name="campaign_party_alliance_unique",
                 condition=models.Q(alliance_id__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["campaign", "corporation_id"],
+                name="campaign_party_corporation_unique",
+                condition=models.Q(corporation_id__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["campaign", "character_id"],
+                name="campaign_party_character_unique",
+                condition=models.Q(character_id__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["campaign", "faction_id"],
+                name="campaign_party_faction_unique",
+                condition=models.Q(faction_id__isnull=False),
             ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.campaign.slug})"
+        return f"{self.name} ({self.side}, {self.campaign.slug})"
+
+    @property
+    def entity_id(self) -> int | None:
+        if self.kind == PartyKind.CHARACTER:
+            return self.character_id
+        if self.kind == PartyKind.CORPORATION:
+            return self.corporation_id
+        if self.kind == PartyKind.ALLIANCE:
+            return self.alliance_id
+        if self.kind == PartyKind.FACTION:
+            return self.faction_id
+        return None
 
 
 class CampaignStructure(models.Model):
@@ -278,13 +351,16 @@ class CampaignStructure(models.Model):
         null=True,
         blank=True,
         db_index=True,
-        help_text="Inferred enemy alliance (e.g. CVA when the owner is an alt corp).",
+        help_text=(
+            "Affiliated alliance when the legal owner is an alt corp "
+            "(e.g. CVA). Used with campaign parties for hostile/friendly."
+        ),
     )
     related_alliance_name = models.CharField(
         max_length=255,
         blank=True,
         default="",
-        help_text="Scout-entered related alliance name.",
+        help_text="Scout-entered affiliated alliance name.",
     )
     eve_structure_id = models.BigIntegerField(null=True, blank=True)
     fitting = models.TextField(
@@ -356,6 +432,14 @@ class CampaignSystem(models.Model):
     campaign = models.ForeignKey(
         Campaign, on_delete=models.CASCADE, related_name="systems"
     )
+    # Type-ahead lookup in admin; denormalized ids/name stay for API/scoring.
+    eve_solar_system = models.ForeignKey(
+        "eveuniverse.EveSolarSystem",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     solar_system_id = models.BigIntegerField(db_index=True)
     name = models.CharField(max_length=64)
     region_id = models.BigIntegerField(null=True, blank=True)
@@ -368,7 +452,7 @@ class CampaignSystem(models.Model):
         default=SystemPriority.MEDIUM,
     )
     goal = models.CharField(
-        max_length=16, choices=SystemGoal.choices, default=SystemGoal.CAPTURE
+        max_length=16, choices=SystemGoal.choices, default=SystemGoal.TAKE
     )
     is_fw_objective = models.BooleanField(
         default=True,
@@ -393,6 +477,16 @@ class CampaignSystem(models.Model):
     def __str__(self) -> str:
         return f"{self.name} ({self.campaign.slug})"
 
+    def sync_from_eve_solar_system(self) -> None:
+        """Copy id/name/region from the autocomplete FK when set."""
+        system = self.eve_solar_system
+        if system is None:
+            return
+        self.solar_system_id = int(system.id)
+        self.name = system.name or self.name
+        if system.eve_constellation_id:
+            self.region_id = system.eve_constellation.eve_region_id
+
 
 class CampaignArea(models.Model):
     """Constellation or region in the campaign as an ops theater.
@@ -409,7 +503,32 @@ class CampaignArea(models.Model):
         null=True, blank=True, db_index=True
     )
     region_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    eve_constellation = models.ForeignKey(
+        "eveuniverse.EveConstellation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    eve_region = models.ForeignKey(
+        "eveuniverse.EveRegion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     name = models.CharField(max_length=128)
+    goal = models.CharField(
+        max_length=16,
+        choices=SystemGoal.choices,
+        default=SystemGoal.RECON,
+        help_text="What members should do in this constellation or region.",
+    )
+    priority = models.CharField(
+        max_length=8,
+        choices=SystemPriority.choices,
+        default=SystemPriority.MEDIUM,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -430,6 +549,21 @@ class CampaignArea(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.scope}, {self.campaign.slug})"
+
+    def sync_from_eve_lookups(self) -> None:
+        """Copy id/name from constellation or region autocomplete FKs."""
+        if self.scope == AreaScope.CONSTELLATION and self.eve_constellation_id:
+            constellation = self.eve_constellation
+            self.constellation_id = int(constellation.id)
+            self.name = constellation.name or self.name
+            self.region_id = None
+            self.eve_region = None
+        elif self.scope == AreaScope.REGION and self.eve_region_id:
+            region = self.eve_region
+            self.region_id = int(region.id)
+            self.name = region.name or self.name
+            self.constellation_id = None
+            self.eve_constellation = None
 
 
 class CampaignSystemArc(models.Model):
@@ -699,38 +833,6 @@ class CampaignEnlistmentCharacter(models.Model):
         if when < self.included_from:
             return False
         return self.included_until is None or when < self.included_until
-
-
-class CampaignStandingFleet(models.Model):
-    """The always-open fleet that is the campaign's front door."""
-
-    campaign = models.OneToOneField(
-        Campaign, on_delete=models.CASCADE, related_name="standing_fleet"
-    )
-    fleet = models.ForeignKey(
-        "fleets.EveFleet", on_delete=models.SET_NULL, null=True, blank=True
-    )
-    current_boss_character_id = models.BigIntegerField(null=True, blank=True)
-    current_boss_user = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
-    )
-    taken_at = models.DateTimeField(null=True, blank=True)
-    handovers = models.PositiveIntegerField(default=0)
-    uptime_minutes_today = models.PositiveIntegerField(default=0)
-    uptime_minutes_prime_today = models.PositiveIntegerField(default=0)
-    advert_name = models.CharField(max_length=128, blank=True, default="")
-    voice_channel_id = models.BigIntegerField(null=True, blank=True)
-    last_seen_at = models.DateTimeField(null=True, blank=True)
-    member_count = models.PositiveIntegerField(default=0)
-
-    def __str__(self) -> str:
-        return f"Standing fleet for {self.campaign.slug}"
-
-    @property
-    def is_up(self) -> bool:
-        if not self.current_boss_character_id or not self.last_seen_at:
-            return False
-        return (timezone.now() - self.last_seen_at).total_seconds() < 600
 
 
 class CampaignDailyOrder(models.Model):

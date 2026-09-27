@@ -37,10 +37,10 @@ class EnsureDefaultArcTestCase(TestCase):
         self.assertEqual(arc.target_state, "flip")
         self.assertEqual(arc.due_at, campaign.end_at)
 
-    def test_defend_goal_gets_hold_arc(self):
+    def test_hold_goal_gets_hold_arc(self):
         campaign = make_campaign()
         system = campaign.systems.first()
-        system.goal = SystemGoal.DEFEND
+        system.goal = SystemGoal.HOLD
         system.save(update_fields=["goal"])
         CampaignSystemArc.objects.filter(campaign_system=system).delete()
 
@@ -63,6 +63,18 @@ class EnsureDefaultArcTestCase(TestCase):
             CampaignSystemArc.objects.filter(campaign_system=system).exists()
         )
 
+    def test_skips_scout_goal(self):
+        campaign = make_campaign()
+        system = campaign.systems.first()
+        system.goal = SystemGoal.RECON
+        system.save(update_fields=["goal"])
+        CampaignSystemArc.objects.filter(campaign_system=system).delete()
+
+        self.assertFalse(ensure_default_arc(system))
+        self.assertFalse(
+            CampaignSystemArc.objects.filter(campaign_system=system).exists()
+        )
+
     def test_signal_creates_arc_on_system_save(self):
         campaign = make_campaign()
         CampaignSystem.objects.filter(campaign=campaign).delete()
@@ -70,7 +82,7 @@ class EnsureDefaultArcTestCase(TestCase):
             campaign=campaign,
             solar_system_id=KAMELA,
             name="Kamela",
-            goal=SystemGoal.CAPTURE,
+            goal=SystemGoal.TAKE,
             is_fw_objective=True,
         )
         self.assertTrue(
@@ -128,6 +140,124 @@ class CampaignAdminActionsTestCase(TestCase):
         self.admin.publish_commander_orders(request, queryset)
         self.campaign.refresh_from_db()
         self.assertFalse(self.campaign.commander_order_is_draft)
+
+
+class CampaignAdminTabsTestCase(TestCase):
+    """Campaign change form is split into django-admin-tabs."""
+
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="campaign-tabs",
+            email="tabs@example.com",
+            password="test",
+        )
+        self.client.force_login(self.user)
+        self.campaign = make_campaign(slug="tabbed-ux", short_code="TBX")
+
+    def test_change_redirects_to_overview_tab(self):
+        response = self.client.get(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/change/"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/overview/",
+            response["Location"],
+        )
+
+    def test_overview_and_story_tabs_render(self):
+        for slug in ("overview", "story", "settings"):
+            with self.subTest(tab=slug):
+                response = self.client.get(
+                    f"/admin/campaigns/campaign/{self.campaign.pk}/"
+                    f"tabs/{slug}/"
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "django-admin-tabs-nav")
+                self.assertContains(response, "Overview")
+                self.assertContains(response, "Story")
+                self.assertContains(response, "Theater")
+                self.assertNotContains(response, ">Doctrine<")
+
+    def test_story_tab_has_title_and_cover(self):
+        response = self.client.get(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/story/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="name"')
+        self.assertContains(response, "Title")
+        self.assertContains(response, 'name="tagline"')
+        self.assertContains(response, 'name="cover_image_url"')
+        self.assertContains(response, "campaign-cover-picker")
+        self.assertContains(response, "/images/home-auga-cover.jpg")
+        self.assertContains(response, "Auga")
+        self.assertContains(response, 'name="commander_order_text"')
+
+    def test_story_tab_can_save_gallery_cover(self):
+        response = self.client.post(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/story/",
+            {
+                "name": self.campaign.name,
+                "tagline": "Focus",
+                "description_md": "",
+                "cover_image_url": "/images/home-auga-cover.jpg",
+                "commander_order_text": "",
+                "commander_order_is_draft": "on",
+                "commander_order_set_at": "",
+                "_continue": "Save",
+            },
+        )
+        self.assertIn(response.status_code, (200, 302))
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.cover_image_url, "/images/home-auga-cover.jpg"
+        )
+
+    def test_overview_tab_is_read_only_summary(self):
+        response = self.client.get(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/overview/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "At a glance")
+        self.assertContains(response, "Pulse")
+        self.assertNotContains(response, 'name="name"')
+        self.assertNotContains(response, 'name="slug"')
+        self.assertNotContains(response, 'name="status"')
+        self.assertNotContains(response, 'name="cover_image_url"')
+        self.assertNotContains(response, 'name="_save"')
+
+    def test_settings_tab_has_lifecycle_fields(self):
+        response = self.client.get(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/settings/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="slug"')
+        self.assertContains(response, 'name="status"')
+        self.assertContains(response, 'name="discord_channel_id"')
+        self.assertNotContains(response, 'name="name"')
+        self.assertNotContains(response, 'name="tagline"')
+
+    def test_theaters_tab_lists_campaign_systems(self):
+        system = self.campaign.systems.first()
+        response = self.client.get(
+            f"/admin/campaigns/campaign/{self.campaign.pk}/tabs/theater/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, system.name)
+        self.assertContains(response, "django-admin-tabs-nav")
+        self.assertContains(response, "Systems")
+        self.assertContains(response, "Constellations")
+        self.assertContains(response, "Regions")
+
+    def test_admin_tabs_registered(self):
+        self.assertEqual(len(CampaignAdmin.admin_tabs), 6)
+        self.assertNotIn(
+            "Doctrine",
+            [tab.admin_tab_name for tab in CampaignAdmin.admin_tabs],
+        )
+        self.assertNotIn(
+            "Areas",
+            [tab.admin_tab_name for tab in CampaignAdmin.admin_tabs],
+        )
 
 
 class StructureTimerAdminAttachTestCase(TestCase):

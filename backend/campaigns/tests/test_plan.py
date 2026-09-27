@@ -61,7 +61,7 @@ class WeeklyPlanTests(TestCase):
         self.assertGreaterEqual(row.target, 3000)
 
     def test_a_defend_system_is_measured_in_days_under_the_line(self):
-        self.system.goal = SystemGoal.DEFEND
+        self.system.goal = SystemGoal.HOLD
         self.system.save()
         plan.propose_week(self.campaign)
 
@@ -255,7 +255,7 @@ class StrategicStructuresReportedTests(TestCase):
 
     def test_strategic_fw_objective_does_not_get_structures_reported(self):
         self.system.is_fw_objective = True
-        self.system.goal = SystemGoal.CAPTURE
+        self.system.goal = SystemGoal.TAKE
         self.system.save(update_fields=["is_fw_objective", "goal"])
         CampaignSystemSnapshot.objects.create(
             campaign_system=self.system,
@@ -275,6 +275,17 @@ class StrategicStructuresReportedTests(TestCase):
         self.assertNotIn(
             CampaignWeekTarget.Metric.STRUCTURES_REPORTED, metrics
         )
+
+    def test_recon_goal_gets_structures_reported_target(self):
+        self.system.is_fw_objective = True
+        self.system.goal = SystemGoal.RECON
+        self.system.save(update_fields=["is_fw_objective", "goal"])
+        plan.propose_week(self.campaign)
+        row = CampaignWeekTarget.objects.get(campaign_system=self.system)
+        self.assertEqual(
+            row.metric, CampaignWeekTarget.Metric.STRUCTURES_REPORTED
+        )
+        self.assertEqual(row.target, DEFAULT_STRUCTURES_REPORTED_TARGET)
 
     def test_faction_warfare_does_not_get_structures_reported(self):
         campaign = make_campaign(slug="fw-only", short_code="FWO")

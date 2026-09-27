@@ -24,7 +24,6 @@ from campaigns.models import (
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
     CampaignKillmail,
-    CampaignStandingFleet,
     CampaignStatus,
     CampaignSystem,
     CampaignSystemArc,
@@ -49,9 +48,9 @@ from feed.models import FeedKillmail, FeedMonitoredSystem
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 SYSTEMS = [
-    ("Kamela", SystemGoal.CAPTURE, SystemRole.PRIMARY, "flip"),
-    ("Kourmonen", SystemGoal.DEFEND, SystemRole.PRIMARY, "hold"),
-    ("Auga", SystemGoal.DEFEND, SystemRole.SECONDARY, "hold"),
+    ("Kamela", SystemGoal.TAKE, SystemRole.PRIMARY, "flip"),
+    ("Kourmonen", SystemGoal.HOLD, SystemRole.PRIMARY, "hold"),
+    ("Auga", SystemGoal.HOLD, SystemRole.SECONDARY, "hold"),
 ]
 
 MINMATAR_FACTION_ID = 500002
@@ -125,10 +124,6 @@ class Command(BaseCommand):
                 "visibility": "alliance",
             },
         )
-        CampaignStandingFleet.objects.get_or_create(
-            campaign=campaign,
-            defaults={"advert_name": "MINMATAR FLEET · Bleak Lands Push"},
-        )
         return campaign
 
     def _systems(self, campaign: Campaign):
@@ -163,7 +158,7 @@ class Command(BaseCommand):
                 campaign_system=system
             ).exists():
                 continue
-            ours = system.goal == SystemGoal.DEFEND
+            ours = system.goal == SystemGoal.HOLD
             contested = 14.0 if ours else 38.0
             threshold = 3000
             for hours_ago in range(7 * 24, -1, -3):

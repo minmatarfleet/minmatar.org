@@ -15,8 +15,12 @@ from eveuniverse.models import EveSolarSystem
 from campaigns.constants import STRUCTURE_TYPE_BY_ID, STRUCTURE_TYPE_IDS
 from campaigns.models import (
     Campaign,
+    CampaignParty,
     CampaignStructure,
     CampaignSystem,
+    PartyKind,
+    PartySide,
+    StructureAffiliation,
     StructureSource,
     StructureStatus,
     SystemGoal,
@@ -103,15 +107,18 @@ def ensure_campaign_system(
     system_name: str,
 ) -> CampaignSystem:
     """Add the system to the campaign theater if it is not already there."""
+    eve_system = EveSolarSystem.objects.filter(id=solar_system_id).first()
+    defaults = {
+        "name": system_name,
+        "role": SystemRole.SUPPORT,
+        "goal": SystemGoal.NONE,
+        "is_fw_objective": False,
+        "eve_solar_system": eve_system,
+    }
     system, created = CampaignSystem.objects.get_or_create(
         campaign=campaign,
         solar_system_id=solar_system_id,
-        defaults={
-            "name": system_name,
-            "role": SystemRole.SUPPORT,
-            "goal": SystemGoal.NONE,
-            "is_fw_objective": False,
-        },
+        defaults=defaults,
     )
     if created:
         logger.info(
@@ -120,9 +127,13 @@ def ensure_campaign_system(
             campaign.slug,
         )
     elif system.retired_at is not None:
+        update_fields = ["retired_at", "name"]
         system.retired_at = None
         system.name = system_name or system.name
-        system.save(update_fields=["retired_at", "name"])
+        if eve_system and not system.eve_solar_system_id:
+            system.eve_solar_system = eve_system
+            update_fields.append("eve_solar_system")
+        system.save(update_fields=update_fields)
     return system
 
 
@@ -398,6 +409,57 @@ def match_structure_for_killmail(
     if queryset.count() == 1:
         return queryset.first()
     return None
+
+
+def structure_matches_party(
+    structure: CampaignStructure, party: CampaignParty
+) -> bool:
+    """True when the structure's owner or affiliated party is this party."""
+    if party.kind == PartyKind.ALLIANCE:
+        alliance_id = party.alliance_id
+        if alliance_id is None:
+            return False
+        return alliance_id in (
+            structure.alliance_id,
+            structure.related_alliance_id,
+        )
+    if party.kind == PartyKind.CORPORATION:
+        return (
+            party.corporation_id is not None
+            and party.corporation_id == structure.corporation_id
+        )
+    # Characters and factions do not own citadels in our recon model yet.
+    return False
+
+
+def structure_affiliation(
+    structure: CampaignStructure,
+    parties: list[CampaignParty] | None = None,
+) -> str:
+    """hostile / friendly / neutral from campaign parties.
+
+    Enemy matches win over ally when both somehow apply. Affiliated alliance
+    (related_alliance_*) counts the same as the legal owner alliance.
+    """
+    rows = (
+        parties
+        if parties is not None
+        else list(structure.campaign.parties.all())
+    )
+    enemy_hit = False
+    ally_hit = False
+    for party in rows:
+        if not structure_matches_party(structure, party):
+            continue
+        if party.side == PartySide.ENEMY:
+            enemy_hit = True
+        elif party.side == PartySide.ALLY:
+            ally_hit = True
+    if enemy_hit:
+        return StructureAffiliation.HOSTILE
+    if ally_hit:
+        return StructureAffiliation.FRIENDLY
+    return StructureAffiliation.NEUTRAL
 
 
 def mark_destroyed(

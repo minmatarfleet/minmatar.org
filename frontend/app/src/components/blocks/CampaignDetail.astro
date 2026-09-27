@@ -83,8 +83,7 @@ import Button from '@components/blocks/Button.astro'
 import CampaignOrdersHero from '@components/blocks/CampaignOrdersHero.astro'
 import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
 import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
-import CampaignOpsSystemRow from '@components/blocks/CampaignOpsSystemRow.astro'
-import CampaignOpsAreas from '@components/blocks/CampaignOpsAreas.astro'
+import CampaignTheaterList from '@components/blocks/CampaignTheaterList.astro'
 import CampaignStructuresTable from '@components/blocks/CampaignStructuresTable.astro'
 import CampaignFleetsTable from '@components/blocks/CampaignFleetsTable.astro'
 import CampaignSites from '@components/blocks/CampaignSites.astro'
@@ -160,6 +159,7 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                         {fw_systems.length > 0 &&
                             <Flexblock gap='var(--space-s)'>
                                 <h3>{t('campaigns.theater.fw_objectives')}</h3>
+                                <small>{t('campaigns.theater.fw_hint')}</small>
                                 {fw_systems.map(system =>
                                     <div id={`campaign-system-${system.id}`}>
                                         <CampaignSystemCard system={system} slug={campaign.slug} can_report={campaign.is_enlisted} />
@@ -171,13 +171,21 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                                 <Flexblock gap='var(--space-s)'>
                                     <Flexblock gap='var(--space-3xs)'>
-                                        <h3>{t('campaigns.theater.ops_theaters')}</h3>
-                                        <small>{t('campaigns.theater.ops_hint')}</small>
+                                        <h3>{
+                                            fw_systems.length > 0
+                                                ? t('campaigns.theater.ops_theaters')
+                                                : t('campaigns.theater.title')
+                                        }</h3>
+                                        <small>{
+                                            fw_systems.length > 0
+                                                ? t('campaigns.theater.ops_hint')
+                                                : t('campaigns.theater.hint')
+                                        }</small>
                                     </Flexblock>
-                                    <CampaignOpsAreas areas={areas} />
-                                    {ops_systems.map(system =>
-                                        <CampaignOpsSystemRow system={system} />
-                                    )}
+                                    <CampaignTheaterList
+                                        systems={ops_systems}
+                                        areas={areas}
+                                    />
                                 </Flexblock>
                             </ComponentBlock>
                         }

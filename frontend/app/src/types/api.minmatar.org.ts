@@ -2515,16 +2515,25 @@ export interface CampaignArea {
     name:               string;
     constellation_id:   number | null;
     region_id:          number | null;
+    goal:               string;
+    priority:           string;
 }
 
 export type CampaignKind = 'faction_warfare' | 'strategic'
 
-export interface CampaignOpponent {
+export type CampaignPartyKind = 'character' | 'corporation' | 'alliance' | 'faction'
+export type CampaignPartySide = 'enemy' | 'ally'
+export type CampaignStructureAffiliation = 'hostile' | 'friendly' | 'neutral'
+
+export interface CampaignParty {
     id:                 number;
     name:               string;
     ticker:             string;
-    alliance_id:        number | null;
+    kind:               CampaignPartyKind;
+    side:               CampaignPartySide;
+    character_id:       number | null;
     corporation_id:     number | null;
+    alliance_id:        number | null;
     faction_id:         number | null;
 }
 
@@ -2551,6 +2560,7 @@ export interface CampaignStructure {
     alliance_name:      string;
     related_alliance_id: number | null;
     related_alliance_name: string;
+    affiliation:        CampaignStructureAffiliation;
     status:             'anchored' | 'reinforced' | 'destroyed' | 'unanchored';
     source:             'recon' | 'timer' | 'killmail';
     fitting:            string;
@@ -2574,7 +2584,7 @@ export interface CampaignListItem {
     cover_image_url:        string;
     systems:                CampaignSystemSummary[];
     areas:                  CampaignArea[];
-    opponents:              CampaignOpponent[];
+    parties:                CampaignParty[];
     structures_remaining:   number;
     structures_destroyed:   number;
     next_timer_at:          string | null;
@@ -2616,7 +2626,7 @@ export interface CampaignDetail {
     commander_order_is_draft:   boolean;
     systems:                    CampaignSystemSummary[];
     areas:                      CampaignArea[];
-    opponents:                  CampaignOpponent[];
+    parties:                    CampaignParty[];
     structures:                 CampaignStructure[];
     fittings:                   CampaignFitting[];
     totals:                     CampaignTotals;

@@ -1,4 +1,4 @@
-"""Campaign kinds, opponents, and structure theaters."""
+"""Campaign kinds, parties, and structure theaters."""
 
 from datetime import timedelta
 
@@ -8,8 +8,11 @@ from django.utils import timezone
 
 from campaigns.models import (
     CampaignKind,
-    CampaignOpponent,
+    CampaignParty,
     CampaignStructure,
+    PartyKind,
+    PartySide,
+    StructureAffiliation,
     StructureSource,
     StructureStatus,
 )
@@ -40,14 +43,16 @@ class CampaignKindTests(TestCase):
             short_code="CVA",
         )
         campaign.systems.all().delete()
-        CampaignOpponent.objects.create(
+        CampaignParty.objects.create(
             campaign=campaign,
             name="Curatores Veritatis Alliance",
             ticker="CVA",
+            kind=PartyKind.ALLIANCE,
+            side=PartySide.ENEMY,
             alliance_id=1354830081,
         )
         self.assertTrue(campaign.is_strategic)
-        self.assertEqual(campaign.opponents.count(), 1)
+        self.assertEqual(campaign.parties.count(), 1)
 
 
 class StructureAttachTests(TestCase):
@@ -140,6 +145,67 @@ class StructureAttachTests(TestCase):
         self.assertEqual(structure.related_alliance_id, cva.alliance_id)
         self.assertEqual(
             structure.related_alliance_name, "Curatores Veritatis Alliance"
+        )
+
+    def test_structure_affiliation_from_parties(self):
+        FeedMonitoredSystem.objects.create(
+            solar_system_id=KAMELA,
+            name="Kamela",
+            source=FeedMonitoredSystem.Source.FW_WARZONE,
+            is_active=True,
+        )
+        CampaignParty.objects.create(
+            campaign=self.campaign,
+            name="Curatores Veritatis Alliance",
+            ticker="CVA",
+            kind=PartyKind.ALLIANCE,
+            side=PartySide.ENEMY,
+            alliance_id=1354830081,
+        )
+        CampaignParty.objects.create(
+            campaign=self.campaign,
+            name="Friendly Holders",
+            ticker="FRI",
+            kind=PartyKind.ALLIANCE,
+            side=PartySide.ALLY,
+            alliance_id=99000001,
+        )
+        hostile = structure_service.attach_structure(
+            self.campaign,
+            name="WATERMELLON",
+            structure_type="fortizar",
+            system_name="Kamela",
+            solar_system_id=KAMELA,
+            alliance_id=1354830081,
+            related_alliance_id=1354830081,
+        )
+        friendly = structure_service.attach_structure(
+            self.campaign,
+            name="Our Fort",
+            structure_type="astrahus",
+            system_name="Kamela",
+            solar_system_id=KAMELA,
+            alliance_id=99000001,
+        )
+        neutral = structure_service.attach_structure(
+            self.campaign,
+            name="Random Den",
+            structure_type="mercenary_den",
+            system_name="Kamela",
+            solar_system_id=KAMELA,
+            alliance_id=99009999,
+        )
+        self.assertEqual(
+            structure_service.structure_affiliation(hostile),
+            StructureAffiliation.HOSTILE,
+        )
+        self.assertEqual(
+            structure_service.structure_affiliation(friendly),
+            StructureAffiliation.FRIENDLY,
+        )
+        self.assertEqual(
+            structure_service.structure_affiliation(neutral),
+            StructureAffiliation.NEUTRAL,
         )
 
     def test_attach_structure_rejects_invalid_reinforce_hour(self):

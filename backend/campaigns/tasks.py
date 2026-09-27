@@ -181,7 +181,6 @@ def link_campaign_fleets() -> dict:
     """Attach campaign mails to the fleet their pilots were flying in."""
     linked = 0
     for campaign in _live_campaigns():
-        fleets.refresh_standing_fleet(campaign)
         for offset in range(2):
             linked += fleets.link_killmails_to_fleets(
                 campaign, campaign_day() - timedelta(days=offset)

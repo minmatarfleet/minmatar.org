@@ -261,26 +261,6 @@ export async function report_campaign_advantage(
     )
 }
 
-export async function take_campaign_standing_fleet(slug:string, access_token:string) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/standing-fleet/take`,
-        access_token,
-        'campaign standing fleet',
-        'POST',
-        {},
-    )
-}
-
-export async function join_campaign_standing_fleet(slug:string, access_token:string) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/standing-fleet/join`,
-        access_token,
-        'campaign standing fleet',
-        'POST',
-        {},
-    )
-}
-
 export async function create_campaign_gang(slug:string, access_token:string, gang:CampaignGangRequest) {
     return await request_json<unknown>(
         `${API_ENDPOINT}/${slug}/gangs`,

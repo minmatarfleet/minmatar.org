@@ -36,22 +36,6 @@ MAX_LIMIT = 200
 HOSTILE_GANG_WINDOW_HOURS = 2
 
 
-def _boss_name(standing) -> str | None:
-    """The standing fleet boss by name; the id is what ESI gives us."""
-    if not standing or not standing.current_boss_character_id:
-        return None
-    character = (
-        EveCharacter.objects.filter(
-            character_id=standing.current_boss_character_id
-        )
-        .only("character_name")
-        .first()
-    )
-    if character and character.character_name:
-        return character.character_name
-    return str(standing.current_boss_character_id)
-
-
 def _visible(request):
     """Campaigns a viewer may see. Drafts are for their creator and staff."""
     queryset = Campaign.objects.exclude(status=CampaignStatus.DRAFT)
@@ -148,13 +132,13 @@ def get_campaign(request, slug: str):
         if user
         else None
     )
-    standing = getattr(campaign, "standing_fleet", None)
     enlistment = (
         campaign.enlistments.filter(user=user, status="active").first()
         if user
         else None
     )
 
+    parties = list(campaign.parties.all())
     return {
         "id": campaign.id,
         "slug": campaign.slug,
@@ -171,11 +155,9 @@ def get_campaign(request, slug: str):
         "commander_order_is_draft": campaign.commander_order_is_draft,
         "systems": serializers.campaign_systems(campaign),
         "areas": serializers.campaign_areas(campaign),
-        "opponents": [
-            serializers.opponent_out(row) for row in campaign.opponents.all()
-        ],
+        "parties": [serializers.party_out(row) for row in parties],
         "structures": [
-            serializers.structure_out(row)
+            serializers.structure_out(row, parties=parties)
             for row in campaign.structures.select_related(
                 "timer", "killmail"
             ).all()
@@ -192,9 +174,9 @@ def get_campaign(request, slug: str):
             else 0
         ),
         "characters_tracked": my_stat.characters_tracked if my_stat else 0,
-        "standing_fleet_up": bool(standing and standing.is_up),
-        "standing_fleet_members": standing.member_count if standing else 0,
-        "standing_fleet_boss": _boss_name(standing),
+        "standing_fleet_up": False,
+        "standing_fleet_members": 0,
+        "standing_fleet_boss": None,
     }
 
 
@@ -242,7 +224,6 @@ def get_right_now(request, slug: str):
         .order_by("-occurred_at")[:5]
     )
 
-    standing = getattr(campaign, "standing_fleet", None)
     my_stat = (
         CampaignParticipantStat.objects.filter(
             campaign=campaign, user=user
@@ -276,9 +257,9 @@ def get_right_now(request, slug: str):
             }
             for event in hostile
         ],
-        "standing_fleet_up": bool(standing and standing.is_up),
-        "standing_fleet_members": standing.member_count if standing else 0,
-        "standing_fleet_boss": _boss_name(standing),
+        "standing_fleet_up": False,
+        "standing_fleet_members": 0,
+        "standing_fleet_boss": None,
         "gangs_forming": [
             {
                 "id": event.id,

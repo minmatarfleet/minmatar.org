@@ -216,7 +216,7 @@ def ensure_default_arc(campaign_system) -> bool:
     """
     if not campaign_system.is_fw_objective:
         return False
-    if campaign_system.goal in (SystemGoal.NONE, ""):
+    if campaign_system.goal in (SystemGoal.NONE, SystemGoal.RECON, ""):
         return False
     if CampaignSystemArc.objects.filter(
         campaign_system_id=campaign_system.pk
@@ -224,7 +224,7 @@ def ensure_default_arc(campaign_system) -> bool:
         return False
 
     target_state = (
-        "hold" if campaign_system.goal == SystemGoal.DEFEND else "flip"
+        "hold" if campaign_system.goal == SystemGoal.HOLD else "flip"
     )
     CampaignSystemArc.objects.create(
         campaign_system=campaign_system,

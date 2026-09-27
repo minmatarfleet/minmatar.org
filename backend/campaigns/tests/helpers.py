@@ -42,7 +42,7 @@ def make_campaign(**overrides) -> Campaign:
         campaign=campaign,
         solar_system_id=KAMELA,
         name="Kamela",
-        goal=SystemGoal.CAPTURE,
+        goal=SystemGoal.TAKE,
         role=SystemRole.PRIMARY,
     )
     return campaign

@@ -34,6 +34,12 @@ const status_color = (status:string) => {
     return 'alliance-blue'
 }
 
+const affiliation_color = (affiliation:string) => {
+    if (affiliation === 'hostile') return 'fleet-red'
+    if (affiliation === 'friendly') return 'green'
+    return 'alliance-blue'
+}
+
 const format_reinforce_hour = (hour:number | null) => {
     if (hour === null || hour === undefined) return ''
     return `${String(hour).padStart(2, '0')}:00`
@@ -79,12 +85,14 @@ import Tag from '@components/blocks/Tag.astro'
                 <span role="columnheader">{t('campaigns.structures.col.type')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.owner')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.related')}</span>
+                <span role="columnheader">{t('campaigns.structures.col.affiliation')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.status')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.rh')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.timer')}</span>
             </div>
             {structures.map(structure => {
                 const icon = structure_icon(structure)
+                const affiliation = structure.affiliation || 'neutral'
                 return (
                 <div class="[ campaign-structures-row ]" role="row">
                     <span role="cell">
@@ -109,6 +117,12 @@ import Tag from '@components/blocks/Tag.astro'
                     <span role="cell">{t(structure.structure_type as any) ?? structure.structure_type}</span>
                     <span role="cell">{structure.corporation_name || '—'}</span>
                     <span role="cell">{structure.related_alliance_name || structure.alliance_name || '—'}</span>
+                    <span role="cell">
+                        <Tag
+                            text={t(`campaigns.structures.affiliation.${affiliation}` as any)}
+                            color={affiliation_color(affiliation)}
+                        />
+                    </span>
                     <span role="cell">
                         <Tag
                             text={t(`campaigns.structures.status.${structure.status}` as any)}
@@ -147,7 +161,7 @@ import Tag from '@components/blocks/Tag.astro'
     .campaign-structures-head,
     .campaign-structures-row {
         display: grid;
-        grid-template-columns: 1.5fr 0.9fr 0.9fr 1fr 1fr 0.7fr 0.5fr 0.9fr;
+        grid-template-columns: 1.5fr 0.9fr 0.9fr 1fr 1fr 0.7fr 0.7fr 0.5fr 0.9fr;
         gap: var(--space-2xs);
         align-items: center;
     }

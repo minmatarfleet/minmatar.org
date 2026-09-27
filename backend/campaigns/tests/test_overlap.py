@@ -35,7 +35,7 @@ class OverlappingCampaignTests(TestCase):
         self.second = make_campaign(
             slug="second-push", short_code="SEC", name="Second Push"
         )
-        self.second.systems.update(goal=SystemGoal.DEFEND)
+        self.second.systems.update(goal=SystemGoal.HOLD)
 
         # One pilot, one character, flying for both.
         self.both, self.character = enlist(self.first, "double", 9501)

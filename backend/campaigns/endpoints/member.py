@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -18,7 +17,6 @@ from campaigns.models import (
     CampaignEnlistmentCharacter,
     CampaignEnlistmentPeriod,
     CampaignEvent,
-    CampaignStandingFleet,
     CampaignStatus,
     CampaignSystem,
 )
@@ -350,89 +348,6 @@ def report_advantage(
             if reading.status == "accepted"
             else 0
         ),
-    }
-
-
-@router.post(
-    "/{slug}/standing-fleet/take",
-    response={200: dict, 403: ErrorResponse, 409: ErrorResponse},
-    auth=AuthBearer(),
-)
-def take_standing_fleet(request, slug: str):
-    """Any enlisted pilot may take the fleet when nobody is boss."""
-    campaign = _campaign(slug)
-    denied = _may_act(request, campaign, ENLIST_FEATURE)
-    if denied:
-        return denied
-
-    character = EveCharacter.objects.filter(
-        user=request.user, esi_deleted=False
-    ).first()
-    if not character:
-        # Without a character the fleet would be recorded as held by someone
-        # who cannot boss it, and would never come up.
-        return 409, {"detail": "no_character_to_fly_it"}
-
-    # Two pilots pressing this at once must not both end up holding it, so
-    # the row is locked for the read and the write.
-    with transaction.atomic():
-        CampaignStandingFleet.objects.get_or_create(campaign=campaign)
-        standing = CampaignStandingFleet.objects.select_for_update().get(
-            campaign=campaign
-        )
-
-        if standing.is_up and standing.current_boss_user_id != request.user.id:
-            return {"taken": False, "reason": "Someone already has it."}
-
-        changed_hands = standing.current_boss_user_id != request.user.id
-        standing.current_boss_user = request.user
-        standing.current_boss_character_id = character.character_id
-        standing.taken_at = timezone.now()
-        standing.last_seen_at = timezone.now()
-        # Uptime and handovers are launch KPIs; re-taking a fleet you already
-        # hold is not a handover.
-        if changed_hands:
-            standing.handovers += 1
-        standing.save()
-
-    CampaignEvent.objects.create(
-        campaign=campaign,
-        kind=CampaignEvent.Kind.STANDING_FLEET_TAKEN,
-        occurred_at=timezone.now(),
-        title=f"{request.user.username} took the standing fleet",
-        user=request.user,
-        side="friendly",
-    )
-    return {"taken": True}
-
-
-@router.post(
-    "/{slug}/standing-fleet/join",
-    response={200: dict, 403: ErrorResponse, 409: ErrorResponse},
-    auth=AuthBearer(),
-)
-def join_standing_fleet(request, slug: str):
-    """Ask the current boss's client to invite this pilot.
-
-    The ESI invite needs the boss's token and an in-game fleet, so when there
-    is no boss the honest answer is to offer the fleet instead of failing.
-    """
-    campaign = _campaign(slug)
-    denied = _may_act(request, campaign, ENLIST_FEATURE)
-    if denied:
-        return denied
-
-    standing = getattr(campaign, "standing_fleet", None)
-    if not standing or not standing.is_up:
-        return {
-            "invited": False,
-            "reason": "No standing fleet is up. Take it and it becomes yours.",
-        }
-    # Wiring the ESI invite itself is ticket 10; the contract is settled here.
-    return {
-        "invited": False,
-        "reason": "Invite queued with the fleet boss.",
-        "boss_character_id": standing.current_boss_character_id,
     }
 
 

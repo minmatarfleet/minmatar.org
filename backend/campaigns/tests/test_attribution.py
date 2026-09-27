@@ -186,7 +186,7 @@ class OpsTheaterAttributionTests(TestCase):
 
     def test_fw_objective_still_attributes_ship_kills(self):
         self.system.is_fw_objective = True
-        self.system.goal = SystemGoal.CAPTURE
+        self.system.goal = SystemGoal.TAKE
         self.system.save(update_fields=["is_fw_objective", "goal"])
         feed_killmail = make_feed_killmail(
             103, victim_character_id=9999, attacker_ids=[2001]

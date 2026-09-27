@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1ae70a53a5fbe0bb23424877ea8447a45f5b2a34d5cc67dcf354440ba942505e"
+            "sha256": "cb5fa58fcb19fa5fee5884304d74abb4730c0a90a573912fae5ae0ffaa31a12b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -797,12 +797,17 @@
         },
         "django": {
             "hashes": [
-                "sha256:04f354bf9d807a86ad1a8392fe3808d362358a8eafc322848e0e43e59b24371d",
-                "sha256:59ea02020c3136fce14bef0bbece21a10a4febef5eed1c51c22ae468efa22200"
+                "sha256:9d4d93be539a18ab80d058eb515900e10951e04c537c5a6b394fc49528d3251f",
+                "sha256:f04fb3b36ee119e1af4fa1d397d5fd6cf12700f49321e84d4f4c642c5b1973db"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.10'",
-            "version": "==5.2.16"
+            "version": "==5.2.17"
+        },
+        "django-admin-tabs": {
+            "git": "git+https://github.com/mehmetakyuz/django-admin-tabs.git",
+            "markers": "python_version >= '3.8' and python_version < '4'",
+            "ref": "441780aa16a8650ce93aa0cf6816f60178b23201"
         },
         "django-bitfield": {
             "hashes": [
@@ -2142,11 +2147,11 @@
         },
         "sqlparse": {
             "hashes": [
-                "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba",
-                "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e"
+                "sha256:113c35c75365ab9cc9c7231d68c6428fb11c085fc8e9eb1ad659b7ddbf6cd2b9",
+                "sha256:b861c0288ce2fa56209a9a6412d2e066ac664b3873b89c26c9d8415e8e32996f"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.5.5"
+            "markers": "python_version >= '3.10'",
+            "version": "==0.6.0"
         },
         "tenacity": {
             "hashes": [

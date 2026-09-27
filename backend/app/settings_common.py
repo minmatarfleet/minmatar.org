@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     # Django packages
+    "django_admin_tabs",
     "django_extensions",
     "django_celery_beat",
     "safedelete",

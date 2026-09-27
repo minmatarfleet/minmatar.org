@@ -24,8 +24,9 @@ from campaigns.models import (
     CampaignEnlistmentPeriod,
     CampaignKillmail,
     CampaignKind,
-    CampaignOpponent,
-    CampaignStandingFleet,
+    CampaignParty,
+    PartyKind,
+    PartySide,
     CampaignStatus,
     CampaignSystem,
     CampaignSystemArc,
@@ -50,12 +51,12 @@ from structures.models import EveStructureTimer
 # ESI constellation Hed (20000372) — Amamake, Vard, Siseide, Lantorn, Dal, Auga.
 HED_SYSTEMS = [
     # name, system_id, goal, role, target_state
-    ("Amamake", 30002537, SystemGoal.DEFEND, SystemRole.PRIMARY, "hold"),
-    ("Auga", 30002542, SystemGoal.DEFEND, SystemRole.PRIMARY, "hold"),
-    ("Siseide", 30002539, SystemGoal.DEFEND, SystemRole.PRIMARY, "hold"),
-    ("Dal", 30002541, SystemGoal.CONTEST, SystemRole.SECONDARY, "flip"),
-    ("Vard", 30002538, SystemGoal.CONTEST, SystemRole.SECONDARY, "flip"),
-    ("Lantorn", 30002540, SystemGoal.CONTEST, SystemRole.SUPPORT, "flip"),
+    ("Amamake", 30002537, SystemGoal.HOLD, SystemRole.PRIMARY, "hold"),
+    ("Auga", 30002542, SystemGoal.HOLD, SystemRole.PRIMARY, "hold"),
+    ("Siseide", 30002539, SystemGoal.HOLD, SystemRole.PRIMARY, "hold"),
+    ("Dal", 30002541, SystemGoal.PRESSURE, SystemRole.SECONDARY, "flip"),
+    ("Vard", 30002538, SystemGoal.PRESSURE, SystemRole.SECONDARY, "flip"),
+    ("Lantorn", 30002540, SystemGoal.PRESSURE, SystemRole.SUPPORT, "flip"),
 ]
 
 CVA_ALLIANCE_ID = 1988009451
@@ -167,17 +168,17 @@ class Command(BaseCommand):
                 "commander_order_set_at": now,
             },
         )
-        CampaignStandingFleet.objects.get_or_create(
+        CampaignParty.objects.update_or_create(
             campaign=campaign,
-            defaults={"advert_name": "MINMATAR FLEET · Hed Constellation"},
-        )
-        CampaignOpponent.objects.update_or_create(
-            campaign=campaign,
-            name="Amarr Militia",
+            faction_id=500003,
             defaults={
+                "name": "Amarr Militia",
                 "ticker": "AMARR",
-                "faction_id": 500003,
+                "kind": PartyKind.FACTION,
+                "side": PartySide.ENEMY,
                 "alliance_id": None,
+                "corporation_id": None,
+                "character_id": None,
             },
         )
 
@@ -260,25 +261,25 @@ class Command(BaseCommand):
                 "commander_order_set_at": now,
             },
         )
-        CampaignStandingFleet.objects.get_or_create(
-            campaign=campaign,
-            defaults={"advert_name": "MINMATAR FLEET · CVA Pressure"},
-        )
 
-        CampaignOpponent.objects.update_or_create(
+        CampaignParty.objects.update_or_create(
             campaign=campaign,
             alliance_id=CVA_ALLIANCE_ID,
             defaults={
                 "name": "Curatores Veritatis Alliance",
                 "ticker": "CVA",
+                "kind": PartyKind.ALLIANCE,
+                "side": PartySide.ENEMY,
             },
         )
-        CampaignOpponent.objects.update_or_create(
+        CampaignParty.objects.update_or_create(
             campaign=campaign,
             alliance_id=SEV3RANCE_ALLIANCE_ID,
             defaults={
                 "name": "Sev3rance",
                 "ticker": "-7-",
+                "kind": PartyKind.ALLIANCE,
+                "side": PartySide.ENEMY,
             },
         )
 

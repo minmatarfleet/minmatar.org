@@ -19,6 +19,7 @@ from campaigns.models import (
     SystemGoal,
 )
 from campaigns.services import advantage, snapshots, stats
+from campaigns.services import structures as structure_service
 from eveonline.models import EveCorporation, EveCharacter, EvePlayer
 from feed.models import FeedKillmail
 from fittings.models import EveFitting
@@ -121,7 +122,11 @@ def _status_chip(campaign_system, contested_change, kills, losses) -> str:
     if contested_change is None:
         return "holding"
 
-    wants_more_contest = campaign_system.goal == SystemGoal.CAPTURE
+    wants_more_contest = campaign_system.goal in (
+        SystemGoal.TAKE,
+        SystemGoal.PRESSURE,
+        SystemGoal.DISRUPT,
+    )
     moving_our_way = (
         contested_change > 0.5
         if wants_more_contest
@@ -178,7 +183,7 @@ def list_item(campaign: Campaign, user=None) -> dict:
         "cover_image_url": campaign.cover_image_url,
         "systems": campaign_systems(campaign, with_trend=False),
         "areas": campaign_areas(campaign),
-        "opponents": [opponent_out(row) for row in campaign.opponents.all()],
+        "parties": [party_out(row) for row in campaign.parties.all()],
         "structures_remaining": totals["structures_remaining"],
         "structures_destroyed": totals["structures_destroyed"],
         "next_timer_at": next_timer,
@@ -196,6 +201,8 @@ def area_out(area) -> dict:
         "name": area.name,
         "constellation_id": area.constellation_id,
         "region_id": area.region_id,
+        "goal": area.goal,
+        "priority": area.priority,
     }
 
 
@@ -203,14 +210,17 @@ def campaign_areas(campaign: Campaign) -> list[dict]:
     return [area_out(area) for area in campaign.areas.all()]
 
 
-def opponent_out(opponent) -> dict:
+def party_out(party) -> dict:
     return {
-        "id": opponent.id,
-        "name": opponent.name,
-        "ticker": opponent.ticker or "",
-        "alliance_id": opponent.alliance_id,
-        "corporation_id": opponent.corporation_id,
-        "faction_id": opponent.faction_id,
+        "id": party.id,
+        "name": party.name,
+        "ticker": party.ticker or "",
+        "kind": party.kind,
+        "side": party.side,
+        "character_id": party.character_id,
+        "corporation_id": party.corporation_id,
+        "alliance_id": party.alliance_id,
+        "faction_id": party.faction_id,
     }
 
 
@@ -237,7 +247,7 @@ def campaign_fittings(campaign: Campaign) -> list[dict]:
     ]
 
 
-def structure_out(structure) -> dict:
+def structure_out(structure, parties=None) -> dict:
     timer = structure.timer
     return {
         "id": structure.id,
@@ -252,6 +262,9 @@ def structure_out(structure) -> dict:
         "alliance_name": structure.alliance_name or "",
         "related_alliance_id": structure.related_alliance_id,
         "related_alliance_name": structure.related_alliance_name or "",
+        "affiliation": structure_service.structure_affiliation(
+            structure, parties=parties
+        ),
         "status": structure.status,
         "source": structure.source,
         "fitting": structure.fitting or "",

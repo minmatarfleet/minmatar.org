@@ -1,0 +1,9 @@
+<label class="campaign-cover-option{% if widget.selected %} is-selected{% endif %}">
+  {% include "django/forms/widgets/input.html" %}
+  {% if widget.cover_url %}
+    <img src="{{ widget.cover_url }}" alt="" loading="lazy" width="140" height="79">
+  {% else %}
+    <span class="campaign-cover-placeholder" aria-hidden="true">Default</span>
+  {% endif %}
+  <span class="campaign-cover-label">{{ widget.label }}</span>
+</label>

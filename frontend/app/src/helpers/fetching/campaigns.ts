@@ -138,6 +138,61 @@ export const fw_objective_systems = (systems:CampaignSystemSummary[]):CampaignSy
 export const ops_theater_systems = (systems:CampaignSystemSummary[]):CampaignSystemSummary[] =>
     systems.filter(system => !is_fw_objective_system(system))
 
+/** Normalize legacy and current goal wire values. */
+export const normalize_campaign_goal = (goal:string):string => {
+    switch (goal) {
+        case 'capture': return 'take'
+        case 'defend': return 'hold'
+        case 'contest': return 'pressure'
+        case 'scout': return 'recon'
+        case 'take':
+        case 'hold':
+        case 'pressure':
+        case 'disrupt':
+        case 'recon':
+        case 'none':
+            return goal
+        default:
+            return 'none'
+    }
+}
+
+/** i18n key for a campaign system's goal label. */
+export const campaign_goal_i18n_key = (goal:string) => {
+    switch (normalize_campaign_goal(goal)) {
+        case 'take': return 'campaigns.goal.take' as const
+        case 'hold': return 'campaigns.goal.hold' as const
+        case 'pressure': return 'campaigns.goal.pressure' as const
+        case 'disrupt': return 'campaigns.goal.disrupt' as const
+        case 'recon': return 'campaigns.goal.recon' as const
+        case 'none': return 'campaigns.goal.none' as const
+        default: return 'campaigns.goal.none' as const
+    }
+}
+
+/** i18n key for the one-line member action behind a goal. */
+export const campaign_goal_hint_i18n_key = (goal:string) => {
+    switch (normalize_campaign_goal(goal)) {
+        case 'take': return 'campaigns.goal.take.hint' as const
+        case 'hold': return 'campaigns.goal.hold.hint' as const
+        case 'pressure': return 'campaigns.goal.pressure.hint' as const
+        case 'disrupt': return 'campaigns.goal.disrupt.hint' as const
+        case 'recon': return 'campaigns.goal.recon.hint' as const
+        case 'none': return 'campaigns.goal.none.hint' as const
+        default: return 'campaigns.goal.none.hint' as const
+    }
+}
+
+/** Display order for theater goal groups. */
+export const CAMPAIGN_GOAL_ORDER = [
+    'take',
+    'hold',
+    'pressure',
+    'disrupt',
+    'recon',
+    'none',
+] as const
+
 export const clamp_percent = (value:number | null | undefined):number => {
     if (value === null || value === undefined || Number.isNaN(value)) return 0
 
@@ -358,7 +413,11 @@ const objective_kind = (metric:string, goal:string):CampaignObjectiveKind => {
     if (metric === 'structures_reported') return 'structures_reported'
     if (metric === 'days_under_line') return 'defense'
     if (metric === 'victory_points') return 'offense'
-    return goal === 'capture' ? 'offense' : 'defense'
+    if (goal === 'recon' || goal === 'scout') return 'structures_reported'
+    return goal === 'take' || goal === 'pressure' || goal === 'disrupt'
+        || goal === 'capture' || goal === 'contest'
+        ? 'offense'
+        : 'defense'
 }
 
 const objective_label = (kind:CampaignObjectiveKind, t:ObjectiveT):string => {
@@ -424,7 +483,7 @@ export const campaign_objective_rows = (
         // structures_reported targets from propose_week.
         return sort_systems_by_contest(fw_objective_systems(systems))
             .map(system => {
-                const kind:CampaignObjectiveKind = system.goal === 'capture' ? 'offense' : 'defense'
+                const kind:CampaignObjectiveKind = objective_kind('', system.goal)
                 const contested = clamp_percent(system.contested_percent)
                 const change = system.contested_change_24h ?? 0
                 const pace = fallback_pace(kind, system)

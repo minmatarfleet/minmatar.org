@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
-import { clamp_percent, status_chip_color, status_chip_i18n_key } from '@helpers/fetching/campaigns'
+import { clamp_percent, status_chip_color, status_chip_i18n_key, campaign_goal_i18n_key } from '@helpers/fetching/campaigns'
 import { format_date_time, from_now_diff } from '@helpers/date'
 
 interface Props {
@@ -30,7 +30,7 @@ const our_pct = clamp_percent(system.advantage_our_pct)
 const enemy_pct = clamp_percent(system.advantage_enemy_pct)
 const net_pct = system.advantage_net_pct ?? 0
 const kills_change = system.kills_change_24h ?? 0
-const goal_key = system.goal === 'capture' ? 'campaigns.goal.capture' : 'campaigns.goal.defend'
+const goal_key = campaign_goal_i18n_key(system.goal)
 
 const advantage_age_text = system.advantage_basis === 'unknown' || system.advantage_age_minutes === null
     ? t('campaigns.system.no_reading')

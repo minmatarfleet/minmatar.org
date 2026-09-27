@@ -155,15 +155,26 @@ const breadcrumbs = [
                 {campaign?.tagline && (
                     <p class="[ campaign-header-tagline ]">{campaign.tagline}</p>
                 )}
-                {campaign?.opponents?.length > 0 && (
-                    <p class="[ campaign-header-opponents ]">
-                        {t('campaigns.opponents.label')}{' '}
-                        {campaign.opponents.map(opponent => {
-                            const ticker = (opponent.ticker || '').trim()
-                            if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
-                                return ticker
-                            return opponent.name
-                        }).join(', ')}
+                {campaign?.parties?.length > 0 && (
+                    <p class="[ campaign-header-parties ]">
+                        {(() => {
+                            const label = (party: { ticker?: string; name: string }) => {
+                                const ticker = (party.ticker || '').trim()
+                                if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
+                                    return ticker
+                                return party.name
+                            }
+                            const enemies = campaign.parties
+                                .filter(party => party.side === 'enemy')
+                                .map(label)
+                            const allies = campaign.parties
+                                .filter(party => party.side === 'ally')
+                                .map(label)
+                            return [
+                                enemies.length ? `${t('campaigns.parties.enemies')} ${enemies.join(', ')}` : '',
+                                allies.length ? `${t('campaigns.parties.allies')} ${allies.join(', ')}` : '',
+                            ].filter(Boolean).join(' · ')
+                        })()}
                     </p>
                 )}
                 {campaign?.description_md && (
@@ -236,7 +247,7 @@ const breadcrumbs = [
         max-width: 60ch;
     }
 
-    .campaign-header-opponents {
+    .campaign-header-parties {
         margin: 0;
         color: var(--fleet-red);
         text-transform: uppercase;

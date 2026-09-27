@@ -12,7 +12,7 @@ import logging
 from django.db.models import Q
 
 from campaigns.helpers import CampaignRoster, day_bounds
-from campaigns.models import Campaign, CampaignKillmail, CampaignStandingFleet
+from campaigns.models import Campaign, CampaignKillmail
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 
 logger = logging.getLogger(__name__)
@@ -200,38 +200,3 @@ def _fleet_for_mail(mail: CampaignKillmail, membership: dict):
                 continue
             return instance.eve_fleet_id
     return None
-
-
-def refresh_standing_fleet(campaign: Campaign) -> CampaignStandingFleet | None:
-    """Keep the standing-fleet card honest about who is holding it."""
-    standing = getattr(campaign, "standing_fleet", None)
-    if not standing or not standing.fleet_id:
-        return standing
-
-    instance = (
-        EveFleetInstance.objects.filter(
-            eve_fleet_id=standing.fleet_id, end_time__isnull=True
-        )
-        .order_by("-start_time")
-        .first()
-    )
-    if not instance:
-        standing.member_count = 0
-        standing.save(update_fields=["member_count"])
-        return standing
-
-    standing.member_count = EveFleetInstanceMember.objects.filter(
-        eve_fleet_instance=instance
-    ).count()
-    standing.current_boss_character_id = (
-        instance.boss_id or standing.current_boss_character_id
-    )
-    standing.last_seen_at = instance.last_updated or standing.last_seen_at
-    standing.save(
-        update_fields=[
-            "member_count",
-            "current_boss_character_id",
-            "last_seen_at",
-        ]
-    )
-    return standing

@@ -56,22 +56,33 @@ def propose_week(campaign: Campaign, week_start: date | None = None) -> int:
         arc = getattr(campaign_system, "arc", None)
         wanted: list[tuple[str, float]] = []
         if campaign_system.is_fw_objective:
-            if campaign_system.goal == SystemGoal.CAPTURE:
+            if campaign_system.goal == SystemGoal.TAKE:
                 wanted.append(
                     (
                         CampaignWeekTarget.Metric.VICTORY_POINTS,
                         _capture_target(campaign_system, week_start),
                     )
                 )
-            elif campaign_system.goal == SystemGoal.DEFEND:
+            elif campaign_system.goal == SystemGoal.HOLD:
                 wanted.append((CampaignWeekTarget.Metric.DAYS_UNDER_LINE, 7.0))
+            elif campaign_system.goal == SystemGoal.RECON:
+                # Recon theaters: find and report, not plex for VP.
+                wanted.append(
+                    (
+                        CampaignWeekTarget.Metric.STRUCTURES_REPORTED,
+                        DEFAULT_STRUCTURES_REPORTED_TARGET,
+                    )
+                )
             # Advantage is its own job, in one of three shapes the operator
             # picks on the arc: build ours up, knock theirs down, or hold ours.
+            # Pressure / Disrupt stay on advantage + kill activity without a
+            # VP or ceiling week target unless the arc asks for one.
             advantage_row = _advantage_target(campaign_system, arc)
             if advantage_row:
                 wanted.append(advantage_row)
-        elif campaign.is_strategic:
-            # Ops theaters on structure campaigns: find and report citadels.
+        elif campaign.is_strategic or campaign_system.goal == SystemGoal.RECON:
+            # Ops theaters on structure campaigns, or any recon goal: find
+            # and report citadels.
             wanted.append(
                 (
                     CampaignWeekTarget.Metric.STRUCTURES_REPORTED,
@@ -408,7 +419,7 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
         if created >= MAX_SYSTEM_ORDERS_PER_DAY:
             break
         if target.metric == CampaignWeekTarget.Metric.STRUCTURES_REPORTED:
-            # Ops theater scout objective; no daily plex/kill orders from it.
+            # Ops theater recon objective; no daily plex/kill orders from it.
             continue
         gap = max(0.0, target.target - target.progress)
         share = gap / days_left / active_pilots if gap else 0.0
@@ -421,7 +432,7 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
             created += _advantage_orders(
                 campaign, day, pool, system, target, gap_share_pct
             )
-        elif system.goal == SystemGoal.CAPTURE:
+        elif system.goal == SystemGoal.TAKE:
             created += _make_order(
                 campaign,
                 day,

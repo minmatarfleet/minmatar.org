@@ -12,12 +12,10 @@ import factory
 from campaigns.models import (
     CampaignEnlistment,
     CampaignEnlistmentCharacter,
-    CampaignEnlistmentPeriod,
     CampaignEvent,
     CampaignFitting,
     CampaignKillmail,
     CampaignParticipantDay,
-    CampaignStandingFleet,
     CampaignStatus,
     KillmailOutcome,
 )
@@ -427,13 +425,6 @@ class CampaignWriteGuardTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["detail"], "not_enlisted")
 
-    def test_a_non_participant_cannot_take_the_standing_fleet(self):
-        response = self.client.post(
-            f"{BASE}/{self.campaign.slug}/standing-fleet/take",
-            **auth_headers(self.bystander),
-        )
-        self.assertEqual(response.status_code, 403)
-
     def test_a_non_participant_cannot_form_a_gang(self):
         response = self.client.post(
             f"{BASE}/{self.campaign.slug}/gangs",
@@ -489,69 +480,6 @@ class CampaignWriteGuardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         for row in response.json()["characters"]:
             self.assertNotIn("evil.example", row["action_url"])
-
-
-class StandingFleetTests(TestCase):
-    """The fleet has to be flyable by whoever is recorded as holding it."""
-
-    def setUp(self):
-        self.client = Client()
-        self.campaign = make_campaign()
-        self.pilot, self.character = enlist(self.campaign, "boss", 7201)
-        grant(self.pilot, "view_campaign", "add_campaignenlistment")
-
-        self.no_character = User.objects.create(username="lurker")
-        grant(self.no_character, "view_campaign", "add_campaignenlistment")
-        enlistment = CampaignEnlistment.objects.create(
-            campaign=self.campaign, user=self.no_character, status="active"
-        )
-        CampaignEnlistmentPeriod.objects.create(
-            enlistment=enlistment, enlisted_at=self.campaign.start_at
-        )
-
-    def _take(self, user):
-        return self.client.post(
-            f"{BASE}/{self.campaign.slug}/standing-fleet/take",
-            **auth_headers(user),
-        )
-
-    def test_a_pilot_with_a_character_can_take_it(self):
-        response = self._take(self.pilot)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["taken"])
-
-        standing = CampaignStandingFleet.objects.get(campaign=self.campaign)
-        self.assertEqual(standing.current_boss_user_id, self.pilot.id)
-        self.assertEqual(standing.current_boss_character_id, 7201)
-        self.assertTrue(standing.is_up)
-
-    def test_a_pilot_with_no_character_is_refused(self):
-        """Otherwise the fleet is held by somebody who cannot boss it."""
-        response = self._take(self.no_character)
-        self.assertEqual(response.status_code, 409)
-        self.assertFalse(
-            CampaignStandingFleet.objects.filter(
-                campaign=self.campaign,
-                current_boss_user=self.no_character,
-            ).exists()
-        )
-
-    def test_retaking_a_fleet_you_already_hold_is_not_a_handover(self):
-        """Uptime and handovers are launch KPIs, so they cannot be inflated."""
-        self._take(self.pilot)
-        first = CampaignStandingFleet.objects.get(
-            campaign=self.campaign
-        ).handovers
-
-        for _ in range(5):
-            self._take(self.pilot)
-
-        self.assertEqual(
-            CampaignStandingFleet.objects.get(
-                campaign=self.campaign
-            ).handovers,
-            first,
-        )
 
 
 class AdvantageConsensusTests(TestCase):
