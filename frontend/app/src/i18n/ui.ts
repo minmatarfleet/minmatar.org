@@ -956,6 +956,7 @@ export const ui = {
         'buyback.purchase.empty': 'Buyback has nothing that matches that list.',
         'buyback.purchase.placed_title': 'Order placed',
         'buyback.purchase.placed_lead': 'Contract these items to {name} for the frozen ISK total. An operator will complete the sale in Discord.',
+        'buyback.purchase.contract_where': 'The contract is created at {location}.',
         'buyback.purchase.view_order': 'View order',
         'buyback.purchase.orders.page_title': 'Buyback buy orders',
         'buyback.purchase.orders.section_title': 'Open buy orders',

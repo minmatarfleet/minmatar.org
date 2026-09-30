@@ -91,6 +91,7 @@ import Markdown from './Markdown.astro'
 
             $nextTick(() => {
                 this.combatlog_dialog_open = true
+                if (typeof htmx !== 'undefined') htmx.process($refs.combatlog_form)
             })
         },
         close_dialog() {
@@ -119,6 +120,7 @@ import Markdown from './Markdown.astro'
             x-bind:aria-hidden="combatlog_dialog_open == false"
             x-trap="combatlog_dialog_open"
             x-bind:inert="!combatlog_dialog_open"
+            x-init="if (typeof htmx !== 'undefined') htmx.process($el)"
             @keyup.escape.window="close_dialog()"
             @mousedown.outside="open && close_dialog()"
         >
@@ -130,6 +132,7 @@ import Markdown from './Markdown.astro'
                 hx-indicator=".loader"
                 hx-swap={fleet_id ? 'outerHTML transition:true' : 'innerHTML transition:true'}
                 x-ref="combatlog_form"
+                @htmx:after-request="close_dialog()"
             >
                 <Flexblock gap="var(--space-l)">
                     <h3>{fleet_id ? t('add_fleet_combatlog_dialog_title') : t('analize_combatlog_dialog_title')}</h3>
@@ -263,7 +266,6 @@ import Markdown from './Markdown.astro'
                     <FlexInline justification='flex-end'>
                         <Button
                             size='sm'
-                            x-on:click="close_dialog()"
                             type="submit"
                         >
                             {t('submit')}

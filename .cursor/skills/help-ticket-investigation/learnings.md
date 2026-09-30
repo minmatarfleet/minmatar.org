@@ -39,6 +39,106 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-09-30 — Open technology threads (batch)
+
+**Category:** pulse.technology
+**Verdict:** mixed (two bugs, one small copy fix, several clarify, one needs-decision)
+**Discord:** per-thread; two archived threads had no reply
+**PR:** fix+skill
+**Symptom vs cause:** Match stock refused hangar ore because sellable qty was contract-ledger net, not the hangar snapshot. Combat-log Submit reloaded the page because the form is teleported and htmx never bound it. Purchase confirm named the pilot and not the structure.
+**Durable rule:** Listed buyback stock is the hangar snapshot minus later sales and pending holds. Teleported htmx forms need `htmx.process`. Archived help threads and note-to-self tickets get no Discord ping.
+**Skill update:** stock-vs-fill row, combat-log teleport row, reapply / planner / contract location / roster / fitting-paste rows.
+
+## 2026-09-30 — Buyback purchase contract location
+
+**Category:** pulse.technology
+**Verdict:** bug (missing location on the buy flow)
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Buying from stock said who to contract, not where. Sell copy already says Amo. Confirm now uses buyback settings location.
+**Durable rule:** Purchase confirm reads `settings.location`. Stockpile structure id is separate from the display location.
+**Skill update:** contract-where row.
+
+## 2026-09-30 — Listed ore missing from Match stock
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Stock page showed the hangar quantity. Match stock sold only inbound-minus-outbound contracts, so the rest was “Not in hangar.”
+**Durable rule:** With a snapshot, sell the snapshot minus sales after `taken_at` and pending. Do not add inbound on top of the snapshot.
+**Skill update:** stock-vs-fill row.
+
+## 2026-09-30 — Combat log submit shows no analysis
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Submit left the empty “no stored combat log” list. The form lives in an `x-teleport` template, so htmx did not handle it and the browser POSTed the page. The log itself parses.
+**Durable rule:** `htmx.process` teleported forms. Zero stored rows means the API was not called.
+**Skill update:** combat-log row.
+
+## 2026-09-30 — Old Discord application thread blocks a new app
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** A years-old application thread is read-only. Creating an application on the site does not check that thread.
+**Durable rule:** Locked Discord application thread ≠ a site block. Apply on `/alliance/corporations/`.
+**Skill update:** reapply row.
+
+## 2026-09-30 — Build planner capital cost far below in-game
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Resbroko is priced with a hardcoded −50% faction-warfare system bonus. In-game at 0% the job cost is higher. Decision already in-thread: price upgraded systems, no planner slider.
+**Durable rule:** Hydra systems use `HYDRA_FW_SYSTEM_COST_BONUS`. Do not re-ask.
+**Skill update:** planner bonus row.
+
+## 2026-09-30 — Fishermen names visible on the site
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Request to hide Fishermen members on the site. Group roster is public primary characters.
+**Durable rule:** Anonymity is a policy call. Tag the decision owner. Do not hide the roster first.
+**Skill update:** roster privacy row.
+
+## 2026-09-30 — Buyback order extras (shortfall history, reports, freighter)
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Three enhancements: keep unmatched lines on the order, a mineral in/out report, and a freighter handoff. Match-time shortfall already exists and is not stored. No report and no freighter prefill. Already routed in-thread; not re-asked.
+**Durable rule:** Unfulfilled paste lines are the fill shortfall, not a failed order. Do not re-ask a product question already handed to implementation.
+**Skill update:** none (already covered by “do not re-ask”)
+
+## 2026-09-30 — Paste a fit into fitting orders
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Create fitting order only accepts site `fitting_id` values. Someone in-thread already took the paste-your-own-fit request.
+**Durable rule:** Confirm the gap. Do not re-ask or start a second implementation.
+**Skill update:** fitting-paste row.
+
+## 2026-09-30 — Archived onboarding ticket and note-to-self
+
+**Category:** pulse.technology
+**Verdict:** clarify (already handled) / skip
+**Discord:** threads gone; no reply
+**PR:** skill-only (same PR)
+**Symptom vs cause:** One onboarding ticket was already explained (wiki `/en/`, BUILD mains). One note-to-self has no thread. Neither gets a new Discord message.
+**Durable rule:** Missing thread → no invented reply. Do not ping the decision owner on their own note.
+**Skill update:** none (already covered)
+
 ---
 
 ## 2026-09-24 — SRP warning with no reason

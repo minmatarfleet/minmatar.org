@@ -13,12 +13,15 @@ from buyback.models import (
 )
 
 
-def _qty_by_type(reason: str) -> dict[int, int]:
-    rows = (
-        BuybackLedgerEntry.objects.filter(reason=reason)
-        .values("eve_type_id")
-        .annotate(total=Sum("quantity"))
-    )
+def _qty_by_type(
+    reason: str,
+    *,
+    after=None,
+) -> dict[int, int]:
+    qs = BuybackLedgerEntry.objects.filter(reason=reason)
+    if after is not None:
+        qs = qs.filter(occurred_at__gt=after)
+    rows = qs.values("eve_type_id").annotate(total=Sum("quantity"))
     return {
         int(row["eve_type_id"]): int(row["total"] or 0)
         for row in rows
@@ -75,11 +78,10 @@ def available_stock_quantities(
     *,
     exclude_order_id: int | None = None,
 ) -> dict[int, int]:
-    """Hangar (or stockpile fallback) minus pending purchase reservations."""
+    """Listed stock. With a hangar snapshot this matches what Match stock sells."""
+    if hangar_snapshot_quantities() is not None:
+        return remaining_sale_quantities(exclude_order_id=exclude_order_id)
     pending = pending_purchase_quantities(exclude_order_id=exclude_order_id)
-    snapshot = hangar_snapshot_quantities()
-    if snapshot is not None:
-        return _subtract_pending(snapshot, pending)
     fallback: dict[int, int] = {}
     for type_id, qty in BuybackAcceptedItem.objects.filter(
         active=True
@@ -88,31 +90,72 @@ def available_stock_quantities(
     return _subtract_pending(fallback, pending)
 
 
-def remaining_sale_quantities(
+def _ledger_net_quantities(
     *,
     exclude_order_id: int | None = None,
 ) -> dict[int, int]:
-    """
-    On-hand for sale: inbound contracts minus outbound contracts minus pending.
-
-    When a hangar snapshot exists, also cap to hangar minus pending so a
-    reserved purchase cannot be sold again from listed stock.
-    """
+    """Inbound contracts minus outbound contracts minus pending. Ignores market sales."""
     inbound = _qty_by_type(BuybackLedgerEntry.Reason.IN_CONTRACT)
     outbound = _qty_by_type(BuybackLedgerEntry.Reason.SOLD_CONTRACT)
     pending = pending_purchase_quantities(exclude_order_id=exclude_order_id)
-    snapshot = hangar_snapshot_quantities()
-    type_ids = set(inbound) | set(outbound) | set(pending)
     remaining: dict[int, int] = {}
-    for type_id in type_ids:
+    for type_id in set(inbound) | set(outbound) | set(pending):
         qty = (
             inbound.get(type_id, 0)
             - outbound.get(type_id, 0)
             - pending.get(type_id, 0)
         )
-        if snapshot is not None:
-            hangar_left = snapshot.get(type_id, 0) - pending.get(type_id, 0)
-            qty = min(qty, hangar_left)
+        if qty > 0:
+            remaining[type_id] = qty
+    return remaining
+
+
+def remaining_sale_quantities(
+    *,
+    exclude_order_id: int | None = None,
+) -> dict[int, int]:
+    """
+    On-hand for sale.
+
+    Without a hangar snapshot: inbound contracts minus outbound contracts
+    minus pending purchase reservations. Market sales are not in that ledger.
+
+    With a snapshot: the physical hangar is what the stock page lists. Sales
+    recorded after that snapshot (contracts and market orders) are subtracted
+    so a stale scan cannot be sold twice, then pending reservations are held
+    back. Contract receipts are not added on top of the scan — the next
+    snapshot picks those up, and adding them early double-counts ore the
+    scan already includes.
+    """
+    snapshot_row = BuybackHangarSnapshot.objects.order_by("-taken_at").first()
+    if snapshot_row is None:
+        return _ledger_net_quantities(exclude_order_id=exclude_order_id)
+
+    snapshot = hangar_snapshot_quantities() or {}
+    taken_at = snapshot_row.taken_at
+    sold_contract_after = _qty_by_type(
+        BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+        after=taken_at,
+    )
+    sold_order_after = _qty_by_type(
+        BuybackLedgerEntry.Reason.SOLD_ORDER,
+        after=taken_at,
+    )
+    pending = pending_purchase_quantities(exclude_order_id=exclude_order_id)
+    type_ids = (
+        set(snapshot)
+        | set(sold_contract_after)
+        | set(sold_order_after)
+        | set(pending)
+    )
+    remaining: dict[int, int] = {}
+    for type_id in type_ids:
+        qty = (
+            snapshot.get(type_id, 0)
+            - sold_contract_after.get(type_id, 0)
+            - sold_order_after.get(type_id, 0)
+            - pending.get(type_id, 0)
+        )
         if qty > 0:
             remaining[type_id] = qty
     return remaining
