@@ -3,6 +3,8 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+from datetime import timedelta
+
 from django.test import Client
 from django.utils import timezone
 
@@ -12,7 +14,10 @@ from buyback.helpers.purchase_fill import fill_purchase
 from buyback.helpers.purchase_orders import (
     try_complete_from_outbound_contracts,
 )
-from buyback.helpers.remaining import remaining_sale_quantities
+from buyback.helpers.remaining import (
+    available_stock_quantities,
+    remaining_sale_quantities,
+)
 from buyback.helpers.sell_pricing import unit_prices_for_types
 from buyback.models import (
     BuybackHangarSnapshot,
@@ -128,6 +133,47 @@ class RemainingSaleQuantitiesTestCase(TestCase):
             line_total=Decimal("10.00"),
         )
         self.assertEqual(remaining_sale_quantities(), {self.ore.id: 70})
+
+    def test_hangar_above_ledger_is_sellable(self):
+        _ledger(
+            eve_type=self.ore,
+            quantity=100,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:partial",
+        )
+        BuybackHangarSnapshot.objects.create(
+            taken_at=timezone.now(),
+            quantities={str(self.ore.id): 1000},
+        )
+        self.assertEqual(remaining_sale_quantities()[self.ore.id], 1000)
+        self.assertEqual(available_stock_quantities()[self.ore.id], 1000)
+
+    def test_contract_sale_after_snapshot_reduces_hangar(self):
+        BuybackHangarSnapshot.objects.create(
+            taken_at=timezone.now() - timedelta(minutes=5),
+            quantities={str(self.ore.id): 1000},
+        )
+        _ledger(
+            eve_type=self.ore,
+            quantity=200,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:after",
+        )
+        self.assertEqual(remaining_sale_quantities()[self.ore.id], 800)
+        self.assertEqual(available_stock_quantities()[self.ore.id], 800)
+
+    def test_market_sale_after_snapshot_reduces_hangar(self):
+        BuybackHangarSnapshot.objects.create(
+            taken_at=timezone.now() - timedelta(minutes=5),
+            quantities={str(self.ore.id): 1000},
+        )
+        _ledger(
+            eve_type=self.ore,
+            quantity=200,
+            reason=BuybackLedgerEntry.Reason.SOLD_ORDER,
+            source_id="mkt:after",
+        )
+        self.assertEqual(remaining_sale_quantities()[self.ore.id], 800)
 
 
 class SellPricingTestCase(TestCase):
@@ -260,6 +306,22 @@ class PurchaseFillTestCase(TestCase):
         self.assertEqual(fill.picks[0].fill_source, "exact")
         self.assertEqual(fill.contract_total, 2000)
         self.assertEqual(fill.janice_tsv, "Water\t20")
+        self.assertEqual(fill.shortfalls, [])
+
+    def test_hangar_above_ledger_is_not_a_shortfall(self, unused_mock_esi):
+        _ledger(
+            eve_type=self.ore,
+            quantity=100,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:partial",
+        )
+        BuybackHangarSnapshot.objects.create(
+            taken_at=timezone.now(),
+            quantities={str(self.ore.id): 1000},
+        )
+        fill = fill_purchase("Compressed Veldspar\t1000")
+        self.assertEqual(len(fill.picks), 1)
+        self.assertEqual(fill.picks[0].quantity, 1000)
         self.assertEqual(fill.shortfalls, [])
 
     def test_tritanium_fills_compressed_veldspar(self, unused_mock_esi):
