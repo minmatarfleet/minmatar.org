@@ -1650,6 +1650,7 @@ export const ui = {
         'tribes.growth.empty': 'Not enough membership history to chart yet.',
         'tribes.growth.caption': 'How many people were active in this tribe group at month end.',
         'tribes.roster.alliance_only': 'Alliance members can see who is in this tribe group.',
+        'tribes.roster.hidden': 'Names are visible to members of this group.',
         'tribes.roster.empty': 'No active members yet.',
         'tribes.roster.unranked': 'Members',
         'tribes.detail.qualifies': 'Qualifies',

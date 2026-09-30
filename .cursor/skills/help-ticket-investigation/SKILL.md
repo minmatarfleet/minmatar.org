@@ -201,7 +201,7 @@ Scan this table before inventing a new theory.
 | “Can’t reapply” because an old Discord application thread is locked | `create_corporation_application` does not look at old Discord threads. “You do not have permission to post in this channel” is that thread, not a site block. New applications are `/alliance/corporations/` and open a new thread. |
 | Build planner job cost is about half of in-game | Resbroko (and other Hydra systems) hardcode `HYDRA_FW_SYSTEM_COST_BONUS` (−50%). Amamake uses its own FW bonus; Basgerin and Auner are 0. There is no slider. Product call already made: price upgraded systems. Do not re-ask. |
 | Buy-from-stock contract doesn’t say where it is created | Sell copy already says contract in Amo. Purchase confirm uses `buyback.purchase.contract_where` from buyback `settings.location`. Structure id is `EveBuybackSettings.stockpile_structure_id`. |
-| Hide Fishermen (or tribe) names on the site | Group roster is public primary characters (`TribeGroupRosterEntrySchema`). That is a policy call — tag BearThatCares. Do not hide the roster without that. |
+| Hide Fishermen (or tribe) names on the site | `TribeGroup.roster_hidden`. Active members and managers see names. Everyone else gets `member_count` blurred placeholders and no roster JSON. Showcase contributor names use the same gate. Fishermen (`pulse.fishermen`) ships with the flag on. |
 | Fitting order should accept a pasted fit | Create order posts `fitting_id` from `get_fittings()` (site fits). There is no EFT paste. If someone in-thread already said they will build it, confirm that and do not re-ask. |
 
 ### Discord reply

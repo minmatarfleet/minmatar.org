@@ -135,6 +135,7 @@ class TribeGroupAdmin(admin.ModelAdmin):
         "chief",
         "required_token_type",
         "require_off_trial",
+        "roster_hidden",
         "allowed_affiliation_names",
         "is_active",
     )
@@ -143,6 +144,7 @@ class TribeGroupAdmin(admin.ModelAdmin):
         "tribe",
         "required_token_type",
         "require_off_trial",
+        "roster_hidden",
         "allowed_affiliations",
     )
     search_fields = ("name", "code", "tribe__name")
