@@ -92,14 +92,6 @@ try {
         user_characters = summary.characters ?? []
         membership_by_group.set(group_id, memberships[0] ?? null)
         available_characters = available
-
-        if (is_alliance_member) {
-            roster = await get_tribe_group_roster(
-                auth_token as string,
-                tribe_id,
-                group_id,
-            ).catch(() => [])
-        }
     }
 } catch (error) {
     fetch_group_error = error as Error
@@ -119,6 +111,19 @@ const can_manage = tribe_group_can_manage({
     is_leader,
     is_superuser,
 })
+const roster_hidden = Boolean(tribe_group?.roster_hidden)
+const can_see_roster = roster_hidden
+    ? Boolean(is_superuser || can_manage || membership?.status === 'active')
+    : is_alliance_member
+
+if (!fetch_group_error && auth_token && tribe_group && can_see_roster) {
+    roster = await get_tribe_group_roster(
+        auth_token as string,
+        tribe_id,
+        group_id,
+    ).catch(() => [])
+}
+
 const activity = tribe_group?.code
     ? TRIBE_ACTIVITY_BY_CODE[tribe_group.code]
     : undefined
@@ -375,8 +380,9 @@ import Button from '@components/blocks/Button.astro'
                         <TribeGroupMembersGallery
                             roster={roster}
                             member_count={tribe_group.member_count}
-                            is_alliance_member={is_alliance_member}
+                            is_alliance_member={can_see_roster}
                             is_auth={is_auth}
+                            roster_redacted={roster_hidden && !can_see_roster}
                         />
 
                         {posts.length > 0 &&

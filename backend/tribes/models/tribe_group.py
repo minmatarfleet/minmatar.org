@@ -62,6 +62,14 @@ class TribeGroup(models.Model):
             "active) before they can apply."
         ),
     )
+    roster_hidden = models.BooleanField(
+        default=False,
+        help_text=(
+            "When set, only active members and people who manage this group "
+            "see names and portraits. Everyone else sees a count of blurred "
+            "placeholders."
+        ),
+    )
     allowed_affiliations = models.ManyToManyField(
         "groups.AffiliationType",
         blank=True,

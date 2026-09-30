@@ -1,4 +1,4 @@
-"""GET /{tribe_id}/groups/{group_id}/showcase — public totals + alliance names."""
+"""GET /{tribe_id}/groups/{group_id}/showcase — public totals, names for roster viewers."""
 
 from ninja import Router
 
@@ -7,7 +7,7 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupShowcaseContributorSchema,
     TribeGroupShowcaseSchema,
 )
-from tribes.helpers import user_is_alliance_member
+from tribes.helpers import user_can_view_group_roster
 from tribes.helpers.showcase import build_group_showcase
 from tribes.models import TribeGroup
 from tribes.reports import ReportError
@@ -15,7 +15,7 @@ from tribes.reports import ReportError
 PATH = "/{tribe_id}/groups/{group_id}/showcase"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "Group Activity showcase (30d totals; named rows for alliance).",
+    "summary": "Group activity showcase (30d totals; named rows for roster viewers).",
     "response": {200: TribeGroupShowcaseSchema, 404: dict},
     "auth": AuthOptional(),
 }
@@ -37,7 +37,7 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
     except ReportError as exc:
         return 404, {"detail": str(exc)}
 
-    include_names = user_is_alliance_member(request.user)
+    include_names = user_can_view_group_roster(request.user, tg)
     contributors = []
     if include_names:
         contributors = [

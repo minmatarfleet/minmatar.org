@@ -56,6 +56,7 @@ class TribeGroupSchema(BaseModel):
     allowed_affiliations: List[AffiliationRefSchema] = []
     can_apply: bool = False
     can_manage: bool = False
+    roster_hidden: bool = False
 
 
 class TribeGroupReportSchema(BaseModel):

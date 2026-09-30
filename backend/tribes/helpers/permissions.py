@@ -44,6 +44,22 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     return False
 
 
+def user_can_view_group_roster(user, tribe_group: TribeGroup) -> bool:
+    """
+    Return True if the user may see roster names and portraits.
+
+    A hidden roster is limited to active members of that group and people
+    who can manage it. Otherwise the roster stays alliance-visible.
+    """
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    if tribe_group.roster_hidden:
+        if user_can_manage_group(user, tribe_group):
+            return True
+        return user_in_tribe_group(user, tribe_group)
+    return user_is_alliance_member(user)
+
+
 def user_in_tribe_group(user, tribe_group: TribeGroup) -> bool:
     """Return True if the user has an active TribeGroupMembership in tribe_group."""
     return TribeGroupMembership.objects.filter(

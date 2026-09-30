@@ -73,9 +73,10 @@ export interface TribeGroup {
     required_token_type?:   string | null;
     require_off_trial?:     boolean;
     allowed_affiliations?:  TribeAffiliationRef[];
-    can_apply?:             boolean;
-    can_manage?:            boolean;
-}
+        can_apply?:             boolean;
+        can_manage?:            boolean;
+        roster_hidden?:         boolean;
+    }
 
 export interface Tribe {
     id:                     number;

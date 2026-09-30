@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-09-30 — Hidden tribe-group roster
+
+**Category:** pulse.technology
+**Verdict:** bug (product decision, then implement)
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A group roster listed primary characters to every alliance member. Decision: a per-group flag. Members and managers see names; everyone else sees a count of blurred placeholders.
+**Durable rule:** `TribeGroup.roster_hidden`. Do not return names in the roster, showcase, or group-chief payload for viewers who fail `user_can_view_group_roster`.
+**Skill update:** rewrote the hide-roster row.
+
 ## 2026-09-30 — Open technology threads (batch)
 
 **Category:** pulse.technology

@@ -1,4 +1,4 @@
-"""GET /{tribe_id}/groups/{group_id}/roster — alliance-only public roster."""
+"""GET /{tribe_id}/groups/{group_id}/roster — names for viewers allowed to see them."""
 
 from typing import List
 
@@ -8,7 +8,7 @@ from authentication import AuthBearer
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation
 from tribes.endpoints.groups.schemas import TribeGroupRosterEntrySchema
-from tribes.helpers import user_is_alliance_member
+from tribes.helpers import user_can_view_group_roster
 from tribes.models import TribeGroup, TribeGroupMembership
 
 PATH = "/{tribe_id}/groups/{group_id}/roster"
@@ -16,8 +16,9 @@ METHOD = "get"
 ROUTE_SPEC = {
     "summary": "Active members (primary character only) for a tribe group.",
     "description": (
-        "Alliance members and superusers only. No committed alts or "
-        "requirement qualification flags."
+        "Alliance members see an open roster. A hidden roster is names for "
+        "active members and managers only. No committed alts or requirement "
+        "qualification flags."
     ),
     "response": {
         200: List[TribeGroupRosterEntrySchema],
@@ -39,8 +40,13 @@ def get_tribe_group_roster(request, tribe_id: int, group_id: int):
     if not tg:
         return 404, {"detail": "Tribe group not found."}
 
-    if not user_is_alliance_member(request.user):
-        return 403, {"detail": "Alliance members only."}
+    if not user_can_view_group_roster(request.user, tg):
+        detail = (
+            "Tribe group members only."
+            if tg.roster_hidden
+            else "Alliance members only."
+        )
+        return 403, {"detail": detail}
 
     memberships = (
         TribeGroupMembership.objects.filter(
