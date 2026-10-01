@@ -200,6 +200,13 @@
         "keywords": ["warzone", "frontline report", "August YC128", "Kamela", "Kourmonen", "faction warfare"]
     },
     {
+        "slug": "warzone.yc128_09",
+        "path": "/warzone/yc128-09/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_09.description",
+        "keywords": ["warzone", "frontline report", "September YC128", "Amamake", "Kamela", "Kourmonen", "faction warfare"]
+    },
+    {
         "slug": "amamake_market",
         "path": "/amamake-market/",
         "publish": true,
