@@ -215,6 +215,12 @@ export const ui = {
         'amamake_market.yc128_08.leading_text': 'What sold at the Amamake keepstar, and what died in the warzone.',
         'amamake_market.yc128_08.meta_title': 'Amamake Economic Report · August YC128 | {site}',
         'amamake_market.yc128_08.meta_description': 'August YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone. Published by Minmatar Fleet.',
+        'amamake_market.yc128_09.name': 'Amamake Economic Report · September YC128',
+        'amamake_market.yc128_09.page_title': 'Amamake Economic Report · September YC128',
+        'amamake_market.yc128_09.period': '1–30 Sep YC128',
+        'amamake_market.yc128_09.leading_text': 'What sold at the Amamake keepstar, and what died in the warzone.',
+        'amamake_market.yc128_09.meta_title': 'Amamake Economic Report · September YC128 | {site}',
+        'amamake_market.yc128_09.meta_description': 'September YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone. Published by Minmatar Fleet.',
         'amamake_market.latest.page_title': 'Amamake Economic Report',
         'amamake_market.page_title': 'Amamake Economic Report',
 
@@ -2411,6 +2417,7 @@ export const ui = {
         'page_finder.warzone.yc128_08.description': 'August YC128 Frontline Report — Minmatar +3 systems, the push into Kourmonen and Kamela, and the 350B Kamela brawl.',
         'page_finder.amamake_market.description': 'Monthly Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.amamake_market.yc128_08.description': 'August YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
+        'page_finder.amamake_market.yc128_09.description': 'September YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':

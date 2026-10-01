@@ -1,5 +1,6 @@
 import type { AmamakeMarketIssue, MarketTopTypeRow } from './types'
 import { YC128_08 } from './yc128-08'
+import { YC128_09 } from './yc128-09'
 
 export type { AmamakeMarketIssue } from './types'
 export { is_skin_or_blueprint, without_skins_and_blueprints } from './sales_filters'
@@ -70,7 +71,7 @@ export function resolve_sold_types(
 export const LATEST_PATH = '/amamake-market/' as const
 export const ALL_REPORTS_PATH = '/alliance/content#WarzoneReports' as const
 
-export const ISSUES: readonly AmamakeMarketIssue[] = [YC128_08]
+export const ISSUES: readonly AmamakeMarketIssue[] = [YC128_09, YC128_08]
 
 export function get_latest_issue(): AmamakeMarketIssue {
     const [latest] = get_issues_sorted()
