@@ -21,6 +21,7 @@ describe('warzone issue registry', () => {
 describe('warzone content-hub registration', () => {
     it('nests frontline and economic reports in one Warzone Reports list', () => {
         expect(getWarzoneReports().map((report) => report.slug)).toEqual([
+            'amamake-market-yc128-09',
             'yc128-08',
             'amamake-market-yc128-08',
             'yc128-07',

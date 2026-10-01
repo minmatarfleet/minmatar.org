@@ -214,6 +214,13 @@
         "keywords": ["Amamake", "amamake economic report", "August YC128", "market report", "keepstar", "warzone"]
     },
     {
+        "slug": "amamake_market.yc128_09",
+        "path": "/amamake-market/yc128-09/",
+        "publish": true,
+        "description": "page_finder.amamake_market.yc128_09.description",
+        "keywords": ["Amamake", "amamake economic report", "September YC128", "market report", "keepstar", "warzone"]
+    },
+    {
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,
