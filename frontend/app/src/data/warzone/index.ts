@@ -1,10 +1,11 @@
 import type { WarzoneIssue } from './types'
 import { YC128_07 } from './yc128-07'
 import { YC128_08 } from './yc128-08'
+import { YC128_09 } from './yc128-09'
 
 export type { WarzoneIssue } from './types'
 
-export const ISSUES: readonly WarzoneIssue[] = [YC128_08, YC128_07]
+export const ISSUES: readonly WarzoneIssue[] = [YC128_09, YC128_08, YC128_07]
 
 export function get_latest_issue(): WarzoneIssue {
     const [latest] = [...ISSUES].sort(
