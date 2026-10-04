@@ -184,3 +184,29 @@ class EveMoonRouterTest(TestCase):
         self.assertEqual(200, response.status_code)
         moons = response.json()
         self.assertEqual(1, len(moons))
+
+
+class MoonReportSurvivesReporterDeleteTest(TestCase):
+    """The scan belongs to the alliance, not the pilot who reported it."""
+
+    def test_deleting_reporter_keeps_the_moon(self):
+        reporter = User.objects.create(username="scanner")
+        moon = EveMoon.objects.create(
+            system="Hek",
+            planet="1",
+            moon=2,
+            reported_by=reporter,
+        )
+        EveMoonDistribution.objects.create(
+            moon=moon,
+            ore="Bitumens",
+            yield_percent=Decimal("0.5"),
+        )
+
+        reporter.delete()
+
+        moon.refresh_from_db()
+        self.assertIsNone(moon.reported_by_id)
+        self.assertEqual(
+            EveMoonDistribution.objects.filter(moon=moon).count(), 1
+        )

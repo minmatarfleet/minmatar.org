@@ -467,7 +467,9 @@ class EveFittingRefit(models.Model):
 class EveFittingModuleSubstitution(models.Model):
     """
     Per-fitting seeder fallback: if the preferred module cannot be sourced,
-    buy/stock the substitute instead.
+    buy/stock one of these substitutes instead.
+
+    A fitting may list several substitutes for the same preferred module.
     """
 
     fitting = models.ForeignKey(
@@ -497,11 +499,11 @@ class EveFittingModuleSubstitution(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["fitting", "preferred_module"],
-                name="unique_fitting_preferred_module_substitution",
+                fields=["fitting", "preferred_module", "substitute_module"],
+                name="unique_fitting_preferred_substitute_module",
             ),
         ]
-        ordering = ["preferred_module__name"]
+        ordering = ["preferred_module__name", "substitute_module__name"]
         verbose_name = "module substitution"
         verbose_name_plural = "module substitutions"
 

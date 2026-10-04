@@ -2,6 +2,7 @@
 
 import jwt
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import Permission, User
@@ -128,6 +129,65 @@ class TribeGroupRosterTestCase(TestCase):
         self.assertEqual(data[0]["rank_sort_order"], 1)
         self.assertNotIn("characters", data[0])
 
+    def test_hidden_roster_hides_names_from_alliance(self):
+        self.group.roster_hidden = True
+        self.group.save(update_fields=["roster_hidden"])
+        token = _make_token(self.alliance)
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_hidden_roster_visible_to_active_member(self):
+        self.group.roster_hidden = True
+        self.group.save(update_fields=["roster_hidden"])
+        token = _make_token(self.member)
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data[0]["primary_character_name"], "Dread Main")
+
+    def test_hidden_roster_visible_to_group_chief(self):
+        chief = User.objects.create_user(username="chief")
+        self.group.chief = chief
+        self.group.roster_hidden = True
+        self.group.save(update_fields=["chief", "roster_hidden"])
+        token = _make_token(chief)
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()[0]["primary_character_name"], "Dread Main"
+        )
+
+    def test_hidden_roster_strips_chief_from_public_group(self):
+        self.group.chief = self.member
+        self.group.roster_hidden = True
+        self.group.save(update_fields=["chief", "roster_hidden"])
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["roster_hidden"])
+        self.assertIsNone(data["chief"])
+        self.assertGreaterEqual(data["member_count"], 1)
+
+        token = _make_token(self.member)
+        member_response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(member_response.status_code, 200)
+        chief = member_response.json()["chief"]
+        self.assertEqual(chief["character_name"], "Dread Main")
+
 
 class TribeGroupGrowthTestCase(TestCase):
     def setUp(self):
@@ -203,3 +263,39 @@ class TribeGroupShowcaseTestCase(TestCase):
         data = response.json()
         self.assertTrue(data["manual"])
         self.assertEqual(data["contributors"], [])
+
+    @patch(
+        "tribes.endpoints.groups.get_tribe_group_showcase.build_group_showcase"
+    )
+    def test_hidden_roster_strips_contributor_names(self, mock_build):
+        self.group.roster_hidden = True
+        self.group.save(update_fields=["roster_hidden"])
+        mock_build.return_value = {
+            "group_id": self.group.pk,
+            "group_code": self.group.code,
+            "group_name": self.group.name,
+            "period": "30d",
+            "period_start": "2026-09-01",
+            "period_end": "2026-09-30",
+            "manual": False,
+            "message": "",
+            "totals": {"kills": 1},
+            "columns": [],
+            "contributors": [
+                {
+                    "character_id": 1001,
+                    "character_name": "Hidden Pilot",
+                    "metric_key": "kills",
+                    "metric_value": 1,
+                }
+            ],
+        }
+        token = _make_token(self.alliance)
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/showcase",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["contributors"], [])
+        self.assertEqual(data["totals"]["kills"], 1)

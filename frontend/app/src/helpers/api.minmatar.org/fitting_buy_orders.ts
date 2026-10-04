@@ -113,6 +113,15 @@ export interface FittingBuyContractFeeRates {
 
 export type FittingBuyContractType = 'alliance' | 'public'
 
+export interface FittingBuyHullSourceChoice {
+    order_id: number
+    public_short_code: string
+    unit_price: string | null
+    quantity: number
+    fulfilled: boolean
+    created_at: string
+}
+
 export interface FittingBuyContractPrice {
     line_id: number
     fitting_id: number
@@ -128,6 +137,8 @@ export interface FittingBuyContractPrice {
     hull_cost_source: '' | 'landed' | 'industry' | 'jita'
     hull_cost_industry_order_id: number | null
     hull_cost_industry_short_code: string
+    hull_source_needed: boolean
+    hull_source_choices: FittingBuyHullSourceChoice[]
     fitting_cost: string | null
     fitting_uses_stock: boolean
     landed_per_ship: string | null
@@ -276,6 +287,8 @@ export async function patch_fitting_buy_order(
         include_hull?: boolean
         contract_markup_pct?: string
         contract_type?: string
+        hull_type_id?: number
+        hull_industry_order_id?: number
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`

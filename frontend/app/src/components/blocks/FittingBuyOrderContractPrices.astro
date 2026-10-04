@@ -288,6 +288,46 @@ const settings_disabled = !is_owner
                                                     ? <a href={source.href}>{source.text}</a>
                                                     : <span>{source.text}</span>
                                             )}
+                                            {(row.hull_source_needed || (row.hull_source_choices ?? []).length > 0) && is_owner && (
+                                                <form
+                                                    class="[ hull-source ]"
+                                                    hx-post={partial_base}
+                                                    hx-target="#fitting-buy-order"
+                                                    hx-swap="outerHTML"
+                                                    hx-trigger="change"
+                                                >
+                                                    <input type="hidden" name="action" value="hull_source" />
+                                                    <input type="hidden" name="hull_type_id" value={String(row.ship_id)} />
+                                                    <label class="[ visually-hidden ]" for={`hull-source-${row.line_id}-${row_index}`}>
+                                                        {t('fitting_buy.hull_source_prompt')}
+                                                    </label>
+                                                    <select
+                                                        id={`hull-source-${row.line_id}-${row_index}`}
+                                                        name="hull_industry_order_id"
+                                                    >
+                                                        {row.hull_source_needed && (
+                                                            <option value="" selected>
+                                                                {t('fitting_buy.hull_source_prompt')}
+                                                            </option>
+                                                        )}
+                                                        {(row.hull_source_choices ?? []).map((choice) => (
+                                                            <option
+                                                                value={String(choice.order_id)}
+                                                                selected={!row.hull_source_needed && row.hull_cost_industry_order_id === choice.order_id}
+                                                            >
+                                                                {t('fitting_buy.hull_source_option')
+                                                                    .replace('{code}', choice.public_short_code || String(choice.order_id))
+                                                                    .replace('{price}', fmt_compact(choice.unit_price))
+                                                                    .replace('{qty}', String(choice.quantity))
+                                                                    .replace('{date}', choice.created_at)}
+                                                            </option>
+                                                        ))}
+                                                        <option value="0" selected={!row.hull_source_needed && row.hull_cost_source === 'jita'}>
+                                                            {t('fitting_buy.hull_source_jita')}
+                                                        </option>
+                                                    </select>
+                                                </form>
+                                            )}
                                         </dd>
                                     </div>
                                     <span class="[ contract-cost__op ]" aria-hidden="true">+</span>
@@ -614,6 +654,18 @@ const settings_disabled = !is_owner
 
     .contract-fit__variant {
         color: var(--fleet-yellow);
+    }
+
+    .hull-source select {
+        width: 100%;
+        max-width: 16rem;
+        margin-top: var(--space-3xs);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        color: var(--foreground);
+        background: var(--background);
+        border: 1px solid var(--border-color-hover);
     }
 
     .contract-fit__copy-fit {

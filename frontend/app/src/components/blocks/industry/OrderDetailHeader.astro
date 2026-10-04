@@ -8,7 +8,7 @@ import { query_string } from '@helpers/string'
 
 interface Props {
     order_id: number
-    character_id: number
+    character_id: number | null
     character_name: string
     location_name?: string | null
     needed_by?: Date | string | null
@@ -51,13 +51,17 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
     class="[ w-full order-detail-meta ]"
 >
     <Flexblock gap="var(--space-s)" class="[ order-detail-meta__contractor ]">
-        <PilotBadge
-            character_id={character_id}
-            character_name={character_name}
-            heading={true}
-        >
-            <small>{t('contractor')}</small>
-        </PilotBadge>
+        {character_id ? (
+            <PilotBadge
+                character_id={character_id}
+                character_name={character_name}
+                heading={true}
+            >
+                <small>{t('contractor')}</small>
+            </PilotBadge>
+        ) : (
+            <p>{character_name}</p>
+        )}
         <FlexInline gap="var(--space-s)" class="[ order-detail-meta__actions ]">
             <DialogButton
                 size="sm"

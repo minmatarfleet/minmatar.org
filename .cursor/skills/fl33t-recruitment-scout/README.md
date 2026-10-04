@@ -78,7 +78,7 @@ Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | Invite link for outreach closers (skill only) |
-| `proof_videos.always` | Bring Fun Shit — every send |
+| `proof_videos.always` | Bring Fun Shit — every r/evejobs and forum send; not on r/eve |
 | `proof_videos.mining` | Rock Hoppin' — extra mining/industry close |
 | `proof_aars` | Current billion-ISK AARs (rotate when a new one posts) |
 | `proof_pages` | Warzone report, corp directory, freight, optional sieges |

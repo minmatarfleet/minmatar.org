@@ -268,6 +268,8 @@ def candidate_contracts_for_order(
     order: IndustryOrder,
 ) -> list[EveCharacterContract]:
     owner = order.character
+    if owner is None:
+        return []
     period_start, period_end = order_period_bounds(order)
     owner_ids = owner_entity_ids(owner)
 
@@ -301,6 +303,8 @@ def match_order_contracts(
     filter but no assignment scores above threshold, keep an order-level row.
     """
     owner = order.character
+    if owner is None:
+        return []
     owner_ids = owner_entity_ids(owner)
     contracts = candidate_contracts_for_order(order)
     if not contracts:

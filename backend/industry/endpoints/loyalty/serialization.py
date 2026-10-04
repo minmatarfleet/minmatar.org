@@ -52,14 +52,19 @@ def currency_response(
 def market_order_claim_response(
     claim: IndustryLoyaltyPointMarketOrderClaim,
 ) -> LoyaltyMarketOrderClaimResponse:
+    claimed_by = claim.claimed_by
     return LoyaltyMarketOrderClaimResponse(
         id=claim.pk,
         amount=int(claim.amount),
         destination_character_name=claim.destination_character_name or "",
         destination_corporation_name=claim.destination_corporation_name or "",
-        claimed_by_user_id=claim.claimed_by_id,
-        claimed_by_name=_user_display_name(claim.claimed_by),
-        claimed_by_character_id=_user_character_id(claim.claimed_by),
+        claimed_by_user_id=claimed_by.pk if claimed_by else None,
+        claimed_by_name=(
+            _user_display_name(claimed_by) if claimed_by else None
+        ),
+        claimed_by_character_id=(
+            _user_character_id(claimed_by) if claimed_by else None
+        ),
         created_at=claim.created_at,
     )
 
@@ -68,6 +73,7 @@ def market_order_response(
     order: IndustryLoyaltyPointMarketOrder,
 ) -> LoyaltyMarketOrderResponse:
     claimed_by = order.claimed_by
+    created_by = order.created_by
     qty_claimed = claimed_quantity(order)
     claims = [
         market_order_claim_response(claim) for claim in order.claims.all()
@@ -83,9 +89,13 @@ def market_order_response(
         quantity_remaining=remaining_quantity(order),
         isk_per_lp=order.isk_per_lp,
         status=order.status,
-        created_by_user_id=order.created_by_id,
-        created_by_name=_user_display_name(order.created_by),
-        created_by_character_id=_user_character_id(order.created_by),
+        created_by_user_id=created_by.pk if created_by else None,
+        created_by_name=(
+            _user_display_name(created_by) if created_by else None
+        ),
+        created_by_character_id=(
+            _user_character_id(created_by) if created_by else None
+        ),
         claimed_by_user_id=claimed_by.pk if claimed_by else None,
         claimed_by_name=(
             _user_display_name(claimed_by) if claimed_by else None

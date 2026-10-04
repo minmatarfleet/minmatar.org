@@ -187,12 +187,13 @@ old reports.
 
 | Layer | Resource | URL | When |
 |-------|----------|-----|------|
-| **Always** | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` | **Every send.** Mining, MFA, no-PvP, WH redirect, named corp, saturated thread. Own block. |
-| **Also mining / industry** | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` | Extraction, MFA rock fleets, highsec bulwark miners, corp-merge industry. **In addition to** Bring Fun Shit, not instead of it. Own block after BFS. |
-| **Also big fight** | Newest AAR in the Current kit | see table | PvP/FW, caps, Rattini, WH→FW, “where’s the action.” One AAR max unless they asked for capitals — then you may add the cap-feed AAR too. Never a substitute for Bring Fun Shit. |
+| **Always on r/evejobs and forums** | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` | **Every r/evejobs and forum send.** Mining, MFA, no-PvP, WH redirect, named corp, saturated thread. Own block. **Not on r/eve.** |
+| **Also mining / industry** | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` | Extraction, MFA rock fleets, highsec bulwark miners, corp-merge industry, on r/evejobs and forums. **In addition to** Bring Fun Shit, not instead of it. Own block after BFS. On r/eve, this is the one optional link only when the ask is mining. |
+| **Also big fight** | Newest AAR in the Current kit | see table | PvP/FW, caps, Rattini, WH→FW, “where’s the action,” on r/evejobs and forums. One AAR max unless they asked for capitals — then you may add the cap-feed AAR too. Never a substitute for Bring Fun Shit there. On r/eve, this AAR can be the single optional link. |
 
-Do not dump every AAR into every message. Do not skip Bring Fun Shit because an
-AAR or Rock Hoppin' is already in the reply.
+Do not dump every AAR into every message. On r/evejobs and forums, do not skip
+Bring Fun Shit because an AAR or Rock Hoppin' is already in the reply. On r/eve,
+skip that stack. One optional link, or none.
 
 #### Current kit (update from pre-scout 1c)
 
@@ -201,9 +202,9 @@ Replace rows when a new mega-fight AAR posts. URLs also live in `config.json`
 
 | Kind | Title | URL | Use |
 |------|-------|-----|-----|
-| Video | Bring Fun Shit | `https://youtu.be/7-eGTtq9vWo` | Every send |
+| Video | Bring Fun Shit | `https://youtu.be/7-eGTtq9vWo` | Every r/evejobs and forum send |
 | Video | Rock Hoppin' | `https://youtu.be/XCApG7Pt6m4` | Mining/industry extra |
-| AAR | 200B down in Dal (19 Sep YC128) | `https://www.reddit.com/r/Eve/comments/1wkwldz/aar_200b_down_in_dal/` | Default extra AAR (newest big fight) |
+| AAR | 625B down in Amamake (27 Sep YC128) | `https://www.reddit.com/r/Eve/comments/1wr8ohf/aar_625b_down_in_amamake/` | Default extra AAR (newest big fight) |
 | AAR | 700B down in Ahbazon (1 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/` | Caps / Rattini / dread-feed hook |
 | Site | Monthly Warzone Report | `https://my.minmatar.org/warzone/` | Forums onebox / casual-null / action-location threads |
 | Site | Corporation directory | `https://my.minmatar.org/alliance/corporations/` | Dual-route, self-serve bios |
@@ -219,8 +220,8 @@ is looking for a corporation — not where a corp is recruiting.
 
 | Source | How |
 |--------|-----|
-| r/evejobs | `/new`, or search however you think will surface LFC posts |
-| r/eve | Same; some pilots post outside evejobs |
+| r/evejobs | `/new`, or search however you think will surface LFC posts. Full recruitment reply. |
+| r/eve | Same; some pilots post outside evejobs. Advice audience. Subtle nudge, not the job-board stack. |
 | EVE Forums | Recruitment Center latest, or search the category |
 
 Search terms and browsing strategy are your call. Use judgment, not a fixed
@@ -339,6 +340,7 @@ Additional principles:
 - **Caps / multi-box veterans:** ARAT. Unused capital + learning lowsec → ARAT (own the dread-feed joke). Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
 - **WH-only veterans, or jspace with no USTZ new/early-intermediate hook:** nameless FW redirect plus Bring Fun Shit and the newest kit AAR. Do not close that redirect with Rock Hoppin'. SOEXD is for USTZ new and early-intermediate pilots who still want a hole on the side.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
+- **Proof closes above are for r/evejobs and the forums.** On r/eve, keep the same seat and the same direction, then write the subtle nudge instead of the ad and video stack.
 
 ### Draft outreach
 
@@ -347,11 +349,12 @@ Read [examples.md](examples.md) for past learnings if any exist. Every recommend
 inside that block. Proof video and forum oneboxes are **separate send blocks**,
 never glued onto the pitch sentence.
 
-#### Shape (always)
+#### Shape (r/evejobs and forums)
 
 **One pitch paragraph. 2–4 sentences max.** Weave their detail, name one primary
 corp, what it does, then ad link and/or discord inline at the end of that
-paragraph only. No bullet lists, no wall of text.
+paragraph only. No bullet lists, no wall of text. This shape is for r/evejobs
+and the EVE forums. r/eve uses the subtle nudge below.
 
 ```
 [hook: their words, a fear, or what the corp does — first sentence grabs attention]
@@ -365,8 +368,50 @@ paragraph only. No bullet lists, no wall of text.
 
 | Surface | After the pitch paragraph |
 |---------|---------------------------|
-| **Reddit** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. See section 4. |
+| **r/evejobs** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. See section 4. |
+| **r/eve** | No pitch stack. One short answer, then at most one URL on its own line. See below. |
 | **Forums** | Pitch keeps the ad URL and `discord.gg/minmatar` as bare text in the last sentence. Then each proof URL on its own line so Discourse embeds it (Bring Fun Shit, Rock Hoppin' when mining, one AAR). Do not bold YouTube URLs. Do not use the Reddit `Some links` list. |
+
+#### r/eve (subtle nudge)
+
+r/eve is a discussion subreddit. People reading the thread are not browsing a
+job board, so a corp ad, a Discord invite, and a proof stack in one comment
+reads as a recruiter who wandered in. Answer the question and point them at
+the right space. Section 3 still names the seat from the routing map so the
+recruiter knows the direction. The copy block is the nudge.
+
+**Voice**
+
+- Sound like a pilot who flies there. Lead with the place or the answer
+  (warzone, Amamake, lowsec, highsec bulwarks), not with a corporation name.
+- One short paragraph, 1–3 sentences. No brochure, no member counts, no
+  "we're recruiting."
+- Name a corp only when they are clearly looking for people to fly with and
+  one name answers that. One clause, then stop. Do not describe culture,
+  roster size, or requirements.
+- Never link an r/evejobs recruitment ad. Never use `Some links`. Never stack
+  Discord, Bring Fun Shit, an AAR, and Rock Hoppin'.
+- At most one URL, on its own line under the paragraph, with no label and no
+  bullets. Pick the single thing that proves the nudge: the newest kit AAR
+  when they asked where the fights are, Bring Fun Shit when the vibe is the
+  point, Rock Hoppin' when the ask is mining. Skip the link when the sentence
+  already did the job.
+- Discord only if they asked where to talk to people. That one line replaces
+  the proof link. Do not add both.
+- Industry and wormhole redirects stay honest and shorter. Highsec bulwarks
+  over another null shuffle is the mining nudge. Extraction's fleet pitch and
+  Keldor00 stay on r/evejobs and the forums.
+- Still vary openings across a run. On r/eve, prefer direct answer, contrast,
+  or blunt. Corp-first is the r/evejobs opener.
+
+```
+[answer their question — the place, the session, or the contrast]
+
+[optional: one corp name in a clause, only if they asked for people to fly with]
+
+<blank line>
+[optional: one URL alone]
+```
 
 #### Variety (mandatory per scout run)
 
@@ -385,9 +430,11 @@ paragraph opens**, not how many paragraphs there are:
 Do not repeat the same opening mode or the same first three words across messages
 in one run. Rotate how link/discord land (end of sentence, after corp name, etc.).
 
-**Self-check:** each message should be scannable in under 5 seconds. **Every**
-draft includes Bring Fun Shit. Mining/industry also includes Rock Hoppin'.
-PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
+**Self-check:** each message should be scannable in under 5 seconds. **r/evejobs
+and forum** drafts include Bring Fun Shit. Mining/industry on those surfaces
+also includes Rock Hoppin'. PvP/FW/caps/redirects on those surfaces also include
+the newest kit AAR when the thread has room. **r/eve** drafts stay a short
+answer plus at most one link.
 
 **Voice rules:**
 
@@ -412,12 +459,13 @@ PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
 - **No nullsec pitch.** Never mention sovereignty, null ratting, null deployment,
   or "we have sov too" in outreach. We are FW/lowsec; sov-null seekers get skipped
   or an honest FW pitch only if their ask fits.
-- **One paragraph only** for the corp pitch. Reddit and forums use the same shape
-  for that block. Link + discord inline in the pitch; skip discord when the ad
-  link is enough. **Bring Fun Shit is required on every send**, own block (see
-  send-shape). Rock Hoppin' is extra for mining/industry, never a BFS substitute.
-  Add one Current-kit AAR for PvP/caps/redirects as they land; do not paste proof
-  URLs into the pitch paragraph.
+- **One paragraph only** for the corp pitch on r/evejobs and forums. Those two
+  surfaces share that block. Link + discord inline in the pitch; skip discord
+  when the ad link is enough. **Bring Fun Shit is required on every r/evejobs
+  and forum send**, own block (see send-shape). Rock Hoppin' is extra for
+  mining/industry there, never a BFS substitute. Add one Current-kit AAR for
+  PvP/caps/redirects as they land; do not paste proof URLs into the pitch
+  paragraph. r/eve does not use this stack.
 - **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
   as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
 - **MFA Discord contact:** `ask for Keldor00` (handle, not the older `Keldor`
@@ -451,10 +499,10 @@ reply list.
 
 One block per open thread, in the same order as section 3. Each block:
 
-1. A heading the recruiter does not paste: title, seat, `Reddit` or `Forums`, link to the thread.
+1. A heading the recruiter does not paste: title, seat, `r/evejobs`, `r/eve`, or `Forums`, link to the thread.
 2. A fenced code block they can copy whole.
 
-**Reddit** (what actually gets sent):
+**r/evejobs** (what actually gets sent):
 
 - Pitch is one paragraph and contains no URLs.
 - Blank line, then the line `Some links`, then a markdown bullet list.
@@ -464,6 +512,13 @@ One block per open thread, in the same order as section 3. Each block:
 - Brand-new teach-me Academy posts put `https://my.minmatar.org/learning/` first in the list and skip the AAR.
 - Other Academy / PvP posts: ad, discord, Bring Fun Shit, then one AAR when the kit says so.
 - Mining / industry posts: Bring Fun Shit, the mining ad, Rock Hoppin', discord. Order can put discord first when the ask is a corp home rather than “how do I mine.”
+
+**r/eve** (what actually gets sent):
+
+- One paragraph, 1–3 sentences, no URLs inside it. Answer the thread. Name a corp only in the one-clause case above.
+- Optional blank line, then one URL alone. No `Some links`, no bullets, no r/evejobs ad.
+- That URL is the newest kit AAR, Bring Fun Shit, or Rock Hoppin', and only one of them. Discord replaces it only when they asked where to talk to people.
+- Skip the URL when the paragraph already points them at the right space.
 
 **Forums** (bare URLs, so Discourse oneboxes):
 
@@ -492,7 +547,7 @@ markers, or routing. Those live in this skill.
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | For outreach closers (skill only) |
-| `proof_videos.always` | Bring Fun Shit — required on every send |
+| `proof_videos.always` | Bring Fun Shit — required on every r/evejobs and forum send; not on r/eve |
 | `proof_videos.mining` | Rock Hoppin' — extra close for mining/industry |
 | `proof_aars` | Current billion-ISK AARs (newest first); rotate when a new one posts |
 | `proof_pages` | Warzone report, corp directory, freight history, optional siege pages |

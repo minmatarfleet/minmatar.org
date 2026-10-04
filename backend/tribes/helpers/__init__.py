@@ -4,6 +4,7 @@ from tribes.helpers.requirements import (
 )
 from tribes.helpers.permissions import (
     user_can_manage_group,
+    user_can_view_group_roster,
     user_in_tribe_group,
     user_is_active_tribe_member,
     user_is_alliance_member,
@@ -30,6 +31,7 @@ __all__ = [
     "application_blocked_by_trial",
     "user_is_on_trial",
     "user_can_manage_group",
+    "user_can_view_group_roster",
     "user_in_tribe_group",
     "user_is_active_tribe_member",
     "user_is_alliance_member",

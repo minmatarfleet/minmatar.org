@@ -54,10 +54,10 @@ const order_purchasers = (row: LoyaltyMarketOrder): PurchaserIcon[] => {
     const by_user = new Map<number, PurchaserIcon>()
 
     for (const claim of row.claims ?? []) {
-        if (!claim.claimed_by_character_id) continue
+        if (!claim.claimed_by_character_id || !claim.claimed_by_user_id) continue
         by_user.set(claim.claimed_by_user_id, {
             character_id: claim.claimed_by_character_id,
-            character_name: claim.claimed_by_name,
+            character_name: claim.claimed_by_name ?? '',
         })
     }
 
@@ -73,10 +73,15 @@ const order_purchasers = (row: LoyaltyMarketOrder): PurchaserIcon[] => {
         })
     }
 
-    if (by_user.size === 0 && row.side === 'buy' && row.created_by_character_id) {
+    if (
+        by_user.size === 0
+        && row.side === 'buy'
+        && row.created_by_user_id
+        && row.created_by_character_id
+    ) {
         by_user.set(row.created_by_user_id, {
             character_id: row.created_by_character_id,
-            character_name: row.created_by_name,
+            character_name: row.created_by_name ?? '',
         })
     }
 

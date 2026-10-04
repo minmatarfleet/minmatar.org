@@ -28,7 +28,9 @@ class IndustryOrder(models.Model):
     )
     character = models.ForeignKey(
         "eveonline.EveCharacter",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="industry_orders",
     )
     location = models.ForeignKey(

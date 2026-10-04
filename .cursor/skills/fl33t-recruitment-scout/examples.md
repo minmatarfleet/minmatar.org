@@ -4,6 +4,40 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-09-27 r/eve is not r/evejobs
+
+Recruiter correction. Earlier r/eve replies used the job-board kit: named corp, evejobs ad, Discord, Bring Fun Shit. That reads as tacky on r/eve because the audience is there for the thread, not to shop corps.
+
+Threads that used the heavy shape:
+
+- [Returning player, where’s the action](https://www.reddit.com/r/Eve/comments/1wad0w2/returning_player_wheres_the_action/) — FW redirect plus Discord plus Bring Fun Shit
+- [My null sec Corp has died.](https://www.reddit.com/r/Eve/comments/1uyj4o5/my_null_sec_corp_has_died/) — Soltech ad plus Discord
+- [Returning player looking for best facwar faction…](https://www.reddit.com/r/Eve/comments/1uy7m0l/returning_player_looking_for_best_facwar_faction/) — Dark Tribe ad plus Discord
+
+Keep the direction (warzone, Amamake, lowsec, highsec bulwarks). Drop the recruitment kit. One short answer, at most one proof link, no evejobs ad, no `Some links`. Name a corp only when they asked for people to fly with, and then in one clause. Section 3 still records the seat. r/evejobs and the forums keep the full pitch.
+
+---
+
+## 2026-09-27 scout run
+
+### Default AAR
+625B down in Amamake (27 Sep YC128) replaces Dal 200B as the default extra AAR. Ahbazon 700B stays the cap-feed hook until a newer capital brawl posts.
+
+### u/420skateman Academy paste
+The same Academy boilerplate plus `discord.gg/minmatar` landed on many r/evejobs threads this window. That is Responded. Do not draft a second reply. The paste is generic Academy even when the seat is Extraction, Rattini, or a wormhole redirect, so section 2 should name `u/420skateman` and say it was the Academy paste.
+
+### Alpha faction-warfare newbro
+**Thread:** [Newbro looking for a FW corp](https://forums.eveonline.com/t/newbro-looking-for-a-fw-corp/518905)
+
+6m SP, alpha, fought for Caldari, wants teaching. `u/BearThatCares` already pitched Academy. Academy is Omega-only. Alpha goes MFA. Already replied, so no second draft. Route MFA before anyone sends.
+
+### Miner alts who refuse highsec
+**Thread:** [Home for my 6 alts](https://forums.eveonline.com/t/home-for-my-6-alts/518643)
+
+Six miner alts, no mains, asked for null. Extraction / highsec bulwarks was the first reply. They answered that they already mine in Minmatar space and want the ore, not highsec. Do not send a second highsec pitch after they refuse it.
+
+---
+
 ## 2026-09-24 formatting (sent vs scout)
 
 BearThatCares posted four Reddit replies and one forum reply from this run. The forum post matched the scout. Every Reddit post was reformatted the same way.

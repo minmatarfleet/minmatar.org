@@ -16,6 +16,18 @@ from sentry_sdk.integrations.django import DjangoIntegration
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def env_int(name, default):
+    """Read an int from the environment.
+
+    Falls back to the default when the variable is unset *or* blank.
+    A freshly copied .env.example leaves the Discord IDs below empty
+    until you create your own Discord app, and a bare int("") would
+    crash Django on startup.
+    """
+    value = os.environ.get(name, "").strip()
+    return int(value) if value else default
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -70,30 +82,30 @@ DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET = os.environ.get(
 DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = os.environ.get(
     "DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE", ""
 )
-DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", 1041384161505722368))
-DISCORD_PEOPLE_TEAM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870)
+DISCORD_GUILD_ID = env_int("DISCORD_GUILD_ID", 1041384161505722368)
+DISCORD_PEOPLE_TEAM_CHANNEL_ID = env_int(
+    "DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870
 )
-DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID", 1174095095537078312)
+DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = env_int(
+    "DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID", 1174095095537078312
 )
-DISCORD_APPLICATION_CHANNEL_ID = int(
-    os.environ.get("DISCORD_APPLICATION_CHANNEL_ID", 1097522187952467989)
+DISCORD_APPLICATION_CHANNEL_ID = env_int(
+    "DISCORD_APPLICATION_CHANNEL_ID", 1097522187952467989
 )
-DISCORD_FLEET_SCHEDULE_CHANNEL_ID = int(
-    os.environ.get("DISCORD_FLEET_SCHEDULE_CHANNEL_ID", 1174169403873558658)
+DISCORD_FLEET_SCHEDULE_CHANNEL_ID = env_int(
+    "DISCORD_FLEET_SCHEDULE_CHANNEL_ID", 1174169403873558658
 )
-DISCORD_FLEET_SCHEDULE_MESSAGE_ID = int(
-    os.environ.get("DISCORD_FLEET_SCHEDULE_MESSAGE_ID", 1244656126302224466)
+DISCORD_FLEET_SCHEDULE_MESSAGE_ID = env_int(
+    "DISCORD_FLEET_SCHEDULE_MESSAGE_ID", 1244656126302224466
 )
-DISCORD_STRUCTURE_PINGS_CHANNEL_ID = int(
-    os.environ.get("DISCORD_STRUCTURE_PINGS_CHANNEL_ID", 1270780039272595549)
+DISCORD_STRUCTURE_PINGS_CHANNEL_ID = env_int(
+    "DISCORD_STRUCTURE_PINGS_CHANNEL_ID", 1270780039272595549
 )
-DISCORD_INDUSTRY_CHANNEL_ID = int(
-    os.environ.get("DISCORD_INDUSTRY_CHANNEL_ID", 1062178037875081226)
+DISCORD_INDUSTRY_CHANNEL_ID = env_int(
+    "DISCORD_INDUSTRY_CHANNEL_ID", 1062178037875081226
 )
-DISCORD_AARS_FORUM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256)
+DISCORD_AARS_FORUM_CHANNEL_ID = env_int(
+    "DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256
 )
 
 # Roam Report

@@ -16,7 +16,7 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupSchema,
 )
 from tribes.endpoints.serialization import user_to_character_ref
-from tribes.helpers import user_can_manage_group
+from tribes.helpers import user_can_manage_group, user_can_view_group_roster
 from tribes.models import TribeGroup, TribeGroupMembership
 
 
@@ -45,7 +45,15 @@ def serialize_tribe_group(
         member_count = TribeGroupMembership.objects.filter(
             tribe_group=tg, status=TribeGroupMembership.STATUS_ACTIVE
         ).count()
-    chief_ref = user_to_character_ref(tg.chief) if tg.chief else None
+    show_identities = not tg.roster_hidden or (
+        request_user is not None
+        and user_can_view_group_roster(request_user, tg)
+    )
+    chief_ref = (
+        user_to_character_ref(tg.chief)
+        if tg.chief and show_identities
+        else None
+    )
     can_apply = False
     can_manage = False
     if request_user is not None and getattr(
@@ -100,4 +108,5 @@ def serialize_tribe_group(
         allowed_affiliations=effective_allowed_affiliations(tg),
         can_apply=can_apply,
         can_manage=can_manage,
+        roster_hidden=bool(tg.roster_hidden),
     )

@@ -11,6 +11,7 @@ const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : fal
 const is_logged_in = !!(user && auth_token)
 
 import {
+    get_buyback_settings,
     post_buyback_purchase_order,
     post_buyback_stock_fill,
 } from '@helpers/api.minmatar.org/buybacks'
@@ -40,6 +41,7 @@ let character_id: number | null = null
 let facility_key = ''
 let use_reprocessing_implants = false
 let data_fetching_error: Error | false = false
+let contract_location = ''
 
 if (Astro.request.method !== 'POST')
     return Astro.redirect(translatePath('/market/buyback/stocks/'))
@@ -99,6 +101,15 @@ if (data_fetching_error) {
     return Astro.redirect(translatePath('/market/buyback/stocks/'))
 }
 
+if (!data_fetching_error) {
+    try {
+        const settings = await get_buyback_settings()
+        contract_location = settings.location?.name ?? ''
+    } catch {
+        contract_location = ''
+    }
+}
+
 const page_title = t('buyback.purchase.page_title')
 const breadcrumbs = [
     { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
@@ -122,6 +133,9 @@ const refine_yield_text = fill
                 )
                 : '',
         )
+    : ''
+const contract_where = contract_location
+    ? t('buyback.purchase.contract_where').replace('{location}', contract_location)
     : ''
 ---
 
@@ -154,6 +168,9 @@ const refine_yield_text = fill
                     <Flexblock gap="var(--space-m)">
                         <h2>{t('buyback.purchase.placed_title')}</h2>
                         <p>{t('buyback.purchase.placed_lead').replace('{name}', placed.character_name || t('buyback.purchase.orders.unknown_pilot'))}</p>
+                        {contract_where &&
+                            <p>{contract_where}</p>
+                        }
                         <FlexInline
                             justification="space-between"
                             gap="var(--space-s)"
@@ -223,6 +240,9 @@ const refine_yield_text = fill
 
                         {refine_yield_text &&
                             <p class="[ buyback-purchase__hint ]">{refine_yield_text}</p>
+                        }
+                        {contract_where &&
+                            <p class="[ buyback-purchase__hint ]">{contract_where}</p>
                         }
 
                         {fill.picks.length === 0 ?
