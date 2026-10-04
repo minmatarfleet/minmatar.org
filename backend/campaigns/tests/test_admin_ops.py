@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import User
@@ -11,6 +12,7 @@ from django.utils import timezone
 
 from app.test import TestCase
 from campaigns.admin import CampaignAdmin
+from campaigns.services.refresh import refresh_campaign
 from campaigns.helpers import ensure_default_arc
 from campaigns.models import (
     Campaign,
@@ -18,6 +20,7 @@ from campaigns.models import (
     CampaignStructure,
     CampaignSystem,
     CampaignSystemArc,
+    CampaignSystemSnapshot,
     CampaignWeekTarget,
     SystemGoal,
 )
@@ -233,8 +236,108 @@ class CampaignAdminTabsTestCase(TestCase):
         self.assertContains(response, 'name="slug"')
         self.assertContains(response, 'name="status"')
         self.assertContains(response, 'name="discord_channel_id"')
+        self.assertContains(response, "Refresh live data")
         self.assertNotContains(response, 'name="name"')
         self.assertNotContains(response, 'name="tagline"')
+
+    def test_settings_refresh_posts_and_returns(self):
+        with patch(
+            "campaigns.admin.refresh_service.refresh_campaign",
+            return_value={
+                "killmails_attributed": 2,
+                "snapshots": 1,
+                "advantage": 1,
+                "stats": 3,
+            },
+        ) as refresh:
+            response = self.client.post(
+                f"/admin/campaigns/campaign/{self.campaign.pk}/refresh/"
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/tabs/settings/", response["Location"])
+        refresh.assert_called_once()
+
+    @patch("campaigns.services.snapshots.fetch_fw_systems", return_value=[])
+    @patch(
+        "campaigns.services.frontlines.fetch_warzone_status", return_value=[]
+    )
+    def test_refresh_campaign_summarizes_without_esi(self, status, systems):
+        result = refresh_campaign(self.campaign)
+        self.assertEqual(result["snapshots"], 0)
+        self.assertEqual(result["advantage"], 0)
+        self.assertEqual(result["snapshots_missing"], [])
+        self.assertIn("killmails_scanned", result)
+
+    @patch("campaigns.services.frontlines.fetch_warzone_status")
+    @patch("campaigns.services.snapshots.fetch_fw_systems")
+    def test_refresh_writes_every_theater_system(self, fetch_fw, fetch_status):
+        aug = CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=30002542,
+            name="Auga",
+            goal=SystemGoal.HOLD,
+            is_fw_objective=True,
+        )
+        huola = CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=30003070,
+            name="Huola",
+            goal=SystemGoal.RECON,
+            is_fw_objective=False,
+        )
+
+        def fw_row(system_id, points):
+            return {
+                "solar_system_id": system_id,
+                "victory_points": points,
+                "victory_points_threshold": 100,
+                "owner_faction_id": 500003,
+                "occupier_faction_id": 500003,
+                "contested": "contested",
+            }
+
+        # ESI sometimes returns the id as a string. Both theater systems
+        # that appear in the feed must still be written.
+        fetch_fw.return_value = [
+            fw_row(KAMELA, 10),
+            fw_row("30002542", 40),
+        ]
+        fetch_status.return_value = [
+            {
+                "solarsystemID": KAMELA,
+                "advantage": [
+                    {"factionID": 500002, "totalAmount": 12},
+                    {"factionID": 500003, "totalAmount": 4},
+                ],
+            },
+            {
+                "solarsystemID": "30002542",
+                "advantage": [
+                    {"factionID": 500002, "totalAmount": 8},
+                    {"factionID": 500003, "totalAmount": 20},
+                ],
+            },
+        ]
+
+        result = refresh_campaign(self.campaign)
+
+        self.assertEqual(result["theater_systems"], 3)
+        self.assertEqual(result["snapshots"], 2)
+        self.assertEqual(result["snapshots_missing"], ["Huola"])
+        self.assertEqual(result["advantage"], 2)
+        self.assertEqual(
+            CampaignSystemSnapshot.objects.filter(
+                campaign_system__campaign=self.campaign
+            ).count(),
+            2,
+        )
+        aug_snapshot = CampaignSystemSnapshot.objects.get(campaign_system=aug)
+        self.assertEqual(aug_snapshot.victory_points, 40)
+        self.assertFalse(
+            CampaignSystemSnapshot.objects.filter(
+                campaign_system=huola
+            ).exists()
+        )
 
     def test_theaters_tab_lists_campaign_systems(self):
         system = self.campaign.systems.first()

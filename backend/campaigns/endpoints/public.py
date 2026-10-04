@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from app.errors import ErrorResponse
-from authentication import AuthOptional
+from authentication import AuthBearer, AuthOptional
 from campaigns.endpoints.base import router
 from campaigns.endpoints import schemas, serializers
 from campaigns.helpers import campaign_week_start, week_bounds
@@ -26,6 +26,7 @@ from campaigns.models import (
     KillmailOutcome,
     SiteKind,
 )
+from campaigns.services import entities as entity_service
 from campaigns.services import plan, stats
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
@@ -106,6 +107,18 @@ def list_campaigns(request, status: str = ""):
         else None
     )
     return [serializers.list_item(campaign, user) for campaign in campaigns]
+
+
+@router.get(
+    "/entities",
+    response={200: list[schemas.UniverseEntityMatch], 400: ErrorResponse},
+    auth=AuthBearer(),
+)
+def search_entities(request, kind: str, q: str = ""):
+    """Autocomplete corporations and alliances for structure scouting."""
+    if kind not in ("corporation", "alliance"):
+        return 400, {"detail": "kind must be corporation or alliance"}
+    return entity_service.search_entities(request.user, kind, q)
 
 
 @router.get(

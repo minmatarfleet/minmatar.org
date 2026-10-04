@@ -8,6 +8,10 @@ focused tabs (story, theaters, structures) instead of one long page.
 """
 
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.urls import path, reverse
 from django.utils import timezone
 from django_admin_tabs import AdminChangeListTab, AdminTab, TabbedModelAdmin
 
@@ -19,6 +23,7 @@ from campaigns.forms import (
     cover_image_formfield,
 )
 from campaigns.services import plan
+from campaigns.services import refresh as refresh_service
 from campaigns.services import structures as structure_service
 from campaigns.models import (
     AreaScope,
@@ -416,6 +421,7 @@ class CampaignStructuresTab(AdminChangeListTab, admin.ModelAdmin):
 
 class CampaignSettingsTab(AdminTab, admin.ModelAdmin):
     admin_tab_name = "Settings"
+    change_form_template = "admin/campaigns/campaign/settings_change_form.html"
     raw_id_fields = ("created_by", "default_fleet_audience")
     fieldsets = (
         (
@@ -456,7 +462,9 @@ class CampaignSettingsTab(AdminTab, admin.ModelAdmin):
                 "fields": ("scoring", "order_pool"),
                 "description": (
                     "JSON overrides for scoring weights and the daily order "
-                    "point pool. Leave empty to use defaults."
+                    "point pool. Leave empty to use defaults. Refresh live "
+                    "data re-pulls contested, advantage, killmails, and "
+                    "scoreboards for every system in this theater."
                 ),
             },
         ),
@@ -467,6 +475,17 @@ class CampaignSettingsTab(AdminTab, admin.ModelAdmin):
             },
         ),
     )
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["refresh_url"] = reverse(
+            "admin:campaigns_campaign_refresh",
+            args=[object_id],
+            current_app=self.admin_site.name,
+        )
+        return super().change_view(
+            request, object_id, form_url, extra_context=extra_context
+        )
 
 
 # --- Campaign ---------------------------------------------------------------
@@ -534,6 +553,62 @@ class CampaignAdmin(TabbedModelAdmin, admin.ModelAdmin):
         CampaignStructuresTab,
         CampaignSettingsTab,
     ]
+
+    def get_urls(self):
+        extra = [
+            path(
+                "<path:object_id>/refresh/",
+                self.admin_site.admin_view(self.refresh_campaign_view),
+                name="campaigns_campaign_refresh",
+            ),
+        ]
+        return extra + super().get_urls()
+
+    def refresh_campaign_view(self, request, object_id):
+        campaign = get_object_or_404(Campaign, pk=object_id)
+        if not self.has_change_permission(request, campaign):
+            raise PermissionDenied
+        settings_url = reverse(
+            "admin:campaigns_campaign_step",
+            args=[campaign.pk, "settings"],
+            current_app=self.admin_site.name,
+        )
+        if request.method != "POST":
+            return HttpResponseRedirect(settings_url)
+
+        result = refresh_service.refresh_campaign(campaign)
+        missing = result.get("snapshots_missing") or []
+        if missing:
+            self.message_user(
+                request,
+                (
+                    f"No faction-warfare reading for {', '.join(missing)}. "
+                    "Those theater systems are unchanged."
+                ),
+                messages.WARNING,
+            )
+        elif result["snapshots"] == 0:
+            self.message_user(
+                request,
+                (
+                    f"Contested systems for {campaign.name} were not pulled. "
+                    "ESI returned no faction-warfare systems, so victory "
+                    "points on the campaign page are unchanged."
+                ),
+                messages.WARNING,
+            )
+        self.message_user(
+            request,
+            (
+                f"Refreshed {campaign.name}: "
+                f"{result['killmails_attributed']} killmail(s), "
+                f"{result['snapshots']} faction-warfare snapshot(s), "
+                f"{result['advantage']} advantage reading(s), "
+                f"{result['stats']} scoreboard row(s)."
+            ),
+            messages.SUCCESS,
+        )
+        return HttpResponseRedirect(settings_url)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == "cover_image_url":

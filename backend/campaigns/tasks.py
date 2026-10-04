@@ -77,6 +77,11 @@ def poll_campaign_snapshots() -> dict:
 def poll_frontlines_advantage() -> dict:
     """Advantage per system, read off CCP's frontlines page instead of pilots."""
     result = frontlines.record_advantage()
+    # Contested is on a slower poll. A system with no snapshot yet would
+    # sit on "not yet pulled" until that poll, so fill those in here.
+    if snapshots.fw_systems_without_snapshots().exists():
+        filled = snapshots.record_snapshots()
+        result["snapshots"] = filled["written"]
     # An advantage target is measured against this number, so the week's
     # pace has to move with it.
     if result.get("written"):

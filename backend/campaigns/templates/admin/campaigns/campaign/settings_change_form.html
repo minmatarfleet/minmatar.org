@@ -1,0 +1,14 @@
+{% extends "admin/django_admin_tabs/tab_change_form.html" %}
+{% load i18n %}
+
+{% block submit_buttons_bottom %}
+{% if refresh_url %}
+<form method="post" action="{{ refresh_url }}">
+  {% csrf_token %}
+  <div class="submit-row">
+    <input type="submit" value="{% trans 'Refresh live data' %}">
+  </div>
+</form>
+{% endif %}
+{{ block.super }}
+{% endblock %}

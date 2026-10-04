@@ -596,6 +596,13 @@ export interface StructureTimerRequest {
     fitting?:               string | null;
 }
 
+export interface UniverseEntityMatch {
+    id:     number;
+    name:   string;
+    ticker: string;
+    kind:   'corporation' | 'alliance';
+}
+
 export interface CampaignStructureAttachRequest {
     name:                   string;
     structure_type:         StructureType | string;

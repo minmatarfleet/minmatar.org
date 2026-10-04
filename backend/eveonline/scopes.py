@@ -15,6 +15,8 @@ BASIC_SCOPES = [
     "esi-characters.read_fw_stats.v1",
     "esi-clones.read_clones.v1",
     "esi-clones.read_implants.v1",
+    # Character search covers corporations and alliances, not only structures.
+    "esi-search.search_structures.v1",
 ]
 
 DIRECTOR_SCOPES = [

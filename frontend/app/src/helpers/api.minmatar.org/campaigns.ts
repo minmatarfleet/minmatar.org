@@ -22,6 +22,7 @@ import type {
     CampaignGangRequest,
     CampaignStructure,
     CampaignStructureAttachRequest,
+    UniverseEntityMatch,
 } from '@dtypes/api.minmatar.org'
 import { parse_response_error } from '@helpers/string'
 
@@ -268,6 +269,19 @@ export async function create_campaign_gang(slug:string, access_token:string, gan
         'campaign gang',
         'POST',
         gang,
+    )
+}
+
+export async function search_campaign_entities(
+    access_token:string,
+    kind:'corporation' | 'alliance',
+    query:string,
+) {
+    const params = new URLSearchParams({ kind, q: query })
+    return await request_json<UniverseEntityMatch[]>(
+        `${API_ENDPOINT}/entities?${params}`,
+        access_token,
+        'entity search',
     )
 }
 

@@ -450,6 +450,13 @@ class StructureAttachRequest(Schema):
     timer_state: str | None = None
 
 
+class UniverseEntityMatch(Schema):
+    id: int
+    name: str
+    ticker: str = ""
+    kind: str
+
+
 class PartyAttachRequest(Schema):
     name: str = Field(min_length=1, max_length=255)
     ticker: str = Field(default="", max_length=16)

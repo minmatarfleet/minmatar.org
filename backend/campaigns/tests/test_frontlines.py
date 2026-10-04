@@ -1,9 +1,12 @@
 """Advantage read off CCP's frontlines page instead of reported by pilots."""
 
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from campaigns.models import CampaignAdvantageReading, CampaignSystem
-from campaigns.services import advantage, frontlines
+from campaigns.services import advantage, frontlines, snapshots
+from campaigns.tasks import poll_frontlines_advantage
 from campaigns.tests.helpers import KAMELA, enlist, make_campaign
 
 
@@ -42,6 +45,19 @@ class FrontlinesAdvantageTests(TestCase):
         self.assertEqual(card["source"], "frontlines")
         self.assertEqual(card["basis"], "reading")
 
+    def test_force_writes_an_unchanged_reading(self):
+        frontlines.record_advantage([_entry(KAMELA, 96, 53)])
+        result = frontlines.record_advantage(
+            [_entry(KAMELA, 96, 53)], force=True
+        )
+        self.assertEqual(result["written"], 1)
+        self.assertEqual(
+            CampaignAdvantageReading.objects.filter(
+                campaign_system=self.system
+            ).count(),
+            2,
+        )
+
     def test_an_unchanged_number_is_not_written_twice(self):
         frontlines.record_advantage([_entry(KAMELA, 96, 53)])
         result = frontlines.record_advantage([_entry(KAMELA, 96, 53)])
@@ -79,3 +95,25 @@ class FrontlinesAdvantageTests(TestCase):
     def test_an_unreachable_page_changes_nothing(self):
         result = frontlines.record_advantage([])
         self.assertEqual(result, {"systems": 0, "written": 0})
+
+    def test_a_system_with_no_snapshot_is_waiting_for_contested(self):
+        self.assertTrue(
+            snapshots.fw_systems_without_snapshots()
+            .filter(id=self.system.id)
+            .exists()
+        )
+
+    @patch(
+        "campaigns.tasks.snapshots.record_snapshots",
+        return_value={"written": 1, "systems": 1},
+    )
+    @patch(
+        "campaigns.tasks.frontlines.record_advantage",
+        return_value={"written": 0, "systems": 0},
+    )
+    def test_advantage_poll_pulls_contested_when_none_exists(
+        self, advantage_poll, pull
+    ):
+        result = poll_frontlines_advantage()
+        pull.assert_called_once_with()
+        self.assertEqual(result["snapshots"], 1)

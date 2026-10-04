@@ -34,14 +34,24 @@ AMARR_FACTION_ID = 500003
 THRESHOLD_WARN_PERCENT = 80.0
 
 
-def fetch_fw_systems() -> list[dict]:
+def _as_system_id(value) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_fw_systems(*, force: bool = False) -> list[dict]:
     """One public call returns the whole warzone; ESI caches it 30 minutes.
 
     We keep the raw entries rather than the feed's derived percentage,
     because victory points and the threshold are what a weekly capture
     target is measured in and the feed discards them.
+
+    ``force`` is the operator refresh. The scheduled poll still stops when
+    the shared ESI budget is low.
     """
-    if not esi_gate.can_spend("factional-warfare"):
+    if not force and not esi_gate.can_spend("factional-warfare"):
         logger.warning("Skipping FW systems poll, ESI budget low")
         return []
 
@@ -76,31 +86,57 @@ def operational_state_for(
     return classify_system(solar_system_id, owner_faction_id, owners)
 
 
-def record_snapshots() -> dict:
-    """Write one durable snapshot per campaign system."""
-    systems = fetch_fw_systems()
-    if not systems:
-        return {"systems": 0, "written": 0}
-
-    by_id = {row.get("solar_system_id"): row for row in systems}
-    # Ownership for the entire warzone, which is what decides whether a
-    # system sits on the frontline.
-    owners = {
-        row.get("solar_system_id"): row.get("owner_faction_id")
-        for row in systems
-    }
-    now = timezone.now()
-    written = 0
-
-    campaign_systems = CampaignSystem.objects.filter(
+def fw_systems_without_snapshots():
+    """Live faction-warfare objectives that have never had a contested pull."""
+    return CampaignSystem.objects.filter(
         retired_at__isnull=True,
         is_fw_objective=True,
         campaign__status__in=["scheduled", "active"],
+        snapshots__isnull=True,
+    )
+
+
+def record_snapshots(
+    campaign: Campaign | None = None, *, force: bool = False
+) -> dict:
+    """Write one durable snapshot per campaign system."""
+    systems = fetch_fw_systems(force=force)
+    if not systems:
+        return {"systems": 0, "written": 0}
+
+    by_id = {}
+    for row in systems:
+        system_id = _as_system_id(row.get("solar_system_id"))
+        if system_id is not None:
+            by_id[system_id] = row
+    # Ownership for the entire warzone, which is what decides whether a
+    # system sits on the frontline.
+    owners = {
+        system_id: row.get("owner_faction_id")
+        for system_id, row in by_id.items()
+    }
+    now = timezone.now()
+    written = 0
+    missing: list[str] = []
+
+    campaign_systems = CampaignSystem.objects.filter(
+        retired_at__isnull=True,
+        campaign__status__in=["scheduled", "active"],
     ).select_related("campaign")
+    if campaign is None:
+        # The scheduled poll only scores faction-warfare objectives.
+        campaign_systems = campaign_systems.filter(is_fw_objective=True)
+    else:
+        # An operator refresh covers every system in this theater, including
+        # ones added after the last poll and ones that are not FW objectives.
+        campaign_systems = campaign_systems.filter(campaign=campaign)
+    campaign_systems = list(campaign_systems)
 
     for campaign_system in campaign_systems:
-        row = by_id.get(campaign_system.solar_system_id)
+        system_id = _as_system_id(campaign_system.solar_system_id)
+        row = by_id.get(system_id) if system_id is not None else None
         if not row:
+            missing.append(campaign_system.name)
             continue
 
         victory_points = int(row.get("victory_points") or 0)
@@ -128,14 +164,18 @@ def record_snapshots() -> dict:
             owner_faction_id=owner_faction_id,
             contested_state=str(row.get("contested") or ""),
             operational_state=operational_state_for(
-                campaign_system.solar_system_id, owner_faction_id, owners
+                system_id, owner_faction_id, owners
             ),
         )
         written += 1
 
         _maybe_emit_events(campaign_system, previous, contested_percent, row)
 
-    return {"systems": len(campaign_systems), "written": written}
+    return {
+        "systems": len(campaign_systems),
+        "written": written,
+        "missing": missing,
+    }
 
 
 def _maybe_emit_events(campaign_system, previous, contested_percent, row):

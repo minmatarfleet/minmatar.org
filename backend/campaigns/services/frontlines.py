@@ -14,7 +14,11 @@ from datetime import timedelta
 import requests
 from django.utils import timezone
 
-from campaigns.models import CampaignAdvantageReading, CampaignSystem
+from campaigns.models import (
+    Campaign,
+    CampaignAdvantageReading,
+    CampaignSystem,
+)
 from campaigns.services import advantage
 
 logger = logging.getLogger(__name__)
@@ -26,6 +30,13 @@ AMARR_FACTION_ID = 500003
 # The page itself is served with max-age 150s; re-recording an unchanged
 # reading more often than this only pads the table.
 MIN_INTERVAL_MINUTES = 10
+
+
+def _as_system_id(value) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def fetch_warzone_status() -> list[dict]:
@@ -55,28 +66,41 @@ def advantage_for(entry: dict, faction_id: int) -> float | None:
     return None
 
 
-def record_advantage(status: list[dict] | None = None) -> dict:
+def record_advantage(
+    status: list[dict] | None = None,
+    *,
+    campaign: Campaign | None = None,
+    force: bool = False,
+) -> dict:
     """Write one frontlines reading per live campaign system.
 
     A reading is only written when the numbers moved or the last one is
     older than ``MIN_INTERVAL_MINUTES``, so the state stays fresh without
-    the table filling with identical rows.
+    the table filling with identical rows. ``force`` is the operator
+    refresh: every theater system gets a current reading.
     """
     status = fetch_warzone_status() if status is None else status
     if not status:
         return {"systems": 0, "written": 0}
 
-    by_id = {entry.get("solarsystemID"): entry for entry in status}
+    by_id = {}
+    for entry in status:
+        system_id = _as_system_id(entry.get("solarsystemID"))
+        if system_id is not None:
+            by_id[system_id] = entry
     campaign_systems = CampaignSystem.objects.filter(
         retired_at__isnull=True,
         campaign__status__in=["scheduled", "active"],
     )
+    if campaign is not None:
+        campaign_systems = campaign_systems.filter(campaign=campaign)
     written = 0
     seen = 0
     since = timezone.now() - timedelta(minutes=MIN_INTERVAL_MINUTES)
 
     for campaign_system in campaign_systems:
-        entry = by_id.get(campaign_system.solar_system_id)
+        system_id = _as_system_id(campaign_system.solar_system_id)
+        entry = by_id.get(system_id) if system_id is not None else None
         if not entry:
             continue
         ours = advantage_for(entry, MINMATAR_FACTION_ID)
@@ -94,7 +118,12 @@ def record_advantage(status: list[dict] | None = None) -> dict:
             .order_by("-reported_at")
             .first()
         )
-        if recent and recent.our_pct == ours and recent.enemy_pct == theirs:
+        if (
+            not force
+            and recent
+            and recent.our_pct == ours
+            and recent.enemy_pct == theirs
+        ):
             continue
 
         CampaignAdvantageReading.objects.create(

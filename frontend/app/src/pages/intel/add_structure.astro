@@ -81,12 +81,17 @@ if (Astro.request.method === "POST") {
             timer_state = data.get('timer_state') as StructureState
         }
 
+        const corporation_id = Number(data.get('corporation_id'))
+        const related_alliance_id = Number(data.get('related_alliance_id'))
+
         const payload:CampaignStructureAttachRequest = {
             name: data.get('structure_name') as string,
             structure_type: data.get('structure_type') as StructureType,
             system_name: data.get('system') as string,
             corporation_name: (data.get('corporation_name') as string) || '',
+            corporation_id: Number.isInteger(corporation_id) && corporation_id > 0 ? corporation_id : null,
             related_alliance_name: (data.get('related_alliance_name') as string) || '',
+            related_alliance_id: Number.isInteger(related_alliance_id) && related_alliance_id > 0 ? related_alliance_id : null,
             fitting: (data.get('fitting') as string) || '',
             reinforce_hour,
             timer_at,
@@ -254,34 +259,66 @@ const page_title = t('intel.add_structure.page_title')
                                 </FixedFluid>
                             </VerticalCenter>
 
-                            <VerticalCenter>
-                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="corporation_name">{t('intel.add_structure.owner_corporation')}</label>
-                                    <Input id="corporation_name" name="corporation_name" type="text" required />
-                                </FixedFluid>
-                            </VerticalCenter>
-                            <small class="[ reinforce-hint ]">{t('intel.add_structure.owner_corporation_hint')}</small>
+                            <FixedFluid class="[ w-full items-start ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="corporation_name">{t('intel.add_structure.owner_corporation')}</label>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <div class="entity-field">
+                                        <Input
+                                            id="corporation_name"
+                                            name="corporation_name"
+                                            type="text"
+                                            required
+                                            autocomplete="off"
+                                            placeholder={t('intel.add_structure.search_placeholder')}
+                                            hx-get={`${translatePath('/partials/entity_search_component')}?kind=corporation`}
+                                            hx-trigger="keyup changed delay:300ms"
+                                            hx-target="#corporation_name-results"
+                                            hx-swap="innerHTML"
+                                            oninput="document.getElementById('corporation_id').value=''"
+                                        />
+                                        <div id="corporation_name-results" class="entity-results"></div>
+                                    </div>
+                                    <input type="hidden" id="corporation_id" name="corporation_id" value="" />
+                                    <small class="[ field-hint ]">{t('intel.add_structure.owner_corporation_hint')}</small>
+                                </Flexblock>
+                            </FixedFluid>
 
-                            <VerticalCenter>
-                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="related_alliance_name">{t('intel.add_structure.related_alliance')}</label>
-                                    <Input id="related_alliance_name" name="related_alliance_name" type="text" required />
-                                </FixedFluid>
-                            </VerticalCenter>
-                            <small class="[ reinforce-hint ]">{t('intel.add_structure.related_alliance_hint')}</small>
+                            <FixedFluid class="[ w-full items-start ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="related_alliance_name">{t('intel.add_structure.related_alliance')}</label>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <div class="entity-field">
+                                        <Input
+                                            id="related_alliance_name"
+                                            name="related_alliance_name"
+                                            type="text"
+                                            required
+                                            autocomplete="off"
+                                            placeholder={t('intel.add_structure.search_placeholder')}
+                                            hx-get={`${translatePath('/partials/entity_search_component')}?kind=alliance`}
+                                            hx-trigger="keyup changed delay:300ms"
+                                            hx-target="#related_alliance_name-results"
+                                            hx-swap="innerHTML"
+                                            oninput="document.getElementById('related_alliance_id').value=''"
+                                        />
+                                        <div id="related_alliance_name-results" class="entity-results"></div>
+                                    </div>
+                                    <input type="hidden" id="related_alliance_id" name="related_alliance_id" value="" />
+                                    <small class="[ field-hint ]">{t('intel.add_structure.related_alliance_hint')}</small>
+                                </Flexblock>
+                            </FixedFluid>
 
-                            <VerticalCenter>
-                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="reinforce_hour">{t('intel.add_structure.reinforce_hour')}</label>
+                            <FixedFluid class="[ w-full items-start ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="reinforce_hour">{t('intel.add_structure.reinforce_hour')}</label>
+                                <Flexblock gap="var(--space-3xs)">
                                     <Input
                                         id="reinforce_hour"
                                         name="reinforce_hour"
                                         type="time"
                                         step="3600"
                                     />
-                                </FixedFluid>
-                            </VerticalCenter>
-                            <small class="[ reinforce-hint ]">{t('intel.add_structure.reinforce_hour_hint')}</small>
+                                    <small class="[ field-hint ]">{t('intel.add_structure.reinforce_hour_hint')}</small>
+                                </Flexblock>
+                            </FixedFluid>
 
                             <VerticalCenter>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
@@ -372,9 +409,36 @@ const page_title = t('intel.add_structure.page_title')
     </PageAside>
 </Viewport>
 
+<script is:inline>
+    function pick_entity(button) {
+        const input = document.getElementById(button.dataset.input)
+        const hidden = document.getElementById(button.dataset.hidden)
+        const results = document.getElementById(button.dataset.results)
+        if (input) input.value = button.dataset.name || ''
+        if (hidden) hidden.value = button.dataset.id || ''
+        if (results) results.innerHTML = ''
+    }
+</script>
+
 <style lang="scss">
-    .reinforce-hint {
+    .field-hint {
         color: var(--highlight);
-        margin-block-start: calc(-1 * var(--space-2xs));
+        line-height: 1.35;
+    }
+
+    .entity-field {
+        position: relative;
+    }
+
+    .entity-results:not(:empty) {
+        position: absolute;
+        z-index: var(--sticky-z-index);
+        inset-inline: 0;
+        top: 100%;
+        margin-block-start: var(--space-3xs);
+        background-color: var(--background);
+        border: 1px solid var(--border-color);
+        max-block-size: calc(var(--space-xl) * 8);
+        overflow: auto;
     }
 </style>

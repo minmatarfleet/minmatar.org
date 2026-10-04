@@ -247,6 +247,27 @@ def _write_participants(mail, victim: dict, attackers: list, included: dict):
         )
 
 
+def sweep_campaign(campaign: Campaign, hours: int = 48) -> dict:
+    """Re-attribute recent feed killmails in one campaign's systems."""
+    since = timezone.now() - timedelta(hours=hours)
+    system_ids = set(campaign.system_ids())
+    if not system_ids:
+        return {"scanned": 0, "attributed": 0}
+
+    scanned = 0
+    attributed = 0
+    rosters: dict = {}
+    queryset = FeedKillmail.objects.filter(
+        solar_system_id__in=system_ids, killmail_time__gte=since
+    ).iterator()
+    for feed_killmail in queryset:
+        scanned += 1
+        attributed += attribute_feed_killmail(
+            feed_killmail, source="sweep", rosters=rosters
+        )
+    return {"scanned": scanned, "attributed": attributed}
+
+
 def sweep_recent(hours: int = 48) -> dict:
     """Re-attribute every feed killmail in campaign systems for a window.
 
