@@ -227,6 +227,8 @@ export interface PageCoverOptions {
     animated?:      boolean;
     scrollable?:    boolean;
     overlay?:       boolean;
+    full_screen?:   boolean;
+    align?:         'right' | 'left',
 }
 
 export interface PageYTVideoOptions {

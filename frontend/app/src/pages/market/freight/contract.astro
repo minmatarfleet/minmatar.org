@@ -110,7 +110,8 @@ const page_title = t('freight.contract.page_title');
             image_990: get_location_cover_990(location_name) ?? '/images/freight-service-cover.jpg',
             animated: false,
             scrollable: true,
-            overlay: true
+            overlay: true,
+            align: get_location_video_cover(location_name) ? 'right' : 'left',
         }}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">

@@ -103,6 +103,10 @@ import {
 const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
     .replace('{count}', String(fleets.length))
 
+const is_video_cover = active_fleets.length > 0 ?
+    Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
+    false
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -143,7 +147,8 @@ const page_title = t('fleets.upcoming.page_title');
             image_990: get_location_cover_990(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg',
             animated: false,
             scrollable: true,
-            overlay: true
+            overlay: true,
+            align: is_video_cover ? 'right' : 'left',
         }}
         x-data={`{
 			show_fc_ranking: false,
