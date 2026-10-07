@@ -6,9 +6,11 @@ interface Props {
     video_thumb?:   string;
     alt?:           string;
     animated?:      boolean; // deprecated
-    scrollable?:    boolean;
-    overlay?:       boolean;
+    scrollable?:    boolean; // deprecated
+    overlay?:       boolean; // deprecated
     oob_swap?:      boolean;
+    full_screen?:   boolean;
+    align?:         'right' | 'left',
     [propName: string]: any;
 }
 
@@ -22,6 +24,8 @@ const {
     scrollable = false,
     overlay = false,
     oob_swap = false,
+    full_screen = false,
+    align = 'left',
     attributes,
 } = Astro.props
 
@@ -34,7 +38,7 @@ const animate_cover = !oob_swap || (old_cover !== image)
 ---
 
 <div
-    class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, { 'fix-pixel': video }, Astro.props.class]}
+    class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, { 'fix-pixel': video }, { 'fixed!': full_screen }, Astro.props.class]}
     class="[ viewport-cover ]"
     id="viewport-cover-oob"
     hx-swap-oob={oob_swap ? 'true' : undefined}
@@ -43,7 +47,7 @@ const animate_cover = !oob_swap || (old_cover !== image)
 >
     {!video ?
         <picture
-            class:list={[ { '!hidden animate-fade-in': animate_cover } ]}
+            class:list={[ { '!hidden animate-fade-in': animate_cover }, { 'full-screen': full_screen }, align ]}
             x-data={animate_cover ? '{ loaded: false }' : undefined}
             x-init={animate_cover ? 'loaded = $refs.img.complete' : undefined}
             x-bind:class={animate_cover ? "{ '!hidden': !loaded }" : undefined}
@@ -58,125 +62,67 @@ const animate_cover = !oob_swap || (old_cover !== image)
             />
         </picture>
         :
-        <video
-            class={animate_cover ? "[ animate-fade-in ]" : undefined}
-            width="1920"
-            height="1080"
-            poster={video_thumb}
-            autoplay
-            loop
-            playsinline
-            webkit-playsinline
-            muted
-        >
-            <source src={video} type="video/webm" />
-        </video>
+        <picture class:list={[ { 'full-screen': full_screen }, align ]}>
+            <video
+                class={animate_cover ? "[ animate-fade-in ]" : undefined}
+                width="1920"
+                height="1080"
+                poster={video_thumb}
+                autoplay
+                loop
+                playsinline
+                webkit-playsinline
+                muted
+            >
+                <source src={video} type="video/webm" />
+            </video>
+        </picture>
     }
 </div>
 
 <style lang="scss" is:global>
     .viewport-cover {
-        position: fixed;
+        position: absolute;
         inset: 0;
         max-height: 100%;
         max-height: 100vh;
 
-        &.fix-pixel {
-            overflow: hidden;
+        picture {
+            position: absolute;
+            inset: 0;
+            max-width: 50%;
+            max-width: min(50%, 1000px);
+            mask-image: radial-gradient(ellipse at top left, black 0%, transparent 70%);
+            width: 100%;
 
-            &.scrollable {
+            &.full-screen {
+                max-width: 100%;
+                mask-image: none;
+
+                img,
                 video {
-                    transform: scaleX(1.001) translateY(-1px); /* Fix green right border out of sharpen filter */
+                    width: 100%;
                 }
             }
 
-            video {
-                transform: scaleX(1.001); /* Fix green right border out of sharpen filter */
+            &.right {
+                mask-image: radial-gradient(ellipse at top right, black 0%, transparent 70%);
+                left: unset;
             }
-        }
-
-        &.scrollable {
-            position: absolute;
-            transform: translateY(0);
-
-            @media only screen and (min-device-width: 1366px) {
-                animation-name: parallax100;
-                animation-timing-function: linear;
-                animation-timeline: view();
-                animation-range: -45% 145%;
-            }
-        }
-
-        &.overlay:after {
-            content: ' ';
-            inset: 0;
-            height: 100%;
-            height: 100vh;
-            height: 100vh;
-            position: absolute;
-            box-shadow: 0 1px 0px var(--background);
-            background-image: linear-gradient(
-                to bottom,
-                hsla(0, 0%, 0%, 0) 0%,
-                hsla(0, 0%, 0%, 0.187) 9.8%,
-                hsla(0, 0%, 0%, 0.349) 19.6%,
-                hsla(0, 0%, 0%, 0.488) 29.2%,
-                hsla(0, 0%, 0%, 0.606) 38.6%,
-                hsla(0, 0%, 0%, 0.704) 47.7%,
-                hsla(0, 0%, 0%, 0.784) 56.4%,
-                hsla(0, 0%, 0%, 0.848) 64.5%,
-                hsla(0, 0%, 0%, 0.898) 72.1%,
-                hsla(0, 0%, 0%, 0.936) 78.9%,
-                hsla(0, 0%, 0%, 0.963) 85%,
-                hsla(0, 0%, 0%, 0.981) 90.1%,
-                hsla(0, 0%, 0%, 0.992) 94.3%,
-                hsla(0, 0%, 0%, 0.998) 97.4%,
-                hsl(0, 0%, 0%) 99.3%,
-                hsl(0, 0%, 0%) 100%
-            );
         }
 
         video,
         img {
-            position: absolute;
-            top: 0;
-            right: 0;
             display: block;
-            width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: top left;
+            object-position: top right;
+            opacity: 0.6;
         }
-    }
 
-    .ui-scaling-90 .viewport-cover {
-        &.scrollable {
-            @media only screen and (min-device-width: 1366px) {
-                animation-name: parallax90;
-            }
+        video {
+            right: 0;
+            position: absolute;
         }
-    }
-        
-    .ui-scaling-80 .viewport-cover {
-        &.scrollable {
-            @media only screen and (min-device-width: 1366px) {
-                animation-name: parallax80;
-            }
-        }
-    }
-    
-    @keyframes parallax100 {
-        from { transform: translateY(-1000px) }
-        to { transform: translateY(1000px) }
-    }
-    
-    @keyframes parallax90 {
-        from { transform: translateY(-1057px) }
-        to { transform: translateY(1000px) }
-    }
-    
-    @keyframes parallax80 {
-        from { transform: translateY(-1124px) }
-        to { transform: translateY(1000px) }
     }
 </style>

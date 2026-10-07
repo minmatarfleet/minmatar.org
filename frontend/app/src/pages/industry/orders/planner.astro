@@ -212,6 +212,7 @@ const planner_copy = JSON.stringify({
             animated: false,
             scrollable: true,
             overlay: true,
+            align: location_name && get_location_video_cover(location_name) ? 'right' : 'left',
         }}
         breadcrumbs={breadcrumbs}
     >

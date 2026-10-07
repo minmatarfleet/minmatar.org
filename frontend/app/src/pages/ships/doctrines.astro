@@ -113,6 +113,7 @@ const leading_text = t('doctrines.alliance.page_leading_text')
             animated: false,
             scrollable: true,
             overlay: true,
+            align: get_location_video_cover(active_location_id) ? 'right' : 'left',
         }}
         x-data={`{
             show_all: $persist(false),
