@@ -18,7 +18,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
-<div class:list={[ 'post-header-wrapper ] relative lg:top-0', { 'xl:sticky!': sticky } ]}>
+<div
+    class:list={[ 'post-header-wrapper ] relative lg:top-0', { 'xl:sticky!': sticky } ]}
+    x-init={sticky ? '$el.style.minHeight = `${$el.offsetHeight}px`' : undefined}
+>
     <Flexblock class="[ post-header ]" gap='0'>
         <div class="[ relative z-10 ]">
             <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
@@ -63,6 +66,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
     .post-header-wrapper {
         z-index: var(--header-z-index);
+        pointer-events: none;
+    }
+
+    .post-header {
+        pointer-events: all;
     }
     
     @supports (container-type: scroll-state) {
