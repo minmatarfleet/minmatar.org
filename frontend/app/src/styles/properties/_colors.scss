@@ -6,7 +6,7 @@
     --militia-purple:   #7342B2;
     --green:            #198754;
     --green-blind:      #0d6efd;
-    --black:            #121212;
+    --black:            #0d0d0d;
 
     --tech-i:           #bbb;
     --tech-ii:          #9e6100;
@@ -30,7 +30,7 @@
     --security-status-null:     #8f2f69;
 
     --foreground:               var(--fleet-yellow);
-    --background:               black;
+    --background:               var(--black);
     --component-background:     rgb(25, 25, 25);
     --highlight:                white;
     --faded:                    rgba(255, 255, 255, 0.5);
