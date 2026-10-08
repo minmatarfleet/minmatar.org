@@ -397,8 +397,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             z-index: 2;
             width: 100%;
             min-height: 0 !important;
-            justify-content: flex-end !important;
             gap: var(--space-s) !important;
+
+            > * {
+                width: 100%;
+            }
         }
 
         h2 {
