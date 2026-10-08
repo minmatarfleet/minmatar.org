@@ -3901,5 +3901,6 @@ export const ui = {
         'authentication_required': 'Authentication required',
         'missing_permissions': 'Missing permissions',
         'hub_page': 'Hub page',
+        'select_starting_station': 'Select starting station',
     },
 } as const;
