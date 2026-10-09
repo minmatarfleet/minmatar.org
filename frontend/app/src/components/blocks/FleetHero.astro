@@ -57,6 +57,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import ItemBadge from './ItemBadge.astro';
 import ClipboardButton from './ClipboardButton.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+import TextBox from '@components/layout/TextBox.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
@@ -139,9 +140,9 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                     }
 
                     {fleet.description &&
-                        <div class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                        <TextBox class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
                             <Markdown markdown={fleet.description as string} />
-                        </div>
+                        </TextBox>
                     }
                 </Flexblock>
             </Flexblock>
