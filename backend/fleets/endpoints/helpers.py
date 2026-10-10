@@ -7,6 +7,7 @@ from typing import Optional
 from django.utils import timezone
 
 from discord.client import DiscordClient
+from eveonline.helpers.characters import user_characters
 from fittings.models import EveDoctrine
 from groups.helpers.feature_access import can_use_feature
 
@@ -62,6 +63,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
+        "hide_volunteers": fleet.hide_volunteers,
         "status": fixup_fleet_status(fleet, tracking),
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "aar_link": fleet.aar_link,
@@ -171,6 +173,8 @@ def _fleet_apply_optional_scalar_updates(fleet: EveFleet, payload) -> None:
         )
     if payload.aar_link:
         fleet.aar_link = payload.aar_link
+    if "hide_volunteers" in payload.model_fields_set:
+        fleet.hide_volunteers = bool(payload.hide_volunteers)
 
 
 def update_instance_endtime(fleet: EveFleet) -> None:
@@ -200,9 +204,31 @@ def try_refresh_active_fleet_motd(fleet: EveFleet) -> None:
         logger.warning("Failed to refresh MOTD for fleet %s: %s", fleet.id, e)
 
 
+def is_strategic_fc(user) -> bool:
+    """True if this user may manage any fleet and see hidden volunteer rosters."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    return user.has_perm("fleets.manage_any_fleet")
+
+
+def limit_volunteers_to_viewer(request, fleet, volunteers):
+    """
+    When the fleet hides its roster, only a Strategic FC sees every signup.
+    Everyone else sees volunteers for their own characters.
+    """
+    if not fleet.hide_volunteers or is_strategic_fc(request.user):
+        return volunteers
+    own_ids = {
+        character.character_id for character in user_characters(request.user)
+    }
+    return volunteers.filter(character_id__in=own_ids)
+
+
 def _fleet_manager(request, fleet: EveFleet) -> bool:
     """True if user may manage FC-only fleet settings (refits, cyno systems)."""
     if request.user == fleet.created_by:
+        return True
+    if is_strategic_fc(request.user):
         return True
     return can_use_feature(request.user, "fleets.delete")
 
@@ -232,10 +258,6 @@ def make_role_volunteer_response(volunteer, reveal_system: bool = False):
 
 def _system_reveal_predicate(request, fleet: EveFleet):
     """Return volunteer -> bool: may this requester see its cyno system?"""
-    from eveonline.helpers.characters import (  # pylint: disable=import-outside-toplevel
-        user_characters,
-    )
-
     if _fleet_manager(request, fleet):
         return lambda volunteer: True
     own_ids = {c.character_id for c in user_characters(request.user)}

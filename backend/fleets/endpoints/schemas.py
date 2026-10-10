@@ -44,6 +44,7 @@ class EveFleetResponse(BaseModel):
     doctrine_id: Optional[int] = None
     location: str
     disable_motd: bool = False
+    hide_volunteers: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
     roam_report_url: Optional[str] = None
@@ -83,6 +84,7 @@ class CreateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: Optional[int] = None
     disable_motd: bool = False
+    hide_volunteers: bool = False
     immediate_ping: bool = False
     status: Optional[str] = None
 
@@ -96,6 +98,7 @@ class UpdateEveFleetRequest(BaseModel):
     audience_id: Optional[int] = None
     location_id: Optional[int] = None
     disable_motd: Optional[bool] = False
+    hide_volunteers: Optional[bool] = None
     status: Optional[str] = None
     aar_link: Optional[str] = None
 

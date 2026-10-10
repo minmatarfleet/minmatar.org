@@ -31,6 +31,7 @@ import {
     type FleetSupply,
 } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
+import { get_user_permissions } from '@helpers/permissions'
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 
 let fleet: FleetUI | null = null
@@ -41,6 +42,7 @@ let composition: FleetCompositionEntry[] = []
 let refits: FleetRefit[] = []
 let supply: FleetSupply = EMPTY_SUPPLY
 let is_fleet_commander = false
+let can_manage_fleet = false
 let fetch_error: Error | false = false
 
 try {
@@ -71,6 +73,9 @@ if (fleet) {
         supply = fetched_supply
         const user_character = await get_user_character(user.user_id)
         is_fleet_commander = user_character?.character_id === fleet.fleet_commander_id
+        const user_permissions = await get_user_permissions(user.username)
+        const is_strategic_fc = Boolean(user.is_superuser) || user_permissions.includes('fleets.manage_any_fleet')
+        can_manage_fleet = is_fleet_commander || is_strategic_fc
     } catch (error) {
         fetch_error = error
     }
@@ -139,7 +144,7 @@ const breadcrumbs = [
                         <small>{t('fleet_commander')}</small>
                     </PilotBadge>
                 }
-                {fleet && is_fleet_commander &&
+                {fleet && can_manage_fleet &&
                     <FleetManageMenu fleet={fleet} />
                 }
             </PageActions>
@@ -161,7 +166,7 @@ const breadcrumbs = [
                     pilots={pilots}
                     fleet_id={fleet_id}
                     readonly={false}
-                    is_fleet_commander={is_fleet_commander}
+                    is_fleet_commander={can_manage_fleet}
                 />
 
                 <FleetShips
@@ -172,7 +177,7 @@ const breadcrumbs = [
                     pilots={pilots}
                     supply={supply}
                     readonly={false}
-                    can_manage={is_fleet_commander}
+                    can_manage={can_manage_fleet}
                     doctrine_name={fleet?.doctrine?.name ?? null}
                 />
             </Flexblock>

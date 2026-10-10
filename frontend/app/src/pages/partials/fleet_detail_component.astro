@@ -35,6 +35,7 @@ let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let is_fleet_commander = false
+let can_manage_fleet = false
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
@@ -66,6 +67,8 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
+    const is_strategic_fc = is_superuser || user_permissions.includes('fleets.manage_any_fleet')
+    can_manage_fleet = is_fleet_commander || is_strategic_fc
 
     if (is_fleet_commander && upcoming) {
         const staging_solar_system = fleet.location.split(' - ')[0]
@@ -135,6 +138,7 @@ import Button from '@components/blocks/Button.astro';
         fleet={fleet as FleetUI }
         can_remove_fleet={can_remove_fleet}
         is_fleet_commander={is_fleet_commander}
+        can_manage={can_manage_fleet}
         fleet_composition={fleet_composition}
         fleet_radar={fleet_radar}
         history={!upcoming}

@@ -5,6 +5,7 @@ import logging
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
+from fleets.endpoints.helpers import is_strategic_fc
 from fleets.models import EveFleet, EveFleetInstance
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ ROUTE_SPEC = {
         404: ErrorResponse,
         500: ErrorResponse,
     },
-    "description": "Refresh the in-game fleet MOTD from current fleet/doctrine/location. Requires active fleet tracking; caller must be fleet owner.",
+    "description": "Refresh the in-game fleet MOTD from current fleet/doctrine/location. Requires active fleet tracking; caller must be the fleet owner or a Strategic FC.",
 }
 
 
@@ -28,7 +29,7 @@ def refresh_fleet_motd(request, fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
         return 404, ErrorResponse(detail="Fleet not found")
-    if request.user != fleet.created_by:
+    if request.user != fleet.created_by and not is_strategic_fc(request.user):
         return 403, ErrorResponse(
             detail="User does not have permission to refresh MOTD for this fleet"
         )

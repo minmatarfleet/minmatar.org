@@ -456,6 +456,7 @@ export interface Fleet {
     doctrine_id:        number;
     location:           string;
     disable_motd:       boolean;
+    hide_volunteers:    boolean;
     tracking?:          Tracking;
     status?:            TrackingStatus;
     aar_link:           string;
@@ -482,6 +483,7 @@ export interface FleetRequest {
     location_id?:       number | null;
     audience_id:        number;
     disable_motd:       boolean;
+    hide_volunteers?:   boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
 }
@@ -495,6 +497,7 @@ export interface FleetPatchRequest {
     location_id?:       number;
     audience_id?:       number;
     disable_motd?:      boolean;
+    hide_volunteers?:   boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     aar_link?:          string;
