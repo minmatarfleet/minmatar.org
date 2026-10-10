@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-10 — Copy for Janice returns an account referral URL
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Copy for Janice was reported to put an account `?ref=` URL on the clipboard. That URL is the referral control. The stocks button copies a name/tab/quantity hangar list.
+**Durable rule:** An account `?ref=` URL is `ReferralLink`, not the Janice paste. Check the `buyback-*-janice` textarea value before changing the copier.
+**Skill update:** added the Copy for Janice vs referral-link row.
+
 ## 2026-09-30 — Hidden tribe-group roster
 
 **Category:** pulse.technology
