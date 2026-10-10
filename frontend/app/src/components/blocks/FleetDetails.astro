@@ -12,6 +12,8 @@ interface Props {
     history?:                   boolean;
     can_remove_fleet:           boolean;
     is_fleet_commander?:        boolean;
+    /** Ships, refits, and cyno assignment. Strategic FCs manage fleets they did not create. */
+    can_manage?:                boolean;
     fleet_composition?:         FleetCompositionUI[];
     fleet_radar?:               FleetRadarUI[];
     volunteers:                 FleetRoleVolunteer[],
@@ -32,6 +34,7 @@ const {
     history = false,
     can_remove_fleet = false,
     is_fleet_commander = false,
+    can_manage = is_fleet_commander,
     fleet_composition,
     fleet_radar,
     volunteers,
@@ -157,12 +160,12 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 pilots={pilots}
                 fleet_id={fleet.id}
                 readonly={fleet.status === 'cancelled'}
-                is_fleet_commander={is_fleet_commander}
+                is_fleet_commander={can_manage}
             />
         </Wrapper>
     }
 
-    {!history && (composition.length > 0 || is_fleet_commander) &&
+    {!history && (composition.length > 0 || can_manage) &&
         <Wrapper
             padding_block='0'
             padding_inline='0'
@@ -177,7 +180,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 pilots={pilots}
                 supply={supply}
                 readonly={fleet.status === 'cancelled'}
-                can_manage={is_fleet_commander}
+                can_manage={can_manage}
                 doctrine_name={fleet?.doctrine?.name ?? null}
             />
         </Wrapper>

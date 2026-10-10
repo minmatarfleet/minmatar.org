@@ -33,6 +33,7 @@ def create_scheduled_fleet(
         location=location,
         audience=audience,
         disable_motd=payload.disable_motd,
+        hide_volunteers=payload.hide_volunteers,
         status="pending",
     )
 
@@ -66,6 +67,7 @@ def fleet_create_response(fleet: EveFleet) -> EveFleetResponse:
         ),
         "audience": fleet.audience.name if fleet.audience else None,
         "disable_motd": fleet.disable_motd,
+        "hide_volunteers": fleet.hide_volunteers,
         "status": fleet.status,
     }
     if fleet.doctrine:

@@ -63,6 +63,7 @@ class EveFleet(models.Model):
         default=None,
     )
     disable_motd = models.BooleanField(null=True, default=False)
+    hide_volunteers = models.BooleanField(default=False)
 
     fleet_statuses = (
         ("pending", "Pending"),
@@ -205,6 +206,12 @@ class EveFleet(models.Model):
         indexes = [
             models.Index(fields=["start_time"]),
         ]
+        permissions = [
+            (
+                "manage_any_fleet",
+                "Can manage any fleet",
+            ),
+        ]
 
 
 class EveFleetInstance(models.Model):
@@ -260,7 +267,11 @@ class EveFleetInstance(models.Model):
         eve_fleet = self.eve_fleet
         formup_location = eve_fleet.formup_location
         kwargs = {
-            "role_volunteers": _motd_role_volunteers(eve_fleet),
+            "role_volunteers": (
+                None
+                if eve_fleet.hide_volunteers
+                else _motd_role_volunteers(eve_fleet)
+            ),
             "fleet_edit_url": _motd_fleet_edit_url(eve_fleet),
             "refits": _motd_refits(eve_fleet),
             "composition": _motd_composition(eve_fleet),

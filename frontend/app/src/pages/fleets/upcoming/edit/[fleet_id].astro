@@ -16,7 +16,9 @@ if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redir
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+const can_view_page = is_superuser ||
+    user_permissions.includes('fleets.add_evefleet') ||
+    user_permissions.includes('fleets.manage_any_fleet')
 
 if (!can_view_page)
     return HTTP_403_Forbidden()
@@ -49,6 +51,7 @@ if (Astro.request.method === "POST") {
             audience_id: parseInt(data.get('audience_id') as string),
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
+            hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
         } as FleetPatchRequest
         
         const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
@@ -197,6 +200,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                         eve_date={eve_date}
                         eve_time={eve_time}
                         disable_motd={fleet?.disable_motd}
+                        hide_volunteers={fleet?.hide_volunteers}
                         lang={lang}
                     />:
                     <DebugTag>{t('fleet_unexpected_error')}</DebugTag>

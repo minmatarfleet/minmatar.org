@@ -2876,6 +2876,8 @@ export const ui = {
         'too_many_tries': 'Too many tries refetching the data. You may try again by reloading the page after a few minutes.',
         'disable_motd': 'Disable automatic generated MOTD',
         'disable_motd_description': 'Use your custom MOTD later when creating the fleet',
+        'hide_volunteers': 'Hide volunteers',
+        'hide_volunteers_description': 'Only Strategic FCs can see who signed up. Pilots can still volunteer and see their own signups.',
         'filters': 'Filters',
         'distance_within': 'Distance (within)',
         '5ly': '5 light-years',

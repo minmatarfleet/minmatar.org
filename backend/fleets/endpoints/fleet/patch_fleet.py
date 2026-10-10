@@ -9,6 +9,7 @@ from groups.helpers.feature_access import can_use_feature
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
     _fleet_patch_audience_location_errors,
+    is_strategic_fc,
     try_refresh_active_fleet_motd,
     update_instance_endtime,
 )
@@ -34,6 +35,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     if not (
         request.user.is_superuser
         or can_use_feature(request.user, "fleets.create")
+        or is_strategic_fc(request.user)
     ):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
 
@@ -46,7 +48,10 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
 
     fleet.save()
 
-    if "doctrine_id" in payload.model_fields_set:
+    if (
+        "doctrine_id" in payload.model_fields_set
+        or "hide_volunteers" in payload.model_fields_set
+    ):
         try_refresh_active_fleet_motd(fleet)
 
     if payload.status and payload.status in ("complete", "cancelled"):
@@ -68,6 +73,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "status": fleet.status,
         "disable_motd": fleet.disable_motd,
+        "hide_volunteers": fleet.hide_volunteers,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
     }

@@ -16,6 +16,7 @@ interface Props {
     eve_date:                       string;
     eve_time:                       string;
     disable_motd:                   boolean;
+    hide_volunteers?:               boolean;
     lang:                           string;
 }
 
@@ -28,6 +29,7 @@ const {
     eve_date,
     eve_time,
     disable_motd,
+    hide_volunteers = false,
     lang,
 } = Astro.props
 
@@ -486,6 +488,14 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             label={t('disable_motd')}
                             description={t('disable_motd_description')}
                             checked={disable_motd}
+                        />
+
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="hide_volunteers"
+                            label={t('hide_volunteers')}
+                            description={t('hide_volunteers_description')}
+                            checked={hide_volunteers}
                         />
                         
                         <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>

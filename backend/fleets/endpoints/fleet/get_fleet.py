@@ -44,6 +44,7 @@ def get_fleet(request, fleet_id: int):
         "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
+        "hide_volunteers": fleet.hide_volunteers,
         "status": fleet.status,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,

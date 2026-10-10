@@ -6,6 +6,7 @@ from authentication import AuthBearer
 
 from fleets.endpoints.helpers import (
     _fleet_authorized,
+    limit_volunteers_to_viewer,
     make_ship_volunteer_response,
 )
 from fleets.endpoints.schemas import EveFleetShipVolunteerResponse
@@ -30,9 +31,11 @@ def get_fleet_ship_volunteers(request, fleet_id: int):
         return 404, None
     if not _fleet_authorized(request, fleet):
         return 403, None
-    volunteers = (
+    volunteers = limit_volunteers_to_viewer(
+        request,
+        fleet,
         EveFleetShipVolunteer.objects.filter(eve_fleet=fleet)
         .select_related("fitting", "fleet_fitting")
-        .order_by("fitting_id", "fleet_fitting_id", "id")
+        .order_by("fitting_id", "fleet_fitting_id", "id"),
     )
     return [make_ship_volunteer_response(v) for v in volunteers]
