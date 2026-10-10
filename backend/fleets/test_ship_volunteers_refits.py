@@ -12,6 +12,7 @@ from discord.models import DiscordUser
 from esi.models import Scope, Token
 
 from eveonline.client import SUCCESS, EsiResponse
+from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from fittings.models import (
     EveDoctrine,
@@ -707,6 +708,123 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             **self._auth(self.fc_token),
         )
         self.assertEqual(400, response.status_code)
+
+    def test_hidden_roster_is_visible_only_to_strategic_fc(self):
+        self.fleet.hide_volunteers = True
+        self.fleet.save()
+        EveFleetShipVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=1001,
+            character_name="Pilot One",
+            fitting=self.fitting,
+        )
+        EveFleetRoleVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=1001,
+            character_name="Pilot One",
+            role=EveFleetRoleVolunteer.ROLE_CYNO,
+        )
+        ship_url = f"{BASE_URL}/{self.fleet.id}/ship-volunteers"
+        role_url = f"{BASE_URL}/{self.fleet.id}/role-volunteers"
+
+        response = self.client.get(ship_url, **self._auth())
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
+        response = self.client.get(role_url, **self._auth())
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
+
+        add_user_permission(self.fc_user, "view_evefleet")
+        response = self.fc_client.get(ship_url, **self._auth(self.fc_token))
+        self.assertEqual([], response.json())
+        response = self.fc_client.get(role_url, **self._auth(self.fc_token))
+        self.assertEqual([], response.json())
+
+        strategic = User.objects.create(username="strategic")
+        add_user_permission(strategic, "view_evefleet")
+        add_user_permission(strategic, "manage_any_fleet")
+        auth = self._auth(token_for(strategic))
+        response = Client().get(ship_url, **auth)
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
+        response = Client().get(role_url, **auth)
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
+
+    def test_hidden_roster_omitted_from_motd(self):
+        set_primary_character(self.fc_user, self.fc_character)
+        EveFleetRoleVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=1001,
+            character_name="Pilot One",
+            role=EveFleetRoleVolunteer.ROLE_CYNO,
+        )
+        instance = EveFleetInstance.objects.create(
+            id=9001, eve_fleet=self.fleet, boss_id=2001
+        )
+        self.assertIn("Pilot One", instance.build_motd())
+
+        self.fleet.hide_volunteers = True
+        self.fleet.save()
+        self.assertNotIn("Pilot One", instance.build_motd())
+
+    def test_strategic_fc_can_edit_and_manage_another_fleet(self):
+        strategic = User.objects.create(username="strategic-edit")
+        add_user_permission(strategic, "view_evefleet")
+        add_user_permission(strategic, "manage_any_fleet")
+        auth = self._auth(token_for(strategic))
+        client = Client()
+
+        response = client.patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {"description": "Strategic edit", "hide_volunteers": True},
+            "application/json",
+            **auth,
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        self.fleet.refresh_from_db()
+        self.assertEqual("Strategic edit", self.fleet.description)
+        self.assertTrue(self.fleet.hide_volunteers)
+
+        volunteer = EveFleetShipVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=1001,
+            character_name="Pilot One",
+            fitting=self.fitting,
+        )
+        response = self.client.delete(
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+            **self._auth(),
+        )
+        self.assertEqual(204, response.status_code)
+
+        volunteer = EveFleetShipVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=1001,
+            character_name="Pilot One",
+            fitting=self.fitting,
+        )
+        outsider = User.objects.create(username="outsider")
+        add_user_permission(outsider, "view_evefleet")
+        response = Client().delete(
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+            **self._auth(token_for(outsider)),
+        )
+        self.assertEqual(403, response.status_code)
+
+        response = client.delete(
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+            **auth,
+        )
+        self.assertEqual(204, response.status_code)
+        self.assertFalse(
+            EveFleetShipVolunteer.objects.filter(id=volunteer.id).exists()
+        )
 
 
 class FleetCompositionRouterTestCase(TestCase):

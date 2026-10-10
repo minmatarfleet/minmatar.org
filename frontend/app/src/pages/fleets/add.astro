@@ -51,6 +51,7 @@ if (Astro.request.method === "POST") {
             audience_id: parseInt(data.get('audience_id') as string),
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
+            hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
             immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
         } as FleetRequest
         
@@ -209,6 +210,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                     eve_date={eve_date}
                     eve_time={eve_time}
                     disable_motd={false}
+                    hide_volunteers={false}
                     lang={lang}
                 />
             }
