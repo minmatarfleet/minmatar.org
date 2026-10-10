@@ -16,7 +16,9 @@ def grant_manage_any_fleet(apps, schema_editor):
         codename=PERM_CODENAME,
         defaults={"name": "Can manage any fleet"},
     )
-    group, _ = Group.objects.get_or_create(name=STRATEGIC_FC_GROUP)
+    group = Group.objects.filter(name=STRATEGIC_FC_GROUP).first()
+    if group is None:
+        return
     group.permissions.add(permission)
 
 
