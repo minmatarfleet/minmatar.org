@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+
+from eveonline.helpers.corporations.safe_cache import cache_get, cache_set
 from eveonline.models import EveCorporation
 
 FL33T_ID = 99011978
@@ -16,6 +18,8 @@ BUILD_ID = 99012009
 
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
 _SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_SLUG_CACHE_KEY = "corporation_slug:v1:{slug}"
+_SLUG_CACHE_SECONDS = 24 * 60 * 60
 
 
 def corporation_slug(name: str | None) -> str:
@@ -30,6 +34,34 @@ def corporation_for_slug(slug: str) -> EveCorporation | None:
     """
     if not _SLUG.match(slug or ""):
         return None
+    key = _SLUG_CACHE_KEY.format(slug=slug)
+    cached_id = cache_get(key)
+    if cached_id is not None:
+        corporation = (
+            EveCorporation.objects.select_related("alliance")
+            .filter(corporation_id=cached_id)
+            .first()
+        )
+        if corporation and corporation_slug(corporation.name) == slug:
+            return corporation
+    corporation = _find_by_slug(slug)
+    if corporation is not None:
+        cache_set(key, corporation.corporation_id, _SLUG_CACHE_SECONDS)
+    return corporation
+
+
+def _find_by_slug(slug: str) -> EveCorporation | None:
+    # Alliance and associate corps cover nearly every page view and are a
+    # small set; only fall back to scanning every corporation name.
+    allied = [
+        corporation
+        for corporation in EveCorporation.objects.filter(
+            alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
+        ).select_related("alliance")
+        if corporation_slug(corporation.name) == slug
+    ]
+    if allied:
+        return min(allied, key=_preference)
     words = slug.split("-")
     pattern = (
         r"^[^a-zA-Z0-9]*"

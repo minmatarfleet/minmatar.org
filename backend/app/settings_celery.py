@@ -275,6 +275,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Corporations] Refresh public profile stats",
+        {
+            "task": "eveonline.tasks.corporations.refresh_corporation_profile_stats",
+            "schedule": crontab(minute=40, hour="*/2"),
+        },
+    ),
+    (
         "[Misc] Check Fleets",
         {
             "task": "fleets.tasks.update_fleet_instances",

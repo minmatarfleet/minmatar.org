@@ -5,14 +5,12 @@ from ninja import Router
 
 from app.errors import ErrorResponse
 from eveonline.endpoints.corporations.schemas import CorporationInfoResponse
-from eveonline.helpers.corporations.applications import application_process
 from eveonline.helpers.corporations.profile import (
     load_corporation,
     public_profile,
     split_requirements,
     split_timezones,
 )
-from eveonline.helpers.corporations.summary import corporation_public_summary
 from eveonline.models import EveAlliance
 
 router = Router(tags=["Corporations"])
@@ -38,8 +36,6 @@ def get_corporation_info(request, corporation_id: int):
         "active": corporation.active,
         "trial": corporation.trial,
         **public_profile(corporation),
-        "public_summary": corporation_public_summary(corporation),
-        "application_process": application_process(corporation.corporation_id),
     }
     if (
         corporation.alliance
