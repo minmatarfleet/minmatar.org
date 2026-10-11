@@ -1,13 +1,7 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+import CorporationInfo from '@components/blocks/CorporationInfo.astro'
 
-const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
-const href = corporation_id
-    ? translatePath(`/alliance/corporations/${corporation_id}/`)
-    : translatePath('/alliance/corporations/')
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
 ---
 
-<p>
-    <a href={href}>{t('learn_more')}</a>
-</p>
+<CorporationInfo corporation_id={corporation_id} />

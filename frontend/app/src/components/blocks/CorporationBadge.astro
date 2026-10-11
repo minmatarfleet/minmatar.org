@@ -1,5 +1,4 @@
 ---
-import { corporation_path } from '@helpers/corporations/detail'
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
@@ -56,16 +55,27 @@ const logo_qlty = LOGO_QLTY[size] ?? 32
 const description:string | false = corporation?.description ?? false
 const gap = GAPS[size] ?? 'var(--space-2xs)'
 
-const Element = show_modal ? 'a' : 'div'
+const Element = show_modal ? StylessButton : 'div'
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
 ---
 
 <Element
-    href={show_modal ? translatePath(corporation_path(corporation.id, corporation.name ?? corporation_eve?.name)) : undefined}
+    x-data={show_modal ? `{
+            show_corporation_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.id}',
+                })
+            }
+        }` :
+        undefined
+    }
+    x-on:click.stop.prevent={show_modal ? 'show_corporation_modal()' : undefined}
 >
     <FixedFluid
         width={`${logo_size}px`}

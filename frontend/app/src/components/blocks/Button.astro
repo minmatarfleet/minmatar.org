@@ -14,7 +14,6 @@ interface Props {
     narrow?:            boolean;
     centered?:          boolean;
     off_disable?:       boolean;
-    disabled?:          boolean;
     [propName: string]: any;
 }
 
@@ -27,7 +26,6 @@ const {
     narrow = false,
     centered = true,
     off_disable = false,
-    disabled = false,
     ...attributes
 } = Astro.props;
 
@@ -66,13 +64,12 @@ const nested_x_data = external ? `{
 
 <Element
     href={ href }
-    class:list={['[ button ]', { narrow: narrow, 'is-disabled': disabled }, Astro.props.class]}
+    class:list={['[ button ]', { narrow: narrow }, Astro.props.class]}
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}`}
-    disabled={Element === 'button' && (disabled || !off_disable) ? 'disabled' : undefined}
-    aria-disabled={disabled ? 'true' : undefined}
-    x-init={Element === 'button' && !off_disable && !disabled ? '$el.removeAttribute("disabled")' : undefined}
+    disabled={Element === 'button' && !off_disable ? 'disabled' : undefined}
+    x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
 
     target={external || new_tab ? '_blank' : undefined }
     rel={external ? 'nofollow noopener noreferrer' : (new_tab ? 'noopener noreferrer' : undefined) }
@@ -114,12 +111,6 @@ const nested_x_data = external ? `{
 
         &[disabled] {
             filter: saturate(50%);
-        }
-
-        /* Explicitly unavailable, as opposed to waiting for Alpine to load. */
-        &.is-disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
         }
 
         &:focus-visible {

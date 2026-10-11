@@ -39,11 +39,17 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
         x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
         alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
         x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
-        x-on:click.stop={`
-            const id = ${x_corporation_id ? x_corporation_id : `'${corporation_id}'`}
-            if (!id || String(id) === '0') return
-            window.location.assign('${translatePath('/alliance/corporations/')}' + id + '/')
-        `}
+        x-data={`{
+            show_corporation_modal() {
+                if (!${x_corporation_id} && ${corporation_id} == 0)
+                    return
+
+                show_modal({
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id='+(${x_corporation_id} ? ${x_corporation_id} : '${String(corporation_id ?? 0)}'),
+                })
+            }
+        }`}
+        x-on:click.stop.prevent="show_corporation_modal()"
     />
 
     {quantity &&
