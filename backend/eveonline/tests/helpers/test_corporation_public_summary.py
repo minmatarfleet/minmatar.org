@@ -3,7 +3,7 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
@@ -40,14 +40,6 @@ def _disconnect_external_signals():
     signals.post_save.disconnect(
         sender=EveFleet,
         dispatch_uid="update_fleet_schedule_on_save",
-    )
-    signals.post_save.disconnect(
-        sender=Group,
-        dispatch_uid="group_post_save",
-    )
-    signals.post_save.disconnect(
-        sender=UserCommunityStatus,
-        dispatch_uid="user_community_status_post_save",
     )
 
 
@@ -267,7 +259,11 @@ class CorporationPublicSummaryTestCase(TestCase):
             user = self.user
         else:
             user = User.objects.create_user(username=username)
-        UserCommunityStatus.objects.create(user=user, status=status)
+        # bulk_create skips the community group sync signal, so this test
+        # never has to disconnect it (a disconnect would leak to later tests).
+        UserCommunityStatus.objects.bulk_create(
+            [UserCommunityStatus(user=user, status=status)]
+        )
         return user
 
     def _character(self, character_id, name, user):
