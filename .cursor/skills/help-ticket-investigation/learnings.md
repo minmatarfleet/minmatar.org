@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-10 — No Discord roles, site account never created
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Waited hours in Discord and still had no roles. No `DiscordUser` for that account, so `HelpTicket.opener` is null and role sync has nothing to push.
+**Durable rule:** Missing `DiscordUser` means they have not logged in on the site. Waiting does not grant roles. If the row exists, use the authed-but-no-roles checks.
+**Skill update:** added the unlinked-account row above the authed-but-no-roles row.
+
 ## 2026-09-30 — Hidden tribe-group roster
 
 **Category:** pulse.technology
