@@ -1030,7 +1030,7 @@ export const ui = {
 
         'buyback.faq.title': 'FAQ',
         'buyback.faq.1_title': 'How do I price my contract?',
-        'buyback.faq.1_text': 'Paste your items on this page. We pay Jita buy: full rate for materials our industry supply chain is importing, and a lower surplus rate otherwise. Ore is the lower of Jita buy for the base compressed type (higher grades scaled) and Jita buy of the minerals at the listed refine %. Use the offer total on the in-game contract.',
+        'buyback.faq.1_text': 'We pay full Jita buy for materials our industry supply chain is importing for recent orders, and a lower surplus rate for other accepted ore and PI (ore is still refined at the listed %). **Only items listed down will be accepted**.',
         'buyback.faq.2_title': 'Where do I contract?',
         'buyback.faq.2_text': 'Private item exchange to Minmatar Extraction Company at Amo – Minmatar Ore Reprocessing.',
         'buyback.faq.contract_title': 'Need anything in the description?',
@@ -3904,5 +3904,9 @@ export const ui = {
         'missing_permissions': 'Missing permissions',
         'hub_page': 'Hub page',
         'select_starting_station': 'Select starting station',
+        'used_in': 'Recent industry order material',
+        'no_items_to_show': 'No items to show',
+        'click_items_in_demand_tooltip': 'ℹ️ Click items in demand for the order material breakdown',
+        'planetary_materials': 'Planetary Materials',
     },
 } as const;

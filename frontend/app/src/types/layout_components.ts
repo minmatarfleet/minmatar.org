@@ -1132,3 +1132,13 @@ export interface Pages {
     available:          boolean;
     reason?:            string;
 }
+
+import type { BuybackAcceptedItem } from '@dtypes/api.minmatar.org'
+export interface DisplayItem {
+    type_id: number
+    name: string
+    variants?: BuybackAcceptedItem[]
+    used_in?: { type_id: number; name: string }[]
+    used_in_is_ore?: boolean
+    in_demand?: boolean
+}

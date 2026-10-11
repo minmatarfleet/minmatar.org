@@ -1,0 +1,108 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { DisplayItem } from '@dtypes/layout_components'
+
+interface Props {
+    item:       DisplayItem;
+}
+
+const {
+    item,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import TextBadge from './TextBadge.astro';
+---
+
+<DialogButton
+    class="[ flex w-full ]"
+    styless={true}
+    transparent={true}
+    max_width='1200px'
+    non_centered={false}
+>
+    <slot />
+
+    <ItemBadge
+        slot="header"
+        item_name={item.name}
+        type_id={item.type_id}
+        title_el='h2'
+    >
+        <small>{t('used_in')}</small>
+    </ItemBadge>
+
+    <Flexblock gap='var(--space-l)' slot="dialog">
+        {item.used_in && item.used_in.length > 0 ?
+            <ComponentBlock
+                class="[ joint ]"
+                padding_block='var(--space-s)'
+                padding_inline='var(--space-s)'
+            >
+                <FixedFluid width='42px' gap='var(--space-2xs)' class="[ items-center! ]">
+                    <picture class="[ border ]">
+                        <img src={item.used_in_is_ore ? '/images/icons/input_groups/minerals.jpg' : '/images/icons/input_groups/planetary_materials.jpg'} />
+                    </picture>
+                    <TextBadge title={item.used_in_is_ore ? t('buyback.info.used_in_ore_note') : t('planetary_materials')}>
+                        <small>{t(item.used_in.length !== 1 ? 'items_count_plural' : 'items_count_singular').replace('{count}', String(item.used_in.length))}</small>
+                    </TextBadge>
+                </FixedFluid>
+            </ComponentBlock>
+
+            <ComponentBlock
+                class="[ joint ]"
+                padding_block='var(--space-s)'
+                padding_inline='var(--space-s)'
+            >
+                <Grid
+                    row_gap='var(--space-3xs)'
+                    column_gap='var(--space-3xs)'
+                    min_item_width='340px'
+                    class="grid-fill w-full"
+                >{item.used_in.map(item =>
+                    <ItemBadge
+                        item_name={item.name}
+                        type_id={item.type_id}
+                        size={32}
+                        highlight={false}
+                    />
+                )}</Grid>
+            </ComponentBlock> :
+            <span>{t('no_items_to_show')}</span>
+        }
+    </Flexblock>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            color='transparent'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
+</DialogButton>
+
+<style lang="scss">
+    .joint:after {
+        content: '';
+        position: absolute;
+        width: 1px;
+        border-left: solid 1px var(--border-color);
+        height: var(--space-l);
+        top: calc(-1 * var(--space-l));
+        margin-top: -1px;
+        left: 32px;
+    }
+</style>

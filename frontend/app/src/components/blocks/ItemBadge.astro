@@ -41,6 +41,7 @@ import Badge from '@components/blocks/Badge.astro';
     title_el={title_el}
     {...attributes}
 >
+    <slot slot="title" name="title" />
     <slot>
         {quantity &&
             <small>{number_thousand_separator(quantity)}</small>

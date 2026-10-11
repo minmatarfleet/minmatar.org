@@ -1,0 +1,37 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DisplayItem } from '@dtypes/layout_components'
+
+interface Props {
+    item:       DisplayItem;
+}
+
+const {
+    item,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+---
+
+{item.variants &&
+    <Wrapper
+        padding_block='var(--space-2xs)'
+        padding_inline='var(--space-2xs)'
+    >
+        <Flexblock gap='var(--space-3xs)'>
+            <small>{t('buyback.info.ore_variants')}</small>
+            {item.variants.map(variant =>
+                <ItemBadge
+                    item_name={variant.name}
+                    type_id={variant.type_id}
+                    size={32}
+                />
+            )}
+        </Flexblock>
+    </Wrapper>
+}

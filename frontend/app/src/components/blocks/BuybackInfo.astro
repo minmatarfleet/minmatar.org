@@ -1,33 +1,19 @@
 ---
 import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import type { BuybackAcceptedItem, BuybackSettings } from '@dtypes/api.minmatar.org'
+import type { DisplayItem } from '@dtypes/layout_components'
 import {
     BUYBACK_ORE_BASES,
     compressed_buyback_ore_base,
 } from '@helpers/buyback_ore'
-
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ItemPicture from '@components/blocks/ItemPicture.astro'
-import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro'
-
-const { t } = i18n(Astro.url)
 
 interface Props {
     settings: BuybackSettings;
 }
 
 const { settings } = Astro.props
-
-interface DisplayItem {
-    type_id: number
-    name: string
-    variants?: BuybackAcceptedItem[]
-    used_in?: { type_id: number; name: string }[]
-    used_in_is_ore?: boolean
-    in_demand?: boolean
-}
 
 const USED_IN_TOOLTIP_LIMIT = 12
 
@@ -140,16 +126,118 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
 }
 
 const grouped_items = CATEGORY_ORDER
-    .map((category) => ({
-        category,
-        label: CATEGORY_LABELS[category],
-        items: display_items_for_category(category),
-    }))
+    .map((category) => {
+        return {
+            category,
+            label: CATEGORY_LABELS[category],
+            items: display_items_for_category(category),
+        }})
     .filter((group) => group.items.length > 0)
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import BuybackItem from '@components/blocks/BuybackItem.astro';
+import BuybackVariants from '@components/blocks/BuybackVariants.astro';
+import ComponentBlock from './ComponentBlock.astro'
+import CollapsableButton from './CollapsableButton.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import TextBadge from './TextBadge.astro'
 ---
 
-<section class="[ buyback-info ]">
-    <ComponentBlock
+<Flexblock gap='var(--space-xl)'>
+    <Flexblock>
+        <FlexInline justification='space-between'>
+            <span>{t('click_items_in_demand_tooltip')}</span>
+
+            <FlexInline gap='var(--space-l)'>
+                <FixedFluid class="[ items-center! ]" width='10px' gap='var(--space-2xs)'>
+                    <span class="[ text-green ]">▲</span>
+                    <TextBadge title={t('buyback.info.in_demand')}>
+                        <small>{t('buyback.info.in_demand_tip')}</small>
+                    </TextBadge>
+                </FixedFluid>
+
+                <FixedFluid class="[ items-center! ]" width='10px' gap='var(--space-2xs)'>
+                    <span class="[ text-red ]">▼</span>
+                    <TextBadge title={t('buyback.info.surplus')}>
+                        <small>{t('buyback.info.surplus_tip')}</small>
+                    </TextBadge>
+                </FixedFluid>
+            </FlexInline>
+        </FlexInline>
+
+        <ComponentBlock 
+            padding_block='var(--space-s)'
+            padding_inline='var(--space-s)'
+        >
+            <Grid
+                row_gap='var(--space-xs)'
+                column_gap='var(--space-3xs)'
+                min_item_width='310px'
+                class="grid-fill"
+            >
+                {grouped_items.length > 0 ?
+                    <>{grouped_items.map(group =>
+                        <Flexblock gap='var(--space-xs)'>
+                            <h4>{group.label}</h4>
+                            
+                            <hr class="[ border-bottom ]" />
+
+                            {group.items.length > 0 &&
+                                <Flexblock gap='0'>
+                                    {group.items.map(item =>
+                                        <Wrapper
+                                            class="[ w-full self-start ]"
+                                            padding_block='0'
+                                            padding_inline='0'
+                                            x-data={`{
+                                                expanded: false,
+                                                toggle_collapse() {
+                                                    this.expanded = !this.expanded
+                                                }
+                                            }`}
+                                        >
+                                            {item.variants && item.variants?.length > 0 ?
+                                                <FlexInlineSiblings
+                                                    min-shink-width='250px'
+                                                    shrinkable-sibbling='first'
+                                                    gap='0'
+                                                >
+                                                    <BuybackItem item={item} />
+                                                    <CollapsableButton
+                                                        class="[ px-[12px]! py-[19px]! ]"
+                                                        x-on:click="toggle_collapse()"
+                                                    />
+                                                </FlexInlineSiblings>
+                                                <div
+                                                    x-show="expanded"
+                                                    x-collapse.duration.0ms
+                                                    style="display: none"
+                                                >
+                                                    <BuybackVariants item={item} />
+                                                </div> :
+                                                <BuybackItem item={item} />
+                                            }
+                                        </Wrapper>
+                                )}</Flexblock>
+                            }
+                        </Flexblock>
+                    )}</>
+                    :
+                    <p>{t('buyback.info.no_items')}</p>
+                }
+            </Grid>
+        </ComponentBlock>
+    </Flexblock>
+</Flexblock>
+
+    {/*<ComponentBlock
         class="[ buyback-info__card ]"
         padding_block="var(--space-m)"
         padding_inline="var(--space-m)"
@@ -252,11 +340,10 @@ const grouped_items = CATEGORY_ORDER
                 <p class="[ buyback-info__empty ]">{t('buyback.info.no_items')}</p>
             }
         </Flexblock>
-    </ComponentBlock>
-</section>
+    </ComponentBlock> */}
 
 <style lang="scss">
-    .buyback-info {
+    /*.buyback-info {
         h3 {
             margin: 0;
             font-size: var(--step--1);
@@ -379,5 +466,5 @@ const grouped_items = CATEGORY_ORDER
             font-size: var(--step--2);
             white-space: nowrap;
         }
-    }
+    }*/
 </style>

@@ -94,7 +94,6 @@ const page_title = t('content.page_title')
             scrollable: true,
         }}
         wide={true}
-        no_main_padding={false}
         x-data={`{
             init() {
                 ${connect_alert ? `show_alert_dialog(${JSON.stringify(connect_alert)})` : ''}
