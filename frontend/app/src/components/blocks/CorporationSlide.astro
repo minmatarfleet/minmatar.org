@@ -1,4 +1,5 @@
 ---
+import { corporation_path } from '@helpers/corporations/detail'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -24,8 +25,8 @@ const {
     mirror_slide = false,
 } = Astro.props
 
-const current_page = `${Astro.url.pathname}${Astro.url.search}`
-const slide_url = translatePath(`${current_page}#${corporation.corporation_name.replaceAll(' ', '_')}`)
+const current_page = translatePath(corporation_path(corporation.corporation_id, corporation.corporation_name))
+const slide_url = current_page
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";

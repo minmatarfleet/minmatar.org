@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationApplicationProcess, CorporationOpenApplication } from '@dtypes/api.minmatar.org'
+import type { CorporationObject } from '@dtypes/layout_components'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.astro'
+
+interface Props {
+    process: CorporationApplicationProcess | null | undefined
+    requirements: string[]
+    apply_corporation: CorporationObject
+    is_user_corporation?: boolean
+    open_applications: CorporationOpenApplication[] | null
+}
+
+const {
+    process,
+    requirements,
+    apply_corporation,
+    is_user_corporation = false,
+} = Astro.props
+
+function count_text(value: number) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+const stats = [
+    {
+        key: 'outstanding',
+        value: String(process?.outstanding ?? 0),
+        label: t('corporations.detail.outstanding'),
+    },
+    {
+        key: 'month',
+        value: process?.applications_per_month != null
+            ? count_text(process.applications_per_month)
+            : '—',
+        label: t('corporations.detail.applications_per_month'),
+    },
+    {
+        key: 'acceptance',
+        value: process?.acceptance_days != null
+            ? t('corporations.detail.acceptance_days').replace(
+                'COUNT',
+                count_text(process.acceptance_days),
+            )
+            : '—',
+        label: t('corporations.detail.acceptance_time'),
+    },
+]
+---
+
+<Flexblock gap="var(--space-xl)">
+    {stats.length > 0 &&
+        <div class="process-stats">
+            {stats.map((stat) => (
+                <div>
+                    <span class="process-value">{stat.value}</span>
+                    <small>{stat.label}</small>
+                </div>
+            ))}
+        </div>
+    }
+
+    {requirements.length > 0 &&
+        <Flexblock gap="var(--space-2xs)">
+            <h2>{t('requirements')}</h2>
+            <Markdown markdown={requirements.join('\n')} />
+        </Flexblock>
+    }
+
+    <CorporationSlideStatus
+        corporation={apply_corporation}
+        is_user_corporation={is_user_corporation}
+        show_learn_more={false}
+        show_unavailable={true}
+    />
+
+</Flexblock>
+
+<style lang="scss">
+    .process-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xl);
+    }
+
+    .process-value {
+        display: block;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    h2 {
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+</style>

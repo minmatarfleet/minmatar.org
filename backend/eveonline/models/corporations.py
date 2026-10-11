@@ -49,6 +49,16 @@ class EveCorporation(models.Model):
     stewards = models.ManyToManyField(
         EveCharacter, related_name="corporation_steward_of", blank=True
     )
+    discord_guild = models.ForeignKey(
+        "discord.DiscordGuild",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="corporations",
+    )
+    discord_invite_url = models.URLField(blank=True)
+    highlights = models.TextField(blank=True)
+    activity_summary = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -101,6 +111,34 @@ class EveCorporation(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+class EveCorporationMedia(models.Model):
+    """Recruit-facing video, image, or propaganda link for a corporation."""
+
+    YOUTUBE = "youtube"
+    IMAGE = "image"
+    PROPAGANDA_POST = "propaganda_post"
+    KIND_CHOICES = (
+        (YOUTUBE, "YouTube"),
+        (IMAGE, "Image"),
+        (PROPAGANDA_POST, "Propaganda post"),
+    )
+
+    corporation = models.ForeignKey(
+        EveCorporation, on_delete=models.CASCADE, related_name="media"
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    url = models.URLField(blank=True)
+    post_id = models.IntegerField(null=True, blank=True)
+    caption = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.corporation} {self.kind}"
 
 
 class EveCorporationContract(models.Model):
