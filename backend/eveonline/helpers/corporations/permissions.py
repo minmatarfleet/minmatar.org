@@ -48,12 +48,13 @@ def user_is_director(user: User, corporation: EveCorporation) -> bool:
 def can_view_corporation_members(
     user: User, corporation: EveCorporation
 ) -> bool:
-    """Members tab: corp leadership, recruiters, People and Tech teams."""
+    """Members tab: corp leadership, recruiters, People and Tech teams,
+    and site superusers."""
     if can_manage_corporation(user, corporation):
         return True
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    return user_is_recruiter(user, corporation)
+    return user.is_superuser or user_is_recruiter(user, corporation)
 
 
 def can_view_member_characters(

@@ -9,10 +9,6 @@ from esi.models import Token
 
 from alliance.models import AllianceHealthSnapshot
 from eveonline.helpers.corporations.stats_cache import corporation_stats
-from eveonline.helpers.corporations.timezones import (
-    observed_prime_buckets_for_users,
-    prime_time_codes_for_users,
-)
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
@@ -64,29 +60,32 @@ def leadership_rows(corporation: EveCorporation) -> list[dict]:
     return _collapse_leadership_to_mains(entries)
 
 
-def attach_timezones(rows: list[dict], user_ids: list[int] | None = None):
-    ids = user_ids if user_ids is not None else _row_user_ids(rows)
-    declared = prime_time_codes_for_users(ids)
-    observed = observed_prime_buckets_for_users(ids)
+def apply_cached_timezones(rows: list[dict], stats: dict) -> None:
+    """Fill prime_time / observed_prime_times from cached stats (no queries).
+
+    Rows stay empty until the first refresh has run.
+    """
+    declared = stats.get("declared_by_user") or {}
+    observed = stats.get("observed_by_user") or {}
     for row in rows:
         user_id = row.get("user_id")
         row["prime_time"] = declared.get(user_id) if user_id else None
         row["observed_prime_times"] = (
             observed.get(user_id, []) if user_id else []
         )
-    return declared, observed
 
 
 def public_profile(corporation: EveCorporation) -> dict:
     """Profile payload. Heavy 90-day stats come from the Celery-filled cache
     and are absent (empty/None) until the first refresh finishes."""
     leaders = leadership_rows(corporation)
-    attach_timezones(leaders)
     stats = corporation_stats(corporation.corporation_id) or {}
+    apply_cached_timezones(leaders, stats)
     return {
         "ticker": corporation.ticker or None,
         "member_count": corporation.member_count,
-        "human_count": len(registered_user_ids(corporation)),
+        "human_count": stats.get("human_count")
+        or len(registered_user_ids(corporation)),
         "ceo": _ceo(corporation),
         "leadership": [_public_leader(row) for row in leaders],
         "timezone_distribution": stats.get("timezone_distribution", []),
@@ -102,7 +101,9 @@ def public_profile(corporation: EveCorporation) -> dict:
 
 def missing_prime_time(corporation: EveCorporation) -> list[dict]:
     leaders = leadership_rows(corporation)
-    attach_timezones(leaders)
+    apply_cached_timezones(
+        leaders, corporation_stats(corporation.corporation_id) or {}
+    )
     return [
         _public_leader(row) for row in leaders if not row.get("prime_time")
     ]
@@ -251,10 +252,6 @@ def _public_leader(row: dict) -> dict:
         "prime_time": row.get("prime_time"),
         "observed_prime_times": row.get("observed_prime_times") or [],
     }
-
-
-def _row_user_ids(rows: list[dict]) -> list[int]:
-    return [row["user_id"] for row in rows if row.get("user_id")]
 
 
 def _ceo(corporation: EveCorporation) -> dict | None:

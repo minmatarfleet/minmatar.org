@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.core.cache import cache
+from django.test import Client
 
 from app.test import TestCase
 from eveonline.helpers.corporations import stats_cache
@@ -12,6 +13,7 @@ class CorporationStatsCacheTestCase(TestCase):
     def setUp(self):
         super().setUp()
         cache.clear()
+        self.client = Client()
         self.corporation = EveCorporation.objects.create(
             corporation_id=98726134, name="Rattini Tribe"
         )
@@ -32,12 +34,16 @@ class CorporationStatsCacheTestCase(TestCase):
         with patch.object(stats_cache, "compute_corporation_stats") as compute:
             stats = stats_cache.corporation_stats(98726134)
         compute.assert_not_called()
-        self.assertEqual(
+        self.assertLessEqual(
             {
                 "timezone_distribution",
                 "weekday_distribution",
                 "public_summary",
                 "application_process",
+                "member_activity",
+                "declared_by_user",
+                "observed_by_user",
+                "human_count",
             },
             set(stats),
         )
@@ -57,3 +63,15 @@ class CorporationStatsCacheTestCase(TestCase):
             side_effect=ConnectionError("redis down"),
         ):
             self.assertIsNone(stats_cache.corporation_stats(98726134))
+
+    def test_members_endpoint_never_computes_stats_inline(self):
+        self.make_superuser()
+        with patch.object(
+            refresh_corporation_profile_stats, "apply_async"
+        ), patch.object(stats_cache, "compute_corporation_stats") as compute:
+            response = self.client.get(
+                "/api/eveonline/corporations/corporations/98726134/members",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(200, response.status_code)
+        compute.assert_not_called()

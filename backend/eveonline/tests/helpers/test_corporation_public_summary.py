@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
+from django.core.cache import cache
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
@@ -45,6 +46,8 @@ def _disconnect_external_signals():
 
 class CorporationPublicSummaryTestCase(TestCase):
     def setUp(self):
+        # Profile stats are cached per corporation id; start clean.
+        cache.clear()
         _disconnect_external_signals()
         super().setUp()
         self.client = Client()

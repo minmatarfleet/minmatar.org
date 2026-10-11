@@ -17,7 +17,7 @@ from eveonline.helpers.corporations import (
     update_corporation_wallet_journal as refresh_corporation_wallet_journal,
 )
 from eveonline.constants import ALLIED_ALLIANCE_NAMES
-from eveonline.models import EveCorporation
+from eveonline.models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +105,10 @@ def refresh_corporation_profile_stats(corporation_id=None):
         refresh_corporation_stats,
     )
 
+    from eveonline.helpers.corporations.kills import (  # pylint: disable=import-outside-toplevel
+        RecentKills,
+    )
+
     corporations = EveCorporation.objects.all()
     if corporation_id is not None:
         corporations = corporations.filter(corporation_id=corporation_id)
@@ -112,10 +116,18 @@ def refresh_corporation_profile_stats(corporation_id=None):
         corporations = corporations.filter(
             alliance__name__in=ALLIED_ALLIANCE_NAMES
         )
+    corporations = list(corporations)
+    # One pass over recent killmails for every character involved, instead
+    # of one per corporation.
+    kills = RecentKills(
+        EveCharacter.objects.filter(
+            corporation_id__in=[c.corporation_id for c in corporations]
+        ).values_list("character_id", flat=True)
+    )
     refreshed = 0
     for corporation in corporations:
         try:
-            refresh_corporation_stats(corporation)
+            refresh_corporation_stats(corporation, kills)
             refreshed += 1
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception(

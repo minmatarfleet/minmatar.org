@@ -9,15 +9,14 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from datetime import timedelta
 
-from django.db.models import Count, F
 from django.utils import timezone
 from eveuniverse.models import EveType
 
-from eveonline.helpers.corporations.activity import ACTIVITY_DAYS
+from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
 from eveonline.helpers.corporations.timezones import (
     observed_prime_buckets_for_users,
 )
-from eveonline.models import EveCharacter, EveCharacterKillmailAttacker
+from eveonline.models import EveCharacter
 from feed.constants import CAPITAL_SHIP_GROUPS
 from feed.helpers.eve_names import CAPSULE_GROUP_NAME, KNOWN_CAPSULE_TYPE_IDS
 from fleets.models import (
@@ -154,14 +153,22 @@ SHIP_ORDER = (
 KILL_ORDER = (KILL_SOLO, KILL_SMALL_GANG, KILL_FLEET)
 
 
-def corporation_public_summary(corporation) -> dict:
-    """Aggregate community, fleet, ship, and kill facts for one corporation."""
+def corporation_public_summary(
+    corporation, kills: RecentKills | None = None
+) -> dict:
+    """Aggregate community, fleet, ship, and kill facts for one corporation.
+
+    Pass `kills` preloaded for many corporations to avoid reloading
+    recent killmails per corporation.
+    """
     cutoff = timezone.now() - timedelta(days=ACTIVITY_DAYS)
     character_ids, user_ids, char_to_user = _corp_characters(corporation)
+    if kills is None:
+        kills = RecentKills(character_ids)
     fleet_instances, fleet_counts, ship_counts, pilot_fleets = _fleet_facts(
         character_ids, user_ids, char_to_user, cutoff
     )
-    killmails, kill_counts = _kill_facts(character_ids, cutoff)
+    killmails, kill_counts = _kill_facts(character_ids, kills)
     return {
         "window_days": ACTIVITY_DAYS,
         "community": {
@@ -367,29 +374,10 @@ def _ship_roles(hulls_by_pilot_fleet: dict) -> tuple[Counter, int]:
     return counts, pilot_fleets
 
 
-def _kill_facts(character_ids, cutoff):
+def _kill_facts(character_ids, kills: RecentKills):
     counts: Counter = Counter()
-    if not character_ids:
-        return 0, counts
-    killmail_ids = set(
-        EveCharacterKillmailAttacker.objects.filter(
-            character_id__in=character_ids,
-            killmail__killmail_time__gte=cutoff,
-        )
-        .exclude(character_id=F("killmail__victim_character_id"))
-        .values_list("killmail_id", flat=True)
-    )
-    if not killmail_ids:
-        return 0, counts
-    attacker_counts = (
-        EveCharacterKillmailAttacker.objects.filter(
-            killmail_id__in=killmail_ids
-        )
-        .values("killmail_id")
-        .annotate(attackers=Count("id"))
-        .values_list("attackers", flat=True)
-    )
-    for attackers in attacker_counts:
+    killmail_ids = kills.killmails_for(character_ids)
+    for attackers in kills.attacker_counts(killmail_ids).values():
         counts[kill_bucket(attackers)] += 1
     return sum(counts.values()), counts
 

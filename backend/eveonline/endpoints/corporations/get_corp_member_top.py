@@ -16,6 +16,7 @@ from eveonline.helpers.corporations.permissions import (
     can_view_member_characters,
 )
 from eveonline.helpers.corporations.profile import load_corporation
+from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.helpers.corporations.timezones import PRIME_BUCKETS
 
 router = Router(tags=["Corporations"])
@@ -52,6 +53,7 @@ def get_corp_member_top(
         reveal_characters=can_view_member_characters(
             request.user, corporation
         ),
+        stats=corporation_stats(corporation.corporation_id),
     )
     ranked = sort_member_rows(rows, metric)
     return {"metric": metric, "members": ranked[:limit]}

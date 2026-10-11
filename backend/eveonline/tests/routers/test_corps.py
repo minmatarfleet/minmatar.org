@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
+from django.core.cache import cache
 from esi.models import Token
 
 from app.test import TestCase
@@ -39,6 +40,8 @@ class CorporationRouterTestCase(TestCase):
     """Test cases for the corporation router."""
 
     def setUp(self):
+        # Profile stats are cached per corporation id; start clean.
+        cache.clear()
         # disconnect signals
         signals.post_save.disconnect(
             sender=EveCharacter,

@@ -2,6 +2,7 @@ from datetime import timedelta, timezone as dt_timezone
 
 from django.db.models import signals
 from django.utils import timezone
+from django.core.cache import cache
 
 from app.test import TestCase
 from eveonline.helpers.corporations.timezones import (
@@ -18,6 +19,8 @@ from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 class ObservedPrimeBucketsTestCase(TestCase):
     def setUp(self):
+        # Profile stats are cached per corporation id; start clean.
+        cache.clear()
         super().setUp()
         signals.post_save.disconnect(
             sender=EveFleet,
@@ -64,6 +67,8 @@ class ObservedPrimeBucketsTestCase(TestCase):
 
 class WeekdayDistributionTestCase(TestCase):
     def setUp(self):
+        # Profile stats are cached per corporation id; start clean.
+        cache.clear()
         super().setUp()
         signals.post_save.disconnect(
             sender=EveFleet,

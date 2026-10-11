@@ -9,14 +9,14 @@ from django.db.models import Count, Sum
 from django.utils import timezone
 
 from discord.models import DiscordChannelActivityRecord
-from eveonline.models import EveCharacter, EveCharacterKillmailAttacker
+from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
+from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstanceMember
-
-ACTIVITY_DAYS = 90
 
 
 def activity_for_characters(
     characters: list[EveCharacter],
+    kills: RecentKills | None = None,
 ) -> dict[int, dict]:
     character_ids = [character.character_id for character in characters]
     user_ids = [
@@ -32,21 +32,15 @@ def activity_for_characters(
         .values("character_id")
         .annotate(n=Count("eve_fleet_instance_id", distinct=True))
     }
-    kills = {
-        row["character_id"]: row["n"]
-        for row in EveCharacterKillmailAttacker.objects.filter(
-            character_id__in=character_ids,
-            killmail__killmail_time__gte=cutoff,
-        )
-        .values("character_id")
-        .annotate(n=Count("id"))
-    }
+    if kills is None:
+        kills = RecentKills(character_ids)
+    kill_counts = kills.kills_by_character(character_ids)
     voice_by_user = _voice_hours_by_user(user_ids, cutoff)
     payload = {}
     for character in characters:
         payload[character.character_id] = {
             "fleets_90d": int(fleets.get(character.character_id, 0)),
-            "kills_90d": int(kills.get(character.character_id, 0)),
+            "kills_90d": int(kill_counts.get(character.character_id, 0)),
             "voice_hours_90d": voice_by_user.get(character.user_id, 0.0),
         }
     return payload

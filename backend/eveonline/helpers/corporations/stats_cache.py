@@ -12,7 +12,9 @@ from __future__ import annotations
 import logging
 
 
+from eveonline.helpers.corporations.activity import activity_for_characters
 from eveonline.helpers.corporations.applications import application_process
+from eveonline.helpers.corporations.kills import RecentKills
 from eveonline.helpers.corporations.summary import corporation_public_summary
 from eveonline.helpers.corporations.timezones import (
     observed_prime_buckets_for_users,
@@ -36,33 +38,57 @@ _STATS_KEY = "corporation_profile_stats:v1:{corporation_id}"
 _LOCK_KEY = "corporation_profile_stats:refreshing:{corporation_id}"
 
 
-def compute_corporation_stats(corporation: EveCorporation) -> dict:
-    user_ids = list(
-        {
-            user_id
-            for user_id in EveCharacter.objects.filter(
-                corporation_id=corporation.corporation_id,
-                user_id__isnull=False,
-            ).values_list("user_id", flat=True)
-            if user_id
-        }
+def compute_corporation_stats(
+    corporation: EveCorporation, kills: RecentKills | None = None
+) -> dict:
+    """Everything slow on the corporation page, for the cache.
+
+    `kills` may be preloaded for many corporations (see the refresh task).
+    """
+    characters = list(
+        EveCharacter.objects.filter(
+            corporation_id=corporation.corporation_id
+        ).only("character_id", "user_id")
     )
-    declared = prime_time_codes_for_users(user_ids)
-    observed = observed_prime_buckets_for_users(user_ids)
+    if kills is None:
+        kills = RecentKills([c.character_id for c in characters])
+    user_ids = list({c.user_id for c in characters if c.user_id})
+    # Leaders can be linked only through a token, or have their main outside
+    # the corp, so include their accounts for the leadership tags too.
+    from eveonline.helpers.corporations.profile import (  # pylint: disable=import-outside-toplevel
+        leadership_rows,
+    )
+
+    leader_ids = {
+        row["user_id"]
+        for row in leadership_rows(corporation)
+        if row.get("user_id")
+    }
+    timezone_users = list(set(user_ids) | leader_ids)
+    declared = prime_time_codes_for_users(timezone_users)
+    observed = observed_prime_buckets_for_users(timezone_users)
     return {
+        "human_count": len(user_ids),
+        # Per person, for leadership tags and the Members table.
+        "declared_by_user": declared,
+        "observed_by_user": observed,
+        # Per character fleets / kills / voice for the Members endpoints.
+        "member_activity": activity_for_characters(characters, kills),
         "timezone_distribution": timezone_distribution(
             user_ids, declared, observed
         ),
         "weekday_distribution": weekday_distribution(
-            user_ids, corporation.corporation_id
+            user_ids, corporation.corporation_id, kills=kills
         ),
-        "public_summary": corporation_public_summary(corporation),
+        "public_summary": corporation_public_summary(corporation, kills),
         "application_process": application_process(corporation.corporation_id),
     }
 
 
-def refresh_corporation_stats(corporation: EveCorporation) -> dict:
-    stats = compute_corporation_stats(corporation)
+def refresh_corporation_stats(
+    corporation: EveCorporation, kills: RecentKills | None = None
+) -> dict:
+    stats = compute_corporation_stats(corporation, kills)
     cache_set(
         _STATS_KEY.format(corporation_id=corporation.corporation_id),
         stats,

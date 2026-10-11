@@ -7,13 +7,8 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.utils import timezone
 
-from django.db.models import F
-
-from eveonline.models import (
-    EveCharacter,
-    EveCharacterKillmailAttacker,
-    EvePlayer,
-)
+from eveonline.helpers.corporations.kills import RecentKills
+from eveonline.models import EveCharacter, EvePlayer
 from fleets.endpoints.helpers import time_region
 from fleets.models import EveFleetInstanceMember
 
@@ -96,13 +91,14 @@ def weekday_distribution(
     user_ids: list[int],
     corporation_id: int | None = None,
     days: int = OBSERVED_DAYS,
+    kills: RecentKills | None = None,
 ) -> list[dict]:
     """People on fleets and kills per EVE-time weekday (0 = Monday).
 
     Alts fold into their owner, so a person counts once per weekday.
     A killmail counts once however many members were on it.
     """
-    kills = _kills_by_weekday(corporation_id, days)
+    kill_days = _kills_by_weekday(corporation_id, days, kills)
     ids = sorted({int(uid) for uid in user_ids if uid})
     members = {day: set() for day in range(7)}
     if ids:
@@ -122,12 +118,14 @@ def weekday_distribution(
                 continue
             members[_eve_time(join_time).weekday()].add(user_id)
     return [
-        {"day": day, "members": len(members[day]), "kills": kills[day]}
+        {"day": day, "members": len(members[day]), "kills": kill_days[day]}
         for day in range(7)
     ]
 
 
-def _kills_by_weekday(corporation_id: int | None, days: int) -> list[int]:
+def _kills_by_weekday(
+    corporation_id: int | None, days: int, kills: RecentKills | None
+) -> list[int]:
     counts = [0] * 7
     if not corporation_id:
         return counts
@@ -138,17 +136,10 @@ def _kills_by_weekday(corporation_id: int | None, days: int) -> list[int]:
     )
     if not character_ids:
         return counts
-    cutoff = timezone.now() - timedelta(days=days)
-    rows = (
-        EveCharacterKillmailAttacker.objects.filter(
-            character_id__in=character_ids,
-            killmail__killmail_time__gte=cutoff,
-        )
-        .exclude(character_id=F("killmail__victim_character_id"))
-        .values_list("killmail_id", "killmail__killmail_time")
-        .distinct()
-    )
-    for killmail_time in (row[1] for row in rows):
+    if kills is None:
+        kills = RecentKills(character_ids, days)
+    for killmail_id in kills.killmails_for(character_ids):
+        killmail_time = kills.times.get(killmail_id)
         if killmail_time is not None:
             counts[_eve_time(killmail_time).weekday()] += 1
     return counts

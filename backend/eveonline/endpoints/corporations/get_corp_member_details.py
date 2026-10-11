@@ -11,16 +11,12 @@ from eveonline.endpoints.corporations.schemas import (
     CorporationMemberAccess,
     CorporationMemberDetails,
 )
-from eveonline.helpers.corporations.activity import activity_for_characters
 from eveonline.helpers.corporations.permissions import (
     can_view_corporation_members,
     can_view_member_characters,
 )
 from eveonline.helpers.corporations.profile import load_corporation
-from eveonline.helpers.corporations.timezones import (
-    observed_prime_buckets_for_users,
-    prime_time_codes_for_users,
-)
+from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import EveCharacter, EvePlayer
 from groups.models import UserCommunityStatus
 
@@ -48,6 +44,7 @@ def get_corp_member_details(request, corporation_id: int):
         reveal_characters=can_view_member_characters(
             request.user, corporation
         ),
+        stats=corporation_stats(corporation.corporation_id),
     )
 
 
@@ -71,10 +68,25 @@ def get_corp_member_access(request, corporation_id: int):
     }
 
 
+# EveCharacter rows carry large JSON columns; load only what the roster uses.
+MEMBER_FIELDS = (
+    "character_id",
+    "character_name",
+    "corporation_id",
+    "user_id",
+    "user__username",
+    "token_id",
+    "esi_suspended",
+    "exempt",
+    "esi_token_level",
+)
+
+
 def corporation_members(corporation) -> list[EveCharacter]:
     return list(
         EveCharacter.objects.filter(corporation_id=corporation.corporation_id)
         .select_related("user")
+        .only(*MEMBER_FIELDS)
         .annotate(token_count=Count("token"))
     )
 
@@ -82,11 +94,16 @@ def corporation_members(corporation) -> list[EveCharacter]:
 def member_details(
     members: list[EveCharacter],
     reveal_characters: bool = True,
+    stats: dict | None = None,
 ) -> list[CorporationMemberDetails]:
-    activity = activity_for_characters(members)
+    """Roster rows. Fleets, kills, voice and timezones come from the cached
+    stats (see stats_cache); they read as zero/empty until the first refresh.
+    """
+    stats = stats or {}
+    activity = stats.get("member_activity") or {}
+    declared = stats.get("declared_by_user") or {}
+    observed = stats.get("observed_by_user") or {}
     user_ids = [member.user_id for member in members if member.user_id]
-    declared = prime_time_codes_for_users(user_ids)
-    observed = observed_prime_buckets_for_users(user_ids)
     statuses = dict(
         UserCommunityStatus.objects.filter(user_id__in=user_ids).values_list(
             "user_id", "status"
