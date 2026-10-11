@@ -1,0 +1,162 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TimezoneBucketCount, WeekdayCount } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    distribution:   TimezoneBucketCount[]
+    weekdays?:      WeekdayCount[]
+    window_days?:   number
+}
+
+const { distribution, weekdays = [], window_days = 90 } = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+const buckets = distribution.filter((row) => row.observed > 0)
+const max_count = Math.max(1, ...buckets.map((row) => row.observed))
+
+const days = [...weekdays].sort((left, right) => left.day - right.day)
+const max_day = Math.max(0, ...days.map((row) => row.members))
+const has_days = max_day > 0
+const max_kills = Math.max(0, ...days.map((row) => row.kills ?? 0))
+const has_kills = max_kills > 0
+
+function prime_label(code: string) {
+    switch (code) {
+        case 'US': return t('US')
+        case 'US_AP': return t('US_AP')
+        case 'AP': return t('AP')
+        case 'AP_EU': return t('AP_EU')
+        case 'EU': return t('EU')
+        case 'EU_US': return t('EU_US')
+        default: return code
+    }
+}
+
+// 2024-01-01 was a Monday; day 0 is Monday in the API.
+function weekday_label(day: number, style: 'long' | 'short' = 'long') {
+    return new Date(Date.UTC(2024, 0, 1 + day)).toLocaleDateString(lang, {
+        weekday: style,
+        timeZone: 'UTC',
+    })
+}
+
+function width_for(count: number, max: number) {
+    return `${Math.round((count / Math.max(1, max)) * 100)}%`
+}
+
+const day_charts = [
+    { key: 'fleets', show: has_days, title: t('corporations.detail.fleet_days'), max: max_day, value: (row: WeekdayCount) => row.members },
+    { key: 'kills', show: has_kills, title: t('corporations.detail.kill_days'), max: max_kills, value: (row: WeekdayCount) => row.kills ?? 0 },
+].filter((chart) => chart.show)
+---
+
+{(buckets.length > 0 || day_charts.length > 0) &&
+    <Flexblock gap="var(--space-l)">
+        <h2>{t('corporations.detail.when_we_fly')}</h2>
+        <div class="when-charts">
+            {buckets.length > 0 &&
+                <Flexblock gap="var(--space-s)">
+                    <h3>{t('timezones')}</h3>
+                    <div class="chart">
+                        {buckets.map((row) => (
+                            <div class="chart-row">
+                                <span class="chart-label">{prime_label(row.bucket)}</span>
+                                <div class="chart-track">
+                                    <span class="chart-bar" style={`width: ${width_for(row.observed, max_count)}`} />
+                                </div>
+                                <small class="chart-count">{row.observed}</small>
+                            </div>
+                        ))}
+                    </div>
+                </Flexblock>
+            }
+
+            {day_charts.map((chart) => (
+                <Flexblock gap="var(--space-s)">
+                    <h3>{chart.title}</h3>
+                    <div class="chart">
+                        {days.map((row) => (
+                            <div class:list={['chart-row', { 'is-peak': chart.value(row) === chart.max }]}>
+                                <span class="chart-label">
+                                    <abbr title={weekday_label(row.day)}>{weekday_label(row.day, 'short')}</abbr>
+                                </span>
+                                <div class="chart-track">
+                                    <span class="chart-bar" style={`width: ${width_for(chart.value(row), chart.max)}`} />
+                                </div>
+                                <small class="chart-count">{chart.value(row)}</small>
+                            </div>
+                        ))}
+                    </div>
+                </Flexblock>
+            ))}
+        </div>
+    </Flexblock>
+}
+
+<style lang="scss">
+    .when-charts {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    h2,
+    h3 {
+        margin: 0;
+    }
+
+    h3 {
+        font-size: var(--step-1);
+    }
+
+
+    .chart {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr) 3ch;
+        column-gap: var(--space-s);
+        row-gap: var(--space-s);
+        align-items: center;
+    }
+
+    .chart-row {
+        display: contents;
+    }
+
+    .chart-label {
+        white-space: nowrap;
+    }
+
+    .chart-label abbr {
+        text-decoration: none;
+    }
+
+    .chart-track {
+        height: var(--space-s);
+        background: color-mix(in srgb, var(--highlight) 18%, transparent);
+    }
+
+    .chart-bar {
+        display: block;
+        height: 100%;
+        background: var(--fleet-yellow);
+    }
+
+    .chart-count {
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .is-peak {
+        .chart-label,
+        .chart-count {
+            color: var(--highlight);
+        }
+
+        .chart-bar {
+            background: var(--fleet-red);
+        }
+    }
+</style>
