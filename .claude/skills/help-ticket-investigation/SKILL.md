@@ -1,0 +1,292 @@
+---
+name: help-ticket-investigation
+description: >-
+  Investigate #help Discord tickets, pull ticket body plus thread replies
+  and screenshots, then reply in the thread (clarify, fix, or tag the
+  decision owner) and open a PR with the fix and skill updates. Use when
+  the user pastes a discord.com/channels help-ticket URL, asks to
+  investigate a bug report in a Discord thread, mentions a
+  pulse-technology / help ticket thread, or says to run the help ticket
+  investigation loop.
+---
+
+# Help ticket investigation
+
+Private Discord threads from the **#help** panel (`HelpTicket`). Pull the
+full ticket, then finish in the **thread** with one of the three outcomes
+below (1+3 or 2+3 when mixed). Every run also **opens a PR** (product
+fix if any, plus skill updates). Do not stop in this chat instead of
+Discord.
+
+These files are **public**. Never write ticket-opener names, character
+names, snowflakes, thread URLs, ticket ids, user pks, ticket-body quotes,
+or screenshot contents into `SKILL.md` or [learnings.md](learnings.md).
+BearThatCares stays in this file as the **decision ping target** only —
+never paste their Discord id.
+
+**This is an agent skill first.** Durable judgment lives here. Read
+[learnings.md](learnings.md) **before** investigating. After **every**
+ticket, append a scrubbed learning **and** fold any new rule back into
+this file (see §4).
+
+Also read [debug-production-readonly-db](../debug-production-readonly-db/SKILL.md)
+for prod reads. Do not SSH to prod. Use
+[production-command](../production-command/SKILL.md) only if you need a
+copy-paste kickoff for the user.
+
+## Outcomes (pick one in Discord)
+
+Reply in the **ticket thread**. Do not wait to be asked. Do not leave the
+reporter hanging in this chat.
+
+1. **Clarify existing behavior** — expected permission, how a flow works,
+   pending vs active, “not a bug.” Explain it to the opener in the thread.
+2. **Fix a real bug** — change this repo, tests, **PR URL in the thread**,
+   what happens after deploy.
+3. **Tag BearThatCares** — only for an **actual decision** this agent
+   cannot make from code (policy, product intent, People/CEO call). Ping
+   them in the thread with the question and the facts. Look up their
+   Discord user id from `production_readonly` (`DiscordUser`); never
+   hardcode a snowflake in these files.
+
+If a ticket is mixed (bug + policy), do **2** for the bug and **3** for
+the decision in the same thread reply.
+
+Do not use **3** for “please explain this screen” or expected denials —
+that is **1**. Do not use **1** when the code is wrong — that is **2**.
+
+**Always open a PR** before ending: stash unrelated dirty files, branch
+from latest `origin/main`, commit the product fix (if any) **and** the
+skill/learnings updates, then `gh pr create`. Skill-only PRs are required
+when the Discord outcome was 1 or 3. Never skip the PR.
+
+## Task progress
+
+```
+Task Progress:
+- [ ] Ingest: Discord thread + HelpTicket row + screenshots
+- [ ] Read learnings.md for similar tickets
+- [ ] Reproduce with code + production_readonly (never write)
+- [ ] Verdict: clarify | bug | needs-decision
+- [ ] If bug: implement the fix + tests
+- [ ] Record + refine: scrubbed learnings.md entry AND update SKILL.md
+- [ ] PR from origin/main: fix (if any) + skill updates
+- [ ] Discord: outcome 1, 2 (with PR URL), or 3 (tag BearThatCares)
+```
+
+---
+
+## 1. Ingest the thread
+
+URL shape: `https://discord.com/channels/<guild_id>/<thread_id>`
+
+- Last path segment is `HelpTicket.thread_id`.
+- Thread names look like `<category-code>-<opener-name>`. These are help
+  tickets, not Sentry.
+- **No URL / “each discord thread” / open help tickets:**
+  `find_channel help` + `list_active_threads` (parent `#help`) and dump
+  `HelpTicket` `status=open`. Ingest every row. Pulse-technology gets a
+  1/2/3 reply. Do **not** hijack a non-Pulse thread whose assignee is
+  already working it (corp applications, LP team). Do **not** ping
+  BearThatCares on their own note-to-self ticket. If they already
+  answered the product question in-thread, do not re-ask — implement or
+  confirm the next Pulse step.
+
+### Discord MCP
+
+Use the workspace Discord MCP (`get_channel_info`, `read_messages`,
+`get_attachment`, `send_message`). If one Discord MCP times out, try the
+other connected Discord MCP.
+
+1. `get_channel_info` `{ channelId }` — confirm name / private thread.
+2. `read_messages` `{ channelId, count: "50" }` (raise if the thread is busy).
+3. For **every** message id, `get_attachment` `{ channelId, messageId }`.
+4. If attachments return CDN URLs, download and **Read the image files**.
+   Do not skip “empty” starter messages.
+
+**Embeds are often invisible to MCP.** Starter posts look like empty content
+plus a mention ping (assignees). That is **not** the ticket body.
+
+### Ticket body (source of truth)
+
+From `backend/` with `pipenv run python manage.py shell`:
+
+```python
+from help_tickets.models import HelpTicket
+
+ticket = (
+    HelpTicket.objects.using("production_readonly")
+    .filter(thread_id=THREAD_ID)
+    .select_related("category", "opener")
+    .first()
+)
+# ticket.body, status, opener, category.code, category.title, opened_at
+```
+
+If no row: still use Discord text/screenshots; note the gap.
+
+Follow-up **replies** show up in `read_messages`. Include them. The starter
+still needs `HelpTicket.body`. If that body is a stub (one-line category
+label), the real ask is in follow-up messages plus screenshots.
+
+### Screenshots
+
+- MCP `get_attachment` is metadata/URLs, not always inline pixels.
+- Save to a temp path and `Read` the image so vision applies.
+- A 403 page is often `HTTP_403_Forbidden()` (“Docking request denied!”)
+  from an Astro guard on a Django permission.
+
+### Mentions in Discord
+
+`get_user_id_by_name` often misses people. Resolve Discord user ids from
+`HelpTicket` (opener) and `DiscordUser` on `production_readonly` (opener
+and, for outcome 3, BearThatCares). Never copy those ids into these
+skill files.
+
+---
+
+## 2. Reproduce
+
+1. Restate the reporter’s claim in one sentence.
+2. Identify **who is affected** (opener vs someone they are advocating for).
+3. Check **prod state** for that account only: groups, `UserAffiliation`,
+   `UserCommunityStatus`, corp recruiter/director M2M, Django `has_perm`,
+   PilotFeatures (`can_use_feature`), primary `alliance_id`,
+   `TribeGroupMembership` (+ history) when the ticket is about tribes.
+4. Trace **code**: frontend page guards, Ninja routers, group sync.
+5. Match against **Known failure classes** below and [learnings.md](learnings.md).
+
+Do not dump other members’ rows. Do not write through `production_readonly`.
+Local Discord bot calls hit the **dev** guild and 404 production members —
+do not treat that as “user not in Discord.”
+
+**Wrong working tree:** stash leftover files, `git fetch origin main`, new
+branch. The PR commit set is the ticket fix (if any) plus these skill
+files — nothing else.
+
+---
+
+## 3. Classify and act
+
+### Known failure classes
+
+Scan this table before inventing a new theory.
+
+| Reporter says | Check first |
+|---------------|-------------|
+| Site 403 / “Docking request denied” | Django `has_perm` vs Discord/auth **group**. A Corp Recruiter **role** is not the perm an Astro page checks. Associate recruiters are not Alliance; Alliance recruiter groups do not automatically cover them. |
+| External button / “Open” reloads the same page | Leaving-site dialog: Open is `x-bind:href="alert_dialog_accept_href"`; `show_alert_dialog` can clear that href in the same click → `href=""` reloads. Not the remote site. Persist-checkbox lives on the dialog; the next Open can still race. |
+| Learning / page progress stuck ~80% | `UserPageProgress` / `UserPageSectionProgress` often n−1 (last `resources` / `additional-resources`). Mark-as-read only after every section dwell. |
+| UI “roles” plus a query string | Character tags (`/account/tags/`) or ESI `token_type=`, not Discord roles. |
+| “Main is not a FL33T member” banner | `MAIN_NOT_IN_FL33T` in `build_character_response` when primary `alliance_id` ∉ `FL33T_MEMBER_ALLIANCE_IDS` (`eveonline.constants`: Alliance + Associates). Associates **is** BUILD (same alliance id, ticker BUILD). Dump primary `alliance_id` and `EveAlliance.ticker`. Do not tell BUILD / M-EXC / Associates to add an Alliance main. Grep origin/main — a skill row is not proof the constant shipped. |
+| Wrong doctrine behind a hull chip | Capital guides (`CapitalGuideMetaBlocks`) must use `primary_fitting_for_ship` / `fit_match`, **not** `fittings[0]` (lowest id). “Passive” often means Buffer. Dump `EveFitting` for that `ship_id` on `production_readonly`. Local Astro often has an empty fittings API — use production HTML or unit tests with real names. |
+| Tribe Actions “wack” / Discord channel missing | **Withdraw** = pending or active (cancel/leave), not a broken menu. Auth/Discord roles (`Tribe Group - …`) sync on **active** only. Each group is a separate apply. Channel list ≠ site membership (overwrites can leak). Dump `TribeGroupMembership` + history before blaming Discord. |
+| Tribe approved but no secondary Discord invite DM | Dump `TribeExternalGuild` for that `TribeGroup.code` and any `TribeExternalGuildSeat`. Empty binding → `on_membership_became_active` is a no-op (no seat, no DM). The chief “new application” DM is a different path. Reconciler seeds the Fishermen binding and backfills seats for already-active members. |
+| Bot kicked FL33T people out of Fishermen Discord | `_kick_stray_role_holders` guild-scanned and kicked anyone holding `member_role_id` without a seat. Fishermen `member_role` **is** Minmatar Fleet Alliance (grant to entitled seats, not a kick filter). Dump seats (`present` vs `pending_join`) and active `TribeGroupMembership`. Reconciler must only kick unentitled **seats**. Hardcoded guild id + a local/dev bot with Kick hits the live server. Already-pending seats need a one-shot join DM. |
+| Corp Discord role looked right, then the **previous** ticker came back | ESI `/characters/affiliation/` and public character data often still report the **old** corp after a join. Bulk `update_character_affilliations` can overwrite `corporation_id`; corporation **history** is usually current first. `Corp <TICKER>` groups sync on `sync_eve_corporation_groups` (different beat). Refresh-Discord-roles should recompute `sync_user_corporation_groups` then `sync_discord_user`. Dump primary `corporation_id`, latest two `corporation_history` rows, `user.groups` `Corp *`, and `DiscordRole.name` (display name may lag a Django group rename). |
+| Show BUILD alliance BPC / mineral packs on blueprints, ops/contracts, or in industry-order claim | Feature request, not a 403. `/industry/blueprints/` is hangar inventory search. `/market/ops/contracts/` is doctrine **fitting** stock (`EveMarketContract` + `fitting_id` not null). Alliance pack listings live on `EveCorporationContract` (`for_corporation`, `assignee_id` = BUILD alliance id); ESI `availability` is often `personal` with the alliance as assignee. They are not fitting-matched and the structure may not be an `EveLocation`, so they never appear on ops. Claim UI (`ButtonClaimOrder`) is quantity + “I have blueprints.” `IndustryContractAssociation` matches producer **delivery** contracts to orders, not supply packs. 48h claim cap is per-line `self_assign_maximum` (order config; stepping qty to 10/20/30 is a separate code change). Tag BearThatCares for product intent **unless they already answered in-thread** — then implement or confirm next, do not re-ask. |
+| PTT off / voice activation in fleet channels | Discord **Use Voice Activity** on the voice channel, not a Django/site group. Dump `user.groups` (FC etc.) then tag BearThatCares. Do not edit Discord overwrites without that call. New-player guide still says PTT in large fleets. |
+| Fishermen (or other secondary guild) nicknames | `apply_seat` PATCHes `[FL33T] {primary character}` (`expected_external_guild_nickname`). Reconciler backfills already-present seats every 15 minutes. FL33T **main** guild still uses `[TICKER] Name`. Skip the PATCH when Discord already has the expected nick. |
+| Hull missing from the industry order page | Catalog, not a 403. Dump `IndustryProduct` for that `EveType`. Combat/capital/mineral rows can exist while mining/logi hulls do not. Tag BearThatCares for which hulls and `strategy` (produced vs imported). If the opener later drops the request in-thread, confirm and stop — do not re-ask. |
+| Fittings page icons too big / hard to scan | `FittingCard` `ItemPicture` is `size={256}` on `/ships/fittings/`. UX product call — tag BearThatCares (current size + denser-card vs list-mode question). |
+| Buyback **Match stock** adds extra ores / leftover 11,231-style qtys | Purchase fill (`fill_purchase`). Mineral paste still converts to ore. **Ore paste** leftover used to become mineral demand, then `_allocate_ore_for_minerals` pulled **other families**. Now leftover ore fills **same family only** (grades/moon prefixes). Compressed ore picks are floored to `ORE_BATCH_SIZE` (100). Dump the paste vs `remaining_sale_quantities` before blaming Janice. |
+| Buyback stock page qty is only partly on the purchase / “Not in hangar” for ore the stock list shows | Stock list and Match stock must use the same pool. `remaining_sale_quantities` used to be inbound contracts minus outbound contracts, capped by the hangar, so ore sitting in the hangar without a matching ledger net was listed and then refused. With a `BuybackHangarSnapshot`, sellable qty is the snapshot minus sales **after** `taken_at` (contract and market) minus pending. Do not add inbound contracts on top of the snapshot (that double-counts). No snapshot: ledger net only; market sales are not in that path. |
+| Authed on the site but no Discord / voice | Dump `EvePlayer.primary_character`, `UserAffiliation`, `user.groups`. **Guest** + non-FL33T/BUILD alliance = expected (no Alliance role). **Corp TICKER** without Alliance and `primary_character` null = affiliation never ran; refresh Discord roles after a main is set. Affiliation sync now auto-sets a main when the user has **exactly one** character. Voice channels need the Alliance (or equivalent) Discord role, not just Guest. |
+| Recruiter / director cannot see applications / “auth” | Astro applications page checks `applications.change_evecorporationapplication`. That lives on **`Corp <TICKER> Recruiter`**, synced from ESI **Personnel_Manager** (`corporation.recruiters`). `Corporation Director` (generic Discord/auth group) and `Corp <TICKER> Director` do **not** get those perms. Dump `user.groups`, `esi_token_level`, and corp `recruiters`/`directors` M2M. Empty M2M → ESI corp-roles pull has nobody listed, not a missing button. |
+| Tribe group green tick without a hull/skill they expected | Multiple `TribeGroupRequirement` rows on one group are **OR**. Skills **inside** one row are **AND**. UI copy is `tribal_group_requirement_text` (“At least one of these {count} requirements.”). Dump the group’s requirements + qualifying skills. Do not treat a green tick as “has every row.” |
+| Wiki `/en/…` connection timed out | `wiki.minmatar.org` is external. Current paths drop the MediaWiki `/en/` prefix (`/alliance/Onboarding`, not `/en/alliance/Onboarding`). Site links should not use `/en/`. If the wiki itself times out, that is hosting, not Django. Onboarding also lives on my.minmatar.org. |
+| SRP dialog is only a warning plus Submit another request / Close | Resolve failed and `killmail_candidate_fleets_component` rendered unused `endpoint_error`. Often the victim `EveCharacter.user` is null (character not on the account). A hull can still be on `ShipReimbursementProgram` (Revelation is a dread). Dump victim `user_id` before calling the ship uncovered. |
+| Combat log analyze submits, then “no stored combat log” and no result | The analyzer form sits in `<template x-teleport="body">`. htmx never sees that markup, so Submit is a normal POST of the page and the list stays empty. `htmx.process` the teleported form (`x-init` and again when the dialog opens). A real combat log still analyzes; zero stored rows means the API was never called. Do not close the dialog on the submit click before htmx reads the form. |
+| Discord thread 404 / “Channel not found” but HelpTicket is still open | Thread was archived or deleted. Still use `HelpTicket.body`. Do not invent a Discord reply if `send_message` cannot see the thread. |
+| “Can’t reapply” because an old Discord application thread is locked | `create_corporation_application` does not look at old Discord threads. “You do not have permission to post in this channel” is that thread, not a site block. New applications are `/alliance/corporations/` and open a new thread. |
+| Build planner job cost is about half of in-game | Resbroko (and other Hydra systems) hardcode `HYDRA_FW_SYSTEM_COST_BONUS` (−50%). Amamake uses its own FW bonus; Basgerin and Auner are 0. There is no slider. Product call already made: price upgraded systems. Do not re-ask. |
+| Buy-from-stock contract doesn’t say where it is created | Sell copy already says contract in Amo. Purchase confirm uses `buyback.purchase.contract_where` from buyback `settings.location`. Structure id is `EveBuybackSettings.stockpile_structure_id`. |
+| Hide Fishermen (or tribe) names on the site | `TribeGroup.roster_hidden`. Active members and managers see names. Everyone else gets `member_count` blurred placeholders and no roster JSON. Showcase contributor names use the same gate. Fishermen (`pulse.fishermen`) ships with the flag on. |
+| Fitting order should accept a pasted fit | Create order posts `fitting_id` from `get_fittings()` (site fits). There is no EFT paste. If someone in-thread already said they will build it, confirm that and do not re-ask. |
+
+### Discord reply
+
+`send_message` on the **thread** `channelId`. Short, operational. No user
+pks, no other members’ data, no tokens.
+
+| Outcome | Thread message |
+|---------|----------------|
+| **1 Clarify** | What the product already does and why. Mention the opener. |
+| **2 Fix** | What was wrong, **PR URL**, what happens after deploy. Mention the opener. If you already replied without a PR, follow up with the link. |
+| **3 Decision** | Facts + the exact question. Mention the opener **and** BearThatCares. Do not invent a policy answer. |
+
+### PR (always)
+
+- Stash unrelated dirty files. `git fetch origin main`. New focused branch.
+- Product fix (outcome 2): tests with
+  `pipenv run python manage.py test … --settings=app.settings_test` from
+  `backend/`. Frontend: `npm run check` / `npm run test` when UI changes.
+- Always include the §4 skill/learnings edits in the same PR.
+- Open the PR (summary + test plan). Skill-only is fine for 1 and 3.
+- Do not end the run without a PR URL.
+
+---
+
+## 4. After every ticket: record and refine
+
+Mandatory, including clarify and needs-decision. Do this **before**
+opening the PR. Do not skip because the fix was “obvious.”
+
+### 4a. Scrub
+
+Nothing identifying goes in these files. Strip before writing:
+
+- Ticket-opener / character names (BearThatCares is the decision-ping
+  exception in SKILL.md only — still never their snowflake)
+- Other Discord usernames and display names
+- Discord snowflakes (guild, channel, thread, user, message)
+- Thread URLs, ticket numeric ids, Django user pks
+- Ticket-body quotes and screenshot contents
+- Personal corp-join / interview stories (write “a member moved corp”)
+- Tokens, secrets, webhook URLs, env values
+
+Keep: symptom class, code paths, model/permission names, verdict
+(clarify / bug / needs-decision).
+
+### 4b. Append [learnings.md](learnings.md)
+
+Newest first. Use that file’s template. One short entry per ticket.
+
+### 4c. Refine this `SKILL.md`
+
+Ask: would the **next** agent miss this if they only read this file?
+
+| Situation | Edit |
+|-----------|------|
+| New failure class | Add a row to **Known failure classes** |
+| Workflow miss (no PR, Discord reply only in this chat, dirty branch, skipped `HelpTicket.body`) | Tighten the checklist or Outcomes |
+| Existing row is wrong or incomplete | Rewrite that row; do not add a duplicate |
+| Bug is fixed and the old heuristic now misleads | Update the row so it describes the **current** check, not the old bug |
+| One-off, no reusable rule | Learnings entry only; do not grow this file |
+
+Do not paste tickets into this file. Keep it under 500 lines. If a row
+rots, delete it.
+
+### 4d. Commit and open the PR
+
+Same branch as the product fix (or skill-only if there was no fix).
+Include `SKILL.md` and `learnings.md`. Then open the PR. The run is not
+done until that PR exists.
+
+---
+
+## What belongs where
+
+| Put in learnings.md / this file | Do not bake in |
+|---------------------------------|----------------|
+| MCP embed gap → always load `HelpTicket.body` | Discord REST wrappers, bot tokens |
+| Permission / affiliation / ESI-lag gotchas | Discord user ids, guild ids |
+| Hull-chip / dialog-race / progress-% classes | Full ticket dumps |
+| Associates vs `MAIN_NOT_IN_FL33T` (Associates ticker is BUILD) | Channel overwrite archaeology |
+| Tribe pending vs Discord role timing | Prod Discord REST from a local bot token |
+| BPC/mineral packs vs fitting contracts | Pack issuer names, in-game contract dumps |
+
+## Additional resources
+
+- [learnings.md](learnings.md)
+- [debug-production-readonly-db](../debug-production-readonly-db/SKILL.md)

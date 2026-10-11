@@ -1,0 +1,40 @@
+---
+paths:
+  - "backend/market/**/*.py"
+  - "backend/buyback/**/*.py"
+  - "backend/industry/**/*.py"
+---
+# Market pricing sources
+
+There is **no** model named `ItemPrice`. Colloquial “ItemPrice” means **`EveMarketItemLocationPrice`** (live order book at one location). Do **not** use it as the Jita guide price.
+
+See also: `docs/market-pricing.md`.
+
+## Which source to use
+
+| Need | Use | Helper |
+|------|-----|--------|
+| **Jita / Forge guide** (“Jita sell”, appraisal baseline) | `EveMarketItemHistory` for `price_baseline` region (The Forge when Jita is baseline), then `EveMarketPrice` | `market.helpers.pricing.get_prices_by_type_id` |
+| **Buyback Jita buy** | Live `EveMarketItemLocationPrice` buy (then split) at `price_baseline`, else Forge history | `buyback.helpers.pricing.get_baseline_buy_prices` |
+| **Live book at a hub/structure** (local sell/buy/split) | `EveMarketItemLocationPrice` | Synced via `market.helpers.location_price` for `prices_active` locations |
+| **Industry planner “Jita sell”** | Hybrid: baseline LocationPrice **sell**, else history | `industry.helpers.cost_breakdown.jita_sell_prices_by_type_id` |
+| **LP store conversion buy/sell** | Baseline LocationPrice buy/sell, else history | `industry.helpers.plan_costing.plan_lp_offer_conversion` via `lp_store_economics` |
+| **Coarse CCP average only** | `eveuniverse.EveMarketPrice` | Last resort / filters — prefer history helpers above |
+
+## Rules
+
+- For **Jita guide prices** outside buyback, call `get_prices_by_type_id`. Never query `EveMarketItemLocationPrice` alone as “Jita”.
+- **Buyback** uses live Jita `buy_price` (then `split_price`) via `get_baseline_buy_prices`, falling back to regional history when station-range buy is empty (#2548). Ore lines pay `min(base compressed Jita buy × grade/moon factor, refined mineral Jita buy × ore_refine)` then demand/surplus share.
+- LP store **conversion** rates use baseline LocationPrice sell/buy when present, else regional history (`get_prices_by_type_id`). Net ISK/LP subtracts 3.37% sales tax and Red Frog value freight (45M/1.5B on Jita↔Amo) for input materials+required and output revenue. Blueprint manufacturing input uses Amamake (compressed ore, jobs, taxes — no alliance route freight) × qty; navy BPC LP/ISK stay via `lp_cost` / `isk_cost`. Prefer `industry.helpers.plan_costing`. Markup baselines use **regional history**, not live station rows alone.
+- `EveLocation.price_baseline` → which location’s **region** drives guide history (exactly one).
+- `EveLocation.prices_active` → sync LocationPrice from ESI (Jita can be prices_active without being a structure market).
+- `EveLocation.market_active` → alliance market sell-order / expectation flows — **not** the same as prices_active.
+
+```python
+# ❌ BAD — live station book as “Jita”
+EveMarketItemLocationPrice.objects.filter(location=baseline).values("buy_price")
+
+# ✅ GOOD — Forge/Jita regional guide
+from market.helpers.pricing import get_prices_by_type_id
+prices = get_prices_by_type_id(type_ids)
+```

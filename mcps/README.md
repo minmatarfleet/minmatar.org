@@ -40,6 +40,18 @@ This repo includes a project config with:
 
 Global config (`~/.cursor/mcp.json`) is optional. Prefer project config here so minmatar tooling stays isolated from other workspaces.
 
+## Claude Code config (`.mcp.json`)
+
+Claude Code reads the project config from **`.mcp.json`** in the repo root (Cursor keeps using `.cursor/mcp.json`). It uses the same wrapper scripts and `mcps/.env`:
+
+| Server | Transport | Auth |
+| ------ | --------- | ---- |
+| **sentry** | Remote HTTP | OAuth: run `/mcp` → `sentry` → **Authenticate** |
+| **discord** | Local JAR stdio | Personal bot token in `mcps/.env` |
+| **reddit** | Local JAR stdio | One-time `--init` / `--auth` (see Reddit (JAR) below) |
+
+Approve the project servers when Claude Code prompts on first launch. Composio is not wired into `.mcp.json`; add a stdio entry running `bash ${CLAUDE_PROJECT_DIR:-.}/mcps/run-composio-mcp.sh` if you need it.
+
 ## Google Drive (town halls)
 
 Remote MCP via [Composio Connect](https://docs.composio.dev/docs/composio-connect) — managed OAuth, no local GCP project or WSL desktop OAuth flow.

@@ -1,0 +1,62 @@
+---
+paths:
+  - "backend/**/*.py"
+---
+# django-esi Client: result() vs results()
+
+We use **django-esi 9.x** (OpenAPI 3 via `esi.openapi_clients.ESIClientProvider`). Our wrapper in `eveonline.client` normalizes Pydantic responses to plain `dict`/`list` via `_esi_to_python`.
+
+| Method | Behavior |
+|--------|----------|
+| **`result()`** | One request, one page. Returns the single page of data (and optionally response headers). |
+| **`results()`** | **All pages.** If the operation has a `page` param, it loops internally (page 1, 2, … X-Pages), concatenates every page, and returns the full list. |
+
+So for any paginated ESI operation, **`operation.results()` always returns the complete dataset**. Do **not** pass `page` when using `results()` — the method loops internally (1, 2, … X-Pages) and overwrites the page param itself.
+
+## Provider
+
+```python
+from esi.openapi_clients import ESIClientProvider
+
+esi_provider = ESIClientProvider(
+    compatibility_date="2026-06-09",
+    ua_appname="MinmatarOrg",
+    ua_version="1.0.0",
+    tags=["Alliance", "Assets", "Character", ..., "Faction Warfare", ...],
+)
+# Operations are PascalCase, e.g. Character.GetCharactersDetail
+```
+
+## When to use which
+
+- **Need all pages (e.g. aggregate into prices, export, small/medium lists):**  
+  Call **`results()` once**. Do not pass `page`; do not loop and call `results()` per page (that would request the full set every time and can cause infinite loops).
+
+  ```python
+  # ✅ GOOD — one call, get everything; no page param
+  operation = esi_provider.client.Market.GetMarketsStructuresStructureId(
+      structure_id=structure_id,
+      token=token,
+  )
+  all_orders = operation.results()
+  # process all_orders
+  ```
+
+- **Need one page only (e.g. Celery task per page, streaming, memory-bound):**  
+  Use **`result(page=n)`** or raw `requests.get` with the desired `page` and read `X-Pages` from headers.
+
+  ```python
+  # ✅ GOOD — single page via result()
+  page_data = esi_provider.client.Market.GetMarketsStructuresStructureId(
+      structure_id=structure_id,
+      page=page,
+      token=token,
+  ).result()
+  ```
+
+## Summary
+
+- **`results()`** = “give me everything” (all pages). Use when you need the full list.
+- **`result()`** = one page (or the single response for non-paginated ops).
+- Prefer `EsiClient` / `_operation_results` so callers keep receiving plain dicts.
+- Tags with spaces in the ESI spec (e.g. `"Faction Warfare"`) are passed to `ESIClientProvider(tags=...)` with the space, and accessed on the client as `Faction_Warfare`.
