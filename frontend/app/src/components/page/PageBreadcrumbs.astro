@@ -23,7 +23,6 @@ interface Props {
     breadcrumb_page_title?:     string
     path?:                      string;
     is_landing_page?:           boolean;
-    links_only?:                boolean;
     [propName: string]:         any;
 }
 
@@ -32,7 +31,6 @@ const {
     breadcrumb_page_title,
     path,
     is_landing_page = false,
-    links_only = false,
     ...attributes
 } = Astro.props
 
@@ -160,7 +158,7 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
                                     page.accumulated_path.split('/').filter(segment => segment).length -1 === depth)
                                 //.map(({ accumulated_path, page_title }) => ({ accumulated_path, page_title }))
 
-                            if (!links_only && hub_links.length > 0) {
+                            if (hub_links.length > 0) {
                                 return (
                                     <BreadcrumbHub {page_title} {hub_links}>
                                         <Flexblock gap='0'>

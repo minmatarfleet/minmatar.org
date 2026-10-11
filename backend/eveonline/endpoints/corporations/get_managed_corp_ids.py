@@ -5,8 +5,8 @@ from typing import List
 from ninja import Router
 
 from authentication import AuthBearer
-from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCorporation
+from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 router = Router(tags=["Corporations"])
 
@@ -22,26 +22,16 @@ BUILD_ID = 99012009
 )
 def get_managed_corp_ids(request) -> List[int]:
     user = request.user
-    corporations = (
-        EveCorporation.objects.filter(
-            alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
-        )
-        .select_related("ceo", "ceo__token")
-        .prefetch_related("directors")
+    team_access = user_in_team(user, PEOPLE_TEAM) or user_in_team(
+        user, TECH_TEAM
     )
-    ids = {
-        corp.corporation_id
-        for corp in corporations
-        if can_manage_corporation(user, corp)
-    }
-    ids.update(
-        EveCorporation.objects.filter(directors__user=user).values_list(
-            "corporation_id", flat=True
-        )
-    )
-    ids.update(
-        EveCorporation.objects.filter(ceo__user=user).values_list(
-            "corporation_id", flat=True
-        )
-    )
-    return sorted(ids)
+    corporations = EveCorporation.objects.filter(
+        alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
+    ).prefetch_related("ceo__token__user")
+    response = []
+    for corp in corporations:
+        if team_access:
+            response.append(corp.corporation_id)
+        elif corp.ceo and corp.ceo.token and corp.ceo.token.user == user:
+            response.append(corp.corporation_id)
+    return response

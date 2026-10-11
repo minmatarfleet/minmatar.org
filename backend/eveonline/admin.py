@@ -25,7 +25,6 @@ from .models import (
     EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
-    EveCorporationMedia,
     EveCorporationWalletJournalEntry,
     EveSkillset,
     EveTag,
@@ -434,12 +433,6 @@ def refresh_corporations_action(modeladmin, request, queryset):
 refresh_corporations_action.short_description = "Refresh selected corporations"
 
 
-class EveCorporationMediaInline(admin.TabularInline):
-    model = EveCorporationMedia
-    extra = 0
-    fields = ("sort_order", "kind", "url", "post_id", "caption")
-
-
 @admin.register(EveCorporation)
 class EveCorporationAdmin(admin.ModelAdmin):
     list_display = (
@@ -452,8 +445,6 @@ class EveCorporationAdmin(admin.ModelAdmin):
     search_fields = ("name", "ticker")
     list_filter = ("alliance", "trial", "generate_corporation_groups")
     filter_horizontal = ("directors", "recruiters", "stewards")
-    autocomplete_fields = ("discord_guild",)
-    inlines = [EveCorporationMediaInline]
     actions = [refresh_corporations_action]
     change_form_template = "admin/eveonline/evecorporation/change_form.html"
 

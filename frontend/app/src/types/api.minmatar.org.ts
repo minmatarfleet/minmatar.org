@@ -224,85 +224,6 @@ export interface TeamRequest {
 
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
-export type CorporationLeadershipRole = 'ceo' | 'director' | 'recruiter' | 'steward'
-
-export interface CorporationLeadershipMember {
-    character_id:           number;
-    character_name:         string;
-    role:                   CorporationLeadershipRole | string;
-    prime_time?:            string | null;
-    observed_prime_times?:  string[];
-}
-
-export interface TimezoneBucketCount {
-    bucket:     string;
-    declared:   number;
-    observed:   number;
-}
-
-export interface WeekdayCount {
-    day:        number;
-    members:    number;
-    kills?:     number;
-}
-
-export type CorporationMediaKind = 'youtube' | 'image' | 'propaganda_post'
-
-export interface CorporationMediaItem {
-    id:             number;
-    sort_order:     number;
-    kind:           CorporationMediaKind | string;
-    url?:           string | null;
-    post_id?:       number | null;
-    caption?:       string;
-    youtube_id?:    string | null;
-}
-
-export interface CorporationCeo {
-    character_id:   number;
-    character_name: string;
-}
-
-export interface CorporationSummarySlice {
-    key:    string;
-    count:  number;
-}
-
-export interface CorporationApplicationProcess {
-    outstanding: number;
-    applications_per_month?: number | null;
-    acceptance_days?: number | null;
-    average_skill_points?: number | null;
-}
-
-export interface CorporationOpenApplication {
-    application_id: number;
-    character_id?: number | null;
-    character_name: string;
-    created_at: string;
-}
-
-export interface CorporationPublicSummary {
-    window_days:            number;
-    community: {
-        humans: number;
-        slices: CorporationSummarySlice[];
-    };
-    fleet_participation: {
-        fleet_instances:    number;
-        humans:             number;
-        slices:             CorporationSummarySlice[];
-    };
-    fleet_ships: {
-        pilot_fleets:   number;
-        slices:         CorporationSummarySlice[];
-    };
-    kills: {
-        killmails:  number;
-        slices:     CorporationSummarySlice[];
-    };
-}
-
 export interface Corporation {
     corporation_id:     number;
     corporation_name:   string;
@@ -313,23 +234,12 @@ export interface Corporation {
     type:               CorporationType;
     introduction:       string;
     biography:          string;
-    executor_notes?:    string;
+    executor_notes:     string;
     timezones:          string[];
     requirements:       string[];
     members:            CharacterCorp[];
     active:             boolean;
     trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
 }
 
 export interface CorporationInfo {
@@ -342,65 +252,11 @@ export interface CorporationInfo {
     type:               CorporationType;
     introduction:       string;
     biography:          string;
-    executor_notes?:    string;
+    executor_notes:     string;
     timezones:          string[];
     requirements:       string[];
     active:             boolean;
     trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
-    public_summary?:    CorporationPublicSummary | null;
-    application_process?: CorporationApplicationProcess | null;
-}
-
-export interface CorporationMemberDetails {
-    character_id:           number;
-    character_name:         string;
-    user_name?:             string | null;
-    primary_character_id?:  number | null;
-    primary_character_name?: string | null;
-    registered:             boolean;
-    exempt:                 boolean;
-    esi_suspended:          boolean;
-    token_count:            number;
-    token_level:            string;
-    fleets_90d:             number;
-    kills_90d:              number;
-    voice_hours_90d:        number;
-    prime_time?:            string | null;
-    observed_prime_times?:  string[];
-    community_status?:      string | null;
-    characters_hidden?:     boolean;
-    hidden_character_count?: number;
-}
-
-export interface CorporationMembersTop {
-    metric:     string;
-    members:    CorporationMemberDetails[];
-}
-
-export interface CorporationAdmin {
-    corporation_id:     number;
-    executor_notes?:    string | null;
-    discord_bot_present: boolean;
-    discord_guild_name?: string | null;
-    discord_invite_url?: string | null;
-    bot_invite_url?:    string | null;
-    humans?:            number | null;
-    active_90d?:        number | null;
-    active_90d_pct?:    number | null;
-    growth_90d_pct?:    number | null;
-    stewards:           { character_id: number; character_name: string }[];
-    leadership_missing_prime_time: CorporationLeadershipMember[];
 }
 
 export interface CharacterCorp {
