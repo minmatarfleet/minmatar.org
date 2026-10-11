@@ -95,3 +95,31 @@ def update_corporation(corporation_id):
         refresh_corporation_blueprints(corporation_id)
     if directors[tuple(SCOPE_CORPORATION_WALLET)]:
         refresh_corporation_wallet_journal(corporation_id)
+
+
+@app.task
+def refresh_corporation_profile_stats(corporation_id=None):
+    """Recompute cached public profile stats for one or all allied corps."""
+    # Imported here to keep task module import light for Celery autodiscovery.
+    from eveonline.helpers.corporations.stats_cache import (  # pylint: disable=import-outside-toplevel
+        refresh_corporation_stats,
+    )
+
+    corporations = EveCorporation.objects.all()
+    if corporation_id is not None:
+        corporations = corporations.filter(corporation_id=corporation_id)
+    else:
+        corporations = corporations.filter(
+            alliance__name__in=ALLIED_ALLIANCE_NAMES
+        )
+    refreshed = 0
+    for corporation in corporations:
+        try:
+            refresh_corporation_stats(corporation)
+            refreshed += 1
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Failed to refresh profile stats for corporation %s",
+                corporation.corporation_id,
+            )
+    return refreshed

@@ -8,11 +8,10 @@ from django.conf import settings
 from esi.models import Token
 
 from alliance.models import AllianceHealthSnapshot
+from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.helpers.corporations.timezones import (
     observed_prime_buckets_for_users,
     prime_time_codes_for_users,
-    timezone_distribution,
-    weekday_distribution,
 )
 from eveonline.models import (
     EveCharacter,
@@ -79,22 +78,21 @@ def attach_timezones(rows: list[dict], user_ids: list[int] | None = None):
 
 
 def public_profile(corporation: EveCorporation) -> dict:
+    """Profile payload. Heavy 90-day stats come from the Celery-filled cache
+    and are absent (empty/None) until the first refresh finishes."""
     leaders = leadership_rows(corporation)
-    member_users = registered_user_ids(corporation)
-    timezone_users = list({*_row_user_ids(leaders), *member_users})
-    declared, observed = attach_timezones(leaders, timezone_users)
+    attach_timezones(leaders)
+    stats = corporation_stats(corporation.corporation_id) or {}
     return {
         "ticker": corporation.ticker or None,
         "member_count": corporation.member_count,
-        "human_count": len(member_users),
+        "human_count": len(registered_user_ids(corporation)),
         "ceo": _ceo(corporation),
         "leadership": [_public_leader(row) for row in leaders],
-        "timezone_distribution": timezone_distribution(
-            member_users, declared, observed
-        ),
-        "weekday_distribution": weekday_distribution(
-            member_users, corporation.corporation_id
-        ),
+        "timezone_distribution": stats.get("timezone_distribution", []),
+        "weekday_distribution": stats.get("weekday_distribution", []),
+        "public_summary": stats.get("public_summary"),
+        "application_process": stats.get("application_process"),
         "highlights": corporation.highlights or None,
         "activity_summary": corporation.activity_summary or None,
         "media": [_media_item(item) for item in corporation.media.all()],
