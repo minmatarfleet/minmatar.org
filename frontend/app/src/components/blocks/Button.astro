@@ -40,6 +40,12 @@ const x_on = attributes['x-on:click.prevent'] ?? undefined
 delete attributes['x-data']
 delete attributes['x-on:click.prevent']
 
+// `disabled` means "unavailable" only when nothing on the client will flip it.
+// Callers that pass `x-bind:disabled` use the attribute for the SSR initial
+// state and let Alpine take over, so they must not get the permanent styling.
+const alpine_managed_disabled = 'x-bind:disabled' in attributes || ':disabled' in attributes
+const static_disabled = disabled && !alpine_managed_disabled
+
 const button_background_color = `var(--${color})`;
 const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--highlight)');
 
@@ -66,13 +72,13 @@ const nested_x_data = external ? `{
 
 <Element
     href={ href }
-    class:list={['[ button ]', { narrow: narrow, 'is-disabled': disabled }, Astro.props.class]}
+    class:list={['[ button ]', { narrow: narrow, 'is-disabled': static_disabled }, Astro.props.class]}
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}`}
     disabled={Element === 'button' && (disabled || !off_disable) ? 'disabled' : undefined}
-    aria-disabled={disabled ? 'true' : undefined}
-    x-init={Element === 'button' && !off_disable && !disabled ? '$el.removeAttribute("disabled")' : undefined}
+    aria-disabled={static_disabled ? 'true' : undefined}
+    x-init={Element === 'button' && !off_disable && !static_disabled ? '$el.removeAttribute("disabled")' : undefined}
 
     target={external || new_tab ? '_blank' : undefined }
     rel={external ? 'nofollow noopener noreferrer' : (new_tab ? 'noopener noreferrer' : undefined) }
