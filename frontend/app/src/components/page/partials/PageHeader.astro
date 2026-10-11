@@ -18,7 +18,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
-<div class:list={[ 'post-header-wrapper ] relative lg:top-0', { 'xl:sticky!': sticky } ]}>
+<div
+    class:list={[ 'post-header-wrapper ] relative lg:top-0', { 'xl:sticky!': sticky } ]}
+    x-init={sticky ? '$el.style.minHeight = `${$el.offsetHeight}px`' : undefined}
+>
     <Flexblock class="[ post-header ]" gap='0'>
         <div class="[ relative z-10 ]">
             <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
@@ -27,15 +30,17 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         </div>
 
         <div class="[ subheader-bar ]">
-            <Wrapper class="[ w-full ]" centered={true} max_width={max_width} neocom={neocom} padding_block='0'>
-                <XFadeScroll flex>
-                    <div class="[ scroll-content ][ w-full ]">
-                        <FlexInline class="[ w-max xl:w-full items-start! ]">
-                            <div id="mobile-actions" class="[ xl:hidden! ]" />
-                            <slot name="subheader" />
-                        </FlexInline>
-                    </div>
-                </XFadeScroll>
+            <Wrapper max_width='var(--max-content-width)' centered={true} neocom={neocom} padding_block='0'>
+                <Wrapper max_width='calc(100% + calc(2 * var(--space-xs)))' padding_block='0' padding_inline='0'>
+                    <XFadeScroll flex>
+                        <div class="[ scroll-content ][ w-full p-(--space-xs) ]">
+                            <FlexInline class="[ w-max xl:w-full items-start! ]">
+                                <div id="mobile-actions" class="[ xl:hidden! ]" />
+                                <slot name="subheader" />
+                            </FlexInline>
+                        </div>
+                    </XFadeScroll>
+                </Wrapper>
             </Wrapper>
         </div>
     </Flexblock>
@@ -63,6 +68,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
     .post-header-wrapper {
         z-index: var(--header-z-index);
+        pointer-events: none;
+    }
+
+    .post-header {
+        pointer-events: all;
     }
     
     @supports (container-type: scroll-state) {
@@ -100,24 +110,35 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             padding-top: 0 !important;
             padding-bottom: 0 !important;
         }
+
+        .scroll-content {
+            padding-left: 0;
+            padding-right: 0;
+        }
     }
 </style>
 
 <style lang="scss">
-
     .subheader-bar {
         width: 100%;
+        margin-top: calc(-1 * var(--space-xs)) !important;
+
+        > * > * {
+            margin: 0px calc(-1 * var(--space-xs));
+        }
 
         @media screen and (max-width: 1279px) {
             position: fixed;
             bottom: 0;
             background-color: var(--dark-transparency-background);
             backdrop-filter: blur(var(--transparency-backdrop-blur));
-            padding-top: var(--space-xs);
-            padding-bottom: var(--space-xs);
 
             :global(.subheader-content) {
                 width: max-content;
+            }
+
+            > * > * {
+                margin: 0;
             }
         }
 

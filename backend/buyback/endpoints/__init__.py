@@ -12,12 +12,14 @@ from buyback.endpoints.get_settings import router as get_settings_router
 from buyback.endpoints.get_stock import router as get_stock_router
 from buyback.endpoints.get_stock_stats import router as get_stock_stats_router
 from buyback.endpoints.post_appraise import router as post_appraise_router
+from buyback.endpoints.purchase import router as purchase_router
 
 router = Router(tags=["Buyback"])
 router.add_router("", get_settings_router)
 router.add_router("", post_appraise_router)
 router.add_router("", get_stock_router)
 router.add_router("stock", get_stock_stats_router)
+router.add_router("stock", purchase_router)
 router.add_router("", get_ledger_router)
 router.add_router("", get_contracts_router)
 router.add_router("contracts", get_contracts_history_router)

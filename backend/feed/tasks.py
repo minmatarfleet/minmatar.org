@@ -41,7 +41,9 @@ def detect_feed_clusters() -> int:
     return count
 
 
-@app.task(queue="celery")
+@app.task(
+    base=QueueOnce, once={"graceful": True, "timeout": 300}, queue="celery"
+)
 def run_feed_rollups(*, since_hours: int = 48) -> int:
     now = timezone.now()
     since = now - timedelta(hours=since_hours)

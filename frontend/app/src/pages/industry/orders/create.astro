@@ -192,15 +192,14 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
 const page_title = t('industry.orders.create.page_title')
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
-    { label: page_title },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.orders.page_title'), accumulated_path: '/industry/orders/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -220,10 +219,10 @@ const breadcrumb_items = [
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
             <PageActions>

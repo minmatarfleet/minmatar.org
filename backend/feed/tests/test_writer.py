@@ -119,6 +119,101 @@ class WriterTestCase(TestCase):
         self.assertEqual(event.payload.get("previous_tier"), "medium")
         self.assertIsNotNone(event.payload.get("upgraded_at"))
 
+    def test_write_coalesces_duplicate_fleet_active_events_with_killmail_links(
+        self,
+    ):
+        now = timezone.now()
+        related = "fleet_engagement:30002542:500002:2026-06-19T21:00"
+        keep = FeedEvent.objects.create(
+            kind=FeedEvent.Kind.FLEET_ACTIVE,
+            rollup_code="fleet_active",
+            cluster_key="fleet_active:30002542:500002:2026-06-19T21:00",
+            occurred_at=now,
+            title="Medium Minmatar gang active",
+            subheader="",
+            preview="",
+            body="",
+            accent=FeedEvent.Accent.MILITIA,
+            payload={
+                "system_id": 30002542,
+                "faction": "minmatar",
+                "related_cluster_key": related,
+                "engagement_tier": "medium",
+                "kills": 14,
+                "pilots": 12,
+            },
+            rollup_version=1,
+        )
+        dup = FeedEvent.objects.create(
+            kind=FeedEvent.Kind.FLEET_ACTIVE,
+            rollup_code="fleet_active",
+            cluster_key="fleet_active:30002542:500002:2026-06-19T21:05",
+            occurred_at=now,
+            title="Medium Minmatar gang active",
+            subheader="",
+            preview="",
+            body="",
+            accent=FeedEvent.Accent.MILITIA,
+            payload={
+                "system_id": 30002542,
+                "faction": "minmatar",
+                "related_cluster_key": related,
+                "engagement_tier": "medium",
+                "kills": 14,
+                "pilots": 12,
+            },
+            rollup_version=1,
+        )
+        km = FeedKillmail.objects.create(
+            killmail_id=137371130,
+            hash="def",
+            killmail_time=now,
+            solar_system_id=30002542,
+            raw_killmail={},
+        )
+        FeedEventKillmailLink.objects.create(feed_event=dup, feed_killmail=km)
+
+        write_rollup_results(
+            [
+                RollupResult(
+                    kind=FeedEvent.Kind.FLEET_ACTIVE,
+                    occurred_at=now,
+                    title="Major Minmatar fleet active",
+                    subheader="",
+                    preview="",
+                    body="",
+                    accent=FeedEvent.Accent.MILITIA,
+                    payload={
+                        "system_id": 30002542,
+                        "faction": "minmatar",
+                        "related_cluster_key": related,
+                        "engagement_tier": "major",
+                        "kills": 60,
+                        "pilots": 45,
+                    },
+                    rollup_code="fleet_active",
+                    rollup_version=1,
+                    cluster_key=keep.cluster_key,
+                    killmail_ids=[km.killmail_id],
+                )
+            ]
+        )
+
+        events = FeedEvent.objects.filter(rollup_code="fleet_active")
+        self.assertEqual(events.count(), 1)
+        survivor = events.get()
+        self.assertEqual(survivor.pk, keep.pk)
+        self.assertFalse(FeedEvent.objects.filter(pk=dup.pk).exists())
+        self.assertEqual(
+            FeedEventKillmailLink.objects.filter(feed_killmail=km).count(),
+            1,
+        )
+        self.assertTrue(
+            FeedEventKillmailLink.objects.filter(
+                feed_event=survivor, feed_killmail=km
+            ).exists()
+        )
+
     def test_write_keeps_distinct_fleet_active_events_apart(self):
         now = timezone.now()
         # A different system/faction engagement must not be coalesced.

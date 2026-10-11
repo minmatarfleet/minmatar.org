@@ -248,6 +248,13 @@ CELERYBEAT_TRIBES = [
             "schedule": crontab(minute=0, hour="*/2"),
         },
     ),
+    (
+        "[Tribes] Reconcile external Discord guild seats",
+        {
+            "task": "tribes.tasks.reconcile_tribe_external_guilds",
+            "schedule": crontab(minute="5,20,35,50", hour="*"),
+        },
+    ),
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
@@ -279,6 +286,13 @@ CELERYBEAT_OTHER = [
         {
             "task": "fleets.tasks.poll_active_fleet_implants",
             "schedule": schedule(timedelta(minutes=10)),
+        },
+    ),
+    (
+        "[Misc] Poll NPSI calendar feeds",
+        {
+            "task": "fleets.tasks.poll_npsi_events",
+            "schedule": schedule(timedelta(hours=4)),
         },
     ),
     (
@@ -427,6 +441,16 @@ CELERYBEAT_FEED = [
     ),
 ]
 
+CELERYBEAT_SURVEYS = [
+    (
+        "[Surveys] Snapshot aggregates for open campaigns",
+        {
+            "task": "surveys.tasks.snapshot_survey_aggregates",
+            "schedule": crontab(minute=15, hour="*"),
+        },
+    ),
+]
+
 CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
@@ -436,5 +460,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
     + CELERYBEAT_FEED
+    + CELERYBEAT_SURVEYS
     + CELERYBEAT_OTHER
 )

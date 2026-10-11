@@ -1,0 +1,98 @@
+---
+import type { GivebackCard } from '@dtypes/survey'
+
+interface Props {
+    giveback: GivebackCard
+    [propName: string]: any
+}
+
+const { giveback } = Astro.props
+
+const isk_b = (n: number) =>
+    n >= 1_000_000_000
+        ? `${(n / 1_000_000_000).toFixed(1)}B`
+        : n >= 1_000_000
+          ? `${(n / 1_000_000).toFixed(0)}M`
+          : `${n}`
+
+const personal = [
+    { label: 'Fleets flown this quarter', value: `${giveback.personal.fleets_flown}` },
+    { label: 'Doctrines you can fly', value: `${giveback.personal.doctrines_ready}` },
+    { label: 'Guides completed', value: `${giveback.personal.guides_completed}` },
+    {
+        label: 'Ships reimbursed (SRP)',
+        value: `${giveback.personal.srp_count} · ${isk_b(giveback.personal.srp_isk)} ISK`,
+    },
+    { label: 'Tribe', value: giveback.personal.tribe },
+]
+const community = [
+    {
+        label: 'Active pilots',
+        value:
+            giveback.community.active_pilots != null
+                ? `${giveback.community.active_pilots}`
+                : '—',
+    },
+]
+---
+
+<div class="[ giveback ]">
+    <article class="[ gb-card ]">
+        <header><h3>Your quarter</h3></header>
+        <dl>
+            {personal.map((row) => (
+                <div class="[ gb-row ]">
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                </div>
+            ))}
+        </dl>
+    </article>
+    <article class="[ gb-card ]">
+        <header><h3>The alliance</h3></header>
+        <dl>
+            {community.map((row) => (
+                <div class="[ gb-row ]">
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                </div>
+            ))}
+            <p class="[ gb-note ]">
+                Community figures fill in as snapshots and aggregates compute.
+            </p>
+        </dl>
+    </article>
+</div>
+
+<style lang="scss">
+    .giveback {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-m);
+    }
+    @media (max-width: 40rem) {
+        .giveback { grid-template-columns: 1fr; }
+    }
+    .gb-card {
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+        border-radius: 6px;
+        padding: var(--space-m);
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.02));
+    }
+    .gb-card header h3 {
+        margin: 0 0 var(--space-s);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .gb-row {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-2xs) 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .gb-row:first-of-type { border-top: 0; }
+    .gb-row dt { color: var(--foreground); opacity: 0.8; }
+    .gb-row dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .gb-note { margin: var(--space-s) 0 0; font-size: 0.85em; opacity: 0.6; }
+</style>

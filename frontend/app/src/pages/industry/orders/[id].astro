@@ -63,17 +63,20 @@ const BREAKDOWN_PARTIAL = translatePath(
 )
 
 import Viewport from '@layouts/Viewport.astro'
-import PageLanding from '@components/page/PageLanding.astro'
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
 import OrderDetailHeaderSkeleton from '@components/blocks/industry/OrderDetailHeaderSkeleton.astro'
 import OrderDetailSectionSkeleton from '@components/blocks/industry/OrderDetailSectionSkeleton.astro'
-
-const breadcrumb_items = [
-    { label: t('market.page_title'), href: translatePath('/market/') },
-    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
-    { label: order_code },
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: translatePath('/market/') },
+    { page_title: t('industry.orders.page_title'), accumulated_path: translatePath('/industry/orders/') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 ---
 
@@ -88,7 +91,7 @@ const breadcrumb_items = [
         tippy: true,
     }}
 >
-    <PageLanding
+    <PageWide
         wide={true}
         cover={{
             image: '/images/industry-cover.jpg',
@@ -97,15 +100,21 @@ const breadcrumb_items = [
             scrollable: true,
             overlay: true,
         }}
+        breadcrumbs={breadcrumbs}
     >
-        <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
-            <Flexblock gap="var(--space-xl)" class="[ w-full ]">
-                <Flexblock gap="var(--space-3xs)">
-                    <Breadcrumb items={breadcrumb_items} />
-                    <PageTitle is_landing={true}>{page_title}</PageTitle>
-                </Flexblock>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+        </FlexInline>
+
+        
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
                 <p class="[ excerpt ]">{page_description}</p>
-            </Flexblock>
+            </TextBox>
 
             <Flexblock
                 gap="var(--space-l)"
@@ -174,7 +183,7 @@ const breadcrumb_items = [
                 </div>
             </Flexblock>
         </Flexblock>
-    </PageLanding>
+    </PageWide>
 </Viewport>
 
 <script>
@@ -294,13 +303,6 @@ const breadcrumb_items = [
 </script>
 
 <style lang="scss">
-    .excerpt,
-    :global(.excerpt p) {
-        font-size: var(--step-1);
-        line-height: 1.6;
-        max-width: 48rem;
-    }
-
     .order-detail-meta {
         flex-wrap: wrap;
         gap: var(--space-s);

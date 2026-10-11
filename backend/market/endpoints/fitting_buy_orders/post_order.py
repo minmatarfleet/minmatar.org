@@ -63,6 +63,7 @@ def post_fitting_buy_order(request, payload: CreateFittingBuyOrderRequest):
             owner=request.user,
             notes=payload.notes,
             include_hull=payload.include_hull,
+            stock_paste=None,
         )
         for index, row in enumerate(payload.lines):
             fitting = fittings[row.fitting_id]

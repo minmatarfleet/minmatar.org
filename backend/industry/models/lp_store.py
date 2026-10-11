@@ -21,6 +21,14 @@ class IndustryLoyaltyPoint(models.Model):
         help_text="Default ISK per LP used when planning navy BPC costs.",
     )
     is_active = models.BooleanField(default=True)
+    allow_buy = models.BooleanField(
+        default=True,
+        help_text="Allow buy orders (Conversion Team purchasing this LP).",
+    )
+    allow_sell = models.BooleanField(
+        default=True,
+        help_text="Allow sell orders (pilots selling this LP to the alliance).",
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -514,7 +522,9 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="loyalty_point_market_orders_created",
     )
     claimed_by = models.ForeignKey(
@@ -565,7 +575,9 @@ class IndustryLoyaltyPointMarketOrderClaim(models.Model):
     destination_corporation_name = models.CharField(max_length=128, blank=True)
     claimed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
         related_name="loyalty_point_market_order_claims",
     )
     created_at = models.DateTimeField(auto_now_add=True)

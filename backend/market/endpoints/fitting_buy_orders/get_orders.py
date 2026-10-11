@@ -7,7 +7,10 @@ from market.helpers.fitting_buy_serialize import (
     FittingBuyOrderListItemSchema,
     serialize_order_list_item,
 )
-from market.models.fitting_buy_order import FittingBuyOrder
+from market.models.fitting_buy_order import (
+    FittingBuyOrder,
+    FittingBuyOrderStatus,
+)
 
 PATH = "/fitting-buy-orders"
 METHOD = "get"
@@ -19,7 +22,10 @@ ROUTE_SPEC = {
 
 
 def get_fitting_buy_orders(
-    request, status: str | None = None, mine: bool = False
+    request,
+    status: str | None = None,
+    mine: bool = False,
+    include_completed: bool = False,
 ):
     qs = (
         FittingBuyOrder.objects.select_related("owner")
@@ -28,6 +34,10 @@ def get_fitting_buy_orders(
     )
     if status:
         qs = qs.filter(status=status)
+    elif not include_completed:
+        qs = qs.exclude(
+            status__in=FittingBuyOrderStatus.hidden_from_default_list()
+        )
     if mine:
         qs = qs.filter(owner=request.user)
     return [

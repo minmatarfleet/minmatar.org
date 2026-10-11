@@ -60,7 +60,12 @@ MARKET_SCOPES = [
 
 EXECUTOR_SCOPES = [
     "esi-mail.send_mail.v1",
-    "esi-access.read_lists.v1",
+]
+
+# Lets a fleet commander save fleet refits / custom fits in-game so the
+# MOTD can link them. Added on top of Basic.
+FLEET_COMMANDER_SCOPES = [
+    "esi-fittings.write_fittings.v1",
 ]
 
 
@@ -71,6 +76,7 @@ class TokenType(Enum):
     INDUSTRY = "Industry"
     MARKET = "Market"
     EXECUTOR = "Executor"
+    FLEET_COMMANDER = "FleetCommander"
 
 
 def scopes_for(token_type: TokenType):
@@ -82,6 +88,8 @@ def scopes_for(token_type: TokenType):
             return BASIC_SCOPES + DIRECTOR_SCOPES
         case TokenType.INDUSTRY:
             return BASIC_SCOPES + INDUSTRY_SCOPES
+        case TokenType.FLEET_COMMANDER:
+            return BASIC_SCOPES + FLEET_COMMANDER_SCOPES
         case TokenType.PUBLIC:
             return ["publicData"]
         case TokenType.MARKET:
@@ -134,6 +142,8 @@ def scope_group(token: Token) -> str | None:
         return TokenType.DIRECTOR.value
     if "esi-characters.read_blueprints.v1" in token_scopes:
         return TokenType.INDUSTRY.value
+    if "esi-fittings.write_fittings.v1" in token_scopes:
+        return TokenType.FLEET_COMMANDER.value
     if "esi-fleets.read_fleet.v1" in token_scopes:
         return TokenType.BASIC.value
 

@@ -52,8 +52,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 padding_inline='var(--space-3xs)'
                 max_width='100%'
                 class:list={[
+                    'w-full',
                     { 'min-h-full': full_screen },
                 ]}
+                centered={true}
             >
                 <slot />
             </Wrapper>
@@ -63,13 +65,15 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 padding_inline='var(--space-m)'
                 max_width='100%'
                 class:list={[
+                    'w-full',
                     { 'min-h-full': full_screen },
                 ]}
+                centered={true}
             >
                 <Flexblock
                     gap='var(--space-l)'
                     class:list={[
-                        { 'min-h-full': full_screen },
+                        { 'h-full': full_screen },
                         { 'justify-between!': full_screen },
                     ]}
                 >

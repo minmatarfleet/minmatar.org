@@ -1,0 +1,212 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import { ALL_REPORTS_PATH, get_adjacent_issues, issue_label } from '@/data/amamake-market'
+
+interface Props {
+    issue: AmamakeMarketIssue
+}
+
+const { issue } = Astro.props
+const { newer, older } = get_adjacent_issues(issue.slug)
+const series_solo = !older && !newer
+---
+
+<nav class:list={['mk-more', series_solo && 'mk-more--solo']} aria-label="More warzone reports">
+    {older && (
+        <a class="[ mk-more__link mk-more__link--prev ]" href={translatePath(older.permalink_path)}>
+            <span class="[ mk-more__dir ]">← Previous report</span>
+            <span class="[ mk-more__title ]">{issue_label(older)}</span>
+        </a>
+    )}
+    <a class="[ mk-more__link mk-more__link--all ]" href={translatePath(ALL_REPORTS_PATH)}>
+        <span class="[ mk-more__dir ]">Series</span>
+        <span class="[ mk-more__title ]">Browse all reports</span>
+    </a>
+    {newer && (
+        <a class="[ mk-more__link mk-more__link--next ]" href={translatePath(newer.permalink_path)}>
+            <span class="[ mk-more__dir ]">Next report →</span>
+            <span class="[ mk-more__title ]">{issue_label(newer)}</span>
+        </a>
+    )}
+</nav>
+
+<footer class="[ mk-footer ]">
+    <dl class="[ mk-footer__meta ]">
+        <div>
+            <dt>Report</dt>
+            <dd>Amamake Economic Report</dd>
+        </div>
+        <div>
+            <dt>Period</dt>
+            <dd>{issue.period_utc}</dd>
+        </div>
+        <div>
+            <dt>Published by</dt>
+            <dd>Minmatar Fleet</dd>
+        </div>
+        <div>
+            <dt>Sources</dt>
+            <dd>Minmatar Fleet order-book snapshots, zKillboard, EVE ESI</dd>
+        </div>
+    </dl>
+    <dl class="[ mk-method ]">
+        {issue.methodology.map((entry) => (
+            <div class="[ mk-method__row ]">
+                <dt>{entry.label}</dt>
+                <dd>{entry.text}</dd>
+            </div>
+        ))}
+    </dl>
+</footer>
+
+<style lang="scss">
+    .mk-footer {
+        width: 100%;
+        max-width: none;
+        margin-top: var(--space-m);
+        padding-top: var(--space-m);
+        border-top: solid 1px var(--mk-rule);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .mk-footer__meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(var(--space-3xl), 1fr));
+        gap: var(--space-s) var(--space-m);
+        margin: 0;
+        width: 100%;
+
+        dt {
+            font-size: var(--step--2);
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-0);
+            font-weight: 600;
+            color: var(--highlight);
+            line-height: 1.3;
+        }
+    }
+
+    .mk-more {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        padding-top: var(--space-s);
+        border-top: solid 1px var(--mk-rule);
+    }
+
+    .mk-more--solo {
+        justify-content: center;
+    }
+
+    .mk-more__link {
+        flex: 1 1 12rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--border-color);
+        background-color: var(--light-transparency-background-mobile);
+        text-decoration: none !important;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--highlight);
+            background-color: var(--light-transparency-background);
+        }
+    }
+
+    .mk-more__link--next {
+        text-align: right;
+        align-items: flex-end;
+    }
+
+    .mk-more__link--all {
+        text-align: center;
+        align-items: center;
+    }
+
+    .mk-more--solo .mk-more__link--all {
+        flex: 0 1 auto;
+        padding-block: var(--space-xs);
+    }
+
+    .mk-more__dir {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--faded);
+    }
+
+    .mk-more__link--all .mk-more__dir {
+        color: var(--fleet-yellow);
+    }
+
+    .mk-more__title {
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    @media (max-width: 45rem) {
+        .mk-more {
+            flex-direction: column;
+        }
+
+        .mk-more__link,
+        .mk-more__link--next,
+        .mk-more__link--all {
+            text-align: left;
+            align-items: flex-start;
+        }
+    }
+
+    .mk-method {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mk-method__row {
+        display: grid;
+        grid-template-columns: 11rem minmax(0, 1fr);
+        gap: var(--space-m);
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--mk-rule);
+
+        &:first-child {
+            border-top: none;
+        }
+
+        dt {
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: var(--step--1);
+            color: var(--fleet-yellow);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 640px) {
+            grid-template-columns: 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+</style>

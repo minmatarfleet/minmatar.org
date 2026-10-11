@@ -275,4 +275,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         scope=FeatureScope.STAFF,
         description="Propose doctrine and fitting changes.",
     ),
+    "surveys.manage": FeatureDefinition(
+        code="surveys.manage",
+        label="Manage community surveys",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Create, open, and close community survey campaigns and view "
+            "corporation fill-out progress. (Response content is superuser-only.)"
+        ),
+        staff_permission="surveys.change_surveycampaign",
+        legacy_permission="surveys.change_surveycampaign",
+        deny_community_statuses=(),
+    ),
 }

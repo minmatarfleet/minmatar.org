@@ -178,7 +178,6 @@ def collect_reference_data(
 
     bundle.fleet_audiences = list(
         EveFleetAudience.objects.using(source_db)
-        .select_related("staging_location")
         .prefetch_related("groups")
         .order_by("pk")
     )

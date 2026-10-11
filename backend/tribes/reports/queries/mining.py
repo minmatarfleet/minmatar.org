@@ -52,6 +52,7 @@ def run_mining_report(
     vol_by_user: dict[int, float] = defaultdict(float)
     isk_by_user: dict[int, float] = defaultdict(float)
     chars_by_user: dict[int, set] = defaultdict(set)
+    active_character_ids: set[int] = set()
 
     for entry in entries:
         uid = entry.character.user_id
@@ -64,6 +65,8 @@ def run_mining_report(
         vol_by_user[uid] += volume_m3
         isk_by_user[uid] += qty * price
         chars_by_user[uid].add(entry.character_id)
+        if volume_m3 > 0:
+            active_character_ids.add(entry.character_id)
 
     if scope == ReportScope.ROSTER:
         for uid in roster_user_ids(tribe_group):
@@ -71,15 +74,37 @@ def run_mining_report(
             chars_by_user.setdefault(uid, set())
 
     rows = _build_user_rows(user_ids, chars_by_user, vol_by_user, isk_by_user)
+    total_volume = sum(vol_by_user.values())
+    total_isk = sum(isk_by_user.values())
+    if scope == ReportScope.ROSTER:
+        miner_count = len(roster_user_ids(tribe_group))
+    else:
+        miner_count = len(user_ids)
+    active_character_count = len(active_character_ids)
+    avg_isk_per_m3 = (total_isk / total_volume) if total_volume else 0.0
+    avg_isk_per_character = (
+        (total_isk / active_character_count) if active_character_count else 0.0
+    )
     totals = {
-        "total_volume_m3": sum(vol_by_user.values()),
-        "total_isk_ore_market_estimate": sum(isk_by_user.values()),
+        "total_volume_m3": total_volume,
+        "total_isk_ore_market_estimate": total_isk,
+        "miner_count": miner_count,
+        "active_character_count": active_character_count,
+        "avg_isk_per_m3": round(avg_isk_per_m3, 4),
+        "avg_isk_per_character": round(avg_isk_per_character, 2),
     }
     return rows, totals, COLUMNS
 
 
 def _empty_totals():
-    return {"total_volume_m3": 0.0, "total_ore_market_estimate": 0.0}
+    return {
+        "total_volume_m3": 0.0,
+        "total_isk_ore_market_estimate": 0.0,
+        "miner_count": 0,
+        "active_character_count": 0,
+        "avg_isk_per_m3": 0.0,
+        "avg_isk_per_character": 0.0,
+    }
 
 
 def _build_user_rows(user_ids, chars_by_user, vol_by_user, isk_by_user):

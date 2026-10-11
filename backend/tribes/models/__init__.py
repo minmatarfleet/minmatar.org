@@ -16,6 +16,10 @@ from tribes.models.tribe_group_membership_history import (
     TribeGroupMembershipHistory,
     TribeGroupMembershipCharacterHistory,
 )
+from tribes.models.tribe_external_guild import (
+    TribeExternalGuild,
+    TribeExternalGuildSeat,
+)
 
 __all__ = [
     "Tribe",
@@ -28,4 +32,6 @@ __all__ = [
     "TribeGroupMembershipCharacter",
     "TribeGroupMembershipHistory",
     "TribeGroupMembershipCharacterHistory",
+    "TribeExternalGuild",
+    "TribeExternalGuildSeat",
 ]

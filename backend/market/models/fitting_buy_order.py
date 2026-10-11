@@ -13,8 +13,20 @@ from fittings.models import EveFitting
 class FittingBuyOrderStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     PENDING_FITTING = "pending_fitting", "Pending fitting"
-    PURCHASED = "purchased", "Purchased"
+    COMPLETED = "completed", "Completed"
     ARCHIVED = "archived", "Archived"
+
+    @classmethod
+    def hidden_from_default_list(cls) -> tuple[str, ...]:
+        return (cls.COMPLETED, cls.ARCHIVED)
+
+
+class FittingBuyGuideStep(models.TextChoices):
+    """Derived workflow steps (not stored — computed from order state)."""
+
+    STOCK = "stock", "On-hand stock"
+    PURCHASE = "purchase", "Purchase & landed"
+    CONTRACT = "contract", "Contract prices"
 
 
 class FittingBuyJitaCheckStatus(models.TextChoices):
@@ -22,6 +34,16 @@ class FittingBuyJitaCheckStatus(models.TextChoices):
     RUNNING = "running", "Running"
     COMPLETE = "complete", "Complete"
     FAILED = "failed", "Failed"
+
+
+class FittingBuyContractType(models.TextChoices):
+    """Who the finished hulls are contracted to (drives contract fees)."""
+
+    ALLIANCE = "alliance", "Alliance contract"
+    PUBLIC = "public", "Public contract"
+
+
+DEFAULT_CONTRACT_MARKUP_PCT = 20
 
 
 class FittingBuyOrder(models.Model):
@@ -38,9 +60,14 @@ class FittingBuyOrder(models.Model):
     )
     notes = models.TextField(blank=True, default="")
     stock_paste = models.TextField(
+        null=True,
         blank=True,
-        default="",
-        help_text="Raw inventory / Multibuy paste applied against the BOM.",
+        default=None,
+        help_text=(
+            "Raw inventory / Multibuy paste applied against the BOM. "
+            "Null means the on-hand stock step is not done yet; empty string "
+            "means the owner skipped or cleared stock."
+        ),
     )
     include_hull = models.BooleanField(
         default=False,
@@ -61,6 +88,26 @@ class FittingBuyOrder(models.Model):
         help_text=(
             "Jita depth for short-item variants from the last check: "
             '{ "<type_id>": {"volume", "order_count", "sell_min"} }.'
+        ),
+    )
+    contract_markup_pct = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        default=DEFAULT_CONTRACT_MARKUP_PCT,
+        help_text="Markup over landed cost used for recommended contract prices.",
+    )
+    contract_type = models.CharField(
+        max_length=16,
+        choices=FittingBuyContractType.choices,
+        default=FittingBuyContractType.ALLIANCE,
+        help_text="Contract availability; public contracts pay a broker fee.",
+    )
+    hull_industry_sources = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Hull price source when no open industry ask exists: "
+            '{ "<ship_type_id>": <industry_order_id> } or 0 to use Jita.'
         ),
     )
     created_at = models.DateTimeField(default=timezone.now, db_index=True)

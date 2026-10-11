@@ -3,6 +3,18 @@
 from groups.helpers.feature_access import can_use_feature
 from tribes.models import TribeGroup, TribeGroupMembership
 
+# Matches the frontend alliance gate (eveonline.add_evecharactertag).
+ALLIANCE_MEMBER_PERM = "eveonline.add_evecharactertag"
+
+
+def user_is_alliance_member(user) -> bool:
+    """Return True if the user is an alliance member (or superuser)."""
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    if user.is_superuser:
+        return True
+    return user.has_perm(ALLIANCE_MEMBER_PERM)
+
 
 def user_is_tribe_chief(user, tribe) -> bool:
     """Return True if user is the tribe chief or has superuser/perm override."""
@@ -30,6 +42,22 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     if tribe_group.chief_id and tribe_group.chief_id == user.pk:
         return True
     return False
+
+
+def user_can_view_group_roster(user, tribe_group: TribeGroup) -> bool:
+    """
+    Return True if the user may see roster names and portraits.
+
+    A hidden roster is limited to active members of that group and people
+    who can manage it. Otherwise the roster stays alliance-visible.
+    """
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    if tribe_group.roster_hidden:
+        if user_can_manage_group(user, tribe_group):
+            return True
+        return user_in_tribe_group(user, tribe_group)
+    return user_is_alliance_member(user)
 
 
 def user_in_tribe_group(user, tribe_group: TribeGroup) -> bool:

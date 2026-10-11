@@ -68,7 +68,7 @@ Task Progress:
 - [ ] Read each thread; decide responded vs open
 - [ ] Route each open prospect to one primary corp (from pre-scout bios)
 - [ ] Draft outreach using voice rules below (+ any entries in examples.md)
-- [ ] Present two tables
+- [ ] Present the four-part output (overview, already replied, need to reply, copy-pastable replies)
 ```
 
 ### What improves over time
@@ -136,10 +136,10 @@ OpenAPI docs: https://api.minmatar.org/api/docs
 Fetch posts from **`u/MinmatarFleet`** for the **past 30 days** (default
 `--pre-scout-days 30`). This is the alliance recruitment Reddit account; it posts
 corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy,
-Banshee, FOSFO, Extraction, etc.). **Only route to corps present in the API**
-and with a recent ad — corps leave the alliance (e.g. Straylight is gone).
-FOSFO may have a live ad while missing from the API; do not scout-route it until
-listed (a human can still link the ad).
+Banshee, Solaris, FOSFO, Extraction, etc.). **Only route to corps on the
+recruiter layout below.** Corps leave the alliance (e.g. Straylight is gone).
+FOSFO is on that layout. Name it and link the live `u/MinmatarFleet` ad even
+when the corporations API has not listed it yet.
 
 ```
 https://www.reddit.com/user/MinmatarFleet/submitted/
@@ -178,20 +178,38 @@ python scripts/fetch_proof_media.py --days 45 --json
 Config: `reddit.proof_accounts` (default `["BearThatCares"]`). Override with
 `--account OtherUser` (repeatable).
 
-**You** pick which links to use. Prefer recent capital AARs, dread brawls, and
-high-signal videos over old or off-topic posts. Keep a short mental list of 2–4
-fresh proof URLs for the draft pass.
+**You** pick which **extra** AAR to add. Prefer the newest billion-ISK-class
+fight over old or off-topic posts. After each scout, replace the Current kit
+table below when a bigger or newer AAR lands — do not keep a graveyard of six
+old reports.
 
-**Evergreen proof closes (always link these by prospect type):**
+**Proof closes (required stack):**
 
-| Prospect | Video | URL |
-|----------|-------|-----|
-| **Mining / industry** (Extraction, MFA rock fleets, highsec bulwark miners, casual no-PvP industry) | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` |
-| **PvP / FW** (Rattini, Soltech, TDT, Banshee, FOSFO, Academy combat, WH→FW redirects, casual-null → FW) | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` |
+| Layer | Resource | URL | When |
+|-------|----------|-----|------|
+| **Always on r/evejobs and forums** | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` | **Every r/evejobs and forum send.** Mining, MFA, no-PvP, WH redirect, named corp, saturated thread. Own block. **Not on r/eve.** |
+| **Also mining / industry** | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` | Extraction, MFA rock fleets, highsec bulwark miners, corp-merge industry, on r/evejobs and forums. **In addition to** Bring Fun Shit, not instead of it. Own block after BFS. On r/eve, this is the one optional link only when the ask is mining. |
+| **Also big fight** | Newest AAR in the Current kit | see table | PvP/FW, caps, Rattini, WH→FW, “where’s the action,” on r/evejobs and forums. One AAR max unless they asked for capitals — then you may add the cap-feed AAR too. Never a substitute for Bring Fun Shit there. On r/eve, this AAR can be the single optional link. |
 
-Fresh AARs from pre-scout 1c can **add** a second proof beat (especially capital
-AARs for Rattini). They do **not** replace Rock Hoppin' / Bring Fun Shit for the
-matching prospect type. One video minimum; do not dump every AAR into every message.
+Do not dump every AAR into every message. On r/evejobs and forums, do not skip
+Bring Fun Shit because an AAR or Rock Hoppin' is already in the reply. On r/eve,
+skip that stack. One optional link, or none.
+
+#### Current kit (update from pre-scout 1c)
+
+Replace rows when a new mega-fight AAR posts. URLs also live in `config.json`
+(`proof_videos`, `proof_aars`, `proof_pages`).
+
+| Kind | Title | URL | Use |
+|------|-------|-----|-----|
+| Video | Bring Fun Shit | `https://youtu.be/7-eGTtq9vWo` | Every r/evejobs and forum send |
+| Video | Rock Hoppin' | `https://youtu.be/XCApG7Pt6m4` | Mining/industry extra |
+| AAR | 625B down in Amamake (27 Sep YC128) | `https://www.reddit.com/r/Eve/comments/1wr8ohf/aar_625b_down_in_amamake/` | Default extra AAR (newest big fight) |
+| AAR | 700B down in Ahbazon (1 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/` | Caps / Rattini / dread-feed hook |
+| Site | Monthly Warzone Report | `https://my.minmatar.org/warzone/` | Forums onebox / casual-null / action-location threads |
+| Site | Corporation directory | `https://my.minmatar.org/alliance/corporations/` | Dual-route, self-serve bios |
+| Site | Freight contracts history | `https://my.minmatar.org/market/freight/contracts/history/` | Hauler learning PvP (side proof, not MFA routing) |
+| Site | Auga siege (YC128) | `https://my.minmatar.org/alliance/campaigns/auga-yc128/` | Optional older siege page; prefer Kamela AAR + warzone report when both fit |
 
 ### Phase 2: Scout (prospects)
 
@@ -202,8 +220,8 @@ is looking for a corporation — not where a corp is recruiting.
 
 | Source | How |
 |--------|-----|
-| r/evejobs | `/new`, or search however you think will surface LFC posts |
-| r/eve | Same; some pilots post outside evejobs |
+| r/evejobs | `/new`, or search however you think will surface LFC posts. Full recruitment reply. |
+| r/eve | Same; some pilots post outside evejobs. Advice audience. Subtle nudge, not the job-board stack. |
 | EVE Forums | Recruitment Center latest, or search the category |
 
 Search terms and browsing strategy are your call. Use judgment, not a fixed
@@ -226,19 +244,22 @@ join — read the title and body, do not pattern-match keywords.
 - The post is outside the lookback window
 - It is your own alliance recruitment post (e.g. `Recruiting corporations who want help growing!` from `u/MinmatarFleet`)
 
-**Poor corp fit ≠ silent skip.** Still draft outreach (Open prospects, corp fit =
-FW redirect / Extraction / MFA) when:
+**Poor corp fit ≠ silent skip.** Still draft outreach (section 3 and a copy block
+in section 4) when:
 
-- **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning); optional
-  Bring Fun Shit video / WH-operator credibility. Do not force Soltech/Rattini into a
-  jspace-locked thread unless they leave LS open.
+- **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning)
+  unless they are USTZ new or early-intermediate with wormhole use on the side,
+  which is SOEXD. Bring Fun Shit always; optional WH-operator credibility. Add
+  the newest kit AAR when the thread can take a second proof beat. Do not force
+  SLTAR or ARAT into a jspace-locked thread unless they leave lowsec open.
 - **Sov-null mining / industry seekers** — highsec bulwark + Extraction fleet density;
   never “we have sov too.”
 - **Prefer-null casual / leisure PvP** — FW proof BR redirect (see examples).
 
 **True no-reply** is rare: hard nullbloc lifestyle lock (dedicated sov Indy/CRAB +
 PAPs + supers with no opening past null) may stay unanswered — note it, do not invent
-a null pitch.
+a null pitch. Same for **Discord-impossible** seekers (invite banned in their
+country) when every corp on the API requires Discord; do not invent Mumble/TS.
 
 When unsure, open the thread and read it.
 
@@ -247,6 +268,9 @@ When unsure, open the thread and read it.
 Open the thread. Mark **Y** if your alliance already reached out — a recruiter
 reply, a corp pitch mentioning Minmatar Fleet / FL33T / `discord.gg/minmatar`, or
 any clear prior outreach from your side.
+
+A stranger saying “try the Amarr-Minmatar warzone / Amamake” is **not** Responded.
+Need a FL33T recruiter, a named alliance corp, or `discord.gg/minmatar`.
 
 **Already responded → separate table. Do not draft new outreach.**
 
@@ -257,7 +281,12 @@ any clear prior outreach from your side.
 against recent `u/MinmatarFleet` ads. Corps change over time.
 
 This is your judgment call. Read the pilot's post, read the corp bios, pick one
-primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet list.
+primary corp. Poor WH or sov-mining fit still gets a redirect draft in sections
+3 and 4, not a silent skip.
+
+Describe each corp by what it offers. Avoid ranking language (“not X material,”
+“weaker fit for Y”) in notes or outreach — alliance corps reading this should
+recognize complementary seats, not a pecking order.
 
 **Principles** (apply using current `requirements` fields from the API):
 
@@ -268,61 +297,121 @@ primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet li
   corps, not FW alliance corps. MFA lives in **highsec bulwark systems** with
   **lowsec excursions** — pitch that, not FW daily life. Mention a PvP corp only
   as an optional side path, not the primary pitch.
+- **Academy is Omega-only** (API `requirements`). Alpha seekers go MFA / highsec
+  PvE, not L3ARN.
 
 One primary corp per prospect. Optional one-liner for a graduate path or
 bigger/smaller corp in the same alliance — name only, no ad link. Use
 `(same alliance)` when naming a secondary corp (e.g. `Banshee Squadron
 (same alliance)` or `Rattini Tribe (same alliance)`).
 
-**FL33T routing notes** (verify against API each scout; corps rename). Recruiter
-routing map overrides stale API TZ fields when they conflict — still confirm the
-corp exists on the API before naming it in outreach.
+**FL33T routing map** (recruiter layout; overrides API timezone text and older
+“who is the newbro corp” notes when they conflict). Tickers are how recruiters
+talk. Use the API or ad name in outreach.
 
-Describe each corp by what it offers. Avoid ranking language (“not X material,”
-“weaker fit for Y”) in notes or outreach — alliance corps reading this should
-recognize complementary seats, not a pecking order.
+Two axes, then timezone only where the layout has one:
 
-| Corp (API name) | Route when… |
-|-----------------|-------------|
-| **Rattini Tribe** | All-TZ **veterans** and **multi-boxers**, especially pilots who want to fly **capitals**. Cap AARs, Bring Fun Shit, and recent Reddit capital footage are the usual draw. |
-| **Soltech Armada** | **USTZ**, especially **late USTZ**, pilots ready for steady Amamake fleets and IRL-first PvP — the busy late-US seat for people past brand-new who want daily fights without a capital/multi-box focus. |
-| **FOSFO** (ad ticker; user shorthand FASFO) | Experienced **small-gang** crews, **UK especially**. Only name/route when the corp is on the corporations API (or a live `u/MinmatarFleet` ad you are intentionally linking). Use the live API/ad name — do not invent Administrative Atrocities / DHDR if the listing differs. |
-| **Banshee Squadron** | **Small, tight-knit new players in EUTZ**, **UK especially**. Prefer when the ask is EU/UK newbro + small roster rather than the larger Academy feeder. |
-| **The Dark Tribe (TDT)** | **Late-night USTZ**, small / tight-knit home for newer pilots in that window (check API requirements — currently 30m SP / KB / capital-ready; if OP does not match those, route Academy or Soltech for that TZ instead). |
-| **Minmatar Fleet Academy (L3ARN)** | **All-TZ new players** default feeder. API may still list US fleet hours — recruit as all-TZ newbro door; natural next homes include Banshee (EU), TDT or Soltech (US), or Rattini when they grow into caps/multi-box. |
+| Axis | Seats |
+|------|--------|
+| Small gang, veterans | **TDT** (USTZ), **FOSFO** (EUTZ) |
+| New / early intermediate | **SOEXD** (USTZ, wormhole on the side), **BNSQ** (EUTZ) |
+| Institutional | **L3ARN** (new), **SLTAR** (intermediate / veteran) |
+| Capitals / many characters | **ARAT** (veterans) |
+
+| Ticker | API / ad name | Route when… |
+|--------|---------------|-------------|
+| **TDT** | The Dark Tribe | **USTZ** veterans who want **small gang**. Not the new-player door. API SP / killboard lines do not turn this into a newbro corp. |
+| **FOSFO** | FOSFO (live `u/MinmatarFleet` ad) | **EUTZ** veterans who want **small gang**. Route it from this layout and link the live ad even if the corporations API has not listed the corp yet. |
+| **SOEXD** | Solaris Expeditionary Corps | **USTZ** **new or early-intermediate** pilots, with **wormhole use on the side** of faction warfare. Not the seat for veteran hole-only seekers, and not “any USTZ player.” |
+| **BNSQ** | Banshee Squadron | **EUTZ** **new or early-intermediate** pilots. The small EUTZ learning seat. Academy is the institutional new-player door when they want the school, not this crew. |
+| **L3ARN** | Minmatar Fleet Academy | **New players, institutional.** The structured learn-by-undocking corp. All timezones. Omega required. A returning pilot who has barely fought is still this seat. Alphas go MFA, not here. |
+| **SLTAR** | Soltech Armada | **Intermediate or veteran, institutional.** The organized faction-warfare corp for people past brand-new who are not asking for a small-gang specialty or for capitals. Timezone does not decide this seat. Do not use it as the filler when the post is thin. |
+| **ARAT** | Rattini Tribe | **Veterans** flying **multiple characters and/or capitals**. Not the default veteran corp. One character and no capital ask stays SLTAR, TDT, or FOSFO. |
 
 Additional principles:
 
-- **New EU/UK pilots:** Banshee Squadron when they want a small tight EUTZ home; Academy (L3ARN) when they want the all-TZ feeder / “learn by undocking” frame. Rattini and Soltech are usually later seats, not the first EU newbro door.
-- **New USTZ / late USTZ:** Academy (L3ARN) for brand-new; TDT for late-night tight-knit if they match requirements; Soltech for late-USTZ pilots who want the daily Amamake intermediate seat.
-- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + Keldor for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. **Always close mining/industry pitches with Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`).
-- **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. **Always close PvP pitches with Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); add a fresh capital AAR from pre-scout 1c when it strengthens the cap hook. **Straylight is not in the alliance** — never route or link there.
+- Pick the seat from experience first (new / early intermediate / intermediate / veteran), then style (small gang, institutional, capitals), then timezone where the layout has one.
+- **New, no timezone, wants teaching:** L3ARN. Missing timezone is not a SLTAR signal.
+- **EUTZ new or early intermediate:** BNSQ. **USTZ new or early intermediate,** especially with wormhole play beside faction warfare: SOEXD.
+- **EUTZ veteran small gang:** FOSFO. **USTZ veteran small gang:** TDT.
+- **Intermediate or veteran, wants the organized corp, no small-gang specialty, no capital ask:** SLTAR.
+- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; the MFA network on `discord.gg/minmatar` for general industry/PvE. Do not name a Discord person. Dual accounts (mining main + PvP alt) can split Extraction + the FW seat that matches the combat character. On forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume). Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
+- **Ex-FL33T returning:** if they already left Rattini and are not asking for dreads or a pile of characters, route **SLTAR** rather than sending them back to ARAT.
+- **Caps / multi-box veterans:** ARAT. Unused capital + learning lowsec → ARAT (own the dread-feed joke). Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
+- **WH-only veterans, or jspace with no USTZ new/early-intermediate hook:** nameless FW redirect plus Bring Fun Shit and the newest kit AAR. Do not close that redirect with Rock Hoppin'. SOEXD is for USTZ new and early-intermediate pilots who still want a hole on the side.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
-- **WH → FW redirects:** alliance door + **Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); optional fresh AAR from pre-scout 1c as a second beat. Do not close WH→FW with Rock Hoppin'.
+- **Proof closes above are for r/evejobs and the forums.** On r/eve, keep the same seat and the same direction, then write the subtle nudge instead of the ad and video stack.
 
 ### Draft outreach
 
 Read [examples.md](examples.md) for past learnings if any exist. Every recommended
-message is **one short paragraph** — punchy, readable on a phone, no line breaks.
+**pitch** is **one short paragraph** — punchy, readable on a phone, no line breaks
+inside that block. Proof video and forum oneboxes are **separate send blocks**,
+never glued onto the pitch sentence.
 
-#### Shape (always)
+#### Shape (r/evejobs and forums)
 
-**One paragraph. 2–4 sentences max.** Weave their detail, name one primary corp,
-what it does, then ad link and/or discord inline at the end. No bullet lists, no
-second paragraph, no wall of text.
+**One pitch paragraph. 2–4 sentences max.** Weave their detail, name one primary
+corp, what it does, then ad link and/or discord inline at the end of that
+paragraph only. No bullet lists, no wall of text. This shape is for r/evejobs
+and the EVE forums. r/eve uses the subtle nudge below.
 
 ```
 [hook: their words, a fear, or what the corp does — first sentence grabs attention]
 
 [corp + one concrete detail tied to their post + optional graduate/alt corp in passing]
 
-[ad link and/or discord.gg/minmatar woven into the last sentence]
-
-[proof video — required by type: Rock Hoppin' for mining/industry, Bring Fun Shit for PvP/FW]
+[ad link and/or discord.gg/minmatar woven into the last sentence of the pitch]
 ```
 
-On Reddit the proof video may sit in a second short block after the paragraph (same
-family as examples.md). On forums, multi-block proof closes are fine.
+**Send-shape (required — do not collapse into the pitch):**
+
+| Surface | After the pitch paragraph |
+|---------|---------------------------|
+| **r/evejobs** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. See section 4. |
+| **r/eve** | No pitch stack. One short answer, then at most one URL on its own line. See below. |
+| **Forums** | Pitch keeps the ad URL and `discord.gg/minmatar` as bare text in the last sentence. Then each proof URL on its own line so Discourse embeds it (Bring Fun Shit, Rock Hoppin' when mining, one AAR). Do not bold YouTube URLs. Do not use the Reddit `Some links` list. |
+
+#### r/eve (subtle nudge)
+
+r/eve is a discussion subreddit. People reading the thread are not browsing a
+job board, so a corp ad, a Discord invite, and a proof stack in one comment
+reads as a recruiter who wandered in. Answer the question and point them at
+the right space. Section 3 still names the seat from the routing map so the
+recruiter knows the direction. The copy block is the nudge.
+
+**Voice**
+
+- Sound like a pilot who flies there. Lead with the place or the answer
+  (warzone, Amamake, lowsec, highsec bulwarks), not with a corporation name.
+- One short paragraph, 1–3 sentences. No brochure, no member counts, no
+  "we're recruiting."
+- Name a corp only when they are clearly looking for people to fly with and
+  one name answers that. One clause, then stop. Do not describe culture,
+  roster size, or requirements.
+- Never link an r/evejobs recruitment ad. Never use `Some links`. Never stack
+  Discord, Bring Fun Shit, an AAR, and Rock Hoppin'.
+- At most one URL, on its own line under the paragraph, with no label and no
+  bullets. Pick the single thing that proves the nudge: the newest kit AAR
+  when they asked where the fights are, Bring Fun Shit when the vibe is the
+  point, Rock Hoppin' when the ask is mining. Skip the link when the sentence
+  already did the job.
+- Discord only if they asked where to talk to people. That one line replaces
+  the proof link. Do not add both.
+- Industry and wormhole redirects stay honest and shorter. Highsec bulwarks
+  over another null shuffle is the mining nudge. Extraction's fleet pitch
+  stays on r/evejobs and the forums. Do not name a Discord person there.
+- Still vary openings across a run. On r/eve, prefer direct answer, contrast,
+  or blunt. Corp-first is the r/evejobs opener.
+
+```
+[answer their question — the place, the session, or the contrast]
+
+[optional: one corp name in a clause, only if they asked for people to fly with]
+
+<blank line>
+[optional: one URL alone]
+```
 
 #### Variety (mandatory per scout run)
 
@@ -341,9 +430,11 @@ paragraph opens**, not how many paragraphs there are:
 Do not repeat the same opening mode or the same first three words across messages
 in one run. Rotate how link/discord land (end of sentence, after corp name, etc.).
 
-**Self-check:** each message should be scannable in under 5 seconds. Mining/
-industry drafts must include Rock Hoppin'; PvP/FW drafts must include Bring Fun
-Shit.
+**Self-check:** each message should be scannable in under 5 seconds. **r/evejobs
+and forum** drafts include Bring Fun Shit. Mining/industry on those surfaces
+also includes Rock Hoppin'. PvP/FW/caps/redirects on those surfaces also include
+the newest kit AAR when the thread has room. **r/eve** drafts stay a short
+answer plus at most one link.
 
 **Voice rules:**
 
@@ -368,37 +459,79 @@ Shit.
 - **No nullsec pitch.** Never mention sovereignty, null ratting, null deployment,
   or "we have sov too" in outreach. We are FW/lowsec; sov-null seekers get skipped
   or an honest FW pitch only if their ask fits.
-- **One paragraph only** for the corp pitch. Reddit and forums use the same shape
-  for that block. Link + discord inline; skip discord when the ad link is enough.
-  **Proof video is required** and may be a second short block: **Rock Hoppin'**
-  (`https://youtu.be/XCApG7Pt6m4`) for mining/industry, **Bring Fun Shit**
-  (`https://youtu.be/7-eGTtq9vWo`) for PvP/FW. Do not swap them. Do not omit them.
+- **One paragraph only** for the corp pitch on r/evejobs and forums. Those two
+  surfaces share that block. Link + discord inline in the pitch; skip discord
+  when the ad link is enough. **Bring Fun Shit is required on every r/evejobs
+  and forum send**, own block (see send-shape). Rock Hoppin' is extra for
+  mining/industry there, never a BFS substitute. Add one Current-kit AAR for
+  PvP/caps/redirects as they land; do not paste proof URLs into the pitch
+  paragraph. r/eve does not use this stack.
+- **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
+  as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
+- **Industry Discord:** `discord.gg/minmatar` only. Do not name a person to ask
+  for. Minmatar Extraction Company has no public Discord contact on the roster.
 - Keep motivational lines only when OP is about to quit EVE (still one paragraph).
 
 ### Present output
 
-## Already responded (no further outreach)
+Four sections, in this order. Sections 1–3 are for reading. Section 4 is what a
+recruiter copies. Do not put the pitch inside a markdown table.
 
-| Title | Responded | Type | Link | Notes |
-|-------|-----------|------|------|-------|
+#### 1. Overview of the results
 
-## Open prospects
+Short prose: lookback window, how many player posts, how many already replied,
+how many still need a reply, how many true no-replies. Name the corp seats used
+this run in one sentence. Flag a kit change (new AAR) here if one happened.
 
-| Title | Corp fit | Responded | Type | Link | Recommended message |
-|-------|----------|-----------|------|------|---------------------|
+#### 2. Overview of who we've already replied to
 
-Put recommended messages in the table as a **single paragraph** (no line breaks).
+One line per thread. Title, who replied (Reddit username or forum username),
+corp they pitched if they named one, link. No new draft.
 
-Below the tables, optionally list:
+#### 3. Overview of who we need to reply to
 
-- Corporation roster + latest reddit ad URLs (from pre-scout output)
-- Fresh proof media shortlist (2–4 AAR / capital video URLs from pre-scout 1c)
-- True no-reply posts (hard nullbloc lock with no redirect worth sending) in one
-  short bullet list
+One line per open thread. Title, seat (ticker plus corp name), why that seat in
+a few words, link. Industry redirects and nameless FW redirects belong here too.
+True no-replies get their own short list under this section, not mixed into the
+reply list.
+
+#### 4. Copy-pastable replies
+
+One block per open thread, in the same order as section 3. Each block:
+
+1. A heading the recruiter does not paste: title, seat, `r/evejobs`, `r/eve`, or `Forums`, link to the thread.
+2. A fenced code block they can copy whole.
+
+**r/evejobs** (what actually gets sent):
+
+- Pitch is one paragraph and contains no URLs.
+- Blank line, then the line `Some links`, then a markdown bullet list.
+- Each bullet is a markdown link whose visible text is the URL: `* [https://…](https://…)` .
+- Discord is `* [discord.gg/minmatar](http://discord.gg/minmatar)` .
+- Do not name a Discord person in the pitch or the link list. Discord in the list is the contact.
+- Brand-new teach-me Academy posts put `https://my.minmatar.org/learning/` first in the list and skip the AAR.
+- Other Academy / PvP posts: ad, discord, Bring Fun Shit, then one AAR when the kit says so.
+- Mining / industry posts: Bring Fun Shit, the mining ad, Rock Hoppin', discord. Order can put discord first when the ask is a corp home rather than “how do I mine.”
+
+**r/eve** (what actually gets sent):
+
+- One paragraph, 1–3 sentences, no URLs inside it. Answer the thread. Name a corp only in the one-clause case above.
+- Optional blank line, then one URL alone. No `Some links`, no bullets, no r/evejobs ad.
+- That URL is the newest kit AAR, Bring Fun Shit, or Rock Hoppin', and only one of them. Discord replaces it only when they asked where to talk to people.
+- Skip the URL when the paragraph already points them at the right space.
+
+**Forums** (bare URLs, so Discourse oneboxes):
+
+- Pitch is one paragraph. The corp ad URL and `discord.gg/minmatar` sit in the last sentence as bare text. No markdown links, no bold. Do not add an "ask for" name.
+- Blank line, then each proof URL on its own line: Bring Fun Shit, Rock Hoppin' when mining, then one AAR when the kit says so.
+- Named corp with no ad: bare `discord.gg/minmatar` in the pitch, then `https://my.minmatar.org/alliance/corporations/` on its own line before the videos.
+- A full `https://www.reddit.com/r/evejobs/comments/...` URL oneboxes as Reddit. A `/r/evejobs/s/` shortlink does too.
 
 Do **not** dump WH-only or sov-mining seekers into a “skipped, no message” list.
-Put them in **Open prospects** with corp fit `FW redirect` or `Minmatar Extraction
-Company` / MFA and a recommended redirect message (see examples.md).
+They get a seat in section 3 and a copy block in section 4 (`FW redirect` or
+`Minmatar Extraction Company`).
+
+After section 4, a short roster of live ad URLs is optional.
 
 ## Configuration
 
@@ -414,8 +547,10 @@ markers, or routing. Those live in this skill.
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | For outreach closers (skill only) |
-| `proof_videos.mining` | Rock Hoppin' URL — required close for mining/industry |
-| `proof_videos.pvp` | Bring Fun Shit URL — required close for PvP/FW |
+| `proof_videos.always` | Bring Fun Shit — required on every r/evejobs and forum send; not on r/eve |
+| `proof_videos.mining` | Rock Hoppin' — extra close for mining/industry |
+| `proof_aars` | Current billion-ISK AARs (newest first); rotate when a new one posts |
+| `proof_pages` | Warzone report, corp directory, freight history, optional siege pages |
 
 ## Additional resources
 

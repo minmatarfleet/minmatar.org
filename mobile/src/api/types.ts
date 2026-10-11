@@ -30,7 +30,7 @@ export interface ApiFleetTracking {
 
 export interface ApiFleet {
   id: number;
-  type: 'strategic' | 'non_strategic' | 'training';
+  type: 'strategic' | 'non_strategic' | 'training' | 'npsi';
   audience: string;
   description: string;
   objective?: string | null;

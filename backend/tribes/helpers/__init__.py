@@ -4,14 +4,21 @@ from tribes.helpers.requirements import (
 )
 from tribes.helpers.permissions import (
     user_can_manage_group,
+    user_can_view_group_roster,
     user_in_tribe_group,
     user_is_active_tribe_member,
+    user_is_alliance_member,
     user_is_tribe_chief,
 )
 from tribes.helpers.token_requirements import (
     character_has_required_token,
     characters_missing_required_token,
     token_requirement_error_detail,
+)
+from tribes.helpers.trial_requirements import (
+    OFF_TRIAL_REQUIRED_DETAIL,
+    application_blocked_by_trial,
+    user_is_on_trial,
 )
 
 __all__ = [
@@ -20,8 +27,13 @@ __all__ = [
     "character_has_required_token",
     "characters_missing_required_token",
     "token_requirement_error_detail",
+    "OFF_TRIAL_REQUIRED_DETAIL",
+    "application_blocked_by_trial",
+    "user_is_on_trial",
     "user_can_manage_group",
+    "user_can_view_group_roster",
     "user_in_tribe_group",
     "user_is_active_tribe_member",
+    "user_is_alliance_member",
     "user_is_tribe_chief",
 ]

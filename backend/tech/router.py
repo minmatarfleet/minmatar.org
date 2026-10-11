@@ -20,7 +20,7 @@ from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
 from discord.helpers import remove_all_roles_from_guild_member
 from groups.helpers.feature_access import can_use_feature
-from groups.tasks import update_affiliation
+from groups.tasks import sync_user_corporation_groups, update_affiliation
 from eveonline.client import esi_for, EsiClient
 from eveonline.models import (
     EveCharacter,
@@ -615,6 +615,9 @@ def force_refresh(request, username: str):
 
     update_affiliation(user.id)
     response.append(f"Updated affiliations for {username}")
+
+    sync_user_corporation_groups(user)
+    response.append(f"Synced corporation groups for {username}")
 
     sync_discord_user(user.id)
     response.append(f"Synced Discord roles for {username}")

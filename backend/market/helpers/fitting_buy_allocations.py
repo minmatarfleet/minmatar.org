@@ -149,6 +149,34 @@ def normalize_entries(entries: list[dict]) -> list[dict]:
     ]
 
 
+def allocated_variant_qtys(order: FittingBuyOrder, plan) -> dict[int, int]:
+    """Buy qty per allocated variant type (excludes the preferred type)."""
+    result: dict[int, int] = {}
+    for type_id, qty in effective_buy_map(order, plan).items():
+        if qty <= 0:
+            continue
+        if type_id in plan.needed:
+            continue
+        result[type_id] = qty
+    return result
+
+
+def cached_jita_item_fields(
+    order: FittingBuyOrder,
+    type_id: int,
+    *,
+    items_by_id: dict[int, FittingBuyOrderItem] | None = None,
+) -> dict:
+    """Jita columns for a new/updated item row from the item or variant cache."""
+    depth = cached_jita_depth(order, type_id, items_by_id=items_by_id)
+    sell_min = depth.get("jita_sell_min")
+    return {
+        "jita_sell_volume": depth.get("jita_sell_volume"),
+        "jita_order_count": depth.get("jita_order_count"),
+        "jita_sell_min": parse_jita_sell_min(sell_min),
+    }
+
+
 def effective_buy_map(order: FittingBuyOrder, plan) -> dict[int, int]:
     """plan.buy with shopping_allocations applied.
 
@@ -244,8 +272,7 @@ def set_allocations(
     if not normalized:
         if key in allocations:
             allocations.pop(key, None)
-            order.shopping_allocations = allocations
-            order.save(update_fields=["shopping_allocations", "updated_at"])
+            _persist_allocations(order, allocations)
         return
 
     fitting_ids = order.lines.values_list("fitting_id", flat=True)
@@ -277,8 +304,7 @@ def set_allocations(
     if not clamped:
         if key in allocations:
             allocations.pop(key, None)
-            order.shopping_allocations = allocations
-            order.save(update_fields=["shopping_allocations", "updated_at"])
+            _persist_allocations(order, allocations)
         return
 
     total = sum(entry["qty"] for entry in clamped)
@@ -288,5 +314,15 @@ def set_allocations(
         )
 
     allocations[key] = clamped
+    _persist_allocations(order, allocations)
+
+
+def _persist_allocations(order: FittingBuyOrder, allocations: dict) -> None:
     order.shopping_allocations = allocations
     order.save(update_fields=["shopping_allocations", "updated_at"])
+    # Circular: fitting_buy_plan.sync_order_items imports prune_invalid_allocations.
+    from market.helpers.fitting_buy_plan import (  # pylint: disable=import-outside-toplevel
+        sync_order_items,
+    )
+
+    sync_order_items(order)

@@ -1,0 +1,14 @@
+---
+import {
+    get_issue,
+    get_latest_issue,
+    SOLD_CLASS_ALL,
+} from '@/data/amamake-market'
+import AmamakeMarketSoldTypes from '@components/blocks/amamake-market/AmamakeMarketSoldTypes.astro'
+
+const issue_slug = Astro.url.searchParams.get('issue') ?? ''
+const sold_class = Astro.url.searchParams.get('sold_class') ?? SOLD_CLASS_ALL
+const issue = get_issue(issue_slug) ?? get_latest_issue()
+---
+
+<AmamakeMarketSoldTypes issue={issue} sold_class={sold_class} />

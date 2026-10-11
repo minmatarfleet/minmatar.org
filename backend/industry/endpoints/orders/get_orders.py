@@ -64,8 +64,12 @@ def get_orders(request):
                 fulfilled_at=order.fulfilled_at,
                 public_short_code=order.public_short_code,
                 contract_to=order.contract_to,
-                character_id=order.character.character_id,
-                character_name=order.character.character_name,
+                character_id=(
+                    order.character.character_id if order.character else None
+                ),
+                character_name=(
+                    order.character.character_name if order.character else ""
+                ),
                 location=(
                     OrderLocationResponse(
                         location_id=order.location.location_id,

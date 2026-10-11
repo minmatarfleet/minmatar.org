@@ -104,12 +104,20 @@ def create_application_thread(application) -> int:
     return int(response.json()["id"])
 
 
+def application_accepted_message() -> str:
+    return (
+        ":tada: Your application has been accepted!\n"
+        "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
+        "- Apply in-game\n"
+        "- Start with the [Learning Center](https://my.minmatar.org/learning/) "
+        "for guides and certificates\n"
+        "- [We are Minmatar (FL33T Alliance)]"
+        "(https://www.youtube.com/watch?v=JMddiOzaDsA)"
+    )
+
+
 def notify_application_accepted(application) -> None:
-    message = ":tada: Your application has been accepted!\n"
-    message += "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
-    message += "- Apply in-game\n- Follow these [onboarding steps](https://wiki.minmatar.org/en/alliance/Onboarding)\n"
-    message += "- Familiarize yourself with our [Learning](https://my.minmatar.org/learning/)\n"
-    message += "- [We are Minmatar (FL33T Alliance)](https://www.youtube.com/watch?v=JMddiOzaDsA)"
+    message = application_accepted_message()
     discord.create_message(
         channel_id=application.discord_thread_id, message=message
     )

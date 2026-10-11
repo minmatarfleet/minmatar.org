@@ -42,6 +42,11 @@ class EveLocation(MinmatarSoftDeleteModel):
         "Used as the reference for markup calculations.",
     )
     freight_active = models.BooleanField(default=False)
+    fleets_active = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text="Location may be selected as fleet form-up on the schedule.",
+    )
     staging_active = models.BooleanField(
         default=False,
         help_text="At most one location may be the active staging system.",
@@ -75,6 +80,7 @@ class EveLocation(MinmatarSoftDeleteModel):
         self.market_active = False
         self.prices_active = False
         self.freight_active = False
+        self.fleets_active = False
         self.staging_active = False
 
     def delete(self, force_policy=None, **kwargs):

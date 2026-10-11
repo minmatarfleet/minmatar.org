@@ -21,7 +21,6 @@ import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import BuybackContractsSkeleton from '@components/blocks/BuybackContractsSkeleton.astro'
 
 const page_title = is_history
@@ -32,13 +31,15 @@ const meta_description = is_history
     ? t('buyback_contracts.history.meta_description')
     : t('buyback_contracts.meta_description')
 
-const breadcrumb_items = is_history
+const breadcrumbs = is_history
     ? [
-        { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
-        { label: t('buyback_contracts.page_title'), href: translatePath('/market/buyback/contracts/') },
+        { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
+        { page_title: t('buyback_contracts.page_title'), accumulated_path: '/market/buyback/contracts/' },
+        { page_title: page_title, accumulated_path: Astro.url.pathname },
     ]
     : [
-        { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
+        { page_title: t('buyback.page_title'), accumulated_path: '/market/buyback/' },
+        { page_title: page_title, accumulated_path: Astro.url.pathname },
     ]
 ---
 
@@ -51,13 +52,14 @@ const breadcrumb_items = is_history
 >
     <PageWide
         cover={{
-            image: '/images/planetary-cover.jpg',
-            image_990: '/images/planetary-cover.jpg',
+            image: '/images/buyback-cover.jpg',
+            image_990: '/images/buyback-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true,
         }}
         sticky={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             contracts_count: 0,
             last_updated_text: '',
@@ -67,7 +69,6 @@ const breadcrumb_items = is_history
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
-                <Breadcrumb items={breadcrumb_items} />
                 <Flexblock gap="var(--space-3xs)">
                     <PageTitle>
                         {page_title}

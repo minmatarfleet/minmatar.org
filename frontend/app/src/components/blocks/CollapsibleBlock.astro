@@ -1,6 +1,9 @@
 ---
+import type { spaces } from '@dtypes/layout_components'
+
 interface Props {
     padding_inline?:    string;
+    gap?:               spaces;
     expanded?:          boolean;
     id?:                string;
     pre_chevron?:       boolean;
@@ -8,6 +11,7 @@ interface Props {
 
 const {
     padding_inline = 'var(--space-3xs)',
+    gap = 'var(--space-3xs)',
     expanded = false,
     id,
     pre_chevron = false,
@@ -21,7 +25,7 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 
 <Flexblock
     id={id ? id : undefined}
-    gap='var(--space-3xs)'
+    gap={gap}
     x-data={`{
         expanded: ${JSON.stringify(expanded)},
         toggle_collapse() {

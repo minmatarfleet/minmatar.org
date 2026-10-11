@@ -140,6 +140,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import Grid from '@components/compositions/Grid.astro'
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 
 import BuybackItem from '@components/blocks/BuybackItem.astro';
 import BuybackVariants from '@components/blocks/BuybackVariants.astro';
@@ -171,62 +172,68 @@ import TextBadge from './TextBadge.astro'
             </FlexInline>
         </FlexInline>
 
-        <hr class="[ border-bottom ]" />
+        <ComponentBlock 
+            padding_block='var(--space-s)'
+            padding_inline='var(--space-s)'
+        >
+            <Grid
+                row_gap='var(--space-xs)'
+                column_gap='var(--space-3xs)'
+                min_item_width='310px'
+                class="grid-fill"
+            >
+                {grouped_items.length > 0 ?
+                    <>{grouped_items.map(group =>
+                        <Flexblock gap='var(--space-xs)'>
+                            <h4>{group.label}</h4>
+                            
+                            <hr class="[ border-bottom ]" />
 
-        <Flexblock gap='var(--space-xl)'>
-            {grouped_items.length > 0 ?
-                <>{grouped_items.map(group =>
-                    <Flexblock>
-                        <h4>{group.label}</h4>
-
-                        {group.items.length > 0 &&
-                            <Grid
-                                row_gap='var(--space-3xs)'
-                                column_gap='var(--space-3xs)'
-                                min_item_width='340px'
-                                class="grid-fill"
-                            >{group.items.map(item =>
-                                <ComponentBlock
-                                    class="[ w-full self-start ]"
-                                    padding_block='0'
-                                    padding_inline='0'
-                                    x-data={`{
-                                        expanded: false,
-                                        toggle_collapse() {
-                                            this.expanded = !this.expanded
-                                        }
-                                    }`}
-                                >
-                                    {item.variants && item.variants?.length > 0 ?
-                                        <FlexInlineSiblings
-                                            min-shink-width='250px'
-                                            shrinkable-sibbling='first'
-                                            gap='0'
+                            {group.items.length > 0 &&
+                                <Flexblock gap='0'>
+                                    {group.items.map(item =>
+                                        <Wrapper
+                                            class="[ w-full self-start ]"
+                                            padding_block='0'
+                                            padding_inline='0'
+                                            x-data={`{
+                                                expanded: false,
+                                                toggle_collapse() {
+                                                    this.expanded = !this.expanded
+                                                }
+                                            }`}
                                         >
-                                            <BuybackItem item={item} />
-                                            <CollapsableButton
-                                                class="[ px-[12px]! py-[19px]! border-left ]"
-                                                x-on:click="toggle_collapse()"
-                                            />
-                                        </FlexInlineSiblings>
-                                        <div
-                                            x-show="expanded"
-                                            x-collapse.duration.0ms
-                                            style="display: none"
-                                        >
-                                            <BuybackVariants item={item} />
-                                        </div> :
-                                        <BuybackItem item={item} />
-                                    }
-                                </ComponentBlock>
-                            )}</Grid>
-                        }
-                    </Flexblock>
-                )}</>
-                :
-                <p>{t('buyback.info.no_items')}</p>
-            }
-        </Flexblock>
+                                            {item.variants && item.variants?.length > 0 ?
+                                                <FlexInlineSiblings
+                                                    min-shink-width='250px'
+                                                    shrinkable-sibbling='first'
+                                                    gap='0'
+                                                >
+                                                    <BuybackItem item={item} />
+                                                    <CollapsableButton
+                                                        class="[ px-[12px]! py-[19px]! ]"
+                                                        x-on:click="toggle_collapse()"
+                                                    />
+                                                </FlexInlineSiblings>
+                                                <div
+                                                    x-show="expanded"
+                                                    x-collapse.duration.0ms
+                                                    style="display: none"
+                                                >
+                                                    <BuybackVariants item={item} />
+                                                </div> :
+                                                <BuybackItem item={item} />
+                                            }
+                                        </Wrapper>
+                                )}</Flexblock>
+                            }
+                        </Flexblock>
+                    )}</>
+                    :
+                    <p>{t('buyback.info.no_items')}</p>
+                }
+            </Grid>
+        </ComponentBlock>
     </Flexblock>
 </Flexblock>
 
@@ -262,6 +269,9 @@ import TextBadge from './TextBadge.astro'
                                             allowHTML: true,
                                             delay: [100, 200],
                                             arrow: true,
+                                            onShow(instance) {
+                                                tippy.hideAll({ exclude: instance })
+                                            },
                                         })`
                                         : undefined
                                     return (
@@ -270,12 +280,10 @@ import TextBadge from './TextBadge.astro'
                                                 gap='var(--space-3xs)'
                                                 class:list={[
                                                     '[ buyback-info__item ]',
-                                                    used_in_tip ? '[ buyback-info__item--has-used-in ]' : '',
                                                     item.in_demand
                                                         ? ''
                                                         : '[ buyback-info__item--surplus ]',
                                                 ]}
-                                                x-init={item_tippy}
                                             >
                                                 <ItemPicture
                                                     item_id={item.type_id}
@@ -283,7 +291,16 @@ import TextBadge from './TextBadge.astro'
                                                     size={24}
                                                     icon_quality={32}
                                                 />
-                                                <span>{item.name}</span>
+                                                <span
+                                                    class:list={[
+                                                        '[ buyback-info__name ]',
+                                                        used_in_tip
+                                                            ? '[ buyback-info__name--has-used-in ]'
+                                                            : '',
+                                                    ]}
+                                                    tabindex={used_in_tip ? 0 : undefined}
+                                                    x-init={item_tippy}
+                                                >{item.name}</span>
                                                 <BuybackRateBadge
                                                     in_demand={Boolean(item.in_demand)}
                                                 />
@@ -297,6 +314,9 @@ import TextBadge from './TextBadge.astro'
                                                             allowHTML: true,
                                                             delay: [100, 200],
                                                             arrow: true,
+                                                            onShow(instance) {
+                                                                tippy.hideAll({ exclude: instance })
+                                                            },
                                                         })`}
                                                     >
                                                         <span aria-hidden="true">i</span>
@@ -393,18 +413,18 @@ import TextBadge from './TextBadge.astro'
             min-width: 0;
         }
 
-        .buyback-info__item--has-used-in {
-            cursor: help;
-        }
-
         .buyback-info__item--surplus {
             opacity: 0.85;
         }
 
-        .buyback-info__item > span:first-of-type {
+        .buyback-info__name {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .buyback-info__name--has-used-in {
+            cursor: help;
         }
 
         .buyback-info__variants {

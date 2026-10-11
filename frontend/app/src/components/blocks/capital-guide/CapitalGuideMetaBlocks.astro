@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import FittingLink from '@components/blocks/FittingLink.astro'
-import { fittingsForShipId, type MetaBlock } from '@/data/capital-guide'
+import { primary_fitting_for_ship, type MetaBlock } from '@/data/capital-guide'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 
 interface Props {
@@ -49,9 +49,13 @@ const no_fitting_label = t('ships.capital_guide.no_fitting')
                     </thead>
                     <tbody>
                         {block.rows.map((row) => {
-                            const fittings =
-                                row.ship_id != null ? fittingsForShipId(row.ship_id, fitting_library) : []
-                            const primary = fittings[0] ?? null
+                            const primary =
+                                row.ship_id != null
+                                    ? primary_fitting_for_ship(row.ship_id, fitting_library, {
+                                          fit_match: row.fit_match,
+                                          notes: row.cells[1],
+                                      })
+                                    : null
                             const hull_content = (
                                 <span class="cap-table__hull">
                                     {row.ship_id != null && (

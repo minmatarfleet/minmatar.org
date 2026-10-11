@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from buyback.helpers.accepted_items import get_active_accepted_type_ids
+from buyback.helpers.accepted_items import (
+    compressed_ore_buy_market_name,
+    get_active_accepted_type_ids,
+    ore_jita_buy_unit,
+)
 from buyback.helpers.classify import (
     BuybackCategory,
     classify_eve_type,
@@ -78,8 +82,13 @@ def appraise_paste(
             ore_names.append(line.name)
 
     mineral_name_to_id = mineral_name_to_id_for_ores(ore_names)
-    mineral_buy_by_name = get_baseline_buy_prices_by_name(
-        list(mineral_name_to_id.keys())
+    ore_market_names = [
+        name
+        for name in (compressed_ore_buy_market_name(n) for n in ore_names)
+        if name
+    ]
+    buy_by_name = get_baseline_buy_prices_by_name(
+        list(mineral_name_to_id.keys()) + ore_market_names
     )
 
     priced: list[PricedLine] = []
@@ -150,8 +159,9 @@ def appraise_paste(
                     type_id=eve_type.id,
                     refine_rate=float(rules["ore_refine"]),
                     jita_share=rate,
-                    mineral_buy_by_name=mineral_buy_by_name,
+                    mineral_buy_by_name=buy_by_name,
                     rate_reason=rate_reason,
+                    ore_unit_buy=ore_jita_buy_unit(eve_type.name, buy_by_name),
                 )
             )
             continue

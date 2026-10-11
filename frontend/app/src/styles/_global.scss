@@ -167,6 +167,11 @@ code {
     border-left: solid 1px var(--border-color) !important;
 }
 
+.border-top {
+    border: none;
+    border-top: solid 1px var(--border-color);
+}
+
 .correct-gaps > [style="display: none;"] ~ * {
     margin-block-start: 0 !important;
 }
@@ -264,6 +269,10 @@ ul {
 
 .text-highlight {
     color: var(--highlight)
+}
+
+.text-muted {
+    color: var(--faded)
 }
 
 .card-animated {

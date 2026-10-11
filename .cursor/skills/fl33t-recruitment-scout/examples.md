@@ -4,6 +4,358 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-10-05 no named industry contact
+
+Recruiter correction after the 5 Oct scout. Forum drafts for the highsec miner, the retired nullsec PvE pilot, and the hisec RP character closed with `ask for Keldor00`. That person is not on the Minmatar Extraction Company roster. Do not name them. Do not use the older `Keldor` shorthand, or `Keldar Atram` / `keldar_atram` from the German industry reply.
+
+Industry and MFA closes are `discord.gg/minmatar` only. On r/evejobs that is the Discord bullet. On forums it is bare `discord.gg/minmatar` in the last sentence, plus the mining ad when they want fleets. No "ask for" clause.
+
+Older entries below that name that handle are historical sends. Do not copy those closers.
+
+### Same scout
+
+- u/420skateman's Academy or alliance paste is still Responded, including when the seat should have been Extraction, a wormhole redirect, or MFA for an Alpha. No second draft.
+- [LF corp with 02:00 activity](https://www.reddit.com/r/evejobs/comments/1wui226/lf_corp_with_0200_activity/) — they answered that they want anything that is not highsec. Same rule as miner alts who refused highsec: do not send a bulwark pitch after that.
+- [Looking for highsec l3 mission running corp](https://www.reddit.com/r/evejobs/comments/1wwd4l7/looking_for_highsec_l3_mission_running_corp/) — Alpha, and they said they do not have Omega. Already replied. Academy stays Omega-only. The note belongs in section 2, not a follow-up.
+- FOSFO's newest ad is older than the 30-day `u/MinmatarFleet` window. Keep linking [FOSFO EUTZ FW nanogang](https://www.reddit.com/r/evejobs/comments/1w2gxzm/fosfo_eutz_fw_nanogang_tight_crew_thick_skin/) until a newer one posts.
+- No kit change. 625B down in Amamake stays the default extra AAR. The September frontline report and the Amamake economic report are not fight AARs.
+
+---
+
+## 2026-09-27 r/eve is not r/evejobs
+
+Recruiter correction. Earlier r/eve replies used the job-board kit: named corp, evejobs ad, Discord, Bring Fun Shit. That reads as tacky on r/eve because the audience is there for the thread, not to shop corps.
+
+Threads that used the heavy shape:
+
+- [Returning player, where’s the action](https://www.reddit.com/r/Eve/comments/1wad0w2/returning_player_wheres_the_action/) — FW redirect plus Discord plus Bring Fun Shit
+- [My null sec Corp has died.](https://www.reddit.com/r/Eve/comments/1uyj4o5/my_null_sec_corp_has_died/) — Soltech ad plus Discord
+- [Returning player looking for best facwar faction…](https://www.reddit.com/r/Eve/comments/1uy7m0l/returning_player_looking_for_best_facwar_faction/) — Dark Tribe ad plus Discord
+
+Keep the direction (warzone, Amamake, lowsec, highsec bulwarks). Drop the recruitment kit. One short answer, at most one proof link, no evejobs ad, no `Some links`. Name a corp only when they asked for people to fly with, and then in one clause. Section 3 still records the seat. r/evejobs and the forums keep the full pitch.
+
+---
+
+## 2026-09-27 scout run
+
+### Default AAR
+625B down in Amamake (27 Sep YC128) replaces Dal 200B as the default extra AAR. Ahbazon 700B stays the cap-feed hook until a newer capital brawl posts.
+
+### u/420skateman Academy paste
+The same Academy boilerplate plus `discord.gg/minmatar` landed on many r/evejobs threads this window. That is Responded. Do not draft a second reply. The paste is generic Academy even when the seat is Extraction, Rattini, or a wormhole redirect, so section 2 should name `u/420skateman` and say it was the Academy paste.
+
+### Alpha faction-warfare newbro
+**Thread:** [Newbro looking for a FW corp](https://forums.eveonline.com/t/newbro-looking-for-a-fw-corp/518905)
+
+6m SP, alpha, fought for Caldari, wants teaching. `u/BearThatCares` already pitched Academy. Academy is Omega-only. Alpha goes MFA. Already replied, so no second draft. Route MFA before anyone sends.
+
+### Miner alts who refuse highsec
+**Thread:** [Home for my 6 alts](https://forums.eveonline.com/t/home-for-my-6-alts/518643)
+
+Six miner alts, no mains, asked for null. Extraction / highsec bulwarks was the first reply. They answered that they already mine in Minmatar space and want the ore, not highsec. Do not send a second highsec pitch after they refuse it.
+
+---
+
+## 2026-09-24 formatting (sent vs scout)
+
+BearThatCares posted four Reddit replies and one forum reply from this run. The forum post matched the scout. Every Reddit post was reformatted the same way.
+
+**Reddit send shape.** Pitch paragraph contains no URLs. Blank line. The words `Some links`. Then a markdown bullet whose label is the URL:
+
+```
+Pitch sentence one. Pitch sentence two.
+
+Some links
+
+* [https://www.reddit.com/r/evejobs/comments/...](https://www.reddit.com/r/evejobs/comments/...)
+* [discord.gg/minmatar](http://discord.gg/minmatar)
+* [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+```
+
+Discord’s visible text is `discord.gg/minmatar` and the target is `http://discord.gg/minmatar`. Do not leave the ad or discord inside the pitch on Reddit.
+
+**What changed in the words, not just the list:**
+
+| Thread | Scout | Sent |
+|--------|-------|------|
+| Teach me PvP | “on comms”; ad and discord in the pitch; Dal AAR | “on discord”; links in the list; added `https://my.minmatar.org/learning/` at the top; no AAR |
+| Social groups / barely fought | ad and discord in the pitch; Dal AAR after the video | same pitch; list order ad, discord, Bring Fun Shit, Dal AAR |
+| Need Help (miner) | `ask for Keldor00` and the mining ad in the pitch | Keldor00 dropped; list is Bring Fun Shit, mining ad, Rock Hoppin', discord |
+| Twelve-account sov industry | Keldor00 and ad in the pitch | Keldor00 dropped; list is discord, mining ad, Bring Fun Shit, Rock Hoppin' |
+| Forum, Norway 170m, Soltech | pitch with ad URL and discord, then bare YouTube, then Dal AAR | sent as drafted; Discourse oneboxed the ad as Reddit and embedded the video |
+
+Brand-new “teach me” Academy posts get the learning page and can skip the AAR. Mining posts do not name a Discord person. Forums stay pitch-with-bare-URLs, not the Reddit bullet list.
+
+---
+
+## 2026-09-24 recruiter layout
+
+Seats are experience, then style, then timezone. This replaces older “Soltech is late-US” and “Rattini is the default veteran” notes.
+
+| Ticker | Seat |
+|--------|------|
+| TDT | Small gang, veterans, USTZ |
+| FOSFO | Small gang, veterans, EUTZ. Route from this layout and link the live ad even if the API omits the corp. |
+| SOEXD | New / early intermediate, wormhole on the side, USTZ |
+| BNSQ | New / early intermediate, EUTZ |
+| L3ARN | New players, institutional |
+| SLTAR | Intermediate / veteran, institutional. Not a filler for thin posts. |
+| ARAT | Veterans, multiple characters / capitals |
+
+Same-day correction this layout overturns: a 170m EUTZ pilot with one character and no capital ask is SLTAR, not ARAT. A returning pilot who has barely fought is L3ARN, not SLTAR.
+
+---
+
+## 2026-09-12 scout run
+
+Recruiter iteration on drafts (Solaris added mid-run; forum CTAs; laid-back WH). Not all of these were sent yet — the corrections are the learning.
+
+### USTZ WH returner, two maxed accounts, scanner alts, kid / WFH
+**Thread:** [USTZ returning player looking for corp](https://www.reddit.com/r/evejobs/comments/1wegnij/ustz_returning_player_looking_for_corp/)  
+**Routed:** Solaris Expeditionary Corps (after first-pass nameless FW redirect)
+
+**First scout:** nameless FW redirect. Loaded Solaris from the API, then skipped it because there was no `u/MinmatarFleet` ad.
+
+**Corrected pitch:**
+> Solaris Expeditionary Corps left the holes so the mains could shoot people for a living, and the C2 is still there for the industry and scanner alts, which is the version of wormhole life that does not eat a kid and a WFH calendar. USTZ, no PAP sheet, you undock and lose ships on purpose. [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Routing note:** New API corp with no dedicated ad is still a primary route. Discord close. USTZ WH-primary + alts that can sit in a C2 → Solaris, not a nameless dump and not Rattini (no cap ask).
+
+---
+
+### Forum: laid-back WH, 75m SP, mining / PvP / indy, one character
+**Thread:** [Looking for Laid Back WH Corp](https://forums.eveonline.com/t/looking-for-laid-back-wh-corp/518135)  
+**Routed:** Solaris Expeditionary Corps (after nameless FW, then CTA fix)
+
+**First scout:** nameless FW, no discord (warzone + YouTube only). Recruiter: forum threads need a join CTA, and this mix is Solaris.
+
+**Corrected send:**
+> Laid-back wormhole with mining, industry, and PvP on one character is the Solaris Expeditionary Corps split: die in the warzone, get paid in a C2, small crew, no PAP sheet. discord.gg/minmatar
+>
+> https://my.minmatar.org/alliance/corporations/
+>
+> https://youtu.be/7-eGTtq9vWo
+>
+> https://www.reddit.com/r/Eve/comments/1w21ozl/aar_350b_down_in_kamela/
+
+**Routing note:** Laid-back hole that still covers mining, industry, and PvP is Solaris even on one character and even with no TZ. Pitch the live API intro. No ad → discord in the pitch last sentence, corp directory onebox, then proof. Warzone/video are not the call to action.
+
+---
+
+### Forum CTAs (same run, other threads)
+Scout table left join actions in an after-block of warzone/YouTube. Recruiter could not send them.
+
+**Fix:** last sentence of every forum pitch weaves `discord.gg/minmatar` and does not name a person. Named corp with an ad also gets the evejobs URL as its own onebox line. Proof (warzone, AAR, BFS, Rock Hoppin') comes after the CTA.
+
+---
+
+### Pacific 7m Omega explorer, PI/gas, open to WH
+**Thread:** [USTZ / Pacific] Newer Omega player looking for a long-term nullsec or wormhole home  
+**Routed:** Minmatar Fleet Academy primary; Solaris Expeditionary Corps (same alliance) aside for the C2
+
+**Routing note:** All-TZ new Omega feeder stays Academy when Solaris hours are midday Pacific. Gas/PI + WH left open earns a Solaris one-liner, not a Soltech Amamake aside.
+
+---
+
+### BLOPS / dread, leaving Horde, USTZ
+**Thread:** [USTZ] 83M SP pilot looking for a lowsec home  
+**Routed:** Rattini Tribe
+
+**Routing note:** Caps and BLOPS stay Rattini. A stranger recommending “Amarr-Minmatar / Amamake” is not Responded.
+
+---
+
+### True no-reply
+- [Returning Player Looking For A Home](https://forums.eveonline.com/t/returning-player-looking-for-a-home/518117) — Discord banned where they live; every FL33T corp on the API needs Discord.
+
+---
+
+## Patterns (2026-09-12 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| New API corp, no MinmatarFleet ad yet | Still name it; discord close; forums add corp directory onebox |
+| USTZ WH + alts for a C2 | Solaris primary, not nameless FW |
+| Laid-back WH + mining/indy/PvP, even one toon | Solaris; pitch `die in the warzone, get paid in a C2` |
+| Pacific new Omega + gas/PI + WH open | Academy primary; Solaris (same alliance) aside |
+| BLOPS/dread leaving a null blob | Rattini, not Solaris |
+| Forum scout table | Join CTA **in the pitch cell**. Warzone/AAR/YouTube are proof only |
+| Forum named corp, no ad | discord last sentence + `my.minmatar.org/alliance/corporations/` |
+| “Try Amamake / Minmatar warzone” from a random poster | Not Responded |
+| Discord banned in OP’s country | True no-reply; do not invent TS/Mumble |
+
+### Corp routing map (recruiter update, 2026-09-12)
+
+Superseded by the 2026-09-24 recruiter layout above.
+
+
+Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it. New API corps with no dedicated ad yet still get named; close with discord.
+
+| Corp | Route |
+|------|--------|
+| Rattini Tribe | All-TZ veterans + multi-boxers; capital pilots — cap AARs / videos |
+| Soltech Armada | USTZ / late USTZ; daily Amamake seat past brand-new, without a capital/multi-box or hole focus |
+| Solaris Expeditionary Corps | USTZ WH→FW; mains in the warzone, C2 for industry/gas/trade alts; teaching crew. Also laid-back WH + mining/indy/PvP even on one character. Discord until a dedicated ad exists. |
+| FOSFO (FASFO) | Experienced small-gang, UK especially — only when on API or linking live ad |
+| Banshee Squadron | Small tight-knit EUTZ new players, UK especially |
+| The Dark Tribe (TDT) | Late-night USTZ, smaller/tight-knit home for newer pilots (watch SP/KB requirements) |
+| Minmatar Fleet Academy (L3ARN) | All-TZ new players feeder |
+
+---
+
+## 2026-09-09 scout run
+
+### Ex-Rattini, USTZ, fried PSU / kicked for inactivity (72m SP)
+**Thread:** [72m SP Looking for a new home](https://www.reddit.com/r/evejobs/comments/1wbe6sk/72m_sp_looking_for_a_new_home/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> Leadership that kicks you after a fried PSU is a bad look, and Soltech Armada is an IRL-first Amamake crew in Minmatar faction warfare that wants you on comms for fleets and leaves you alone while you gas-huff through work. Central and Eastern US evenings are the busy window, with room to sneak an EU hour, and the mining/gas alts sit beside the pew without a dread tax. [Ad](https://www.reddit.com/r/evejobs/comments/1w80at6/sltar_soltech_armada_were_probably_a_bad/) or [discord.gg/minmatar](http://discord.gg/minmatar) [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+
+**Formatting issue:** Scout table put Bring Fun Shit in the same paragraph. Send it as pitch → blank line → video alone (see action-thread send below).
+
+**Routing note:** Already did a year in Rattini, not interested in dreads, patchy IRL → Soltech IRL-first, not Rattini again.
+
+---
+
+### Alpha, Amarr staging, L3s + FW
+**Thread:** [Corp looking](https://www.reddit.com/r/evejobs/comments/1wbd6q6/corp_looking/)  
+**Routed:** Minmatar Fleet Associates  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> Alpha with short grind time is still enough for Minmatar Fleet Associates, highsec bulwark missions and industry without an Omega tax, and you can keep Amarr as a staging while you decide if a subscription is worth it later. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor [https://youtu.be/XCApG7Pt6m4](https://youtu.be/XCApG7Pt6m4)
+
+**What to change next time:** Same glue issue. Split Rock Hoppin' onto its own line. Discord contact is now **Keldor00** (this send still said Keldor).
+
+**Routing note:** Academy API requires Omega. Alpha + highsec missions → MFA, not L3ARN.
+
+---
+
+### 380m SP Delve industrialist, four accounts, prefers a large bloc
+**Thread:** [Looking for a new home](https://www.reddit.com/r/evejobs/comments/1w9xy2o/looking_for_a_new_home/)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> The new highsec bulwark systems pay well enough that a four-account miner with a JF and a demanding job does not need another Delve shuffle, and Minmatar Extraction Company runs multiple Amo fleets a day with roughly 24/7 coverage inside Minmatar Fleet Associates. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor, or [the mining ad](https://www.reddit.com/r/evejobs/comments/1w9rlea/mining_for_the_largest_war_in_new_eden/) [https://youtu.be/XCApG7Pt6m4](https://youtu.be/XCApG7Pt6m4)
+
+**Routing note:** Sov-null / Delve-prefer mining lock still gets Extraction; never “we have sov too.” Split the video next time. Use Keldor00.
+
+---
+
+### r/Eve: returning Goons, “where’s the action”
+**Thread:** [Returning player, where’s the action](https://www.reddit.com/r/Eve/comments/1wad0w2/returning_player_wheres_the_action/)  
+**Routed:** alliance FW redirect  
+**Author:** BearThatCares
+
+**Scout draft (one paragraph, video glued):**
+> Delve is quieter than the 2022 Goons memory and Amarr-Minmatar faction warfare is where the back-to-back fights actually are, Amamake especially, so skip the asset-safety trip. discord.gg/minmatar + Bring Fun Shit
+
+**Sent:**
+> Delve is quieter than the 2022 Goons memory and Amarr-Minmatar faction warfare is where the back-to-back fights actually are, Amamake especially, so skip the asset-safety trip.
+>
+> [discord.gg/minmatar](http://discord.gg/minmatar)
+>
+> [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+
+**What changed and why:** Split discord and Bring Fun Shit onto their own lines. This is the Reddit send-shape for a no-ad FW redirect (pitch / discord / video).
+
+**Routing note:** Location/advice threads still count when they are shopping for where to play. Proof-first FW, no named corp.
+
+---
+
+### Forum: UK 53m SP, wants 0.0 roams / Sabre
+**Thread:** [Returning long time player looking for a new home UK TZ](https://forums.eveonline.com/t/returning-long-time-player-looking-for-a-new-home-uk-tz/517891)  
+**Routed:** FOSFO (live ad; not on corporations API)  
+**Author:** BearThatCares
+
+**Scout draft:**
+> Skip another 0.0 PAP home if the real ask is UK evening roams in a Sabre. FOSFO … [full evejobs comment URL] **https://youtu.be/7-eGTtq9vWo**
+
+**Sent:**
+> Skip another 0.0 PAP home if the real ask is UK evening roams in a Sabre. FOSFO is the tight EUTZ Minmatar FW skirmish crew for that window, small roster, thick skin, and alliance fights when something huge shows up.
+>
+> https://www.reddit.com/r/evejobs/s/qjCRmobtF5
+>
+> https://youtu.be/7-eGTtq9vWo
+
+**What changed and why:**
+- Reddit **shortlink** (`/r/evejobs/s/…`) so Discourse oneboxes as the word `Reddit`.
+- Bare YouTube URL on its own line → native video embed. Do **not** bold the URL (that was the old house close; embeds beat bold text).
+
+**Routing note:** Prefer-null + UK small-gang roam → FOSFO live ad OK while corp is missing from the API.
+
+---
+
+### Forum: small EU indy corp seeking a null-sec home
+**Thread:** [Small EU Indy Corp Looking for a Null-Sec Home](https://forums.eveonline.com/t/small-eu-indy-corp-looking-for-a-null-sec-home/517953)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Scout draft:** pitch + Keldor + mining ad + Rock Hoppin' in one blob.
+
+**Sent:**
+> Null-sec politics are optional when the rocks are in highsec bulwarks. Minmatar Extraction Company runs multiple daily Amo fleets with 100% Jita buyback inside Minmatar Fleet Associates if a small EU industry group wants a laid-back home that still undocks.
+>
+> discord.gg/minmatar and ask for Keldor00
+>
+> https://youtu.be/XCApG7Pt6m4
+
+**What changed and why:** Dropped the Reddit mining ad (site/discord is enough when the ask is a group home). Discord contact **Keldor00**. Bare YouTube on its own line for the embed. Pitch / contact / video.
+
+**Routing note:** Industry **corp** hunting a null alliance is still an Extraction redirect, not a skip.
+
+---
+
+### Forum: 14-person Gallente mine/build corp looking to merge
+**Thread:** [Small Corp looking to disband and merge into another team](https://forums.eveonline.com/t/small-corp-looking-to-disband-and-merge-into-another-team/517824)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Fourteen people who mainly mine and build, tired of alliance merges that do not stick, is the Minmatar Extraction Company picture: organized Amo fleets, 100% Jita buyback, highsec bulwarks, and a network that already absorbs small industry groups. discord.gg/minmatar and ask for Keldor + Rock Hoppin'
+
+**Sent:**
+> Minmatar Extraction Company has 3-5 mining fleets a day, and supplies 100B+ of highsec ore every month to the faction warfare efforts.
+>
+> https://my.minmatar.org/
+>
+> https://youtu.be/XCApG7Pt6m4
+
+**What changed and why:** Dropped the 14-person weave and Keldor. Fleet-density + monthly ore volume is the fear-kill for empty mining promises. Site onebox (`my.minmatar.org`) then Rock Hoppin' embed. Same family as “4 fleets per day / 24/7” sov-miner redirects.
+
+**Routing note:** Corp-merge industry seekers → Extraction stats + site, not a brochure paragraph.
+
+---
+
+### Already on the thread before this scout closed
+- [Returner 76m SP lf...](https://www.reddit.com/r/evejobs/comments/1wai32z/returner_76m_sp_lf/) — Bear: casual-dad FW + my.minmatar.org
+- [Returning player looking for PvX WH corp UK/EU TZ](https://www.reddit.com/r/evejobs/comments/1w79ue3/returning_player_looking_for_pvx_wh_corp_ukeu_tz/) — Bear: WH second-job / FW session math + Bring Fun Shit (glued in one paragraph; split next time)
+- [EU based returning bittervet looking for home](https://www.reddit.com/r/evejobs/comments/1w7132l/eu_based_returning_bittervet_looking_for_home/) — Sycamoria: Soltech
+- [Back into the fray](https://forums.eveonline.com/t/back-into-the-fray/517708) — Bear: Soltech + MFA PI, corp directory onebox, Bring Fun Shit embed
+
+---
+
+## Patterns (2026-09-09 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Ex-Rattini USTZ, no caps, IRL patchy | Soltech; do not recycle Rattini |
+| Alpha / no Omega | MFA; Academy is Omega-gated |
+| Delve / sov-prefer miner | Extraction bulwarks; video split next time |
+| r/Eve “where’s the action” | FW redirect; pitch / discord / video as three blocks |
+| UK Sabre roam, wants 0.0 | FOSFO live ad; forum Reddit **shortlink** + bare youtu.be embed |
+| EU indy corp seeking null home | Extraction; Keldor00; drop mining ad; YouTube embed |
+| 14-person mine/build merge | Extraction **stats** (3–5 fleets/day, 100B+ ore/month) + my.minmatar.org + Rock Hoppin' embed |
+| Reddit send-shape | Pitch paragraph → blank → proof video alone. Do not glue youtu.be into the pitch |
+| Forum send-shape | Pitch with join CTA (discord and/or ad/directory) → optional proof onebox (warzone/AAR) → **bare** youtu.be. Warzone/video are not the call to action. Stop bolding YouTube URLs |
+| MFA Discord | `Keldor00` |
+| Proof stack (going forward) | Bring Fun Shit on **every** send; Rock Hoppin' extra for mining; newest kit AAR extra for PvP/caps (Kamela 350B default, Ahbazon 700B for dreads) |
+
+---
+
 ## 2026-08-10 scout run
 
 ### Returning US Central, 12m SP, PvE-leaning learner
@@ -316,7 +668,7 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ### Corp routing map (recruiter update, 2026-08-09)
 
-Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it.
+Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it. Superseded 2026-09-12 (Solaris added).
 
 | Corp | Route |
 |------|--------|

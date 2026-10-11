@@ -4,10 +4,23 @@ import { COVER_IMAGE as SCALDING_COVER, PERIOD_SCALDING_ISK_KILLS as SCALDING_IS
 import { COVER_IMAGE as HEK_COVER, ISK_DESTROYED as HEK_ISK } from '@/data/campaigns/hek'
 import { COVER_IMAGE as AUGA_COVER, CAMPAIGN_ISK_DESTROYED as AUGA_ISK, ALLIANCE_PATH as AUGA_PATH, SLUG as AUGA_SLUG } from '@/data/campaigns/auga'
 import { formatIsk } from '@/data/campaigns/hek'
+import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 } from '@/data/warzone/yc128-07'
+import { PERMALINK_PATH as WARZONE_08_PATH, YC128_08 } from '@/data/warzone/yc128-08'
+import { PERMALINK_PATH as WARZONE_09_PATH, YC128_09 } from '@/data/warzone/yc128-09'
+import {
+    COVER_IMAGE as AMAMAKE_COVER,
+    PERMALINK_PATH as AMAMAKE_08_PATH,
+    YC128_08 as AMAMAKE_YC128_08,
+} from '@/data/amamake-market/yc128-08'
+import {
+    PERMALINK_PATH as AMAMAKE_09_PATH,
+    YC128_09 as AMAMAKE_YC128_09,
+} from '@/data/amamake-market/yc128-09'
 
-export type CampaignKind = 'campaign' | 'siege'
+export type CampaignKind = 'campaign' | 'siege' | 'warzone'
+export type WarzoneReportType = 'frontline' | 'economic'
 
-export type CampaignMeta = {
+type CampaignMetaShared = {
     slug: string
     path: string
     nameKey: string
@@ -16,10 +29,15 @@ export type CampaignMeta = {
     coverImage: string
     iskDestroyed: number
     sortOrder: number
-    kind: CampaignKind
+    /** i18n key for the card's ISK figure label. Defaults to `destroyed`. */
+    isk_label_key?: string
     /** Campaign/siege end date for content-stream sorting. */
     published_at: Date
 }
+
+export type CampaignMeta =
+    | (CampaignMetaShared & { kind: 'campaign' | 'siege' })
+    | (CampaignMetaShared & { kind: 'warzone'; warzone_type: WarzoneReportType })
 
 export const campaigns: CampaignMeta[] = [
     {
@@ -82,6 +100,73 @@ export const campaigns: CampaignMeta[] = [
         kind: 'siege',
         published_at: new Date('2026-07-18T00:00:00Z'),
     },
+    {
+        slug: 'yc128-07',
+        path: WARZONE_PATH,
+        nameKey: 'warzone.yc128_07.name',
+        periodKey: 'warzone.yc128_07.period',
+        excerptKey: 'warzone.yc128_07.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_07.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'frontline',
+        published_at: new Date('2026-07-31T00:00:00Z'),
+    },
+    {
+        slug: 'yc128-08',
+        path: WARZONE_08_PATH,
+        nameKey: 'warzone.yc128_08.name',
+        periodKey: 'warzone.yc128_08.period',
+        excerptKey: 'warzone.yc128_08.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_08.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'frontline',
+        published_at: new Date('2026-08-31T00:00:00Z'),
+    },
+    {
+        slug: 'yc128-09',
+        path: WARZONE_09_PATH,
+        nameKey: 'warzone.yc128_09.name',
+        periodKey: 'warzone.yc128_09.period',
+        excerptKey: 'warzone.yc128_09.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_09.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'frontline',
+        published_at: new Date('2026-09-30T00:00:00Z'),
+    },
+    {
+        slug: 'amamake-market-yc128-08',
+        path: AMAMAKE_08_PATH,
+        nameKey: 'amamake_market.yc128_08.name',
+        periodKey: 'amamake_market.yc128_08.period',
+        excerptKey: 'amamake_market.yc128_08.leading_text',
+        coverImage: AMAMAKE_COVER,
+        iskDestroyed: AMAMAKE_YC128_08.sales.isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'economic',
+        isk_label_key: 'sold',
+        published_at: AMAMAKE_YC128_08.published_at,
+    },
+    {
+        slug: 'amamake-market-yc128-09',
+        path: AMAMAKE_09_PATH,
+        nameKey: 'amamake_market.yc128_09.name',
+        periodKey: 'amamake_market.yc128_09.period',
+        excerptKey: 'amamake_market.yc128_09.leading_text',
+        coverImage: AMAMAKE_COVER,
+        iskDestroyed: AMAMAKE_YC128_09.sales.isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'economic',
+        isk_label_key: 'sold',
+        published_at: AMAMAKE_YC128_09.published_at,
+    },
 ]
 
 export function getCampaigns(): CampaignMeta[] {
@@ -96,10 +181,33 @@ export function getSieges(): CampaignMeta[] {
         .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
+/** Campaigns and sieges; monthly warzone reports have their own strip. */
 export function getAllCampaigns(): CampaignMeta[] {
-    return [...campaigns].sort(
-        (a, b) => b.published_at.getTime() - a.published_at.getTime(),
-    )
+    return campaigns
+        .filter((c) => c.kind !== 'warzone')
+        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
+}
+
+const WARZONE_TYPE_ORDER: Record<WarzoneReportType, number> = {
+    frontline: 0,
+    economic: 1,
+}
+
+function is_warzone_report(
+    campaign: CampaignMeta,
+): campaign is CampaignMeta & { kind: 'warzone'; warzone_type: WarzoneReportType } {
+    return campaign.kind === 'warzone'
+}
+
+/** Frontline and Economic reports, newest month first; Frontline before Economic in the same month. */
+export function getWarzoneReports(): CampaignMeta[] {
+    return campaigns
+        .filter(is_warzone_report)
+        .sort((a, b) => {
+            const by_date = b.published_at.getTime() - a.published_at.getTime()
+            if (by_date !== 0) return by_date
+            return WARZONE_TYPE_ORDER[a.warzone_type] - WARZONE_TYPE_ORDER[b.warzone_type]
+        })
 }
 
 export { formatIsk }

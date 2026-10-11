@@ -1,4 +1,4 @@
-export type FleetTypes = 'strategic' | 'non_strategic' | 'training';
+export type FleetTypes = 'strategic' | 'non_strategic' | 'training' | 'npsi';
 
 export type TrackingStatus = 'pending' | 'active' | 'complete' | 'cancelled' | 'unknown';
 

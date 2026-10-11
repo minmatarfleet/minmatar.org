@@ -1,0 +1,97 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeGroupGrowth } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    growth: TribeGroupGrowth | null
+    [propName: string]: any
+}
+
+const { growth, ...attributes } = Astro.props
+delete attributes.class
+
+const chart_id = `tribe-group-growth-${Math.random().toString(36).slice(2, 9)}`
+const labels = (growth?.months ?? []).map((m) => m.label)
+const counts = growth?.counts ?? []
+---
+
+<section
+    class:list={['[ tribe-group-growth ]', Astro.props.class]}
+    aria-label={t('alliance.health.tribes.aria')}
+    x-data={`{
+        chart: null,
+        build_chart() {
+            const canvas = document.getElementById('${chart_id}')
+            const ChartLib = window.Chart
+            if (!canvas || typeof ChartLib === 'undefined') return false
+            if (this.chart) {
+                this.chart.destroy()
+                this.chart = null
+            }
+            const root = getComputedStyle(document.documentElement)
+            const fg = root.getPropertyValue('--foreground').trim() || '#ccc'
+            const accent = root.getPropertyValue('--alliance-blue').trim() || '#2051B5'
+            ChartLib.defaults.color = fg
+            ChartLib.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
+            ChartLib.defaults.font.family = 'Montserrat Variable'
+            this.chart = new ChartLib(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ${JSON.stringify(labels)},
+                    datasets: [{
+                        label: ${JSON.stringify(t('tribe_members'))},
+                        data: ${JSON.stringify(counts)},
+                        borderColor: accent,
+                        backgroundColor: accent,
+                        tension: 0,
+                        pointRadius: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } },
+                },
+            })
+            return true
+        },
+        init() {
+            if (this.build_chart()) return
+            let tries = 0
+            const timer = setInterval(() => {
+                tries += 1
+                if (this.build_chart() || tries > 40) clearInterval(timer)
+            }, 100)
+        }
+    }`}
+>
+    <div class="[ tribe-group-growth__header ]">
+        <h2>{t('tribe_members')}</h2>
+        <small>{t('tribes.growth.caption')}</small>
+    </div>
+    {(!growth || labels.length === 0) ?
+        <p>{t('tribes.growth.empty')}</p>
+        :
+        <div class="[ tribe-group-growth__canvas-wrap ]">
+            <canvas id={chart_id} aria-hidden="true"></canvas>
+        </div>
+    }
+</section>
+
+<style lang="scss">
+    .tribe-group-growth__header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin-bottom: var(--space-s);
+    }
+
+    .tribe-group-growth__canvas-wrap {
+        position: relative;
+        height: 14rem;
+        width: 100%;
+    }
+</style>

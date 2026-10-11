@@ -52,12 +52,9 @@ const extra_query = alliance_health_table_params({
 const can_act = (pilot: AllianceHealthTrialPilot) =>
     can_promote_alliance_health_trial({
         can_mutate: can_promote,
-        bucket,
         alliance_wide,
         officer_corp_ids,
         corporation_id: pilot.corporation_id,
-        decision: pilot.decision,
-        alliance_days: pilot.alliance_days,
     })
 
 const order_by_options: AllianceHealthOrderOption[] = [

@@ -21,8 +21,8 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_403_Forbidden()
 
-import { create_fleet, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
-import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
+import { create_fleet, get_audiences, get_locations, start_fleet } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRequest, FleetTypes, Audience, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -49,7 +49,9 @@ if (Astro.request.method === "POST") {
             start_time: start_time,
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
+            location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
+            hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
             immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
         } as FleetRequest
         
@@ -93,12 +95,13 @@ if (Astro.request.method === "POST") {
 }
 
 import { get_user_character } from '@helpers/fetching/characters'
-import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
 
 let doctrines:DoctrineType[] = []
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error: Error | false = false
 let audiences:Audience[] = []
+let locations:Location[] = []
 
 try {
     const user_profile = await get_user_character((user as User).user_id)
@@ -111,8 +114,9 @@ try {
         character_name: user_profile.character_name,
     }
 
-    doctrines = await fetch_doctrines()
+    doctrines = await fetch_doctrine_options()
     audiences = await get_audiences(auth_token as string)
+    locations = await get_locations(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = error
 }
@@ -200,11 +204,13 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                 :
                 <FleetForm
                     audiences={audiences}
+                    locations={locations}
                     doctrines={doctrines}
                     fleet_commander={fleet_commander as CharacterBasic}
                     eve_date={eve_date}
                     eve_time={eve_time}
                     disable_motd={false}
+                    hide_volunteers={false}
                     lang={lang}
                 />
             }

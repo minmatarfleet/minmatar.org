@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.models import Group as AuthGroup
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 
 from eveonline.models import EveCorporation
 from groups.models import (
@@ -20,6 +20,9 @@ VALID_STATUSES = {"active", "trial", "on_leave"}
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
 
+# Corp <TICKER> groups: Alliance members and Associate recruiters.
+CORPORATION_GROUP_AFFILIATION_NAMES = frozenset({"Alliance", "Associate"})
+
 # Django auth group for Discord / permissions: anyone who is chief of an active tribe.
 TRIBE_CHIEF_GROUP_NAME = "Tribe - Chief"
 
@@ -30,6 +33,60 @@ CORPORATION_GROUP_SUFFIXES = {
     EveCorporationGroup.GROUP_TYPE_DIRECTOR: " Director",
     EveCorporationGroup.GROUP_TYPE_GUNNER: " Gunner",
 }
+
+# Same Django permissions as alliance corp recruiter groups (A-RAT, L3ARN, …).
+# Associate recruiters are not in the Alliance group, so they only get site
+# access if these are on their Corp <TICKER> Recruiter group.
+RECRUITER_APPLICATION_PERMISSION_CODENAMES = (
+    "add_evecorporationapplication",
+    "change_evecorporationapplication",
+    "delete_evecorporationapplication",
+    "view_evecorporationapplication",
+)
+
+
+def recruiter_application_permissions():
+    """Permissions that let recruiters view/manage corp applications on the site."""
+    return list(
+        Permission.objects.filter(
+            content_type__app_label="applications",
+            codename__in=RECRUITER_APPLICATION_PERMISSION_CODENAMES,
+        )
+    )
+
+
+def ensure_recruiter_application_permissions(auth_group: AuthGroup) -> None:
+    """Grant corp-application perms on a recruiter Django group if missing."""
+    perms = recruiter_application_permissions()
+    if not perms:
+        logger.warning(
+            "Application permissions missing; cannot grant them to %s",
+            auth_group.name,
+        )
+        return
+    existing = set(
+        auth_group.permissions.filter(
+            pk__in=[p.pk for p in perms]
+        ).values_list("pk", flat=True)
+    )
+    missing = [p for p in perms if p.pk not in existing]
+    if missing:
+        auth_group.permissions.add(*missing)
+        logger.info(
+            "Granted application permissions to recruiter group %s",
+            auth_group.name,
+        )
+
+
+def _grant_recruiter_permissions_for_corp_groups(
+    corporation_groups: list[EveCorporationGroup],
+) -> None:
+    for corporation_group in corporation_groups:
+        if (
+            corporation_group.group_type
+            == EveCorporationGroup.GROUP_TYPE_RECRUITER
+        ):
+            ensure_recruiter_application_permissions(corporation_group.group)
 
 
 def ensure_corporation_groups_for_corp(
@@ -42,11 +99,13 @@ def ensure_corporation_groups_for_corp(
     Returns the list of EveCorporationGroup for this corporation.
     """
     if not corporation.generate_corporation_groups or not corporation.ticker:
-        return list(
+        groups = list(
             EveCorporationGroup.objects.filter(
                 corporation=corporation
             ).order_by("group_type")
         )
+        _grant_recruiter_permissions_for_corp_groups(groups)
+        return groups
 
     base_name = f"Corp {corporation.ticker}"
     created_groups = []
@@ -71,11 +130,13 @@ def ensure_corporation_groups_for_corp(
         )
         created_groups.append(ecg)
 
-    return list(
+    groups = list(
         EveCorporationGroup.objects.filter(corporation=corporation).order_by(
             "group_type"
         )
     )
+    _grant_recruiter_permissions_for_corp_groups(groups)
+    return groups
 
 
 def offboard_corporation_groups(corporation: EveCorporation) -> None:
@@ -142,6 +203,33 @@ def process_bulk_community_status_row(
     return (True, None, None)
 
 
+def reconcile_community_status_for_affiliation(user: User) -> None:
+    """Clear trial/on_leave when the user is no longer Alliance."""
+    affiliation = (
+        UserAffiliation.objects.filter(user=user)
+        .select_related("affiliation")
+        .first()
+    )
+    if affiliation and affiliation.affiliation.requires_trial:
+        return
+    ucs = UserCommunityStatus.objects.filter(user=user).first()
+    if ucs is None or ucs.status not in (
+        UserCommunityStatus.STATUS_TRIAL,
+        UserCommunityStatus.STATUS_ON_LEAVE,
+    ):
+        return
+    ucs.status = UserCommunityStatus.STATUS_ACTIVE
+    ucs.save(update_fields=["status"])
+    latest = (
+        UserCommunityStatusHistory.objects.filter(user=user)
+        .order_by("-changed_at")
+        .first()
+    )
+    if latest and not latest.reason:
+        latest.reason = "No longer Alliance"
+        latest.save(update_fields=["reason"])
+
+
 def sync_user_community_groups(user: User) -> None:
     """
     Set the user's Django groups based on UserCommunityStatus and UserAffiliation.
@@ -157,11 +245,8 @@ def sync_user_community_groups(user: User) -> None:
     affiliation = UserAffiliation.objects.filter(user=user).first()
     affiliation_group = affiliation.affiliation.group if affiliation else None
 
-    try:
-        ucs = user.community_status
-        status = ucs.status
-    except UserCommunityStatus.DoesNotExist:
-        status = UserCommunityStatus.STATUS_ACTIVE
+    ucs = UserCommunityStatus.objects.filter(user=user).first()
+    status = ucs.status if ucs else UserCommunityStatus.STATUS_ACTIVE
 
     # Include ALL affiliation type groups (not just the current one) so that
     # when a user moves from e.g. Alliance → Guest, the old Alliance group is

@@ -1,0 +1,78 @@
+---
+/**
+ * Shown to an FC whose characters lack the ESI fittings scope. Refits and
+ * custom fits are saved in-game under the FC, so the scope is required.
+ * The SSO flow opens in a new tab; "Check again" reloads the modal.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetFittingAccess } from '@helpers/api.minmatar.org/fleets'
+import { get_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
+
+interface Props {
+    fleet_id:       number;
+    access:         FleetFittingAccess;
+    /** Partial URL of the modal to reload once the scope is added. */
+    reload_url:     string;
+}
+
+const { fleet_id, access, reload_url } = Astro.props
+
+const redirect_url = get_app_url(translatePath(`/fleets/upcoming/${fleet_id}`))
+const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const ADD_SCOPE_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=${access.token_type}${access.character_id ? `&character_id=${access.character_id}` : ''}${account_user_query}`
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<div class="[ scope-notice ]">
+    <Flexblock gap='var(--space-s)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <p class="[ scope-notice__title ]">{t('fitting_scope_title')}</p>
+            <small>
+                {access.character_name
+                    ? t('fitting_scope_text').replace('{character}', access.character_name)
+                    : t('fitting_scope_text_no_character')}
+            </small>
+        </Flexblock>
+        <FlexInline gap='var(--space-s)' class="[ items-center ]">
+            <Button
+                size='sm'
+                color='green'
+                href={ADD_SCOPE_URL}
+                new_tab={true}
+            >
+                {t('fitting_scope_add')}
+            </Button>
+            <Button
+                size='sm'
+                color='transparent'
+                type="button"
+                hx-get={reload_url}
+                hx-target="closest .modal-content"
+                hx-swap="innerHTML transition:true"
+                hx-indicator=".loader"
+            >
+                {t('fitting_scope_check_again')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .scope-notice {
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .scope-notice__title {
+        color: var(--highlight);
+        font-size: var(--step-0);
+    }
+</style>

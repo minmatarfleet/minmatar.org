@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +11,7 @@ class EveFleetType(str, Enum):
     STRATEGIC = "strategic"
     NON_STRATEGIC = "non_strategic"
     TRAINING = "training"
+    NPSI = "npsi"
 
 
 class EveFleetChannelResponse(BaseModel):
@@ -43,8 +44,10 @@ class EveFleetResponse(BaseModel):
     doctrine_id: Optional[int] = None
     location: str
     disable_motd: bool = False
+    hide_volunteers: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    roam_report_url: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -63,6 +66,8 @@ class EveFleetLocationResponse(BaseModel):
     location_name: str
     solar_system_id: int
     solar_system_name: str
+    short_name: str
+    staging_active: bool
 
 
 class EveFleetUsersResponse(BaseModel):
@@ -79,6 +84,7 @@ class CreateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: Optional[int] = None
     disable_motd: bool = False
+    hide_volunteers: bool = False
     immediate_ping: bool = False
     status: Optional[str] = None
 
@@ -92,6 +98,7 @@ class UpdateEveFleetRequest(BaseModel):
     audience_id: Optional[int] = None
     location_id: Optional[int] = None
     disable_motd: Optional[bool] = False
+    hide_volunteers: Optional[bool] = None
     status: Optional[str] = None
     aar_link: Optional[str] = None
 
@@ -144,6 +151,9 @@ class EveFleetRoleVolunteerResponse(BaseModel):
     role: str
     subtype: Optional[str] = None
     quantity: Optional[int] = None
+    # FC-assigned cyno system; only serialized for the FC and the pilot.
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -160,3 +170,143 @@ class EveFleetFilter(str, Enum):
     ACTIVE = "active"
     UPCOMING = "upcoming"
     RECENT = "recent"
+
+
+class AssignRoleVolunteerSystemRequest(BaseModel):
+    """FC assigns (or clears) the system for a cyno volunteer."""
+
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = Field(default=None, max_length=255)
+
+
+class EveFleetShipVolunteerResponse(BaseModel):
+    id: int
+    character_id: int
+    character_name: str
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    fitting_name: str
+    ship_id: int
+
+
+class EveFleetFittingRefitOption(BaseModel):
+    id: int
+    name: str
+
+
+class EveFleetCompositionEntryResponse(BaseModel):
+    """One ship in the fleet's effective composition."""
+
+    key: str
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    name: str
+    ship_id: int
+    ship_name: str
+    ship_group: str = ""
+    role: str
+    source: str
+    eft_format: str
+    refits: List[EveFleetFittingRefitOption]
+    module_slots: Dict[str, str] = {}
+
+
+class CreateEveFleetFittingRequest(BaseModel):
+    """Add a catalog fitting (fitting_id) or a manual EFT fit (eft_format)."""
+
+    fitting_id: Optional[int] = None
+    eft_format: Optional[str] = None
+    role: str = "primary"
+
+
+class EveFleetFittingRefitModule(BaseModel):
+    name: str
+    quantity: int
+    type_id: Optional[int] = None
+
+
+class EveFleetFittingRefitResponse(BaseModel):
+    id: int
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    fitting_name: str
+    ship_id: int
+    refit_id: Optional[int] = None
+    name: str
+    cargo_modules: str
+    modules: List[EveFleetFittingRefitModule]
+    notes: str
+    eft_format: str = ""
+    esi_fitting_id: Optional[int] = None
+
+
+class EveFleetRefitSwap(BaseModel):
+    """One slot swap: the fitted module and the cargo module replacing it."""
+
+    module_out: str = Field(max_length=255)
+    module_in: str = Field(max_length=255)
+
+
+class CreateEveFleetFittingRefitRequest(BaseModel):
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    refit_id: Optional[int] = None
+    name: Optional[str] = Field(default=None, max_length=255)
+    cargo_modules: Optional[str] = None
+    notes: Optional[str] = Field(default=None, max_length=200)
+    # Custom refit built from slot swaps; cargo_modules/notes derive from
+    # it when omitted and the refit EFT is saved in-game under the FC.
+    swaps: Optional[List[EveFleetRefitSwap]] = None
+
+
+class EveFleetFittingAccessResponse(BaseModel):
+    """Whether the FC can save refits / custom fits in-game (ESI scope)."""
+
+    can_publish: bool
+    scope: str
+    token_type: str
+    character_id: Optional[int] = None
+    character_name: Optional[str] = None
+
+
+class EveFleetSupplyEntryResponse(BaseModel):
+    """Availability of one composition entry at the fleet's staging location."""
+
+    key: str
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    contracts: Optional[int] = None
+    market_fits: Optional[int] = None
+    market_missing: List[str] = []
+
+
+class EveFleetSupplyResponse(BaseModel):
+    entries: List[EveFleetSupplyEntryResponse]
+
+
+class ShipSelection(BaseModel):
+    """Which composition entry a character brings (both ids null = not flying)."""
+
+    character_id: int
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+
+
+class MyFleetPilotResponse(BaseModel):
+    character_id: int
+    character_name: str
+    recent_fleets: bool
+    selection: Optional[ShipSelection] = None
+
+
+class SetMyShipVolunteersRequest(BaseModel):
+    selections: List[ShipSelection]
+
+
+class MyFleetFittingResponse(BaseModel):
+    """A custom EFT fit the caller has used on a previous fleet."""
+
+    name: str
+    ship_id: int
+    ship_name: str
+    eft_format: str

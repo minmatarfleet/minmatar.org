@@ -33,7 +33,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
 
 class JobClass(str, Enum):
@@ -57,6 +57,12 @@ class FacilityBonuses:
     # Multiplicative bonus on system-index gross cost (e.g. -0.5 for FW -50%).
     # Does not apply to facility tax or SCC surcharge.
     system_cost_bonus: float = 0.0
+    # Structure hull + representative rig for this job class (UI / API only;
+    # the numeric bonuses above are what the planner actually costs with).
+    structure_kind: str = "sotiyo"
+    structure_type_id: int = 0
+    rig_name: str = ""
+    rig_type_id: int = 0
 
     @property
     def effective_me(self) -> float:
@@ -89,6 +95,10 @@ class ReprocessingProfile:
     structure_modifier: float = 0.0
     # Corp reprocessing tax on Tatara output value (e.g. 2.5%).
     facility_tax: float = 0.0
+    # Structure hull + representative rig (UI / API only).
+    structure_kind: str = "tatara"
+    structure_type_id: int = 0
+    rig_type_id: int = 0
 
     def facility_base_yield(self) -> float:
         """Structure + rig yield as a fraction (before character skills)."""
@@ -126,6 +136,102 @@ class ReprocessingProfile:
         return math.floor(output_value * self.facility_tax)
 
 
+@dataclass(frozen=True)
+class RigFit:
+    """A fitted Standup rig, for the planner facility card (display only)."""
+
+    name: str
+    type_id: int
+    # Job class this rig accelerates (drives the ME/TE effect label). None for
+    # auxiliary rigs whose bonus the planner does not cost with:
+    #   aux="lab" (research), aux="reprocess" (reprocessing yield).
+    job_class: Optional[JobClass] = None
+    aux: str = ""
+
+
+@dataclass(frozen=True)
+class StructureFit:
+    """A fitted freeport structure with its full rig complement (display)."""
+
+    role: str  # "ship" | "component" | "reaction" | "reprocessing"
+    name: str  # matches the FacilityBonuses / ReprocessingProfile it backs
+    kind: str  # "sotiyo" | "azbel" | "athanor" | "tatara"
+    type_id: int
+    rigs: Tuple[RigFit, ...] = ()
+
+
+# --- EVE type IDs: freeport structures + fitted industry rigs ---
+SOTIYO_TYPE_ID = 35827
+TATARA_TYPE_ID = 35836
+AZBEL_TYPE_ID = 35826
+ATHANOR_TYPE_ID = 35835
+
+# Sotiyo + Tatara stack (Amamake / Auner / Basgerin).
+RIG_XL_SHIP_MFG = RigFit(
+    "Standup XL-Set Ship Manufacturing Efficiency I",
+    37180,
+    JobClass.SHIP_MANUFACTURING,
+)
+RIG_XL_THUKKER = RigFit(
+    "Standup XL-Set Thukker Structure and Component Manufacturing Efficiency",
+    45548,
+    JobClass.COMPONENT_MANUFACTURING,
+)
+RIG_XL_LAB = RigFit(
+    "Standup XL-Set Laboratory Optimization I", 37183, None, aux="lab"
+)
+RIG_L_REACTOR_EFF = RigFit(
+    "Standup L-Set Reactor Efficiency II", 46497, JobClass.REACTION
+)
+RIG_L_REPROCESS_MONITOR = RigFit(
+    "Standup L-Set Reprocessing Monitor II", 46640, None, aux="reprocess"
+)
+
+# Azbel + twin Athanor stack (Gukarla / Resbroko "Hydra" freeports).
+RIG_L_CAP_SHIP_MFG = RigFit(
+    "Standup L-Set Capital Ship Manufacturing Efficiency I",
+    37173,
+    JobClass.SHIP_MANUFACTURING,
+)
+RIG_L_BASIC_CAP_COMPONENT = RigFit(
+    "Standup L-Set Basic Capital Component Manufacturing Efficiency I",
+    43718,
+    JobClass.COMPONENT_MANUFACTURING,
+)
+RIG_L_THUKKER_ADV_COMPONENT = RigFit(
+    "Standup L-Set Thukker Advanced Component Manufacturing Efficiency",
+    45641,
+    JobClass.COMPONENT_MANUFACTURING,
+)
+RIG_M_BIOCHEMICAL_REACTOR = RigFit(
+    "Standup M-Set Biochemical Reactor Material Efficiency I",
+    46494,
+    JobClass.REACTION,
+)
+RIG_M_COMPOSITE_REACTOR = RigFit(
+    "Standup M-Set Composite Reactor Material Efficiency I",
+    46486,
+    JobClass.REACTION,
+)
+RIG_M_HYBRID_REACTOR = RigFit(
+    "Standup M-Set Hybrid Reactor Material Efficiency I",
+    46490,
+    JobClass.REACTION,
+)
+RIG_M_ASTEROID_GRADING = RigFit(
+    "Standup M-Set Asteroid Ore Grading Processor I",
+    46633,
+    None,
+    aux="reprocess",
+)
+RIG_M_ICE_GRADING = RigFit(
+    "Standup M-Set Ice Grading Processor I", 46635, None, aux="reprocess"
+)
+RIG_M_MOON_GRADING = RigFit(
+    "Standup M-Set Moon Ore Grading Processor I", 46637, None, aux="reprocess"
+)
+
+
 # --- Rig base bonuses (before security multiplier) ---
 # Standup XL-Set Ship Manufacturing Efficiency I
 _SHIP_RIG_ME_BASE = 0.02
@@ -143,6 +249,34 @@ _REACTOR_RIG_TE_BASE = 0.24
 
 _LOWSEC_ENGINEERING_MULT = 1.9
 _LOWSEC_REACTOR_MULT = 1.0
+
+# --- Hydra (Azbel + Athanor) rig base bonuses ---
+# Standup L-Set Capital Ship Manufacturing Efficiency I (ESI attr 2593/2594).
+# NOTE: this rig only benefits *capital* ship builds; the planner applies it
+# uniformly to the SHIP_MANUFACTURING class (same limitation the Sotiyo XL ship
+# rig does not have — that one benefits all ships), so sub-capital estimates in
+# a Hydra Azbel are slightly optimistic. The Azbel is a capital yard in practice.
+_CAP_SHIP_RIG_ME_BASE = 0.02
+_CAP_SHIP_RIG_TE_BASE = 0.20
+
+# Standup L-Set Basic / Thukker capital component rigs (ESI attr 2593/2594).
+_CAP_COMPONENT_RIG_ME_BASE = 0.02
+_CAP_COMPONENT_RIG_TE_BASE = 0.20
+
+# Standup M-Set <type> Reactor Material Efficiency I (ESI attr 2714 = -2.0);
+# no time bonus. Lowsec reactor multiplier is 1.0 (as Reactor Efficiency II).
+_MSET_REACTOR_RIG_ME_BASE = 0.02
+
+# Azbel engineering-complex role bonuses (ESI attr 2600/2601/2602 = .99/.96/.80).
+_AZBEL_ROLE_ME = 0.01
+_AZBEL_ROLE_TE = 0.20
+_AZBEL_ISK_BONUS = 0.04
+
+# Athanor refinery running reactions: no reaction ME/time role bonus (only the
+# Tatara carries the -25% reaction-time role bonus).
+_ATHANOR_REACTION_ROLE_ME = 0.0
+_ATHANOR_REACTION_ROLE_TE = 0.0
+_ATHANOR_REACTION_ISK_BONUS = 0.0
 
 # Sotiyo manufacturing role bonuses
 _SOTIYO_ROLE_ME = 0.01
@@ -165,6 +299,15 @@ _TATARA_STRUCTURE_MODIFIER = 0.055
 _REPROCESS_MONITOR_II_RIG_MODIFIER = 3.0  # T2
 _LOWSEC_REPROCESS_SECURITY_MODIFIER = 0.06
 
+# Reprocessing: Athanor + Standup M-Set Ore Grading Processors (Gukarla / Resbroko).
+# Athanor structure modifier is 0.02 (vs Tatara 0.055). The grading-processor rig
+# modifier is derived on the same scale the Monitor II uses: ESI refiningYield
+# (attr 717) minus the 0.50 base, ×100 — Monitor II 0.53 → 3.0 calibrates it, so
+# the M-Set grading rig 0.51 → 1.0. The three grading rigs cover asteroid / ice /
+# moon ore respectively (full ore coverage), each contributing the same modifier.
+_ATHANOR_STRUCTURE_MODIFIER = 0.02
+_GRADING_PROCESSOR_RIG_MODIFIER = 1.0
+
 AMAMAKE_SYSTEM_ID = 30002537
 AMAMAKE_SYSTEM_NAME = "Amamake"
 # FW infrastructure hub level 5: -50% facility pricing (applies system-wide).
@@ -180,6 +323,16 @@ AUNER_SYSTEM_NAME = "Auner"
 _AUNER_FACILITY_TAX = 0.01
 _AUNER_REPROCESSING_TAX = 0.03
 
+GUKARLA_SYSTEM_ID = 30002102
+GUKARLA_SYSTEM_NAME = "Gukarla"
+
+RESBROKO_SYSTEM_ID = 30002056
+RESBROKO_SYSTEM_NAME = "Resbroko"
+
+# Both Hydra freeports sit in FW systems upgraded to -50% facility pricing,
+# and use the same corp taxes as Amamake / Basgerin.
+HYDRA_FW_SYSTEM_COST_BONUS = -0.50
+
 
 def _lowsec_tatara_reprocessing(
     tatara_name: str,
@@ -188,12 +341,35 @@ def _lowsec_tatara_reprocessing(
 ) -> ReprocessingProfile:
     return ReprocessingProfile(
         structure_name=tatara_name,
-        rig_name="Standup L-Set Reprocessing Monitor II",
+        rig_name=RIG_L_REPROCESS_MONITOR.name,
         base_yield_percent=50.0,
         rig_modifier=_REPROCESS_MONITOR_II_RIG_MODIFIER,
         security_modifier=_LOWSEC_REPROCESS_SECURITY_MODIFIER,
         structure_modifier=_TATARA_STRUCTURE_MODIFIER,
         facility_tax=facility_tax,
+        structure_kind="tatara",
+        structure_type_id=TATARA_TYPE_ID,
+        rig_type_id=RIG_L_REPROCESS_MONITOR.type_id,
+    )
+
+
+def _athanor_grading_reprocessing(
+    athanor_name: str,
+    *,
+    facility_tax: float = _FREEPORT_REPROCESSING_TAX,
+) -> ReprocessingProfile:
+    """Athanor + M-Set Ore Grading Processors (Gukarla / Resbroko)."""
+    return ReprocessingProfile(
+        structure_name=athanor_name,
+        rig_name="Standup M-Set Ore Grading Processors (Asteroid / Ice / Moon)",
+        base_yield_percent=50.0,
+        rig_modifier=_GRADING_PROCESSOR_RIG_MODIFIER,
+        security_modifier=_LOWSEC_REPROCESS_SECURITY_MODIFIER,
+        structure_modifier=_ATHANOR_STRUCTURE_MODIFIER,
+        facility_tax=facility_tax,
+        structure_kind="athanor",
+        structure_type_id=ATHANOR_TYPE_ID,
+        rig_type_id=RIG_M_ASTEROID_GRADING.type_id,
     )
 
 
@@ -222,6 +398,10 @@ def _lowsec_freeport_bonuses(
             structure_isk_bonus=_SOTIYO_ISK_BONUS,
             facility_tax=facility_tax,
             system_cost_bonus=system_cost_bonus,
+            structure_kind="sotiyo",
+            structure_type_id=SOTIYO_TYPE_ID,
+            rig_name=RIG_XL_SHIP_MFG.name,
+            rig_type_id=RIG_XL_SHIP_MFG.type_id,
         ),
         JobClass.COMPONENT_MANUFACTURING: FacilityBonuses(
             structure_name=sotiyo_name,
@@ -232,6 +412,10 @@ def _lowsec_freeport_bonuses(
             structure_isk_bonus=_SOTIYO_ISK_BONUS,
             facility_tax=facility_tax,
             system_cost_bonus=system_cost_bonus,
+            structure_kind="sotiyo",
+            structure_type_id=SOTIYO_TYPE_ID,
+            rig_name=RIG_XL_THUKKER.name,
+            rig_type_id=RIG_XL_THUKKER.type_id,
         ),
         JobClass.REACTION: FacilityBonuses(
             structure_name=tatara_name,
@@ -242,6 +426,70 @@ def _lowsec_freeport_bonuses(
             structure_isk_bonus=_TATARA_ISK_BONUS,
             facility_tax=facility_tax,
             system_cost_bonus=system_cost_bonus,
+            structure_kind="tatara",
+            structure_type_id=TATARA_TYPE_ID,
+            rig_name=RIG_L_REACTOR_EFF.name,
+            rig_type_id=RIG_L_REACTOR_EFF.type_id,
+        ),
+    }
+
+
+def _hydra_freeport_bonuses(
+    *,
+    azbel_name: str,
+    reactions_athanor_name: str,
+    system_cost_bonus: float = HYDRA_FW_SYSTEM_COST_BONUS,
+    facility_tax: float = _FREEPORT_FACILITY_TAX,
+) -> Dict[JobClass, FacilityBonuses]:
+    """Azbel manufacturing + Athanor reactions stack (Gukarla / Resbroko)."""
+    cap_ship_me = _CAP_SHIP_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
+    cap_ship_te = _CAP_SHIP_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
+    cap_comp_me = _CAP_COMPONENT_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
+    cap_comp_te = _CAP_COMPONENT_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
+    reactor_me = _MSET_REACTOR_RIG_ME_BASE * _LOWSEC_REACTOR_MULT
+
+    return {
+        JobClass.SHIP_MANUFACTURING: FacilityBonuses(
+            structure_name=azbel_name,
+            role_me=_AZBEL_ROLE_ME,
+            role_te=_AZBEL_ROLE_TE,
+            rig_me=cap_ship_me,
+            rig_te=cap_ship_te,
+            structure_isk_bonus=_AZBEL_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="azbel",
+            structure_type_id=AZBEL_TYPE_ID,
+            rig_name=RIG_L_CAP_SHIP_MFG.name,
+            rig_type_id=RIG_L_CAP_SHIP_MFG.type_id,
+        ),
+        JobClass.COMPONENT_MANUFACTURING: FacilityBonuses(
+            structure_name=azbel_name,
+            role_me=_AZBEL_ROLE_ME,
+            role_te=_AZBEL_ROLE_TE,
+            rig_me=cap_comp_me,
+            rig_te=cap_comp_te,
+            structure_isk_bonus=_AZBEL_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="azbel",
+            structure_type_id=AZBEL_TYPE_ID,
+            rig_name=RIG_L_THUKKER_ADV_COMPONENT.name,
+            rig_type_id=RIG_L_THUKKER_ADV_COMPONENT.type_id,
+        ),
+        JobClass.REACTION: FacilityBonuses(
+            structure_name=reactions_athanor_name,
+            role_me=_ATHANOR_REACTION_ROLE_ME,
+            role_te=_ATHANOR_REACTION_ROLE_TE,
+            rig_me=reactor_me,
+            rig_te=0.0,
+            structure_isk_bonus=_ATHANOR_REACTION_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="athanor",
+            structure_type_id=ATHANOR_TYPE_ID,
+            rig_name=RIG_M_BIOCHEMICAL_REACTOR.name,
+            rig_type_id=RIG_M_BIOCHEMICAL_REACTOR.type_id,
         ),
     }
 
@@ -273,10 +521,37 @@ def _auner_bonuses() -> Dict[JobClass, FacilityBonuses]:
     )
 
 
+# Hydra freeport structure names (shared between bonuses, reprocessing, and the
+# display registry so they line up).
+GUKARLA_AZBEL_NAME = "Gukarla – Hydra Manufacturing (Azbel)"
+GUKARLA_REACTIONS_NAME = "Gukarla – Hydra Reactions (Athanor)"
+GUKARLA_REPROCESSING_NAME = "Gukarla – Hydra Reprocessing (Athanor)"
+RESBROKO_AZBEL_NAME = "Resbroko – Hydra Manufacturing (Azbel)"
+RESBROKO_REACTIONS_NAME = "Resbroko – Hydra Reactions (Athanor)"
+RESBROKO_REPROCESSING_NAME = "Resbroko – Hydra Reprocessing (Athanor)"
+
+
+def _gukarla_bonuses() -> Dict[JobClass, FacilityBonuses]:
+    return _hydra_freeport_bonuses(
+        azbel_name=GUKARLA_AZBEL_NAME,
+        reactions_athanor_name=GUKARLA_REACTIONS_NAME,
+    )
+
+
+def _resbroko_bonuses() -> Dict[JobClass, FacilityBonuses]:
+    # Same fit as Gukarla (Digital Blink: "resbroko is the same setup").
+    return _hydra_freeport_bonuses(
+        azbel_name=RESBROKO_AZBEL_NAME,
+        reactions_athanor_name=RESBROKO_REACTIONS_NAME,
+    )
+
+
 FACILITY_PROFILES: Dict[str, Dict[JobClass, FacilityBonuses]] = {
     "amamake": _amamake_bonuses(),
     "auner": _auner_bonuses(),
     "basgerin": _basgerin_bonuses(),
+    "gukarla": _gukarla_bonuses(),
+    "resbroko": _resbroko_bonuses(),
 }
 
 FACILITY_REPROCESSING: Dict[str, ReprocessingProfile] = {
@@ -290,6 +565,8 @@ FACILITY_REPROCESSING: Dict[str, ReprocessingProfile] = {
     "basgerin": _lowsec_tatara_reprocessing(
         "Basgerin – Reactions & Reprocessing (Tatara)"
     ),
+    "gukarla": _athanor_grading_reprocessing(GUKARLA_REPROCESSING_NAME),
+    "resbroko": _athanor_grading_reprocessing(RESBROKO_REPROCESSING_NAME),
 }
 
 # Solar system used for live ESI industry cost indices per facility profile.
@@ -297,7 +574,107 @@ FACILITY_SYSTEM_IDS: Dict[str, int] = {
     "amamake": AMAMAKE_SYSTEM_ID,
     "auner": AUNER_SYSTEM_ID,
     "basgerin": BASGERIN_SYSTEM_ID,
+    "gukarla": GUKARLA_SYSTEM_ID,
+    "resbroko": RESBROKO_SYSTEM_ID,
 }
+
+
+def _sotiyo_tatara_structures(
+    sotiyo_name: str, tatara_name: str
+) -> List[StructureFit]:
+    """Display fit for the Amamake / Auner / Basgerin stack."""
+    return [
+        StructureFit(
+            role="ship",
+            name=sotiyo_name,
+            kind="sotiyo",
+            type_id=SOTIYO_TYPE_ID,
+            rigs=(RIG_XL_SHIP_MFG, RIG_XL_THUKKER, RIG_XL_LAB),
+        ),
+        StructureFit(
+            role="reaction",
+            name=tatara_name,
+            kind="tatara",
+            type_id=TATARA_TYPE_ID,
+            rigs=(RIG_L_REACTOR_EFF, RIG_L_REPROCESS_MONITOR),
+        ),
+    ]
+
+
+def _hydra_structures(
+    azbel_name: str, reactions_name: str, reprocessing_name: str
+) -> List[StructureFit]:
+    """Display fit for the Gukarla / Resbroko stack (Azbel + twin Athanors)."""
+    return [
+        StructureFit(
+            role="ship",
+            name=azbel_name,
+            kind="azbel",
+            type_id=AZBEL_TYPE_ID,
+            rigs=(
+                RIG_L_CAP_SHIP_MFG,
+                RIG_L_BASIC_CAP_COMPONENT,
+                RIG_L_THUKKER_ADV_COMPONENT,
+            ),
+        ),
+        StructureFit(
+            role="reaction",
+            name=reactions_name,
+            kind="athanor",
+            type_id=ATHANOR_TYPE_ID,
+            rigs=(
+                RIG_M_BIOCHEMICAL_REACTOR,
+                RIG_M_COMPOSITE_REACTOR,
+                RIG_M_HYBRID_REACTOR,
+            ),
+        ),
+        StructureFit(
+            role="reprocessing",
+            name=reprocessing_name,
+            kind="athanor",
+            type_id=ATHANOR_TYPE_ID,
+            rigs=(
+                RIG_M_ASTEROID_GRADING,
+                RIG_M_ICE_GRADING,
+                RIG_M_MOON_GRADING,
+            ),
+        ),
+    ]
+
+
+# Fitted structures + rigs per facility, for the planner facility card.
+FACILITY_STRUCTURES: Dict[str, List[StructureFit]] = {
+    "amamake": _sotiyo_tatara_structures(
+        "Amamake – Police Weapons Facility (Sotiyo)",
+        "Amamake – Reactions & Reprocessing (Tatara)",
+    ),
+    "auner": _sotiyo_tatara_structures(
+        "Auner – Guru Forge (Sotiyo)",
+        "Auner – Guru Foundry (Tatara)",
+    ),
+    "basgerin": _sotiyo_tatara_structures(
+        "Basgerin – The Forgery (Sotiyo)",
+        "Basgerin – Reactions & Reprocessing (Tatara)",
+    ),
+    "gukarla": _hydra_structures(
+        GUKARLA_AZBEL_NAME, GUKARLA_REACTIONS_NAME, GUKARLA_REPROCESSING_NAME
+    ),
+    "resbroko": _hydra_structures(
+        RESBROKO_AZBEL_NAME,
+        RESBROKO_REACTIONS_NAME,
+        RESBROKO_REPROCESSING_NAME,
+    ),
+}
+
+
+def get_facility_structures(name: str) -> List[StructureFit]:
+    """Fitted structure list for a facility profile (display / API)."""
+    key = name.lower().strip()
+    if key not in FACILITY_STRUCTURES:
+        known = ", ".join(sorted(FACILITY_STRUCTURES))
+        raise ValueError(f"Unknown facility profile {name!r}. Known: {known}")
+    return FACILITY_STRUCTURES[key]
+
 
 # Thukker enhanced capital-component ME (lowsec), for Advanced Capital Construction
 # Components. Not used for Typhoon T1 advanced components (group Construction Components).

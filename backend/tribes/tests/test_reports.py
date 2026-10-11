@@ -43,6 +43,7 @@ from tribes.reports.period import parse_period
 from tribes.reports.queries.capitals import run_capitals_report
 from tribes.reports.queries.fleet_commanders import run_fleet_commanders_report
 from tribes.reports.queries.industry_orders import run_industry_orders_report
+from tribes.reports.queries.freight import run_freight_report
 from tribes.reports.queries.mining import run_mining_report
 from tribes.reports.registry import REPORT_BINDINGS, get_binding
 from tribes.reports.runner import ReportError, run_group_report
@@ -205,6 +206,15 @@ class MiningReportTestCase(TestCase):
         self.assertAlmostEqual(rows[0]["volume_m3"], 150.0)
         self.assertAlmostEqual(rows[0]["isk_ore_market_estimate"], 100000.0)
         self.assertAlmostEqual(totals["total_volume_m3"], 150.0)
+        self.assertAlmostEqual(
+            totals["total_isk_ore_market_estimate"], 100000.0
+        )
+        self.assertEqual(totals["miner_count"], 1)
+        self.assertEqual(totals["active_character_count"], 1)
+        self.assertAlmostEqual(
+            totals["avg_isk_per_m3"], round(100000.0 / 150.0, 4), places=4
+        )
+        self.assertAlmostEqual(totals["avg_isk_per_character"], 100000.0)
 
     def test_mining_scope_override_via_runner(self):
         outsider = User.objects.create_user(username="outsider")
@@ -242,6 +252,28 @@ class MiningReportTestCase(TestCase):
         self.assertAlmostEqual(
             alliance_result.totals["total_volume_m3"], 450.0
         )
+
+
+class FreightReportTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.tribe = Tribe.objects.create(name="Supply", slug="supply-freight")
+        self.group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Freighters",
+            code="supply.freighters",
+        )
+
+    def test_empty_freight_totals_include_avg_volume(self):
+        period = parse_period("30d")
+        rows, totals, columns = run_freight_report(
+            self.group, period, ReportScope.PROGRAM, {}
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(columns, [])
+        self.assertEqual(totals["contracts_completed"], 0)
+        self.assertEqual(totals["avg_volume_per_contract"], 0.0)
+        self.assertEqual(totals["total_volume_m3"], 0.0)
 
 
 class FleetCommandersReportTestCase(TestCase):

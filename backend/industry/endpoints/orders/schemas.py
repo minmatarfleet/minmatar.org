@@ -40,8 +40,8 @@ class OrderListItemResponse(BaseModel):
     fulfilled_at: datetime | None
     public_short_code: str
     contract_to: str
-    character_id: int
-    character_name: str
+    character_id: int | None = None
+    character_name: str = ""
     location: OrderLocationResponse | None
     items: List[OrderItemQuantityResponse]
     assigned_to: List[OrderAssigneeResponse]
@@ -129,8 +129,8 @@ class OrderDetailResponse(BaseModel):
     fulfilled_at: datetime | None
     public_short_code: str
     contract_to: str
-    character_id: int
-    character_name: str
+    character_id: int | None = None
+    character_name: str = ""
     location: OrderLocationResponse | None
     items: List[OrderItemResponse]
     lp_stockpiles: List[OrderLpStockpileResponse] = []
@@ -290,3 +290,12 @@ class IndustryOrderCharacterStatResponse(BaseModel):
     primary_character_id: int | None = None
     primary_character_name: str | None = None
     delivered_isk_estimate: Decimal
+
+
+class BuildPackResponse(BaseModel):
+    """One outstanding BUILD alliance pack contract (identical rows collapsed)."""
+
+    title: str
+    count: int
+    price: Decimal | None = None
+    location_name: str | None = None

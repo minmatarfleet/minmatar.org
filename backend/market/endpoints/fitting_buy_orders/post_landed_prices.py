@@ -53,6 +53,7 @@ def post_fitting_buy_landed_prices(
         return 400, ErrorResponse(detail="Paste is empty.")
 
     updated, unresolved = apply_landed_prices(order, payload.paste)
+    order.refresh_from_db()
     return {
         "updated": updated,
         "unresolved": unresolved,

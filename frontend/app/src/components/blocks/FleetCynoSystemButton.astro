@@ -1,0 +1,170 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    /** DOM id of the role item block to swap after assigning. */
+    target:         string;
+    fleet_id:       number;
+    volunteer_id:   number;
+    character_name: string;
+    size?:          ButtonSizes;
+    color?:         ButtonColors;
+}
+
+const {
+    target,
+    fleet_id,
+    volunteer_id,
+    character_name,
+    size = 'sm',
+    color = 'transparent',
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const id = `${target}-cyno-system-${volunteer_id}`
+const LIST_PARTIAL_URL = `${translatePath('/partials/fleet_cyno_system_list_component/')}?${query_string({
+    id: target,
+    fleet_id: fleet_id,
+    volunteer_id: volunteer_id,
+})}`
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import Button from '@components/blocks/Button.astro';
+import Dialog from '@components/blocks/Dialog.astro';
+import Input from '@components/blocks/Input.astro';
+import Kbd from '@components/blocks/Kbd.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+---
+
+<div
+    id={id}
+    class="[ system-finder ]"
+    x-data={`{
+        system_finder_open: false,
+        search: '',
+        close_dialog() {
+            this.system_finder_open = false
+            this.search = ''
+            $refs.system_finder_list.innerHTML = ''
+        }
+    }`}
+>
+    <Button
+        size={size}
+        type="button"
+        color={color}
+        narrow={true}
+        title={t('assign_cyno_system')}
+        x-on:click.stop.prevent="system_finder_open = true"
+    >
+        <MagnifierIcon slot="icon" />
+    </Button>
+
+    <template x-teleport="body">
+        <div class="[ system-finder-dialog ]">
+            <Dialog
+                breakout={true}
+                non_centered={true}
+                thin={true}
+                class="[ w-full max-w-[500px] ]"
+                x-bind:class="(system_finder_open ? 'open' : '')"
+                x-bind:aria-hidden="system_finder_open == false"
+                x-trap="system_finder_open"
+                x-bind:inert="!system_finder_open"
+                @keyup.escape.window="close_dialog()"
+                @mousedown.outside="open && close_dialog()"
+                style="--dialog-max-width: 500px"
+            >
+                <Flexblock gap="0">
+                    <div class="[ py-[var(--space-2xs)] px-[var(--space-s)] ]">
+                        <small>{t('assign_cyno_system_hint').replace('{character_name}', character_name)}</small>
+                    </div>
+                    <Input
+                        class="[ relative z-10 ]"
+                        placeholder={t('find_system_placeholder')}
+                        autocomplete="off"
+                        name="system"
+                        x-model="search"
+                        hx-get={LIST_PARTIAL_URL}
+                        hx-trigger="keyup changed delay:1s"
+                        hx-target={`#${id}-list`}
+                        hx-indicator=".loader"
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
+
+                    <div class="[ relative ]">
+                        <Flexblock gap='var(--space-3xs)'>
+                            <BlockList
+                                id={`${id}-list`}
+                                class="[ system-finder-list ][ light-transparency w-full ]"
+                                gap='var(--space-3xs)'
+                                x-ref="system_finder_list"
+                            />
+
+                            <FlexInline justification='center'>
+                                <FlexInline gap="var(--space-3xs)">
+                                    <Kbd>Enter</Kbd>
+                                    <small>to select</small>
+                                </FlexInline>
+                                <FlexInline gap="var(--space-3xs)">
+                                    <Kbd>Esc</Kbd>
+                                    <small>to close</small>
+                                </FlexInline>
+                            </FlexInline>
+                        </Flexblock>
+                    </div>
+                </Flexblock>
+            </Dialog>
+        </div>
+    </template>
+</div>
+
+<style lang="scss">
+    .dialog {
+        top: 12%;
+    }
+
+    .system-finder-list {
+        overflow-y: auto;
+        max-height: 320px;
+        background-color: #171616;
+        border: solid 1px var(--border-color);
+        border-top: none;
+        height: calc(100% - 20px);
+    }
+
+    :global(.system-finder-list > button) {
+        background-color: transparent;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+        text-align: left;
+        width: 100%;
+
+        &:focus-within {
+            outline: none;
+            background-color: var(--component-background);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+
+        &:hover {
+            background-color: var(--component-background);
+        }
+    }
+</style>

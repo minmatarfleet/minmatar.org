@@ -69,6 +69,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import AllianceCampaignStrip from '@components/blocks/AllianceCampaignStrip.astro'
 import GuidesStrip from '@components/blocks/GuidesStrip.astro'
 import PropagandaReels from '@components/blocks/PropagandaReels.astro'
+import WarzoneReportStrip from '@components/blocks/WarzoneReportStrip.astro'
 import StoreBanner from '@components/blocks/StoreBanner.astro'
 import NewsReel from '@components/blocks/NewsReel.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
@@ -93,7 +94,6 @@ const page_title = t('content.page_title')
             scrollable: true,
         }}
         wide={true}
-        page_actions={false}
         x-data={`{
             init() {
                 ${connect_alert ? `show_alert_dialog(${JSON.stringify(connect_alert)})` : ''}
@@ -134,6 +134,7 @@ const page_title = t('content.page_title')
                             is_editing={false}
                             show_section_header={true}
                         />
+                        <WarzoneReportStrip />
                         <GuidesStrip />
                         <Wrapper
                             class="[ w-full ]"

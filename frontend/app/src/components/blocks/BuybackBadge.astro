@@ -13,7 +13,7 @@ const {
 } = Astro.props
 
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ItemBadge from '@components/blocks/ItemBadge.astro'
 import NotificationBadge from '@components/blocks/NotificationBadge.astro'
@@ -24,11 +24,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
         <span class="[ text-green ]">▲</span> :
         <span class="[ text-red ]">▼</span>
     }
-    <FlexInlineSiblings
-        class="[ w-full ]"
-        min-shink-width='200px'
-        shrinkable-sibbling='first'
-    >
+    <FlexInline>
         <ItemBadge
             item_name={item.name}
             type_id={item.type_id}
@@ -43,7 +39,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
                 text_color='var(--background)'
             />
         }
-    </FlexInlineSiblings>
+    </FlexInline>
 </FixedFluid>
 
 <style lang="scss">

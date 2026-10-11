@@ -113,11 +113,6 @@ def _stockpile_account_queryset():
     )
 
 
-def resolve_all_lp_stockpiles() -> List[OrderLpStockpile]:
-    """Active stockpile accounts across all active LP currencies."""
-    return stockpile_rows_from_accounts(list(_stockpile_account_queryset()))
-
-
 def resolve_order_lp_stockpiles(
     order: IndustryOrder,
 ) -> List[OrderLpStockpile]:

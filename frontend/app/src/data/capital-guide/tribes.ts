@@ -9,7 +9,7 @@ export const CARRIERS_GROUP_NAME = 'Carriers'
 export const FAXES_GROUP_NAME = 'Faxes'
 
 export function capitals_tribe_path(tribe_id: number = CAPITALS_TRIBE_ID): string {
-    return `/alliance/tribes/${tribe_id}/`
+    return `/alliance/tribes/?tribe=capitals`
 }
 
 export function capitals_group_path(

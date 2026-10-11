@@ -78,6 +78,21 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <script is:inline>
     window.ccpwgl_context = window.ccpwgl_context ?? null
 
+    // After an outerHTML htmx swap the old target is detached, so body
+    // afterSwap listeners never see it. The dying node calls this; look up
+    // the replacement by id and re-bind htmx/Alpine (dropdown teleport, etc.).
+    window.minmatar_after_outer_html_swap = function () {
+        const next = this && this.id ? document.getElementById(this.id) : null
+        if (!next) return
+        if (typeof htmx !== 'undefined') htmx.process(next)
+        if (typeof Alpine !== 'undefined') Alpine.initTree(next)
+    }
+
+    window.minmatar_after_inner_html_swap = function () {
+        if (typeof htmx !== 'undefined') htmx.process(this)
+        if (typeof Alpine !== 'undefined') Alpine.initTree(this)
+    }
+
     if (!window.__footer_scripts_bound) {
         window.__footer_scripts_bound = true
 
@@ -93,10 +108,13 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
         document.addEventListener('astro:after-swap', () => {
             tippy('[data-tippy-content]', window.tippy_options)
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
-            const content = document.getElementById('content')
-                || document.querySelector('.viewport-layout-inner')
-            if (content)
-                htmx.process(content)
+            // Process the layout root, not only #content. Pages like account
+            // tags wrap <main id="content"> in a form with hx-post; processing
+            // #content alone never binds that form after ClientRouter nav.
+            const root = document.querySelector('.viewport-layout-inner')
+                || document.getElementById('content')
+            if (root)
+                htmx.process(root)
             // Init from body so page bindings see Viewport x-data
             // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
             // initTree(content) alone orphans those expressions after soft nav.

@@ -1,0 +1,687 @@
+---
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import { format_markup_pct } from '@/data/amamake-market'
+import { day_label, format_isk, percent } from '@/data/amamake-market/format'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import AmamakeMarketDemand from '@components/blocks/amamake-market/AmamakeMarketDemand.astro'
+import AmamakeMarketFooter from '@components/blocks/amamake-market/AmamakeMarketFooter.astro'
+import AmamakeMarketGetInvolved from '@components/blocks/amamake-market/AmamakeMarketGetInvolved.astro'
+import AmamakeMarketSoldTypes from '@components/blocks/amamake-market/AmamakeMarketSoldTypes.astro'
+import AmamakeMarketVolume from '@components/blocks/amamake-market/AmamakeMarketVolume.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+}
+
+const { issue } = Astro.props
+
+const SECTION_NAV = [
+    { id: 'book', label: 'Market sales overview' },
+    { id: 'sold', label: 'Top Items Sold' },
+    { id: 'volume', label: 'All Items Sold' },
+    { id: 'demand', label: 'Demand' },
+    { id: 'get-involved', label: 'How to get involved' },
+]
+
+const vs_label = `vs ${issue.previous_period_label}`
+
+const first_day = issue.days[0]?.date ?? issue.published_at.toISOString().slice(0, 10)
+const [strip_year, strip_month] = first_day.split('-').map(Number)
+const days_in_month = new Date(Date.UTC(strip_year, strip_month, 0)).getUTCDate()
+const day_by_date = new Map(issue.days.map((d) => [Number(d.date.slice(8, 10)), d]))
+const max_day_isk = Math.max(...issue.days.map((d) => d.isk), 1)
+const loudest_day = issue.sales.loudest_day?.date
+const strip = Array.from({ length: days_in_month }, (_, i) => {
+    const dom = i + 1
+    const row = day_by_date.get(dom)
+    return {
+        dom,
+        isk: row?.isk ?? 0,
+        fills: row?.fills ?? 0,
+        empty: !row,
+        labelled: dom === 1 || dom % 7 === 1 || dom === days_in_month,
+        loudest: row?.date === loudest_day,
+    }
+})
+const max_category_isk = Math.max(...issue.categories.map((c) => c.isk), 1)
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+
+---
+
+<div class="[ market-report ]">
+    <div class="[ mk-lede ]">
+        <div class="[ mk-hero-stats ]">
+            <div class="[ mk-hero-stat ]">
+                <span class="[ mk-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Wallet.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ mk-hero-stat__label ]">ISK sold</span>
+                    <b class="[ mk-hero-stat__value ]">{issue.sales.isk_label}</b>
+                    {issue.sales_vs.isk_pct !== null && issue.sales_vs.isk_pct !== 0 && (
+                        <span class:list={['mk-trend', issue.sales_vs.isk_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                            <span aria-hidden="true">{issue.sales_vs.isk_pct > 0 ? '▲' : '▼'}</span>{Math.abs(issue.sales_vs.isk_pct)}% {vs_label}
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div class="[ mk-hero-stat ]">
+                <span class="[ mk-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/48px-Market.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ mk-hero-stat__label ]">Profit</span>
+                    <b class="[ mk-hero-stat__value ]">{issue.sales.profit_label}</b>
+                    {issue.sales_vs.profit !== 0 && (
+                        <span class:list={['mk-trend', issue.sales_vs.profit > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                            <span aria-hidden="true">{issue.sales_vs.profit > 0 ? '▲' : '▼'}</span>{format_isk(Math.abs(issue.sales_vs.profit))} {vs_label}
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div class="[ mk-hero-stat ]">
+                <span class="[ mk-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Killreport.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ mk-hero-stat__label ]">Ships destroyed at the hub</span>
+                    <b class="[ mk-hero-stat__value ]">{number_thousand_separator(issue.catchment.amamake.ships)}</b>
+                    {issue.catchment.amamake.ships_vs !== 0 && (
+                        <span class:list={['mk-trend', issue.catchment.amamake.ships_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                            <span aria-hidden="true">{issue.catchment.amamake.ships_vs > 0 ? '▲' : '▼'}</span>{number_thousand_separator(Math.abs(issue.catchment.amamake.ships_vs))} {vs_label}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        <nav class="[ mk-jump ]" aria-label="Jump to section">
+            {SECTION_NAV.map((section) => (
+                <a class="[ mk-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+            ))}
+        </nav>
+    </div>
+
+    <section id="book" class="[ mk-section ]">
+        <header class="[ mk-section__head ]">
+            <h2>Market sales overview</h2>
+            <p class="[ mk-dek ]">{issue.weeks_dek}</p>
+        </header>
+
+        <ComponentBlock>
+            <Flexblock gap="var(--space-l)">
+                <div class="[ mk-chart ]">
+                    <h4>ISK sold by day</h4>
+                    <ol class="[ mk-strip ]" role="img" aria-label={`ISK sold per day. Loudest day ${loudest_day ? day_label(loudest_day) : 'n/a'} at ${format_isk(issue.sales.loudest_day?.isk ?? 0)}.`}>
+                        {strip.map((day) => (
+                            <li class:list={['mk-strip__day', day.empty && 'is-empty', day.loudest && 'is-loudest']} title={day.empty ? `${day.dom}: no data` : `${day.dom}: ${format_isk(day.isk)} · ${number_thousand_separator(day.fills)} orders`}>
+                                <span class="[ mk-strip__bar ]" style={`height: ${Math.max(day.empty ? 0 : 2, percent(day.isk, max_day_isk))}%`}></span>
+                                <span class:list={['mk-strip__label', day.labelled && 'is-visible']}>{day.dom}</span>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+
+                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
+                    <h4>Sell orders by class</h4>
+                    <table class="[ mk-table mk-table--weeks ]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Class</th>
+                                <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
+                                <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
+                                <th scope="col" class="[ mk-table__num ]">Orders</th>
+                                <th scope="col" class="[ mk-table__num ]">Markup</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {issue.categories.map((row) => (
+                                <tr>
+                                    <td class="[ mk-table__when ]">{row.name}</td>
+                                    <td class="[ mk-table__bar ]">
+                                        <div class="[ mk-bar ]">
+                                            <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_category_isk)}%`}></span>
+                                        </div>
+                                        <b>{row.isk_label}</b>
+                                    </td>
+                                    <td class="[ mk-table__num ]">
+                                        {row.isk_vs !== 0 && (
+                                            <span class:list={['mk-delta', row.isk_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                                                <span class="[ mk-delta__arrow ]">{row.isk_vs > 0 ? '▲' : '▼'}</span>
+                                                <span class="[ mk-delta__num ]">{row.isk_vs_label}</span>
+                                            </span>
+                                        )}
+                                        {row.isk_vs === 0 && '—'}
+                                    </td>
+                                    <td class="[ mk-table__num ]">{number_thousand_separator(row.fills)}</td>
+                                    <td class="[ mk-table__num ]">
+                                        {row.markup_pct === null ? (
+                                            <span title="No Jita price for types in this class">—</span>
+                                        ) : (
+                                            <span
+                                                class:list={[
+                                                    'mk-markup',
+                                                    row.markup_pct > 0 && 'mk-delta--up',
+                                                    row.markup_pct < 0 && 'mk-delta--down',
+                                                ]}
+                                                title="Compared with Jita"
+                                            >{format_markup_pct(row.markup_pct)}</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Flexblock>
+        </ComponentBlock>
+    </section>
+
+    <section id="sold" class="[ mk-section ]">
+        <header class="[ mk-section__head ]">
+            <h2>Top Items Sold</h2>
+            <p class="[ mk-dek ]">{issue.top_types.dek}</p>
+        </header>
+        <ComponentBlock padding_inline="var(--space-m)" class="[ mk-board ]">
+            <div id="mk-sold-types">
+                <AmamakeMarketSoldTypes issue={issue} />
+            </div>
+        </ComponentBlock>
+    </section>
+
+    <section id="volume" class="[ mk-section ]">
+        <header class="[ mk-section__head ]">
+            <h2>All Items Sold</h2>
+            <p class="[ mk-dek ]">{issue.volume.dek}</p>
+        </header>
+        <AmamakeMarketVolume issue={issue} access_token={auth_token} />
+    </section>
+
+    <AmamakeMarketDemand issue={issue} />
+    <AmamakeMarketGetInvolved issue={issue} />
+    <AmamakeMarketFooter issue={issue} />
+</div>
+
+<style lang="scss">
+    .market-report {
+        --mk-minmatar: color-mix(in srgb, var(--fleet-red) 78%, var(--highlight) 22%);
+        --mk-amarr: var(--fleet-yellow);
+        --mk-sold: var(--green);
+        --mk-lost: var(--fleet-red);
+        --mk-track: color-mix(in srgb, var(--highlight) 6%, transparent);
+        --mk-rule: color-mix(in srgb, var(--highlight) 8%, transparent);
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+        width: 100%;
+        min-width: 0;
+
+        h2 {
+            font-size: var(--step-3);
+            font-family: var(--heading-font);
+            margin: 0;
+        }
+
+        h4 {
+            font-size: var(--step-0);
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            max-width: var(--max-text-width);
+            line-height: 1.6;
+        }
+
+        b {
+            font-variant-numeric: tabular-nums;
+        }
+
+        a:not(.button) {
+            color: var(--highlight);
+            text-decoration: underline;
+            text-decoration-color: color-mix(in srgb, var(--highlight) 35%, transparent);
+            text-underline-offset: 0.15em;
+
+            &:hover {
+                text-decoration-color: var(--highlight);
+            }
+        }
+    }
+
+    /* Lede ---------------------------------------------------------------- */
+
+    .mk-lede {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .mk-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+        gap: var(--space-3xs);
+    }
+
+    .mk-hero-stat {
+        display: flex;
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-s) var(--space-m);
+        background-color: var(--light-transparency-background-mobile);
+        border: solid 1px var(--border-color);
+
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15em;
+            min-width: 0;
+        }
+    }
+
+    .mk-hero-stat__icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--highlight) 5%, transparent);
+        border: solid 1px var(--border-color-hover);
+
+        img {
+            width: 2.25rem;
+            height: 2.25rem;
+            object-fit: contain;
+            filter: brightness(1.7) contrast(1.05);
+        }
+    }
+
+    .mk-hero-stat__label {
+        font-size: var(--step--2);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .mk-hero-stat__value {
+        font-size: var(--step-2);
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+    /* Sections ------------------------------------------------------------ */
+
+    .mk-jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin: 0;
+    }
+    .mk-jump__link {
+        padding: var(--space-3xs) var(--space-s);
+        border: solid 1px var(--border-color);
+        border-radius: 2rem;
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+        text-decoration: none !important;
+        white-space: nowrap;
+        transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    }
+    .mk-jump__link:hover {
+        border-color: var(--highlight);
+        color: var(--highlight);
+        background-color: var(--light-transparency-background-mobile);
+    }
+
+    @media (max-width: 45rem) {
+        .mk-jump {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .mk-jump::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    .mk-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        /* Clear the fixed site header so jump-nav anchors don't land under it. */
+        scroll-margin-top: var(--sticky-top);
+    }
+
+    .mk-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .mk-dek {
+        color: var(--faded);
+        font-size: var(--step-0);
+    }
+
+    /* Trends and badges --------------------------------------------------- */
+
+    .mk-trend {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.3em;
+        margin-top: 0.2em;
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .mk-compare__trend {
+        margin-inline: 0.4em;
+        font-size: var(--step--2);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .mk-delta {
+        display: inline-grid;
+        grid-template-columns: 1em 5ch;
+        gap: 0.3em;
+        align-items: baseline;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .mk-delta--up {
+        color: var(--green);
+    }
+    .mk-delta--down {
+        color: var(--fleet-red);
+    }
+    .mk-delta__arrow {
+        text-align: center;
+    }
+    .mk-delta__num {
+        text-align: right;
+    }
+    .mk-ratio {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+
+        &--covered {
+            color: var(--green);
+        }
+
+        &--short {
+            color: var(--fleet-red);
+        }
+    }
+
+    /* Daily strip --------------------------------------------------------- */
+
+    .mk-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .mk-strip {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        padding-bottom: var(--space-s);
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 3px;
+        height: 8rem;
+        align-items: end;
+    }
+
+    .mk-strip__day {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        height: 100%;
+        min-width: 0;
+        border-bottom: solid 1px var(--mk-rule);
+    }
+
+    .mk-strip__bar {
+        display: block;
+        width: 100%;
+        background: var(--mk-sold);
+        opacity: 0.85;
+        transition: opacity 0.15s ease;
+
+        .mk-strip__day:hover & {
+            opacity: 1;
+        }
+
+        .mk-strip__day.is-loudest & {
+            background: var(--fleet-yellow);
+            opacity: 1;
+        }
+
+        .mk-strip__day.is-empty & {
+            background: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--highlight) 12%, transparent) 3px 5px);
+            height: 100% !important;
+            opacity: 0.6;
+        }
+    }
+
+    .mk-strip__label {
+        position: absolute;
+        top: calc(100% + 0.3rem);
+        left: 0;
+        font-size: var(--step--2);
+        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+        visibility: hidden;
+
+        &.is-visible {
+            visibility: visible;
+        }
+    }
+
+    /* Bars and tables ----------------------------------------------------- */
+
+    .mk-bar {
+        width: 100%;
+        height: 0.75rem;
+        background: var(--mk-track);
+    }
+
+    .mk-bar__fill {
+        display: block;
+        height: 100%;
+        min-width: 2px;
+
+        &--sold {
+            background: var(--mk-sold);
+        }
+    }
+
+    .mk-table-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        overflow-x: auto;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .mk-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: solid 1px var(--mk-rule);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover td {
+            background: color-mix(in srgb, var(--highlight) 2.5%, transparent);
+        }
+
+        td:first-child {
+            white-space: nowrap;
+        }
+
+        @media screen and (max-width: 720px) {
+            th,
+            td {
+                padding: var(--space-xs) var(--space-2xs);
+            }
+        }
+    }
+
+    .mk-table__num {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-table__bar-head {
+        min-width: 12rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 8rem;
+        }
+    }
+
+    .mk-table__bar {
+        width: 34%;
+        min-width: 12rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 8rem;
+        }
+
+        > b {
+            display: block;
+            margin-top: 0.3em;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .mk-table--weeks .mk-table__bar {
+        width: 45%;
+    }
+
+    .mk-table__system {
+        display: block;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .mk-table__front {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .mk-table__when {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .mk-table__owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .mk-table__icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+
+        :global(img) {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .mk-table--hulls {
+        @media screen and (max-width: 720px) {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--mk-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                white-space: normal !important;
+                min-width: 0;
+                width: auto;
+            }
+
+            td.mk-table__hull {
+                grid-column: 1 / -1;
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+
+        }
+    }
+
+    .mk-board {
+        min-width: 0;
+    }
+</style>

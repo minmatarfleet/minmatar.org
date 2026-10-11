@@ -1,0 +1,82 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes, ShipFittings } from '@dtypes/layout_components';
+
+interface Props {
+    ship_group:  ShipFittings;
+    [propName: string]: any;
+}
+
+const {
+    ship_group,
+    ...attributes
+} = Astro.props
+
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
+import { semantic_list } from '@helpers/array';
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import FittingLink from "@components/blocks/FittingLink.astro";
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import FittingShareButton from '@components/blocks/FittingShareButton.astro';
+import TextBadge from '@components/blocks/TextBadge.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+---
+
+<ComponentBlock padding_block='0' padding_inline='0' class="[ fitting-card ][ w-full self-start max-w-[750px] ]">
+    <CollapsibleBlock gap='0' padding_inline='0'>
+        <ItemBadge
+            item_name={ship_group.ship_name}
+            type_id={ship_group.ship_id}
+            slot='head'
+        >
+            <small>
+                {semantic_list(lang, format_fitting_tags_line(ship_group.tags, t))}
+            </small>
+            <div class="[ fitting-card-filters ]">
+                <p>{ship_group.ship_name}</p>
+                <p>{ship_group.ship_type}</p>
+            </div>
+        </ItemBadge>
+
+        <Wrapper class="[ border-top ]" padding_block='var(--space-xs)' padding_inline='var(--space-xs)'>
+            <Flexblock>
+                {ship_group.fittings.map((fitting) =>
+                    <FlexInlineSiblings
+                        min-shink-width='300px'
+                        shrinkable-sibbling='first'
+                    >
+                        <FittingLink fitting_id={fitting.id}>
+                            {fitting.tags ?
+                                <TextBadge title={fitting.fitting_name}>
+                                    <small class="[ text-foreground ]">
+                                        {semantic_list(lang, format_fitting_tags_line(fitting.tags, t))}
+                                    </small>
+                                </TextBadge> :
+                                <h4>{fitting.fitting_name}</h4>
+                            }
+                        </FittingLink>
+                        <FlexInline>
+                            <FittingShareButton fitting_id={fitting.id} narrow={true} iconed={false} />
+                            <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
+                        </FlexInline>
+                    </FlexInlineSiblings>
+                )}
+            </Flexblock>
+        </Wrapper>
+    </CollapsibleBlock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fitting-card-filters {
+        display: none;
+    }
+</style>

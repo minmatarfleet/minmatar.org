@@ -131,3 +131,15 @@ interface Props {
         }
     }
 </style>
+
+<script>
+    import { schedule_alert_dialog_reset } from '@helpers/alertDialog'
+
+    declare global {
+        interface Window {
+            __schedule_alert_dialog_reset?: typeof schedule_alert_dialog_reset
+        }
+    }
+
+    window.__schedule_alert_dialog_reset = schedule_alert_dialog_reset
+</script>

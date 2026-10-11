@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
 import type { Character } from '@dtypes/api.minmatar.org'
+import { account_user_id_query } from '@helpers/account_user_query'
 import { get_api_url, get_app_url } from '@helpers/env'
 import type { Alert } from '@dtypes/layout_components'
 
@@ -27,7 +28,7 @@ const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cook
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
-const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Public`
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Public${account_user_id_query(Astro.cookies.get('auth_token')?.value)}`
 const GUEST_PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/guest_pilots_list_component')}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -58,7 +59,7 @@ delete attributes.class
         },
         pilot_list_init() {
             ${removed_character !== false ? `stop_remove_animation(${removed_character})` : ''}
-            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            ${alert !== false ? `const root_data = Alpine.$data(document.body); if (root_data && root_data.show_alert_dialog) root_data.show_alert_dialog(${JSON.stringify(alert)})` : ''}
         }
     }`}
     x-init="pilot_list_init()"
@@ -81,10 +82,12 @@ delete attributes.class
                         type="button"
                         x-data={`{
                             show_add_pilot_disclaimer() {
-                                show_alert_dialog({
-                                    title: '${t('add_friend_pilot_dialog_title')}',
-                                    content: '${t('add_guest_pilot_dialog_text')}',
-                                }).then( (accepted) => add_pilot(accepted) )
+                                const root_data = Alpine.$data(document.body)
+                                if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
+                                return root_data.show_alert_dialog({
+                                    title: ${JSON.stringify(t('add_friend_pilot_dialog_title'))},
+                                    content: ${JSON.stringify(t('add_guest_pilot_dialog_text'))},
+                                }).then((accepted) => add_pilot(accepted))
                             }
                         }`}
                         x-on:click="show_add_pilot_disclaimer"
@@ -114,24 +117,26 @@ delete attributes.class
                         narrow={true}
                         x-data={`{
                             show_remove_character_dialog() {
-                                show_confirm_dialog({
-                                    title: '${t('remove_pilot_dialog_title')}',
-                                    partial: '${translatePath('/partials/dialog_with_character/')}?${query_string({
+                                const root_data = Alpine.$data(document.body)
+                                if (!root_data || !root_data.show_confirm_dialog) return Promise.resolve(false)
+                                return root_data.show_confirm_dialog({
+                                    title: ${JSON.stringify(t('remove_pilot_dialog_title'))},
+                                    partial: ${JSON.stringify(`${translatePath('/partials/dialog_with_character/')}?${query_string({
                                         id: pilot.character_id.toString(),
                                         character_name: pilot.character_name,
                                         message: t('remove_pilot_dialog_text'),
-                                    })}',
+                                    })}`)},
                                     return_on_accept: ${pilot.character_id},
                                     hx: {
                                         method: 'delete',
-                                        url: '${GUEST_PILOTS_LIST_PARTIAL_URL}?${query_string({
+                                        url: ${JSON.stringify(`${GUEST_PILOTS_LIST_PARTIAL_URL}?${query_string({
                                             id: pilot.character_id.toString(),
                                             character_name: pilot.character_name
-                                        })}',
+                                        })}`)},
                                         target: '#pilots-list',
                                         swap: 'outerHTML transition:true'
                                     }
-                                }).then( (character_id) => start_remove_animation(character_id) )
+                                }).then((character_id) => start_remove_animation(character_id))
                             }
                         }`}
                         x-on:click="show_remove_character_dialog()"

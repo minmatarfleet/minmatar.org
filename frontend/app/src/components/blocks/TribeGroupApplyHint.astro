@@ -1,0 +1,130 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    TribeGroup,
+    SummaryCharacter,
+    TribeMembership,
+    TribeAvailableCharacter,
+} from '@dtypes/api.minmatar.org'
+import { tribe_group_apply_ui_state } from '@helpers/tribe_group_apply_ui'
+
+interface Props {
+    group: TribeGroup
+    tribe_id: number
+    group_id: number
+    is_auth: boolean
+    is_leader: boolean
+    user_characters: SummaryCharacter[]
+    available_characters?: TribeAvailableCharacter[]
+    membership_by_group: Map<number, TribeMembership | null>
+    user_on_trial?: boolean
+    oob?: boolean
+    [propName: string]: any
+}
+
+const {
+    group,
+    tribe_id,
+    group_id,
+    is_auth,
+    is_leader,
+    user_characters,
+    available_characters,
+    membership_by_group,
+    user_on_trial = false,
+    oob = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const apply_ui = tribe_group_apply_ui_state({
+    group,
+    membership: membership_by_group.get(group.id) ?? null,
+    is_auth,
+    is_leader,
+    user_on_trial,
+})
+const {
+    can_show_apply,
+    show_ineligible,
+} = apply_ui
+const ineligible_text = apply_ui.affiliation_names
+    ? t('tribes.detail.apply_affiliation_required').replace(
+        '{affiliations}',
+        apply_ui.affiliation_names,
+    )
+    : t('tribes.detail.apply_affiliation_denied')
+const status_id = `tribe-group-status-${group.tribe_id}-${group.id}`
+const hint_id = `tribe-group-apply-hint-${group.tribe_id}-${group.id}`
+const auth_redirect = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+
+import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+---
+
+<div
+    id={hint_id}
+    class:list={['[ tribe-group-apply-hint ]', Astro.props.class]}
+    hx-swap-oob={oob ? 'true' : undefined}
+    {...attributes}
+>
+    {can_show_apply &&
+        (!is_auth ?
+            <StylessButton
+                type="button"
+                x-on:click={`window.location.href = ${JSON.stringify(auth_redirect)}`}
+            >
+                {t('tribes.detail.click_here_to_apply')}
+            </StylessButton>
+            :
+            <ButtonApplyTribe
+                styless={true}
+                actions_ui={true}
+                label={t('tribes.detail.click_here_to_apply')}
+                target_id={status_id}
+                title={group.name}
+                tribe_id={tribe_id}
+                group_id={group_id}
+                pilots={user_characters}
+                available_characters={available_characters}
+                required_token_type={group.required_token_type}
+            />
+        )
+    }
+    {show_ineligible &&
+        <p class="[ tribe-group-apply-hint__ineligible ]">{ineligible_text}</p>
+    }
+</div>
+
+<style lang="scss">
+    .tribe-group-apply-hint {
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        color: color-mix(in srgb, var(--highlight) 65%, transparent);
+
+        :global(.flex) {
+            display: inline;
+        }
+
+        :global(button) {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 0.2em;
+            font-size: inherit;
+            font-family: inherit;
+        }
+
+        :global(button:hover),
+        :global(button:focus-visible) {
+            color: var(--highlight);
+        }
+    }
+
+    .tribe-group-apply-hint__ineligible {
+        margin: 0;
+        color: color-mix(in srgb, var(--foreground) 55%, transparent);
+    }
+</style>

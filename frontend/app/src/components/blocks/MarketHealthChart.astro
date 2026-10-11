@@ -132,7 +132,43 @@ const viability_label = t('viability')
                         y: { display: false, min: 0, max: 100, clip: false },
                     },
                     plugins: {
-                        legend: { position: 'top' },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 40, 
+                                generateLabels: (chart) => {
+                                    const defaultLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    
+                                    defaultLabels.forEach(label => {
+                                        const dataset = chart.data.datasets[label.datasetIndex];
+                                        
+                                        const legendCanvas = document.createElement('canvas');
+                                        // 1. Make the canvas wider to include the padding (25px line + 10px gap)
+                                        legendCanvas.width = 45; 
+                                        legendCanvas.height = 10;
+                                        const legendCtx = legendCanvas.getContext('2d');
+                                        
+                                        legendCtx.strokeStyle = label.strokeStyle;
+                                        legendCtx.lineWidth = label.lineWidth || 2;
+                                        
+                                        if (dataset.borderDash && dataset.borderDash.length > 0) {
+                                            legendCtx.setLineDash(dataset.borderDash);
+                                        }
+                                        
+                                        legendCtx.beginPath();
+                                        legendCtx.moveTo(0, 5);
+                                        // 2. Only draw the line up to 25 pixels, leaving the remaining 10px blank
+                                        legendCtx.lineTo(25, 5); 
+                                        legendCtx.stroke();
+                                        
+                                        label.pointStyle = legendCanvas;
+                                    });
+                                    
+                                    return defaultLabels;
+                                }
+                            }
+                        },
                     },
                     animations: reduce_motion
                         ? false
@@ -144,14 +180,14 @@ const viability_label = t('viability')
                                     }
                                 },
                                 duration: 2000,
-                                delay: (ctx) => ctx.datasetIndex === 1 ? 200 : 0
+                                delay: (ctx) => ctx.datasetIndex === 1 ? 500 : 0
                             },
                             colors: {
                                 type: 'color',
                                 properties: ['borderColor'],
                                 from: 'transparent',
                                 duration: 2000,
-                                delay: (ctx) => ctx.datasetIndex === 1 ? 200 : 0
+                                delay: (ctx) => ctx.datasetIndex === 1 ? 500 : 0
                             }
                         },
                 },

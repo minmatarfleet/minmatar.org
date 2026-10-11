@@ -42,6 +42,7 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
+import NpsiIcon from '@components/icons/NpsiIcon.astro';
 ---
 
 <div
@@ -105,6 +106,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                 t('strategic_fleet') :
                 fleet.type === 'training' ?
                 t('training_fleet') :
+                fleet.type === 'npsi' ?
+                t('npsi_fleet') :
                 t('non_strategic_fleet')
             }
             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
@@ -113,6 +116,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                 <StratopIcon /> :
                 fleet.type === 'training' ?
                 <TrainingIcon /> :
+                fleet.type === 'npsi' ?
+                <NpsiIcon /> :
                 fleet.type === 'non_strategic' &&
                 <NonStrategicIcon />
             }

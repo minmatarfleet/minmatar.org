@@ -21,6 +21,7 @@ from ninja.testing import TestClient
 from fittings.models import EveFitting, EveFittingModuleSubstitution
 from market.endpoints.fitting_buy_orders import router
 from market.helpers.fitting_buy_check import run_fitting_buy_jita_check
+from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
 from market.helpers.fitting_buy_eft import effective_eft_for_line
 from market.helpers.fitting_buy_jita import (
     JITA_DEPTH_BAND_MIN_PRICE,
@@ -39,11 +40,18 @@ from market.helpers.fitting_buy_allocations import (
     effective_buy_map,
     set_allocations,
 )
+from market.helpers.fitting_buy_guide import shopping_landed_complete
 from market.helpers.fitting_buy_plan import (
     build_shopping_plan,
     sync_order_items,
 )
-from market.helpers.fitting_buy_prices import apply_landed_prices
+from market.helpers.fitting_buy_prices import (
+    PriceRow,
+    apply_landed_prices,
+    normalize_unit_price,
+    parse_price_paste,
+    pasted_prices_are_totals,
+)
 from market.helpers.fitting_buy_serialize import serialize_order_detail
 from market.helpers.fitting_buy_swap import apply_swap_on_order
 from market.helpers.item_classification import (
@@ -208,6 +216,72 @@ class FittingBuyPlanTestCase(TestCase):
         self.assertEqual(unresolved, [])
         item = self.order.items.get(eve_type_id=self.mod_a.id)
         self.assertEqual(item.unit_price, Decimal("12345.67"))
+
+
+class PastedPriceNormalizationTestCase(TestCase):
+    def test_parse_qty_and_total_columns(self):
+        parsed = parse_price_paste(
+            "Damage Control II\t3\t3,060,000.00\n1MN Afterburner II\t2,050,000.00"
+        )
+        self.assertEqual(parsed["Damage Control II"].quantity, 3)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("3060000.00")
+        )
+        self.assertIsNone(parsed["1MN Afterburner II"].quantity)
+
+    def test_votes_totals_when_prices_match_qty_times_jita(self):
+        rows = [
+            PriceRow(
+                price=Decimal("3060000"),
+                buy_qty=3,
+                jita_unit=Decimal("1000000"),
+            ),
+            PriceRow(
+                price=Decimal("6150000"),
+                buy_qty=3,
+                jita_unit=Decimal("2000000"),
+            ),
+            PriceRow(
+                price=Decimal("500"), buy_qty=1, jita_unit=Decimal("450")
+            ),
+        ]
+        self.assertTrue(pasted_prices_are_totals(rows))
+        self.assertEqual(
+            normalize_unit_price(rows[0], totals=True), Decimal("1020000.00")
+        )
+        self.assertEqual(
+            normalize_unit_price(rows[2], totals=True), Decimal("500")
+        )
+
+    def test_votes_units_when_prices_match_jita(self):
+        rows = [
+            PriceRow(
+                price=Decimal("1050000"),
+                buy_qty=3,
+                jita_unit=Decimal("1000000"),
+            ),
+            PriceRow(
+                price=Decimal("1900000"),
+                buy_qty=3,
+                jita_unit=Decimal("2000000"),
+            ),
+        ]
+        self.assertFalse(pasted_prices_are_totals(rows))
+
+    def test_qty_column_without_jita_reads_as_total(self):
+        rows = [
+            PriceRow(
+                price=Decimal("3000"), buy_qty=3, jita_unit=None, pasted_qty=3
+            )
+        ]
+        self.assertTrue(pasted_prices_are_totals(rows))
+        self.assertEqual(
+            normalize_unit_price(rows[0], totals=True), Decimal("1000.00")
+        )
+
+    def test_no_signal_keeps_unit_prices(self):
+        rows = [PriceRow(price=Decimal("3000"), buy_qty=3, jita_unit=None)]
+        self.assertFalse(pasted_prices_are_totals(rows))
 
 
 class BandedJitaSellDepthTestCase(TestCase):
@@ -469,6 +543,20 @@ class FittingBuyApiTestCase(TestCase):
             json={"status": FittingBuyOrderStatus.PENDING_FITTING},
             headers=_auth_headers(self.owner),
         )
+        self.assertEqual(patched.status_code, 400)
+
+        order = FittingBuyOrder.objects.get(id=body["id"])
+        order.jita_checked_at = timezone.now()
+        order.save(update_fields=["jita_checked_at"])
+        for item in order.items.all():
+            item.jita_sell_volume = max(item.buy_qty, 1)
+            item.save(update_fields=["jita_sell_volume"])
+
+        patched = self.client.patch(
+            f"/fitting-buy-orders/{body['id']}",
+            json={"status": FittingBuyOrderStatus.PENDING_FITTING},
+            headers=_auth_headers(self.owner),
+        )
         self.assertEqual(patched.status_code, 200)
         self.assertEqual(patched.json()["status"], "pending_fitting")
 
@@ -547,6 +635,54 @@ class FittingBuyApiTestCase(TestCase):
         )
         self.assertEqual(removed.status_code, 204)
         self.assertFalse(FittingBuyOrder.objects.filter(pk=order.id).exists())
+
+    def test_owner_can_delete_order_with_lines_and_items(self):
+        order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrderLine.objects.create(
+            order=order,
+            fitting=self.fitting,
+            quantity=2,
+        )
+        sync_order_items(order)
+        self.assertTrue(order.lines.exists())
+        self.assertTrue(order.items.exists())
+
+        removed = self.client.delete(
+            f"/fitting-buy-orders/{order.id}",
+            headers={
+                **_auth_headers(self.owner),
+                "Content-Type": "application/json",
+            },
+        )
+        self.assertEqual(removed.status_code, 204)
+        self.assertFalse(FittingBuyOrder.objects.filter(pk=order.id).exists())
+        self.assertFalse(
+            FittingBuyOrderLine.objects.filter(order_id=order.id).exists()
+        )
+
+    def test_list_hides_completed_unless_requested(self):
+        open_order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrder.objects.create(
+            owner=self.owner,
+            status=FittingBuyOrderStatus.COMPLETED,
+        )
+        FittingBuyOrder.objects.create(
+            owner=self.other,
+            status=FittingBuyOrderStatus.ARCHIVED,
+        )
+
+        hidden = self.client.get(
+            "/fitting-buy-orders", headers=_auth_headers(self.other)
+        )
+        self.assertEqual(hidden.status_code, 200)
+        self.assertEqual([row["id"] for row in hidden.json()], [open_order.id])
+
+        shown = self.client.get(
+            "/fitting-buy-orders?include_completed=true",
+            headers=_auth_headers(self.other),
+        )
+        self.assertEqual(shown.status_code, 200)
+        self.assertEqual(len(shown.json()), 3)
 
 
 class FittingBuyAlternateSwapTestCase(TestCase):
@@ -884,6 +1020,81 @@ class FittingBuyAllocationTestCase(TestCase):
             if item["type_id"] == self.faction.id
         )
         self.assertEqual(faction_item["buy_qty"], 5)
+        self.assertTrue(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        self.assertTrue(
+            self.order.items.filter(eve_type_id=self.faction.id).exists()
+        )
+
+    def test_variant_items_keep_landed_prices_across_sync(self):
+        set_allocations(
+            self.order,
+            preferred_type_id=self.preferred.id,
+            entries=[
+                {"type_id": self.preferred.id, "qty": 7},
+                {"type_id": self.compact.id, "qty": 8},
+                {"type_id": self.faction.id, "qty": 5},
+            ],
+        )
+        preferred = self.order.items.get(eve_type_id=self.preferred.id)
+        preferred.unit_price = Decimal("100")
+        preferred.save(update_fields=["unit_price"])
+        self.assertFalse(shopping_landed_complete(self.order))
+
+        updated, unresolved = apply_landed_prices(
+            self.order,
+            f"{self.compact.name}\t10\n{self.faction.name}\t20",
+        )
+        self.assertEqual(updated, 2)
+        self.assertEqual(unresolved, [])
+        self.assertTrue(shopping_landed_complete(self.order))
+        self.order.refresh_from_db()
+        self.assertIsNotNone(self.order.jita_checked_at)
+
+        sync_order_items(self.order)
+        compact = self.order.items.get(eve_type_id=self.compact.id)
+        self.assertEqual(compact.buy_qty, 8)
+        self.assertEqual(compact.needed_qty, 0)
+        self.assertEqual(compact.unit_price, Decimal("10"))
+        self.assertEqual(compact.jita_sell_volume, 8)
+        self.assertTrue(shopping_landed_complete(self.order))
+        self.assertIsNotNone(self.order.jita_checked_at)
+
+        set_allocations(
+            self.order,
+            preferred_type_id=self.preferred.id,
+            entries=[],
+        )
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.faction.id).exists()
+        )
+
+    def test_get_order_heals_missing_variant_items(self):
+        self.order.shopping_allocations = {
+            str(self.preferred.id): [
+                {"type_id": self.preferred.id, "qty": 7},
+                {"type_id": self.compact.id, "qty": 8},
+            ]
+        }
+        self.order.save(update_fields=["shopping_allocations", "updated_at"])
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        response = self.client.get(
+            f"/fitting-buy-orders/{self.order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        compact = self.order.items.get(eve_type_id=self.compact.id)
+        self.assertEqual(compact.buy_qty, 8)
+        self.assertEqual(compact.needed_qty, 0)
+        self.assertEqual(compact.jita_sell_volume, 8)
+        self.order.refresh_from_db()
+        self.assertIsNotNone(self.order.jita_checked_at)
 
     def test_rejects_unknown_variant_and_over_sum(self):
         with self.assertRaises(AllocationError):
@@ -1003,6 +1214,59 @@ class FittingBuyAllocationTestCase(TestCase):
         body = response.json()
         self.assertIn(f"{self.faction.name} 5", body["multibuy"])
         self.assertIn(f"{self.preferred.name} 15", body["multibuy"])
+
+    def test_fit_copies_compose_independent_allocations(self):
+        kinetic = _type(3146, "Centum A-Type Kinetic Energized Membrane")
+        kinetic_sub = _type(3148, "Centum B-Type Kinetic Energized Membrane")
+        fitting = EveFitting.objects.create(
+            name="[TEST] Multi Alloc",
+            ship_id=self.hull.id,
+            description="test",
+            eft_format=(
+                f"[{self.hull.name}, Multi]\n"
+                f"{self.preferred.name}\n"
+                f"{kinetic.name}\n"
+            ),
+        )
+        order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrderLine.objects.create(
+            order=order,
+            fitting=fitting,
+            quantity=20,
+        )
+        sync_order_items(order)
+        order.shopping_allocations = {
+            str(self.preferred.id): [
+                {"type_id": self.compact.id, "qty": 20},
+            ],
+            str(kinetic.id): [
+                {"type_id": kinetic.id, "qty": 12},
+                {"type_id": kinetic_sub.id, "qty": 8},
+            ],
+        }
+        order.save(update_fields=["shopping_allocations"])
+        line = order.lines.select_related("fitting").get()
+        copies = build_fit_copies_by_line(order, [line])[line.id]
+        self.assertEqual(sum(copy["quantity"] for copy in copies), 20)
+        both = next(
+            copy
+            for copy in copies
+            if kinetic_sub.name in copy["eft"]
+            and self.compact.name in copy["eft"]
+        )
+        dc_only = next(
+            copy
+            for copy in copies
+            if self.compact.name in copy["eft"]
+            and kinetic_sub.name not in copy["eft"]
+        )
+        self.assertEqual(both["quantity"], 8)
+        self.assertEqual(dc_only["quantity"], 12)
+        self.assertIn(kinetic.name, dc_only["eft"])
+        self.assertNotIn(self.preferred.name, both["eft"])
+        self.assertNotIn(self.preferred.name, dc_only["eft"])
+        self.assertEqual(len(both["swaps"]), 2)
+        self.assertEqual(len(dc_only["swaps"]), 1)
 
 
 class FittingBuyAlternateFitFilterTestCase(TestCase):

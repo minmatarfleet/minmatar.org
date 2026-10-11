@@ -52,6 +52,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
+import NpsiIcon from '@components/icons/NpsiIcon.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -68,6 +69,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             t('strategic_fleet') :
             fleet.type === 'training' ?
             t('training_fleet') :
+            fleet.type === 'npsi' ?
+            t('npsi_fleet') :
             t('non_strategic_fleet')
         }
         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
@@ -76,6 +79,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <StratopIcon /> :
             fleet.type === 'training' ?
             <TrainingIcon /> :
+            fleet.type === 'npsi' ?
+            <NpsiIcon /> :
             fleet.type === 'non_strategic' &&
             <NonStrategicIcon />
         }

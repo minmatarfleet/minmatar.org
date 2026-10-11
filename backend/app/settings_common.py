@@ -24,6 +24,7 @@ CELERY_IMPORTS = (
     "buyback.tasks",
     "alliance.tasks",
     "fittings.tasks",
+    "surveys.tasks",
 )
 
 
@@ -103,6 +104,8 @@ INSTALLED_APPS = [
     "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",
     "help_tickets.apps.HelpTicketsConfig",
+    # Quarterly community surveys
+    "surveys.apps.SurveysConfig",
 ]
 
 # Discord Login

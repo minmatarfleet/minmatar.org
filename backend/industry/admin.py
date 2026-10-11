@@ -217,11 +217,18 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         "corporation_id",
         "default_isk_per_lp",
         "is_active",
+        "allow_buy",
+        "allow_sell",
         "account_count",
         "accounts_link",
     )
-    list_editable = ("default_isk_per_lp", "is_active")
-    list_filter = ("is_active",)
+    list_editable = (
+        "default_isk_per_lp",
+        "is_active",
+        "allow_buy",
+        "allow_sell",
+    )
+    list_filter = ("is_active", "allow_buy", "allow_sell")
     search_fields = ("name", "corporation_id")
     inlines = (
         IndustryLoyaltyPointAccountInline,
@@ -236,11 +243,14 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
                     "corporation_id",
                     "default_isk_per_lp",
                     "is_active",
+                    ("allow_buy", "allow_sell"),
                     "notes",
                 ),
                 "description": (
                     "Currency catalog for militia / navy LP. Default ISK/LP is "
-                    "used by the planner and as the offer fallback for accounts."
+                    "used by the planner and as the offer fallback for accounts. "
+                    "Allow buy / allow sell control which order sides pilots "
+                    "can post on the public buyback book."
                 ),
             },
         ),

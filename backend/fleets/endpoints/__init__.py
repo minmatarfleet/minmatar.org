@@ -6,6 +6,7 @@ from fleets.endpoints.active import _ROUTES as active_routes
 from fleets.endpoints.catalog import _ROUTES as catalog_routes
 from fleets.endpoints.fleet import _ROUTES as fleet_routes
 from fleets.endpoints.metrics import _ROUTES as metrics_routes
+from fleets.endpoints.npsi import _ROUTES as npsi_routes
 from fleets.endpoints.reference import _ROUTES as reference_routes
 
 router = Router(tags=["Fleets"])
@@ -13,6 +14,7 @@ router = Router(tags=["Fleets"])
 for routes in (
     reference_routes,
     catalog_routes,
+    npsi_routes,
     metrics_routes,
     active_routes,
     fleet_routes,

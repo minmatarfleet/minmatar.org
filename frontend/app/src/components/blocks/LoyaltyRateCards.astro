@@ -6,6 +6,8 @@ import { number_thousand_separator } from '@helpers/numbers'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Grid from '@components/compositions/Grid.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
 
 const { t } = i18n(Astro.url)
 
@@ -71,6 +73,32 @@ const sorted = [...currencies].sort((a, b) => {
                                     {t('industry.loyalty.rates.isk_per_lp')}
                                 </span>
                             </p>
+                            <FlexInline gap="var(--space-3xs)" class="[ loyalty-rate-cards__sides ]">
+                                {currency.allow_buy && (
+                                    <Tag
+                                        text={t('industry.loyalty.rates.allow_buy')}
+                                        color="alliance-blue"
+                                        narrow={true}
+                                        title={t('industry.loyalty.rates.allow_buy_tip')}
+                                    />
+                                )}
+                                {currency.allow_sell && (
+                                    <Tag
+                                        text={t('industry.loyalty.rates.allow_sell')}
+                                        color="fleet-yellow"
+                                        narrow={true}
+                                        title={t('industry.loyalty.rates.allow_sell_tip')}
+                                    />
+                                )}
+                                {!currency.allow_buy && !currency.allow_sell && (
+                                    <Tag
+                                        text={t('industry.loyalty.rates.paused')}
+                                        color="fleet-red"
+                                        narrow={true}
+                                        title={t('industry.loyalty.rates.paused_tip')}
+                                    />
+                                )}
+                            </FlexInline>
                         </div>
                     </ComponentBlock>
                 ))}

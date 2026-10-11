@@ -21,7 +21,7 @@ from esi.views import sso_redirect
 from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
-from groups.tasks import update_affiliation
+from groups.tasks import sync_user_corporation_groups, update_affiliation
 from users.eve_sso import EVE_LOGIN_SCOPES
 from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
 from users.redirects import oauth_redirect
@@ -308,6 +308,7 @@ def sync_user(request, user_id: int):
         return 403, ErrorResponse(detail="You can only sync your own account.")
     try:
         update_affiliation(user_id)
+        sync_user_corporation_groups(request.user)
         sync_discord_user(user_id)
     except DiscordRoleAssignmentError as e:
         # Offboard inside affiliation's atomic block rolls back; redo outside.

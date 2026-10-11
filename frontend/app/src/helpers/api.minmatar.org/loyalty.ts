@@ -1,9 +1,8 @@
 import type {
     LoyaltyCurrency,
     LoyaltyLedgerEntry,
-    LoyaltyMarketOrder,
+    LoyaltyMarketOrdersList,
     LoyaltyOffersList,
-    OrderLpStockpile,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
@@ -102,20 +101,6 @@ export async function get_loyalty_offers(params?: LoyaltyOffersQuery) {
     return await response.json() as LoyaltyOffersList
 }
 
-export async function get_loyalty_stockpiles() {
-    const ENDPOINT = `${API_ENDPOINT}/stockpiles`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as OrderLpStockpile[]
-}
-
 export async function get_loyalty_ledger(params?: {
     loyalty_point_id?: number
     account_id?: number
@@ -142,16 +127,25 @@ export async function get_loyalty_ledger(params?: {
     return await response.json() as LoyaltyLedgerEntry[]
 }
 
-export async function get_loyalty_orders(params?: {
+export interface LoyaltyOrdersQuery {
     side?: string
     loyalty_point_id?: number
+    /** Comma-separated statuses; the API defaults to active orders. */
     status?: string
-}) {
+    ordering?: 'created_at' | '-created_at' | 'updated_at' | '-updated_at'
+    limit?: number
+    offset?: number
+}
+
+export async function get_loyalty_orders(params?: LoyaltyOrdersQuery) {
     const query: Record<string, string> = {}
     if (params?.side) query.side = params.side
     if (params?.loyalty_point_id != null)
         query.loyalty_point_id = String(params.loyalty_point_id)
     if (params?.status) query.status = params.status
+    if (params?.ordering) query.ordering = params.ordering
+    if (params?.limit != null) query.limit = String(params.limit)
+    if (params?.offset != null) query.offset = String(params.offset)
     const qs = query_string(query)
     const ENDPOINT = `${API_ENDPOINT}/orders${qs ? `?${qs}` : ''}`
     console.log(`Requesting: ${ENDPOINT}`)
@@ -163,5 +157,5 @@ export async function get_loyalty_orders(params?: {
             cause: response.status,
         })
     }
-    return await response.json() as LoyaltyMarketOrder[]
+    return await response.json() as LoyaltyMarketOrdersList
 }

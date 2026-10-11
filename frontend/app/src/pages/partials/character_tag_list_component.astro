@@ -11,6 +11,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
 import { get_tags, set_character_tags } from '@helpers/api.minmatar.org/characters'
+import { tag_ids_from_form_data } from '@helpers/character_tags_form'
 import { get_tags_summary } from '@helpers/fetching/characters'
 import type { CharacterTag } from '@dtypes/api.minmatar.org'
 import type { CharacterTagSummary, Alert } from '@dtypes/layout_components'
@@ -25,12 +26,12 @@ let active_character:number = parseInt(Astro.url.searchParams.get('character_id'
 if (Astro.request.method === "POST") {
     try {
         const form_data = await Astro.request.formData()
-        const tags = (form_data.getAll('tag') as string[]).map(tag => parseInt(tag))
+        const selected_tags = tag_ids_from_form_data(form_data)
 
         if (isNaN(active_character))
             throw new Error('invalid_character_id')
 
-        await set_character_tags(auth_token as string, active_character, tags)
+        await set_character_tags(auth_token as string, active_character, selected_tags)
     } catch (error) {
         const set_character_tags_error = error.message
 

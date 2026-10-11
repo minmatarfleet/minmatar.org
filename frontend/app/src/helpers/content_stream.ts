@@ -2,7 +2,7 @@ import type { PostListUI } from '@dtypes/layout_components'
 import type { CampaignMeta } from '@/data/campaigns'
 import { campaigns } from '@/data/campaigns'
 
-export type ContentStreamKind = 'campaign' | 'siege' | 'post'
+export type ContentStreamKind = 'campaign' | 'siege' | 'warzone' | 'post'
 
 export type ContentStreamItem = {
     id: string

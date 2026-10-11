@@ -89,6 +89,74 @@ export interface FittingBuyJitaCheck {
     finished_at: string | null
 }
 
+export interface FittingBuyIndustrySource {
+    type_id: number
+    type_name: string
+    unit_price: string
+    order_id: number
+    public_short_code: string
+}
+
+export interface FittingBuyContractFees {
+    broker_fee: string
+    sales_tax: string
+    total: string
+    net: string
+}
+
+export interface FittingBuyContractFeeRates {
+    contract_type: string
+    broker_rate: string
+    broker_min: string
+    sales_tax_rate: string
+}
+
+export type FittingBuyContractType = 'alliance' | 'public'
+
+export interface FittingBuyHullSourceChoice {
+    order_id: number
+    public_short_code: string
+    unit_price: string | null
+    quantity: number
+    fulfilled: boolean
+    created_at: string
+}
+
+export interface FittingBuyContractPrice {
+    line_id: number
+    fitting_id: number
+    fitting_name: string
+    ship_id: number
+    ship_name: string
+    eft: string
+    quantity: number
+    is_swapped: boolean
+    variant_name: string
+    hull_cost: string | null
+    hull_cost_from_jita: boolean
+    hull_cost_source: '' | 'landed' | 'industry' | 'jita'
+    hull_cost_industry_order_id: number | null
+    hull_cost_industry_short_code: string
+    hull_source_needed: boolean
+    hull_source_choices: FittingBuyHullSourceChoice[]
+    fitting_cost: string | null
+    fitting_uses_stock: boolean
+    landed_per_ship: string | null
+    landed_complete: boolean
+    missing_type_names: string[]
+    landed_plus_20: string | null
+    landed_line_total: string | null
+    jita_sell_per_ship: string | null
+    jita_plus_20: string | null
+    jita_marked_up: string | null
+    contract_price: string | null
+    contract_line_total: string | null
+    fees: FittingBuyContractFees | null
+    other_fees: FittingBuyContractFees | null
+    profit: string | null
+    industry_sources: FittingBuyIndustrySource[]
+}
+
 export interface FittingBuyOrderListShip {
     fitting_id: number
     fitting_name: string
@@ -101,6 +169,8 @@ export interface FittingBuyOrderListItem {
     status: string
     owner_id: number
     owner_username: string
+    owner_character_id: number
+    owner_character_name: string
     line_count: number
     ships: FittingBuyOrderListShip[]
     include_hull: boolean
@@ -113,9 +183,12 @@ export interface FittingBuyOrderListItem {
 export interface FittingBuyOrderDetail {
     id: number
     status: string
+    guide_step: 'stock' | 'purchase' | 'contract'
     notes: string
     owner_id: number
     owner_username: string
+    owner_character_id: number
+    owner_character_name: string
     stock_paste: string
     include_hull: boolean
     jita_checked_at: string | null
@@ -129,6 +202,14 @@ export interface FittingBuyOrderDetail {
     unresolved_stock_names: string[]
     substitutions: FittingBuySubstitution[]
     active_jita_check: FittingBuyJitaCheck | null
+    contract_prices: FittingBuyContractPrice[]
+    contract_markup_pct: string
+    contract_markup_presets: number[]
+    contract_type: FittingBuyContractType | string
+    contract_fee_rates: FittingBuyContractFeeRates | null
+    multibuy_blocked: boolean
+    multibuy_block_reason: string
+    shopping_landed_complete: boolean
 }
 
 function auth_headers(access_token: string) {
@@ -148,20 +229,25 @@ async function parse_json_or_throw(response: Response, method: string, endpoint:
             { cause: response.status },
         )
     }
-    if (response.status === 204)
+    if (response.status === 204 || response.status === 205)
         return null
-    return response.json()
+    const text = await response.text()
+    if (!text)
+        return null
+    return JSON.parse(text)
 }
 
 export async function list_fitting_buy_orders(
     access_token: string,
-    options: { status?: string; mine?: boolean } = {},
+    options: { status?: string; mine?: boolean; include_completed?: boolean } = {},
 ) {
     const params = new URLSearchParams()
     if (options.status)
         params.set('status', options.status)
     if (options.mine)
         params.set('mine', 'true')
+    if (options.include_completed)
+        params.set('include_completed', 'true')
     const qs = params.toString()
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders${qs ? `?${qs}` : ''}`
     const response = await fetch(endpoint, { headers: auth_headers(access_token) })
@@ -199,6 +285,10 @@ export async function patch_fitting_buy_order(
         status?: string
         stock_paste?: string
         include_hull?: boolean
+        contract_markup_pct?: string
+        contract_type?: string
+        hull_type_id?: number
+        hull_industry_order_id?: number
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`

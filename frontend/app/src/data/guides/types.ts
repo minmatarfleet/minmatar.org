@@ -22,4 +22,6 @@ export type GuideMeta = {
      * Adjacent sections with the same group share one nav subheader.
      */
     contents_groups?: Record<string, string>
+    /** Stable TribeGroup.code values this guide belongs to (e.g. capitals.dreads). */
+    tribe_group_codes?: string[]
 }

@@ -1,0 +1,34 @@
+---
+interface Props {
+    step:       number;
+    title:      string;
+    subtitle?:  string;
+}
+
+const {
+    step,
+    title,
+    subtitle
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Markdown from '@components/blocks/Markdown.astro';
+---
+
+<Flexblock class="[ step ]">
+    <h3 class="[ text-step-2 ]">{step}</h3>
+    <Flexblock gap='var(--space-3xs)'>
+        <Markdown markdown={title} inline={true} inline_element='span' />
+        {subtitle && <small class="[ text-highlight ]">In-game</small>}
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    .step {
+        background-color: var(--component-background);
+        padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-m);
+        
+        clip-path: polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%);
+    }
+</style>

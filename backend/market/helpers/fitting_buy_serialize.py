@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
+
 from ninja import Schema
 
 from eveuniverse.models import EveType
 
 from fittings.models import EveFittingModuleSubstitution
+from eveonline.helpers.characters import user_primary_character
 from market.helpers.fitting_buy_allocations import (
     ALTERNATE_LIMIT,
     cached_jita_depth,
@@ -18,18 +21,32 @@ from market.helpers.fitting_buy_alternates import (
     listed_substitutes_by_preferred,
     shopping_alternate_types_for,
 )
+from market.helpers.fitting_buy_contract_prices import (
+    CONTRACT_MARKUP_PRESETS,
+    build_contract_prices,
+    contract_fee_rates,
+    markup_pct_str,
+)
 from market.helpers.fitting_buy_eft import effective_efts_for_lines
 from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
+from market.helpers.fitting_buy_guide import (
+    multibuy_blocked,
+    resolve_guide_step,
+    shopping_landed_complete,
+)
 from market.helpers.fitting_buy_plan import (
     build_shopping_plan,
     compute_max_completable,
     multibuy_tsv,
 )
 from market.models.fitting_buy_order import (
+    FittingBuyGuideStep,
     FittingBuyJitaCheck,
     FittingBuyJitaCheckStatus,
     FittingBuyOrder,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FittingBuyAlternateSchema(Schema):
@@ -121,6 +138,8 @@ class FittingBuyOrderListItemSchema(Schema):
     status: str
     owner_id: int
     owner_username: str
+    owner_character_id: int = 0
+    owner_character_name: str = ""
     line_count: int
     ships: list[FittingBuyOrderListShipSchema]
     include_hull: bool
@@ -140,12 +159,81 @@ class FittingBuyJitaCheckSchema(Schema):
     finished_at: str | None = None
 
 
+class FittingBuyIndustrySourceSchema(Schema):
+    type_id: int
+    type_name: str
+    unit_price: str
+    order_id: int
+    public_short_code: str = ""
+
+
+class FittingBuyContractFeesSchema(Schema):
+    broker_fee: str
+    sales_tax: str
+    total: str
+    net: str
+
+
+class FittingBuyContractFeeRatesSchema(Schema):
+    contract_type: str
+    broker_rate: str
+    broker_min: str
+    sales_tax_rate: str
+
+
+class FittingBuyHullSourceChoiceSchema(Schema):
+    order_id: int
+    public_short_code: str = ""
+    unit_price: str | None = None
+    quantity: int = 0
+    fulfilled: bool = False
+    created_at: str = ""
+
+
+class FittingBuyContractPriceSchema(Schema):
+    line_id: int
+    fitting_id: int
+    fitting_name: str
+    ship_id: int
+    ship_name: str = ""
+    eft: str = ""
+    quantity: int
+    is_swapped: bool = False
+    variant_name: str = ""
+    hull_cost: str | None = None
+    hull_cost_from_jita: bool = False
+    hull_cost_source: str = ""
+    hull_cost_industry_order_id: int | None = None
+    hull_cost_industry_short_code: str = ""
+    hull_source_needed: bool = False
+    hull_source_choices: list[FittingBuyHullSourceChoiceSchema] = []
+    fitting_cost: str | None = None
+    fitting_uses_stock: bool = False
+    landed_per_ship: str | None = None
+    landed_complete: bool = False
+    missing_type_names: list[str] = []
+    landed_plus_20: str | None = None
+    landed_line_total: str | None = None
+    jita_sell_per_ship: str | None = None
+    jita_plus_20: str | None = None
+    jita_marked_up: str | None = None
+    contract_price: str | None = None
+    contract_line_total: str | None = None
+    fees: FittingBuyContractFeesSchema | None = None
+    other_fees: FittingBuyContractFeesSchema | None = None
+    profit: str | None = None
+    industry_sources: list[FittingBuyIndustrySourceSchema] = []
+
+
 class FittingBuyOrderDetailSchema(Schema):
     id: int
     status: str
+    guide_step: str = "stock"
     notes: str
     owner_id: int
     owner_username: str
+    owner_character_id: int = 0
+    owner_character_name: str = ""
     stock_paste: str
     include_hull: bool
     jita_checked_at: str | None = None
@@ -159,12 +247,33 @@ class FittingBuyOrderDetailSchema(Schema):
     unresolved_stock_names: list[str]
     substitutions: list[FittingBuySubstitutionSchema]
     active_jita_check: FittingBuyJitaCheckSchema | None = None
+    contract_prices: list[FittingBuyContractPriceSchema] = []
+    contract_markup_pct: str = "20"
+    contract_markup_presets: list[int] = []
+    contract_type: str = "alliance"
+    contract_fee_rates: FittingBuyContractFeeRatesSchema | None = None
+    multibuy_blocked: bool = False
+    multibuy_block_reason: str = ""
+    shopping_landed_complete: bool = False
 
 
 def _iso(dt) -> str | None:
     if dt is None:
         return None
     return dt.isoformat()
+
+
+def _owner_fields(order: FittingBuyOrder) -> dict:
+    username = getattr(order.owner, "username", str(order.owner_id))
+    primary = user_primary_character(order.owner) if order.owner_id else None
+    character_id = int(primary.character_id) if primary else 0
+    character_name = (primary.character_name if primary else "") or username
+    return {
+        "owner_id": order.owner_id,
+        "owner_username": username,
+        "owner_character_id": character_id,
+        "owner_character_name": character_name,
+    }
 
 
 def _is_owner(order: FittingBuyOrder, request_user) -> bool:
@@ -203,10 +312,7 @@ def serialize_order_list_item(order, request_user=None) -> dict:
     return {
         "id": order.id,
         "status": order.status,
-        "owner_id": order.owner_id,
-        "owner_username": getattr(
-            order.owner, "username", str(order.owner_id)
-        ),
+        **_owner_fields(order),
         "line_count": getattr(order, "line_count", len(ships)),
         "ships": ships,
         "include_hull": order.include_hull,
@@ -406,11 +512,12 @@ def serialize_order_detail(  # noqa: C901
                 bool(row.shortfall and row.shortfall > 0)
                 or type_id in preferred_ids_with_alloc
             )
+            from_id = allocated_from.get(type_id)
             item_schemas.append(
                 display_row(
                     type_id=type_id,
                     buy_qty=buy_qty,
-                    needed_qty=row.needed_qty,
+                    needed_qty=buy_qty if from_id else row.needed_qty,
                     stock_qty=row.stock_qty,
                     jita_sell_volume=row.jita_sell_volume,
                     jita_order_count=row.jita_order_count,
@@ -424,6 +531,7 @@ def serialize_order_detail(  # noqa: C901
                         if row.unit_price is not None
                         else None
                     ),
+                    allocated_from_type_id=from_id,
                     can_allocate=can_allocate,
                     allocate_buy_qty=row.buy_qty if can_allocate else None,
                     alternates=alts,
@@ -469,11 +577,12 @@ def serialize_order_detail(  # noqa: C901
         ):
             continue
         display_buy = effective_buy.get(row.eve_type_id, 0)
+        from_id = allocated_from.get(row.eve_type_id)
         item_schemas.append(
             display_row(
                 type_id=row.eve_type_id,
                 buy_qty=display_buy,
-                needed_qty=row.needed_qty,
+                needed_qty=display_buy if from_id else row.needed_qty,
                 stock_qty=row.stock_qty,
                 jita_sell_volume=row.jita_sell_volume,
                 jita_order_count=row.jita_order_count,
@@ -485,6 +594,7 @@ def serialize_order_detail(  # noqa: C901
                 unit_price=(
                     str(row.unit_price) if row.unit_price is not None else None
                 ),
+                allocated_from_type_id=from_id,
                 can_allocate=can_allocate,
                 allocate_buy_qty=row.buy_qty if can_allocate else None,
                 alternates=fitted,
@@ -591,15 +701,26 @@ def serialize_order_detail(  # noqa: C901
         .first()
     )
 
+    blocked, block_reason = multibuy_blocked(order, plan)
+    landed_done = shopping_landed_complete(order, plan)
+    guide_step = resolve_guide_step(order, plan)
+    contract_prices: list[dict] = []
+    if guide_step == FittingBuyGuideStep.CONTRACT:
+        try:
+            contract_prices = build_contract_prices(order)
+        except Exception:
+            logger.exception(
+                "Failed to build contract prices for fitting buy order %s",
+                order.pk,
+            )
+
     return {
         "id": order.id,
         "status": order.status,
+        "guide_step": guide_step,
         "notes": order.notes,
-        "owner_id": order.owner_id,
-        "owner_username": getattr(
-            order.owner, "username", str(order.owner_id)
-        ),
-        "stock_paste": order.stock_paste,
+        **_owner_fields(order),
+        "stock_paste": order.stock_paste or "",
         "include_hull": order.include_hull,
         "jita_checked_at": _iso(order.jita_checked_at),
         "created_at": _iso(order.created_at),
@@ -617,4 +738,14 @@ def serialize_order_detail(  # noqa: C901
         "unresolved_stock_names": plan.unresolved_stock_names,
         "substitutions": subs,
         "active_jita_check": serialize_jita_check(active) if active else None,
+        "contract_prices": contract_prices,
+        "contract_markup_pct": markup_pct_str(order.contract_markup_pct),
+        "contract_markup_presets": list(CONTRACT_MARKUP_PRESETS),
+        "contract_type": str(order.contract_type or "alliance"),
+        "contract_fee_rates": contract_fee_rates(
+            str(order.contract_type or "alliance")
+        ),
+        "multibuy_blocked": blocked,
+        "multibuy_block_reason": block_reason,
+        "shopping_landed_complete": landed_done,
     }

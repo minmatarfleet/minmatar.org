@@ -899,6 +899,51 @@ class DiscordChannelAdminFormTestCase(TestCase):
 
     @patch("discord.forms.fetch_active_guild_channels")
     @patch("discord.forms.get_guild_channel")
+    def test_receive_buyback_rejected_for_text_channel(
+        self, mock_get_channel, mock_fetch_active
+    ):
+        mock_fetch_active.return_value = [
+            {
+                "id": 790,
+                "name": "general",
+                "type": "text",
+                "guild_id": self.guild.guild_id,
+            },
+        ]
+        mock_get_channel.return_value = mock_fetch_active.return_value[0]
+        form = DiscordChannelAdminForm(
+            data={
+                "discord_channel_pick": "790",
+                "track_voice_activity": False,
+                "receive_buyback": True,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("receive_buyback", form.errors)
+
+    def test_receive_buyback_is_unique(self):
+        first = DiscordChannel.objects.create(
+            channel_id=1542652883026186320,
+            guild=self.guild,
+            name="buyback",
+            channel_type=DiscordChannel.FORUM,
+            receive_buyback=True,
+        )
+        other = DiscordChannel.objects.create(
+            channel_id=1542652883026186321,
+            guild=self.guild,
+            name="buyback-2",
+            channel_type=DiscordChannel.FORUM,
+            receive_buyback=True,
+        )
+        first.refresh_from_db()
+        other.refresh_from_db()
+        self.assertFalse(first.receive_buyback)
+        self.assertTrue(other.receive_buyback)
+
+    @patch("discord.forms.fetch_active_guild_channels")
+    @patch("discord.forms.get_guild_channel")
     def test_duplicate_channel_id_rejected(
         self, mock_get_channel, mock_fetch_active
     ):
@@ -979,10 +1024,11 @@ class DiscordOffboardSyncTests(TestCase):
     def test_sync_discord_user_missing_user_is_noop(self):
         sync_discord_user(999999)
 
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_410_after_offboard(
-        self, mock_affiliation, mock_sync
+        self, mock_affiliation, mock_sync, mock_corp_groups
     ):
         user_id = self.user.id
 
@@ -999,10 +1045,11 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertIn(b"offboarded", response.content)
 
     @patch("users.router.offboard_user")
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_410_on_affiliation_member_missing(
-        self, mock_affiliation, mock_sync, mock_offboard
+        self, mock_affiliation, mock_sync, mock_corp_groups, mock_offboard
     ):
         """REST-API-MZ/MX: DiscordRoleAssignmentError rolls back in-atomic offboard."""
         user_id = self.user.id
@@ -1024,12 +1071,14 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertIn(b"offboarded", response.content)
         mock_offboard.assert_called_once_with(user_id)
         mock_sync.assert_not_called()
+        mock_corp_groups.assert_not_called()
         self.assertFalse(User.objects.filter(id=user_id).exists())
 
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_404_when_user_missing(
-        self, mock_affiliation, mock_sync
+        self, mock_affiliation, mock_sync, mock_corp_groups
     ):
         mock_affiliation.side_effect = User.DoesNotExist
         client = Client()
@@ -1040,6 +1089,7 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn(b"not found", response.content)
         mock_sync.assert_not_called()
+        mock_corp_groups.assert_not_called()
 
 
 if __name__ == "__main__":

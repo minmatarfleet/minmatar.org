@@ -64,3 +64,18 @@ export function format_isk(isk: number): string {
         return `${(isk / 1_000).toFixed(0)}K`
     return isk.toFixed(0)
 }
+
+export function format_volume_m3(volume: number): string {
+    if (!Number.isFinite(volume))
+        return '0'
+    return format_number(volume)
+}
+
+export function format_hours(hours: number): string {
+    if (!Number.isFinite(hours))
+        return '0'
+    const rounded = Math.round(hours * 10) / 10
+    if (Number.isInteger(rounded))
+        return String(rounded)
+    return rounded.toFixed(1)
+}

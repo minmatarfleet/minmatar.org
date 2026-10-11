@@ -9,29 +9,44 @@ from tribes.models import TribeGroupMembership
 
 logger = logging.getLogger(__name__)
 
+_OPEN_STATUSES = (
+    TribeGroupMembership.STATUS_ACTIVE,
+    TribeGroupMembership.STATUS_PENDING,
+)
+
+
+def inactivate_tribe_membership(
+    membership: TribeGroupMembership,
+    *,
+    reason: str = "removed",
+) -> None:
+    membership.status = TribeGroupMembership.STATUS_INACTIVE
+    membership.left_at = timezone.now()
+    membership.history_inactive_reason = reason
+    membership.save(update_fields=["status", "left_at"])
+
 
 def offboard_tribe_memberships_without_feature(user) -> int:
-    """
-    Inactivate active tribe memberships when the user cannot apply to tribes.
-    Returns the number of memberships inactivated.
-    """
-    if can_use_feature(user, "tribes.apply"):
-        return 0
-
-    active_memberships = TribeGroupMembership.objects.filter(
-        user=user,
-        status=TribeGroupMembership.STATUS_ACTIVE,
+    """Inactivate pending/active memberships the user can no longer apply to."""
+    open_memberships = (
+        TribeGroupMembership.objects.filter(
+            user=user,
+            status__in=_OPEN_STATUSES,
+        )
+        .select_related("tribe_group__tribe")
+        .prefetch_related("tribe_group__allowed_affiliations")
     )
     count = 0
-    for membership in active_memberships:
+    for membership in open_memberships:
+        if can_use_feature(
+            user, "tribes.apply", tribe_group=membership.tribe_group
+        ):
+            continue
         logger.info(
-            "User %s lost tribes.apply; inactivating membership in %s",
+            "User %s lost tribes.apply for %s; inactivating membership",
             user,
             membership.tribe_group,
         )
-        membership.status = TribeGroupMembership.STATUS_INACTIVE
-        membership.left_at = timezone.now()
-        membership.history_inactive_reason = "removed"
-        membership.save(update_fields=["status", "left_at"])
+        inactivate_tribe_membership(membership)
         count += 1
     return count

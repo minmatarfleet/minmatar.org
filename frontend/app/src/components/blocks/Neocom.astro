@@ -204,7 +204,7 @@ const page = Astro.url.pathname
         top: 0;
         left: 0;
         height: 100%;
-        max-width: 48px;
+        max-width: var(--neocom-width);
         transition: var(--fast-transition);
 
         nav {
@@ -214,8 +214,8 @@ const page = Astro.url.pathname
 
         .neocom-toggle {
             display: none;
-            width: 48px;
-            left: 48px;
+            width: var(--neocom-width);
+            left: var(--neocom-width);
             position: absolute;
         }
 
@@ -229,13 +229,13 @@ const page = Astro.url.pathname
 
             &:has(.active),
             &:has(.htmx-request) {
-                left: 48px;
+                left: var(--neocom-width);
                 opacity: 1;
             }
         }
 
-        @media screen and (max-width: 600px) {
-            left: -48px;
+        @media screen and (max-width: 890px) {
+            left: calc(-1 * var(--neocom-width));
 
             &.opened {
                 left: 0;
@@ -255,7 +255,7 @@ const page = Astro.url.pathname
     .clock {
         text-align: center;
         color: var(--highlight);
-        width: 48px;
+        width: var(--neocom-width);
         font-size: var(--step--2);
         background-color: rgba(0, 0, 0, 0.6);
     }
@@ -271,8 +271,8 @@ const page = Astro.url.pathname
     .loader-wrapper,
     .loader-wrapper-mobile {
         border-top: solid 1px var(--border-color);
-        width: 48px;
-        height: 48px;
+        width: var(--neocom-width);
+        height: var(--neocom-width);
         display: flex;
         justify-content: center;
         align-items: center;

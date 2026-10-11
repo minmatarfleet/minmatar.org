@@ -28,6 +28,10 @@ class FeatureAccessTestCase(TestCase):
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
         )
+        signals.post_save.disconnect(
+            sender=EveFleet,
+            dispatch_uid="update_fleet_schedule_on_save",
+        )
         clear_feature_cache()
         SyncCommand().handle()
 
@@ -93,6 +97,120 @@ class FeatureAccessTestCase(TestCase):
         clear_feature_cache()
         self.assertTrue(
             can_use_feature(user, "tribes.apply", tribe_group=tribe_group)
+        )
+
+    def _affiliation(self, name: str, priority: int):
+        group = Group.objects.create(name=f"{name} Test {priority}")
+        return AffiliationType.objects.create(
+            name=name,
+            group=group,
+            priority=priority,
+            default=False,
+        )
+
+    def test_tribe_group_allowed_affiliations_override(self):
+        alliance = self._affiliation("Alliance", 30)
+        associate = self._affiliation("Associate", 20)
+        militia = self._affiliation("Militia", 10)
+        tribe = Tribe.objects.create(name="Capitals", slug="capitals")
+        dreads = TribeGroup.objects.create(
+            tribe=tribe, name="Dreads", code="capitals.dreads"
+        )
+        mining = TribeGroup.objects.create(
+            tribe=tribe, name="Mining", code="supply.mining-test"
+        )
+        feature = PilotFeature.objects.get(code="tribes.apply")
+        feature.affiliations.set([alliance, associate])
+        feature.tribe_groups.clear()
+        feature.legacy_permission = ""
+        feature.save(update_fields=["legacy_permission"])
+        dreads.allowed_affiliations.set([alliance])
+        mining.allowed_affiliations.set([associate, militia])
+        clear_feature_cache()
+
+        alliance_user = User.objects.create_user(username="alliance_pilot")
+        UserAffiliation.objects.create(
+            user=alliance_user, affiliation=alliance
+        )
+        associate_user = User.objects.create_user(username="associate_pilot")
+        UserAffiliation.objects.create(
+            user=associate_user, affiliation=associate
+        )
+        militia_user = User.objects.create_user(username="militia_pilot")
+        UserAffiliation.objects.create(user=militia_user, affiliation=militia)
+
+        self.assertTrue(
+            can_use_feature(alliance_user, "tribes.apply", tribe_group=dreads)
+        )
+        self.assertFalse(
+            can_use_feature(associate_user, "tribes.apply", tribe_group=dreads)
+        )
+        self.assertFalse(
+            can_use_feature(militia_user, "tribes.apply", tribe_group=dreads)
+        )
+        self.assertTrue(
+            can_use_feature(associate_user, "tribes.apply", tribe_group=mining)
+        )
+        self.assertTrue(
+            can_use_feature(militia_user, "tribes.apply", tribe_group=mining)
+        )
+        self.assertFalse(
+            can_use_feature(alliance_user, "tribes.apply", tribe_group=mining)
+        )
+
+    def test_tribe_group_empty_allowed_affiliations_inherits_feature(self):
+        alliance = self._affiliation("Alliance", 31)
+        associate = self._affiliation("Associate", 21)
+        militia = self._affiliation("Militia", 11)
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse-aff")
+        tribe_group = TribeGroup.objects.create(
+            tribe=tribe, name="Thinkspeak", code="pulse.thinkspeak-aff"
+        )
+        feature = PilotFeature.objects.get(code="tribes.apply")
+        feature.affiliations.set([alliance, associate])
+        feature.tribe_groups.clear()
+        feature.legacy_permission = ""
+        feature.save(update_fields=["legacy_permission"])
+        clear_feature_cache()
+
+        militia_user = User.objects.create_user(username="militia_inherit")
+        UserAffiliation.objects.create(user=militia_user, affiliation=militia)
+        associate_user = User.objects.create_user(username="associate_inherit")
+        UserAffiliation.objects.create(
+            user=associate_user, affiliation=associate
+        )
+
+        self.assertFalse(
+            can_use_feature(
+                militia_user, "tribes.apply", tribe_group=tribe_group
+            )
+        )
+        self.assertTrue(
+            can_use_feature(
+                associate_user, "tribes.apply", tribe_group=tribe_group
+            )
+        )
+
+    def test_tribe_group_target_ignores_feature_tribe_group_wiring(self):
+        user = User.objects.create_user(username="unwired_apply_user")
+        alliance = self._affiliation("Alliance", 32)
+        UserAffiliation.objects.create(user=user, affiliation=alliance)
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse-unwired")
+        wired_group = TribeGroup.objects.create(
+            tribe=tribe, name="Wired", code="pulse.wired"
+        )
+        unwired_group = TribeGroup.objects.create(
+            tribe=tribe, name="Unwired", code="pulse.unwired"
+        )
+        feature = PilotFeature.objects.get(code="tribes.apply")
+        feature.affiliations.set([alliance])
+        feature.tribe_groups.set([wired_group])
+        feature.legacy_permission = ""
+        feature.save(update_fields=["legacy_permission"])
+        clear_feature_cache()
+
+        self.assertTrue(
+            can_use_feature(user, "tribes.apply", tribe_group=unwired_group)
         )
 
     def test_tribe_chief_scope(self):

@@ -1,0 +1,301 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : null
+const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user)
+    return Astro.redirect(
+        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
+    )
+
+const is_superuser = user ? user.is_superuser : false
+if (!is_superuser) return HTTP_403_Forbidden()
+
+const campaign_id = parseInt(Astro.params.id as string)
+
+import { get_corp_report, get_report } from '@helpers/api.minmatar.org/surveys'
+import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
+let report: any = null
+let corp_report: any = null
+let data_fetching_error: any
+try {
+    report = await get_report(auth_token as string, campaign_id)
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    data_fetching_error = error
+}
+try {
+    corp_report = await get_corp_report(auth_token as string, campaign_id)
+} catch (error) {
+    console.error('corp report fetch failed', error)
+}
+
+// ---- rendering helpers ----
+const SCALE_TYPES = ['scale5', 'agree', 'enps']
+const band = (frac: number) => `hsl(${Math.round(120 * frac)}, 60%, 47%)`
+
+// Ordered [{label, count, color}] for a question's distribution.
+function bars(q: any) {
+    const dist: Record<string, number> = q.distribution || {}
+    let entries: { label: string; count: number; color: string }[] = []
+    if (SCALE_TYPES.includes(q.type)) {
+        entries = [1, 2, 3, 4, 5].map((n) => ({
+            label: `${n}`,
+            count: dist[`${n}`] || 0,
+            color: band((n - 1) / 4),
+        }))
+    } else {
+        entries = Object.entries(dist).map(([label, count]) => ({
+            label,
+            count: count as number,
+            color: 'var(--fleet-yellow)',
+        }))
+    }
+    const max = Math.max(1, ...entries.map((e) => e.count))
+    return entries.map((e) => ({ ...e, pct: (e.count / max) * 100 }))
+}
+
+// For matrix questions: {rowKey: [{label,count,color,pct}]}
+function matrix_bars(q: any) {
+    const dist: Record<string, number> = q.distribution || {}
+    const rows: Record<string, { label: string; count: number; color: string }[]> = {}
+    const opts: string[] = []
+    for (const key of Object.keys(dist)) {
+        const [rowKey, option] = key.split('|')
+        if (!option) continue
+        if (!opts.includes(option)) opts.push(option)
+        rows[rowKey] = rows[rowKey] || []
+    }
+    const scored = opts.filter((o) => o.toLowerCase() !== 'n/a')
+    const colorOf = (o: string) => {
+        if (o.toLowerCase() === 'n/a') return 'var(--foreground)'
+        const i = scored.indexOf(o)
+        return band(scored.length > 1 ? i / (scored.length - 1) : 0.5)
+    }
+    for (const rowKey of Object.keys(q.rows || {})) {
+        rows[rowKey] = opts.map((o) => ({
+            label: o,
+            count: dist[`${rowKey}|${o}`] || 0,
+            color: colorOf(o),
+        }))
+    }
+    return rows
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+
+const page_title = report ? `Results — ${report.title}` : 'Survey results'
+---
+
+<Viewport title={page_title} components={{ alert_dialog: true }}>
+    <PageDefault>
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>Survey results</PageTitle>
+            {report && <small class="[ sub ]">{report.title} · {report.response_count} responses</small>}
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xl)">
+            {data_fetching_error && <ComponentBlock><p>Could not load results.</p></ComponentBlock>}
+
+            {report && report.sections.map((section: any) => (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-l)">
+                        <h2 class="[ section-title ]">{section.title}</h2>
+                        {section.questions.map((q: any) => (
+                            <div class="[ q ]">
+                                <div class="[ q-head ]">
+                                    <span class="[ q-label ]">{q.group ? `${q.group} · ` : ''}{q.label}</span>
+                                    <code class="[ slug ]">{q.key}</code>
+                                </div>
+                                <div class="[ q-meta ]">
+                                    {q.mean != null && <span class="[ mean ]">avg {q.mean.toFixed(2)}</span>}
+                                    <span class="[ n ]">n={q.n}</span>
+                                </div>
+
+                                {q.type === 'matrix' ? (
+                                    <div class="[ matrix ]">
+                                        {Object.entries(matrix_bars(q)).map(([rowKey, opts]: any) => (
+                                            <div class="[ mrow ]">
+                                                <span class="[ mrow-label ]">{q.rows[rowKey] || rowKey}</span>
+                                                <div class="[ bars ]">
+                                                    {opts.map((o: any) => (
+                                                        <div class="[ bar ]" title={`${o.label}: ${o.count}`}>
+                                                            <div class="[ bar__fill ]" style={`width:${Math.max(2, (o.count / Math.max(1, ...opts.map((x:any)=>x.count))) * 100)}%; background:${o.color}`}></div>
+                                                            <span class="[ bar__lbl ]">{o.label}</span>
+                                                            <span class="[ bar__ct ]">{o.count}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div class="[ bars ]">
+                                        {bars(q).map((b) => (
+                                            <div class="[ bar ]" title={`${b.label}: ${b.count}`}>
+                                                <div class="[ bar__fill ]" style={`width:${Math.max(2, b.pct)}%; background:${b.color}`}></div>
+                                                <span class="[ bar__lbl ]">{b.label}</span>
+                                                <span class="[ bar__ct ]">{b.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+
+            {report && report.write_ins.length > 0 && (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-l)">
+                        <h2 class="[ section-title ]">Write-in responses</h2>
+                        {report.write_ins.map((w: any) => (
+                            <details class="[ writein ]">
+                                <summary>
+                                    <span class="[ q-label ]">{w.label}</span>
+                                    <code class="[ slug ]">{w.key}</code>
+                                    <span class="[ n ]">{w.responses.length}</span>
+                                </summary>
+                                <ul class="[ writein-list ]">
+                                    {w.responses.map((r: any) => (
+                                        <li>
+                                            <span class="[ wi-author ]" title={`${r.character_name || 'Member'}${r.corporation_name ? ' · ' + r.corporation_name : ''}`}>
+                                                <img class="[ wi-portrait ]" src={get_player_icon(r.character_id || 1, 32)} alt={r.character_name} width="24" height="24" loading="lazy" />
+                                                {r.corporation_id && (
+                                                    <img class="[ wi-corp ]" src={get_corporation_logo(r.corporation_id, 32)} alt={r.corporation_name} width="18" height="18" loading="lazy" />
+                                                )}
+                                            </span>
+                                            <span class="[ wi-text ]">{r.text}</span>
+                                        </li>
+                                    ))}
+                                    {w.responses.length === 0 && <li class="[ muted ]">No responses.</li>}
+                                </ul>
+                            </details>
+                        ))}
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            {corp_report && corp_report.corps.length > 0 && (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-l)">
+                        <h2 class="[ section-title ]">Corporation experience</h2>
+                        <p class="[ note ]">
+                            Per corporation · corps with fewer than {corp_report.min_n} responses are hidden to protect anonymity.
+                        </p>
+                        {corp_report.corps.map((corp: any) => (
+                            <div class="[ corp ]">
+                                <div class="[ corp-head ]">
+                                    <strong>{corp.corp}</strong>
+                                    <span class="[ n ]">{corp.n} responses</span>
+                                </div>
+                                {corp.suppressed ? (
+                                    <p class="[ muted ]">Hidden (below the anonymity threshold).</p>
+                                ) : (
+                                    <div class="[ corp-rows ]">
+                                        {corp.questions.map((q: any) => (
+                                            <div class="[ corp-row ]">
+                                                <span class="[ crow-label ]">{q.label}</span>
+                                                <div class="[ meter ]">
+                                                    <div class="[ meter__fill ]" style={`width:${q.mean != null ? ((q.mean - 1) / 4) * 100 : 0}%; background:${band(q.mean != null ? (q.mean - 1) / 4 : 0)}`}></div>
+                                                </div>
+                                                <span class="[ crow-mean ]">{q.mean != null ? q.mean.toFixed(2) : '—'}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            <FlexInline>
+                <Button href={translatePath('/surveys')}>Back to surveys</Button>
+            </FlexInline>
+        </Flexblock>
+    </PageDefault>
+</Viewport>
+
+<style lang="scss">
+    .sub { color: var(--fleet-yellow); opacity: 0.85; }
+    .section-title { text-transform: uppercase; margin: 0; }
+    .q {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+        padding-top: var(--space-s);
+    }
+    .q-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); flex-wrap: wrap; }
+    .q-label { font-weight: 600; color: var(--highlight); }
+    .slug {
+        font-size: 0.72em;
+        color: var(--fleet-yellow);
+        opacity: 0.7;
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.05));
+        padding: 1px 6px;
+        border-radius: 3px;
+    }
+    .q-meta { display: flex; gap: var(--space-m); font-size: 0.85em; }
+    .mean { color: var(--green); font-weight: 600; }
+    .n { color: var(--foreground); opacity: 0.55; font-variant-numeric: tabular-nums; }
+
+    .bars { display: flex; flex-direction: column; gap: 3px; }
+    .bar { position: relative; display: flex; align-items: center; gap: var(--space-2xs); }
+    .bar__fill { height: 18px; border-radius: 3px; min-width: 2px; }
+    .bar__lbl { font-size: 0.82em; color: var(--foreground); }
+    .bar__ct { font-size: 0.78em; opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+    .matrix { display: flex; flex-direction: column; gap: var(--space-s); }
+    .mrow { display: grid; grid-template-columns: minmax(8rem, 1fr) 2fr; gap: var(--space-s); align-items: start; }
+    .mrow-label { font-size: 0.9em; }
+    @media (max-width: 40rem) { .mrow { grid-template-columns: 1fr; } }
+
+    .writein > summary {
+        cursor: pointer;
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-s);
+        padding: var(--space-2xs) 0;
+    }
+    .writein-list { margin: var(--space-2xs) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2xs); }
+    .writein-list li { color: var(--foreground); opacity: 0.9; display: flex; align-items: center; gap: var(--space-2xs); }
+    .wi-author { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+    .wi-portrait { border-radius: 50%; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)); }
+    .wi-corp { border-radius: 3px; margin-left: -6px; border: 1px solid var(--background, #12100e); background: var(--background, #12100e); }
+    .wi-text { line-height: 1.4; }
+    .muted { opacity: 0.5; }
+    .note { opacity: 0.7; margin: 0; }
+
+    .corp {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+        padding-top: var(--space-s);
+    }
+    .corp-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); }
+    .corp-rows { display: flex; flex-direction: column; gap: var(--space-3xs); }
+    .corp-row { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr auto; gap: var(--space-s); align-items: center; }
+    @media (max-width: 40rem) { .corp-row { grid-template-columns: 1fr; } }
+    .crow-label { font-size: 0.88em; }
+    .meter { height: 8px; border-radius: 999px; background: var(--fill-and-stroke, rgba(255, 255, 255, 0.08)); overflow: hidden; }
+    .meter__fill { height: 100%; border-radius: 999px; }
+    .crow-mean { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3ch; text-align: right; }
+</style>

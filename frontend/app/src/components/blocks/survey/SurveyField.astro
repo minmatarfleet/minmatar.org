@@ -1,0 +1,264 @@
+---
+import type { SurveyQuestion } from '@dtypes/survey'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import SurveyContextPanel from '@components/blocks/survey/SurveyContextPanel.astro'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    question: SurveyQuestion
+    hide_label?: boolean
+    hide_context?: boolean
+    value?: any
+    [propName: string]: any
+}
+
+const { question: q, hide_label = false, hide_context = false, value } = Astro.props
+
+// Prior answer helpers, used to pre-select inputs when reviewing/editing.
+const matrix_value: Record<string, string> =
+    value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+const multi_value: string[] = Array.isArray(value) ? value.map(String) : []
+const scalar_value = value !== null && value !== undefined ? String(value) : ''
+
+const AGREE_LABELS = ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree']
+
+const gradient_color = (frac: number) => `hsl(${Math.round(120 * frac)}, 62%, 45%)`
+
+interface ScaleOption { value: number; label: string; color: string }
+
+const scale_options = (question: SurveyQuestion): ScaleOption[] => {
+    if (question.type === 'enps') {
+        return Array.from({ length: 11 }, (_, v) => ({ value: v, label: `${v}`, color: gradient_color(v / 10) }))
+    }
+    return [1, 2, 3, 4, 5].map((v) => {
+        const frac = (v - 1) / 4
+        const label = question.type === 'agree' ? AGREE_LABELS[v - 1] : `${v}`
+        return { value: v, label, color: gradient_color(frac) }
+    })
+}
+
+const NEUTRAL = 'var(--foreground)'
+const matrix_option_color = (kind: string, choices: string[], choice: string, index: number): string => {
+    if (kind === 'rating') {
+        const scored = choices.filter((c) => c.toLowerCase() !== 'n/a')
+        if (choice.toLowerCase() === 'n/a') return NEUTRAL
+        const i = scored.indexOf(choice)
+        return gradient_color(i / Math.max(1, scored.length - 1))
+    }
+    if (kind === 'diverging') {
+        // Symmetric: the center is ideal (green); both ends taper off equally
+        // toward red as they get further from the middle.
+        const center = (choices.length - 1) / 2
+        if (center === 0) return 'hsl(120, 62%, 45%)'
+        const frac = Math.abs(index - center) / center // 0 at center → 1 at ends
+        return `hsl(${Math.round(120 - 95 * frac)}, 62%, 46%)`
+    }
+    return NEUTRAL
+}
+---
+
+<Flexblock gap="var(--space-xs)" class="[ question ]">
+    {!hide_label && (
+        <Flexblock gap="var(--space-3xs)">
+            <div class="[ q-label-row ]">
+                <p class="[ question-label ]">{q.label}</p>
+                <span class:list={['[ q-badge ]', q.required ? 'q-badge--required' : 'q-badge--optional']}>
+                    {q.required ? 'Required' : 'Optional'}
+                </span>
+            </div>
+            {q.help && <small class="[ help ]">{q.help}</small>}
+        </Flexblock>
+    )}
+
+    {q.context && !hide_context && <SurveyContextPanel context={q.context} />}
+
+    {(q.type === 'scale5' || q.type === 'agree' || q.type === 'enps') && (
+        <div class="[ scale-group ]">
+            <div class:list={['[ scale ]', { 'scale--enps': q.type === 'enps' }]}>
+                {scale_options(q).map((opt) => (
+                    <label class="[ scale-chip ]" style={`--c: ${opt.color}`}>
+                        <input type="radio" name={`q__${q.key}`} value={opt.value} required={q.required} checked={scalar_value === String(opt.value)} />
+                        <span class="[ chip ]">{opt.label}</span>
+                    </label>
+                ))}
+            </div>
+            {q.type !== 'agree' && (
+                <div class="[ scale-legend ]">
+                    <small>{q.scale_labels ? q.scale_labels[0] : (q.type === 'enps' ? 'Not likely' : 'Worse')}</small>
+                    <small>{q.scale_labels ? q.scale_labels[1] : (q.type === 'enps' ? 'Very likely' : 'Better')}</small>
+                </div>
+            )}
+        </div>
+    )}
+
+    {q.type === 'single' && q.scale_kind && (
+        <div class="[ scale-group ]">
+            <div class="[ scale ]">
+                {q.choices.map((choice, ci) => (
+                    <label class="[ scale-chip ]" style={`--c: ${matrix_option_color(q.scale_kind, q.choices, choice, ci)}`}>
+                        <input type="radio" name={`q__${q.key}`} value={choice} required={q.required} checked={scalar_value === choice} />
+                        <span class="[ chip ]">{choice}</span>
+                    </label>
+                ))}
+            </div>
+            {q.scale_labels && (
+                <div class="[ scale-legend ]">
+                    <small>{q.scale_labels[0]}</small>
+                    <small>{q.scale_labels[1]}</small>
+                </div>
+            )}
+        </div>
+    )}
+
+    {q.type === 'single' && !q.scale_kind && (
+        <Flexblock gap="var(--space-2xs)">
+            {q.choices.map((choice) => (
+                <RadioCheckInput type="radio" name={`q__${q.key}`} value={choice} required={q.required} label={choice} checked={scalar_value === choice} />
+            ))}
+        </Flexblock>
+    )}
+
+    {q.type === 'multi' && (
+        <div class="[ multi-grid ]">
+            {q.choices.map((choice) => (
+                <RadioCheckInput type="checkbox" name={`q__${q.key}`} value={choice} label={choice} checked={multi_value.includes(choice)} />
+            ))}
+        </div>
+    )}
+
+    {q.type === 'matrix' && q.scale_kind && (
+        <Flexblock gap="var(--space-s)">
+            {q.rows.map((row) => (
+                <div class="[ matrix-row ]">
+                    <div class="[ matrix-label ]">
+                        <div class="[ matrix-label__main ]">
+                            <img
+                                class="[ chief-portrait ]"
+                                src={get_player_icon(row.chief_id || 1, 32)}
+                                alt={row.chief_name}
+                                title={row.chief_name ? `Chief: ${row.chief_name}` : 'No chief assigned'}
+                                width="28"
+                                height="28"
+                                loading="lazy"
+                            />
+                            <span>{row.label}</span>
+                        </div>
+                        {row.groups && row.groups.length > 0 && (
+                            <ul class="[ subgroups ]">
+                                {row.groups.map((g) => (
+                                    <li>
+                                        <img
+                                            class="[ subgroup-portrait ]"
+                                            src={get_player_icon(g.chief_id || 1, 32)}
+                                            alt={g.chief_name}
+                                            title={g.chief_name ? `Chief: ${g.chief_name}` : 'No chief assigned'}
+                                            width="16"
+                                            height="16"
+                                            loading="lazy"
+                                        />
+                                        <span class="[ sg-name ]">{g.name}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <div class="[ scale ]">
+                        {q.choices.map((choice, ci) => (
+                            <label class="[ scale-chip ]" style={`--c: ${matrix_option_color(q.scale_kind, q.choices, choice, ci)}`}>
+                                <input type="radio" name={`m__${q.key}__${row.key}`} value={choice} checked={matrix_value[row.key] === choice} />
+                                <span class="[ chip ]">{choice}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </Flexblock>
+    )}
+
+    {q.type === 'matrix' && !q.scale_kind && (
+        <Flexblock gap="var(--space-2xs)">
+            {q.rows.map((row) => (
+                <FixedFluid width="60%" breakpoint="60%" gap="var(--space-s)" class="[ matrix-row ]">
+                    <div class="[ matrix-label ]"><span>{row.label}</span></div>
+                    <Select name={`m__${q.key}__${row.key}`}>
+                        <option value="" selected={!matrix_value[row.key]}>—</option>
+                        {q.choices.map((choice) => <option value={choice} selected={matrix_value[row.key] === choice}>{choice}</option>)}
+                    </Select>
+                </FixedFluid>
+            ))}
+        </Flexblock>
+    )}
+
+    {q.type === 'text' && <Textarea name={`q__${q.key}`} rows="3">{scalar_value}</Textarea>}
+</Flexblock>
+
+<style lang="scss">
+    .q-label-row { display: flex; align-items: baseline; gap: var(--space-2xs); flex-wrap: wrap; }
+    .question-label { font-weight: 600; margin: 0; color: var(--highlight); }
+    .q-badge {
+        flex-shrink: 0;
+        font-size: 0.58em;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        transform: translateY(-1px);
+    }
+    .q-badge--required { color: var(--fleet-red); }
+    .q-badge--optional { color: var(--foreground); opacity: 0.4; }
+    .help { color: var(--foreground); opacity: 0.6; }
+
+    /* Scales */
+    .scale-group { display: inline-flex; flex-direction: column; gap: var(--space-2xs); width: fit-content; max-width: 100%; }
+    .scale { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+    .scale-chip { cursor: pointer; }
+    .scale-chip input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.2rem;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid var(--c);
+        color: var(--c);
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-weight: 500;
+        transition: var(--fast-transition);
+        user-select: none;
+    }
+    .scale-chip:hover .chip { background: color-mix(in srgb, var(--c) 18%, transparent); }
+    .scale-chip input:checked + .chip { background: var(--c); color: #0d0d0d; font-weight: 600; }
+    .scale-chip input:focus-visible + .chip { outline: 2px solid var(--highlight); outline-offset: 2px; }
+    .scale-legend { display: flex; justify-content: space-between; width: 100%; color: var(--foreground); opacity: 0.6; }
+
+    .multi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-2xs) var(--space-l); }
+
+    /* Matrix: label left, scale right */
+    .matrix-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        flex-wrap: wrap;
+    }
+    .matrix-label { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .matrix-label__main { display: flex; align-items: center; gap: var(--space-2xs); }
+    .chief-portrait { border-radius: 50%; flex-shrink: 0; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)); }
+    .subgroups { list-style: none; margin: var(--space-3xs) 0 0; padding: 0 0 0 calc(28px + var(--space-2xs)); display: flex; flex-direction: column; gap: 3px; }
+    .subgroups li { display: flex; align-items: center; gap: var(--space-3xs); font-size: 0.82em; color: var(--foreground); opacity: 0.75; }
+    .subgroup-portrait { border-radius: 50%; flex-shrink: 0; }
+    .sg-name { white-space: nowrap; }
+    .matrix-row .scale { flex-shrink: 0; }
+
+    @media (max-width: 32rem) {
+        .matrix-row { justify-content: flex-start; }
+        .scale-group { width: 100%; }
+        .q-label-row { flex-direction: column; align-items: flex-start; }
+    }
+</style>

@@ -8,6 +8,8 @@ Faction warfare complexes (**plexes**) are where most fights and most LP happen.
 
 For map colors, system types (frontline / command ops / rearguard), contested vs advantage, and how site names are read, start with [Faction Warfare Basics](/learning/guides/faction-warfare-basics/). This guide covers plexing itself: the deadspace pocket, and the LP / victory point tables.
 
+This month in the warzone: [Warzone Report](/warzone/).
+
 ## Basics
 
 ### Outside the plex

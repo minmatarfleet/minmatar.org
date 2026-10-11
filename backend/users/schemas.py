@@ -30,6 +30,7 @@ class UserProfileSchema(BaseModel):
     username: str
     permissions: List[str]
     is_superuser: bool
+    community_status: Optional[str] = None
 
     # eve stuff
     eve_character_profile: Optional[EveCharacterSchema]

@@ -41,7 +41,7 @@ export type MetaBlock =
     | {
         type: 'table'
         headers: [string, string]
-        rows: { cells: [string, string]; ship_id?: number }[]
+        rows: { cells: [string, string]; ship_id?: number; fit_match?: string }[]
     }
 
 export type CrosstrainingRow = {

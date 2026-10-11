@@ -15,6 +15,10 @@ interface Props {
     volunteers:     FleetRoleVolunteer[],
     pilots:         SummaryCharacter[],
     readonly?:      boolean;
+    /** Fleet commander view: allows assigning cyno volunteers to a system. */
+    can_assign_system?: boolean;
+    /** How many volunteers the fleet wants for this role (drives the indicator). */
+    wanted?:        number;
 }
 
 const {
@@ -26,7 +30,12 @@ const {
     volunteers,
     pilots,
     readonly,
+    can_assign_system = false,
+    wanted = 1,
 } = Astro.props
+
+const show_system_controls = role === 'cyno' && can_assign_system && !readonly
+const filled = volunteers.length >= wanted
 
 import { query_string } from '@helpers/string';
 
@@ -35,78 +44,160 @@ const FLEET_ROLE_ITEM_PARTIAL_URL = `${translatePath('/partials/fleet_role_item_
 const volunteers_characters = volunteers.map((v) => v.character_id)
 const pilots_to_add = pilots.filter(user_pilot => !volunteers_characters.includes(user_pilot.character_id))
 
-import { get_item_icon } from '@helpers/eve_image_server'
+const clear_system_url = (volunteer_id:number) => `${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    role: role,
+    volunteer_id: volunteer_id,
+    clear_system: true,
+    can_assign: true,
+})}`
 
-const ICONS_BY_SUBTYPE = {
-    ehp: null,
-    info: get_item_icon(43554, 32),
-    skirmish: get_item_icon(43556, 32),
-}
+const count_text = t('role_count_of_wanted')
+    .replace('{count}', volunteers.length.toString())
+    .replace('{wanted}', wanted.toString())
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import FluidFixed from '@components/compositions/FluidFixed.astro'
-
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
-import Button from '@components/blocks/Button.astro'
+import FleetRowAction from '@components/blocks/FleetRowAction.astro'
 import ButtonAddVolunteer from '@components/blocks/ButtonAddVolunteer.astro'
+import FleetCynoSystemButton from '@components/blocks/FleetCynoSystemButton.astro'
+import Square from '@components/blocks/Square.astro'
+import Badge from '@components/blocks/Badge.astro'
 
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
-<div id={id}>
-    <ComponentBlock padding_block='var(--space-xs)' padding_inline='var(--space-xs)'>
-        <Flexblock class="[ basis-[300px] ]">
-            <FluidFixed width='46px' class="[ items-center! ]">
-                <FlexInline gap='var(--space-3xs)'>
-                    <slot name="icon" />
-                    <Flexblock gap='var(--space-3xs)'>
-                        <h4 class="[ sentence-cap ]" style="margin: 0;">{title}</h4>
-                        <small class:list={{ 'text-red': volunteers.length === 0 }}>{volunteers.length !== 1 ? t('volunteer_plural').replace('{count}', volunteers.length.toString()) : t('volunteer_singular')}</small>
-                    </Flexblock>
-                </FlexInline>
-                {!readonly && pilots_to_add.length > 0 &&
-                    <ButtonAddVolunteer
-                        title={title}
+<div id={id} class="[ fleet-role ][ light-transparency ]" role="listitem">
+    <div class="[ fleet-role__role ]">
+        <Badge title={title} size={40}>
+            <div slot="picture" class="[ fleet-role__icon ]">
+                <slot name="icon" />
+            </div>
+            <small class="[ fleet-role__count ]">
+                <Square color={filled ? 'green' : 'fleet-red'} />
+                {count_text}
+            </small>
+        </Badge>
+    </div>
+
+    <div class="[ fleet-role__pilots ]">
+        {volunteers.map(volunteer =>
+            <span class="[ fleet-role__pilot ]">
+                <PilotBadge
+                    character_id={volunteer.character_id}
+                    character_name={volunteer.character_name}
+                    size={32}
+                    icon_quality={32}
+                >
+                    {role === 'cyno' && volunteer.solar_system_name &&
+                        <small class="[ text-[var(--highlight)] ]">{volunteer.solar_system_name}</small>
+                    }
+                </PilotBadge>
+                {show_system_controls &&
+                    <FleetCynoSystemButton
                         target={id}
                         fleet_id={fleet_id}
-                        pilots={pilots_to_add}
-                        role={role}
-                        subtype={subtype ? subtype : undefined}
+                        volunteer_id={volunteer.id}
+                        character_name={volunteer.character_name}
                     />
                 }
-            </FluidFixed>
-            {volunteers.map(volunteer =>
-                <FluidFixed width='46px' class="[ items-center! ]">
-                    <PilotBadge
-                        character_id={volunteer.character_id}
-                        character_name={volunteer.character_name}
-                        size={32}
-                        icon_quality={32}
-                    />
-                    {!readonly && pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id) &&
-                        <Button
-                            size='sm'
-                            type="button"
-                            narrow={true}
-                            hx-delete={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
-                                id: id,
-                                fleet_id: fleet_id,
-                                remove_id: volunteer.id,
-                                role: role,
-                                ...(subtype && { subtype }),
-                                ...(subtype && subtype !== 'ehp' && ICONS_BY_SUBTYPE[subtype] && { icon: ICONS_BY_SUBTYPE[subtype] }),
-                            })}`}
-                            hx-target={`#${id}`}
-                            hx-indicator=".loader"
-                            hx-swap='outerHTML transition:true'
-                        >
-                            <TrashIcon slot="icon" />
-                        </Button>
-                    }
-                </FluidFixed>
-            )}
-        </Flexblock>
-    </ComponentBlock>
+                {show_system_controls && volunteer.solar_system_name &&
+                    <FleetRowAction
+                        title={t('clear_cyno_system')}
+                        hx-patch={clear_system_url(volunteer.id)}
+                        hx-target={`#${id}`}
+                        hx-indicator=".loader"
+                        hx-swap='outerHTML transition:true'
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </FleetRowAction>
+                }
+                {!readonly && pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id) &&
+                    <FleetRowAction
+                        title={t('remove')}
+                        danger={true}
+                        hx-delete={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+                            id: id,
+                            fleet_id: fleet_id,
+                            remove_id: volunteer.id,
+                            role: role,
+                            ...(subtype && { subtype }),
+                            ...(can_assign_system && { can_assign: true }),
+                        })}`}
+                        hx-target={`#${id}`}
+                        hx-indicator=".loader"
+                        hx-swap='outerHTML transition:true'
+                    >
+                        <TrashIcon />
+                    </FleetRowAction>
+                }
+            </span>
+        )}
+
+        {!readonly && pilots_to_add.length > 0 &&
+            <ButtonAddVolunteer
+                title={title}
+                target={id}
+                fleet_id={fleet_id}
+                pilots={pilots_to_add}
+                role={role}
+                subtype={subtype ? subtype : undefined}
+                params={can_assign_system ? { can_assign: true } : {}}
+            />
+        }
+    </div>
 </div>
+
+<style lang="scss">
+    .fleet-role {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-2xs) var(--space-m);
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        border: solid 1px var(--border-color);
+    }
+
+    .fleet-role__role {
+        min-width: 0;
+    }
+
+    .fleet-role__icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        :global(img),
+        :global(svg) {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    .fleet-role__count {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        white-space: nowrap;
+    }
+
+    .fleet-role__pilots {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .fleet-role__pilot {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .fleet-role__pilot :global(.pilot-item span) {
+        font-size: var(--step--1);
+    }
+</style>

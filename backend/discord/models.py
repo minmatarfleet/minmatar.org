@@ -176,6 +176,13 @@ class DiscordChannel(models.Model):
             "forum. Only one channel should have this enabled."
         ),
     )
+    receive_buyback = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, hangar buyback purchase-order threads are created "
+            "in this forum. Only one channel should have this enabled."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -188,6 +195,10 @@ class DiscordChannel(models.Model):
             type(self).objects.filter(receive_lp_buyback=True).exclude(
                 pk=self.pk
             ).update(receive_lp_buyback=False)
+        if self.receive_buyback:
+            type(self).objects.filter(receive_buyback=True).exclude(
+                pk=self.pk
+            ).update(receive_buyback=False)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_channel_type_display()})"

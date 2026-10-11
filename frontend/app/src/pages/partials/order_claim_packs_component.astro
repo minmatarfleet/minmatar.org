@@ -1,0 +1,48 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { BuildPack } from '@dtypes/api.minmatar.org'
+import { get_order_item_build_packs } from '@helpers/api.minmatar.org/industry'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '')
+
+let packs:BuildPack[] = []
+let fetching_error:Error | false = false
+
+try {
+    if (isNaN(order_id) || isNaN(item_id))
+        throw new Error(t('invalid_item_id'), { cause: 400 })
+
+    packs = await get_order_item_build_packs(order_id, item_id)
+} catch (error) {
+    fetching_error = error
+}
+
+import { query_string } from '@helpers/string';
+
+const ORDER_CLAIM_PACKS_PARTIAL_URL = translatePath(`/partials/order_claim_packs_component?${query_string({
+    order_id: order_id,
+    item_id: item_id,
+})}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import BuildPacksList from '@components/blocks/BuildPacksList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: ORDER_CLAIM_PACKS_PARTIAL_URL,
+            error: fetching_error,
+            delay: delay,
+        }}
+    /> :
+    <BuildPacksList
+        packs={packs}
+        id_prefix={`build-pack-${order_id}-${item_id}`}
+    />
+}

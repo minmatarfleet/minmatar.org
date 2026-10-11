@@ -78,6 +78,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
         "receive_capital_pings",
         "receive_amarr_fleet_pings",
         "receive_lp_buyback",
+        "receive_buyback",
         "channel_id",
         "updated_at",
     )
@@ -88,6 +89,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
         "receive_capital_pings",
         "receive_amarr_fleet_pings",
         "receive_lp_buyback",
+        "receive_buyback",
     )
     search_fields = ("name", "channel_id", "guild__name")
     readonly_fields = (
@@ -109,6 +111,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
                 "receive_capital_pings",
                 "receive_amarr_fleet_pings",
                 "receive_lp_buyback",
+                "receive_buyback",
                 "created_at",
                 "updated_at",
             )
@@ -118,6 +121,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
             "receive_capital_pings",
             "receive_amarr_fleet_pings",
             "receive_lp_buyback",
+            "receive_buyback",
         )
 
     def save_model(self, request, obj, form, change):

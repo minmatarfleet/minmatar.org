@@ -1,0 +1,328 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { BuybackPurchaseOrder, BuybackPurchaseOrderLine, BuybackPurchaseOrderStatus } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+import { format_date_short, format_date_time } from '@helpers/date'
+
+import Dropdown from '@components/blocks/Dropdown.astro'
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+interface Props {
+    order: BuybackPurchaseOrder
+    can_manage?: boolean
+    highlighted?: boolean
+}
+
+const { t, lang } = i18n(Astro.url)
+const {
+    order,
+    can_manage = false,
+    highlighted = false,
+} = Astro.props
+
+const STATUS_LABELS: Record<BuybackPurchaseOrderStatus, string> = {
+    pending: t('buyback.purchase.orders.status.pending'),
+    completed: t('buyback.purchase.orders.status.completed'),
+    cancelled: t('buyback.purchase.orders.status.cancelled'),
+}
+
+const STATUS_COLORS: Record<BuybackPurchaseOrderStatus, TagColors> = {
+    pending: 'fleet-yellow',
+    completed: 'green',
+    cancelled: 'fleet-red',
+}
+
+const STATUS_TEXT_COLORS: Partial<Record<BuybackPurchaseOrderStatus, string>> = {
+    pending: 'var(--background)',
+}
+
+function escape_html(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+}
+
+function lines_tip_html(lines: BuybackPurchaseOrderLine[]): string {
+    const rows = lines.map((line) =>
+        `<li><strong>${escape_html(line.name)}</strong> × ${number_thousand_separator(line.quantity)}</li>`
+    ).join('')
+    return `<ul style="margin:0;padding-left:1.1em;text-align:left">${rows}</ul>`
+}
+
+const status_label = STATUS_LABELS[order.status as BuybackPurchaseOrderStatus] ?? order.status
+const status_color = STATUS_COLORS[order.status as BuybackPurchaseOrderStatus] ?? 'alliance-blue'
+const status_text_color = STATUS_TEXT_COLORS[order.status as BuybackPurchaseOrderStatus]
+const pilot_name = order.character_name || t('buyback.purchase.orders.unknown_pilot')
+const quantity = order.lines.reduce((sum, line) => sum + line.quantity, 0)
+const line_count_label = t('buyback.purchase.orders.items_count').replace('{count}', String(order.lines.length))
+const created_date = format_date_short(lang, order.created_at)
+const created_datetime = format_date_time(lang, order.created_at)
+const show_actions = order.status === 'pending'
+    || order.discord_thread_url
+    || order.janice_tsv
+
+const copy_label = t('buyback.purchase.orders.copy_isk').replace(/'/g, "\\'")
+const copied_label = t('copied').replace(/'/g, "\\'")
+const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
+---
+
+<div
+    class:list={[
+        'buyback-purchase-order-item',
+        { 'buyback-purchase-order-item--highlight': highlighted },
+    ]}
+    role="row"
+    id={`order-${order.id}`}
+>
+    <div class="[ buyback-purchase-order-item__id ]" role="cell">
+        <span class="[ text-highlight ]">#{order.id}</span>
+    </div>
+
+    <div class="[ buyback-purchase-order-item__pilot ]" role="cell">
+        {order.character_id ?
+            <PilotBadge
+                character_id={order.character_id}
+                character_name={pilot_name}
+                size={32}
+                icon_quality={64}
+            />
+            :
+            <span>{pilot_name}</span>
+        }
+    </div>
+
+    <div
+        class="[ buyback-purchase-order-item__quantity ]"
+        role="cell"
+        tabindex="0"
+        aria-label={line_count_label}
+        x-init={`tippy($el, {
+            content: ${JSON.stringify(lines_tip_html(order.lines))},
+            allowHTML: true,
+            delay: [100, 200],
+            arrow: true,
+        })`}
+    >
+        <span>{number_thousand_separator(quantity)}</span>
+    </div>
+
+    <div class="[ buyback-purchase-order-item__total ]" role="cell">
+        <span>{format_isk(order.contract_total)}</span> <span>ISK</span>
+    </div>
+
+    <div class="[ buyback-purchase-order-item__status ]" role="cell">
+        <Tag
+            text={status_label}
+            color={status_color}
+            text_color={status_text_color}
+            narrow={true}
+        />
+    </div>
+
+    <div
+        class="[ buyback-purchase-order-item__created ]"
+        role="cell"
+        data-tippy-content={t('date_issued').replace('{date}', created_datetime)}
+        x-init="tippy($el, tippy_options)"
+    >
+        <span class="[ whitespace-nowrap ]">{created_date}</span>
+    </div>
+
+    <div class="[ buyback-purchase-order-item__actions ]" role="cell">
+        {show_actions &&
+            <Dropdown
+                variant="button"
+                color="fleet-red"
+                size="sm"
+                class="[ buyback-purchase-order-actions-menu ]"
+            >
+                <span slot="button">{t('actions')}</span>
+                <nav
+                    class="[ buyback-purchase-order-actions-menu__list ]"
+                    aria-label={t('actions')}
+                >
+                    <button
+                        type="button"
+                        class="[ buyback-purchase-order-actions-menu__item ]"
+                        x-data={`{ label: '${copy_label}' }`}
+                        x-on:click.stop.prevent={`copyFitToClipboard('buyback-order-isk-${order.id}'); label = '${copied_label}'; setTimeout(() => label = '${copy_label}', 2000); close()`}
+                    >
+                        <span x-text="label">{t('buyback.purchase.orders.copy_isk')}</span>
+                    </button>
+                    {order.janice_tsv &&
+                        <button
+                            type="button"
+                            class="[ buyback-purchase-order-actions-menu__item ]"
+                            x-data={`{ label: '${janice_label}' }`}
+                            x-on:click.stop.prevent={`copyFitToClipboard('buyback-order-janice-${order.id}'); label = '${copied_label}'; setTimeout(() => label = '${janice_label}', 2000); close()`}
+                        >
+                            <span x-text="label">{t('buyback.purchase.copy_janice')}</span>
+                        </button>
+                    }
+                    {order.discord_thread_url &&
+                        <a
+                            class="[ buyback-purchase-order-actions-menu__item ]"
+                            href={order.discord_thread_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            x-on:click="close()"
+                        >
+                            {t('buyback.purchase.discord_thread')}
+                        </a>
+                    }
+                    {order.status === 'pending' && can_manage &&
+                        <form method="POST">
+                            <input type="hidden" name="action" value="complete" />
+                            <input type="hidden" name="order_id" value={order.id} />
+                            <ButtonConfirm
+                                label={t('buyback.purchase.orders.complete')}
+                                size="sm"
+                                color="green"
+                                narrow={true}
+                            >
+                                <button
+                                    type="submit"
+                                    class="[ buyback-purchase-order-actions-menu__item buyback-purchase-order-actions-menu__item--go ]"
+                                >
+                                    {t('buyback.purchase.orders.confirm_complete')}
+                                </button>
+                            </ButtonConfirm>
+                        </form>
+                    }
+                    {order.status === 'pending' &&
+                        <form method="POST">
+                            <input type="hidden" name="action" value="cancel" />
+                            <input type="hidden" name="order_id" value={order.id} />
+                            <ButtonConfirm
+                                label={t('buyback.purchase.orders.cancel')}
+                                size="sm"
+                                color="fleet-red"
+                                narrow={true}
+                            >
+                                <button
+                                    type="submit"
+                                    class="[ buyback-purchase-order-actions-menu__item buyback-purchase-order-actions-menu__item--danger ]"
+                                >
+                                    {t('buyback.purchase.orders.confirm_cancel')}
+                                </button>
+                            </ButtonConfirm>
+                        </form>
+                    }
+                </nav>
+                <textarea
+                    class="[ hidden ]"
+                    id={`buyback-order-isk-${order.id}`}
+                    readonly
+                >{String(order.contract_total)}</textarea>
+                {order.janice_tsv &&
+                    <textarea
+                        class="[ hidden ]"
+                        id={`buyback-order-janice-${order.id}`}
+                        readonly
+                    >{order.janice_tsv}</textarea>
+                }
+            </Dropdown>
+        }
+    </div>
+</div>
+
+<style lang="scss">
+    .buyback-purchase-order-item {
+        display: grid;
+        grid-template-columns: minmax(4rem, 0.5fr) minmax(10rem, 1.4fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(7rem, 0.9fr) minmax(6.5rem, 0.8fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        font-size: var(--step--1);
+        min-width: 70rem;
+    }
+
+    .buyback-purchase-order-item--highlight {
+        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+    }
+
+    .buyback-purchase-order-item__quantity {
+        cursor: help;
+    }
+
+    .buyback-purchase-order-item__actions {
+        :global(.button-dropdown) {
+            display: inline-block;
+        }
+    }
+
+    :global(.buyback-purchase-order-actions-menu.button-dropdown-panel),
+    :global(.buyback-purchase-order-actions-menu .button-dropdown-panel) {
+        width: var(--button-dropdown-min-width, max-content);
+        min-width: var(--button-dropdown-min-width, 12rem);
+        padding: var(--space-3xs);
+        background: var(--background);
+    }
+
+    .buyback-purchase-order-actions-menu__list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+    }
+
+    .buyback-purchase-order-actions-menu__list form {
+        margin: 0;
+    }
+
+    .buyback-purchase-order-actions-menu__item {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none;
+        text-align: left;
+        border: none;
+        background: transparent;
+        transition: var(--fast-transition);
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+            color: var(--button-color);
+            outline: 2px solid var(--highlight);
+            outline-offset: -2px;
+        }
+
+        &--go {
+            color: var(--green);
+
+            &:hover,
+            &:focus-visible {
+                background: color-mix(in srgb, var(--green) 25%, transparent);
+                color: var(--highlight);
+                outline: 2px solid var(--highlight);
+                outline-offset: -2px;
+            }
+        }
+
+        &--danger {
+            color: var(--fleet-red);
+
+            &:hover,
+            &:focus-visible {
+                background: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+                color: var(--button-color);
+                outline: 2px solid var(--highlight);
+                outline-offset: -2px;
+            }
+        }
+    }
+</style>

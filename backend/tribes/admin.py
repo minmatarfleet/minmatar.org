@@ -5,6 +5,8 @@ from tribes.admin_group_views import tribe_group_hub_view, tribes_view
 from tribes.helpers.admin_permissions import tribes_index_link_perms
 from tribes.models import (
     Tribe,
+    TribeExternalGuild,
+    TribeExternalGuildSeat,
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
@@ -25,9 +27,23 @@ class TribeGroupInline(admin.TabularInline):
         "chief",
         "is_active",
         "required_token_type",
+        "require_off_trial",
         "discord_channel_id",
     )
     show_change_link = True
+
+
+class TribeExternalGuildInline(admin.StackedInline):
+    model = TribeExternalGuild
+    extra = 0
+    max_num = 1
+    raw_id_fields = ("guild",)
+    fields = (
+        "guild",
+        "member_role_id",
+        "alert_channel_id",
+        "is_active",
+    )
 
 
 @admin.register(Tribe)
@@ -38,6 +54,42 @@ class TribeAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     raw_id_fields = ("chief", "group")
     inlines = [TribeGroupInline]
+
+
+@admin.register(TribeExternalGuild)
+class TribeExternalGuildAdmin(admin.ModelAdmin):
+    list_display = (
+        "tribe_group",
+        "guild",
+        "member_role_id",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("tribe_group__name", "tribe_group__code", "guild__name")
+    raw_id_fields = ("tribe_group", "guild")
+
+
+@admin.register(TribeExternalGuildSeat)
+class TribeExternalGuildSeatAdmin(admin.ModelAdmin):
+    list_display = (
+        "discord_username",
+        "discord_user_id",
+        "binding",
+        "status",
+        "user",
+        "failure_count",
+        "updated_at",
+    )
+    list_filter = ("status", "binding")
+    search_fields = (
+        "discord_username",
+        "discord_nickname",
+        "eve_name",
+        "discord_user_id",
+    )
+    raw_id_fields = ("binding", "user")
+    readonly_fields = ("created_at", "updated_at", "last_synced_at")
 
 
 class AssetTypeInline(admin.TabularInline):
@@ -82,12 +134,34 @@ class TribeGroupAdmin(admin.ModelAdmin):
         "tribe",
         "chief",
         "required_token_type",
+        "require_off_trial",
+        "roster_hidden",
+        "allowed_affiliation_names",
         "is_active",
     )
-    list_filter = ("is_active", "tribe", "required_token_type")
+    list_filter = (
+        "is_active",
+        "tribe",
+        "required_token_type",
+        "require_off_trial",
+        "roster_hidden",
+        "allowed_affiliations",
+    )
     search_fields = ("name", "code", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
-    inlines = [TribeGroupRankInline, TribeGroupRequirementInline]
+    filter_horizontal = ("allowed_affiliations",)
+    inlines = [
+        TribeGroupRankInline,
+        TribeGroupRequirementInline,
+        TribeExternalGuildInline,
+    ]
+
+    @admin.display(description="Allowed affiliations")
+    def allowed_affiliation_names(self, obj):
+        names = list(obj.allowed_affiliations.values_list("name", flat=True))
+        if not names:
+            return "— (tribes.apply)"
+        return ", ".join(names)
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)

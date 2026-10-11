@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
+from django.db import connection
 
 from discord.client import DiscordClient
 from discord.models import DiscordRole, DiscordUser
@@ -15,6 +16,25 @@ from .schemas import EveCharacterSchema, UserProfileSchema
 
 logger = logging.getLogger(__name__)
 
+# Left behind when the mumble Django app was hard-deleted. Production still has
+# the table with a non-cascading FK to auth_user, which blocks User.delete().
+LEGACY_MUMBLE_ACCESS_TABLE = "mumble_mumbleaccess"
+
+
+def _delete_legacy_mumble_access(user_id: int) -> None:
+    """Delete leftover MumbleAccess rows for this user, if the table exists."""
+    if (
+        LEGACY_MUMBLE_ACCESS_TABLE
+        not in connection.introspection.table_names()
+    ):
+        return
+    quoted = connection.ops.quote_name(LEGACY_MUMBLE_ACCESS_TABLE)
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"DELETE FROM {quoted} WHERE user_id = %s",
+            [user_id],
+        )
+
 
 def offboard_user(user_id: int):
     """
@@ -25,6 +45,7 @@ def offboard_user(user_id: int):
     """
     with disable_discord_group_sync():
         user = User.objects.get(id=user_id)
+        _delete_legacy_mumble_access(user_id)
         user.delete()
 
 
@@ -84,6 +105,12 @@ def _user_profile_from_prefetched(
     corporation_name: Optional[str] = None,
 ) -> UserProfileSchema:
     """Build UserProfileSchema from prefetched user/character/corp (no extra queries)."""
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        user_community_status,
+    )
+
     if primary_character is None:
         eve_character_profile = None
     else:
@@ -99,6 +126,7 @@ def _user_profile_from_prefetched(
         user_id=user.id,
         username=user.username,
         is_superuser=user.is_superuser,
+        community_status=user_community_status(user),
         eve_character_profile=eve_character_profile,
         permissions=[],
         discord_user_profile=None,
@@ -108,6 +136,12 @@ def _user_profile_from_prefetched(
 def expand_user_profile(
     user: User, include_permissions: bool, include_discord: bool
 ) -> UserProfileSchema:
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        user_community_status,
+    )
+
     if include_discord:
         discord_user = DiscordUser.objects.filter(user=user).first()
     else:
@@ -144,6 +178,7 @@ def expand_user_profile(
         "user_id": user.id,
         "username": user.username,
         "is_superuser": user.is_superuser,
+        "community_status": user_community_status(user),
         "eve_character_profile": eve_character_profile,
     }
 

@@ -22,7 +22,6 @@ class FreightContractManager(
             super()
             .get_queryset()
             .filter(
-                corporation__corporation_id=FREIGHT_CORPORATION_ID,
                 type=FREIGHT_CONTRACT_TYPE,
                 assignee_id=FREIGHT_CORPORATION_ID,
             )
@@ -30,7 +29,7 @@ class FreightContractManager(
 
 
 class FreightContract(EveCorporationContract):
-    """Proxy view over EveCorporationContract for the freight corporation's courier contracts."""
+    """Courier contracts assigned to MFL, regardless of which corp last synced the ESI row."""
 
     objects = FreightContractManager()
 

@@ -72,13 +72,17 @@ import TippyOrderItem from './TippyOrderItem.astro';
     >
         <FixedFluid width='312px' class="[ order-item ]">
             <div class="[ flex items-center! ]">
-                <PilotBadge
-                    character_id={order.character_id}
-                    character_name={order.character_name}
-                    heading={true}
-                >
-                    <small>{t('contractor')}</small>
-                </PilotBadge>
+                {order.character_id ? (
+                    <PilotBadge
+                        character_id={order.character_id}
+                        character_name={order.character_name}
+                        heading={true}
+                    >
+                        <small>{t('contractor')}</small>
+                    </PilotBadge>
+                ) : (
+                    <p>{order.character_name}</p>
+                )}
             </div>
             <FlexInline justification='space-between'>
                 <div class="[ basis-[425px] ]">

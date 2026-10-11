@@ -26,9 +26,9 @@ def get_v2_fleet_locations(request):
     response = []
     locations = (
         EveLocation.objects.all()
-        .filter(staging_active=True)
+        .filter(fleets_active=True)
         .annotate(count=Count("evefleet__id"))
-        .order_by("-count")
+        .order_by("-count", "location_name")
     )
     for location in locations:
         response.append(
@@ -37,6 +37,8 @@ def get_v2_fleet_locations(request):
                 "location_name": location.location_name,
                 "solar_system_id": location.solar_system_id,
                 "solar_system_name": location.solar_system_name,
+                "short_name": location.short_name,
+                "staging_active": location.staging_active,
             }
         )
     return response

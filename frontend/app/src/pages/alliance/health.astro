@@ -288,13 +288,7 @@ const last_updated_text = overview?.computed_at
                         >
                             <AllianceHealthTrialsTable
                                 pilots={trials.pilots}
-                                can_promote={
-                                    can_mutate &&
-                                    (trials.bucket === 'current' ||
-                                        trials.bucket === 'passing' ||
-                                        trials.bucket === 'remove' ||
-                                        trials.bucket === 'approve')
-                                }
+                                can_promote={can_mutate}
                                 officer_corp_ids={officer_corp_ids}
                                 alliance_wide={alliance_wide}
                                 initial_corp={initial_corp}

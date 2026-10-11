@@ -41,13 +41,14 @@ class MarketContractSellerResponse(BaseModel):
 
 
 class MarketContractMetricsResponse(BaseModel):
-    """Deferred volume / fleet demand metrics for one fitting."""
+    """Deferred finished-volume and stock-coverage metrics for one fitting."""
 
     fitting_id: int
-    volume_28d: int = 0
-    typical_fleet_size: int | None = None
-    fleets_remaining: int | None = None
-    fleets_per_month: float | None = None
+    volume_7d: int = 0
+    volume_30d: int = 0
+    volume_90d: int = 0
+    volume_365d: int = 0
+    unstocked_pct_30d: int = 100
 
 
 class MarketContractResponse(BaseModel):

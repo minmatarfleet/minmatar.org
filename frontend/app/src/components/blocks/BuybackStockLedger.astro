@@ -1,135 +1,48 @@
 ---
 import { i18n } from '@helpers/i18n'
-import type { BuybackLedgerEntry, BuybackOnHandItem } from '@dtypes/api.minmatar.org'
+import type { BuybackOnHandItem } from '@dtypes/api.minmatar.org'
 import {
-    BUYBACK_ORE_BASES,
-    compressed_buyback_ore_base,
+    BUYBACK_STOCK_CATEGORIES,
+    group_stock_items,
+    janice_tsv_from_stock_groups,
 } from '@helpers/buyback_ore'
 import { format_isk } from '@helpers/numbers'
-import {
-    get_corporation_logo,
-    get_player_icon,
-} from '@helpers/eve_image_server'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro'
-import PilotBadge from '@components/blocks/PilotBadge.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
 interface Props {
     stock_items: BuybackOnHandItem[]
-    ledger_entries: BuybackLedgerEntry[]
 }
 
 const { t } = i18n(Astro.url)
-const {
-    stock_items,
-    ledger_entries,
-} = Astro.props
+const { stock_items } = Astro.props
 
-const KELDOR_CHARACTER_ID = 91_439_324
-const KELDOR_CHARACTER_NAME = 'Keldor Eternia'
-
-const SALE_REASONS = new Set(['sold_order', 'sold_contract'])
-const sale_entries = ledger_entries.filter((entry) =>
-    SALE_REASONS.has(entry.reason),
-)
-
-interface StockGroup {
-    key: string
-    label: string
-    type_id: number
-    quantity: number
-    isk_value: number | null
-    in_demand: boolean
-    variants: BuybackOnHandItem[]
-}
-
-function item_in_demand(item: BuybackOnHandItem): boolean {
-    if (!item.demand_status) return false
-    return item.demand_status !== 'surplus'
-}
-
-function group_in_demand(items: BuybackOnHandItem[]): boolean {
-    return items.some(item_in_demand)
-}
-
-function sum_isk(values: Array<number | null | undefined>): number | null {
-    let total = 0
-    let any = false
-    for (const value of values) {
-        if (value == null) continue
-        total += value
-        any = true
-    }
-    return any ? total : null
-}
-
-function group_stock_items(items: BuybackOnHandItem[]): StockGroup[] {
-    const by_base = new Map<string, BuybackOnHandItem[]>()
-    const leftovers: BuybackOnHandItem[] = []
-
-    for (const item of items) {
-        const base = compressed_buyback_ore_base(item.name)
-        if (!base) {
-            leftovers.push(item)
-            continue
-        }
-        const group = by_base.get(base) ?? []
-        group.push(item)
-        by_base.set(base, group)
-    }
-
-    const grouped: StockGroup[] = BUYBACK_ORE_BASES
-        .filter((base) => by_base.has(base))
-        .map((base) => {
-            const variants = (by_base.get(base) ?? [])
-                .slice()
-                .sort((a, b) => a.name.localeCompare(b.name))
-            const preferred =
-                variants.find((v) => v.name === `Compressed ${base}`)
-                ?? variants[0]
-            return {
-                key: `ore:${base}`,
-                label: base,
-                type_id: preferred.type_id,
-                quantity: variants.reduce((sum, v) => sum + v.quantity, 0),
-                isk_value: sum_isk(variants.map((v) => v.isk_value)),
-                in_demand: group_in_demand(variants),
-                variants,
-            }
-        })
-
-    const singles: StockGroup[] = leftovers
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((item) => ({
-            key: `type:${item.type_id}`,
-            label: item.name,
-            type_id: item.type_id,
-            quantity: item.quantity,
-            isk_value: item.isk_value ?? null,
-            in_demand: item_in_demand(item),
-            variants: [],
-        }))
-
-    return [...grouped, ...singles].sort((a, b) => {
-        const a_isk = a.isk_value ?? -1
-        const b_isk = b.isk_value ?? -1
-        if (b_isk !== a_isk) return b_isk - a_isk
-        return a.label.localeCompare(b.label)
-    })
+const STOCK_CATEGORY_LABELS: Record<(typeof BUYBACK_STOCK_CATEGORIES)[number], string> = {
+    ore: t('buyback.info.group.ore'),
+    p1: t('buyback.info.group.p1'),
+    p2: t('buyback.info.group.p2'),
+    p3: t('buyback.info.group.p3'),
+    p4: t('buyback.info.group.p4'),
 }
 
 const stock_groups = group_stock_items(stock_items)
-
-function reason_label(reason: string): string {
-    if (reason === 'sold_order') return t('buyback.ledger.reason.sold_order')
-    if (reason === 'sold_contract') return t('buyback.ledger.reason.sold_contract')
-    return reason
-}
+const janice_tsv = janice_tsv_from_stock_groups(stock_groups)
+const categorized_sections = BUYBACK_STOCK_CATEGORIES
+    .map((category) => ({
+        category,
+        label: STOCK_CATEGORY_LABELS[category],
+        groups: stock_groups.filter((group) => group.category === category),
+    }))
+    .filter((section) => section.groups.length > 0)
+const other_groups = stock_groups.filter((group) => group.category === 'other')
+const stock_sections = other_groups.length > 0
+    ? [...categorized_sections, { category: 'other' as const, label: '', groups: other_groups }]
+    : categorized_sections
 
 function format_qty(qty: number): string {
     return qty.toLocaleString()
@@ -140,45 +53,21 @@ function format_value(isk: number | null | undefined): string {
     return `${format_isk(isk)} ISK`
 }
 
-function format_when(iso: string): string {
-    return new Date(iso).toLocaleString()
+function escape_html(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
 }
 
-function party_name(entry: BuybackLedgerEntry): string {
-    if (!entry.counterparty_name && !entry.counterparty_id) return ''
-    return entry.counterparty_name || String(entry.counterparty_id)
-}
-
-function party_icon_src(entry: BuybackLedgerEntry): string | null {
-    if (!entry.counterparty_id) return null
-    if (entry.counterparty_kind === 'corporation') {
-        return get_corporation_logo(entry.counterparty_id, 32)
-    }
-    if (entry.counterparty_kind === 'character') {
-        return get_player_icon(entry.counterparty_id, 32)
-    }
-    return null
-}
-
-function party_icon_alt(entry: BuybackLedgerEntry): string {
-    const name = party_name(entry)
-    if (entry.counterparty_kind === 'corporation') {
-        return `${name} ${t('buyback.ledger.buyer_corp_logo')}`
-    }
-    return `${name} ${t('buyback.ledger.buyer_portrait')}`
-}
-
-function sale_isk(entry: BuybackLedgerEntry): number | null {
-    return entry.isk_value ?? entry.isk_total ?? null
-}
-
-function variants_tip_html(variants: BuybackOnHandItem[]): string {
+function variants_tip_html(variants: Array<{ name: string; quantity: number; isk_value?: number | null }>): string {
     const lines = [
         `<strong>${t('buyback.info.ore_variants')}</strong>`,
         ...variants.map((variant) => {
             const qty = format_qty(variant.quantity)
             const isk = format_value(variant.isk_value)
-            return `${variant.name}: ${qty} · ${isk}`
+            return `${escape_html(variant.name)}: ${qty} · ${isk}`
         }),
     ]
     return lines.join('<br>')
@@ -186,169 +75,105 @@ function variants_tip_html(variants: BuybackOnHandItem[]): string {
 ---
 
 <section class="[ buyback-stock-ledger ]">
-    <Flexblock gap='var(--space-xl)'>
-        <ComponentBlock
-            class="[ buyback-stock-ledger__card ]"
-            padding_block="var(--space-m)"
-            padding_inline="var(--space-m)"
-        >
-            <Flexblock gap='var(--space-m)'>
+    <ComponentBlock
+        class="[ buyback-stock-ledger__card ]"
+        padding_block="var(--space-m)"
+        padding_inline="var(--space-m)"
+    >
+        <Flexblock gap='var(--space-m)'>
+            <FlexInline
+                justification='space-between'
+                gap='var(--space-s)'
+                class="[ w-full flex-wrap items-center ]"
+            >
                 <h3>{t('buyback.stock.title')}</h3>
-
-                {stock_groups.length === 0 ?
-                    <p>{t('buyback.stock.empty')}</p>
-                    :
-                    <ul class="[ buyback-stock-ledger__stock-list ]">
-                        {stock_groups.map((group) => {
-                            const show_variants = group.variants.length > 1
-                            return (
-                                <li>
-                                    <FlexInline
-                                        gap='var(--space-3xs)'
-                                        class="[ buyback-stock-ledger__stock-row ]"
-                                    >
-                                        <ItemPicture
-                                            item_id={group.type_id}
-                                            item_name={group.label}
-                                            size={24}
-                                            icon_quality={32}
-                                        />
-                                        <FlexInline
-                                            gap='var(--space-3xs)'
-                                            class="[ buyback-stock-ledger__name-group ]"
-                                        >
-                                            <span class="[ buyback-stock-ledger__name ]">{group.label}</span>
-                                            {show_variants &&
-                                                <button
-                                                    type="button"
-                                                    class="[ buyback-stock-ledger__variants ]"
-                                                    aria-label={t('buyback.info.ore_variants')}
-                                                    x-init={`tippy($el, {
-                                                        content: ${JSON.stringify(variants_tip_html(group.variants))},
-                                                        allowHTML: true,
-                                                        delay: [100, 200],
-                                                        arrow: true,
-                                                    })`}
-                                                >
-                                                    <span aria-hidden="true">i</span>
-                                                    <span class="[ buyback-stock-ledger__variants-count ]">
-                                                        {t('buyback.info.ore_variants_count').replace(
-                                                            '{count}',
-                                                            String(group.variants.length),
-                                                        )}
-                                                    </span>
-                                                </button>
-                                            }
-                                            <BuybackRateBadge in_demand={group.in_demand} />
-                                        </FlexInline>
-                                        <span class="[ buyback-stock-ledger__qty ]">{format_qty(group.quantity)}</span>
-                                        <span class="[ buyback-stock-ledger__isk ]">{format_value(group.isk_value)}</span>
-                                    </FlexInline>
-                                </li>
-                            )
-                        })}
-                    </ul>
+                {janice_tsv &&
+                    <ClipboardButton
+                        id="buyback-stock-janice"
+                        text={t('buyback.purchase.copy_janice')}
+                    >{janice_tsv}</ClipboardButton>
                 }
+            </FlexInline>
 
-                <Flexblock gap='var(--space-2xs)' class="[ buyback-stock-ledger__contact ]">
-                    <p class="[ buyback-stock-ledger__lead ]">
-                        {t('buyback.stocks.contact.lead')}
-                    </p>
-                    <PilotBadge
-                        character_id={KELDOR_CHARACTER_ID}
-                        character_name={KELDOR_CHARACTER_NAME}
-                        size={48}
-                        icon_quality={64}
-                    >
-                        <small>{t('buyback.stocks.contact.role')}</small>
-                    </PilotBadge>
-                </Flexblock>
-            </Flexblock>
-        </ComponentBlock>
-
-        <ComponentBlock
-            class="[ buyback-stock-ledger__card ]"
-            padding_block="var(--space-m)"
-            padding_inline="var(--space-m)"
-        >
-            <Flexblock gap='var(--space-m)'>
-                <Flexblock gap='var(--space-2xs)'>
-                    <h3>{t('buyback.ledger.title')}</h3>
-                    <p class="[ buyback-stock-ledger__lead ]">{t('buyback.ledger.lead')}</p>
-                </Flexblock>
-
-                {sale_entries.length === 0 ?
-                    <p>{t('buyback.ledger.empty')}</p>
-                    :
-                    <ul class="[ buyback-stock-ledger__ledger-list ]">
-                        {sale_entries.map((entry) =>
-                            <li>
-                                <FlexInline
-                                    gap='var(--space-2xs)'
-                                    class="[ buyback-stock-ledger__ledger-row ]"
-                                >
-                                    <span class="[ buyback-ledger__reason ] [ buyback-ledger__reason--sold ]">
-                                        {reason_label(entry.reason)}
-                                    </span>
-                                    <ItemPicture
-                                        item_id={entry.type_id}
-                                        item_name={entry.name}
-                                        size={24}
-                                        icon_quality={32}
-                                    />
-                                    <span class="[ buyback-stock-ledger__name ]">{entry.name}</span>
-                                    <span class="[ buyback-stock-ledger__qty ]">
-                                        {format_qty(entry.quantity)}
-                                    </span>
-                                    <span class="[ buyback-stock-ledger__isk ]">
-                                        {format_value(sale_isk(entry))}
-                                    </span>
-                                    {party_name(entry) &&
-                                        <FlexInline
-                                            gap='var(--space-3xs)'
-                                            class="[ buyback-stock-ledger__party ]"
-                                        >
-                                            {party_icon_src(entry) &&
-                                                <img
-                                                    class="[ buyback-stock-ledger__party-icon ]"
-                                                    loading="lazy"
-                                                    width="20"
-                                                    height="20"
-                                                    src={party_icon_src(entry)}
-                                                    alt={party_icon_alt(entry)}
+            {stock_groups.length === 0 ?
+                <p>{t('buyback.stock.empty')}</p>
+                :
+                <Flexblock gap='var(--space-s)'>
+                    {stock_sections.map((section) =>
+                        <Flexblock gap='var(--space-3xs)'>
+                            {section.label &&
+                                <h4 class="[ buyback-stock-ledger__group-title ]">{section.label}</h4>
+                            }
+                            <ul class="[ buyback-stock-ledger__stock-list ]">
+                                {section.groups.map((group) => {
+                                    const show_variants = group.variants.length > 1
+                                    return (
+                                        <li>
+                                            <FlexInline
+                                                gap='var(--space-3xs)'
+                                                class="[ buyback-stock-ledger__stock-row ]"
+                                            >
+                                                <ItemPicture
+                                                    item_id={group.type_id}
+                                                    item_name={group.label}
+                                                    size={24}
+                                                    icon_quality={32}
                                                 />
-                                            }
-                                            <span>
-                                                {t('buyback.ledger.to').replace(
-                                                    '{name}',
-                                                    party_name(entry),
-                                                )}
-                                            </span>
-                                        </FlexInline>
-                                    }
-                                    <span class="[ buyback-stock-ledger__when ]">
-                                        {format_when(entry.occurred_at)}
-                                    </span>
-                                </FlexInline>
-                            </li>
-                        )}
-                    </ul>
-                }
-            </Flexblock>
-        </ComponentBlock>
-    </Flexblock>
+                                                <FlexInline
+                                                    gap='var(--space-3xs)'
+                                                    class="[ buyback-stock-ledger__name-group ]"
+                                                >
+                                                    <span class="[ buyback-stock-ledger__name ]">{group.label}</span>
+                                                    {show_variants &&
+                                                        <button
+                                                            type="button"
+                                                            class="[ buyback-stock-ledger__variants ]"
+                                                            aria-label={t('buyback.info.ore_variants')}
+                                                            x-init={`tippy($el, {
+                                                                content: ${JSON.stringify(variants_tip_html(group.variants))},
+                                                                allowHTML: true,
+                                                                delay: [100, 200],
+                                                                arrow: true,
+                                                            })`}
+                                                        >
+                                                            <span aria-hidden="true">i</span>
+                                                            <span class="[ buyback-stock-ledger__variants-count ]">
+                                                                {t('buyback.info.ore_variants_count').replace(
+                                                                    '{count}',
+                                                                    String(group.variants.length),
+                                                                )}
+                                                            </span>
+                                                        </button>
+                                                    }
+                                                    <BuybackRateBadge in_demand={group.in_demand} />
+                                                </FlexInline>
+                                                <span class="[ buyback-stock-ledger__qty ]">{format_qty(group.quantity)}</span>
+                                                <span class="[ buyback-stock-ledger__isk ]">{format_value(group.isk_value)}</span>
+                                            </FlexInline>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        </Flexblock>
+                    )}
+                </Flexblock>
+            }
+        </Flexblock>
+    </ComponentBlock>
 </section>
 
 <style lang="scss">
-    .buyback-stock-ledger__lead,
-    .buyback-stock-ledger__when,
-    .buyback-stock-ledger__party {
+    .buyback-stock-ledger__group-title {
+        margin: 0;
+        font-size: var(--step--2);
+        font-weight: 600;
+        line-height: 1.3;
         color: var(--faded);
-        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
 
-    .buyback-stock-ledger__stock-list,
-    .buyback-stock-ledger__ledger-list {
+    .buyback-stock-ledger__stock-list {
         list-style: none;
         margin: 0;
         padding: 0;
@@ -369,10 +194,6 @@ function variants_tip_html(variants: BuybackOnHandItem[]): string {
         white-space: nowrap;
     }
 
-    .buyback-stock-ledger__ledger-row > .buyback-stock-ledger__name {
-        flex: 1;
-    }
-
     .buyback-stock-ledger__qty,
     .buyback-stock-ledger__isk {
         font-variant-numeric: tabular-nums;
@@ -387,11 +208,6 @@ function variants_tip_html(variants: BuybackOnHandItem[]): string {
         color: var(--faded);
         min-width: 4.5rem;
         text-align: end;
-    }
-
-    .buyback-stock-ledger__party-icon {
-        flex-shrink: 0;
-        object-fit: cover;
     }
 
     .buyback-stock-ledger__variants {
@@ -432,17 +248,5 @@ function variants_tip_html(variants: BuybackOnHandItem[]): string {
     .buyback-stock-ledger__variants-count {
         font-size: var(--step--2);
         white-space: nowrap;
-    }
-
-    .buyback-ledger__reason {
-        font-size: var(--step--2);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-        min-width: 7rem;
-    }
-
-    .buyback-ledger__reason--sold {
-        color: var(--alliance-blue);
     }
 </style>

@@ -123,11 +123,7 @@ class Command(BaseCommand):
         )
 
         fit_ids = {df.fitting_id for df in doctrine_fittings}
-        loc_ids = {f.location_id for f in fleets if f.location_id} | {
-            a.staging_location_id
-            for a in EveFleetAudience.objects.using(source).all()
-            if a.staging_location_id
-        }
+        loc_ids = {f.location_id for f in fleets if f.location_id}
         audience_ids = {f.audience_id for f in fleets if f.audience_id}
         audiences = list(
             EveFleetAudience.objects.using(source)
@@ -372,8 +368,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Copied EveDoctrine {prod.pk} ({prod.name}).")
 
     def _upsert_audience(self, prod, source, local):
-        if prod.staging_location_id:
-            self._ensure_location(prod.staging_location_id, source, local)
         fields = {
             field.name: getattr(prod, field.name)
             for field in EveFleetAudience._meta.concrete_fields  # pylint: disable=protected-access

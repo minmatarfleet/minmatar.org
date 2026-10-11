@@ -1,169 +1,159 @@
 ---
 import { i18n } from '@helpers/i18n'
-import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
-import type { TagColors } from '@dtypes/layout_components'
-import { format_date_time } from '@helpers/date'
+import type { LoyaltyCurrency, LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
+import { query_string } from '@helpers/string'
+import {
+    LOYALTY_HISTORY_PAGE_SIZE,
+    loyalty_history_partial_params,
+    type LoyaltyHistoryFilters,
+} from '@helpers/loyalty_order_history'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import CharacterPicture from '@components/blocks/CharacterPicture.astro'
-import Tag from '@components/blocks/Tag.astro'
+import LoyaltyOrderCard from '@components/blocks/LoyaltyOrderCard.astro'
+import LoyaltyOrderList from '@components/blocks/LoyaltyOrderList.astro'
+import Select from '@components/blocks/Select.astro'
+import Button from '@components/blocks/Button.astro'
 
-const { t, lang } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 interface Props {
+    /** Current page of history rows, already sorted by the API. */
     orders: LoyaltyMarketOrder[]
+    currencies: LoyaltyCurrency[]
+    total: number
+    filters: LoyaltyHistoryFilters
 }
 
-const { orders } = Astro.props
+const { orders, currencies, total, filters } = Astro.props
 
-const status_labels: Record<string, string> = {
-    completed: t('industry.loyalty.status.completed'),
-    cancelled: t('industry.loyalty.status.cancelled'),
+const SECTION_ID = 'loyalty-order-history'
+const TARGET = `#${SECTION_ID}`
+const PARTIAL = translatePath('/partials/loyalty_order_history_component')
+const FILTER_INPUTS = `${TARGET} select`
+
+const partial_url = (overrides: Partial<LoyaltyHistoryFilters>): string => {
+    const qs = query_string(
+        loyalty_history_partial_params({ ...filters, ...overrides }),
+    )
+    return qs ? `${PARTIAL}?${qs}` : PARTIAL
 }
 
-const STATUS_COLORS: Record<string, TagColors> = {
-    completed: 'green',
-    cancelled: 'fleet-red',
-}
+const page_size = LOYALTY_HISTORY_PAGE_SIZE
+const total_pages = Math.max(1, Math.ceil(total / page_size))
+const page = Math.min(filters.page, total_pages)
+const range_from = total === 0 ? 0 : (page - 1) * page_size + 1
+const range_to = Math.min(total, page * page_size)
+const page_status = t('industry.loyalty.history.page_status')
+    .replace('{from}', number_thousand_separator(range_from))
+    .replace('{to}', number_thousand_separator(range_to))
+    .replace('{total}', number_thousand_separator(total))
 
-type PurchaserIcon = {
-    character_id: number
-    character_name: string
-}
+const sorted_currencies = [...currencies].sort((a, b) => a.name.localeCompare(b.name))
+const status_options: { value: LoyaltyHistoryFilters['status'], label: string }[] = [
+    { value: 'completed', label: t('industry.loyalty.history.filter.status_completed') },
+    { value: 'cancelled', label: t('industry.loyalty.history.filter.status_cancelled') },
+    { value: 'all', label: t('industry.loyalty.history.filter.status_all') },
+]
 
-const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
-    const by_user = new Map<number, PurchaserIcon>()
-
-    for (const claim of order.claims ?? []) {
-        if (!claim.claimed_by_character_id) continue
-        by_user.set(claim.claimed_by_user_id, {
-            character_id: claim.claimed_by_character_id,
-            character_name: claim.claimed_by_name,
-        })
-    }
-
-    if (
-        by_user.size === 0
-        && order.claimed_by_user_id
-        && order.claimed_by_character_id
-        && order.claimed_by_name
-    ) {
-        by_user.set(order.claimed_by_user_id, {
-            character_id: order.claimed_by_character_id,
-            character_name: order.claimed_by_name,
-        })
-    }
-
-    if (by_user.size === 0 && order.side === 'buy' && order.created_by_character_id) {
-        by_user.set(order.created_by_user_id, {
-            character_id: order.created_by_character_id,
-            character_name: order.created_by_name,
-        })
-    }
-
-    return [...by_user.values()]
-}
-
-const history_timestamp = (order: LoyaltyMarketOrder): Date | string =>
-    order.completed_at || order.updated_at || order.created_at
-
-const rows = [...orders].sort((a, b) => {
-    const a_ms = new Date(history_timestamp(a)).getTime()
-    const b_ms = new Date(history_timestamp(b)).getTime()
-    return b_ms - a_ms
-})
+const rows = orders
 ---
 
-<section class="[ loyalty-history ]">
+<section id={SECTION_ID} class="[ loyalty-history ]">
     <Flexblock gap="var(--space-s)">
-        <h2>{t('industry.loyalty.history.title')}</h2>
+        <FlexInline
+            justification="space-between"
+            class="[ loyalty-history__toolbar w-full ]"
+            gap="var(--space-s)"
+        >
+            <h2>{t('industry.loyalty.history.title')}</h2>
+            <FlexInline class="[ loyalty-history__filters ]" gap="var(--space-2xs)">
+                    <Select
+                        name="loyalty_point_id"
+                        size="sm"
+                        width="16rem"
+                        aria-label={t('industry.loyalty.history.filter.currency')}
+                        hx-get={PARTIAL}
+                        hx-target={TARGET}
+                        hx-swap="outerHTML"
+                        hx-trigger="change"
+                        hx-include={FILTER_INPUTS}
+                    >
+                        <option value="" selected={filters.loyalty_point_id == null}>
+                            {t('industry.loyalty.history.filter.currency_all')}
+                        </option>
+                        {sorted_currencies.map((currency) => (
+                            <option
+                                value={currency.id}
+                                selected={filters.loyalty_point_id === currency.id}
+                            >
+                                {currency.name}
+                            </option>
+                        ))}
+                    </Select>
+                    <Select
+                        name="status"
+                        size="sm"
+                        width="16rem"
+                        aria-label={t('industry.loyalty.history.filter.status')}
+                        hx-get={PARTIAL}
+                        hx-target={TARGET}
+                        hx-swap="outerHTML"
+                        hx-trigger="change"
+                        hx-include={FILTER_INPUTS}
+                    >
+                        {status_options.map((option) => (
+                            <option
+                                value={option.value}
+                                selected={filters.status === option.value}
+                            >
+                                {option.label}
+                            </option>
+                        ))}
+                    </Select>
+            </FlexInline>
+        </FlexInline>
 
         {rows.length === 0 ? (
             <p class="[ loyalty-history__empty ]">{t('industry.loyalty.history.empty')}</p>
         ) : (
-            <ComponentBlock
-                padding_block="var(--space-2xs)"
-                padding_inline="var(--space-m)"
+            <LoyaltyOrderList variant="history">
+                {rows.map((order) => (
+                    <LoyaltyOrderCard order={order} variant="history" />
+                ))}
+            </LoyaltyOrderList>
+        )}
+
+        {(total > page_size || filters.page > 1) && (
+            <FlexInline
+                justification="space-between"
+                class="[ loyalty-history__pager w-full ]"
+                gap="var(--space-s)"
             >
-                <div class="[ loyalty-history__table-wrap ]">
-                    <table class="[ loyalty-history__table ]">
-                        <thead>
-                            <tr>
-                                <th>{t('industry.loyalty.history.col.date')}</th>
-                                <th>{t('industry.loyalty.orders.col.side')}</th>
-                                <th>{t('industry.loyalty.orders.col.currency')}</th>
-                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.quantity')}</th>
-                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.rate')}</th>
-                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.total')}</th>
-                                <th>{t('industry.loyalty.orders.col.status')}</th>
-                                <th>{t('industry.loyalty.orders.col.purchasers')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((order) => {
-                                const status_color = STATUS_COLORS[order.status] ?? 'alliance-blue'
-                                const status_label = status_labels[order.status] ?? order.status
-                                const purchasers = order_purchasers(order)
-                                const quantity_claimed = order.quantity_claimed ?? 0
-                                const lp_for_total = quantity_claimed > 0
-                                    ? quantity_claimed
-                                    : order.quantity
-                                const isk_total = lp_for_total * order.isk_per_lp
-                                return (
-                                    <tr id={`order-${order.id}`}>
-                                        <td class="[ loyalty-history__date ]">
-                                            {format_date_time(lang, history_timestamp(order))}
-                                        </td>
-                                        <td class:list={[
-                                            'loyalty-history__side',
-                                            order.side === 'buy' ? 'is-buy' : 'is-sell',
-                                        ]}>
-                                            {order.side === 'buy'
-                                                ? t('industry.loyalty.side.buy')
-                                                : t('industry.loyalty.side.sell')}
-                                        </td>
-                                        <td>{order.loyalty_point_name}</td>
-                                        <td class="[ tabular ]">
-                                            {number_thousand_separator(order.quantity)}
-                                        </td>
-                                        <td class="[ tabular ]">
-                                            {number_thousand_separator(order.isk_per_lp)}
-                                        </td>
-                                        <td class="[ tabular ]">
-                                            {number_thousand_separator(isk_total)}
-                                        </td>
-                                        <td>
-                                            <Tag
-                                                text={status_label}
-                                                color={status_color}
-                                            />
-                                        </td>
-                                        <td>
-                                            {purchasers.length > 0 ? (
-                                                <FlexInline gap="var(--space-3xs)" class="[ loyalty-history__purchasers ]">
-                                                    {purchasers.map((pilot) => (
-                                                        <CharacterPicture
-                                                            character_id={pilot.character_id}
-                                                            character_name={pilot.character_name}
-                                                            tooltip={pilot.character_name}
-                                                            size={32}
-                                                            icon_quality={64}
-                                                        />
-                                                    ))}
-                                                </FlexInline>
-                                            ) : (
-                                                <Tag text={t('industry.loyalty.orders.no_purchasers')} />
-                                            )}
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </ComponentBlock>
+                <small class="[ loyalty-history__page-status ]">{page_status}</small>
+                <FlexInline gap="var(--space-3xs)">
+                    <Button
+                        size="sm"
+                        color="transparent"
+                        disabled={page <= 1}
+                        hx-get={partial_url({ page: page - 1 })}
+                        hx-target={TARGET}
+                        hx-swap="outerHTML"
+                    >
+                        {t('industry.loyalty.history.prev')}
+                    </Button>
+                    <Button
+                        size="sm"
+                        color="transparent"
+                        disabled={page >= total_pages}
+                        hx-get={partial_url({ page: page + 1 })}
+                        hx-target={TARGET}
+                        hx-swap="outerHTML"
+                    >
+                        {t('industry.loyalty.history.next')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
         )}
     </Flexblock>
 </section>
@@ -174,65 +164,26 @@ const rows = [...orders].sort((a, b) => {
         margin: 0;
     }
 
-    .loyalty-history__table-wrap {
-        overflow-x: auto;
-    }
-
-    .loyalty-history__table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            text-align: left;
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-
-        th {
-            color: var(--highlight);
-            font-weight: 600;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        th.tabular,
-        td.tabular {
-            text-align: right;
-        }
-    }
-
-    .loyalty-history__side.is-sell {
-        color: var(--fleet-yellow);
-        font-weight: 600;
-    }
-
-    .loyalty-history__side.is-buy {
-        color: var(--highlight);
-        font-weight: 600;
-    }
-
-    .tabular {
-        font-variant-numeric: tabular-nums;
-    }
-
-    .loyalty-history__purchasers {
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
-    .loyalty-history__date {
-        white-space: nowrap;
-    }
-
     .loyalty-history__empty {
         margin: 0;
         font-size: var(--step--1);
         color: var(--highlight);
+    }
+
+    .loyalty-history__toolbar {
+        align-items: center;
+    }
+
+    .loyalty-history__filters {
+        align-items: center;
+    }
+
+    .loyalty-history__pager {
+        align-items: center;
+    }
+
+    .loyalty-history__page-status {
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
     }
 </style>

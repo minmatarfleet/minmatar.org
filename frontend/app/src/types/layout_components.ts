@@ -4,6 +4,12 @@ export type ButtonSizes = 'sm' | 'lg'
 export type BadgeColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'fleet-yellow'
 export type TagColors = 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'fleet-yellow' | 'security-status-1' | 'security-status-point-9' | 'security-status-point-8' | 'security-status-point-7' | 'security-status-point-6' | 'security-status-point-5' | 'security-status-point-4' | 'security-status-point-3' | 'security-status-point-2' | 'security-status-point-1' | 'security-status-null'
 export type FlexInlineJustify = 'center' | 'flex-start' | 'flex-end' | 'space-around' | 'space-between'
+
+export interface BreadcrumbLinkProps {
+    accumulated_path:   string;
+    page_title:         string;
+}
+
 export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type ImageSize = 16 | 24 | 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
@@ -221,6 +227,8 @@ export interface PageCoverOptions {
     animated?:      boolean;
     scrollable?:    boolean;
     overlay?:       boolean;
+    full_screen?:   boolean;
+    align?:         'right' | 'left',
 }
 
 export interface PageYTVideoOptions {
@@ -714,8 +722,10 @@ export interface FleetUI {
     tracking:               Tracking;
     audience:               string;
     disable_motd:           boolean;
+    hide_volunteers:        boolean;
     status?:                TrackingStatus;
     aar_link:               string;
+    roam_report_url?:       string;
 }
 
 export interface Tracking {
@@ -1028,7 +1038,7 @@ export interface IndustryOrderUI {
     needed_by:          Date;
     fulfilled_at:       Date | null;
     public_short_code:  string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootItem[];
@@ -1114,6 +1124,13 @@ export interface SRPGroupHistory {
     total:      number;
     approved:   number;
     rejected:   number;
+}
+
+export interface Pages {
+    accumulated_path:   string;
+    page_title:         string;
+    available:          boolean;
+    reason?:            string;
 }
 
 import type { BuybackAcceptedItem } from '@dtypes/api.minmatar.org'

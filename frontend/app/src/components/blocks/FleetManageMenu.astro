@@ -1,0 +1,111 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:  FleetUI;
+}
+
+const { fleet } = Astro.props
+
+const history = Boolean(fleet?.tracking?.end_time)
+const cancelled = fleet.status === 'cancelled'
+const tracking_active = Boolean(fleet?.tracking) && !history
+const editable = !history && !cancelled
+
+import { query_string } from '@helpers/string'
+
+// The state partial reloads the page on success; errors surface as an alert
+// and its fallback markup lands in the hidden sink below.
+const state_url = `${translatePath('/partials/fleet_state_button_component')}?${query_string({
+    fleet_id: fleet.id,
+    status: cancelled ? 'pending' : 'cancelled',
+})}`
+
+import Dropdown from '@components/blocks/Dropdown.astro'
+---
+
+<Dropdown class="[ fleet-manage-menu ]" variant="button" color="fleet-red" size="lg">
+    <span slot="button">{t('actions')}</span>
+
+    <div class="[ fleet-manage-menu__list ]">
+        {editable &&
+            <a class="[ fleet-manage-menu__item ]" href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}>
+                {t('edit_fleet')}
+            </a>
+        }
+        {tracking_active &&
+            <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)}>
+                <button type="submit" class="[ fleet-manage-menu__item ]">{t('refresh_motd')}</button>
+            </form>
+        }
+        {!history && fleet.tracking === null &&
+            <button
+                type="button"
+                class="[ fleet-manage-menu__item ]"
+                x-on:click={`show_confirm_dialog({
+                    title: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_title') : t('cancel_fleet_dialog_title'))},
+                    content: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_text') : t('cancel_fleet_dialog_text'))},
+                    hx: {
+                        method: 'patch',
+                        url: ${JSON.stringify(state_url)},
+                        target: '#fleet-manage-sink',
+                        swap: 'innerHTML'
+                    }
+                })`}
+            >
+                {cancelled ? t('restore_fleet') : t('cancel_fleet')}
+            </button>
+        }
+        <div id="fleet-manage-sink" hidden></div>
+    </div>
+</Dropdown>
+
+<style lang="scss">
+    :global(.fleet-manage-menu.button-dropdown) {
+        display: inline-block;
+    }
+
+    :global(.fleet-manage-menu.button-dropdown-panel),
+    :global(.fleet-manage-menu .button-dropdown-panel) {
+        width: var(--button-dropdown-min-width, max-content);
+        min-width: max(12rem, var(--button-dropdown-min-width, 0px));
+        padding: var(--space-3xs);
+        background: var(--background);
+    }
+
+    .fleet-manage-menu__list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .fleet-manage-menu__item {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: var(--space-2xs) var(--space-s) !important;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none;
+        text-align: left;
+        border: none;
+        border-radius: 0;
+        min-height: 0;
+        background: transparent;
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+            color: var(--button-color);
+            outline: none;
+        }
+    }
+
+</style>

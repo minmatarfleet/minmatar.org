@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import factory
 
 from django.contrib.auth.models import Group, User
+from django.db import IntegrityError
 from django.db.models import signals
 from django.test import Client
 from esi.models import Token
@@ -11,8 +14,12 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
+    EvePlayer,
 )
-from eveonline.helpers.characters import set_primary_character
+from eveonline.helpers.characters import (
+    set_primary_character,
+    user_primary_character,
+)
 from discord.models import DiscordUser
 from groups.models import (
     AffiliationType,
@@ -24,10 +31,38 @@ from groups.helpers import (
     sync_tribe_chief_group_membership,
 )
 from groups.tasks import (
+    _ensure_user_affiliation,
+    update_affiliation,
     update_affiliations,
     sync_eve_corporation_groups,
+    sync_user_corporation_groups,
 )
 from tribes.models import Tribe, TribeGroup
+
+
+def _attach_affiliation(
+    user,
+    name="Alliance",
+    *,
+    requires_trial=True,
+    priority=15,
+    default=False,
+):
+    group, _ = Group.objects.get_or_create(name=name)
+    affiliation, _ = AffiliationType.objects.get_or_create(
+        group=group,
+        defaults={
+            "name": name,
+            "description": "",
+            "image_url": "",
+            "priority": priority,
+            "requires_trial": requires_trial,
+            "default": default,
+        },
+    )
+    UserAffiliation.objects.filter(user=user).delete()
+    UserAffiliation.objects.create(user=user, affiliation=affiliation)
+    return affiliation
 
 
 class UserAffiliationTestCase(TestCase):
@@ -190,6 +225,160 @@ class UserAffiliationTestCase(TestCase):
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type_2
 
+    def test_set_user_affiliation_replaces_lower_priority(self):
+        user = User.objects.create(
+            username="test_set_user_affiliation_replaces_lower_priority"
+        )
+        group = Group.objects.create(
+            name="test_set_user_affiliation_replaces_lower_priority"
+        )
+        group_2 = Group.objects.create(
+            name="test_set_user_affiliation_replaces_lower_priority_2"
+        )
+        corporation = EveCorporation.objects.create(corporation_id=98726135)
+        character = EveCharacter.objects.create(character_id=124)
+        token = Token.objects.create(
+            character_id=124,
+            user=user,
+        )
+        character.token = token
+        character.save()
+        set_primary_character(user, character)
+        affiliation_type = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type_2 = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group_2,
+            priority=5,
+        )
+        affiliation_type.corporations.add(corporation)
+        character.corporation_id = corporation.corporation_id
+        character.save()
+        update_affiliations()
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type,
+        )
+
+        affiliation_type_2.corporations.add(corporation)
+        update_affiliations()
+        self.assertEqual(UserAffiliation.objects.filter(user=user).count(), 1)
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type_2,
+        )
+
+    def test_ensure_user_affiliation_swallows_integrity_error(self):
+        user = User.objects.create(
+            username="test_ensure_user_affiliation_integrity"
+        )
+        group = Group.objects.create(
+            name="test_ensure_user_affiliation_integrity"
+        )
+        affiliation = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        with patch(
+            "groups.tasks.UserAffiliation.objects.get_or_create",
+            side_effect=IntegrityError(),
+        ):
+            _ensure_user_affiliation(user, affiliation)
+        self.assertEqual(UserAffiliation.objects.filter(user=user).count(), 1)
+
+    def test_affiliation_heals_missing_primary_when_user_has_one_character(
+        self,
+    ):
+        user = User.objects.create(username="heal_sole_primary")
+        group = Group.objects.create(name="heal_sole_primary")
+        corporation = EveCorporation.objects.create(corporation_id=98726199)
+        affiliation_type = AffiliationType.objects.create(
+            name="HealCorp",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type.corporations.add(corporation)
+        character = EveCharacter.objects.create(
+            character_id=1440000001,
+            character_name="Heal Sole Pilot",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EvePlayer.objects.create(
+            user=user,
+            nickname="heal_sole_primary",
+            primary_character=None,
+        )
+        self.assertIsNone(user_primary_character(user))
+
+        update_affiliations()
+
+        self.assertEqual(user_primary_character(user), character)
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type,
+        )
+
+    def test_affiliation_does_not_guess_primary_when_user_has_two_characters(
+        self,
+    ):
+        user = User.objects.create(username="heal_two_chars")
+        group = Group.objects.create(name="heal_two_chars")
+        corporation = EveCorporation.objects.create(corporation_id=98726200)
+        affiliation_type = AffiliationType.objects.create(
+            name="TwoCharCorp",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type.corporations.add(corporation)
+        EveCharacter.objects.create(
+            character_id=1440000002,
+            character_name="Two Char A",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EveCharacter.objects.create(
+            character_id=1440000003,
+            character_name="Two Char B",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EvePlayer.objects.create(
+            user=user,
+            nickname="heal_two_chars",
+            primary_character=None,
+        )
+
+        update_affiliations()
+
+        self.assertIsNone(user_primary_character(user))
+        self.assertFalse(UserAffiliation.objects.filter(user=user).exists())
+
+    def test_update_affiliation_logs_errors_instead_of_raising(self):
+        with patch(
+            "groups.tasks._update_affiliation_for_user",
+            side_effect=RuntimeError("boom"),
+        ):
+            update_affiliation(self.user.id)
+        self.assertFalse(
+            UserAffiliation.objects.filter(user=self.user).exists()
+        )
+
 
 class GroupTasksTestCase(TestCase):
     """Unit tests for Groups tasks"""
@@ -218,6 +407,7 @@ class GroupTasksTestCase(TestCase):
         )
         set_primary_character(self.user, char)
 
+        _attach_affiliation(self.user)
         self.assertEqual(0, self.user.groups.count())
 
         sync_eve_corporation_groups()
@@ -240,6 +430,7 @@ class GroupTasksTestCase(TestCase):
             corporation_id=other_corp.corporation_id,
         )
         set_primary_character(other_user, other_char)
+        _attach_affiliation(other_user)
 
         sync_eve_corporation_groups()
 
@@ -279,6 +470,7 @@ class GroupTasksTestCase(TestCase):
             user=self.user,
         )
 
+        _attach_affiliation(self.user)
         sync_eve_corporation_groups()
 
         self.assertEqual(
@@ -294,6 +486,76 @@ class GroupTasksTestCase(TestCase):
 
         self.assertEqual(
             [group_a.name],
+            list(self.user.groups.values_list("name", flat=True)),
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_user_corporation_groups_switches_corp(self):
+        old_corp = EveCorporation.objects.create(
+            corporation_id=98838034,
+            name="FOSFO",
+        )
+        new_corp = EveCorporation.objects.create(
+            corporation_id=98741376,
+            name="L3ARN",
+        )
+        old_group = Group.objects.create(name="Corp FOSFO")
+        new_group = Group.objects.create(name="Corp L3ARN")
+        EveCorporationGroup.objects.create(
+            corporation=old_corp, group=old_group
+        )
+        EveCorporationGroup.objects.create(
+            corporation=new_corp, group=new_group
+        )
+        char = EveCharacter.objects.create(
+            character_id=2115133763,
+            character_name="Paul Steinor",
+            corporation_id=old_corp.corporation_id,
+        )
+        set_primary_character(self.user, char)
+        self.user.groups.add(old_group)
+        _attach_affiliation(self.user)
+
+        char.corporation_id = new_corp.corporation_id
+        char.save(update_fields=["corporation_id"])
+        sync_user_corporation_groups(self.user)
+
+        self.assertEqual(
+            [new_group.name],
+            list(self.user.groups.values_list("name", flat=True)),
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_eve_corporation_groups_strips_guest(self):
+        corp = EveCorporation.objects.create(
+            corporation_id=100013,
+            name="StillInCorp",
+        )
+        group = Group.objects.create(name="Corp STILL")
+        EveCorporationGroup.objects.create(corporation=corp, group=group)
+        char = EveCharacter.objects.create(
+            character_id=1013,
+            character_name="Leaver",
+            corporation_id=corp.corporation_id,
+        )
+        set_primary_character(self.user, char)
+        self.user.groups.add(group)
+        _attach_affiliation(
+            self.user,
+            name="Guest",
+            requires_trial=False,
+            priority=0,
+            default=True,
+        )
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(
+            [],
             list(self.user.groups.values_list("name", flat=True)),
         )
 

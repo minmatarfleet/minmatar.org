@@ -122,6 +122,7 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
+        tribe_group_codes: ["supply.loyalty-points"],
     },
     {
         slug: "faction-warfare-cruiser-guide",
@@ -234,6 +235,11 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
+        tribe_group_codes: [
+            "capitals.dreads",
+            "capitals.carriers",
+            "capitals.faxes",
+        ],
     },
     {
         slug: "force-auxiliary-carrier-guide",
@@ -246,6 +252,7 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
+        tribe_group_codes: ["capitals.faxes"],
     },
     {
         slug: "dreadnought-guide",
@@ -258,6 +265,7 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
+        tribe_group_codes: ["capitals.dreads"],
     },
     {
         slug: "carrier-guide",
@@ -270,6 +278,7 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
+        tribe_group_codes: ["capitals.carriers"],
     },
     {
         slug: "abyssals",
@@ -384,10 +393,18 @@ export function getIndexedGuides(): GuideMeta[] {
     return guides.filter((guide) => !guide.hiddenFromIndex && !guide.comingSoon)
 }
 
-/** Guides that are published and linkable (excludes coming soon placeholders). */
 export function getPublishedGuides(): GuideMeta[] {
     return getIndexedGuides().filter((guide) => !guide.comingSoon)
 }
+
+/** Guides tagged to a tribe group via stable TribeGroup.code. */
+export function getGuidesByTribeGroupCode(code: string | undefined | null): GuideMeta[] {
+    if (!code) return []
+    return getPublishedGuides().filter(
+        (guide) => guide.tribe_group_codes?.includes(code),
+    )
+}
+
 
 export function getGuidesByCategory(): Record<string, GuideMeta[]> {
     const grouped: Record<string, GuideMeta[]> = {}

@@ -55,7 +55,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
         <div
             class:list={[
                 attributes.class,
-                '[ dropdown-panel light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]',
+                '[ dropdown-panel solid-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]',
                 { 'button-dropdown-panel': variant === 'button' },
             ]}
             x-ref="panel"
@@ -65,6 +65,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
             x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
             @mousedown.outside="expanded && close_if_outside($event)"
             @keydown.escape.prevent.stop="close()"
+            x-init="if (typeof htmx !== 'undefined') htmx.process($el); $watch('expanded', v => { if (v && typeof htmx !== 'undefined') htmx.process($el) })"
             style="display: none"
         >
             <slot />
@@ -77,17 +78,20 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
         position: relative;
     }
 
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
+<style lang="scss" is:global>
     .dropdown-panel {
         z-index: var(--tooltips-z-index);
     }
 
     .button-dropdown-panel {
-        min-width: var(--button-dropdown-min-width, 0px);
-        width: var(--button-dropdown-min-width, max-content);
+        min-width: max(12rem, var(--button-dropdown-min-width, 0px));
+        width: max-content;
+        max-width: min(24rem, calc(100vw - var(--space-s)));
         box-sizing: border-box;
-    }
-
-    [x-cloak] {
-        display: none !important;
     }
 </style>

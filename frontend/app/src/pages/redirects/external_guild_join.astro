@@ -1,0 +1,39 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import { get_auth_url } from '@helpers/env'
+import { get_external_guild_join } from '@helpers/api.minmatar.org/tribes'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user) {
+    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
+    return Astro.redirect(get_auth_url())
+}
+
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+if (isNaN(group_id))
+    return HTTP_400_Bad_Request()
+
+const redirect_url = Astro.url.searchParams.get('redirect_url')
+    || translatePath('/alliance/tribes/')
+
+try {
+    const join = await get_external_guild_join(
+        auth_token as string,
+        group_id,
+        new URL(redirect_url, Astro.url.origin).toString(),
+    )
+    return Astro.redirect(join.authorize_url)
+} catch {
+    return Astro.redirect(
+        `${redirect_url}${redirect_url.includes('?') ? '&' : '?'}external_guild=join_failed`,
+    )
+}
+---

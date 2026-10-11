@@ -1,0 +1,47 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+import { post_planner_refine_rate } from '@helpers/api.minmatar.org/industry'
+import Input from '@components/blocks/Input.astro'
+
+const facility_key = (Astro.url.searchParams.get('facility_key') || 'amamake').trim()
+const character_raw = (Astro.url.searchParams.get('character_id') || '').trim()
+const parsed_character = parseInt(character_raw, 10)
+const character_id = parsed_character > 0 ? parsed_character : null
+const implants_raw = (
+    Astro.url.searchParams.get('use_reprocessing_implants') || ''
+).trim().toLowerCase()
+const use_reprocessing_implants = ['1', 'true', 'on', 'yes'].includes(implants_raw)
+
+let refine_pct = '—'
+try {
+    const data = await post_planner_refine_rate(
+        is_logged_in ? (auth_token as string) : undefined,
+        {
+            facility_key,
+            character_id,
+            use_reprocessing_implants,
+        },
+    )
+    refine_pct = `${(data.refine_rate * 100).toFixed(2)}%`
+} catch (error) {
+    console.log(error)
+}
+---
+<Input
+    id="buyback-purchase-refine-value"
+    size="sm"
+    width="100%"
+    disabled
+    readonly
+    value={refine_pct}
+    aria-label={t('industry.orders.planner.effective_refine')}
+/>

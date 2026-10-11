@@ -1,0 +1,8 @@
+---
+import { get_latest_issue } from '@/data/warzone'
+import WarzoneReportLanding from '@components/blocks/warzone/WarzoneReportLanding.astro'
+
+const issue = get_latest_issue()
+---
+
+<WarzoneReportLanding issue={issue} canonical_path="/warzone/" />

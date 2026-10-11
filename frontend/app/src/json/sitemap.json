@@ -98,7 +98,7 @@
         ]
     },
     {
-        "slug": "alliance.content",
+        "slug": "content",
         "path": "/alliance/content/",
         "publish": true,
         "description": "page_finder.content.description",
@@ -177,6 +177,55 @@
             "Minmatar Fleet",
             "siege report"
         ]
+    },
+    {
+        "slug": "warzone",
+        "path": "/warzone/",
+        "publish": true,
+        "description": "page_finder.warzone.description",
+        "keywords": ["warzone", "frontline report", "faction warfare", "Minmatar", "Amarr", "YC128"]
+    },
+    {
+        "slug": "warzone.yc128_07",
+        "path": "/warzone/yc128-07/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_07.description",
+        "keywords": ["warzone", "frontline report", "July YC128", "Auga", "Hed", "faction warfare"]
+    },
+    {
+        "slug": "warzone.yc128_08",
+        "path": "/warzone/yc128-08/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_08.description",
+        "keywords": ["warzone", "frontline report", "August YC128", "Kamela", "Kourmonen", "faction warfare"]
+    },
+    {
+        "slug": "warzone.yc128_09",
+        "path": "/warzone/yc128-09/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_09.description",
+        "keywords": ["warzone", "frontline report", "September YC128", "Amamake", "Kamela", "Kourmonen", "faction warfare"]
+    },
+    {
+        "slug": "amamake_market",
+        "path": "/amamake-market/",
+        "publish": true,
+        "description": "page_finder.amamake_market.description",
+        "keywords": ["Amamake", "amamake economic report", "warzone", "Amamake market", "structure market", "faction warfare", "Minmatar Fleet"]
+    },
+    {
+        "slug": "amamake_market.yc128_08",
+        "path": "/amamake-market/yc128-08/",
+        "publish": true,
+        "description": "page_finder.amamake_market.yc128_08.description",
+        "keywords": ["Amamake", "amamake economic report", "August YC128", "market report", "keepstar", "warzone"]
+    },
+    {
+        "slug": "amamake_market.yc128_09",
+        "path": "/amamake-market/yc128-09/",
+        "publish": true,
+        "description": "page_finder.amamake_market.yc128_09.description",
+        "keywords": ["Amamake", "amamake economic report", "September YC128", "market report", "keepstar", "warzone"]
     },
     {
         "slug": "campaigns.providence",
@@ -318,47 +367,55 @@
         "description": "page_finder.tribes.description",
         "publish": true,
         "keywords": [
-            "groups"
+            "groups",
+            "clubs"
         ]
     },
     {
         "slug": "tribes_capitals",
-        "path": "/alliance/tribes/1/",
+        "path": "/alliance/tribes/?tribe=capitals",
         "description": "page_finder.tribes.capitals.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs"
         ]
     },
     {
         "slug": "tribes_industry",
-        "path": "/alliance/tribes/2/",
+        "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.industry.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs",
+            "supply"
         ]
     },
     {
         "slug": "tribes_market",
-        "path": "/alliance/tribes/2/",
+        "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.market.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs",
+            "market",
+            "supply"
         ]
     },
     {
         "slug": "tribes_pulse",
-        "path": "/alliance/tribes/4/",
+        "path": "/alliance/tribes/?tribe=pulse",
         "description": "page_finder.tribes.pulse.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs"
         ]
     },
     {
@@ -630,6 +687,12 @@
         "path": "/market/buyback/stocks/",
         "publish": true,
         "description": "page_finder.buyback_stocks.description"
+    },
+    {
+        "slug": "buyback_orders",
+        "path": "/market/buyback/orders/",
+        "publish": true,
+        "description": "page_finder.buyback_orders.description"
     },
     {
         "slug": "buyback_contracts.history",

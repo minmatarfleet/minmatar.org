@@ -5,7 +5,7 @@ from django.http import HttpRequest
 from django.test import Client
 from django.contrib.auth.models import User
 
-from esi.models import Token, Scope
+from esi.models import Token, Scope, CallbackRedirect
 from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import (
@@ -24,7 +24,10 @@ from eveonline.helpers.characters import (
     set_primary_character,
 )
 from eveonline.endpoints.characters._helpers import (
+    ESI_ADD_READY_SESSION_KEY,
     handle_add_character_esi_callback,
+    discord_account_mismatch_redirect,
+    reset_api_session_if_unbound_for_esi_add,
 )
 
 BASE_URL = "/api/eveonline/characters/"
@@ -275,6 +278,121 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(
             f"new hash {char_id}", new_char.token.character_owner_hash
         )
+
+    def test_add_esi_character_relinks_orphaned_unlinked_character(self):
+        char_id = 365375372
+        EveCharacter.objects.create(
+            character_id=char_id,
+            character_name="Orphan Char",
+            user=None,
+            token=None,
+            esi_token_level="TokenType.BASIC",
+            esi_scope_groups=["TokenType.BASIC"],
+        )
+        req = self.make_request()
+        token = self.make_token(char_id)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.get(character_id=char_id)
+        self.assertEqual(self.user, new_char.user)
+        self.assertEqual(token, new_char.token)
+        self.assertEqual(new_char, user_primary_character(self.user))
+
+    def test_reset_api_session_logs_out_leftover_session(self):
+        req = self.make_request()
+        req.user = self.user
+        reset_api_session_if_unbound_for_esi_add(req)
+        self.assertFalse(req.user.is_authenticated)
+        self.assertTrue(req.session.get(ESI_ADD_READY_SESSION_KEY))
+
+    def test_reset_api_session_keeps_bound_session(self):
+        req = self.make_request()
+        req.user = self.user
+        req.session[ESI_ADD_READY_SESSION_KEY] = True
+        reset_api_session_if_unbound_for_esi_add(req)
+        self.assertEqual(self.user, req.user)
+        self.assertTrue(req.session.get(ESI_ADD_READY_SESSION_KEY))
+
+    def test_reset_api_session_skips_logout_during_esi_callback(self):
+        req = self.make_request()
+        req.user = self.user
+        req.session.save()
+        CallbackRedirect.objects.create(
+            session_key=req.session.session_key,
+            url="/",
+            state="sso-state",
+        )
+        reset_api_session_if_unbound_for_esi_add(req)
+        self.assertEqual(self.user, req.user)
+        self.assertFalse(req.session.get(ESI_ADD_READY_SESSION_KEY))
+
+    def test_discord_account_mismatch_redirects_when_session_user_differs(
+        self,
+    ):
+        other = User.objects.create_user(username="other-discord-session")
+        req = self.make_request("/account")
+        req.user = other
+        response = discord_account_mismatch_redirect(
+            req, "/account", self.user.id
+        )
+        self.assertIsNotNone(response)
+        self.assertIn("error=wrong_discord_account", response.url)
+
+    def test_discord_account_mismatch_allows_matching_user(self):
+        req = self.make_request("/account")
+        req.user = self.user
+        self.assertIsNone(
+            discord_account_mismatch_redirect(req, "/account", self.user.id)
+        )
+
+    def test_add_character_endpoint_rejects_mismatched_account_user_id(self):
+        jwt_user = User.objects.create_user(username="jwt-account-user")
+        self.client.force_login(self.user)
+        session = self.client.session
+        session[ESI_ADD_READY_SESSION_KEY] = True
+        session.save()
+        response = self.client.get(
+            f"{BASE_URL}add",
+            {
+                "redirect_url": "/account",
+                "account_user_id": jwt_user.id,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=wrong_discord_account", response.url)
+
+    def test_add_character_logs_out_leftover_session_then_requires_discord(
+        self,
+    ):
+        jwt_user = User.objects.create_user(username="jwt-account-user")
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{BASE_URL}add",
+            {
+                "redirect_url": "/account",
+                "account_user_id": jwt_user.id,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/oauth2/login/", response.url)
+        self.assertNotIn("wrong_discord_account", response.url)
+        self.assertTrue(self.client.session.get(ESI_ADD_READY_SESSION_KEY))
+
+    def test_add_esi_character_uses_request_user_not_token_user(self):
+        other = User.objects.create_user(username="other-session-user")
+        char_id = 888001
+        token = Token.objects.create(
+            user=other,
+            character_id=char_id,
+            character_name="Session Mixup",
+            character_owner_hash="mix-hash",
+        )
+        req = self.make_request()
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+        new_char = EveCharacter.objects.get(character_id=char_id)
+        self.assertEqual(self.user, new_char.user)
+        self.assertEqual(new_char, user_primary_character(self.user))
 
     def test_add_esi_character_update_less_scopes(self):
         char_id = 4567

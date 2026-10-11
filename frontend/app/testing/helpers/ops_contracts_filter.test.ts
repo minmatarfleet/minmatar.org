@@ -16,8 +16,8 @@ import {
     stock_status: 'unstocked' as const,
     doctrine_ids: [1],
     fill_pct: 0,
-    volume_28d: 2,
-    fleets_remaining: 0,
+    volume_30d: 2,
+    unstocked_pct_30d: 100,
 }
 
 const low_stock = {
@@ -26,8 +26,8 @@ const low_stock = {
     stock_status: 'low_stock' as const,
     doctrine_ids: [1, 2],
     fill_pct: 40,
-    volume_28d: 10,
-    fleets_remaining: 3,
+    volume_30d: 10,
+    unstocked_pct_30d: 40,
 }
 
 const in_stock = {
@@ -36,8 +36,8 @@ const in_stock = {
     stock_status: 'in_stock' as const,
     doctrine_ids: [2],
     fill_pct: 100,
-    volume_28d: 5,
-    fleets_remaining: 8,
+    volume_30d: 5,
+    unstocked_pct_30d: 10,
 }
 
 const overstocked = {
@@ -46,8 +46,8 @@ const overstocked = {
     stock_status: 'overstocked' as const,
     doctrine_ids: [2],
     fill_pct: 100,
-    volume_28d: 1,
-    fleets_remaining: 12,
+    volume_30d: 1,
+    unstocked_pct_30d: 5,
 }
 
 const no_target = {
@@ -56,8 +56,8 @@ const no_target = {
     stock_status: null,
     doctrine_ids: [],
     fill_pct: null,
-    volume_28d: 0,
-    fleets_remaining: null,
+    volume_30d: 0,
+    unstocked_pct_30d: null,
 }
 
 describe('ops_contracts_stock_status', () => {
@@ -141,11 +141,11 @@ describe('ops_contracts_compare_rows', () => {
         ])
     })
 
-    it('sorts volume_28d desc', () => {
+    it('sorts volume_30d desc', () => {
         const ranked = [unstocked, in_stock, low_stock]
             .slice()
             .sort((a, b) =>
-                ops_contracts_compare_rows(a, b, 'volume_28d', 'desc'),
+                ops_contracts_compare_rows(a, b, 'volume_30d', 'desc'),
             )
         expect(ranked.map(r => r.title)).toEqual([
             'Thin Fit',
@@ -154,11 +154,11 @@ describe('ops_contracts_compare_rows', () => {
         ])
     })
 
-    it('sorts fleets_remaining asc with missing last', () => {
+    it('sorts unstocked_pct_30d desc with missing last', () => {
         const ranked = [in_stock, unstocked, no_target, low_stock]
             .slice()
             .sort((a, b) =>
-                ops_contracts_compare_rows(a, b, 'fleets_remaining', 'asc'),
+                ops_contracts_compare_rows(a, b, 'unstocked_pct_30d', 'desc'),
             )
         expect(ranked.map(r => r.title)).toEqual([
             'Empty Fit',
@@ -178,11 +178,11 @@ describe('ops_contracts_next_order_state', () => {
 
     it('selects new pill with its default direction', () => {
         expect(
-            ops_contracts_next_order_state('stock_fill', 'desc', 'volume_28d'),
-        ).toEqual({ order_by: 'volume_28d', direction: 'desc' })
+            ops_contracts_next_order_state('stock_fill', 'desc', 'volume_30d'),
+        ).toEqual({ order_by: 'volume_30d', direction: 'desc' })
         expect(
-            ops_contracts_next_order_state('stock_fill', 'desc', 'fleets_remaining'),
-        ).toEqual({ order_by: 'fleets_remaining', direction: 'asc' })
-        expect(ops_contracts_default_direction('fleets_remaining')).toBe('asc')
+            ops_contracts_next_order_state('stock_fill', 'desc', 'unstocked_pct_30d'),
+        ).toEqual({ order_by: 'unstocked_pct_30d', direction: 'desc' })
+        expect(ops_contracts_default_direction('unstocked_pct_30d')).toBe('desc')
     })
 })

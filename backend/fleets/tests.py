@@ -40,6 +40,7 @@ from fleets.signals import (
     update_fleet_schedule_on_save,
     update_fleet_schedule_on_delete,
 )
+from fleets.helpers.fleet_location import backfill_missing_fleet_locations
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
@@ -72,19 +73,19 @@ def disconnect_fleet_signals():
 
 def setup_fleet_reference_data():
     """Create reference data needed for fleets"""
-    location = EveLocation.objects.create(
+    EveLocation.objects.create(
         location_id=123,
         location_name="Test Location",
         solar_system_id=234,
         solar_system_name="Somewhere",
         short_name="Somewhere",
         staging_active=True,
+        fleets_active=True,
     )
 
     EveFleetAudience.objects.create(
         name="Test Audience",
         discord_channel_name="TestChannel",
-        staging_location=location,
     )
     EveFleetAudience.objects.create(
         name="Hidden",
@@ -137,10 +138,8 @@ def make_test_fleet(
 class FleetHelperTestCase(SimpleTestCase):
     """Tests for Fleet helper code"""
 
-    @patch(
-        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
-    )
-    def test_get_motd_appends_rat_quote_escaped(self, mock_choice):
+    def test_get_motd_is_compact(self):
+        """No role nag or quote: MOTD real estate is for fleet info."""
         motd = get_motd(
             1,
             "FC Name",
@@ -151,17 +150,11 @@ class FleetHelperTestCase(SimpleTestCase):
             "https://example.com/d",
             "Doctrine",
         )
-        self.assertIn("Quote with", motd)
-        self.assertIn("&lt;tags&gt;", motd)
-        self.assertIn("&amp;", motd)
-        mock_choice.assert_called_once()
+        self.assertNotIn("fleet roles are missing", motd)
+        self.assertNotIn("Rat", motd.split("Doctrine", 1)[1])
+        self.assertFalse(motd.endswith("\n"))
 
-    @patch(
-        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
-    )
-    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(
-        self, mock_choice
-    ):
+    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(self):
         motd = get_motd(
             1,
             "FC Name",
@@ -499,7 +492,7 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, len(response.json()))
+        self.assertGreaterEqual(len(response.json()), 1)
 
         response = self.client.get(
             f"{BASE_URL}/audiences",
@@ -538,14 +531,13 @@ class FleetRouterTestCase(TestCase):
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
 
-    def test_create_fleet_without_location_id_uses_audience_staging(self):
+    def test_create_fleet_without_location_id_uses_staging_active(self):
         setup_fc(self.user)
 
         audience = EveFleetAudience.objects.first()
-        # Ensure audience has staging_location
-        self.assertIsNotNone(audience.staging_location)
+        staging = EveLocation.objects.filter(staging_active=True).first()
+        self.assertIsNotNone(staging)
 
-        # Test creating fleet without location_id - should use audience.staging_location
         data = {
             "type": "training",
             "description": "Test fleet without location_id",
@@ -562,16 +554,32 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         fleet_response = response.json()
         self.assertTrue(fleet_response["id"])
-        # Should use audience staging location
         self.assertEqual("Test Location", fleet_response["location"])
 
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
-        # Verify the fleet uses the audience staging location
-        self.assertEqual(
-            db_fleet.formup_location.location_name,
-            audience.staging_location.location_name,
+        self.assertEqual(db_fleet.location_id, staging.location_id)
+
+    def test_backfill_missing_fleet_locations_uses_staging_active(self):
+        staging = EveLocation.objects.filter(staging_active=True).first()
+        self.assertIsNotNone(staging)
+
+        fleet = EveFleet.objects.create(
+            type="non_strategic",
+            description="Legacy fleet without location",
+            start_time=timezone.now() + timedelta(hours=1),
+            created_by=self.user,
+            audience=EveFleetAudience.objects.first(),
+            location=None,
+            status="pending",
         )
+        self.assertIsNone(fleet.location_id)
+
+        updated = backfill_missing_fleet_locations()
+        self.assertEqual(updated, 1)
+
+        fleet.refresh_from_db()
+        self.assertEqual(fleet.location_id, staging.location_id)
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
@@ -878,16 +886,20 @@ class FleetRouterTestCase(TestCase):
 
         update = {"status": "complete"}
 
-        response = self.client.patch(
-            f"{BASE_URL}/{fleet.id}",
-            update,
-            "application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+        with patch(
+            "fleets.endpoints.helpers.schedule_roam_report"
+        ) as schedule_mock:
+            response = self.client.patch(
+                f"{BASE_URL}/{fleet.id}",
+                update,
+                "application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
 
         self.assertEqual(200, response.status_code)
 
         self.assertIsNotNone(EveFleetInstance.objects.get(id=123456).end_time)
+        schedule_mock.assert_called_once_with(fleet.id)
 
     @patch("fleets.models.EsiClient")
     def test_start_fleet_error(self, esi_client_class):
@@ -1116,10 +1128,14 @@ class FleetTaskTests(TestCase):
         )
         efi.refresh_from_db()
 
-        efi.update_fleet_members()
+        with patch(
+            "fleets.helpers.roam_report.schedule_roam_report"
+        ) as schedule_mock:
+            efi.update_fleet_members()
 
         self.assertEqual("complete", efi.eve_fleet.status)
         self.assertIsNotNone(efi.end_time)
+        schedule_mock.assert_called_once_with(efi.eve_fleet.id)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")

@@ -1,4 +1,4 @@
-"""Price buyback lines against Jita-region market history."""
+"""Price buyback lines against live Jita buy, with history fallback."""
 
 from __future__ import annotations
 
@@ -6,12 +6,14 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
+from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 from industry.helpers.compressed_ore import (
     ORE_BATCH_SIZE,
     ore_materials_per_portion,
 )
 from market.helpers.pricing import get_history_averages_by_type_id
+from market.models import EveMarketItemLocationPrice
 
 from buyback.helpers.classify import BuybackCategory
 from buyback.models import DEFAULT_RATE_RULES
@@ -24,30 +26,57 @@ def _history_prices_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
     return get_history_averages_by_type_id(type_ids)
 
 
+def _live_jita_buys_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
+    """Station-range Jita buy, then split, at the price_baseline location."""
+    if not type_ids:
+        return {}
+    unique_ids = list({int(tid) for tid in type_ids})
+    baseline = EveLocation.objects.filter(price_baseline=True).first()
+    if baseline is None:
+        return {}
+    prices: dict[int, Decimal] = {}
+    rows = EveMarketItemLocationPrice.objects.filter(
+        location=baseline,
+        item_id__in=unique_ids,
+    ).values_list("item_id", "buy_price", "split_price")
+    for type_id, buy_price, split_price in rows:
+        if buy_price is not None:
+            prices[int(type_id)] = Decimal(str(buy_price))
+        elif split_price is not None:
+            prices[int(type_id)] = Decimal(str(split_price))
+    return prices
+
+
 def get_baseline_buy_prices(
     type_ids: list[int] | None = None,
 ) -> dict[int, Decimal]:
     """
-    Jita guide price per EveType from price_baseline region history.
+    Jita buy per EveType at the price_baseline location.
 
-    Uses EveMarketItemHistory (The Forge when Jita is baseline), with
-    EveMarketPrice as a last resort — not live station order-book rows.
+    Prefers EveMarketItemLocationPrice.buy_price, then split_price.
+    Types with no live buy/split fall back to Forge history average
+    (then EveMarketPrice) so missing station-range buys do not reject.
     """
     if not type_ids:
         return {}
-    return _history_prices_by_type_id(type_ids)
+    unique_ids = list({int(tid) for tid in type_ids})
+    prices = _live_jita_buys_by_type_id(unique_ids)
+    missing = [tid for tid in unique_ids if tid not in prices]
+    if missing:
+        prices.update(_history_prices_by_type_id(missing))
+    return prices
 
 
 def get_baseline_buy_prices_by_name(
     names: list[str] | None = None,
 ) -> dict[str, Decimal]:
-    """Jita guide prices by item name; same source as get_baseline_buy_prices."""
+    """Jita buy by item name; same source as get_baseline_buy_prices."""
     if not names:
         return {}
     name_to_id = dict(
         EveType.objects.filter(name__in=names).values_list("name", "id")
     )
-    by_id = _history_prices_by_type_id(list(name_to_id.values()))
+    by_id = get_baseline_buy_prices(list(name_to_id.values()))
     return {
         name: by_id[type_id]
         for name, type_id in name_to_id.items()
@@ -144,6 +173,7 @@ def price_ore_line(
     jita_share: float,
     mineral_buy_by_name: dict[str, Decimal],
     rate_reason: str | None = None,
+    ore_unit_buy: Decimal | None = None,
 ) -> PricedLine:
     outputs = _prorated_refine_outputs(name, quantity, refine_rate)
     if not outputs:
@@ -183,8 +213,14 @@ def price_ore_line(
     mineral_isk = sum(
         float(mineral_buy_by_name[m]) * qty for m, qty in outputs.items()
     )
-    line_total = mineral_isk * jita_share
+    if ore_unit_buy is not None:
+        ore_isk = float(ore_unit_buy) * quantity
+        raw_isk = min(mineral_isk, ore_isk)
+    else:
+        raw_isk = mineral_isk
+    line_total = raw_isk * jita_share
     unit_price = line_total / quantity if quantity else 0.0
+    raw_unit = raw_isk / quantity if quantity else 0.0
     return PricedLine(
         type_id=type_id,
         name=name,
@@ -197,7 +233,7 @@ def price_ore_line(
         refine_outputs={
             m: int(round(q)) for m, q in outputs.items() if round(q) > 0
         },
-        jita_buy=None,
+        jita_buy=round(raw_unit, 2),
         rate_reason=rate_reason,
     )
 

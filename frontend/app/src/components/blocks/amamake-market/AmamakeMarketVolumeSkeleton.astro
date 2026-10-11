@@ -1,0 +1,120 @@
+---
+interface Props {
+    rows?: number
+}
+
+const { rows = 5 } = Astro.props
+---
+
+<div
+    class="[ mk-volume-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <span class="[ visually-hidden ]">Loading results…</span>
+    <div class="[ mk-volume-skeleton__chips ]">
+        {Array.from({ length: 6 }).map(() => (
+            <span class="[ mk-volume-skeleton__chip ]"></span>
+        ))}
+    </div>
+    <div class="[ mk-volume-skeleton__table ]" aria-hidden="true">
+        <div class="[ mk-volume-skeleton__head ]"></div>
+        {Array.from({ length: rows }).map(() => (
+            <div class="[ mk-volume-skeleton__row ]">
+                <span class="[ mk-volume-skeleton__icon ]"></span>
+                <span class="[ mk-volume-skeleton__name ]"></span>
+                <span class="[ mk-volume-skeleton__bar ]"></span>
+                <span class="[ mk-volume-skeleton__num ]"></span>
+                <span class="[ mk-volume-skeleton__num ]"></span>
+                <span class="[ mk-volume-skeleton__num ]"></span>
+            </div>
+        ))}
+    </div>
+</div>
+
+<style lang="scss">
+    .mk-volume-skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .mk-volume-skeleton__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .mk-volume-skeleton__chip,
+    .mk-volume-skeleton__head,
+    .mk-volume-skeleton__icon,
+    .mk-volume-skeleton__name,
+    .mk-volume-skeleton__bar,
+    .mk-volume-skeleton__num {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--foreground) 6%, transparent) 0%,
+            color-mix(in srgb, var(--foreground) 12%, transparent) 50%,
+            color-mix(in srgb, var(--foreground) 6%, transparent) 100%
+        );
+        background-size: 200% 100%;
+        animation: mk-volume-skel 1.1s ease-in-out infinite;
+    }
+
+    .mk-volume-skeleton__chip {
+        height: var(--space-l);
+        width: 5.5rem;
+        border-radius: var(--space-l);
+    }
+
+    .mk-volume-skeleton__table {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .mk-volume-skeleton__head {
+        height: var(--space-m);
+        width: 100%;
+        opacity: 0.7;
+    }
+
+    .mk-volume-skeleton__row {
+        display: grid;
+        grid-template-columns: 2rem minmax(8rem, 1fr) minmax(8rem, 1.4fr) 4rem 4rem 4rem;
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+    }
+
+    .mk-volume-skeleton__icon {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .mk-volume-skeleton__name {
+        height: var(--space-m);
+        width: 80%;
+    }
+
+    .mk-volume-skeleton__bar {
+        height: 0.75rem;
+        width: 100%;
+    }
+
+    .mk-volume-skeleton__num {
+        height: var(--space-m);
+        width: 100%;
+    }
+
+    @keyframes mk-volume-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+</style>

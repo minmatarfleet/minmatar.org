@@ -4,18 +4,23 @@ import logging
 from collections import defaultdict
 
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 
 from app.celery import app
 from discord.client import DiscordClient
 from discord.exceptions import DiscordRoleAssignmentError
 from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
+    set_primary_character,
     user_primary_character,
 )
 from eveonline.models import EveCharacter
 
 from .helpers import (
+    CORPORATION_GROUP_AFFILIATION_NAMES,
+    ensure_recruiter_application_permissions,
     process_bulk_community_status_row,
+    reconcile_community_status_for_affiliation,
     sync_tribe_chief_group_membership,
     sync_user_community_groups,
 )
@@ -84,6 +89,7 @@ def update_affiliations():
             _update_affiliation_for_user(user, affiliation_rules)
             # Always reconcile community groups so Discord strips/adds retry
             # even when the affiliation row did not change.
+            reconcile_community_status_for_affiliation(user)
             sync_user_community_groups(user)
         except Exception as e:
             log_affiliation_update_error(user, e)
@@ -99,6 +105,7 @@ def sync_community_groups():
     """
     for user in User.objects.all().iterator(chunk_size=500):
         try:
+            reconcile_community_status_for_affiliation(user)
             sync_user_community_groups(user)
         except Exception as e:  # pylint: disable=broad-except
             log_affiliation_update_error(user, e)
@@ -159,10 +166,24 @@ def _user_qualifies_for_affiliation(primary_character, rule):
     return False
 
 
+def _maybe_set_sole_primary_character(user):
+    """If the user has exactly one character and no main, make it the main."""
+    primary = user_primary_character(user)
+    if primary:
+        return primary
+    characters = list(
+        EveCharacter.objects.filter(user=user).order_by("character_id")
+    )
+    if len(characters) != 1:
+        return None
+    set_primary_character(user, characters[0])
+    return user_primary_character(user)
+
+
 def _update_affiliation_for_user(user, affiliation_rules):
     logger.info("Checking affiliations for user %s", user)
 
-    primary_character = user_primary_character(user)
+    primary_character = _maybe_set_sole_primary_character(user)
     if not primary_character:
         logger.info("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
@@ -181,29 +202,7 @@ def _update_affiliation_for_user(user, affiliation_rules):
                 user,
                 affiliation,
             )
-            if UserAffiliation.objects.filter(
-                user=user, affiliation=affiliation
-            ).exists():
-                logger.info(
-                    "User %s already has affiliation %s",
-                    user,
-                    affiliation,
-                )
-                return
-
-            if UserAffiliation.objects.filter(user=user).exists():
-                logger.info(
-                    "User %s already has an affiliation, removing",
-                    user,
-                )
-                UserAffiliation.objects.filter(user=user).delete()
-
-            logger.info(
-                "Creating affiliation for user %s with %s",
-                user,
-                affiliation,
-            )
-            UserAffiliation.objects.create(user=user, affiliation=affiliation)
+            _ensure_user_affiliation(user, affiliation)
             return
 
         logger.info(
@@ -233,7 +232,41 @@ def _update_affiliation_for_user(user, affiliation_rules):
 @app.task
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
-    _update_affiliation_for_user(user, _load_affiliation_rules())
+    try:
+        _update_affiliation_for_user(user, _load_affiliation_rules())
+        reconcile_community_status_for_affiliation(user)
+        sync_user_community_groups(user)
+    except Exception as e:  # pylint: disable=broad-except
+        log_affiliation_update_error(user, e)
+
+
+def _ensure_user_affiliation(user, affiliation):
+    UserAffiliation.objects.filter(user=user).exclude(
+        affiliation=affiliation
+    ).delete()
+    try:
+        _, created = UserAffiliation.objects.get_or_create(
+            user=user, affiliation=affiliation
+        )
+    except IntegrityError:
+        logger.info(
+            "User %s already has affiliation %s",
+            user,
+            affiliation,
+        )
+        return
+    if created:
+        logger.info(
+            "Creating affiliation for user %s with %s",
+            user,
+            affiliation,
+        )
+    else:
+        logger.info(
+            "User %s already has affiliation %s",
+            user,
+            affiliation,
+        )
 
 
 def log_affiliation_update_error(user: User, e):
@@ -263,8 +296,13 @@ def log_affiliation_update_error(user: User, e):
 def _user_qualifies_for_corporation_group(user, corporation_group):
     """
     Return True if this user should be in the given corporation group
-    based on group_type and character ownership.
+    based on affiliation, group_type, and character ownership.
     """
+    if not UserAffiliation.objects.filter(
+        user=user,
+        affiliation__name__in=CORPORATION_GROUP_AFFILIATION_NAMES,
+    ).exists():
+        return False
     corp = corporation_group.corporation
     group_type = (
         corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
@@ -356,6 +394,11 @@ def sync_eve_corporation_groups():
         user__isnull=False, corporation_id__isnull=False
     ).values_list("user_id", "corporation_id"):
         user_corp_ids[user_id].add(corporation_id)
+    affiliated_user_ids = set(
+        UserAffiliation.objects.filter(
+            affiliation__name__in=CORPORATION_GROUP_AFFILIATION_NAMES
+        ).values_list("user_id", flat=True)
+    )
 
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
@@ -368,6 +411,11 @@ def sync_eve_corporation_groups():
 
         corp = corporation_group.corporation
         group = corporation_group.group
+        if (
+            corporation_group.group_type
+            == EveCorporationGroup.GROUP_TYPE_RECRUITER
+        ):
+            ensure_recruiter_application_permissions(group)
 
         in_group_user_ids = set(group.user_set.values_list("id", flat=True))
         recruiter_user_ids = {
@@ -386,12 +434,15 @@ def sync_eve_corporation_groups():
             if user_id
         }
 
-        target_user_ids = _target_user_ids_for_corporation_group(
-            corporation_group,
-            user_corp_ids,
-            recruiter_user_ids,
-            director_user_ids,
-            steward_user_ids,
+        target_user_ids = (
+            _target_user_ids_for_corporation_group(
+                corporation_group,
+                user_corp_ids,
+                recruiter_user_ids,
+                director_user_ids,
+                steward_user_ids,
+            )
+            & affiliated_user_ids
         )
         to_add = target_user_ids - in_group_user_ids
         to_remove = in_group_user_ids - target_user_ids
@@ -428,6 +479,47 @@ def sync_eve_corporation_groups():
                         corporation_group,
                         e,
                     )
+
+
+def sync_user_corporation_groups(user: User) -> None:
+    """
+    Recompute Corp <TICKER> auth groups for one user from linked characters.
+
+    Used by Discord role refresh so corp roles do not wait for the :19/:49 beat.
+    """
+    for corporation_group in EveCorporationGroup.objects.select_related(
+        "corporation", "group"
+    ):
+        if not corporation_group.corporation:
+            continue
+        group = corporation_group.group
+        qualifies = _user_qualifies_for_corporation_group(
+            user, corporation_group
+        )
+        in_group = user.groups.filter(pk=group.id).exists()
+        try:
+            if qualifies and not in_group:
+                user.groups.add(group)
+                logger.info(
+                    "User %s qualifies for corporation group %s, adding",
+                    user.id,
+                    group.name,
+                )
+            elif not qualifies and in_group:
+                user.groups.remove(group)
+                logger.info(
+                    "User %s no longer qualifies for corporation group %s, "
+                    "removing",
+                    user.id,
+                    group.name,
+                )
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(
+                "Error updating user %s corporation group %s: %s",
+                user.id,
+                corporation_group,
+                e,
+            )
 
 
 @app.task

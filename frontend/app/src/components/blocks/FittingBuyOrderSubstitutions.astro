@@ -1,0 +1,127 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+interface Props {
+    order: FittingBuyOrderDetail
+    is_owner: boolean
+    partial_base: string
+    [propName: string]: any
+}
+
+const {
+    order,
+    is_owner,
+    partial_base,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+{order.substitutions.length > 0 && order.status === 'draft' && (
+    <ComponentBlock
+        class:list={['[ fitting-buy-section ]', Astro.props.class]}
+        {...attributes}
+    >
+        <Flexblock gap="var(--space-s)">
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{t('fitting_buy.recommended_swap')}</h2>
+                <p class="[ fitting-buy-hint ]">{t('fitting_buy.swaps_tip')}</p>
+            </Flexblock>
+            <ul class="[ fitting-buy-subs ]">
+                {order.substitutions.map((sub) => {
+                    const line = order.lines.find((l) => l.fitting_id === sub.fitting_id)
+                    return (
+                        <li>
+                            <FlexInline
+                                justification="space-between"
+                                class="[ w-full flex-wrap items-center ]"
+                                gap="var(--space-s)"
+                            >
+                                <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 flex-wrap ]">
+                                    <ItemPicture
+                                        item_id={sub.preferred_type_id}
+                                        item_name={sub.preferred_name}
+                                        size={32}
+                                        icon_quality={32}
+                                    />
+                                    <strong class="[ break-words ]">{sub.preferred_name}</strong>
+                                    <span aria-hidden="true">→</span>
+                                    <ItemPicture
+                                        item_id={sub.substitute_type_id}
+                                        item_name={sub.substitute_name}
+                                        size={32}
+                                        icon_quality={32}
+                                    />
+                                    <span class="[ text-[var(--highlight)] break-words ]">{sub.substitute_name}</span>
+                                    {sub.notes && (
+                                        <span class="[ fitting-buy-hint ]"> — {sub.notes}</span>
+                                    )}
+                                </FlexInline>
+                                {is_owner && line && (
+                                    <form
+                                        hx-post={partial_base}
+                                        hx-target="#fitting-buy-order"
+                                        hx-swap="outerHTML"
+                                    >
+                                        <input type="hidden" name="action" value="swap" />
+                                        <input type="hidden" name="line_id" value={line.id} />
+                                        <input type="hidden" name="preferred_type_id" value={sub.preferred_type_id} />
+                                        <input type="hidden" name="substitute_type_id" value={sub.substitute_type_id} />
+                                        <input type="hidden" name="notes" value={sub.notes} />
+                                        <Button type="submit" size="sm">{t('fitting_buy.apply_swap')}</Button>
+                                    </form>
+                                )}
+                            </FlexInline>
+                        </li>
+                    )
+                })}
+            </ul>
+        </Flexblock>
+    </ComponentBlock>
+)}
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+        font-size: var(--step-1);
+    }
+
+    .fitting-buy-hint {
+        margin: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-subs {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .fitting-buy-subs li {
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+
+        &:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        &:first-child {
+            padding-top: 0;
+        }
+    }
+</style>

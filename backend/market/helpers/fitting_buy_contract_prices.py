@@ -1,0 +1,633 @@
+"""Per-hull landed cost and recommended contract prices for fitting buy orders."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Iterable
+
+from django.db.models import Prefetch
+from eveuniverse.models import EveType
+
+from industry.models import IndustryOrderItem, IndustryOrderItemAssignment
+from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
+from market.helpers.fitting_buy_plan import (
+    apply_type_swaps,
+    line_type_quantities,
+)
+from market.helpers.pricing import get_prices_by_type_id
+from market.models.fitting_buy_order import (
+    FittingBuyContractType,
+    FittingBuyOrder,
+    FittingBuyOrderLine,
+)
+
+# Contract fees as shown in the in-game contract creation window (item
+# exchange, Amamake, Sept 2026). Public availability: 1.53% broker fee and
+# 0.5% sales tax, each with a 10,000 ISK floor. Private (alliance)
+# availability: flat 10,000 ISK broker fee and no sales tax.
+PUBLIC_CONTRACT_SALES_TAX_RATE = Decimal("0.005")
+PUBLIC_CONTRACT_BROKER_RATE = Decimal("0.0153")
+CONTRACT_FEE_MIN = Decimal("10000")
+ALLIANCE_CONTRACT_BROKER_FEE = Decimal("10000")
+CONTRACT_MARKUP_PRESETS = (10, 20)
+CONTRACT_MARKUP_MAX = Decimal("500")
+
+
+def _isk_str(value: Decimal | int | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return str(value)
+    quantized = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return str(int(quantized))
+
+
+def _markup(base: Decimal | None, factor: Decimal) -> str | None:
+    if base is None:
+        return None
+    return _isk_str(base * factor)
+
+
+def _cost_value(amount: Decimal, *, complete: bool) -> Decimal | None:
+    if complete or amount > 0:
+        return amount
+    return None
+
+
+def markup_pct_str(markup_pct: Decimal | int | None) -> str:
+    """'20' for whole percentages, '12.5' otherwise."""
+    pct = Decimal(markup_pct if markup_pct is not None else 0)
+    if pct == pct.to_integral_value():
+        return str(int(pct))
+    return str(pct.normalize())
+
+
+def markup_factor(markup_pct: Decimal | int | None) -> Decimal:
+    pct = Decimal(markup_pct if markup_pct is not None else 0)
+    return Decimal("1") + (pct / Decimal("100"))
+
+
+def contract_fees(price: Decimal | None, contract_type: str) -> dict | None:
+    """Broker fee + sales tax the seller pays on one contract at ``price``."""
+    if price is None or price <= 0:
+        return None
+    if contract_type == FittingBuyContractType.PUBLIC:
+        broker = max(price * PUBLIC_CONTRACT_BROKER_RATE, CONTRACT_FEE_MIN)
+        sales_tax = max(
+            price * PUBLIC_CONTRACT_SALES_TAX_RATE, CONTRACT_FEE_MIN
+        )
+    else:
+        broker = ALLIANCE_CONTRACT_BROKER_FEE
+        sales_tax = Decimal("0")
+    return {
+        "broker_fee": _isk_str(broker),
+        "sales_tax": _isk_str(sales_tax),
+        "total": _isk_str(broker + sales_tax),
+        "net": _isk_str(price - broker - sales_tax),
+    }
+
+
+def contract_fee_rates(contract_type: str) -> dict:
+    public = contract_type == FittingBuyContractType.PUBLIC
+    return {
+        "contract_type": contract_type,
+        "broker_rate": str(PUBLIC_CONTRACT_BROKER_RATE) if public else "0",
+        "broker_min": _isk_str(
+            CONTRACT_FEE_MIN if public else ALLIANCE_CONTRACT_BROKER_FEE
+        ),
+        "sales_tax_rate": (
+            str(PUBLIC_CONTRACT_SALES_TAX_RATE) if public else "0"
+        ),
+    }
+
+
+def _pricing_block(
+    landed: Decimal | None,
+    *,
+    factor: Decimal,
+    contract_type: str,
+) -> dict:
+    """Recommended contract price for one hull plus fees and profit."""
+    price = landed * factor if landed is not None else None
+    fees = contract_fees(price, contract_type)
+    other_type = (
+        FittingBuyContractType.ALLIANCE
+        if contract_type == FittingBuyContractType.PUBLIC
+        else FittingBuyContractType.PUBLIC
+    )
+    other_fees = contract_fees(price, other_type)
+    profit = None
+    if price is not None and fees is not None:
+        profit = price - Decimal(fees["total"]) - landed
+    return {
+        "price": price,
+        "contract_price": _isk_str(price),
+        "fees": fees,
+        "other_fees": other_fees,
+        "profit": _isk_str(profit),
+    }
+
+
+@dataclass(frozen=True)
+class IndustryAsk:
+    type_id: int
+    unit_price: Decimal
+    order_id: int
+    public_short_code: str
+    quantity: int = 0
+    fulfilled: bool = False
+    created_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class HullPriceDecision:
+    """How to price one hull type when it was not pasted."""
+
+    ask: IndustryAsk | None
+    needs_choice: bool
+    choices: tuple[IndustryAsk, ...]
+    use_jita: bool
+
+
+def _line_ask_decimal(item: IndustryOrderItem) -> Decimal | None:
+    unit = item.target_unit_price
+    if unit is None:
+        for assignment in item.assignments.all():
+            if assignment.target_unit_price is not None:
+                unit = assignment.target_unit_price
+                break
+    if unit is None:
+        return None
+    return Decimal(unit)
+
+
+def latest_open_industry_asks(
+    type_ids: Iterable[int],
+) -> dict[int, IndustryAsk]:
+    """Latest unfulfilled industry ask per type (order-item, else assignment)."""
+    unique_ids = list({int(tid) for tid in type_ids if tid})
+    if not unique_ids:
+        return {}
+
+    assignment_qs = IndustryOrderItemAssignment.objects.only(
+        "id",
+        "order_item_id",
+        "target_unit_price",
+    )
+    items = (
+        IndustryOrderItem.objects.filter(
+            eve_type_id__in=unique_ids,
+            order__fulfilled_at__isnull=True,
+        )
+        .select_related("order")
+        .prefetch_related(Prefetch("assignments", queryset=assignment_qs))
+        .order_by("-order__created_at", "-order_id", "id")
+    )
+
+    result: dict[int, IndustryAsk] = {}
+    for item in items:
+        type_id = int(item.eve_type_id)
+        if type_id in result:
+            continue
+        ask = _line_ask_decimal(item)
+        if ask is None:
+            continue
+        order = item.order
+        result[type_id] = IndustryAsk(
+            type_id=type_id,
+            unit_price=ask,
+            order_id=order.id,
+            public_short_code=order.public_short_code or "",
+            quantity=int(item.quantity or 0),
+            fulfilled=order.fulfilled_at is not None,
+            created_at=order.created_at,
+        )
+    return result
+
+
+def industry_asks_for_types(
+    type_ids: Iterable[int],
+) -> dict[int, list[IndustryAsk]]:
+    """Priced industry lines for each type, newest order first."""
+    unique_ids = list({int(tid) for tid in type_ids if tid})
+    if not unique_ids:
+        return {}
+
+    assignment_qs = IndustryOrderItemAssignment.objects.only(
+        "id",
+        "order_item_id",
+        "target_unit_price",
+    )
+    items = (
+        IndustryOrderItem.objects.filter(eve_type_id__in=unique_ids)
+        .select_related("order")
+        .prefetch_related(Prefetch("assignments", queryset=assignment_qs))
+        .order_by("-order__created_at", "-order_id", "id")
+    )
+
+    grouped: dict[int, list[IndustryAsk]] = {}
+    seen: set[tuple[int, int]] = set()
+    for item in items:
+        type_id = int(item.eve_type_id)
+        order = item.order
+        key = (type_id, int(order.id))
+        if key in seen:
+            continue
+        ask = _line_ask_decimal(item)
+        if ask is None:
+            continue
+        seen.add(key)
+        grouped.setdefault(type_id, []).append(
+            IndustryAsk(
+                type_id=type_id,
+                unit_price=ask,
+                order_id=order.id,
+                public_short_code=order.public_short_code or "",
+                quantity=int(item.quantity or 0),
+                fulfilled=order.fulfilled_at is not None,
+                created_at=order.created_at,
+            )
+        )
+    return grouped
+
+
+def _pinned_order_id(raw) -> int | None:
+    """Stored choice: positive industry order id, 0 for Jita, None if unset."""
+    if raw is None or raw == "":
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if value < 0:
+        return None
+    return value
+
+
+def resolve_hull_price(
+    type_id: int,
+    *,
+    sources: dict | None,
+    asks_by_type: dict[int, list[IndustryAsk]],
+) -> HullPriceDecision:
+    """
+    Open industry ask wins when the owner has not picked a source.
+
+    Fulfilled orders are not guessed: the owner chooses one, or Jita.
+    """
+    rows = list(asks_by_type.get(int(type_id), []))
+    past = tuple(row for row in rows if row.fulfilled)
+    pin = _pinned_order_id((sources or {}).get(str(int(type_id))))
+    if pin == 0:
+        return HullPriceDecision(None, False, past, True)
+    if pin:
+        pinned = next((row for row in rows if row.order_id == pin), None)
+        if pinned is not None:
+            return HullPriceDecision(pinned, False, past, False)
+    open_rows = [row for row in rows if not row.fulfilled]
+    if open_rows:
+        return HullPriceDecision(open_rows[0], False, past, False)
+    if past:
+        return HullPriceDecision(None, True, past, False)
+    return HullPriceDecision(None, False, (), True)
+
+
+def hull_source_choice(ask: IndustryAsk) -> dict:
+    created = ""
+    if ask.created_at is not None:
+        created = ask.created_at.date().isoformat()
+    return {
+        "order_id": ask.order_id,
+        "public_short_code": ask.public_short_code,
+        "unit_price": _isk_str(ask.unit_price),
+        "quantity": ask.quantity,
+        "fulfilled": ask.fulfilled,
+        "created_at": created,
+    }
+
+
+def _stock_covered_type_ids(order: FittingBuyOrder) -> set[int]:
+    """Types fully filled from on-hand stock (nothing left to buy)."""
+    return {
+        int(row.eve_type_id)
+        for row in order.items.all()
+        if int(row.buy_qty or 0) <= 0
+    }
+
+
+def _preferred_for_variant(
+    allocations: dict,
+    line: FittingBuyOrderLine,
+    variant_type_id: int,
+) -> int | None:
+    """Find preferred type_id that was allocated onto this variant."""
+    for preferred_key, entries in (allocations or {}).items():
+        preferred_id = int(preferred_key)
+        for entry in entries or []:
+            if int(entry.get("type_id") or 0) == variant_type_id:
+                return preferred_id
+    for swap in line.swaps or []:
+        preferred = int(swap.get("preferred_type_id") or 0)
+        substitute = int(swap.get("substitute_type_id") or 0)
+        if substitute == variant_type_id and preferred:
+            return preferred
+    return None
+
+
+def _per_ship_for_copy(
+    *,
+    original_per_ship: dict[int, int],
+    line: FittingBuyOrderLine,
+    copy: dict,
+    allocations: dict,
+) -> dict[int, int]:
+    if not copy.get("is_swapped"):
+        return dict(original_per_ship)
+
+    copy_swaps = copy.get("swaps")
+    if copy_swaps:
+        return apply_type_swaps(original_per_ship, copy_swaps)
+
+    variant_type_id = copy.get("variant_type_id")
+    if variant_type_id:
+        preferred = None
+        for swap in line.swaps or []:
+            preferred = int(swap.get("preferred_type_id") or 0)
+            if preferred:
+                break
+        if preferred is None:
+            preferred = _preferred_for_variant(
+                allocations, line, int(variant_type_id)
+            )
+        if preferred:
+            return apply_type_swaps(
+                original_per_ship,
+                [
+                    {
+                        "preferred_type_id": preferred,
+                        "substitute_type_id": int(variant_type_id),
+                    }
+                ],
+            )
+        return dict(original_per_ship)
+
+    return apply_type_swaps(original_per_ship, line.swaps)
+
+
+def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
+    """
+    Recommended contract prices per fit copy (original / swapped / variant).
+
+    Landed unit cost: pasted FittingBuyOrderItem.unit_price, else latest open
+    industry ask. Types fully filled from on-hand stock skip industry and use
+    Jita sell. Hull is always included even when include_hull is false; if the
+    hull still has no landed/industry price, Jita sell is used. Fitting cost
+    and total cost are per hull.
+    """
+    order_lines = list(
+        order.lines.select_related("fitting").order_by("sort_order", "id")
+    )
+    if not order_lines:
+        return []
+
+    factor = markup_factor(order.contract_markup_pct)
+    contract_type = str(order.contract_type or FittingBuyContractType.ALLIANCE)
+
+    fit_copies = build_fit_copies_by_line(order, order_lines)
+    original_boms = {
+        bom.line_id: bom
+        for bom in line_type_quantities(
+            order_lines,
+            include_hull=True,
+            apply_line_swaps=False,
+        )
+    }
+
+    pasted = {
+        int(row.eve_type_id): Decimal(row.unit_price)
+        for row in order.items.all()
+        if row.unit_price is not None
+    }
+    stock_covered = _stock_covered_type_ids(order)
+
+    all_type_ids: set[int] = set()
+    allocations = order.shopping_allocations or {}
+    per_copy_boms: list[tuple[FittingBuyOrderLine, dict, dict[int, int]]] = []
+    for line in order_lines:
+        original = original_boms.get(line.id)
+        if original is None:
+            continue
+        copies = fit_copies.get(line.id) or [
+            {
+                "quantity": int(line.quantity),
+                "eft": line.fitting.eft_format or "",
+                "is_swapped": False,
+                "variant_type_id": None,
+                "variant_name": "",
+            }
+        ]
+        for copy in copies:
+            per_ship = _per_ship_for_copy(
+                original_per_ship=original.per_ship,
+                line=line,
+                copy=copy,
+                allocations=allocations,
+            )
+            all_type_ids.update(per_ship)
+            per_copy_boms.append((line, copy, per_ship))
+
+    industry_asks = latest_open_industry_asks(
+        all_type_ids - set(pasted) - stock_covered
+    )
+    ship_ids = {
+        int(line.fitting.ship_id)
+        for line, copy, per_ship in per_copy_boms
+        if line.fitting.ship_id
+    }
+    hull_decisions = {
+        ship_id: resolve_hull_price(
+            ship_id,
+            sources=order.hull_industry_sources,
+            asks_by_type=industry_asks_for_types(ship_ids),
+        )
+        for ship_id in ship_ids
+    }
+    jita_prices = get_prices_by_type_id(list(all_type_ids))
+    type_names = dict(
+        EveType.objects.filter(id__in=all_type_ids).values_list("id", "name")
+    )
+    ship_names = dict(
+        EveType.objects.filter(id__in=ship_ids).values_list("id", "name")
+    )
+
+    rows: list[dict] = []
+    for line, copy, per_ship in per_copy_boms:
+        ship_id = int(line.fitting.ship_id) if line.fitting.ship_id else 0
+        hull_cost = Decimal("0")
+        fitting_cost = Decimal("0")
+        hull_complete = ship_id not in per_ship
+        fitting_complete = True
+        has_fitting_types = False
+        landed_complete = True
+        missing: list[str] = []
+        industry_sources: list[dict] = []
+        used_industry_types: set[int] = set()
+        hull_cost_source = ""
+        hull_industry_order_id: int | None = None
+        hull_industry_short_code = ""
+        hull_from_jita = False
+        fitting_uses_stock = False
+        hull_decision = hull_decisions.get(ship_id)
+        hull_source_needed = bool(hull_decision and hull_decision.needs_choice)
+        hull_source_choices = (
+            [hull_source_choice(ask) for ask in hull_decision.choices]
+            if hull_decision
+            and (
+                hull_decision.needs_choice
+                or _pinned_order_id(
+                    (order.hull_industry_sources or {}).get(str(ship_id))
+                )
+                is not None
+            )
+            else []
+        )
+
+        for type_id, qty in sorted(per_ship.items()):
+            # qty is items on one hull — never multiply by line/copy quantity.
+            is_hull = type_id == ship_id
+            if not is_hull:
+                has_fitting_types = True
+            unit = pasted.get(type_id)
+            source = None
+            from_jita = False
+            if (
+                is_hull
+                and unit is None
+                and hull_decision is not None
+                and hull_decision.ask is not None
+            ):
+                unit = hull_decision.ask.unit_price
+                source = hull_decision.ask
+            elif is_hull and unit is None and hull_source_needed:
+                landed_complete = False
+                hull_complete = False
+                continue
+            if unit is None and type_id not in stock_covered:
+                ask = industry_asks.get(type_id)
+                if ask is not None:
+                    unit = ask.unit_price
+                    source = ask
+            if unit is None and (is_hull or type_id in stock_covered):
+                guide = jita_prices.get(type_id)
+                if guide is not None:
+                    unit = Decimal(guide)
+                    from_jita = True
+            if unit is None:
+                landed_complete = False
+                missing.append(type_names.get(type_id, str(type_id)))
+                if is_hull:
+                    hull_complete = False
+                else:
+                    fitting_complete = False
+                continue
+            line_cost = unit * Decimal(qty)
+            if not is_hull and from_jita:
+                fitting_uses_stock = True
+            if is_hull:
+                hull_cost += line_cost
+                hull_complete = True
+                if source is not None:
+                    hull_cost_source = "industry"
+                    hull_industry_order_id = source.order_id
+                    hull_industry_short_code = source.public_short_code
+                elif from_jita:
+                    hull_cost_source = "jita"
+                    hull_from_jita = True
+                else:
+                    hull_cost_source = "landed"
+            else:
+                fitting_cost += line_cost
+            if source is not None and type_id not in used_industry_types:
+                used_industry_types.add(type_id)
+                industry_sources.append(
+                    {
+                        "type_id": type_id,
+                        "type_name": type_names.get(type_id, str(type_id)),
+                        "unit_price": _isk_str(source.unit_price),
+                        "order_id": source.order_id,
+                        "public_short_code": source.public_short_code,
+                    }
+                )
+
+        if not has_fitting_types:
+            fitting_complete = True
+
+        landed = hull_cost + fitting_cost
+        jita_total = Decimal("0")
+        jita_complete = True
+        for type_id, qty in per_ship.items():
+            guide = jita_prices.get(type_id)
+            if guide is None:
+                jita_complete = False
+                continue
+            jita_total += Decimal(guide) * Decimal(qty)
+
+        hull_value = _cost_value(hull_cost, complete=hull_complete)
+        fitting_value = _cost_value(fitting_cost, complete=fitting_complete)
+        landed_value = _cost_value(landed, complete=landed_complete)
+        jita_value: Decimal | None = jita_total if jita_complete else None
+        pricing = _pricing_block(
+            landed_value, factor=factor, contract_type=contract_type
+        )
+        copy_qty = int(copy.get("quantity") or 0)
+
+        rows.append(
+            {
+                "line_id": line.id,
+                "fitting_id": line.fitting_id,
+                "fitting_name": line.fitting.name,
+                "ship_id": line.fitting.ship_id,
+                "ship_name": ship_names.get(
+                    int(line.fitting.ship_id),
+                    str(line.fitting.ship_id),
+                ),
+                "eft": str(copy.get("eft") or ""),
+                "quantity": int(copy.get("quantity") or 0),
+                "is_swapped": bool(copy.get("is_swapped")),
+                "variant_name": str(copy.get("variant_name") or ""),
+                "hull_cost": _isk_str(hull_value),
+                "hull_cost_from_jita": hull_from_jita,
+                "hull_cost_source": hull_cost_source,
+                "hull_cost_industry_order_id": hull_industry_order_id,
+                "hull_cost_industry_short_code": hull_industry_short_code,
+                "hull_source_needed": hull_source_needed,
+                "hull_source_choices": hull_source_choices,
+                "fitting_cost": _isk_str(fitting_value),
+                "fitting_uses_stock": fitting_uses_stock,
+                "landed_per_ship": _isk_str(landed_value),
+                "landed_complete": landed_complete,
+                "missing_type_names": missing,
+                "landed_plus_20": _markup(landed_value, Decimal("1.20")),
+                "landed_line_total": (
+                    _isk_str(landed_value * copy_qty)
+                    if landed_value is not None
+                    else None
+                ),
+                "jita_sell_per_ship": _isk_str(jita_value),
+                "jita_plus_20": _markup(jita_value, Decimal("1.20")),
+                "jita_marked_up": _markup(jita_value, factor),
+                "contract_price": pricing["contract_price"],
+                "contract_line_total": (
+                    _isk_str(pricing["price"] * copy_qty)
+                    if pricing["price"] is not None
+                    else None
+                ),
+                "fees": pricing["fees"],
+                "other_fees": pricing["other_fees"],
+                "profit": pricing["profit"],
+                "industry_sources": industry_sources,
+            }
+        )
+    return rows

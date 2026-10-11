@@ -5,7 +5,9 @@ from typing import Optional
 from django.contrib.auth.decorators import login_required
 from esi.decorators import token_required
 from eveonline.endpoints.characters._helpers import (
+    discord_account_mismatch_redirect,
     handle_add_character_esi_callback,
+    reset_api_session_if_unbound_for_esi_add,
     set_or_remove_session_value,
 )
 from eveonline.helpers.characters import scope_groups_for_token_add
@@ -24,9 +26,16 @@ def add_character(
     redirect_url: str,
     token_type: Optional[TokenType] = None,
     character_id: str = None,
+    account_user_id: Optional[int] = None,
 ):
+    reset_api_session_if_unbound_for_esi_add(request)
     request.session["redirect_url"] = redirect_url
     set_or_remove_session_value(request, "add_character_id", character_id)
+    mismatch = discord_account_mismatch_redirect(
+        request, redirect_url, account_user_id
+    )
+    if mismatch is not None:
+        return mismatch
 
     character = None
     if character_id:

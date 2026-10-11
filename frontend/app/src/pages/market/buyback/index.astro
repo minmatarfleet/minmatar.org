@@ -45,6 +45,9 @@ import BuybackFAQs from '@components/blocks/BuybackFAQs.astro';
 import Button from '@components/blocks/Button.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import TippyBase from '@components/blocks/TippyBase.astro'
+import Grid from '@components/compositions/Grid.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import Steps from '@components/blocks/Steps.astro'
 
 const page_title = t('buyback.page_title');
 const leading_text = settings?.leading_text?.trim() || ''
@@ -59,8 +62,8 @@ const leading_text = settings?.leading_text?.trim() || ''
 >
     <PageWide
         cover={{
-            image: "/images/planetary-cover.jpg",
-            image_990: "/images/planetary-cover.jpg",
+            image: "/images/buyback-cover.jpg",
+            image_990: "/images/buyback-cover.jpg",
             animated: false,
             scrollable: true,
             overlay: true
@@ -91,44 +94,68 @@ const leading_text = settings?.leading_text?.trim() || ''
 
         <Flexblock gap='var(--space-xl)'>
             {settings?.active &&
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='0'
-                    max_width='100%'
-                    class="[ w-full ]"
+                <TextBox>
+                    <Markdown markdown={t('buyback.faq.1_text')} />
+                </TextBox>
+
+                <Grid
+                    row_gap='var(--space-xs)'
+                    column_gap='0'
+                    min_item_width='310px'
+                    class="grid-fill"
                 >
-                    <FlexInline class="[ items-start! ]" gap='var(--space-l)'>
-                        <TextBox>
-                            <p>{t('buyback.faq.1_text')}</p>
-                        </TextBox>
+                    <Steps
+                        step={1}
+                        title='Copy items from your inventory (CTRL+A, CTRL+C)'
+                        subtitle='In-game'
+                    />
 
-                        <Flexblock gap='var(--space-2xs)' class="[ grow max-w-(--max-text-width) min-w-[450px] ]">
-                            <form
-                                method="POST"
-                                action={translatePath('/market/buyback/appraisal')}
-                                x-data={`{
-                                    paste: '',
-                                    submitted: false,
-                                }`}
-                                x-on:submit="submitted = true"
-                            >
-                                <Flexblock>
-                                    <Flexblock gap='var(--space-2xs)'>
-                                        <Textarea
-                                            id="paste"
-                                            name="paste"
-                                            required
-                                            x-model="paste"
-                                            placeholder={t('buyback.form.paste_placeholder')}
-                                        />
-                                    </Flexblock>
+                    <Steps
+                        step={2}
+                        title='Paste on the text box below'
+                    />
 
-                                    <Button x-bind:disabled="submitted" type="submit">{t('buyback.form.submit')}</Button>
-                                </Flexblock>
-                            </form>
+                    <Steps
+                        step={3}
+                        title='Click on the **Appraise** button'
+                    />
+
+                    <Steps
+                        step={4}
+                        title='Wait for appraisal then click on **Create contract walkthrought**'
+                    />
+                    <Steps
+                        step={5}
+                        title='Follow the instructions and create the contract'
+                        subtitle='In-game'
+                    />
+                </Grid>
+
+                <Flexblock gap='var(--space-2xs)' class="[ grow max-w-(--max-text-width) min-w-[450px] ]">
+                    <form
+                        method="POST"
+                        action={translatePath('/market/buyback/appraisal')}
+                        x-data={`{
+                            paste: '',
+                            submitted: false,
+                        }`}
+                        x-on:submit="submitted = true"
+                    >
+                        <Flexblock>
+                            <Flexblock gap='var(--space-2xs)'>
+                                <Textarea
+                                    id="paste"
+                                    name="paste"
+                                    required
+                                    x-model="paste"
+                                    placeholder={t('buyback.form.paste_placeholder')}
+                                />
+                            </Flexblock>
+
+                            <Button x-bind:disabled="submitted" type="submit">{t('buyback.form.submit')}</Button>
                         </Flexblock>
-                    </FlexInline>
-                </Wrapper>
+                    </form>
+                </Flexblock>
             }
 
             {fetch_error ?
@@ -137,6 +164,8 @@ const leading_text = settings?.leading_text?.trim() || ''
                 </ComponentBlock>
                 :
                 <>
+                    <hr class="[ border-bottom ]" />
+
                     {settings && !settings.active &&
                         <ComponentBlock>
                             <p>{t('buyback.inactive')}</p>

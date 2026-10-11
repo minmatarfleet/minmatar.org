@@ -24,10 +24,12 @@ if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
 import type { TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { get_tribe, get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 let tribe_group:TribeGroup | null = null
+let tribe_slug = ''
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
 let chief_membership:TribeMembership | null = null
@@ -35,14 +37,28 @@ let fetch_membership_error: Error | false = false
 let user_characters: SummaryCharacter[] = []
 
 try {
-    tribe_group = await get_tribe_group(tribe_id, group_id)
+    const [tribe, group] = await Promise.all([
+        get_tribe(tribe_id),
+        get_tribe_group(tribe_id, group_id, auth_token),
+    ])
+    tribe_group = group
+    tribe_slug = tribe.slug
     
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
 
-    const is_chief = Boolean(user_characters.find(character => character.character_id === tribe_group?.chief?.character_id))
+    const is_chief = tribe_group_is_leader({
+        group: tribe_group,
+        membership: null,
+        user_characters,
+    })
+    const can_manage = tribe_group_can_manage({
+        group: tribe_group,
+        is_leader: is_chief,
+        is_superuser,
+    })
     
-    if (!is_superuser && !is_chief)
+    if (!can_manage)
         return HTTP_403_Forbidden()
 
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
@@ -76,13 +92,11 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
@@ -92,6 +106,18 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('tribes.groups.membership.page_title').replace('{group}', tribe_group?.name ?? '')
+
+const breadcrumbs = [
+    { page_title: t('alliance.page_title'), accumulated_path: translatePath('/alliance/') },
+    { page_title: t('tribes.page_title'), accumulated_path: translatePath('/alliance/tribes/') },
+    ...(tribe_group
+        ? [
+            { page_title: tribe_group.tribe_name, accumulated_path: `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}` },
+            { page_title: tribe_group.name, accumulated_path: `/alliance/tribes/${tribe_id}/${group_id}/` },
+        ]
+        : []),
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
 ---
 
 <Viewport
@@ -111,6 +137,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
         }}
         sticky={true}
         wide={true}
+        breadcrumbs={breadcrumbs}
         x-data={`{
             count_text: '${count_text}',
             item_name_filter: '',
@@ -122,11 +149,13 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
         }`}
     >
         <FlexInline id="header-oob" slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small x-text="count_text">{count_text}</small>
+            <Flexblock gap="var(--space-s)">
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text="count_text">{count_text}</small>
+                </Flexblock>
             </Flexblock>
             <PageActions>
                 <Input type="text"
@@ -139,21 +168,6 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                 </Input>
             </PageActions>
         </FlexInline>
-
-        <PageSubheader
-            id="subheader-oob"
-            slot="subheader"
-            is_empty={!tribe_group }
-        >
-            {tribe_group &&
-                <Button
-                    href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
-                    size='sm'
-                >
-                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
-                </Button>
-            }
-        </PageSubheader>
         
         {fetch_membership_error ?
             <ErrorRefetch

@@ -124,7 +124,8 @@ class Command(BaseCommand):
         loc_ids = set()
         eve_type_ids = set()
         for order in orders:
-            char_pks.add(order.character_id)
+            if order.character_id:
+                char_pks.add(order.character_id)
             if order.location_id:
                 loc_ids.add(order.location_id)
             for item in order.items.all():
@@ -209,7 +210,7 @@ class Command(BaseCommand):
             fulfilled_at=order.fulfilled_at,
             public_short_code=order.public_short_code,
             contract_to=order.contract_to,
-            character_id=prod_char_pk_to_local_pk[order.character_id],
+            character_id=prod_char_pk_to_local_pk.get(order.character_id),
             location_id=order.location_id,
         )
         new_order.save(using=local)

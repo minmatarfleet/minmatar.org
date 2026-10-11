@@ -26,6 +26,7 @@ const the_cope_posts:PostListUI[] = posts['The Cope'] ?? []
 const videos_posts:PostListUI[] = posts['Videos'] ?? []
 const rust_and_blood_posts:PostListUI[] = posts['Rust and Blood'] ?? []
 const waifu_wars_posts:PostListUI[] = posts['Waifu Wars'] ?? []
+const dispatches_posts:PostListUI[] = posts['Dispatches'] ?? []
 
 let empty = true
 for (var i in posts) {
@@ -81,6 +82,17 @@ import MarkeeDragonBanner from '@components/blocks/MarkeeDragonBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Frontlines'
+            as_subsection={show_section_header}
+        />
+    }
+    {dispatches_posts.length > 0 &&
+        <PropagandaSection
+            title="Dispatches"
+            description={t('dispatches_description')}
+            posts={dispatches_posts}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
+            hash='Dispatches'
             as_subsection={show_section_header}
         />
     }

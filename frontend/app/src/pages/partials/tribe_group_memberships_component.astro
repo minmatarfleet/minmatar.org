@@ -25,6 +25,7 @@ if (isNaN(tribe_id) || isNaN(group_id))
 
 import type { TribeGroup, TribeMembership, SummaryCharacter } from '@dtypes/api.minmatar.org'
 import {
+    get_tribe,
     get_tribe_group,
     get_memberships,
     apply_to_group,
@@ -123,8 +124,10 @@ if (Astro.request.method === "DELETE") {
 }
 
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 let tribe_group:TribeGroup | null = null
+let tribe_slug = ''
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
 let chief_membership:TribeMembership | null = null
@@ -132,14 +135,28 @@ let fetch_membership_error: Error | false = false
 let user_characters: SummaryCharacter[] = []
 
 try {
-    tribe_group = await get_tribe_group(tribe_id, group_id)
+    const [tribe, group] = await Promise.all([
+        get_tribe(tribe_id),
+        get_tribe_group(tribe_id, group_id, auth_token),
+    ])
+    tribe_group = group
+    tribe_slug = tribe.slug
     
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
 
-    const is_chief = Boolean(user_characters.find(character => character.character_id === tribe_group?.chief?.character_id))
+    const is_chief = tribe_group_is_leader({
+        group: tribe_group,
+        membership: null,
+        user_characters,
+    })
+    const can_manage = tribe_group_can_manage({
+        group: tribe_group,
+        is_leader: is_chief,
+        is_superuser,
+    })
     
-    if (!is_superuser && !is_chief)
+    if (!can_manage)
         return HTTP_403_Forbidden()
 
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
@@ -172,13 +189,12 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import PageTitle from '@components/page/PageTitle.astro';
 import PageActions from '@components/page/PageActions.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
@@ -190,6 +206,10 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('tribes.groups.membership.page_title').replace('{group}', tribe_group?.name ?? '')
+const group_hub_url = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`)
+const tribe_filter_url = translatePath(
+    `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}`,
+)
 ---
 
 {alert && <ShowAlert alert={alert} /> }
@@ -223,21 +243,6 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     </Input>
                 </PageActions>
             </FlexInline>
-
-            <PageSubheader
-                id="subheader-oob"
-                hx-swap-oob="true"
-                is_empty={!tribe_group }
-            >
-                {tribe_group &&
-                    <Button
-                        href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
-                        size='sm'
-                    >
-                        {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
-                    </Button>
-                }
-            </PageSubheader>
         }</>
 
         <UpdateAlpineVariables

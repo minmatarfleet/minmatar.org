@@ -30,6 +30,12 @@ class EvePost(models.Model):
     date_posted = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     tags = models.ManyToManyField(EveTag, blank=True)
+    tribe_groups = models.ManyToManyField(
+        "tribes.TribeGroup",
+        blank=True,
+        related_name="posts",
+        help_text="Optional tribe groups this post is associated with.",
+    )
 
     def __str__(self):
         return str(self.title)

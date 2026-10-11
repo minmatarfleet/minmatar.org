@@ -1,0 +1,68 @@
+---
+/**
+ * Small square icon button used for secondary actions inside fleet list rows
+ * (refit, copy EFT, remove). Keeps every row's action cluster the same size.
+ */
+interface Props {
+    title:              string;
+    href?:              string;
+    danger?:            boolean;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    href,
+    danger = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Element = href ? 'a' : 'button'
+---
+
+<Element
+    class:list={[ 'row-action', { 'row-action--danger': danger }, Astro.props.class ]}
+    type={href ? undefined : 'button'}
+    href={href}
+    title={title}
+    aria-label={title}
+    {...attributes}
+>
+    <slot />
+</Element>
+
+<style lang="scss">
+    .row-action {
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        background: transparent;
+        border: solid 1px transparent;
+        color: var(--highlight);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        :global(svg) {
+            width: 16px;
+            height: 16px;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--border-color);
+            background: rgba(255, 255, 255, 0.06);
+            outline: none;
+        }
+
+        &.row-action--danger:hover,
+        &.row-action--danger:focus-visible {
+            color: var(--fleet-red);
+        }
+    }
+</style>

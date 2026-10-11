@@ -10,16 +10,37 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_tags } from '@helpers/api.minmatar.org/characters'
+import { get_tags, set_character_tags } from '@helpers/api.minmatar.org/characters'
+import { tag_ids_from_form_data } from '@helpers/character_tags_form'
 import { get_tags_summary } from '@helpers/fetching/characters'
 import type { CharacterTag } from '@dtypes/api.minmatar.org'
-import type { CharacterTagSummary } from '@dtypes/layout_components'
+import type { CharacterTagSummary, Alert } from '@dtypes/layout_components'
  
 const active_character = parseInt(Astro.params.character_id ? Astro.params.character_id : '0');
 
 let tags_summary:CharacterTagSummary[] = []
 let tags:CharacterTag[] = []
 let get_tags_error: Error | false = false
+let alert:Alert | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        if (isNaN(active_character) || active_character === 0)
+            throw new Error('invalid_character_id')
+
+        const form_data = await Astro.request.formData()
+        await set_character_tags(
+            auth_token as string,
+            active_character,
+            tag_ids_from_form_data(form_data),
+        )
+    } catch (error) {
+        alert = {
+            title: t('setting_roles'),
+            content: error.message as string,
+        }
+    }
+}
 
 try {
     tags_summary = await get_tags_summary(auth_token as string)
@@ -46,6 +67,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CharactersTagList from '@components/blocks/CharactersTagList.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
 
 const page_title = t('account.tags.page_title');
 ---
@@ -58,7 +80,10 @@ const page_title = t('account.tags.page_title');
         modal: true
     }}
 >
+    {alert && <ShowAlert alert={alert} /> }
     <form
+        method="post"
+        action={translatePath(`/account/tags/${active_character}`)}
         hx-post={CHARACTER_TAG_LIST_PARTIAL_URL}
         hx-trigger="submit"
         hx-target="#character-tag-list"
@@ -121,6 +146,7 @@ const page_title = t('account.tags.page_title');
                 event.returnValue = ''
             },
             init() {
+                if (typeof htmx !== 'undefined') htmx.process(this.$el)
                 this._on_before_preparation = (event) => this.on_before_preparation(event)
                 this._on_before_unload = (event) => this.on_before_unload(event)
                 document.addEventListener('astro:before-preparation', this._on_before_preparation)

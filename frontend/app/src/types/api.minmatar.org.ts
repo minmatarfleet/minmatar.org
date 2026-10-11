@@ -49,6 +49,11 @@ export interface TribeGroupRank {
     sort_order: number;
 }
 
+export interface TribeAffiliationRef {
+    id:   number;
+    name: string;
+}
+
 export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
@@ -56,6 +61,7 @@ export interface TribeGroup {
     code?:                  string;
     name:                   string;
     description:            string;
+    content?:               string;
     discord_channel_id:     number | null;
     chief:                  TribeCharacterRef | null;
     ship_type_ids:          number[];
@@ -65,7 +71,12 @@ export interface TribeGroup {
     requirements:           TribeRequirement[];
     ranks?:                 TribeGroupRank[];
     required_token_type?:   string | null;
-}
+    require_off_trial?:     boolean;
+    allowed_affiliations?:  TribeAffiliationRef[];
+        can_apply?:             boolean;
+        can_manage?:            boolean;
+        roster_hidden?:         boolean;
+    }
 
 export interface Tribe {
     id:                     number;
@@ -82,21 +93,43 @@ export interface Tribe {
     total_member_count:     number;
 }
 
-export interface TribeGroupOutputSummary {
-    tribe_group_id:     number;
-    tribe_group_name:   string;
-    tribe_id:           number;
-    period_start:       string | null;
-    period_end:         string | null;
-    totals:             Record<string, number>;  // e.g. { "kills (kills)": 5, "mining_contribution (m3)": 150000 }
+export interface TribeGroupRosterEntry {
+    user_id:                    number;
+    primary_character_id:       number | null;
+    primary_character_name:     string;
+    corporation_id:             number | null;
+    corporation_name:           string | null;
+    rank_id:                    number | null;
+    rank_code:                  string | null;
+    rank_name:                  string | null;
+    rank_sort_order:            number | null;
+    approved_at:                string | null;
 }
 
-export interface TribeLeaderboardEntry {
-    user_id:        number;
-    character_id:   number | null;
-    character_name: string | null;
-    total:          number;
-    unit:           string;
+export interface TribeGroupGrowth {
+    months:     { month: string; label: string }[];
+    counts:     number[];
+}
+
+export interface TribeGroupShowcaseContributor {
+    character_id:       number | null;
+    character_name:     string;
+    metric_key:         string;
+    metric_value:       number | string;
+}
+
+export interface TribeGroupShowcase {
+    group_id:           number;
+    group_code:         string;
+    group_name:         string;
+    period:             string;
+    period_start:       string | null;
+    period_end:         string | null;
+    manual:             boolean;
+    message:            string;
+    totals:             Record<string, number | string>;
+    columns:            string[];
+    contributors:       TribeGroupShowcaseContributor[];
 }
 
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
@@ -156,6 +189,19 @@ export interface TribeAvailableCharacter {
     missing_assets: boolean;
     /** True when the group requires an ESI token type the character lacks. */
     missing_token: boolean;
+}
+
+export type TribeExternalGuildSeatStatus =
+    | 'pending_join'
+    | 'present'
+    | 'pending_remove'
+    | 'removed'
+    | 'cleanup_failed'
+
+export interface TribeExternalGuildJoin {
+    authorize_url: string;
+    group_id: number;
+    status: TribeExternalGuildSeatStatus;
 }
 
 export interface SigRequest {
@@ -250,6 +296,7 @@ export interface UserProfile {
     username:              string;
     permissions:           string[];
     is_superuser:          boolean;
+    community_status?:     string | null;
     eve_character_profile: EveCharacterProfile | null;
     discord_user_profile:  DiscordUserProfile | null;
 }
@@ -395,7 +442,7 @@ export interface Doctrine {
 export const fleet_status = ['active', 'upcoming', 'recent'] as const
 export type FleetStatus = typeof fleet_status[number]
 
-export const fleet_types = ['strategic', 'non_strategic', 'training'] as const
+export const fleet_types = ['strategic', 'non_strategic', 'training', 'npsi'] as const
 export type FleetTypes = typeof fleet_types[number]
 
 export interface Fleet {
@@ -409,9 +456,11 @@ export interface Fleet {
     doctrine_id:        number;
     location:           string;
     disable_motd:       boolean;
+    hide_volunteers:    boolean;
     tracking?:          Tracking;
     status?:            TrackingStatus;
     aar_link:           string;
+    roam_report_url?:   string | null;
 }
 
 export interface FleetBasic {
@@ -434,6 +483,7 @@ export interface FleetRequest {
     location_id?:       number | null;
     audience_id:        number;
     disable_motd:       boolean;
+    hide_volunteers?:   boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
 }
@@ -447,9 +497,11 @@ export interface FleetPatchRequest {
     location_id?:       number;
     audience_id?:       number;
     disable_motd?:      boolean;
+    hide_volunteers?:   boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     aar_link?:          string;
+    roam_report_url?:   string | null;
 }
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
@@ -484,6 +536,7 @@ export interface Location extends BaseLocation {
     market_active:      boolean;
     prices_active:      boolean;
     freight_active:     boolean;
+    fleets_active:      boolean;
     staging_active:     boolean;
 }
 
@@ -556,6 +609,7 @@ export interface Post {
     author_character_id: number;
     author_character_name: string;
     tag_ids:            number[];
+    tribe_group_ids?:   number[];
 }
 
 export interface PostParams {
@@ -564,6 +618,7 @@ export interface PostParams {
     state?:             PostStates;
     content?:           string;
     tag_ids?:           number[];
+    tribe_group_ids?:   number[];
 }
 
 export interface PostTag {
@@ -724,10 +779,11 @@ export interface ContractSeller {
 
 export interface ContractMetrics {
     fitting_id:             number;
-    volume_28d:             number;
-    typical_fleet_size:     number | null;
-    fleets_remaining:       number | null;
-    fleets_per_month:       number | null;
+    volume_7d:              number;
+    volume_30d:             number;
+    volume_90d:             number;
+    volume_365d:            number;
+    unstocked_pct_30d:      number;
 }
 
 export interface Contract {
@@ -823,11 +879,12 @@ export interface SRPFilter {
 }
 
 export interface PostRequest {
-    user_id?:       number;
-    tag_id?:        number;
-    page_size?:     number;
-    page_num?:      number;
-    status?:        PostStates;
+    user_id?:           number;
+    tag_id?:            number;
+    tribe_group_id?:    number;
+    page_size?:         number;
+    page_num?:          number;
+    status?:            PostStates;
 }
 
 export interface ReferralLinkStats {
@@ -911,7 +968,7 @@ export interface CharacterTag {
     image_name:     string;
 }
 
-export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor' ] as const
+export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor', 'FleetCommander' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
 
 export const prime_times = [ 'US', 'AP', 'EU' ] as const
@@ -1050,7 +1107,7 @@ export interface IndustryOrder {
     needed_by:          Date;
     fulfilled_at:       Date | null;
     public_short_code:  string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootItem[];
@@ -1310,6 +1367,79 @@ export interface BuybackContractsStats {
     window_days:                    number;
 }
 
+export interface BuybackPurchasePick {
+    type_id: number;
+    name: string;
+    quantity: number;
+    fill_source: string;
+    unit_price: number | null;
+    line_total: number | null;
+}
+
+export interface BuybackPurchaseShortfall {
+    type_id: number | null;
+    name: string;
+    quantity: number;
+}
+
+export interface BuybackPurchaseFill {
+    picks: BuybackPurchasePick[];
+    shortfalls: BuybackPurchaseShortfall[];
+    unresolved_names: string[];
+    janice_tsv: string;
+    shortfall_tsv: string;
+    contract_total: number;
+    refine_rate: number;
+    refine_rate_source: string;
+    facility_key: string;
+    facility_name: string;
+    sell_price_basis: string;
+    sell_markup: number;
+}
+
+export const buyback_purchase_order_status = [
+    'pending',
+    'completed',
+    'cancelled',
+] as const
+export type BuybackPurchaseOrderStatus = typeof buyback_purchase_order_status[number]
+
+export interface BuybackPurchaseOrderLine {
+    type_id: number;
+    name: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+    fill_source: string;
+}
+
+export interface BuybackPurchaseOrder {
+    id: number;
+    status: BuybackPurchaseOrderStatus;
+    source: string;
+    created_by_user_id: number;
+    character_id: number | null;
+    character_name: string;
+    contract_total: number;
+    sell_price_basis: string;
+    sell_markup: number;
+    janice_tsv: string;
+    created_at: string;
+    completed_at: string | null;
+    discord_thread_id: number | null;
+    discord_thread_url: string | null;
+    lines: BuybackPurchaseOrderLine[];
+}
+
+export interface BuybackPurchaseOrderList {
+    orders: BuybackPurchaseOrder[];
+    count: number;
+}
+
+export interface BuybackPurchaseCapabilities {
+    can_manage: boolean;
+}
+
 export const blueprint_owner_entity = [ 'character', 'corporation'  ] as const
 export type BlueprintOwnerEntity = typeof blueprint_owner_entity[number]
 
@@ -1511,6 +1641,44 @@ export interface InferredSalesVolume {
     top_movers:     InferredSalesTopMover[];
 }
 
+export interface InferredSalesMonthlyVolumeClass {
+    slug: string
+    label: string
+    count: number
+}
+
+export interface InferredSalesMonthlyVolumeRow {
+    type_id: number
+    name: string
+    group: string
+    category: string
+    fills: number
+    units: number
+    isk: number
+    isk_label: string
+    amamake_avg: number
+    jita: number | null
+    freight: number
+    markup_pct: number | null
+    extra_isk: number | null
+    extra_isk_label: string | null
+}
+
+export interface InferredSalesMonthlyVolumePage {
+    location_id: number
+    year: number
+    month: number
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+    sort: string
+    sold_class: string
+    q: string
+    classes: InferredSalesMonthlyVolumeClass[]
+    rows: InferredSalesMonthlyVolumeRow[]
+}
+
 export interface OrderAssignmentsBreakdownItem {
     name:                   string;
     type_id:                number;
@@ -1553,6 +1721,13 @@ export interface RootSingleItem {
     assignments:                    OrderAssignment[];
 }
 
+export interface BuildPack {
+    title:          string;
+    count:          number;
+    price:          string | null;
+    location_name:  string | null;
+}
+
 export interface IndustrySingleOrder {
     id:                 number;
     created_at:         Date;
@@ -1560,7 +1735,7 @@ export interface IndustrySingleOrder {
     fulfilled_at:       Date | null;
     public_short_code:  string;
     contract_to:        string;
-    character_id:       number;
+    character_id:       number | null;
     character_name:     string;
     location:           BaseLocation;
     items:              RootSingleItem[];
@@ -1598,6 +1773,8 @@ export interface LoyaltyCurrency {
     corporation_id:     number;
     default_isk_per_lp: number;
     is_active:          boolean;
+    allow_buy:          boolean;
+    allow_sell:         boolean;
 }
 
 export interface LoyaltyMarketOrderClaim {
@@ -1605,8 +1782,8 @@ export interface LoyaltyMarketOrderClaim {
     amount:                          number;
     destination_character_name:      string;
     destination_corporation_name:    string;
-    claimed_by_user_id:              number;
-    claimed_by_name:                 string;
+    claimed_by_user_id:              number | null;
+    claimed_by_name:                 string | null;
     claimed_by_character_id:         number | null;
     created_at:                      Date | string;
 }
@@ -1622,8 +1799,8 @@ export interface LoyaltyMarketOrder {
     quantity_remaining:         number;
     isk_per_lp:                 number;
     status:                     string;
-    created_by_user_id:         number;
-    created_by_name:            string;
+    created_by_user_id:         number | null;
+    created_by_name:            string | null;
     created_by_character_id:    number | null;
     claimed_by_user_id:         number | null;
     claimed_by_name:            string | null;
@@ -1635,6 +1812,13 @@ export interface LoyaltyMarketOrder {
     created_at:                 Date | string;
     updated_at:                 Date | string;
     completed_at:               Date | string | null;
+}
+
+export interface LoyaltyMarketOrdersList {
+    items:  LoyaltyMarketOrder[];
+    total:  number;
+    limit:  number | null;
+    offset: number;
 }
 
 export interface LoyaltyLedgerEntry {

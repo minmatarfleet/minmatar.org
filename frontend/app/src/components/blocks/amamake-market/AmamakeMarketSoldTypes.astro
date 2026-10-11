@@ -1,0 +1,285 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { AmamakeMarketIssue } from '@/data/amamake-market/types'
+import {
+    SOLD_CLASS_ALL,
+    format_markup_pct,
+    get_sold_class_names,
+    resolve_sold_types,
+    sold_class_label,
+    sold_class_slug,
+} from '@/data/amamake-market'
+import { percent } from '@/data/amamake-market/format'
+import { query_string } from '@helpers/string'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+interface Props {
+    issue: AmamakeMarketIssue
+    sold_class?: string
+}
+
+const { issue, sold_class = SOLD_CLASS_ALL } = Astro.props
+const resolved = resolve_sold_types(issue, sold_class)
+const class_names = get_sold_class_names(issue)
+const max_type_isk = Math.max(...resolved.rows.map((row) => row.isk), 1)
+
+function sold_types_partial(class_slug: string): string {
+    return translatePath(
+        `/partials/amamake_market_sold_types_component?${query_string({
+            issue: issue.slug,
+            sold_class: class_slug,
+        })}`,
+    )
+}
+
+const chips = [
+    { slug: SOLD_CLASS_ALL, label: 'All' },
+    ...class_names.map((name) => ({ slug: sold_class_slug(name), label: sold_class_label(name) })),
+]
+---
+
+<div class="[ mk-sold-types ]">
+    <nav class="[ mk-sold-chips ]" aria-label="Filter Top Items Sold by class">
+        <FlexInline gap="var(--space-2xs)">
+            {chips.map((chip) => (
+                <button
+                    type="button"
+                    class:list={['mk-sold-chip', chip.slug === resolved.slug && 'is-active']}
+                    hx-get={sold_types_partial(chip.slug)}
+                    hx-target="#mk-sold-types"
+                    hx-swap="innerHTML"
+                    aria-pressed={chip.slug === resolved.slug}
+                >
+                    {chip.label}
+                </button>
+            ))}
+        </FlexInline>
+    </nav>
+
+    <ol
+        class="[ mk-types ]"
+        aria-live="polite"
+        aria-label={resolved.class_name
+            ? `Top types sold in ${resolved.class_name}`
+            : 'Top types sold'}
+    >
+        {resolved.rows.map((row, index) => (
+            <li class:list={['mk-type', index === 0 && 'mk-type--lead']}>
+                <span class="[ mk-type__rank ]">{index + 1}</span>
+                <span class="[ mk-type__icon ]">
+                    <ItemPicture item_id={row.typeId} item_name={row.name} size={40} icon_quality={64} />
+                </span>
+                <div class="[ mk-type__body ]">
+                    <div class="[ mk-type__line ]">
+                        <span class="[ mk-type__name ]">
+                            {row.name}
+                            {row.is_new && <span class="[ mk-badge ]">NEW</span>}
+                        </span>
+                        <span class="[ mk-type__meta ]">
+                            {number_thousand_separator(row.units)} units · {number_thousand_separator(row.fills)} orders
+                            {row.isk_vs_pct !== null && row.isk_vs_pct !== 0 && (
+                                <span class:list={['mk-compare__trend', row.isk_vs_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.isk_vs_pct > 0 ? '▲' : '▼'}{Math.abs(row.isk_vs_pct)}%</span>
+                            )}
+                            <span
+                                class:list={[
+                                    'mk-type__markup',
+                                    row.markup_pct !== null && row.markup_pct > 0 && 'mk-delta--up',
+                                    row.markup_pct !== null && row.markup_pct < 0 && 'mk-delta--down',
+                                ]}
+                                title={row.markup_pct === null ? 'No Jita price for this type' : 'Compared with Jita'}
+                            >{row.markup_pct === null ? '—' : `${format_markup_pct(row.markup_pct)} vs Jita`}</span>
+                        </span>
+                        <b class="[ mk-type__isk ]">{row.isk_label}</b>
+                    </div>
+                    <div class="[ mk-bar ]">
+                        <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_type_isk)}%`}></span>
+                    </div>
+                </div>
+            </li>
+        ))}
+    </ol>
+</div>
+
+<style lang="scss">
+    .mk-sold-types {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .mk-sold-chips {
+        min-width: 0;
+    }
+
+    .mk-sold-chip {
+        padding: var(--space-3xs) var(--space-s);
+        border: solid 1px var(--border-color);
+        border-radius: var(--space-l);
+        background: transparent;
+        color: var(--foreground);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: border-color var(--fast-transition), color var(--fast-transition), background-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--highlight);
+            color: var(--highlight);
+            background-color: var(--light-transparency-background-mobile);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--highlight);
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .mk-types {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .mk-type {
+        display: grid;
+        grid-template-columns: var(--space-m) var(--space-xl) 1fr;
+        align-items: center;
+        gap: var(--space-xs);
+        padding-block: var(--space-2xs);
+        border-bottom: solid 1px var(--mk-rule, var(--border-color));
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    .mk-type__rank {
+        font-family: var(--heading-font);
+        color: var(--faded);
+        text-align: center;
+
+        .mk-type--lead & {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .mk-type__icon {
+        display: block;
+        width: var(--space-xl);
+        height: var(--space-xl);
+
+        :global(img) {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .mk-type__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .mk-type__line {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas: 'name isk' 'meta isk';
+        column-gap: var(--space-s);
+        align-items: baseline;
+    }
+
+    .mk-type__name {
+        grid-area: name;
+        font-weight: 600;
+        color: var(--highlight);
+        font-size: var(--step-0);
+    }
+
+    .mk-type__meta {
+        grid-area: meta;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .mk-type__markup {
+        margin-inline-start: var(--space-3xs);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-type__isk {
+        grid-area: isk;
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .mk-badge {
+        display: inline-block;
+        margin-inline-start: var(--space-3xs);
+        padding-inline: var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--green);
+        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
+        background: color-mix(in srgb, var(--green) 14%, transparent);
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .mk-compare__trend {
+        margin-inline: var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .mk-delta--up {
+        color: var(--green);
+    }
+
+    .mk-delta--down {
+        color: var(--fleet-red);
+    }
+
+    .mk-bar {
+        width: 100%;
+        height: var(--space-2xs);
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+    }
+
+    .mk-bar__fill {
+        display: block;
+        height: 100%;
+        min-width: 2px;
+
+        &--sold {
+            background: var(--mk-sold, var(--green));
+        }
+    }
+</style>

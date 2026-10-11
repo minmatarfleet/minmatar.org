@@ -74,7 +74,7 @@ import BlockList from '@components/compositions/BlockList.astro'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckPill from '@components/blocks/RadioCheckPill.astro'
 import Input from '@components/blocks/Input.astro'
 import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
 
@@ -141,9 +141,8 @@ const page_title = t('ships.srp.killmails.page_title');
         >
             {can_view_all_srp && ship_types.length > 0 &&
                  <FlexInline>
-                    <label>{t('filters')}</label>
                     <>{ship_types.map(type =>
-                        <UnstyledRadioCheckButton
+                        <RadioCheckPill
                             type='checkbox'
                             name="srp_ship_type_filter"
                             x-model="srp_ship_type_filter"

@@ -29,6 +29,8 @@ class RegistryTestCase(TestCase):
         assignment = get_type("industry.order.assignment")
         self.assertFalse(assignment.supports_topic_subscription)
         get_type("industry.order.job")
+        closed = get_type("fleets.closed")
+        self.assertTrue(closed.default_enabled(NotificationChannel.EVE_MAIL))
 
 
 class PreferenceResolutionTestCase(TestCase):

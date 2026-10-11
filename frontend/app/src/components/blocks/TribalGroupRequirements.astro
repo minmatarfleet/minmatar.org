@@ -19,7 +19,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import SkillItem from '@components/blocks/SkillItem.astro';
-import TextSeparator from '@components/blocks/TextSeparator.astro';
 ---
 
 <Flexblock>
@@ -41,7 +40,7 @@ import TextSeparator from '@components/blocks/TextSeparator.astro';
         </FlexInline>
     }
     {requirement?.asset_types.length > 0 && requirement?.qualifying_skills.length > 0 &&
-        <TextSeparator text={t('and')} />
+        <hr class="[ border-bottom w-full ]" />
     }
     {requirement?.qualifying_skills.length > 0 &&
         <h4>{t('all_following_skills')}</h4>

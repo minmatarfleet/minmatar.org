@@ -4,7 +4,6 @@ from datetime import timedelta
 from typing import List
 
 from django.db.models import Count, F, OuterRef, Subquery
-from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from authentication import AuthBearer
@@ -31,10 +30,7 @@ def get_fleet_metrics(request):
         .annotate(instances=Count("evefleetinstance"))
         .annotate(members=Count("evefleetinstance__evefleetinstancemember"))
         .annotate(
-            location_name=Coalesce(
-                F("audience__staging_location__location_name"),
-                F("location__location_name"),
-            )
+            location_name=F("location__location_name"),
         )
         .annotate(
             fc_corporation_id=F(

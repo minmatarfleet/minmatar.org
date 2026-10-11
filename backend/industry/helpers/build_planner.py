@@ -12,7 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from math import ceil
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from eveuniverse.models import (
     EveIndustryActivityDuration,
@@ -484,6 +484,106 @@ def _collect_leaf_materials(
     return leaf_materials
 
 
+def _cached_recipe(
+    type_id: int, cache: Dict[int, Optional[Recipe]]
+) -> Optional[Recipe]:
+    if type_id not in cache:
+        cache[type_id] = _get_recipe(type_id)
+    return cache[type_id]
+
+
+def _skips_intermediate_fuel(
+    type_id: int,
+    *,
+    build_fuel_blocks: bool,
+    fuel_type_ids: Set[int],
+    root_id: int,
+) -> bool:
+    # Always manufacture the root (e.g. fuel-block industry orders).
+    # build_fuel_blocks=False only skips intermediate fuel-block inputs.
+    return (
+        not build_fuel_blocks
+        and type_id in fuel_type_ids
+        and type_id != root_id
+    )
+
+
+def _has_wanted_descendant(
+    type_id: int,
+    *,
+    recipe_for: Callable[[int], Optional[Recipe]],
+    excluded: Set[int],
+    fuel_type_ids: Set[int],
+    root_id: int,
+    build_fuel_blocks: bool,
+    cache: Dict[int, bool],
+) -> bool:
+    """True if some non-excluded, non-fuel recipe sits under this type."""
+    if type_id in cache:
+        return cache[type_id]
+    visiting: Set[int] = set()
+
+    def walk(tid: int) -> bool:
+        if tid in visiting:
+            return False
+        visiting.add(tid)
+        recipe = recipe_for(tid)
+        if recipe is None:
+            return False
+        for mid, _, _ in recipe.materials:
+            if _skips_intermediate_fuel(
+                mid,
+                build_fuel_blocks=build_fuel_blocks,
+                fuel_type_ids=fuel_type_ids,
+                root_id=root_id,
+            ):
+                continue
+            child = recipe_for(mid)
+            if child is None:
+                continue
+            if mid not in excluded:
+                return True
+            if walk(mid):
+                return True
+        return False
+
+    result = walk(type_id)
+    cache[type_id] = result
+    return result
+
+
+def _is_job_buildable(
+    type_id: int,
+    *,
+    recipe_for: Callable[[int], Optional[Recipe]],
+    excluded: Set[int],
+    fuel_type_ids: Set[int],
+    root_id: int,
+    build_fuel_blocks: bool,
+    wanted_cache: Dict[int, bool],
+) -> bool:
+    if _skips_intermediate_fuel(
+        type_id,
+        build_fuel_blocks=build_fuel_blocks,
+        fuel_type_ids=fuel_type_ids,
+        root_id=root_id,
+    ):
+        return False
+    if recipe_for(type_id) is None:
+        return False
+    if type_id in excluded:
+        return _has_wanted_descendant(
+            type_id,
+            recipe_for=recipe_for,
+            excluded=excluded,
+            fuel_type_ids=fuel_type_ids,
+            root_id=root_id,
+            build_fuel_blocks=build_fuel_blocks,
+            cache=wanted_cache,
+        )
+    return True
+
+
 def plan_build(
     product: EveType | str | int,
     quantity: int = 1,
@@ -509,7 +609,9 @@ def plan_build(
 
     Types in ``exclude_type_ids`` are treated as imported leaves (subtree not
     expanded), matching ``build_fuel_blocks=False`` for intermediate fuel-block
-    groups. The root product is always expanded when it has a recipe — including
+    groups. If a descendant of an excluded type is *not* excluded (the user
+    wants to build it), ancestors are still expanded so that job stays in the
+    plan. The root product is always expanded when it has a recipe — including
     when the order itself is a fuel block.
     """
     if quantity <= 0:
@@ -540,24 +642,21 @@ def plan_build(
     root_id = int(root.id)
 
     recipe_cache: Dict[int, Optional[Recipe]] = {}
+    wanted_descendant_cache: Dict[int, bool] = {}
 
     def recipe_for(type_id: int) -> Optional[Recipe]:
-        if type_id not in recipe_cache:
-            recipe_cache[type_id] = _get_recipe(type_id)
-        return recipe_cache[type_id]
+        return _cached_recipe(type_id, recipe_cache)
 
     def is_buildable(type_id: int) -> bool:
-        if type_id in excluded:
-            return False
-        # Always manufacture the root (e.g. fuel-block industry orders).
-        # build_fuel_blocks=False only skips intermediate fuel-block inputs.
-        if (
-            not build_fuel_blocks
-            and type_id in fuel_type_ids
-            and type_id != root_id
-        ):
-            return False
-        return recipe_for(type_id) is not None
+        return _is_job_buildable(
+            type_id,
+            recipe_for=recipe_for,
+            excluded=excluded,
+            fuel_type_ids=fuel_type_ids,
+            root_id=root_id,
+            build_fuel_blocks=build_fuel_blocks,
+            wanted_cache=wanted_descendant_cache,
+        )
 
     demand, jobs_meta = _stabilize_demand(
         root_id=root.id,

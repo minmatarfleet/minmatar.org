@@ -3,9 +3,8 @@ from django.db import models
 
 class TribeGroupRequirementSkill(models.Model):
     """
-    A qualifying skill for a TribeGroupRequirement with type 'skill'.
-    The character satisfies the requirement if they have ANY listed skill
-    trained to at least its minimum_level (OR logic).
+    A qualifying skill for a TribeGroupRequirement.
+    The character must have ALL listed skills at their minimum_level (AND).
     """
 
     requirement = models.ForeignKey(

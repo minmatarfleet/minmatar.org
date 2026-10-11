@@ -1,0 +1,145 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetShipVolunteer, FleetCompositionEntry, FleetRefit, FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import { supply_for, refits_for, volunteers_for, ship_row_id, is_capital_entry, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+
+interface Props {
+    fleet_id:           number;
+    composition:        FleetCompositionEntry[];
+    volunteers:         FleetShipVolunteer[];
+    refits:             FleetRefit[];
+    pilots:             SummaryCharacter[];
+    supply?:            FleetSupply;
+    readonly?:          boolean;
+    can_manage?:        boolean;
+    doctrine_name?:     string | null;
+}
+
+const {
+    fleet_id,
+    composition,
+    volunteers,
+    refits,
+    pilots,
+    supply = EMPTY_SUPPLY,
+    readonly = false,
+    can_manage = false,
+    doctrine_name = null,
+} = Astro.props
+
+// Capitals are listed last regardless of doctrine role: most pilots can skip them.
+const subcapitals = composition.filter(entry => !is_capital_entry(entry))
+const capitals = composition.filter(is_capital_entry)
+
+const groups = [
+    { key: 'primary', title: t('primary_ships'), entries: subcapitals.filter(e => e.role === 'primary') },
+    { key: 'secondary', title: t('secondary_ships'), entries: subcapitals.filter(e => e.role === 'secondary') },
+    { key: 'support', title: t('support_ships'), entries: subcapitals.filter(e => e.role === 'support') },
+    { key: 'capital', title: t('capital_ships'), entries: capitals },
+].filter(group => group.entries.length > 0)
+
+import { query_string } from '@helpers/string'
+const ADD_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_component/')}?${query_string({
+    fleet_id: fleet_id,
+})}`
+const PICK_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
+    fleet_id: fleet_id,
+    ...(can_manage && { can_manage: true }),
+})}`
+const my_character_ids = new Set(pilots.map(pilot => pilot.character_id))
+const my_volunteers = volunteers.filter(volunteer => my_character_ids.has(volunteer.character_id))
+
+const covered = composition.filter(entry => volunteers_for(entry, volunteers).length > 0).length
+const out_of_stock = composition.filter(entry => {
+    const row = supply_for(entry, supply)
+    if (!row || (row.contracts === null && row.market_fits === null)) return false
+    return (row.contracts ?? 0) === 0 && (row.market_fits ?? 0) === 0
+}).length
+
+const summary_parts = [
+    doctrine_name,
+    t('fleet_ships_count').replace('{count}', composition.length.toString()),
+    covered > 0 ? t('fleet_ships_covered').replace('{covered}', covered.toString()) : null,
+    out_of_stock > 0 ? t('fleet_ships_short_supply').replace('{count}', out_of_stock.toString()) : null,
+].filter(Boolean)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+import FleetShipRow from '@components/blocks/FleetShipRow.astro'
+import Button from '@components/blocks/Button.astro'
+import AddIcon from '@components/icons/buttons/AddIcon.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+---
+
+<section id="fleet-ships" aria-labelledby="fleet-ships-title">
+    <Flexblock gap='var(--space-m)'>
+        <FlexInline justification='space-between' gap='var(--space-s)' class="[ items-start ]">
+            <Flexblock gap="var(--space-3xs)">
+                <h2 id="fleet-ships-title">{t('fleet_ships')}</h2>
+                {composition.length > 0 ?
+                    <small class="!mt-[var(--space-3xs)]">{summary_parts.join(' · ')}</small>
+                    :
+                    <small class="!mt-[var(--space-3xs)]">{can_manage ? (doctrine_name ? t('fleet_ships_empty_doctrine') : t('fleet_ships_empty_fc')) : t('fleet_ships_empty')}</small>
+                }
+            </Flexblock>
+
+            <FlexInline gap='var(--space-2xs)'>
+                {can_manage && !readonly && !doctrine_name &&
+                    <Button
+                        size='sm'
+                        type="button"
+                        x-on:click={`show_modal({ partial: '${ADD_SHIPS_MODAL_URL}' })`}
+                    >
+                        <CogIcon slot="icon" />
+                        {t('manage_doctrine')}
+                    </Button>
+                }
+                {!readonly && composition.length > 0 && pilots.length > 0 &&
+                    <Button
+                        size='sm'
+                        type="button"
+                        color='green'
+                        x-on:click={`show_modal({ partial: '${PICK_SHIPS_MODAL_URL}' })`}
+                    >
+                        <AddIcon slot="icon" />
+                        {my_volunteers.length > 0 ? t('volunteer_my_ships_edit') : t('volunteer_my_ships')}
+                    </Button>
+                }
+            </FlexInline>
+        </FlexInline>
+
+        {groups.map(group =>
+            <Flexblock gap='var(--space-2xs)'>
+                <h3 class="[ fleet-ships__group ]">{group.title}</h3>
+                <BlockList gap='var(--space-3xs)' role="list">
+                    {group.entries.map(entry =>
+                        <FleetShipRow
+                            id={ship_row_id(entry)}
+                            fleet_id={fleet_id}
+                            entry={entry}
+                            volunteers={volunteers_for(entry, volunteers)}
+                            refits={refits_for(entry, refits)}
+                            supply={supply_for(entry, supply)}
+                            pilots={pilots}
+                            readonly={readonly}
+                            can_manage={can_manage}
+                        />
+                    )}
+                </BlockList>
+            </Flexblock>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .fleet-ships__group {
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        opacity: 0.85;
+    }
+</style>

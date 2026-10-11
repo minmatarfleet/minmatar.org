@@ -1,5 +1,6 @@
 ---
 import type { SkillsUI } from '@dtypes/layout_components'
+import { SKILL_LEVEL_ROMAN } from '@helpers/skill_plan'
 
 interface Props {
     skill:              SkillsUI;
@@ -16,13 +17,6 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import SkillSquare from '@components/blocks/SkillSquare.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-const SKILL_NUMBER = {
-    1: 'I',
-    2: 'II',
-    3: 'III',
-    4: 'IV',
-    5: 'V',
-}
 const PIXEL_GAP = 1
 const SKILL_SQUARE_WIDTH = 10
 ---
@@ -46,7 +40,7 @@ const SKILL_SQUARE_WIDTH = 10
             <SkillSquare status={ current_skill_level > 5 ? 'learned' : 'unlearned' } />
         }
     </FlexInline>
-    <span>{skill.skill_name} {SKILL_NUMBER[skill.skill_level]}</span>
+    <span>{skill.skill_name} {SKILL_LEVEL_ROMAN[skill.skill_level]}</span>
 </FixedFluid>
 
 <style lang="scss">
