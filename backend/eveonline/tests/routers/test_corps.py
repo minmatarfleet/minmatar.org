@@ -614,6 +614,17 @@ class CorporationRouterTestCase(TestCase):
             created_at=now - timedelta(days=10),
             updated_at=now - timedelta(days=6),
         )
+        # Accepted outside the 30-day window: must not skew the average.
+        stale = EveCorporationApplication.objects.create(
+            corporation_id=corp.corporation_id,
+            user=self.user,
+            description="Stale",
+            status="accepted",
+        )
+        EveCorporationApplication.objects.filter(pk=stale.pk).update(
+            created_at=now - timedelta(days=400),
+            updated_at=now - timedelta(days=40),
+        )
         applicant = User.objects.create(username="applicant")
         main = EveCharacter.objects.create(
             character_id=51001,

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from django.contrib.auth.models import User
+from datetime import timedelta
+
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -12,6 +14,7 @@ from eveonline.models import EveCharacterSkill, EveCorporation, EvePlayer
 from groups.helpers.feature_access import can_use_feature
 
 DAYS_PER_MONTH = 30.4375
+ACCEPTANCE_WINDOW_DAYS = 30
 
 
 def can_review_applications(user: User, corporation: EveCorporation) -> bool:
@@ -94,7 +97,14 @@ def _per_month(applications) -> float | None:
 
 
 def _acceptance_days(applications) -> float | None:
-    accepted = applications.filter(status="accepted")
+    """Mean days from application to acceptance, over applications
+    accepted in the last ``ACCEPTANCE_WINDOW_DAYS`` days.
+
+    ``updated_at`` is the acceptance timestamp only for recent rows; older
+    rows were bulk re-saved and would skew a lifetime average.
+    """
+    cutoff = timezone.now() - timedelta(days=ACCEPTANCE_WINDOW_DAYS)
+    accepted = applications.filter(status="accepted", updated_at__gte=cutoff)
     spans = []
     for created_at, updated_at in accepted.values_list(
         "created_at", "updated_at"

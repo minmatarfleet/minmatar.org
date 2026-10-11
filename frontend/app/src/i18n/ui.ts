@@ -1770,7 +1770,7 @@ export const ui = {
         'corporations.detail.application_process': 'Apply',
         'corporations.detail.outstanding': 'Outstanding',
         'corporations.detail.applications_per_month': 'Per month',
-        'corporations.detail.acceptance_time': 'Acceptance time',
+        'corporations.detail.acceptance_time': 'Acceptance time (30d)',
         'corporations.detail.acceptance_days': 'COUNT days',
         'corporations.detail.when_online': 'When people are online',
         'corporations.detail.how_we_fly': 'How we fly',
