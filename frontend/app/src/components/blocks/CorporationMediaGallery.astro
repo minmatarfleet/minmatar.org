@@ -1,0 +1,44 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationMediaItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    media: CorporationMediaItem[]
+}
+
+const { media } = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import YTVideoWidget from '@components/blocks/YTVideoWidget.astro'
+
+function propaganda_href(post_id: number) {
+    return translatePath(`/alliance/propaganda/${post_id}`)
+}
+---
+
+{media.length > 0 &&
+    <Flexblock gap="var(--space-s)">
+        <h2>{t('corporations.detail.media')}</h2>
+        <Grid min_item_width="18rem">
+            {media.map((item) => (
+                <Flexblock gap="var(--space-2xs)">
+                    {item.kind === 'youtube' && item.youtube_id &&
+                        <YTVideoWidget videoid={item.youtube_id} videotitle={item.caption || item.youtube_id} />
+                    }
+                    {item.kind === 'image' && item.url &&
+                        <img src={item.url} alt={item.caption || ''} />
+                    }
+                    {item.kind === 'propaganda_post' && item.post_id &&
+                        <a href={propaganda_href(item.post_id)}>{item.caption || t('corporations.detail.media')}</a>
+                    }
+                    {item.caption && item.kind !== 'propaganda_post' &&
+                        <small>{item.caption}</small>
+                    }
+                </Flexblock>
+            ))}
+        </Grid>
+    </Flexblock>
+}

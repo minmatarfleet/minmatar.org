@@ -5,7 +5,13 @@ from ninja import Router
 
 from app.errors import ErrorResponse
 from eveonline.endpoints.corporations.schemas import CorporationInfoResponse
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.helpers.corporations.profile import (
+    load_corporation,
+    public_profile,
+    split_requirements,
+    split_timezones,
+)
+from eveonline.models import EveAlliance
 
 router = Router(tags=["Corporations"])
 
@@ -13,34 +19,23 @@ router = Router(tags=["Corporations"])
 @router.get(
     "corporations/{corporation_id}/info",
     response={200: CorporationInfoResponse, 404: ErrorResponse},
-    summary="Get a corporation's info",
+    summary="Get a corporation's public profile",
 )
 def get_corporation_info(request, corporation_id: int):
-    if not EveCorporation.objects.filter(
-        corporation_id=corporation_id
-    ).exists():
+    corporation = load_corporation(corporation_id)
+    if corporation is None:
         return 404, {"detail": "Corporation not found"}
-    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     response = {
         "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
         "introduction": corporation.introduction,
         "biography": corporation.biography,
-        "executor_notes": corporation.executor_notes,
-        "timezones": (
-            corporation.timezones.strip().split(",")
-            if corporation.timezones
-            else []
-        ),
-        "requirements": (
-            corporation.requirements.strip().split("\n")
-            if corporation.requirements
-            else []
-        ),
+        "timezones": split_timezones(corporation.timezones),
+        "requirements": split_requirements(corporation.requirements),
         "type": corporation.type,
         "active": corporation.active,
         "trial": corporation.trial,
-        "members": [],
+        **public_profile(corporation),
     }
     if (
         corporation.alliance

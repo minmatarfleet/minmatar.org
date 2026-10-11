@@ -24,6 +24,8 @@ const {
     mirror_slide = false,
 } = Astro.props
 
+// The heading links to this slide within the slider (Swiper hash navigation);
+// "Learn more" is the way into the corporation's own page.
 const current_page = `${Astro.url.pathname}${Astro.url.search}`
 const slide_url = translatePath(`${current_page}#${corporation.corporation_name.replaceAll(' ', '_')}`)
 
