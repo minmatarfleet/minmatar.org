@@ -271,6 +271,7 @@ export interface CorporationSummarySlice {
 export interface CorporationApplicationProcess {
     outstanding: number;
     applications_per_month?: number | null;
+    /** Mean days to acceptance over applications accepted in the last 30 days. */
     acceptance_days?: number | null;
     average_skill_points?: number | null;
 }
