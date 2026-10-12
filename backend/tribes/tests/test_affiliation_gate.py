@@ -212,3 +212,34 @@ class TribeGroupAffiliationGateTestCase(TestCase):
         self.assertEqual(
             open_membership.status, TribeGroupMembership.STATUS_PENDING
         )
+
+    def test_deleting_affiliation_inactivates_ineligible_membership(self):
+        membership = TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.alliance_only,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        UserAffiliation.objects.filter(user=self.user).delete()
+        membership.refresh_from_db()
+        self.assertEqual(
+            membership.status, TribeGroupMembership.STATUS_INACTIVE
+        )
+
+    def test_user_delete_with_open_membership_removes_history(self):
+        """Deleting a user removes membership history with the membership."""
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.alliance_only,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        user_id = self.user.id
+        self.user.delete()
+        self.assertFalse(User.objects.filter(id=user_id).exists())
+        self.assertFalse(
+            TribeGroupMembership.objects.filter(user_id=user_id).exists()
+        )
+        self.assertFalse(
+            TribeGroupMembershipHistory.objects.filter(
+                membership__user_id=user_id
+            ).exists()
+        )
