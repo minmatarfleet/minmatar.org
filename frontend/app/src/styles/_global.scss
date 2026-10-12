@@ -443,3 +443,7 @@ hr {
     border: none;
     border-bottom: solid 1px var(--border-color) !important;
 }
+
+.green-glow {
+    filter: drop-shadow(0px 0px 5px var(--green));
+}
