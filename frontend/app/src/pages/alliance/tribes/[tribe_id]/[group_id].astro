@@ -157,6 +157,43 @@ const breadcrumbs = [
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 
+type TribeGroupTab = 'about' | 'requirements' | 'guides' | 'activity' | 'members' | 'propaganda'
+
+function tribe_tab_label(tab: TribeGroupTab) {
+    switch (tab) {
+        case 'about':
+            return t('tribes.detail.tab.about')
+        case 'requirements':
+            return t('tribes.detail.tab.requirements')
+        case 'guides':
+            return t('tribes.detail.tab.guides')
+        case 'activity':
+            return t('tribes.detail.tab.activity')
+        case 'members':
+            return t('tribes.detail.tab.members')
+        case 'propaganda':
+            return t('tribes.detail.tab.propaganda')
+        default: {
+            const unexpected: never = tab
+            return unexpected
+        }
+    }
+}
+
+const tribe_tab_ids: TribeGroupTab[] = [
+    ...(about_markdown ? ['about' as const] : []),
+    'requirements',
+    ...(guides.length > 0 ? ['guides' as const] : []),
+    ...(activity ? ['activity' as const] : []),
+    'members',
+    ...(posts.length > 0 ? ['propaganda' as const] : []),
+]
+const tribe_tabs = tribe_tab_ids.map((id) => ({
+    id,
+    label: tribe_tab_label(id),
+}))
+const default_tribe_tab = tribe_tabs[0]?.id
+
 import Viewport from '@layouts/Viewport.astro'
 
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
@@ -184,6 +221,8 @@ import GuidePostCard from '@components/blocks/GuidePostCard.astro'
 import PropagandaPostCard from '@components/blocks/PropagandaPostCard.astro'
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
 <Viewport
@@ -259,151 +298,165 @@ import Button from '@components/blocks/Button.astro'
                 />
                 :
                 tribe_group &&
-                    <Flexblock gap="var(--space-2xl)" id="tribe-group-hub">
-                        <div class="[ tribe-group-req-guides ]">
+                    <div id="tribe-group-hub">
+                        <SectionTabs
+                            aria_label={t('tribes.detail.tabs_label')}
+                            id_prefix="tribe-group"
+                            tabs={tribe_tabs}
+                        >
                             {about_markdown &&
-                                <TextBox max_width="100%" class="[ tribe-group-about ]">
-                                    <Markdown markdown={about_markdown} />
-                                </TextBox>
+                                <SectionTabPanel id="about" id_prefix="tribe-group" is_default={default_tribe_tab === 'about'}>
+                                    <TextBox max_width="100%">
+                                        <Markdown markdown={about_markdown} />
+                                    </TextBox>
+                                </SectionTabPanel>
                             }
 
-                            <Flexblock gap="var(--space-m)" class="[ tribe-group-requirements ]">
-                            <Flexblock gap="var(--space-3xs)">
-                                <h2>{t('tribes.detail.requirements')}</h2>
-                                {tribe_group.requirements.length > 1 &&
-                                    <small>
-                                        {t('tribal_group_requirement_text').replace(
-                                            '{count}',
-                                            String(tribe_group.requirements.length),
-                                        )}
-                                    </small>
-                                }
-                            </Flexblock>
+                            <SectionTabPanel id="requirements" id_prefix="tribe-group" is_default={default_tribe_tab === 'requirements'}>
+                                <Flexblock gap="var(--space-m)" class="[ tribe-group-requirements ]">
+                                    <Flexblock gap="var(--space-3xs)">
+                                        <h2>{t('tribes.detail.requirements')}</h2>
+                                        {tribe_group.requirements.length > 1 &&
+                                            <small>
+                                                {t('tribal_group_requirement_text').replace(
+                                                    '{count}',
+                                                    String(tribe_group.requirements.length),
+                                                )}
+                                            </small>
+                                        }
+                                    </Flexblock>
 
-                            {has_qualification_requirements ?
-                                <Wrapper
-                                    class="[ requirements-reel ]"
-                                    padding_block="0"
-                                    padding_inline="0"
-                                    max_width="100%"
-                                >
-                                    <div id="tribe-group-requirements-reel" class="[ swiper ][ w-full ]">
-                                        <RequirementSwiper
-                                            swiper_selector="#tribe-group-requirements-reel"
-                                            pagination={false}
-                                            gap={60}
-                                            slides_per_view={1}
+                                    {has_qualification_requirements ?
+                                        <Wrapper
+                                            class="[ requirements-reel ]"
+                                            padding_block="0"
+                                            padding_inline="0"
+                                            max_width="100%"
                                         >
-                                            {tribe_group.requirements.map((req, index) =>
-                                                <div class="[ swiper-slide ]">
-                                                    {tribe_group.requirements.length > 1 &&
-                                                        <NotificationBadge
-                                                            class="[ requirement-number ]"
-                                                            number={index + 1}
-                                                            color="fleet-yellow"
-                                                            text_color="var(--background)"
-                                                        />
-                                                    }
-                                                    <TribalGroupRequirements
-                                                        requirement={req}
-                                                        init_tooltips={false}
-                                                    />
-                                                </div>
-                                            )}
-                                        </RequirementSwiper>
-                                    </div>
-                                    {tribe_group.requirements.length > 1 &&
-                                        <>
-                                            <div id="tribe-group-requirements-reel-button-prev" class="[ swiper-button-prev ]"></div>
-                                            <div id="tribe-group-requirements-reel-button-next" class="[ swiper-button-next ]"></div>
-                                        </>
+                                            <div id="tribe-group-requirements-reel" class="[ swiper ][ w-full ]">
+                                                <RequirementSwiper
+                                                    swiper_selector="#tribe-group-requirements-reel"
+                                                    pagination={false}
+                                                    gap={60}
+                                                    slides_per_view={1}
+                                                >
+                                                    {tribe_group.requirements.map((req, index) =>
+                                                        <div class="[ swiper-slide ]">
+                                                            {tribe_group.requirements.length > 1 &&
+                                                                <NotificationBadge
+                                                                    class="[ requirement-number ]"
+                                                                    number={index + 1}
+                                                                    color="fleet-yellow"
+                                                                    text_color="var(--background)"
+                                                                />
+                                                            }
+                                                            <TribalGroupRequirements
+                                                                requirement={req}
+                                                                init_tooltips={false}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </RequirementSwiper>
+                                            </div>
+                                            {tribe_group.requirements.length > 1 &&
+                                                <>
+                                                    <div id="tribe-group-requirements-reel-button-prev" class="[ swiper-button-prev ]"></div>
+                                                    <div id="tribe-group-requirements-reel-button-next" class="[ swiper-button-next ]"></div>
+                                                </>
+                                            }
+                                        </Wrapper>
+                                        :
+                                        !has_any_requirements &&
+                                            <p>{t('tribes.detail.no_requirements')}</p>
                                     }
-                                </Wrapper>
-                                :
-                                !has_any_requirements &&
-                                    <p>{t('tribes.detail.no_requirements')}</p>
+
+                                    <TribeGroupMembershipRequirements
+                                        require_off_trial={Boolean(tribe_group.require_off_trial)}
+                                        allowed_affiliations={tribe_group.allowed_affiliations ?? []}
+                                        show_top_separator={has_qualification_requirements}
+                                    />
+
+                                    <TribeGroupTokenRequirement
+                                        required_token_type={tribe_group.required_token_type}
+                                    />
+
+                                    <TribeGroupApplyHint
+                                        group={tribe_group}
+                                        tribe_id={tribe_id}
+                                        group_id={group_id}
+                                        is_auth={is_auth}
+                                        is_leader={is_leader}
+                                        user_on_trial={user_on_trial}
+                                        user_characters={user_characters}
+                                        available_characters={available_characters}
+                                        membership_by_group={membership_by_group}
+                                    />
+                                </Flexblock>
+                            </SectionTabPanel>
+
+                            {guides.length > 0 &&
+                                <SectionTabPanel id="guides" id_prefix="tribe-group" is_default={default_tribe_tab === 'guides'}>
+                                    <Flexblock gap="var(--space-m)">
+                                        <h2>{t('content.guides.section_title')}</h2>
+                                        <Wrapper padding_block="0" padding_inline="0" max_width="100%">
+                                            <div id="tribe-group-guides-swiper" class="[ swiper ][ w-full ]">
+                                                <LandingSwiper
+                                                    swiper_selector="#tribe-group-guides-swiper"
+                                                    align="start"
+                                                    gap={10}
+                                                    pagination={false}
+                                                >
+                                                    {guides.map((guide) => (
+                                                        <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
+                                                            <GuidePostCard guide={guide} />
+                                                        </div>
+                                                    ))}
+                                                </LandingSwiper>
+                                            </div>
+                                        </Wrapper>
+                                    </Flexblock>
+                                </SectionTabPanel>
                             }
 
-                            <TribeGroupMembershipRequirements
-                                require_off_trial={Boolean(tribe_group.require_off_trial)}
-                                allowed_affiliations={tribe_group.allowed_affiliations ?? []}
-                                show_top_separator={has_qualification_requirements}
-                            />
+                            {activity &&
+                                <SectionTabPanel id="activity" id_prefix="tribe-group" is_default={default_tribe_tab === 'activity'}>
+                                    <TribeGroupActivity
+                                        activity={activity}
+                                        showcase={showcase}
+                                    />
+                                </SectionTabPanel>
+                            }
 
-                            <TribeGroupTokenRequirement
-                                required_token_type={tribe_group.required_token_type}
-                            />
+                            <SectionTabPanel id="members" id_prefix="tribe-group" is_default={default_tribe_tab === 'members'}>
+                                <TribeGroupMembersGallery
+                                    roster={roster}
+                                    member_count={tribe_group.member_count}
+                                    is_alliance_member={can_see_roster}
+                                    is_auth={is_auth}
+                                    roster_redacted={roster_hidden && !can_see_roster}
+                                />
+                            </SectionTabPanel>
 
-                            <TribeGroupApplyHint
-                                group={tribe_group}
-                                tribe_id={tribe_id}
-                                group_id={group_id}
-                                is_auth={is_auth}
-                                is_leader={is_leader}
-                                user_on_trial={user_on_trial}
-                                user_characters={user_characters}
-                                available_characters={available_characters}
-                                membership_by_group={membership_by_group}
-                            />
-                        </Flexblock>
-
-                        {guides.length > 0 &&
-                            <Flexblock gap="var(--space-m)" class="[ tribe-group-guides ]">
-                                <h2>{t('content.guides.section_title')}</h2>
-                                <Wrapper padding_block="0" padding_inline="0" max_width="100%">
-                                    <div id="tribe-group-guides-swiper" class="[ swiper ][ w-full ]">
-                                        <LandingSwiper
-                                            swiper_selector="#tribe-group-guides-swiper"
-                                            align="start"
-                                            gap={10}
-                                            pagination={false}
-                                        >
-                                            {guides.map((guide) => (
-                                                <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
-                                                    <GuidePostCard guide={guide} />
-                                                </div>
-                                            ))}
-                                        </LandingSwiper>
-                                    </div>
-                                </Wrapper>
-                            </Flexblock>
-                        }
-                        </div>
-
-                        {activity &&
-                            <TribeGroupActivity
-                                activity={activity}
-                                showcase={showcase}
-                            />
-                        }
-
-                        <TribeGroupMembersGallery
-                            roster={roster}
-                            member_count={tribe_group.member_count}
-                            is_alliance_member={can_see_roster}
-                            is_auth={is_auth}
-                            roster_redacted={roster_hidden && !can_see_roster}
-                        />
-
-                        {posts.length > 0 &&
-                            <section>
-                                <Flexblock gap="var(--space-l)">
-                                    <h2>{t('content.propaganda.section_title')}</h2>
-                                    <Wrapper padding_block="0" padding_inline="0" max_width="100%">
-                                        <div id="tribe-group-posts-swiper" class="[ swiper ][ w-full pb-10! ]">
-                                            <LandingSwiper swiper_selector="#tribe-group-posts-swiper" align="end" gap={10}>
-                                                {posts.map((post) => (
-                                                    <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
-                                                        <PropagandaPostCard post={post} is_editing={false} />
-                                                    </div>
-                                                ))}
-                                            </LandingSwiper>
-                                        </div>
-                                    </Wrapper>
-                                </Flexblock>
-                            </section>
-                        }
-                    </Flexblock>
+                            {posts.length > 0 &&
+                                <SectionTabPanel id="propaganda" id_prefix="tribe-group" is_default={default_tribe_tab === 'propaganda'}>
+                                    <Flexblock gap="var(--space-l)">
+                                        <h2>{t('content.propaganda.section_title')}</h2>
+                                        <Wrapper padding_block="0" padding_inline="0" max_width="100%">
+                                            <div id="tribe-group-posts-swiper" class="[ swiper ][ w-full pb-10! ]">
+                                                <LandingSwiper swiper_selector="#tribe-group-posts-swiper" align="end" gap={10}>
+                                                    {posts.map((post) => (
+                                                        <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
+                                                            <PropagandaPostCard post={post} is_editing={false} />
+                                                        </div>
+                                                    ))}
+                                                </LandingSwiper>
+                                            </div>
+                                        </Wrapper>
+                                    </Flexblock>
+                                </SectionTabPanel>
+                            }
+                        </SectionTabs>
+                    </div>
             }
         </Flexblock>
     </PageLanding>
@@ -444,70 +497,7 @@ import Button from '@components/blocks/Button.astro'
         }
     }
 
-    .tribe-group-req-guides {
-        display: grid;
-        width: 100%;
-        min-width: 0;
-        row-gap: var(--space-m);
-        column-gap: var(--space-xl);
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "req";
-        align-items: start;
-
-        &:has(.tribe-group-about):not(:has(.tribe-group-guides)) {
-            grid-template-areas:
-                "about"
-                "req";
-        }
-
-        &:not(:has(.tribe-group-about)):has(.tribe-group-guides) {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            grid-template-areas: "req guides";
-        }
-
-        &:has(.tribe-group-about):has(.tribe-group-guides) {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            grid-template-areas:
-                "about about"
-                "req guides";
-        }
-
-        @media (max-width: 48rem) {
-            &:has(.tribe-group-guides) {
-                grid-template-columns: minmax(0, 1fr);
-                grid-template-areas:
-                    "req"
-                    "guides";
-            }
-
-            &:has(.tribe-group-about):has(.tribe-group-guides) {
-                grid-template-areas:
-                    "about"
-                    "req"
-                    "guides";
-            }
-
-            &:has(.tribe-group-about):not(:has(.tribe-group-guides)) {
-                grid-template-areas:
-                    "about"
-                    "req";
-            }
-        }
-    }
-
-    .tribe-group-about {
-        grid-area: about;
-        min-width: 0;
-    }
-
     .tribe-group-requirements {
-        grid-area: req;
-        width: 100%;
-        min-width: 0;
-    }
-
-    .tribe-group-guides {
-        grid-area: guides;
         width: 100%;
         min-width: 0;
     }

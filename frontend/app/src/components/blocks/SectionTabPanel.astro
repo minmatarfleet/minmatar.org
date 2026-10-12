@@ -1,0 +1,40 @@
+---
+interface Props {
+    id: string
+    id_prefix: string
+    is_default?: boolean
+    [propName: string]: any
+}
+
+const {
+    id,
+    id_prefix,
+    is_default = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<section
+    {...attributes}
+    id={`${id_prefix}-panel-${id}`}
+    role="tabpanel"
+    aria-labelledby={`${id_prefix}-tab-${id}`}
+    class:list={['[ section-tabs-panel ]', Astro.props.class]}
+    x-ref={`panel-${id}`}
+    x-bind:hidden={`tab !== ${JSON.stringify(id)}`}
+    hidden={!is_default}
+>
+    <slot />
+</section>
+
+<style lang="scss">
+    .section-tabs-panel {
+        min-width: 0;
+    }
+
+    .section-tabs-panel[hidden] {
+        display: none;
+    }
+</style>
