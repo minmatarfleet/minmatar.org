@@ -21,8 +21,8 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 
 <FixedFluid class="[ buyback-badge ][ items-center! w-full ]" width='10px' gap='var(--space-2xs)'>
     {item.in_demand ?
-        <span class="[ text-green ]">▲</span> :
-        <span class="[ text-red ]">▼</span>
+        <span class="[ text-green green-glow ]">▲</span> :
+        <span class="[ text-muted ]">▼</span>
     }
     <FlexInline>
         <ItemBadge
