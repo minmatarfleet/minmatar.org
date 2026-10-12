@@ -1,5 +1,6 @@
 ---
 import { corporation_path } from '@helpers/corporations/detail'
+import { open_application_elsewhere_message } from '@helpers/corporations/open_application'
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -34,11 +35,19 @@ let reapplication_date = new Date(corporation?.application_updated as Date)
 reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
 const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
 const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
+const open_elsewhere = corporation?.open_application_corporation_name
+    ? open_application_elsewhere_message(
+        t('open_application_elsewhere'),
+        corporation.open_application_corporation_name,
+    )
+    : null
 
 // Why the apply button is unavailable, when it is shown disabled instead of hidden.
 const unavailable_reason = is_user_corporation
     ? t('joined_corporation_tooltip')
-    : corporation?.status === 'pending'
+    : open_elsewhere
+        ? open_elsewhere
+        : corporation?.status === 'pending'
         ? t('pending_application_tooltip')
         : corporation?.status === 'accepted' && !is_acceptance_period_passed
             ? t('application_accepted_tooltip')
@@ -86,9 +95,11 @@ import Markdown from '@components/blocks/Markdown.astro';
                 {t('enlist_today')}
             </ButtonAddPrimary>
         :
-        (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
-        (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
-        (is_re_applicable && corporation?.status === 'rejected') ?
+        !open_elsewhere && (
+            (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
+            (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
+            (is_re_applicable && corporation?.status === 'rejected')
+        ) ?
             <ButtonCorpApply corporation={corporation} />
         :
         corporation?.status == 'unauth' ?
@@ -120,7 +131,10 @@ import Markdown from '@components/blocks/Markdown.astro';
         }
     </FlexInline>
 
-    {show_unavailable && is_user_corporation ?
+    {!is_user_corporation && open_elsewhere ?
+            <small class="[ status-text ]">{open_elsewhere}</small>
+        :
+        show_unavailable && is_user_corporation ?
             <small class="[ status-text ]">{t('joined_corporation_tooltip')}</small>
         :
         !is_user_corporation && corporation?.status === 'accepted' && !is_acceptance_period_passed ?

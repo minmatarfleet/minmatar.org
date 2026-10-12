@@ -1,5 +1,9 @@
-import type { CorporationApplication, CorporationApplicationDetails } from '@dtypes/api.minmatar.org'
-import { get_error_message } from '@helpers/string'
+import type {
+    CorporationApplication,
+    CorporationApplicationDetails,
+    OpenCorporationApplication,
+} from '@dtypes/api.minmatar.org'
+import { get_error_message, parse_response_error } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/applications/corporations`
 
@@ -59,9 +63,9 @@ export async function create_corporation_application(access_token:string, corpor
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST: ${ENDPOINT}`
+            throw new Error(await parse_response_error(
+                response,
+                `POST ${ENDPOINT}`
             ), {
                 cause: response.status
             });
@@ -69,7 +73,46 @@ export async function create_corporation_application(access_token:string, corpor
 
         return await response.json() as CorporationApplication;
     } catch (error) {
-        throw new Error(`Error creating corporation application: ${error.message}`, { cause: error.cause });
+        if (error instanceof Error && typeof error.cause === 'number')
+            throw error
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`Error creating corporation application: ${message}`);
+    }
+}
+
+export async function get_my_open_application(access_token: string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${import.meta.env.API_URL}/api/applications/me/open`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (response.status === 204)
+            return null
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            });
+        }
+
+        return await response.json() as OpenCorporationApplication;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`Error fetching open corporation application: ${message}`, {
+            cause: error instanceof Error ? error.cause : undefined,
+        });
     }
 }
 

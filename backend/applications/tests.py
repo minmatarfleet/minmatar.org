@@ -84,6 +84,135 @@ class EveCorporationApplicationTestCase(TestCase):
             ],
         )
 
+    def test_create_corporation_application_blocked_while_one_is_open(self):
+        first_corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="First Corporation",
+        )
+        second_corporation = EveCorporation.objects.create(
+            corporation_id=456,
+            name="Second Corporation",
+        )
+        EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=first_corporation.corporation_id,
+            description="Already waiting",
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{second_corporation.corporation_id}/applications",
+            data={"description": "I want this one too."},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["detail"],
+            "You already have an open application to First Corporation. "
+            "Wait for a decision before applying again.",
+        )
+        self.assertEqual(
+            EveCorporationApplication.objects.filter(user=self.user).count(),
+            1,
+        )
+
+    def test_create_corporation_application_allowed_after_decision(self):
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        decided = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="Earlier application",
+            status="rejected",
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            data={"description": "Trying again."},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            EveCorporationApplication.objects.filter(user=self.user).count(),
+            2,
+        )
+        self.assertEqual(decided.status, "rejected")
+
+    def test_create_corporation_application_ignores_another_users_open_application(
+        self,
+    ):
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        other = User.objects.create(username="someone-else")
+        EveCorporationApplication.objects.create(
+            user=other,
+            corporation_id=corporation.corporation_id,
+            description="Not mine",
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            data={"description": "My application."},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_my_open_application(self):
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="Waiting",
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}me/open",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "application_id": application.id,
+                "corporation_id": corporation.corporation_id,
+                "corporation_name": corporation.name,
+                "status": "pending",
+            },
+        )
+
+    def test_get_my_open_application_when_none_is_open(self):
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="Already decided",
+            status="accepted",
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}me/open",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+
     def test_accept_corporation_application_success(self):
         corporation = EveCorporation.objects.create(
             corporation_id=123, name="Test Corporation"

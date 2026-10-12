@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { open_application_elsewhere_message } from '@helpers/corporations/open_application'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Alert, CorporationObject } from '@dtypes/layout_components'
@@ -23,6 +24,12 @@ const primary_character_id = primary_character ? parseInt(primary_character.char
 
 import { query_string } from '@helpers/string';
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_request_status_item/')
+const open_elsewhere = corporation?.open_application_corporation_name
+    ? open_application_elsewhere_message(
+        t('open_application_elsewhere'),
+        corporation.open_application_corporation_name,
+    )
+    : null
 
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 import Button from '@components/blocks/Button.astro';
@@ -79,6 +86,14 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                     >
                         {t('enlist_today')}
                     </ButtonAddPrimary>
+                :
+                (open_elsewhere && corporation?.status == 'available' && primary_character_id) ?
+                    <Tag
+                        data-tippy-content={open_elsewhere}
+                        x-init="tippy($el, tippy_options)"
+                        color='alliance-blue'
+                        text={t('application_open')}
+                    />
                 :
                 (corporation?.status == 'available' && primary_character_id) ?
                     <Button

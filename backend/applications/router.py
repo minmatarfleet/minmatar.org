@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
+from django.contrib.auth.models import User
+from django.db import transaction
 from ninja import Router
 from pydantic import BaseModel
 
@@ -15,7 +17,12 @@ from .l3arn import (
     validate_application_description,
     validate_l3arn_application_description,
 )
-from .models import EveCorporationApplication
+from .models import (
+    EveCorporationApplication,
+    corporation_name_for_application,
+    open_application_detail,
+    open_application_for_user,
+)
 from .prime_time import apply_application_prime_time
 from groups.helpers.feature_access import can_use_feature
 
@@ -53,6 +60,31 @@ class TransferCorporationApplicationRequest(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class OpenCorporationApplicationResponse(BaseModel):
+    application_id: int
+    corporation_id: int
+    corporation_name: str
+    status: str
+
+
+@router.get(
+    "/me/open",
+    summary="The caller's open corporation application, if any",
+    auth=AuthBearer(),
+    response={200: OpenCorporationApplicationResponse, 204: None},
+)
+def get_my_open_corporation_application(request):
+    application = open_application_for_user(request.user)
+    if application is None:
+        return 204, None
+    return {
+        "application_id": application.id,
+        "corporation_id": application.corporation_id,
+        "corporation_name": corporation_name_for_application(application),
+        "status": application.status,
+    }
 
 
 @router.get(
@@ -110,12 +142,18 @@ def create_corporation_application(
         if validation_error:
             return 400, {"detail": validation_error}
 
-    application = EveCorporationApplication.objects.create(
-        corporation_id=corporation_id,
-        user_id=request.user.id,
-        description=payload.description,
-    )
-    apply_application_prime_time(request.user, payload.description)
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=request.user.id)
+        existing = open_application_for_user(request.user)
+        if existing:
+            return 400, {"detail": open_application_detail(existing)}
+
+        application = EveCorporationApplication.objects.create(
+            corporation_id=corporation_id,
+            user_id=request.user.id,
+            description=payload.description,
+        )
+        apply_application_prime_time(request.user, payload.description)
 
     logger.info(
         "Application to %s submitted by %s",

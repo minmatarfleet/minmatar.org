@@ -359,6 +359,7 @@ export interface CorporationObject {
     executor_notes?:        string;
     timezones?:             string[];
     requirements?:          string[];
+    open_application_corporation_name?: string;
 }
 
 export interface CorporationBasic {
