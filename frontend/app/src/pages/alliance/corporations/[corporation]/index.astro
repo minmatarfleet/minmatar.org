@@ -22,6 +22,8 @@ import CorporationTimezoneDistribution from '@components/blocks/CorporationTimez
 import CorporationMediaGallery from '@components/blocks/CorporationMediaGallery.astro'
 import CorporationAboutStats from '@components/blocks/CorporationAboutStats.astro'
 import CorporationApplicationProcess from '@components/blocks/CorporationApplicationProcess.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : null
@@ -163,60 +165,13 @@ const breadcrumbs = [
         </Flexblock>
 
         {tabs.length > 0 &&
-            <div
-                class="corp-tabs"
-                x-data={`{
-                    tabs: ${JSON.stringify(tabs)},
-                    tab: '${default_tab}',
-                    init() {
-                        const hash = window.location.hash.replace('#', '')
-                        if (this.tabs.includes(hash)) this.tab = hash
-                    },
-                    select(tab) {
-                        this.tab = tab
-                        history.replaceState(null, '', '#' + tab)
-                        this.$nextTick(() => this.$refs['tab-' + tab]?.focus())
-                    },
-                    step(offset) {
-                        const index = this.tabs.indexOf(this.tab)
-                        this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
-                    },
-                }`}
+            <SectionTabs
+                aria_label={t('corporations.detail.tabs_label')}
+                id_prefix="corporation"
+                tabs={tabs.map((tab) => ({ id: tab, label: tab_label(tab) }))}
             >
-                <div class="corp-tabs-list" role="tablist" aria-label={t('corporations.detail.tabs_label')}>
-                    {tabs.map((tab, index) =>
-                        <button
-                            type="button"
-                            role="tab"
-                            id={`corporation-tab-${tab}`}
-                            class:list={['corp-tab', { 'is-active': index === 0 }]}
-                            aria-controls={`corporation-panel-${tab}`}
-                            aria-selected={index === 0 ? 'true' : 'false'}
-                            tabindex={index === 0 ? 0 : -1}
-                            x-ref={`tab-${tab}`}
-                            x-bind:class={`{ 'is-active': tab === '${tab}' }`}
-                            x-bind:aria-selected={`tab === '${tab}' ? 'true' : 'false'`}
-                            x-bind:tabindex={`tab === '${tab}' ? 0 : -1`}
-                            x-on:click={`select('${tab}')`}
-                            x-on:keydown.arrow-right.prevent="step(1)"
-                            x-on:keydown.arrow-left.prevent="step(-1)"
-                            x-on:keydown.home.prevent="select(tabs[0])"
-                            x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
-                        >
-                            {tab_label(tab)}
-                        </button>
-                    )}
-                </div>
-
                 {has_about &&
-                    <section
-                        id="corporation-panel-about"
-                        role="tabpanel"
-                        aria-labelledby="corporation-tab-about"
-                        class="corp-panel"
-                        x-bind:hidden="tab !== 'about'"
-                        hidden={default_tab !== 'about'}
-                    >
+                    <SectionTabPanel id="about" id_prefix="corporation" is_default={default_tab === 'about'}>
                         <Flexblock gap="var(--space-2xl)">
                             {biography &&
                                 <TextBox max_width="100%">
@@ -241,52 +196,31 @@ const breadcrumbs = [
                             }
                             <CorporationMediaGallery media={corporation.media ?? []} />
                         </Flexblock>
-                    </section>
+                    </SectionTabPanel>
                 }
 
                 {has_activity &&
-                    <section
-                        id="corporation-panel-activity"
-                        role="tabpanel"
-                        aria-labelledby="corporation-tab-activity"
-                        class="corp-panel"
-                        x-bind:hidden="tab !== 'activity'"
-                        hidden={default_tab !== 'activity'}
-                    >
+                    <SectionTabPanel id="activity" id_prefix="corporation" is_default={default_tab === 'activity'}>
                         <Flexblock gap="var(--space-s)">
                             <h2>{t('corporations.detail.how_we_fly')}</h2>
                             <TextBox max_width="100%">
                                 <Markdown markdown={corporation.activity_summary ?? ''} />
                             </TextBox>
                         </Flexblock>
-                    </section>
+                    </SectionTabPanel>
                 }
 
                 {has_leadership &&
-                    <section
-                        id="corporation-panel-leadership"
-                        role="tabpanel"
-                        aria-labelledby="corporation-tab-leadership"
-                        class="corp-panel"
-                        x-bind:hidden="tab !== 'leadership'"
-                        hidden={default_tab !== 'leadership'}
-                    >
+                    <SectionTabPanel id="leadership" id_prefix="corporation" is_default={default_tab === 'leadership'}>
                         <CorporationLeadership
                             leadership={corporation.leadership ?? []}
                             show_heading={false}
                         />
-                    </section>
+                    </SectionTabPanel>
                 }
 
                 {can_view_members &&
-                    <section
-                        id="corporation-panel-members"
-                        role="tabpanel"
-                        aria-labelledby="corporation-tab-members"
-                        class="corp-panel"
-                        x-bind:hidden="tab !== 'members'"
-                        hidden={default_tab !== 'members'}
-                    >
+                    <SectionTabPanel id="members" id_prefix="corporation" is_default={default_tab === 'members'}>
                         <div
                             hx-get={members_partial}
                             hx-trigger="intersect once"
@@ -294,17 +228,10 @@ const breadcrumbs = [
                         >
                             <p class="corp-loading">{t('corporations.detail.loading_members')}</p>
                         </div>
-                    </section>
+                    </SectionTabPanel>
                 }
 
-                <section
-                    id="corporation-panel-apply"
-                    role="tabpanel"
-                    aria-labelledby="corporation-tab-apply"
-                    class="corp-panel"
-                    x-bind:hidden="tab !== 'apply'"
-                    hidden={default_tab !== 'apply'}
-                >
+                <SectionTabPanel id="apply" id_prefix="corporation" is_default={default_tab === 'apply'}>
                     <CorporationApplicationProcess
                         process={corporation.application_process}
                         requirements={requirements}
@@ -312,77 +239,16 @@ const breadcrumbs = [
                         is_user_corporation={is_user_corporation}
                         open_applications={open_applications}
                     />
-                </section>
-            </div>
+                </SectionTabPanel>
+            </SectionTabs>
         }
     </Flexblock>
 </PageLanding>
 </Viewport>
 
 <style lang="scss">
-    .corp-tabs {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-m);
-        width: 100%;
-    }
-
-    .corp-tabs-list {
-        display: flex;
-        gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color-hover);
-    }
-
-    .corp-tab {
-        appearance: none;
-        background: transparent;
-        border: 0;
-        border-bottom: 3px solid transparent;
-        margin-block-end: -1px;
-        padding: var(--space-2xs) var(--space-s);
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-        color: var(--foreground);
-        cursor: pointer;
-
-        &.is-active {
-            color: var(--highlight);
-            border-bottom-color: var(--fleet-red);
-        }
-
-        &:focus-visible {
-            outline: solid 2px var(--fleet-yellow);
-            outline-offset: -2px;
-        }
-    }
-
-    @media (hover: hover) {
-        .corp-tab:hover {
-            color: var(--highlight);
-        }
-    }
-
     .corp-loading {
         margin: 0;
         color: var(--faded);
-    }
-
-    .corp-panel[hidden] {
-        display: none;
-    }
-
-    @media screen and (max-width: 767px) {
-        .corp-tabs-list {
-            gap: 0;
-        }
-
-        .corp-tab {
-            flex: 1 1 0;
-            text-align: center;
-            padding-inline: var(--space-2xs);
-            font-size: var(--step-0);
-        }
     }
 </style>
