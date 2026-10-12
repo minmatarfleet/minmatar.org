@@ -16,7 +16,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 ---
 
-<Flexblock class="[ step ]">
+<Flexblock class="[ step ]" gap='var(--space-xs)'>
     <h3 class="[ text-step-2 ]">{step}</h3>
     <Flexblock gap='var(--space-3xs)'>
         <Markdown markdown={title} inline={true} inline_element='span' />
@@ -26,9 +26,11 @@ import Markdown from '@components/blocks/Markdown.astro';
 
 <style lang="scss">
     .step {
+        --arrow-head-width: var(--space-s);
+
         background-color: var(--component-background);
-        padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-m);
+        padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-l);
         
-        clip-path: polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%);
+        clip-path: polygon(0 0,calc(100% + calc(-1 * var(--arrow-head-width))) 0,100% 50%,calc(100% + calc(-1 * var(--arrow-head-width))) 100%,0 100%,var(--arrow-head-width) 50%);
     }
 </style>
