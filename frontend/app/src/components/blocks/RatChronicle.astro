@@ -2,6 +2,7 @@
 import { ratChronicleChapters } from '@/data/rat-chronicle'
 import RatChronicleChapter from '@components/blocks/RatChronicleChapter.astro'
 import RatChronicleDate from '@components/blocks/RatChronicleDate.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     activeChapterId: string
@@ -9,7 +10,10 @@ interface Props {
 
 const { activeChapterId } = Astro.props
 const chapters = ratChronicleChapters
-const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId) ?? chapters[0]
+const active_index = Math.max(0, chapters.findIndex((chapter) => chapter.id === activeChapterId))
+const active_chapter = chapters[active_index]
+const previous_chapter = chapters[active_index - 1]
+const next_chapter = chapters[active_index + 1]
 ---
 
 <div
@@ -22,6 +26,12 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
                 margin: 24,
                 metaClick: false,
             })
+        },
+        center_active_tab(scroller) {
+            const tab = scroller.querySelector('[aria-current=page]')
+            if (!tab) return
+            const offset = tab.getBoundingClientRect().left - scroller.getBoundingClientRect().left
+            scroller.scrollLeft += offset - (scroller.clientWidth - tab.offsetWidth) / 2
         }
     }`}
     x-init="init_zoom()"
@@ -32,44 +42,71 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
     </header>
 
     <nav class="rat-chronicle__timeline" aria-label="Chapters">
-        <div class="rat-chronicle__track" aria-hidden="true">
-            <span class="rat-chronicle__track-line"></span>
-        </div>
-
-        <ol class="rat-chronicle__tabs">
-            {
-                chapters.map((chapter, index) => (
-                    <li class="rat-chronicle__tab-item">
-                        <a
-                            href={`/alliance/story/${chapter.id}/`}
-                            class:list={[
-                                'rat-chronicle__tab',
-                                { active: chapter.id === activeChapterId },
-                            ]}
-                            aria-current={chapter.id === activeChapterId ? 'page' : undefined}
-                        >
-                            <span class="rat-chronicle__tab-marker" aria-hidden="true"></span>
-                            <span class="rat-chronicle__tab-number">Chapter {chapter.number}</span>
-                            <span class="rat-chronicle__tab-title">{chapter.title}</span>
-                            <RatChronicleDate
-                                class="rat-chronicle__tab-date"
-                                months={chapter.dateRange}
-                                yc={chapter.yc}
-                                realYear={chapter.realYear}
-                            />
-                        </a>
-                        {index < chapters.length - 1 && (
-                            <span class="rat-chronicle__connector" aria-hidden="true"></span>
-                        )}
-                    </li>
-                ))
-            }
-        </ol>
+        <XFadeScroll
+            class="rat-chronicle__scroller"
+            fade_size="var(--space-xl)"
+            x-init="$nextTick(() => center_active_tab($el))"
+        >
+            <ol class="rat-chronicle__tabs">
+                {
+                    chapters.map((chapter, index) => (
+                        <li class="rat-chronicle__tab-item">
+                            <a
+                                href={`/alliance/story/${chapter.id}/`}
+                                class:list={[
+                                    'rat-chronicle__tab',
+                                    { active: chapter.id === activeChapterId },
+                                ]}
+                                aria-current={chapter.id === activeChapterId ? 'page' : undefined}
+                            >
+                                <span class="rat-chronicle__tab-marker" aria-hidden="true"></span>
+                                <span class="rat-chronicle__tab-number">Chapter {chapter.number}</span>
+                                <span class="rat-chronicle__tab-title">{chapter.title}</span>
+                                <RatChronicleDate
+                                    class="rat-chronicle__tab-date"
+                                    months={chapter.dateRange}
+                                    yc={chapter.yc}
+                                    realYear={chapter.realYear}
+                                />
+                            </a>
+                            {index < chapters.length - 1 && (
+                                <span class="rat-chronicle__connector" aria-hidden="true"></span>
+                            )}
+                        </li>
+                    ))
+                }
+            </ol>
+        </XFadeScroll>
     </nav>
 
     <div class="rat-chronicle__content">
         {active_chapter && <RatChronicleChapter chapter={active_chapter} />}
     </div>
+
+    {(previous_chapter || next_chapter) && (
+        <nav class="rat-chronicle__pager" aria-label="Chapter navigation">
+            {previous_chapter && (
+                <a
+                    href={`/alliance/story/${previous_chapter.id}/`}
+                    class="rat-chronicle__pager-link rat-chronicle__pager-link--previous"
+                    rel="prev"
+                >
+                    <span class="rat-chronicle__pager-kicker">← Chapter {previous_chapter.number}</span>
+                    <span class="rat-chronicle__pager-title">{previous_chapter.title}</span>
+                </a>
+            )}
+            {next_chapter && (
+                <a
+                    href={`/alliance/story/${next_chapter.id}/`}
+                    class="rat-chronicle__pager-link rat-chronicle__pager-link--next"
+                    rel="next"
+                >
+                    <span class="rat-chronicle__pager-kicker">Chapter {next_chapter.number} →</span>
+                    <span class="rat-chronicle__pager-title">{next_chapter.title}</span>
+                </a>
+            )}
+        </nav>
+    )}
 </div>
 
 <style lang="scss">
@@ -116,18 +153,40 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
         margin-bottom: var(--space-2xl);
     }
 
-    .rat-chronicle__track {
-        display: none;
+    .rat-chronicle__scroller {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--fleet-yellow) 25%, transparent) transparent;
     }
 
     .rat-chronicle__tabs {
+        --tab-marker-top: calc(var(--space-3xs) + var(--space-m) + 0.275rem);
+        position: relative;
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: stretch;
         gap: 0;
+        width: max-content;
+        min-width: 100%;
         margin: 0;
-        padding: 0;
+        padding: var(--space-3xs) 0 var(--space-xs);
         list-style: none;
+
+        // The track the chapter markers sit on, spanning every tab (not just the visible ones).
+        &::before {
+            content: '';
+            position: absolute;
+            inset-inline: var(--space-l);
+            top: var(--tab-marker-top);
+            height: 1px;
+            pointer-events: none;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 3%,
+                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 97%,
+                transparent
+            );
+        }
     }
 
     .rat-chronicle__tab-item {
@@ -136,11 +195,11 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
 
     .rat-chronicle__tab {
         display: flex;
-        flex: 1 1 14rem;
+        flex: 1 0 auto;
         flex-direction: column;
         align-items: flex-start;
         gap: var(--space-3xs);
-        min-width: 12rem;
+        width: 12.5rem;
         padding: var(--space-m) var(--space-l);
         border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
         border-radius: 0;
@@ -177,6 +236,8 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
     }
 
     .rat-chronicle__tab-marker {
+        position: relative;
+        z-index: 1;
         width: 0.55rem;
         height: 0.55rem;
         margin-bottom: var(--space-2xs);
@@ -212,40 +273,55 @@ const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId
         padding-block: var(--space-m);
     }
 
-    @media (min-width: 48rem) {
-        .rat-chronicle__tabs {
-            flex-wrap: nowrap;
-        }
+    .rat-chronicle__pager {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-s);
+        margin-top: var(--space-xl);
+        padding-top: var(--space-xl);
+        border-top: 1px solid color-mix(in srgb, var(--fleet-yellow) 15%, transparent);
+    }
 
-        .rat-chronicle__tab {
-            flex: 1;
-        }
+    .rat-chronicle__pager-link {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m) var(--space-l);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) 40%, transparent);
+        color: inherit;
+        text-decoration: none;
+        transition:
+            border-color 0.2s ease,
+            background 0.2s ease;
 
-        .rat-chronicle__track {
-            display: block;
-            position: absolute;
-            inset-inline: var(--space-l);
-            top: calc(var(--space-m) + 0.275rem);
-            height: 1px;
-            pointer-events: none;
+        @media (hover: hover) {
+            &:hover {
+                border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+                background: color-mix(in srgb, var(--component-background) 75%, transparent);
+            }
         }
+    }
 
-        .rat-chronicle__track-line {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 15%,
-                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 85%,
-                transparent
-            );
-        }
+    .rat-chronicle__pager-link--next {
+        grid-column: 2;
+        align-items: flex-end;
+        text-align: right;
+    }
 
-        .rat-chronicle__tab-marker {
-            position: relative;
-            z-index: 1;
-        }
+    .rat-chronicle__pager-kicker {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .rat-chronicle__pager-title {
+        font-family: var(--chronicle-font);
+        font-size: var(--step-0);
+        font-weight: 500;
+        line-height: 1.25;
+        color: var(--highlight);
     }
 </style>
