@@ -420,6 +420,13 @@ export interface CorporationApplication {
     corporation_id: number;
 }
 
+export interface OpenCorporationApplication {
+    application_id:     number;
+    corporation_id:     number;
+    corporation_name:   string;
+    status:             string;
+}
+
 export interface CorporationApplicationDetails {
     status:         string;
     application_id: number;

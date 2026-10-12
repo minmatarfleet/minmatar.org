@@ -2801,6 +2801,8 @@ export const ui = {
         'application_denied_tooltip': 'Your application has been denied. You will be able to re-apply TIME_TO_REAPPLY',
         'request_denied_tooltip': 'Your request has been denied. You will be able to re-apply TIME_TO_REAPPLY',
         'pending_application_tooltip': 'Your application has been submitted and will be processed within the next days',
+        'application_open': 'Application open',
+        'open_application_elsewhere': 'You already have an open application to {corporation}. Wait for a decision before applying again.',
         'joined_corporation_tooltip': 'You are member of this corporation',
         'start_fleet_tracking': 'Ping fleet',
         'start_fleet_tracking_description': 'Requires fleet previously created in game',
