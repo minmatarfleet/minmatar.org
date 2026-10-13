@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { DoctrineLocationUI } from '@dtypes/layout_components'
+import { sort_doctrines } from '@helpers/doctrine_order'
 
 interface Props {
     active_doctrine_location_ui:        DoctrineLocationUI;
@@ -14,13 +15,7 @@ const {
     non_active_doctrine_location_ui,
 } = Astro.props
 
-const DOCTRINE_TYPE_ORDER = ['strategic', 'non_strategic', 'experimental']
-
-const sorted_doctrines = active_doctrine_location_ui.doctrines
-    .slice()
-    .sort((a, b) => {
-        return DOCTRINE_TYPE_ORDER.indexOf(a.type) - DOCTRINE_TYPE_ORDER.indexOf(b.type)
-    })
+const sorted_doctrines = sort_doctrines(active_doctrine_location_ui.doctrines)
 
 import { semantic_list } from '@helpers/array';
 import { query_string } from '@helpers/string';

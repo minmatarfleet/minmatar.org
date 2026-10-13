@@ -4,7 +4,6 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { DoctrineType, DoctrineLocationUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
-import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 import type { Location } from '@dtypes/api.minmatar.org'
 
@@ -52,16 +51,12 @@ try {
         const location_doctrines = doctrines.filter(doctrine => 
             doctrine.location_ids && doctrine.location_ids.includes(locaction.location_id)
         )
-        
-        const sorted_location_doctrines = location_doctrines.sort((a, b) => 
-            SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
-        )
 
         return {
             id: locaction.location_id,
             name: locaction.short_name,
             doctrine_count: location_doctrine_counts_map.get(locaction.location_id) || 0,
-            doctrines: sorted_location_doctrines
+            doctrines: location_doctrines
         } as DoctrineLocationUI
     })
 
