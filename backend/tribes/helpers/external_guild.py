@@ -13,7 +13,10 @@ from django.utils import timezone
 
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.core import format_discord_nickname
-from discord.helpers import is_discord_unknown_guild_member_error
+from discord.helpers import (
+    is_discord_permission_denied_error,
+    is_discord_unknown_guild_member_error,
+)
 from discord.models import DiscordGuild, DiscordUser
 from eveonline.helpers.characters import user_primary_character
 from tribes.models import (
@@ -179,6 +182,32 @@ def _mark_removed(seat: TribeExternalGuildSeat) -> None:
     _save_seat(seat, "status", "last_error", "failure_count", "last_synced_at")
 
 
+def _http_error_summary(exc: Exception) -> str:
+    response = getattr(exc, "response", None)
+    if response is None:
+        return str(exc)
+    try:
+        body = response.json()
+    except ValueError:
+        body = None
+    if isinstance(body, dict) and (body.get("message") or body.get("code")):
+        return (
+            f"{response.status_code} {body.get('message', '')} "
+            f"(code {body.get('code')})"
+        ).strip()
+    return str(exc)
+
+
+def _kick_failure_message(exc: Exception) -> str:
+    summary = _http_error_summary(exc)
+    if is_discord_permission_denied_error(exc):
+        return (
+            f"kick: {summary}. Member is still in the guild; "
+            "the bot cannot kick them (role hierarchy or missing Kick Members)."
+        )
+    return f"kick: {summary}"
+
+
 def _record_seat_error(
     seat: TribeExternalGuildSeat, error: str, *, alert: bool = False
 ) -> None:
@@ -186,10 +215,14 @@ def _record_seat_error(
     seat.failure_count = (seat.failure_count or 0) + 1
     fields = ["last_error", "failure_count"]
     if alert and seat.failure_count >= CLEANUP_FAILURE_ALERT_THRESHOLD:
+        already_failed = (
+            seat.status == TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        )
         seat.status = TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
         fields.append("status")
         _save_seat(seat, *fields)
-        _alert_cleanup_failed(seat)
+        if not already_failed:
+            _alert_cleanup_failed(seat)
         return
     _save_seat(seat, *fields)
 
@@ -322,18 +355,20 @@ def apply_seat(
 def _apply_remove(seat: TribeExternalGuildSeat, client: DiscordClient) -> str:
     if seat.status == TribeExternalGuildSeat.STATUS_REMOVED:
         return seat.status
-    seat.status = TribeExternalGuildSeat.STATUS_PENDING_REMOVE
-    _save_seat(seat, "status")
+    # Stay on cleanup_failed across retries so the chief is alerted once.
+    if seat.status != TribeExternalGuildSeat.STATUS_CLEANUP_FAILED:
+        seat.status = TribeExternalGuildSeat.STATUS_PENDING_REMOVE
+        _save_seat(seat, "status")
     try:
         client.kick_guild_member(seat.discord_user_id)
     except requests.exceptions.HTTPError as exc:
         if is_discord_unknown_guild_member_error(exc):
             _mark_removed(seat)
             return seat.status
-        _record_seat_error(seat, f"kick: {exc}", alert=True)
+        _record_seat_error(seat, _kick_failure_message(exc), alert=True)
         return seat.status
     except (DiscordError, requests.RequestException, RuntimeError) as exc:
-        _record_seat_error(seat, f"kick: {exc}", alert=True)
+        _record_seat_error(seat, _kick_failure_message(exc), alert=True)
         return seat.status
     _mark_removed(seat)
     return seat.status
