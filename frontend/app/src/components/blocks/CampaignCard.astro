@@ -1,0 +1,198 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CampaignListItem } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { days_diff, format_date_short } from '@helpers/date'
+
+interface Props {
+    campaign:           CampaignListItem;
+    index?:             number;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+delete attributes.index
+
+const is_upcoming = campaign.status === 'scheduled' || campaign.status === 'draft'
+const is_strategic = campaign.kind === 'strategic'
+const href = translatePath(`/campaigns/${campaign.slug}/`)
+const cover = campaign.cover_image_url || (
+    is_strategic ? '/images/home-auga-cover.jpg' : '/images/warzone-card.jpg'
+)
+
+const start_label = format_date_short(lang, campaign.start_at)
+const end_label = format_date_short(lang, campaign.end_at)
+const days_until_start = Math.max(0, days_diff(new Date(), new Date(campaign.start_at)))
+const upcoming_countdown = days_until_start === 0
+    ? t('campaigns.launching_soon')
+    : t('campaigns.starts_in_days')
+        .replace('{count}', String(days_until_start))
+        .replace('{unit}', days_until_start === 1 ? t('day') : t('days'))
+
+const period = is_upcoming
+    ? upcoming_countdown
+    : `${start_label} – ${end_label}`
+
+const kind_label = t(`campaigns.kind.${campaign.kind}` as any)
+const kind_color: TagColors = is_strategic ? 'fleet-red' : 'alliance-blue'
+const party_label = (party: { ticker?: string; name: string }) => {
+    const ticker = (party.ticker || '').trim()
+    if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
+        return ticker
+    return party.name
+}
+const enemy_names = (campaign.parties ?? [])
+    .filter(party => party.side === 'enemy')
+    .map(party_label)
+    .filter(Boolean)
+    .slice(0, 3)
+const ally_names = (campaign.parties ?? [])
+    .filter(party => party.side === 'ally')
+    .map(party_label)
+    .filter(Boolean)
+    .slice(0, 3)
+const parties_label = [
+    enemy_names.length ? `${t('campaigns.parties.enemies')} ${enemy_names.join(', ')}` : '',
+    ally_names.length ? `${t('campaigns.parties.allies')} ${ally_names.join(', ')}` : '',
+].filter(Boolean).join(' · ')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import PictureCard from '@components/blocks/PictureCard.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<PictureCard
+    class:list={[
+        '[ campaign-post-card ]',
+        { 'campaign-post-card-upcoming': is_upcoming },
+        Astro.props.class,
+    ]}
+    src={cover}
+    alt={campaign.name}
+    narrow={true}
+    thumbnail={true}
+    {...attributes}
+>
+    <FlexInline slot="header" gap='var(--space-3xs)' class="[ items-center ]">
+        <Tag text={kind_label} color={kind_color} />
+        {!is_upcoming && campaign.is_enlisted &&
+            <Tag text={t('campaigns.enlisted_already')} color='green' />
+        }
+    </FlexInline>
+
+    <Flexblock gap='var(--space-2xs)'>
+        <small class:list={[{ 'campaign-card-countdown': is_upcoming }]}>{period}</small>
+        {is_upcoming ?
+            <h3>{campaign.name}</h3>
+            :
+            <a href={href}>
+                <h3>{campaign.name}</h3>
+            </a>
+        }
+        {campaign.tagline &&
+            <p class="[ campaign-card-tagline ]">{campaign.tagline}</p>
+        }
+        {!is_upcoming && parties_label &&
+            <small class="[ campaign-card-parties ]">{parties_label}</small>
+        }
+        {!is_upcoming &&
+            <FlexInline>
+                <Button href={href} size='sm'>
+                    {t('campaigns.view_campaign')}
+                </Button>
+            </FlexInline>
+        }
+    </Flexblock>
+</PictureCard>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+        font-family: var(--heading-font);
+        line-height: 1.15;
+    }
+
+    .campaign-card-tagline {
+        margin: 0;
+        font-size: var(--step--1);
+        line-height: 1.35;
+        color: var(--foreground);
+    }
+
+    .campaign-card-parties {
+        color: var(--fleet-red);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
+    }
+
+    .campaign-card-countdown {
+        color: var(--highlight);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: var(--step--2);
+    }
+
+    :global(.campaign-post-card) {
+        position: relative;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to top,
+                rgb(0 0 0 / 88%) 0%,
+                rgb(0 0 0 / 55%) 42%,
+                rgb(0 0 0 / 25%) 68%,
+                rgb(0 0 0 / 12%) 100%
+            );
+        }
+
+        :global(.card-body),
+        :global(.card-header),
+        :global(.card-actions),
+        :global(.visible-actions) {
+            z-index: 2;
+        }
+    }
+
+    :global(.campaign-post-card-upcoming) {
+        :global(picture) {
+            filter: grayscale(0.65) brightness(0.62) saturate(0.45);
+        }
+
+        &::after {
+            background: linear-gradient(
+                to top,
+                rgb(0 0 0 / 94%) 0%,
+                rgb(0 0 0 / 78%) 42%,
+                rgb(0 0 0 / 55%) 68%,
+                rgb(0 0 0 / 40%) 100%
+            );
+        }
+
+        h3 {
+            color: color-mix(in srgb, var(--foreground) 80%, transparent);
+        }
+
+        .campaign-card-tagline {
+            color: color-mix(in srgb, var(--foreground) 60%, transparent);
+        }
+
+        .campaign-card-countdown {
+            color: color-mix(in srgb, var(--highlight) 70%, transparent);
+        }
+    }
+</style>

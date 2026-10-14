@@ -12,6 +12,7 @@ const BASIC_SCOPES = [
     'esi-characters.read_fw_stats.v1',
     'esi-clones.read_clones.v1',
     'esi-clones.read_implants.v1',
+    'esi-search.search_structures.v1',
 ] as const
 
 const DIRECTOR_SCOPES = [

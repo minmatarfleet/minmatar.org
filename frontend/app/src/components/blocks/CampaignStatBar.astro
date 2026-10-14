@@ -1,0 +1,119 @@
+---
+export interface CampaignStat {
+    label:  string;
+    value:  string;
+    title?: string;
+}
+
+interface Props {
+    stats:              CampaignStat[];
+    variant?:           'boxed' | 'inline';
+    [propName: string]: any;
+}
+
+const {
+    stats,
+    variant = 'boxed',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Grid from '@components/compositions/Grid.astro'
+---
+
+{variant === 'inline' ?
+    <div
+        class:list={['[ campaign-stat-bar campaign-stat-bar-inline ]', Astro.props.class]}
+        {...attributes}
+    >
+        {stats.map(stat =>
+            <div class="[ campaign-stat ]" title={stat.title}>
+                <span class="[ campaign-stat-value ]">{stat.value}</span>
+                <small class="[ campaign-stat-label ]">{stat.label}</small>
+            </div>
+        )}
+    </div>
+    :
+    <Grid
+        min_item_width='7rem'
+        row_gap='var(--space-3xs)'
+        column_gap='var(--space-3xs)'
+        class:list={['[ campaign-stat-bar campaign-stat-bar-boxed ][ light-transparency ]', Astro.props.class]}
+        {...attributes}
+    >
+        {stats.map(stat =>
+            <div class="[ campaign-stat ]" title={stat.title}>
+                <span class="[ campaign-stat-value ]">{stat.value}</span>
+                <small class="[ campaign-stat-label ]">{stat.label}</small>
+            </div>
+        )}
+    </Grid>
+}
+
+<style lang="scss">
+    .campaign-stat-bar-boxed {
+        border: solid 1px var(--border-color);
+        padding: var(--space-2xs);
+        width: 100%;
+    }
+
+    .campaign-stat-bar-inline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        row-gap: var(--space-2xs);
+
+        .campaign-stat {
+            padding-block: 0;
+            padding-inline: var(--space-s);
+            border-left: solid 1px var(--border-color-hover);
+
+            &:first-child {
+                padding-inline-start: 0;
+                border-left: none;
+            }
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .campaign-stat-bar-inline {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            justify-content: space-between;
+            width: 100%;
+
+            .campaign-stat {
+                padding-inline: var(--space-xs);
+            }
+
+            .campaign-stat-label {
+                font-size: var(--step--2);
+            }
+        }
+    }
+
+    .campaign-stat {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-2xs) var(--space-xs);
+        min-width: 0;
+    }
+
+    .campaign-stat-value {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        line-height: 1;
+        overflow-wrap: anywhere;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .campaign-stat-label {
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+</style>

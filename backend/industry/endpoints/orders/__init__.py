@@ -74,6 +74,12 @@ from industry.endpoints.orders.get_order_orderitems import (
     get_order_orderitems,
     METHOD as get_order_orderitems_method,
 )
+from industry.endpoints.orders.patch_order import (
+    PATH as patch_order_path,
+    ROUTE_SPEC as patch_order_spec,
+    patch_order,
+    METHOD as patch_order_method,
+)
 from industry.endpoints.orders.patch_order_blueprint_coordinator import (
     PATH as patch_order_blueprint_coordinator_path,
     ROUTE_SPEC as patch_order_blueprint_coordinator_spec,
@@ -166,6 +172,7 @@ _ROUTES = (
         get_order_material_options,
     ),
     (delete_order_method, delete_order_path, delete_order_spec, delete_order),
+    (patch_order_method, patch_order_path, patch_order_spec, patch_order),
     (
         post_order_profit_breakdown_refresh_method,
         post_order_profit_breakdown_refresh_path,

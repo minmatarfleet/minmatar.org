@@ -8,6 +8,7 @@ class FeedMonitoredSystem(models.Model):
     class Source(models.TextChoices):
         FW_WARZONE = "fw_warzone", "FW warzone (seeded)"
         MANUAL = "manual", "Manual admin addition"
+        CAMPAIGN = "campaign", "Campaign theater"
 
     solar_system_id = models.BigIntegerField(unique=True, db_index=True)
     name = models.CharField(max_length=128)

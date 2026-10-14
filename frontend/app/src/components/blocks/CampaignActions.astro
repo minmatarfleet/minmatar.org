@@ -1,0 +1,106 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The foot of the orders card. A pilot who is not in the campaign gets the
+ * one thing they can do here: enlist. Once enlisted there is nothing to
+ * press; leaving lives on the You tab. Every action posts back here and this
+ * block is swapped, along with the header tag and the You tab.
+ */
+interface Props {
+    slug:                       string;
+    is_enlisted:                boolean;
+    flash?:                     string | false;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    is_enlisted,
+    flash = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+delete attributes.variant
+delete attributes.systems
+delete attributes.standing_fleet_up
+delete attributes.standing_fleet_members
+delete attributes.standing_fleet_boss
+delete attributes.my_points
+delete attributes.my_rank
+delete attributes.my_streak
+
+const actions_id = `campaign-actions-${slug}`
+const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}`)
+
+const hx_attributes = (action:string) => ({
+    'hx-post': `${PARTIAL_URL}&action=${action}`,
+    'hx-target': `#${actions_id}`,
+    'hx-swap': 'outerHTML',
+    'hx-indicator': '.loader',
+})
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<div
+    id={actions_id}
+    class:list={['[ campaign-hero-footer ]', { 'is-empty': is_enlisted && !flash }, Astro.props.class]}
+    {...attributes}
+>
+    {!is_enlisted &&
+        <div class="[ campaign-enlist ][ light-transparency ]">
+            <span class="[ campaign-enlist-text ]">{t('campaigns.you.enlist_hint')}</span>
+            <Button color='green' class="[ campaign-primary-action ]" {...hx_attributes('enlist')}>
+                {t('campaigns.enlist')}
+            </Button>
+        </div>
+    }
+
+    {flash && <small class="[ campaign-actions-flash ]" role="status">{flash}</small>}
+</div>
+
+<style lang="scss">
+    .campaign-hero-footer {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        &.is-empty {
+            display: none;
+        }
+    }
+
+    .campaign-enlist {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--border-color-hover);
+        border-inline-start: solid 3px var(--green);
+    }
+
+    .campaign-enlist-text {
+        color: var(--highlight);
+    }
+
+    .campaign-actions-flash {
+        color: var(--highlight);
+        text-align: right;
+    }
+
+    @media screen and (max-width: 767px) {
+        .campaign-enlist {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .campaign-enlist :global(.campaign-primary-action) {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>

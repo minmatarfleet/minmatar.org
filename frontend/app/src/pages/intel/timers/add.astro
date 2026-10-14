@@ -23,11 +23,28 @@ if (!is_superuser && !user_permissions.includes('structures.add_evestructuretime
 const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
 
 import { create_structure_timer, verify_structure_timer } from '@helpers/api.minmatar.org/structures'
+import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
 import { structure_type_with_translations } from '@helpers/eve'
 import { get_selected_item_translation } from '@helpers/eve'
 import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
-import type { StructureTimerRequest, StructureType } from '@dtypes/api.minmatar.org'
+import type { StructureTimerRequest, StructureType, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
+
+const campaign_slug = Astro.url.searchParams.get('campaign_slug') ?? ''
+let live_campaigns:CampaignListItem[] = []
+let selected_campaign_id:number | null = null
+
+try {
+    live_campaigns = (await get_campaigns(auth_token as string)).filter(
+        campaign => campaign.status === 'active' || campaign.status === 'scheduled'
+    )
+    if (campaign_slug) {
+        const match = live_campaigns.find(campaign => campaign.slug === campaign_slug)
+        selected_campaign_id = match?.id ?? null
+    }
+} catch (error) {
+    console.log(error)
+}
 
 let create_structure_timer_error
 let alert:Alert | false = false
@@ -38,6 +55,8 @@ if (Astro.request.method === "POST") {
 
         const structure_type = data.get('structure_type') as StructureType
         const selected_item_window = data.get('selected_item_window') as string
+        const campaign_id_raw = data.get('campaign_id') as string
+        const campaign_id = campaign_id_raw ? parseInt(campaign_id_raw) : null
         
         let translated_selected_item_window = ''
         if (structure_type_with_translations.includes(structure_type as any)) {
@@ -54,6 +73,7 @@ if (Astro.request.method === "POST") {
             state: data.get('state') as string,
             selected_item_window: structure_type_with_translations.includes(structure_type as any) ? translated_selected_item_window : selected_item_window,
             type: structure_type,
+            campaign_id: Number.isFinite(campaign_id) ? campaign_id : null,
         } as StructureTimerRequest
 
         const new_timer = await create_structure_timer(auth_token as string, timer_data)
@@ -75,6 +95,12 @@ if (Astro.request.method === "POST") {
                 const verify_timer_error = error.message
                 Astro.cookies.set('verify_timer_error', verify_timer_error, { path: '/' })
             }
+
+            const redirect_campaign = live_campaigns.find(
+                campaign => campaign.id === timer_data.campaign_id
+            )
+            if (redirect_campaign)
+                return Astro.redirect(translatePath(`/campaigns/${redirect_campaign.slug}/#structures`))
 
             return Astro.redirect(translatePath('/intel/timers/active'))
         }
@@ -324,6 +350,21 @@ const page_title = t('intel.timers.add.page_title');
                                     </Grid>
                                 </FixedFluid>
                             </div>
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="campaign_id">{t('campaigns.structures.campaign_optional')}</label>
+                                <Select id="campaign_id" name="campaign_id">
+                                    <option value="">{t('campaigns.structures.no_campaign')}</option>
+                                    {live_campaigns.map(campaign =>
+                                        <option
+                                            value={campaign.id}
+                                            selected={campaign.id === selected_campaign_id}
+                                        >
+                                            {campaign.name}
+                                        </option>
+                                    )}
+                                </Select>
+                            </FixedFluid>
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                 <label for="corporation_name">{t('corporation_name')}</label>

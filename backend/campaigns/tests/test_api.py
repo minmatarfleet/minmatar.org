@@ -1,0 +1,666 @@
+"""API smoke tests: permissions, shapes and the enlistment round trip."""
+
+from datetime import timedelta
+
+from django.contrib.auth.models import User
+from django.db.models import signals
+from django.test import Client, TestCase
+from django.utils import timezone
+
+import factory
+
+from campaigns.models import (
+    CampaignEnlistment,
+    CampaignEnlistmentCharacter,
+    CampaignEvent,
+    CampaignFitting,
+    CampaignKillmail,
+    CampaignParticipantDay,
+    CampaignStatus,
+    CampaignSystem,
+    CampaignSystemSnapshot,
+    KillmailOutcome,
+    SystemGoal,
+    SystemRole,
+)
+from campaigns.endpoints import serializers
+from campaigns.services import advantage, plan
+from campaigns.services.attribution import attribute_feed_killmail
+from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.tests.helpers import (
+    KAMELA,
+    KOURMONEN,
+    auth_headers,
+    enlist,
+    grant,
+    make_campaign,
+    make_feed_killmail,
+)
+from eveonline.models import EveCharacter, EvePlayer
+from fittings.models import EveFitting
+from fleets.models import EveFleet
+
+BASE = "/api/campaigns"
+
+
+class CampaignApiTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.campaign = make_campaign()
+        self.user, self.character = enlist(self.campaign, "pilot", 3001)
+        grant(
+            self.user,
+            "view_campaign",
+            "add_campaignenlistment",
+            "add_campaignevent",
+        )
+        self.staff = User.objects.create(username="staff", is_superuser=True)
+
+    def test_listing_requires_permission(self):
+        """An anonymous visitor is told no, not handed an empty list."""
+        response = self.client.get(f"{BASE}")
+        self.assertEqual(response.status_code, 403)
+
+    def test_a_pilot_without_the_feature_is_refused(self):
+        outsider = User.objects.create(username="outsider")
+        response = self.client.get(f"{BASE}", **auth_headers(outsider))
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_list_campaigns(self):
+        response = self.client.get(f"{BASE}", **auth_headers(self.staff))
+        self.assertEqual(response.status_code, 200)
+        slugs = [row["slug"] for row in response.json()]
+        self.assertIn(self.campaign.slug, slugs)
+
+    def test_detail_carries_totals_and_systems(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.staff)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["short_code"], "TST")
+        self.assertIn("totals", body)
+        self.assertEqual(
+            [system["name"] for system in body["systems"]], ["Kamela"]
+        )
+        self.assertIn("fittings", body)
+        self.assertEqual(body["fittings"], [])
+        self.assertNotIn("my_points", body)
+        self.assertNotIn("my_rank", body)
+
+    def test_detail_includes_role_labelled_fittings(self):
+        fitting = EveFitting.objects.create(
+            name="Campaign Thrasher",
+            ship_id=16240,
+            description="Campaign fit",
+            eft_format="[Thrasher, Campaign Thrasher]\n",
+        )
+        CampaignFitting.objects.create(
+            campaign=self.campaign,
+            fitting=fitting,
+            role_label="Hunter",
+            srp_eligible=True,
+            order=1,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.staff)
+        )
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()["fittings"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["fitting_id"], fitting.id)
+        self.assertEqual(rows[0]["role_label"], "Hunter")
+        self.assertTrue(rows[0]["srp_eligible"])
+
+    def test_draft_campaigns_are_hidden_from_ordinary_pilots(self):
+        self.campaign.status = CampaignStatus.DRAFT
+        self.campaign.save()
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_readiness_lists_every_character_with_its_state(self):
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["total"], 1)
+        row = body["characters"][0]
+        self.assertEqual(row["character_name"], "Pilot")
+        # No token at all, so it counts for nothing and needs one action.
+        self.assertEqual(row["state"], "lapsed")
+
+    def test_readiness_route_is_not_swallowed_by_the_slug_route(self):
+        """``/readiness`` must not resolve as a campaign called readiness."""
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        self.assertIn("characters", response.json())
+
+    def test_a_pilot_can_enlist_and_leave(self):
+        newcomer = User.objects.create(username="newcomer")
+        grant(newcomer, "view_campaign", "add_campaignenlistment")
+        EveCharacter.objects.create(
+            character_id=3002, character_name="Newcomer", user=newcomer
+        )
+
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/enlist",
+            data={"source": "web"},
+            content_type="application/json",
+            **auth_headers(newcomer),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["enlisted"])
+        self.assertEqual(body["characters_included"], 1)
+        # No campaign token yet, so we say so rather than silently dropping it.
+        self.assertEqual(body["characters_missing_scopes"], ["Newcomer"])
+
+        enlistment = CampaignEnlistment.objects.get(
+            campaign=self.campaign, user=newcomer
+        )
+        self.assertEqual(enlistment.periods.count(), 1)
+
+        response = self.client.delete(
+            f"{BASE}/{self.campaign.slug}/enlist", **auth_headers(newcomer)
+        )
+        self.assertEqual(response.status_code, 200)
+        enlistment.refresh_from_db()
+        self.assertEqual(enlistment.status, "left")
+        self.assertIsNotNone(enlistment.periods.first().left_at)
+
+    def test_excluding_a_character_closes_its_inclusion_period(self):
+        response = self.client.delete(
+            f"{BASE}/{self.campaign.slug}/characters/3001",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        row = CampaignEnlistmentCharacter.objects.get(character=self.character)
+        self.assertIsNotNone(row.included_until)
+
+    def test_re_enlisting_after_excluding_a_character_does_not_break(self):
+        """A character can be excluded and re-included many times.
+
+        Each cycle opens a new inclusion period, so anything that assumes one
+        row per character falls over the second time round.
+        """
+        url = f"{BASE}/{self.campaign.slug}/characters/3001"
+        for _ in range(2):
+            self.assertEqual(
+                self.client.delete(url, **auth_headers(self.user)).status_code,
+                200,
+            )
+            self.assertEqual(
+                self.client.put(url, **auth_headers(self.user)).status_code,
+                200,
+            )
+
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/enlist",
+            data={"source": "web"},
+            content_type="application/json",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["characters_included"], 1)
+
+        open_rows = CampaignEnlistmentCharacter.objects.filter(
+            enlistment__campaign=self.campaign,
+            character=self.character,
+            included_until__isnull=True,
+        )
+        self.assertEqual(open_rows.count(), 1)
+
+    def test_reporting_advantage_records_a_reading(self):
+        system = self.campaign.systems.first()
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/systems/{system.id}/advantage",
+            data={"our_pct": 40.0, "enemy_pct": 15.0},
+            content_type="application/json",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["accepted"])
+        self.assertEqual(body["net_pct"], 25.0)
+        self.assertNotIn("points", body)
+
+    def test_the_week_carries_its_position_and_my_contribution(self):
+        plan.propose_week(self.campaign)
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("week_index", body)
+        self.assertIn("week_count", body)
+        self.assertIn("day_index", body)
+        self.assertEqual(len(body["targets"]), 1)
+        self.assertEqual(body["targets"][0]["my_complexes"], 0)
+        self.assertNotIn("points", body["summary"])
+
+    def test_the_week_reports_opening_and_current_contest(self):
+        """Start is the last snapshot before Thursday 11:00 UTC; now is the latest.
+
+        A system with no pre-week reading falls back to its first snapshot
+        inside the week. Ops-theater systems are not contest progress.
+        """
+        window_start = week_bounds(campaign_week_start())[0]
+        system = self.campaign.systems.get()
+        held = CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=KOURMONEN,
+            name="Kourmonen",
+            goal=SystemGoal.HOLD,
+            role=SystemRole.SECONDARY,
+        )
+        CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=30003070,
+            name="Ops Only",
+            goal=SystemGoal.RECON,
+            role=SystemRole.SUPPORT,
+            is_fw_objective=False,
+        )
+
+        def _snap(system, when, victory_points, contested):
+            CampaignSystemSnapshot.objects.create(
+                campaign_system=system,
+                captured_at=when,
+                victory_points=victory_points,
+                victory_points_threshold=5000,
+                contested_percent=contested,
+            )
+
+        _snap(system, window_start - timedelta(hours=3), 1000, 20.0)
+        _snap(system, window_start + timedelta(minutes=30), 1100, 22.5)
+        _snap(system, window_start + timedelta(days=2), 1400, 35.256)
+        _snap(held, window_start + timedelta(hours=1), 400, 12.0)
+        _snap(held, window_start + timedelta(days=1), 380, 9.5)
+
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        progress = {row["system"]: row for row in response.json()["progress"]}
+        self.assertEqual(set(progress), {"Kamela", "Kourmonen"})
+
+        kamela = progress["Kamela"]
+        self.assertEqual(kamela["contested_start"], 20.0)
+        self.assertEqual(kamela["contested_now"], 35.26)
+        self.assertEqual(kamela["victory_points_start"], 1000)
+        self.assertEqual(kamela["victory_points_now"], 1400)
+        self.assertIsNone(kamela["advantage_our_start"])
+        self.assertIsNone(kamela["advantage_our_now"])
+
+        kourmonen = progress["Kourmonen"]
+        self.assertEqual(kourmonen["contested_start"], 12.0)
+        self.assertEqual(kourmonen["contested_now"], 9.5)
+        self.assertEqual(kourmonen["victory_points_start"], 400)
+        self.assertEqual(kourmonen["victory_points_now"], 380)
+        self.assertIsNone(kourmonen["advantage_our_start"])
+        self.assertIsNone(kourmonen["advantage_our_now"])
+
+    def test_fleets_lists_campaign_fleets_with_their_impact(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            fleet = EveFleet.objects.create(
+                type="strategic",
+                description="Kamela push",
+                start_time=timezone.now() - timedelta(hours=1),
+                campaign=self.campaign,
+                created_by=self.user,
+            )
+            EveFleet.objects.create(
+                type="strategic",
+                description="Unrelated",
+                start_time=timezone.now(),
+                created_by=self.user,
+            )
+        CampaignKillmail.objects.create(
+            campaign=self.campaign,
+            killmail_id=9001,
+            killmail_time=timezone.now(),
+            solar_system_id=KAMELA,
+            outcome=KillmailOutcome.KILL,
+            isk_value=50_000_000,
+            fleet=fleet,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/fleets", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual([row["description"] for row in body], ["Kamela push"])
+        self.assertEqual(body[0]["kills"], 1)
+        self.assertEqual(body[0]["isk_destroyed"], 50_000_000)
+        self.assertFalse(body[0]["is_live"])
+
+    def test_the_leaderboard_names_the_pilots_main_character(self):
+        EvePlayer.objects.create(
+            user=self.user, nickname="pilot", primary_character=self.character
+        )
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign,
+            user=self.user,
+            day=timezone.now().date(),
+            kills=2,
+            active=True,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        row = response.json()[0]
+        self.assertEqual(row["character_id"], self.character.character_id)
+        self.assertEqual(row["character_name"], self.character.character_name)
+        self.assertEqual(row["value"], 2)
+        self.assertNotIn("points", row)
+
+        scored = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?metric=points&period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(scored.status_code, 200)
+        self.assertNotIn("points", scored.json()[0])
+        self.assertEqual(scored.json()[0]["value"], 2)
+
+    def test_leaderboard_and_timeline_respond(self):
+        for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}{path}",
+                **auth_headers(self.staff),
+            )
+            self.assertEqual(response.status_code, 200, path)
+            self.assertIsInstance(response.json(), list)
+
+    def test_forming_a_gang_puts_it_on_the_right_now_strip(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/gangs",
+            data={"ships": "Thrashers", "note": "Kamela roam"},
+            content_type="application/json",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["formed"])
+
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/now", **auth_headers(self.staff)
+        )
+        gangs = response.json()["gangs_forming"]
+        self.assertEqual(len(gangs), 1)
+        self.assertEqual(gangs[0]["ships"], "Thrashers")
+        self.assertEqual(gangs[0]["started_by"], "pilot")
+
+    def test_a_stale_gang_drops_off_the_strip(self):
+        CampaignEvent.objects.create(
+            campaign=self.campaign,
+            kind=CampaignEvent.Kind.GANG_FORMED,
+            occurred_at=timezone.now() - timedelta(hours=5),
+            title="Old gang",
+            is_active=True,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/now", **auth_headers(self.staff)
+        )
+        self.assertEqual(response.json()["gangs_forming"], [])
+
+    def test_roster_reports_coverage_for_every_hour(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.staff)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["coverage"]), 24)
+
+
+class CampaignAccessTests(TestCase):
+    """Every read is as sensitive as the campaign it belongs to."""
+
+    def setUp(self):
+        self.client = Client()
+        self.campaign = make_campaign()
+        self.outsider = User.objects.create(username="outsider")
+        self.member, _ = enlist(self.campaign, "member", 7001)
+        grant(self.member, "view_campaign", "add_campaignenlistment")
+
+    def _subresources(self):
+        return [
+            "/now",
+            "/week",
+            "/orders",
+            "/systems",
+            "/leaderboard",
+            "/killmails",
+            "/sites",
+            "/timeline",
+            "/roster",
+        ]
+
+    def test_an_anonymous_visitor_cannot_read_any_sub_resource(self):
+        for path in self._subresources():
+            response = self.client.get(f"{BASE}/{self.campaign.slug}{path}")
+            self.assertEqual(response.status_code, 403, path)
+
+    def test_a_pilot_without_the_feature_cannot_read_them_either(self):
+        for path in self._subresources():
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}{path}",
+                **auth_headers(self.outsider),
+            )
+            self.assertEqual(response.status_code, 403, path)
+
+    def test_a_pilot_with_the_feature_can(self):
+        for path in self._subresources():
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}{path}",
+                **auth_headers(self.member),
+            )
+            self.assertEqual(response.status_code, 200, path)
+
+    def test_a_public_campaign_is_readable_without_the_feature(self):
+        self.campaign.visibility = "public"
+        self.campaign.save()
+        response = self.client.get(f"{BASE}/{self.campaign.slug}/roster")
+        self.assertEqual(response.status_code, 200)
+
+    def test_a_negative_page_size_is_clamped_not_crashed(self):
+        for limit in (-1, 0, 10_000_000):
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}/killmails?limit={limit}",
+                **auth_headers(self.member),
+            )
+            self.assertEqual(response.status_code, 200, limit)
+
+
+class CampaignWriteGuardTests(TestCase):
+    """Holding a feature is not the same as being in the campaign."""
+
+    def setUp(self):
+        self.client = Client()
+        self.campaign = make_campaign()
+        self.member, _ = enlist(self.campaign, "member", 7101)
+        grant(
+            self.member,
+            "view_campaign",
+            "add_campaignenlistment",
+            "add_campaignevent",
+        )
+        self.bystander = User.objects.create(username="bystander")
+        grant(
+            self.bystander,
+            "view_campaign",
+            "add_campaignenlistment",
+            "add_campaignevent",
+        )
+        self.system = self.campaign.systems.first()
+
+    def test_a_non_participant_cannot_report_advantage(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/systems/{self.system.id}/advantage",
+            data={"our_pct": 40.0, "enemy_pct": 10.0},
+            content_type="application/json",
+            **auth_headers(self.bystander),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "not_enlisted")
+
+    def test_a_non_participant_cannot_form_a_gang(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/gangs",
+            data={"ships": "Thrashers"},
+            content_type="application/json",
+            **auth_headers(self.bystander),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_a_participant_can(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/gangs",
+            data={"ships": "Thrashers"},
+            content_type="application/json",
+            **auth_headers(self.member),
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_a_finished_campaign_accepts_no_writes(self):
+        self.campaign.status = CampaignStatus.COMPLETED
+        self.campaign.save()
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/gangs",
+            data={"ships": "Thrashers"},
+            content_type="application/json",
+            **auth_headers(self.member),
+        )
+        self.assertEqual(response.status_code, 409)
+
+    def test_oversized_gang_text_is_rejected_not_a_500(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/gangs",
+            data={"ships": "T" * 400},
+            content_type="application/json",
+            **auth_headers(self.member),
+        )
+        self.assertEqual(response.status_code, 422)
+
+    def test_an_out_of_range_digest_hour_is_rejected(self):
+        response = self.client.post(
+            f"{BASE}/{self.campaign.slug}/enlist",
+            data={"digest_hour": 99999},
+            content_type="application/json",
+            **auth_headers(self.member),
+        )
+        self.assertEqual(response.status_code, 422)
+
+    def test_readiness_refuses_an_offsite_redirect(self):
+        response = self.client.get(
+            f"{BASE}/readiness?redirect_url=https://evil.example/x",
+            **auth_headers(self.member),
+        )
+        self.assertEqual(response.status_code, 200)
+        for row in response.json()["characters"]:
+            self.assertNotIn("evil.example", row["action_url"])
+
+
+class AdvantageConsensusTests(TestCase):
+    """One pilot, one vote."""
+
+    def setUp(self):
+        self.campaign = make_campaign()
+        self.system = self.campaign.systems.first()
+        self.loud, _ = enlist(self.campaign, "loud", 7301)
+        self.quiet, _ = enlist(self.campaign, "quiet", 7302)
+
+    def test_repeating_a_reading_does_not_outvote_the_alliance(self):
+        advantage.record_reading(self.system, self.quiet, 20.0, 10.0)
+        for _ in range(20):
+            advantage.record_reading(self.system, self.loud, 40.0, 10.0)
+
+        _, state_row = advantage.record_reading(
+            self.system, self.loud, 40.0, 10.0
+        )
+        state = advantage.as_card(state_row)
+        # Two pilots, so the agreed reading sits between them, not on top of
+        # whoever pressed the button most.
+        self.assertAlmostEqual(state["our_pct"], 30.0, places=1)
+
+    def test_a_wild_reading_is_still_held(self):
+        advantage.record_reading(self.system, self.quiet, 20.0, 10.0)
+        reading, _ = advantage.record_reading(
+            self.system, self.loud, 99.0, 0.0
+        )
+        self.assertEqual(reading.status, "held")
+
+    def test_reporting_returns_the_reading_you_just_made(self):
+        """Not the one from before it.
+
+        Django caches a reverse one-to-one on the instance, so reading the
+        state back off the system after writing it hands you the stale row.
+        """
+        client = Client()
+        grant(self.loud, "view_campaign", "add_campaignenlistment")
+
+        response = client.post(
+            f"{BASE}/{self.campaign.slug}/systems/{self.system.id}/advantage",
+            data={"our_pct": 65.0, "enemy_pct": 5.0},
+            content_type="application/json",
+            **auth_headers(self.loud),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["our_pct"], 65.0)
+        self.assertEqual(response.json()["net_pct"], 60.0)
+
+    def test_the_first_reading_of_a_system_is_accepted(self):
+        reading, _ = advantage.record_reading(
+            self.system, self.loud, 80.0, 5.0
+        )
+        self.assertEqual(reading.status, "accepted")
+
+
+class CoverageWindowTests(TestCase):
+    """The chart has to show the fighting, not the calendar."""
+
+    def setUp(self):
+        # A campaign long enough to have a quiet fortnight in it.
+        self.campaign = make_campaign(
+            start_at=timezone.now() - timedelta(days=40)
+        )
+        self.user, _ = enlist(self.campaign, "pilot", 7401)
+        grant(self.user, "view_campaign")
+        self.client = Client()
+
+        # The fighting happened a fortnight ago and then stopped.
+        self.when = timezone.now() - timedelta(days=14)
+        for index in range(3):
+            feed_killmail = make_feed_killmail(
+                760 + index,
+                victim_character_id=9999,
+                attacker_ids=[7401],
+                killmail_time=self.when + timedelta(hours=index),
+            )
+            attribute_feed_killmail(feed_killmail)
+
+    def test_a_quiet_fortnight_does_not_blank_the_chart(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+
+        coverage = response.json()["coverage"]
+        self.assertEqual(len(coverage), 24)
+        self.assertTrue(
+            any(row["our_active_days"] for row in coverage),
+            "coverage is empty for a campaign that did its fighting earlier",
+        )
+
+    def test_the_window_ends_at_the_last_thing_that_happened(self):
+        since, until = serializers.coverage_window(self.campaign, days=7)
+        self.assertLessEqual(until, timezone.now())
+        self.assertEqual((until - since).days, 7)
+        self.assertGreaterEqual(until, self.when)
+
+    def test_the_window_never_starts_before_the_campaign(self):
+        _, until = serializers.coverage_window(self.campaign, days=7)
+        self.assertGreaterEqual(until, self.campaign.start_at)

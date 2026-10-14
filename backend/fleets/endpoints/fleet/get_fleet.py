@@ -47,6 +47,8 @@ def get_fleet(request, fleet_id: int):
         "hide_volunteers": fleet.hide_volunteers,
         "status": fleet.status,
         "aar_link": fleet.aar_link,
+        "campaign_id": fleet.campaign_id,
+        "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         "roam_report_url": fleet.roam_report_url,
     }
     if fleet.doctrine:

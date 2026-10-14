@@ -25,8 +25,10 @@ import {
 } from '@helpers/api.minmatar.org/industry'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 import { get_locations } from '@helpers/api.minmatar.org/locations'
+import { fetch_campaign_options } from '@helpers/fetching/campaigns'
 import type {
     CreateOrderItemInput,
+    CampaignListItem,
     Location,
     Product,
     SummaryCharacter,
@@ -49,15 +51,18 @@ let products: Product[] = []
 let locations: Location[] = []
 let characters: SummaryCharacter[] = []
 let delivery_corporations: string[] = []
+let campaigns: CampaignListItem[] = []
 let form_error: string | false = false
 
 const type_id_prefill = Number(Astro.url.searchParams.get('type_id') || 0) || 0
+const campaign_prefill = Number(Astro.url.searchParams.get('campaign_id') || 0) || 0
 
 try {
-    const [all_products, all_locations, summary] = await Promise.all([
+    const [all_products, all_locations, summary, campaign_options] = await Promise.all([
         get_products(),
         get_locations(),
         get_characters_summary(auth_token),
+        fetch_campaign_options(auth_token),
     ])
     products = all_products
         .filter((product) => product.strategy === 'produced')
@@ -75,6 +80,7 @@ try {
             .map((character) => character.corp_name)
             .filter((name) => Boolean(name))
     )].sort((a, b) => a.localeCompare(b))
+    campaigns = campaign_options
 } catch (error) {
     form_error = (error as Error).message
 }
@@ -94,6 +100,7 @@ let submitted_needed_by = ''
 let submitted_contract_to = default_contract_to
 let submitted_location_id = default_location_id
 let submitted_character_id = default_character_id ? String(default_character_id) : ''
+let submitted_campaign_id = campaign_prefill ? String(campaign_prefill) : ''
 let submitted_items: CreateOrderItemInput[] = type_id_prefill
     ? [{ eve_type_id: type_id_prefill, quantity: 1 }]
     : []
@@ -116,6 +123,7 @@ if (Astro.request.method === 'POST') {
         submitted_contract_to = String(form.get('contract_to') ?? '').trim()
         submitted_location_id = String(form.get('location_id') ?? '')
         submitted_character_id = String(form.get('character_id') ?? '')
+        submitted_campaign_id = String(form.get('campaign_id') ?? '')
 
         const raw_items = String(form.get('items_json') ?? '[]')
         const parsed = JSON.parse(raw_items) as CreateOrderItemInput[]
@@ -141,6 +149,9 @@ if (Astro.request.method === 'POST') {
         const character_id = submitted_character_id
             ? Number(submitted_character_id)
             : null
+        const campaign_id = submitted_campaign_id
+            ? Number(submitted_campaign_id)
+            : null
 
         const created = await create_order(auth_token, {
             needed_by: submitted_needed_by,
@@ -148,6 +159,7 @@ if (Astro.request.method === 'POST') {
             location_id,
             contract_to: submitted_contract_to,
             items: submitted_items,
+            campaign_id: campaign_id || null,
         })
 
         return Astro.redirect(
@@ -362,6 +374,28 @@ const breadcrumbs = [
                                     )}
                                 </Select>
                             </Flexblock>
+
+                            {campaigns.length > 0 &&
+                                <Flexblock gap="var(--space-2xs)">
+                                    <label for="campaign_id">{t('campaign')}</label>
+                                    <small>{t('campaigns.structures.campaign_optional')}</small>
+                                    <Select
+                                        id="campaign_id"
+                                        name="campaign_id"
+                                        size="sm"
+                                    >
+                                        <option value="">{t('no_campaign')}</option>
+                                        {campaigns.map((campaign) =>
+                                            <option
+                                                value={campaign.id}
+                                                selected={String(campaign.id) === submitted_campaign_id}
+                                            >
+                                                {campaign.name}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </Flexblock>
+                            }
 
                             <Flexblock gap="var(--space-2xs)">
                                 <label for="contract_to">{t('industry.orders.create.contract_to')}</label>

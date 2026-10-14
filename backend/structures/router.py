@@ -71,6 +71,8 @@ class EveStructureTimerRequest(BaseModel):
     structure_name: str = None
     location: str = None
     timer: datetime = None
+    campaign_id: int | None = None
+    fitting: str | None = None
 
 
 class EveStructureTimerVerificationRequest(BaseModel):
@@ -96,6 +98,8 @@ class EveStructureTimerResponse(BaseModel):
     corporation_name: str | None = None
     alliance_name: str | None = None
     structure_id: int | None = None
+    campaign_id: int | None = None
+    fitting: str | None = None
 
 
 @router.get(
@@ -148,6 +152,8 @@ def get_structure_timers(request, active: bool = True):
             "corporation_name": timer.corporation_name,
             "alliance_name": timer.alliance_name,
             "structure_id": timer.structure.id if timer.structure else None,
+            "campaign_id": timer.campaign_id,
+            "fitting": timer.fitting,
         }
         response.append(response_item)
 
@@ -209,7 +215,12 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
         corporation_name=payload.corporation_name,
         system_name=structure_response.location,
         name=structure_response.structure_name,
+        campaign_id=payload.campaign_id,
+        fitting=payload.fitting or None,
     )
+
+    if payload.campaign_id:
+        _attach_timer_to_campaign(payload.campaign_id, timer, request.user)
 
     logger.info("Timer %d submitted by %s", timer.id, request.user.username)
 
@@ -223,9 +234,26 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
         "system_name": timer.system_name,
         "corporation_name": timer.corporation_name,
         "name": timer.name,
+        "campaign_id": timer.campaign_id,
+        "fitting": timer.fitting,
     }
 
     return response
+
+
+def _attach_timer_to_campaign(campaign_id: int, timer, user) -> None:
+    """Best-effort link so a bad campaign id does not fail timer create.
+
+    Imported lazily: campaigns.endpoints.manage already imports this module's
+    helpers, and loading campaigns.models at module import time would cycle.
+    """
+    # pylint: disable=import-outside-toplevel
+    from campaigns.models import Campaign
+    from campaigns.services import structures as structure_service
+
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    if campaign:
+        structure_service.attach_timer(campaign, timer, created_by=user)
 
 
 @router.post(

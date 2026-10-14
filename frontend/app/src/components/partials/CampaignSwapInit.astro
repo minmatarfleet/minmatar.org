@@ -1,0 +1,48 @@
+---
+/**
+ * Campaign partials return markup carrying `x-data` and `x-teleport`
+ * (DialogButton), which htmx does not wire up on its own. Re-process every
+ * swapped subtree so Alpine roots inside a fresh partial come back alive.
+ */
+---
+
+<script>
+    function init_campaign_swap_root(node: unknown) {
+        const element = node as HTMLElement | null
+
+        // An `outerHTML` swap detaches the old target, and processing a node
+        // that is no longer in the document does nothing useful.
+        if (!element || !element.isConnected)
+            return
+
+        const htmx_global = (window as any).htmx
+        const alpine_global = (window as any).Alpine
+
+        if (htmx_global) htmx_global.process(element)
+        if (alpine_global) alpine_global.initTree(element)
+    }
+
+    function bind_campaign_swap_init() {
+        if (document.body.dataset.campaignSwapBound === '1')
+            return
+
+        document.body.dataset.campaignSwapBound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            // `innerHTML` swaps report the live container in detail.target.
+            // `outerHTML` swaps replace it, so detail.target is detached and
+            // the event fires on the parent that now holds the new markup.
+            init_campaign_swap_root(event.detail?.target)
+            init_campaign_swap_root(event.target)
+
+            const replacement = event.detail?.target?.id
+                ? document.getElementById(event.detail.target.id)
+                : null
+            if (replacement && replacement !== event.detail?.target)
+                init_campaign_swap_root(replacement)
+        })
+    }
+
+    bind_campaign_swap_init()
+    document.addEventListener('astro:page-load', bind_campaign_swap_init)
+</script>

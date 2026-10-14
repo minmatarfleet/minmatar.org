@@ -1,8 +1,45 @@
 ---
-/* Industry hub removed — Market is the home for Orders / Supply Chain */
-
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-return Astro.redirect(`${translatePath('/market/')}${Astro.url.search}`, 301)
+import Viewport from '@layouts/Viewport.astro'
+
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import IndustryTiles from '@components/blocks/IndustryTiles.astro'
+
+const page_title = t('industry.page_title')
+const leading_text = t('industry.leading_text')
 ---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.meta_description')}
+>
+    <PageLanding
+        cover={{
+            image: "/images/industry-cover.jpg",
+            image_990: "/images/industry-cover-990.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <TextBox>
+                <PageTitle is_landing={true}>{page_title}</PageTitle>
+            </TextBox>
+
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
+
+            <IndustryTiles />
+        </Flexblock>
+    </PageLanding>
+</Viewport>

@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from campaigns.helpers import resolve_attachable_campaign
 
 from .authors import post_author_fields
 from .models import EvePost, EveTag
@@ -29,6 +30,21 @@ def _set_tribe_groups(
     post.tribe_groups.set(
         TribeGroup.objects.filter(id__in=tribe_group_ids, is_active=True)
     )
+
+
+def _campaign_fields(post: EvePost) -> dict:
+    return {
+        "campaign_id": post.campaign_id,
+        "campaign_slug": post.campaign.slug if post.campaign_id else None,
+    }
+
+
+def _assign_campaign(post: EvePost, campaign_id: int | None):
+    resolved = resolve_attachable_campaign(campaign_id)
+    if isinstance(resolved, tuple):
+        return resolved
+    post.campaign = resolved
+    return None
 
 
 def extract_first_image_link(content: str) -> str:
@@ -86,6 +102,8 @@ class EvePostResponse(BaseModel):
     author_character_name: str
     tag_ids: List[int]
     tribe_group_ids: List[int] = []
+    campaign_id: int | None = None
+    campaign_slug: str | None = None
 
 
 class EveTagResponse(BaseModel):
@@ -100,6 +118,7 @@ class CreateEvePostRequest(BaseModel):
     content: str
     tag_ids: List[int]
     tribe_group_ids: List[int] = []
+    campaign_id: int | None = None
 
 
 class UpdateEvePostRequest(BaseModel):
@@ -109,6 +128,7 @@ class UpdateEvePostRequest(BaseModel):
     content: str | None = None
     tag_ids: List[int] | None = None
     tribe_group_ids: List[int] | None = None
+    campaign_id: int | None = None
 
 
 @router.get("/posts", response=List[EvePostListResponse])
@@ -118,6 +138,7 @@ def get_posts(
     user_id: int = None,
     tag_id: int = None,
     tribe_group_id: int = None,
+    campaign_id: int = None,
     status: str = None,
     page_size: int = 20,
     page_num: int = None,
@@ -141,6 +162,9 @@ def get_posts(
 
     if tribe_group_id:
         posts = posts.filter(tribe_groups__id=tribe_group_id).distinct()
+
+    if campaign_id:
+        posts = posts.filter(campaign_id=campaign_id)
 
     if status:
         posts = posts.filter(state=status)
@@ -188,6 +212,7 @@ def get_post(request, post_id: int):
             "user",
             "user__eveplayer",
             "user__eveplayer__primary_character",
+            "campaign",
         )
         .prefetch_related("tags", "tribe_groups")
         .first()
@@ -210,6 +235,7 @@ def get_post(request, post_id: int):
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
+        **_campaign_fields(post),
     )
 
 
@@ -225,6 +251,10 @@ def create_post(request, payload: CreateEvePostRequest):
     if EvePost.objects.filter(title=payload.title).exists():
         return 400, {"detail": "A post with this title already exists."}
 
+    campaign = resolve_attachable_campaign(payload.campaign_id)
+    if isinstance(campaign, tuple):
+        return campaign
+
     post = EvePost.objects.create(
         title=payload.title,
         state=payload.state,
@@ -232,6 +262,7 @@ def create_post(request, payload: CreateEvePostRequest):
         slug=EvePost.generate_slug(payload.title),
         content=payload.content,
         user=request.user,
+        campaign=campaign,
     )
     post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
     _set_tribe_groups(post, payload.tribe_group_ids)
@@ -250,6 +281,7 @@ def create_post(request, payload: CreateEvePostRequest):
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
+        **_campaign_fields(post),
     )
 
 
@@ -292,6 +324,11 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     if payload.tribe_group_ids is not None:
         _set_tribe_groups(post, payload.tribe_group_ids)
 
+    if "campaign_id" in payload.model_fields_set:
+        error = _assign_campaign(post, payload.campaign_id)
+        if error:
+            return error
+
     post.save()
     author_character_id, author_character_name = post_author_fields(post.user)
 
@@ -308,6 +345,7 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
+        **_campaign_fields(post),
     )
 
 

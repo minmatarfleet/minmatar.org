@@ -1,0 +1,710 @@
+"""Read endpoints. Everything a campaign page renders comes from here."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
+from app.errors import ErrorResponse
+from authentication import AuthBearer, AuthOptional
+from campaigns.endpoints.base import router
+from campaigns.endpoints import schemas, serializers
+from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.models import (
+    Campaign,
+    CampaignAdvantageReading,
+    CampaignAward,
+    CampaignEvent,
+    CampaignKillmail,
+    CampaignParticipantStat,
+    CampaignSiteCompletion,
+    CampaignStatus,
+    CampaignStructure,
+    CampaignWeekTarget,
+    KillmailOutcome,
+    SiteKind,
+)
+from campaigns.services import entities as entity_service
+from campaigns.services import plan, stats
+from eveonline.models import EveCharacter
+from fleets.models import EveFleetInstance, EveFleetInstanceMember
+from groups.helpers.feature_access import require_feature
+
+VIEW_FEATURE = "campaigns.view"
+MAX_LIMIT = 200
+HOSTILE_GANG_WINDOW_HOURS = 2
+
+
+def _visible(request):
+    """Campaigns a viewer may see. Drafts are for their creator and staff."""
+    queryset = Campaign.objects.exclude(status=CampaignStatus.DRAFT)
+    user = request.user
+    if getattr(user, "is_authenticated", False) and (
+        user.is_staff or user.is_superuser
+    ):
+        queryset = Campaign.objects.all()
+    return queryset.prefetch_related("systems")
+
+
+def _get(request, slug: str) -> Campaign:
+    return get_object_or_404(_visible(request), slug=slug)
+
+
+def _may_read(request, campaign: Campaign):
+    """Gate every read on the campaign's own visibility.
+
+    A campaign's sub-resources are as sensitive as the campaign itself: the
+    roster names pilots, the coverage chart shows the hours the alliance is
+    not online, and the strip says which gang is forming right now. Only a
+    campaign explicitly marked public is readable without the feature.
+    """
+    if campaign.visibility == "public":
+        return None
+    return require_feature(request.user, VIEW_FEATURE)
+
+
+def _clamp(limit: int) -> int:
+    """A page size the database can actually serve."""
+    return max(1, min(limit, MAX_LIMIT))
+
+
+@router.get(
+    "",
+    response={200: list[schemas.CampaignListItem], 403: ErrorResponse},
+    auth=AuthOptional(),
+)
+def list_campaigns(request, status: str = ""):
+    """Live campaigns first, then upcoming, then finished.
+
+    A viewer without the feature still sees campaigns marked public, and
+    nothing else.
+    """
+    permitted = require_feature(request.user, VIEW_FEATURE) is None
+    queryset = _visible(request)
+    if not permitted:
+        queryset = queryset.filter(visibility="public")
+        if not queryset.exists():
+            return require_feature(request.user, VIEW_FEATURE)
+    if status:
+        queryset = queryset.filter(status=status)
+
+    order = {
+        CampaignStatus.ACTIVE: 0,
+        CampaignStatus.SCHEDULED: 1,
+        CampaignStatus.COMPLETED: 2,
+        CampaignStatus.ARCHIVED: 3,
+        CampaignStatus.DRAFT: 4,
+    }
+    campaigns = sorted(
+        queryset,
+        key=lambda c: (order.get(c.status, 9), -c.start_at.timestamp()),
+    )
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+    return [serializers.list_item(campaign, user) for campaign in campaigns]
+
+
+@router.get(
+    "/entities",
+    response={200: list[schemas.UniverseEntityMatch], 400: ErrorResponse},
+    auth=AuthBearer(),
+)
+def search_entities(request, kind: str, q: str = ""):
+    """Autocomplete corporations and alliances for structure scouting."""
+    if kind not in ("corporation", "alliance"):
+        return 400, {"detail": "kind must be corporation or alliance"}
+    return entity_service.search_entities(request.user, kind, q)
+
+
+@router.get(
+    "/{slug}",
+    response={200: schemas.CampaignDetail, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_campaign(request, slug: str):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+
+    my_stat = (
+        CampaignParticipantStat.objects.filter(
+            campaign=campaign, user=user
+        ).first()
+        if user
+        else None
+    )
+    enlistment = (
+        campaign.enlistments.filter(user=user, status="active").first()
+        if user
+        else None
+    )
+
+    parties = list(campaign.parties.all())
+    return {
+        "id": campaign.id,
+        "slug": campaign.slug,
+        "name": campaign.name,
+        "short_code": campaign.short_code,
+        "tagline": campaign.tagline,
+        "description_md": campaign.description_md,
+        "cover_image_url": campaign.cover_image_url,
+        "kind": campaign.kind,
+        "status": campaign.status,
+        "start_at": campaign.start_at,
+        "end_at": campaign.end_at,
+        "commander_order_text": campaign.commander_order_text,
+        "commander_order_is_draft": campaign.commander_order_is_draft,
+        "systems": serializers.campaign_systems(campaign),
+        "areas": serializers.campaign_areas(campaign),
+        "parties": [serializers.party_out(row) for row in parties],
+        "structures": [
+            serializers.structure_out(row, parties=parties)
+            for row in campaign.structures.select_related(
+                "timer", "killmail"
+            ).all()
+        ],
+        "fittings": serializers.campaign_fittings(campaign),
+        "totals": stats.campaign_totals(campaign),
+        "is_enlisted": enlistment is not None,
+        "my_streak": my_stat.streak_days if my_stat else 0,
+        "characters_included": (
+            enlistment.characters.filter(included_until__isnull=True).count()
+            if enlistment
+            else 0
+        ),
+        "characters_tracked": my_stat.characters_tracked if my_stat else 0,
+        "standing_fleet_up": False,
+        "standing_fleet_members": 0,
+        "standing_fleet_boss": None,
+    }
+
+
+@router.get(
+    "/{slug}/now",
+    response={200: schemas.RightNow, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_right_now(request, slug: str):
+    """Why undock in the next ten minutes."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+
+    # "Right now" means right now: an event the feed still calls active but
+    # that started hours ago is history, not a reason to undock.
+    live_since = timezone.now() - timedelta(hours=HOSTILE_GANG_WINDOW_HOURS)
+    hostile = (
+        CampaignEvent.objects.filter(
+            campaign=campaign,
+            kind=CampaignEvent.Kind.HOSTILE_GANG,
+            is_active=True,
+            occurred_at__gte=live_since,
+        )
+        .select_related("campaign_system")
+        .order_by("-occurred_at")[:3]
+    )
+
+    # A gang is only worth joining while it is still forming up.
+    forming_since = timezone.now() - timedelta(hours=2)
+    forming = (
+        CampaignEvent.objects.filter(
+            campaign=campaign,
+            kind=CampaignEvent.Kind.GANG_FORMED,
+            is_active=True,
+            occurred_at__gte=forming_since,
+        )
+        .select_related("campaign_system", "user")
+        .order_by("-occurred_at")[:5]
+    )
+
+    my_stat = (
+        CampaignParticipantStat.objects.filter(
+            campaign=campaign, user=user
+        ).first()
+        if user
+        else None
+    )
+
+    orders = plan.orders_for(campaign, user) if user else []
+
+    ticker = [
+        {
+            "killmail_id": mail.killmail_id,
+            "outcome": mail.outcome,
+            "isk_value": mail.isk_value,
+            "killmail_time": mail.killmail_time.isoformat(),
+        }
+        for mail in CampaignKillmail.objects.filter(campaign=campaign)[:8]
+    ]
+
+    return {
+        "active_pilots": stats.active_recently(campaign),
+        "system_heat": stats.system_heat(campaign),
+        "hostile_gangs": [
+            {
+                "title": event.title,
+                "system": (
+                    event.campaign_system.name if event.campaign_system else ""
+                ),
+                "occurred_at": event.occurred_at.isoformat(),
+            }
+            for event in hostile
+        ],
+        "standing_fleet_up": False,
+        "standing_fleet_members": 0,
+        "standing_fleet_boss": None,
+        "gangs_forming": [
+            {
+                "id": event.id,
+                "ships": (event.payload or {}).get("ships", ""),
+                "note": event.body,
+                "system": (
+                    event.campaign_system.name
+                    if event.campaign_system
+                    else None
+                ),
+                "started_by": (event.user.username if event.user else ""),
+                "occurred_at": event.occurred_at.isoformat(),
+            }
+            for event in forming
+        ],
+        "my_streak": my_stat.streak_days if my_stat else 0,
+        "my_orders_done": sum(1 for order in orders if order["completed"]),
+        "my_orders_total": len(orders),
+        "ticker": ticker,
+    }
+
+
+@router.get(
+    "/{slug}/week",
+    response={200: schemas.WeekPlan, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_week(request, slug: str):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    week_start = campaign_week_start()
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+    window = week_bounds(week_start)
+
+    targets = []
+    for row in CampaignWeekTarget.objects.filter(
+        campaign_system__campaign=campaign, week_start=week_start
+    ).select_related("campaign_system"):
+        mine = _my_contribution(row.campaign_system, user, window)
+        targets.append(
+            {
+                "id": row.id,
+                "system": row.campaign_system.name,
+                "system_id": row.campaign_system_id,
+                "goal": row.campaign_system.goal,
+                "metric": row.metric,
+                "target": row.target,
+                "progress": row.progress,
+                "pace_expected": row.pace_expected,
+                "baseline": row.baseline,
+                "pace": row.pace,
+                "proposed": row.proposed,
+                "last_week_actual": row.last_week_actual,
+                "days_under_line": row.days_under_line,
+                "projected_arc_date": row.projected_arc_date,
+                **mine,
+            }
+        )
+
+    return {
+        **plan.week_position(campaign, week_start),
+        "targets": targets,
+        "progress": plan.week_system_progress(campaign, week_start),
+        "commander_order_text": campaign.commander_order_text,
+        "summary": stats.week_summary(campaign),
+    }
+
+
+ADVANTAGE_SITE_KINDS = (
+    SiteKind.ADVANTAGE_SITE,
+    SiteKind.RENDEZVOUS_POINT,
+    SiteKind.PROPAGANDA_BEACON,
+    SiteKind.LISTENING_OUTPOST,
+    SiteKind.SUPPLY_CACHE,
+    SiteKind.BATTLEFIELD,
+)
+
+
+def _my_contribution(campaign_system, user, window) -> dict:
+    """What the viewer did towards one system this week."""
+    empty = {
+        "my_complexes": 0,
+        "my_advantage_sites": 0,
+        "my_readings": 0,
+        "my_structures_reported": 0,
+    }
+    if user is None:
+        return empty
+    start, end = window
+    sites = CampaignSiteCompletion.objects.filter(
+        campaign_system=campaign_system,
+        user=user,
+        occurred_at__gte=start,
+        occurred_at__lt=end,
+        scored=True,
+    )
+    return {
+        "my_complexes": sites.filter(site_kind=SiteKind.COMPLEX).count(),
+        "my_advantage_sites": sites.filter(
+            site_kind__in=ADVANTAGE_SITE_KINDS
+        ).count(),
+        "my_readings": CampaignAdvantageReading.objects.filter(
+            campaign_system=campaign_system,
+            reported_by=user,
+            reported_at__gte=start,
+            reported_at__lt=end,
+            status="accepted",
+        ).count(),
+        "my_structures_reported": CampaignStructure.objects.filter(
+            campaign=campaign_system.campaign,
+            solar_system_id=campaign_system.solar_system_id,
+            created_by=user,
+            created_at__gte=start,
+            created_at__lt=end,
+        ).count(),
+    }
+
+
+@router.get(
+    "/{slug}/fleets",
+    response={
+        200: list[schemas.CampaignFleetOut],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_fleets(request, slug: str, limit: int = 50):
+    """Every fleet attributed to the campaign, newest first, with its impact."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    fleets = list(
+        campaign.fleets.select_related("created_by", "doctrine").order_by(
+            "-start_time"
+        )[: _clamp(limit)]
+    )
+    if not fleets:
+        return []
+    fleet_ids = [fleet.id for fleet in fleets]
+
+    live_ids = set(
+        EveFleetInstance.objects.filter(
+            eve_fleet_id__in=fleet_ids, end_time__isnull=True
+        ).values_list("eve_fleet_id", flat=True)
+    )
+    pilots: dict[int, set] = {}
+    for fleet_id, character_id in EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance__eve_fleet_id__in=fleet_ids
+    ).values_list("eve_fleet_instance__eve_fleet_id", "character_id"):
+        pilots.setdefault(fleet_id, set()).add(character_id)
+
+    impact: dict[int, dict] = {}
+    for fleet_id, outcome, isk in CampaignKillmail.objects.filter(
+        campaign=campaign, fleet_id__in=fleet_ids
+    ).values_list("fleet_id", "outcome", "isk_value"):
+        row = impact.setdefault(
+            fleet_id, {"kills": 0, "losses": 0, "isk_destroyed": 0}
+        )
+        if outcome == KillmailOutcome.KILL:
+            row["kills"] += 1
+            row["isk_destroyed"] += isk
+        elif outcome == KillmailOutcome.LOSS:
+            row["losses"] += 1
+
+    return [
+        {
+            "id": fleet.id,
+            "type": fleet.type,
+            "description": _fleet_description(fleet),
+            "objective": fleet.objective or "",
+            "start_time": fleet.start_time,
+            "status": fleet.status,
+            "fleet_commander": _commander_name(fleet),
+            "fleet_commander_id": _commander_id(fleet),
+            "doctrine": fleet.doctrine.name if fleet.doctrine else None,
+            "aar_link": fleet.aar_link or None,
+            "is_live": fleet.id in live_ids,
+            "pilots": len(pilots.get(fleet.id, ())),
+            **impact.get(
+                fleet.id, {"kills": 0, "losses": 0, "isk_destroyed": 0}
+            ),
+        }
+        for fleet in fleets
+    ]
+
+
+def _fleet_description(fleet) -> str:
+    """Drop the local ``[prod#…]`` import marker from the visible copy."""
+    text = fleet.description or ""
+    if text.startswith("[prod#"):
+        close = text.find("]")
+        if close != -1:
+            return text[close + 1 :].lstrip()
+    return text
+
+
+def _commander_id(fleet) -> int | None:
+    character = fleet.fleet_commander
+    return character.character_id if character else None
+
+
+def _commander_name(fleet) -> str | None:
+    character = fleet.fleet_commander
+    if character:
+        return character.character_name
+    return fleet.created_by.username if fleet.created_by else None
+
+
+@router.get(
+    "/{slug}/orders",
+    response={200: list[schemas.OrderOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_orders(request, slug: str):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    user = (
+        request.user
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+    return plan.orders_for(campaign, user)
+
+
+@router.get(
+    "/{slug}/systems",
+    response={
+        200: list[schemas.CampaignSystemSummary],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_systems(request, slug: str):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    return serializers.campaign_systems(campaign)
+
+
+@router.get(
+    "/{slug}/leaderboard",
+    response={
+        200: list[schemas.LeaderboardRow],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_leaderboard(
+    request,
+    slug: str,
+    metric: str = "kills",
+    period: str = "week",
+    limit: int = 25,
+):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    return stats.leaderboard(
+        campaign, metric=metric, period=period, limit=_clamp(limit)
+    )
+
+
+@router.get(
+    "/{slug}/killmails",
+    response={200: list[schemas.KillmailOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_killmails(
+    request, slug: str, outcome: str = "", limit: int = 50, offset: int = 0
+):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    queryset = CampaignKillmail.objects.filter(campaign=campaign).exclude(
+        outcome="unscored"
+    )
+    if outcome:
+        queryset = queryset.filter(outcome=outcome)
+    start = max(0, offset)
+    return [
+        serializers.killmail_out(mail)
+        for mail in queryset[start : start + _clamp(limit)]
+    ]
+
+
+@router.get(
+    "/{slug}/sites",
+    response={200: list[schemas.SiteOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    start = max(0, offset)
+    rows = list(
+        CampaignSiteCompletion.objects.filter(
+            campaign=campaign
+        ).select_related("campaign_system", "user", "complex")[
+            start : start + _clamp(limit)
+        ]
+    )
+    names = dict(
+        EveCharacter.objects.filter(
+            character_id__in=[
+                row.character_id for row in rows if row.character_id
+            ]
+        ).values_list("character_id", "character_name")
+    )
+    return [
+        {
+            "id": row.id,
+            "occurred_at": row.occurred_at,
+            "site_kind": row.site_kind,
+            "amount_lp": row.amount_lp,
+            "system": row.campaign_system.name,
+            "username": row.user.username if row.user else None,
+            "character_id": row.character_id,
+            "character_name": names.get(row.character_id, ""),
+            "plex_class": (
+                row.complex.inferred_plex_class if row.complex else ""
+            ),
+            "plex_size": (
+                serializers.complex_size(row.complex.class_candidates)
+                if row.complex
+                else ""
+            ),
+            "confidence": row.complex.confidence if row.complex else "",
+        }
+        for row in rows
+    ]
+
+
+@router.get(
+    "/{slug}/timeline",
+    response={200: list[schemas.TimelineEvent], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_timeline(request, slug: str, limit: int = 50):
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    rows = CampaignEvent.objects.filter(campaign=campaign).select_related(
+        "campaign_system"
+    )[: _clamp(limit)]
+    return [
+        {
+            "id": event.id,
+            "kind": event.kind,
+            "occurred_at": event.occurred_at,
+            "title": event.title,
+            "body": event.body,
+            "side": event.side,
+            "source": event.source,
+            "system": (
+                event.campaign_system.name if event.campaign_system else None
+            ),
+            "is_active": event.is_active,
+        }
+        for event in rows
+    ]
+
+
+@router.get(
+    "/{slug}/awards",
+    response={200: list[schemas.AwardOut], 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_awards(request, slug: str, limit: int = 50):
+    """Weekly winners newest first, then the campaign awards."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    rows = CampaignAward.objects.filter(campaign=campaign).select_related(
+        "user"
+    )[: _clamp(limit)]
+    return [
+        {
+            "code": award.code,
+            "label": award.label,
+            "scope": award.scope,
+            "week_start": award.week_start,
+            "awarded_at": award.awarded_at,
+            "username": award.user.username,
+            "value": (award.payload or {}).get("value"),
+            "metric": (award.payload or {}).get("metric", ""),
+        }
+        for award in rows
+    ]
+
+
+@router.get(
+    "/{slug}/roster",
+    response={200: schemas.Roster, 403: ErrorResponse, 404: None},
+    auth=AuthOptional(),
+)
+def get_roster(request, slug: str):
+    """Who is in, when they play, and where the coverage hole is."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+
+    rows = serializers.roster_rows(campaign)
+
+    by_prime_time: dict[str, int] = {}
+    for row in rows:
+        label = row["prime_time"] or row["observed_prime_time"] or "Unknown"
+        by_prime_time[label] = by_prime_time.get(label, 0) + 1
+
+    return {
+        "pilots": rows,
+        "coverage": serializers.coverage_by_hour(campaign),
+        "by_prime_time": by_prime_time,
+    }

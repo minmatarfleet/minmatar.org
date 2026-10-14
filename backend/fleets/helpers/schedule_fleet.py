@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.contrib.auth.models import User
 
+from app.errors import ErrorResponse
 from fittings.models import EveDoctrine
 from fleets.endpoints.helpers import send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest, EveFleetResponse
@@ -24,6 +25,10 @@ def create_scheduled_fleet(
         return location_result
     location = location_result
 
+    campaign = resolve_campaign(getattr(payload, "campaign_id", None))
+    if isinstance(campaign, tuple):
+        return campaign
+
     fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
@@ -35,6 +40,7 @@ def create_scheduled_fleet(
         disable_motd=payload.disable_motd,
         hide_volunteers=payload.hide_volunteers,
         status="pending",
+        campaign=campaign,
     )
 
     if payload.doctrine_id:
@@ -50,6 +56,36 @@ def create_scheduled_fleet(
         send_discord_pre_ping(fleet)
 
     return fleet
+
+
+def resolve_campaign(campaign_id):
+    """A fleet can count towards a campaign that is running or about to.
+
+    Returns the campaign, None when no campaign was asked for, or a Ninja
+    error tuple.
+    """
+    if not campaign_id:
+        return None
+
+    # Imported here on purpose: campaigns depends on fleets, so importing it
+    # at module level would close the loop.
+    from campaigns.models import (  # pylint: disable=import-outside-toplevel
+        Campaign,
+        CampaignStatus,
+    )
+
+    # A bad id in the body is a bad request, not a missing page.
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    if not campaign:
+        return 400, ErrorResponse.new(f"No campaign with id {campaign_id}")
+    if campaign.status not in (
+        CampaignStatus.SCHEDULED,
+        CampaignStatus.ACTIVE,
+    ):
+        return 400, ErrorResponse.new(
+            f"Campaign {campaign.slug} is {campaign.status}"
+        )
+    return campaign
 
 
 def fleet_create_response(fleet: EveFleet) -> EveFleetResponse:
@@ -69,6 +105,8 @@ def fleet_create_response(fleet: EveFleet) -> EveFleetResponse:
         "disable_motd": fleet.disable_motd,
         "hide_volunteers": fleet.hide_volunteers,
         "status": fleet.status,
+        "campaign_id": fleet.campaign_id,
+        "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
     }
     if fleet.doctrine:
         out["doctrine_id"] = fleet.doctrine.id

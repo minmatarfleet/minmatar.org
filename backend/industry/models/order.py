@@ -41,6 +41,14 @@ class IndustryOrder(models.Model):
         related_name="industry_orders",
         help_text="Station or structure where the order should be built/delivered.",
     )
+    campaign = models.ForeignKey(
+        "campaigns.Campaign",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="industry_orders",
+        help_text="Optional live campaign this supply order supports.",
+    )
     tribe_groups = models.ManyToManyField(
         "tribes.TribeGroup",
         blank=True,

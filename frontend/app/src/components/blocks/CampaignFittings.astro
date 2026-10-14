@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignFitting } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    fittings:           CampaignFitting[];
+    [propName: string]: any;
+}
+
+const {
+    fittings,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const rows = (fittings ?? []).filter(fitting => fitting.fitting_id)
+---
+
+{rows.length > 0 &&
+    <div class:list={['[ campaign-fittings ]', Astro.props.class]} {...attributes}>
+        <Flexblock gap='var(--space-3xs)'>
+            <small class="[ campaign-fittings__label ]">{t('campaigns.fittings.label')}</small>
+            <FlexInline gap='var(--space-2xs)' class="[ campaign-fittings__list ]">
+                {rows.map(fitting =>
+                    <a
+                        class="[ campaign-fittings__link ]"
+                        href={translatePath(`/ships/fittings/${fitting.fitting_id}`)}
+                    >
+                        <span>{fitting.role_label || fitting.ship_name || fitting.name}</span>
+                        {fitting.srp_eligible &&
+                            <small class="[ campaign-fittings__srp ]">{t('campaigns.fittings.srp')}</small>
+                        }
+                    </a>
+                )}
+            </FlexInline>
+        </Flexblock>
+    </div>
+}
+
+<style lang="scss">
+    .campaign-fittings__label {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .campaign-fittings__list {
+        flex-wrap: wrap;
+    }
+
+    .campaign-fittings__link {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-3xs);
+        padding-block: var(--space-3xs);
+        padding-inline: var(--space-s);
+        background: var(--background);
+        color: var(--highlight);
+        text-decoration: none;
+        font-size: var(--step--1);
+
+        &:hover,
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+        }
+    }
+
+    .campaign-fittings__srp {
+        color: var(--green);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
+    }
+</style>

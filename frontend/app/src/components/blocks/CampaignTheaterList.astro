@@ -1,0 +1,174 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    CampaignArea,
+    CampaignSystemPriority,
+    CampaignSystemSummary,
+} from '@dtypes/api.minmatar.org'
+import {
+    CAMPAIGN_GOAL_ORDER,
+    campaign_goal_hint_i18n_key,
+    campaign_goal_i18n_key,
+    normalize_campaign_goal,
+    priority_rank,
+} from '@helpers/fetching/campaigns'
+
+interface Props {
+    systems:            CampaignSystemSummary[];
+    areas:              CampaignArea[];
+    [propName: string]: any;
+}
+
+const {
+    systems,
+    areas,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+type TheaterScope = 'system' | 'constellation' | 'region'
+
+interface TheaterRow {
+    key:        string
+    name:       string
+    scope:      TheaterScope
+    goal:       string
+    priority:   CampaignSystemPriority
+    anchor_id?: string
+}
+
+const as_priority = (value:string | undefined):CampaignSystemPriority => {
+    if (value === 'high' || value === 'medium' || value === 'low') return value
+    return 'medium'
+}
+
+const scope_label = (scope:TheaterScope) => {
+    switch (scope) {
+        case 'system': return t('campaigns.theater.scope_system')
+        case 'constellation': return t('campaigns.theater.scope_constellation')
+        case 'region': return t('campaigns.theater.scope_region')
+        default: {
+            const _exhaustive: never = scope
+            return _exhaustive
+        }
+    }
+}
+
+const goal_tag_color = (goal:string) => {
+    switch (normalize_campaign_goal(goal)) {
+        case 'take': return 'fleet-red' as const
+        case 'hold': return 'green' as const
+        case 'pressure': return 'fleet-yellow' as const
+        case 'disrupt': return 'militia-purple' as const
+        case 'recon': return 'alliance-blue' as const
+        default: return 'alliance-blue' as const
+    }
+}
+
+const rows:TheaterRow[] = [
+    ...systems.map(system => ({
+        key: `system-${system.id}`,
+        name: system.name,
+        scope: 'system' as const,
+        goal: normalize_campaign_goal(system.goal || 'none'),
+        priority: as_priority(system.priority),
+        anchor_id: `campaign-system-${system.id}`,
+    })),
+    ...areas.map(area => ({
+        key: `area-${area.id}`,
+        name: area.name,
+        scope: area.scope,
+        goal: normalize_campaign_goal(area.goal || 'none'),
+        priority: as_priority(area.priority),
+    })),
+]
+
+const groups = CAMPAIGN_GOAL_ORDER
+    .map(goal => ({
+        goal,
+        rows: rows
+            .filter(row => row.goal === goal)
+            .sort((a, b) =>
+                priority_rank(a.priority) - priority_rank(b.priority)
+                || a.name.localeCompare(b.name)
+            ),
+    }))
+    .filter(group => group.rows.length > 0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+{groups.length > 0 &&
+    <Flexblock gap='var(--space-m)' class:list={['[ campaign-theater-list ]', Astro.props.class]} {...attributes}>
+        {groups.map(group =>
+            <Flexblock gap='var(--space-2xs)' class="[ campaign-theater-group ]">
+                <Flexblock gap='var(--space-3xs)' class="[ campaign-theater-goal ]">
+                    <Tag
+                        text={t(campaign_goal_i18n_key(group.goal))}
+                        color={goal_tag_color(group.goal)}
+                    />
+                    <p>{t(campaign_goal_hint_i18n_key(group.goal))}</p>
+                </Flexblock>
+                <ul>
+                    {group.rows.map(row =>
+                        <li id={row.anchor_id}>
+                            <FlexInline gap='var(--space-2xs)' class="[ items-center campaign-theater-name ]">
+                                <CampaignPriorityIcon priority={row.priority} />
+                                <span>{row.name}</span>
+                            </FlexInline>
+                            <small class="[ campaign-theater-scope ]">{scope_label(row.scope)}</small>
+                        </li>
+                    )}
+                </ul>
+            </Flexblock>
+        )}
+    </Flexblock>
+}
+
+<style lang="scss">
+    .campaign-theater-goal {
+        p {
+            margin: 0;
+            color: var(--foreground);
+            font-size: var(--step--1);
+            line-height: 1.4;
+            max-width: 42rem;
+        }
+    }
+
+    .campaign-theater-group ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .campaign-theater-group li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-top: solid 1px var(--border-color);
+    }
+
+    .campaign-theater-name span {
+        color: var(--highlight);
+        font-size: var(--step-0);
+    }
+
+    .campaign-theater-scope {
+        flex-shrink: 0;
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: var(--step--2);
+    }
+</style>

@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return new Response('', { status: 401 })
+
+import { search_campaign_entities } from '@helpers/api.minmatar.org/campaigns'
+import type { UniverseEntityMatch } from '@dtypes/api.minmatar.org'
+
+const kind_param = Astro.url.searchParams.get('kind')
+const kind = kind_param === 'alliance' ? 'alliance' : 'corporation'
+const input_id = kind === 'alliance' ? 'related_alliance_name' : 'corporation_name'
+const hidden_id = kind === 'alliance' ? 'related_alliance_id' : 'corporation_id'
+const results_id = `${input_id}-results`
+const query = (Astro.url.searchParams.get(input_id) ?? '').trim()
+
+let matches:UniverseEntityMatch[] = []
+
+if (query.length >= 2) {
+    try {
+        matches = await search_campaign_entities(auth_token as string, kind, query)
+    } catch {
+        matches = []
+    }
+}
+---
+
+{query.length >= 2 && matches.length === 0 &&
+    <p class="entity-empty">{t('intel.add_structure.no_matches')}</p>
+}
+
+{matches.map((match) =>
+    <button
+        type="button"
+        class="entity-option"
+        data-input={input_id}
+        data-hidden={hidden_id}
+        data-results={results_id}
+        data-name={match.name}
+        data-id={String(match.id)}
+        onclick="pick_entity(this)"
+    >
+        {match.name}{match.ticker ? ` [${match.ticker}]` : ''}
+    </button>
+)}
+
+<style is:global>
+    .entity-results .entity-option,
+    .entity-results .entity-empty {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        text-align: start;
+        color: var(--foreground);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+    }
+
+    .entity-results .entity-empty {
+        color: var(--highlight);
+        cursor: default;
+    }
+
+    .entity-results .entity-option:hover,
+    .entity-results .entity-option:focus-visible {
+        background-color: var(--highlight);
+        color: var(--background);
+        outline: none;
+    }
+</style>

@@ -11,7 +11,7 @@ from eveonline.models import EveCorporation
 
 from fleets.endpoints.helpers import time_region
 from fleets.endpoints.schemas import EveFleetMetric
-from fleets.models import EveFleet
+from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
 
 PATH = "/metrics"
 METHOD = "get"
@@ -27,6 +27,7 @@ def get_fleet_metrics(request):
     one_year_ago = timezone.now() - timedelta(days=365)
     fleets = (
         EveFleet.objects.filter(start_time__gte=one_year_ago)
+        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .annotate(instances=Count("evefleetinstance"))
         .annotate(members=Count("evefleetinstance__evefleetinstancemember"))
         .annotate(

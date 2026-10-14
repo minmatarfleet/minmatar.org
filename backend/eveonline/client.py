@@ -1138,6 +1138,36 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def search_category(self, category: str, search: str) -> EsiResponse:
+        """Prefix search via GET /characters/{id}/search/.
+
+        ``esi-search.search_structures.v1`` is the scope ESI requires for
+        corporation and alliance searches, despite the name.
+        """
+        if not live_esi_allowed():
+            return EsiResponse(ERROR_CALLING_ESI)
+        token, status = self._valid_token(["esi-search.search_structures.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/search/",
+            params={
+                "categories": category,
+                "search": search,
+                "strict": "false",
+            },
+            timeout=10,
+            headers=self._bearer_headers(token),
+        )
+        try:
+            data = response.json() if response.content else {}
+        except ValueError:
+            data = {}
+        if not isinstance(data, dict):
+            data = {}
+        return EsiResponse(response_code=response.status_code, data=data)
+
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
         operation = esi_provider.client.Universe.PostUniverseNames(
             body=ids_to_resolve

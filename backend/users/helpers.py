@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
-from django.db import connection
+from django.db import IntegrityError, connection
 
 from discord.client import DiscordClient
 from discord.models import DiscordRole, DiscordUser
@@ -283,8 +283,38 @@ def make_user_objects(user):
     discord_user.user = django_user
     discord_user.save()
 
-    EvePlayer.objects.get_or_create(
-        user=django_user, defaults={"nickname": django_user.username}
-    )
+    ensure_eve_player_for_user(django_user)
 
     return django_user
+
+
+def ensure_eve_player_for_user(django_user: User) -> EvePlayer:
+    """
+    Ensure the user has an EvePlayer.
+
+    Nickname uniqueness is case-insensitive on MySQL (utf8mb4_uca1400_ai_ci),
+    so Discord usernames that only differ by case from an existing nickname
+    must not break login (including Django admin Discord OAuth).
+    """
+    existing = EvePlayer.objects.filter(user=django_user).first()
+    if existing:
+        return existing
+
+    nickname = _unique_eve_player_nickname(django_user)
+    try:
+        return EvePlayer.objects.create(user=django_user, nickname=nickname)
+    except IntegrityError:
+        # Race: another request created the row, or nick still collided.
+        existing = EvePlayer.objects.filter(user=django_user).first()
+        if existing:
+            return existing
+        nickname = f"{django_user.username}__u{django_user.pk}"
+        return EvePlayer.objects.create(user=django_user, nickname=nickname)
+
+
+def _unique_eve_player_nickname(django_user: User) -> str:
+    """Pick a nickname that won't collide case-insensitively with another player."""
+    nickname = django_user.username
+    if not EvePlayer.objects.filter(nickname__iexact=nickname).exists():
+        return nickname
+    return f"{django_user.username}__u{django_user.pk}"

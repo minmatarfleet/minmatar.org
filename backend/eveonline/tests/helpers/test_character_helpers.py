@@ -39,15 +39,15 @@ class CharacterHelperTests(TestCase):
         )
         char.save()
 
-        self.assertEqual(11, len(character_desired_scopes(char)))
+        self.assertEqual(12, len(character_desired_scopes(char)))
 
         self.assertEqual(0, len(scope_names(char.token)))
 
         add_scopes(TokenType.DIRECTOR, char.token)
 
-        self.assertEqual(28, len(scope_names(char.token)))
+        self.assertEqual(29, len(scope_names(char.token)))
 
-        self.assertEqual(36, len(scopes_for(TokenType.EXECUTOR)))
+        self.assertEqual(37, len(scopes_for(TokenType.EXECUTOR)))
 
     def test_merge_scope_groups(self):
         self.assertEqual(

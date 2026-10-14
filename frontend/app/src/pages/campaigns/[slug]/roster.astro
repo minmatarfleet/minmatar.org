@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import { get_user_permissions } from '@helpers/permissions'
+import type { CampaignDetail, CampaignRoster } from '@dtypes/api.minmatar.org'
+import { get_campaign, get_campaign_roster } from '@helpers/api.minmatar.org/campaigns'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CampaignRosterPanels from '@components/blocks/CampaignRosterPanels.astro'
+import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
+
+const slug = Astro.params.slug as string
+
+let campaign:CampaignDetail | null = null
+let roster:CampaignRoster | null = null
+let fetch_roster_error:Error | false = false
+
+try {
+    campaign = await get_campaign(slug, auth_token as string)
+    roster = await get_campaign_roster(slug, auth_token as string)
+} catch (error) {
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+
+    fetch_roster_error = error
+}
+
+const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
+
+const page_title = campaign ? `${campaign.name} · ${t('campaigns.roster.title')}` : t('campaigns.roster.page_title')
+
+const breadcrumbs = [
+    { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
+    {
+        page_title: campaign?.name ?? t('campaigns.page_title'),
+        accumulated_path: `/campaigns/${slug}/`,
+    },
+    {
+        page_title: t('campaigns.roster.title'),
+        accumulated_path: `/campaigns/${slug}/roster/`,
+    },
+]
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('campaigns.roster.meta_description')}
+>
+    <PageDefault
+        cover={{
+            image: '/images/warzone-cover.jpg',
+            image_990: '/images/warzone-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </FlexInline>
+
+        {fetch_roster_error || !roster ?
+            <ErrorRefetch
+                args={{
+                    partial: ROSTER_PARTIAL_URL,
+                    error: fetch_roster_error || new Error(t('campaigns.action_failed')),
+                    delay: 0,
+                }}
+            />
+            :
+            <CampaignRosterPanels roster={roster} />
+        }
+    </PageDefault>
+
+    <CampaignSwapInit />
+</Viewport>

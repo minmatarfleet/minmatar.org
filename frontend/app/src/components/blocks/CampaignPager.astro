@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/** Newer / Older for a table fed by a partial; the partial re-renders the whole table with the page it is asked for. */
+interface Props {
+    page:               number;
+    has_more:           boolean;
+    url_for:            (page:number) => string;
+    target:             string;
+    [propName: string]: any;
+}
+
+const {
+    page,
+    has_more,
+    url_for,
+    target,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+{(page > 1 || has_more) &&
+    <FlexInline gap='var(--space-2xs)' justification='space-between' class:list={['[ campaign-pager items-center ]', Astro.props.class]} {...attributes}>
+        <span>
+            {page > 1 &&
+                <Button size='sm' color='transparent' narrow={true} hx-get={url_for(page - 1)} hx-target={target} hx-swap='outerHTML' hx-indicator='.loader'>
+                    ← {t('campaigns.pager.newer')}
+                </Button>
+            }
+        </span>
+        <small class="[ campaign-pager-page ]">{t('campaigns.pager.page').replace('{page}', String(page))}</small>
+        <span>
+            {has_more &&
+                <Button size='sm' color='transparent' narrow={true} hx-get={url_for(page + 1)} hx-target={target} hx-swap='outerHTML' hx-indicator='.loader'>
+                    {t('campaigns.pager.older')} →
+                </Button>
+            }
+        </span>
+    </FlexInline>
+}
+
+<style lang="scss">
+    .campaign-pager-page {
+        color: var(--foreground);
+    }
+</style>

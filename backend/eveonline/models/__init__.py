@@ -21,6 +21,10 @@ from eveonline.models.characters import (
     EveSkillset,
     EveTag,
 )
+from eveonline.models.factional_warfare import (
+    EveCharacterFwLpPayout,
+    FwPayoutEventCode,
+)
 from eveonline.models.corporations import (
     EveCorporation,
     EveCorporationAllianceHistory,
@@ -34,6 +38,8 @@ from eveonline.models.corporations import (
 from eveonline.models.universe import EveUniverseSchematic
 
 __all__ = [
+    "EveCharacterFwLpPayout",
+    "FwPayoutEventCode",
     "EveAlliance",
     "EveCharacter",
     "EveCharacterAsset",

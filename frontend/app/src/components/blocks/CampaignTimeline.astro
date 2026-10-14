@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignTimelineEvent } from '@dtypes/api.minmatar.org'
+import { format_date_time } from '@helpers/date'
+
+interface Props {
+    events:             CampaignTimelineEvent[];
+    [propName: string]: any;
+}
+
+const {
+    events,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock gap='var(--space-s)' class:list={['[ campaign-timeline ]', Astro.props.class]} {...attributes}>
+    {events.length === 0 ?
+        <small>{t('campaigns.timeline.none')}</small>
+        :
+        events.map(event =>
+            <Flexblock gap='var(--space-3xs)' class="[ campaign-timeline-event ]">
+                <FlexInline gap='var(--space-2xs)' justification='space-between' class="[ items-start ]">
+                    <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                        <span class="[ text-[var(--highlight)] ]">{event.title}</span>
+                        {event.is_active && <Tag text={t('campaigns.timeline.active')} color='green' narrow={true} />}
+                    </FlexInline>
+                    <small>{format_date_time(lang, event.occurred_at)}</small>
+                </FlexInline>
+                {event.body && <small>{event.body}</small>}
+                {event.system && <small>{event.system}</small>}
+            </Flexblock>
+        )
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-timeline-event {
+        padding-inline-start: var(--space-s);
+        border-left: solid 2px var(--border-color);
+    }
+</style>

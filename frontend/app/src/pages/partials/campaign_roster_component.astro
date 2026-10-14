@@ -1,0 +1,59 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+
+if (!can_view_campaigns)
+    return HTTP_403_Forbidden()
+
+import type { CampaignRoster } from '@dtypes/api.minmatar.org'
+import { get_campaign_roster } from '@helpers/api.minmatar.org/campaigns'
+
+const slug = Astro.url.searchParams.get('slug') as string
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let roster:CampaignRoster | null = null
+let fetch_roster_error:Error | false = false
+
+try {
+    roster = await get_campaign_roster(slug, auth_token as string)
+} catch (error) {
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+
+    fetch_roster_error = error
+}
+
+const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
+
+import CampaignRosterPanels from '@components/blocks/CampaignRosterPanels.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_roster_error || !roster ?
+    <ErrorRefetch
+        args={{
+            partial: ROSTER_PARTIAL_URL,
+            error: fetch_roster_error || new Error(t('campaigns.action_failed')),
+            delay: delay,
+        }}
+    />
+    :
+    <CampaignRosterPanels roster={roster} />
+}

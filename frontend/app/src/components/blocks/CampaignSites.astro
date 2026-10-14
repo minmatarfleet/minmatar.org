@@ -1,0 +1,36 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { CampaignSite } from '@dtypes/api.minmatar.org'
+
+/** The sites table with its pager; the partial re-renders this block for another page. */
+interface Props {
+    slug:               string;
+    sites:              CampaignSite[];
+    page?:              number;
+    has_more?:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    sites,
+    page = 1,
+    has_more = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const partial_url = (next_page:number) => translatePath(`/partials/campaign_sites_component?slug=${slug}&page=${next_page}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import CampaignSitesTable from '@components/blocks/CampaignSitesTable.astro'
+import CampaignPager from '@components/blocks/CampaignPager.astro'
+---
+
+<Flexblock id='campaign-sites' gap='var(--space-s)' class:list={['[ campaign-sites ]', Astro.props.class]} {...attributes}>
+    <CampaignSitesTable sites={sites} />
+    <CampaignPager page={page} has_more={has_more} url_for={partial_url} target='#campaign-sites' />
+</Flexblock>

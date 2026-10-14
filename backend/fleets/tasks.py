@@ -14,7 +14,7 @@ from fleets.helpers.active_clones import (
 )
 from fleets.helpers.npsi_ingest import poll_npsi_sources
 from fleets.helpers.roam_report import publish_fleet_roam_report_impl
-from fleets.models import EveFleet, EveFleetInstance
+from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet, EveFleetInstance
 
 discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -54,6 +54,9 @@ def update_fleet_schedule():
     fleets = (
         EveFleet.objects.filter(start_time__gte=timezone.now())
         .exclude(status="cancelled")
+        # A standing fleet is always up and a gang forms on the spot;
+        # neither belongs on a schedule of upcoming fleets.
+        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .order_by("start_time")
         .select_related("location", "audience", "created_by")
     )

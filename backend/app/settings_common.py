@@ -25,6 +25,7 @@ CELERY_IMPORTS = (
     "alliance.tasks",
     "fittings.tasks",
     "surveys.tasks",
+    "campaigns.tasks",
 )
 
 
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     # Django packages
+    "django_admin_tabs",
     "django_extensions",
     "django_celery_beat",
     "safedelete",
@@ -106,6 +108,8 @@ INSTALLED_APPS = [
     "help_tickets.apps.HelpTicketsConfig",
     # Quarterly community surveys
     "surveys.apps.SurveysConfig",
+    # Live multi-system Faction Warfare campaigns
+    "campaigns.apps.CampaignsConfig",
 ]
 
 # Discord Login

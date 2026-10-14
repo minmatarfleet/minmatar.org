@@ -12,6 +12,10 @@ class EveFleetType(str, Enum):
     NON_STRATEGIC = "non_strategic"
     TRAINING = "training"
     NPSI = "npsi"
+    # Campaign fleets. Valid on a response, but deliberately absent from
+    # GET /types so the fleet form cannot create one.
+    STANDING = "standing"
+    GANG = "gang"
 
 
 class EveFleetChannelResponse(BaseModel):
@@ -47,6 +51,8 @@ class EveFleetResponse(BaseModel):
     hide_volunteers: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    campaign_id: Optional[int] = None
+    campaign_slug: Optional[str] = None
     roam_report_url: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
@@ -87,6 +93,7 @@ class CreateEveFleetRequest(BaseModel):
     hide_volunteers: bool = False
     immediate_ping: bool = False
     status: Optional[str] = None
+    campaign_id: Optional[int] = None
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -101,6 +108,7 @@ class UpdateEveFleetRequest(BaseModel):
     hide_volunteers: Optional[bool] = None
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    campaign_id: Optional[int] = None
 
 
 class EveFleetMetric(BaseModel):

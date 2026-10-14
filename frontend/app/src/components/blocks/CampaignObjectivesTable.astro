@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignWeek, CampaignSystemSummary } from '@dtypes/api.minmatar.org'
+import { campaign_objective_rows } from '@helpers/fetching/campaigns'
+
+interface Props {
+    week:               CampaignWeek | null;
+    systems:            CampaignSystemSummary[];
+    [propName: string]: any;
+}
+
+const {
+    week,
+    systems,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const rows = campaign_objective_rows(week, systems, t)
+
+import CampaignObjectiveRow from '@components/blocks/CampaignObjectiveRow.astro'
+---
+
+<div class:list={['[ campaign-objectives ]', Astro.props.class]} {...attributes}>
+    {rows.length === 0 ?
+        <p class="[ campaign-objectives-empty ]">{t('campaigns.week.no_targets')}</p>
+        :
+        <>
+            <div class="[ campaign-objectives-header ]" aria-hidden="true">
+                <small>{t('campaigns.objective.column_where')}</small>
+                <small>{t('campaigns.objective.column_what')}</small>
+                <small>{t('campaigns.objective.column_progress')}</small>
+            </div>
+            {rows.map(row => <CampaignObjectiveRow row={row} />)}
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .campaign-objectives {
+        --campaign-objective-columns: minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(20rem, 3fr);
+    }
+
+    .campaign-objectives-header {
+        display: grid;
+        grid-template-columns: var(--campaign-objective-columns);
+        column-gap: var(--space-s);
+        padding-block: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+        }
+    }
+
+    .campaign-objectives-empty {
+        color: var(--foreground);
+        font-size: var(--step-0);
+    }
+
+    @media screen and (max-width: 991px) {
+        .campaign-objectives-header {
+            display: none;
+        }
+    }
+</style>

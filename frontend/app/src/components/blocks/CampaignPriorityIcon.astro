@@ -1,0 +1,67 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignSystemPriority } from '@dtypes/api.minmatar.org'
+
+/**
+ * The three-tier chevron every issue tracker uses: three stacked chevrons
+ * in red for high, two in orange for medium, one in green for low.
+ */
+interface Props {
+    priority:           CampaignSystemPriority;
+    [propName: string]: any;
+}
+
+const {
+    priority,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const label = t(`campaigns.system.priority.${priority}` as 'campaigns.system.priority.high')
+const tiers = priority === 'high' ? 3 : priority === 'medium' ? 2 : 1
+---
+
+<span
+    class:list={['[ campaign-priority ]', `campaign-priority-${priority}`, Astro.props.class]}
+    role="img"
+    aria-label={label}
+    title={label}
+    {...attributes}
+>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+        {tiers >= 3 && <path d="M3 5.5 L8 2.5 L13 5.5" />}
+        {tiers >= 2 && <path d="M3 9 L8 6 L13 9" />}
+        <path d="M3 12.5 L8 9.5 L13 12.5" />
+    </svg>
+</span>
+
+<style lang="scss">
+    .campaign-priority {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 1rem;
+        height: 1rem;
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        path {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    }
+
+    .campaign-priority-high { color: var(--fleet-red); }
+    .campaign-priority-medium { color: var(--fleet-yellow); }
+    .campaign-priority-low { color: var(--green); }
+</style>
