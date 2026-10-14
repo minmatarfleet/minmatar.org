@@ -33,7 +33,7 @@ def get_order(request, order_id: int):
     try:
         order = (
             IndustryOrder.objects.filter(pk=order_id)
-            .select_related("character", "location")
+            .select_related("character", "location", "campaign")
             .prefetch_related(
                 "items__eve_type",
                 "items__assignments__character",
@@ -63,6 +63,7 @@ def get_order(request, order_id: int):
         character_name=(
             order.character.character_name if order.character else ""
         ),
+        campaign_slug=order.campaign.slug if order.campaign_id else None,
         location=(
             OrderLocationResponse(
                 location_id=order.location.location_id,

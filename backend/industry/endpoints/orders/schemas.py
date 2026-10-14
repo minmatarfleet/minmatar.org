@@ -131,6 +131,7 @@ class OrderDetailResponse(BaseModel):
     contract_to: str
     character_id: int | None = None
     character_name: str = ""
+    campaign_slug: str | None = None
     location: OrderLocationResponse | None
     items: List[OrderItemResponse]
     lp_stockpiles: List[OrderLpStockpileResponse] = []
@@ -159,6 +160,7 @@ class CreateOrderRequest(BaseModel):
     character_id: int | None = None
     location_id: int | None = None
     contract_to: str = ""
+    campaign_id: int | None = None
     items: List[OrderItemInput]
 
 

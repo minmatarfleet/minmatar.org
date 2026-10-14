@@ -8,6 +8,7 @@ from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from campaigns.helpers import resolve_attachable_campaign
 from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
@@ -129,12 +130,14 @@ def _create_order(
     character,
     location,
     contract_to: str,
+    campaign,
 ):
     order = IndustryOrder.objects.create(
         needed_by=payload.needed_by,
         character=character,
         location=location,
         contract_to=contract_to,
+        campaign=campaign,
         public_short_code=pick_unique_public_short_code_among_actives(),
     )
     return order, None
@@ -209,11 +212,15 @@ def post_order(request, payload: CreateOrderRequest):
     context, err = _resolve_create_context(request, payload)
     if err:
         return err
+    campaign = resolve_attachable_campaign(payload.campaign_id)
+    if isinstance(campaign, tuple):
+        return campaign
     order, err = _create_order(
         payload,
         context["character"],
         context["location"],
         context["contract_to"],
+        campaign,
     )
     if err:
         return err
