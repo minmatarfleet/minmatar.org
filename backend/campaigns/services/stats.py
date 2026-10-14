@@ -46,7 +46,6 @@ from feed.models import FeedKillmail
 logger = logging.getLogger(__name__)
 
 BOARD_METRICS = {
-    "points": "points",
     "kills": "kills",
     "isk": "isk_destroyed",
     "sites": "complexes",
@@ -495,12 +494,12 @@ def rebuild_stats(campaign: Campaign) -> int:
 
 def leaderboard(
     campaign: Campaign,
-    metric: str = "points",
+    metric: str = "kills",
     period: str = "week",
     limit: int = 25,
 ) -> list[dict]:
     """Every board reads the same day rows; only the window changes."""
-    field = BOARD_METRICS.get(metric, "points")
+    field = BOARD_METRICS.get(metric, "kills")
     queryset = CampaignParticipantDay.objects.filter(campaign=campaign)
 
     if period == "week":
@@ -511,7 +510,7 @@ def leaderboard(
 
     rows = list(
         queryset.values("user_id", "user__username")
-        .annotate(value=Sum(field), points=Sum("points"))
+        .annotate(value=Sum(field))
         .order_by("-value")[:limit]
     )
     primaries = primary_characters([row["user_id"] for row in rows])
@@ -524,7 +523,6 @@ def leaderboard(
             "character_id": primaries.get(row["user_id"], (None, ""))[0],
             "character_name": primaries.get(row["user_id"], (None, ""))[1],
             "value": float(row["value"] or 0),
-            "points": int(row["points"] or 0),
         }
         for index, row in enumerate(rows, start=1)
     ]
@@ -630,7 +628,6 @@ def week_summary(campaign: Campaign) -> dict:
         "week_start": week_start.isoformat(),
         "kills": rows.aggregate(v=Sum("kills"))["v"] or 0,
         "complexes": rows.aggregate(v=Sum("complexes"))["v"] or 0,
-        "points": rows.aggregate(v=Sum("points"))["v"] or 0,
         "active_pilots": rows.filter(active=True)
         .values("user_id")
         .distinct()

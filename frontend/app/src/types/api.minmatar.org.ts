@@ -2473,7 +2473,7 @@ export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
 export type CampaignSystemPriority = 'high' | 'medium' | 'low'
-export type CampaignLeaderboardMetric = 'points' | 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
+export type CampaignLeaderboardMetric = 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
 export type CampaignLeaderboardPeriod = 'week' | 'rolling7' | 'all'
 export type CampaignCharacterState = 'ready' | 'needs_update' | 'lapsed' | 'removed' | 'missing'
 export type CampaignKillmailOutcome = 'kill' | 'loss'
@@ -2639,8 +2639,6 @@ export interface CampaignDetail {
     fittings:                   CampaignFitting[];
     totals:                     CampaignTotals;
     is_enlisted:                boolean;
-    my_points:                  number;
-    my_rank:                    number | null;
     my_streak:                  number;
     characters_included:        number;
     characters_tracked:         number;
@@ -2706,11 +2704,21 @@ export interface CampaignWeekTarget {
     my_structures_reported?: number;
 }
 
+export interface CampaignWeekProgress {
+    system:                 string;
+    system_id:              number;
+    contested_start:        number | null;
+    contested_now:          number | null;
+    victory_points_start:   number | null;
+    victory_points_now:     number | null;
+    advantage_our_start?:   number | null;
+    advantage_our_now?:     number | null;
+}
+
 export interface CampaignWeekSummary {
     week_start?:    string;
     kills?:         number;
     complexes?:     number;
-    points?:        number;
     active_pilots?: number;
 }
 
@@ -2721,6 +2729,7 @@ export interface CampaignWeek {
     week_count:             number;
     day_index:              number;
     targets:                CampaignWeekTarget[];
+    progress?:              CampaignWeekProgress[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
 }
@@ -2730,7 +2739,6 @@ export interface CampaignOrder {
     kind:               string;
     label:              string;
     params:             Record<string, any>;
-    points:             number;
     system:             string | null;
     gap_share_pct:      number;
     progress:           number;
@@ -2762,7 +2770,6 @@ export interface CampaignLeaderboardRow {
     character_id:   number | null;
     character_name: string;
     value:          number;
-    points:         number;
 }
 
 export interface CampaignKillmail {
@@ -2824,7 +2831,6 @@ export interface CampaignRosterPilot {
     observed_prime_time:    string;
     last_active_day:        string | null;
     streak_days:            number;
-    points:                 number;
     characters_included:    number;
     characters_tracked:     number;
 }
@@ -2886,7 +2892,6 @@ export interface CampaignAdvantageResponse {
     our_pct:    number | null;
     enemy_pct:  number | null;
     net_pct:    number | null;
-    points:     number;
 }
 
 export interface CampaignGangRequest {

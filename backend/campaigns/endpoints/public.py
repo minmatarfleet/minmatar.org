@@ -178,8 +178,6 @@ def get_campaign(request, slug: str):
         "fittings": serializers.campaign_fittings(campaign),
         "totals": stats.campaign_totals(campaign),
         "is_enlisted": enlistment is not None,
-        "my_points": my_stat.points if my_stat else 0,
-        "my_rank": my_stat.rank_points if my_stat else None,
         "my_streak": my_stat.streak_days if my_stat else 0,
         "characters_included": (
             enlistment.characters.filter(included_until__isnull=True).count()
@@ -341,6 +339,7 @@ def get_week(request, slug: str):
     return {
         **plan.week_position(campaign, week_start),
         "targets": targets,
+        "progress": plan.week_system_progress(campaign, week_start),
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
@@ -536,7 +535,7 @@ def get_systems(request, slug: str):
 def get_leaderboard(
     request,
     slug: str,
-    metric: str = "points",
+    metric: str = "kills",
     period: str = "week",
     limit: int = 25,
 ):

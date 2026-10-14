@@ -30,7 +30,7 @@ import type {
 import { get_campaign_leaderboard } from '@helpers/api.minmatar.org/campaigns'
 
 const slug = Astro.url.searchParams.get('slug') as string
-const metric = (Astro.url.searchParams.get('metric') ?? 'points') as CampaignLeaderboardMetric
+const metric = (Astro.url.searchParams.get('metric') ?? 'kills') as CampaignLeaderboardMetric
 const period = (Astro.url.searchParams.get('period') ?? 'week') as CampaignLeaderboardPeriod
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

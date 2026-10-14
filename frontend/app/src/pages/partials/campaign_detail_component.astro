@@ -72,7 +72,7 @@ if (campaign) {
     const results = await Promise.allSettled([
         get_campaign_week(slug, auth_token as string),
         get_campaign_fleets(slug, auth_token as string, 25),
-        get_campaign_leaderboard(slug, auth_token as string, 'points', 'week'),
+        get_campaign_leaderboard(slug, auth_token as string, 'kills', 'week'),
         get_campaign_killmails(slug, auth_token as string, '', ACTIVITY_PAGE_SIZE + 1),
         get_campaign_sites(slug, auth_token as string, ACTIVITY_PAGE_SIZE + 1),
         get_campaign_roster(slug, auth_token as string),

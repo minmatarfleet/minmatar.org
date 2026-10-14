@@ -223,6 +223,7 @@ class OrderTests(TestCase):
         rows = plan.orders_for(self.campaign, self.user)
         self.assertTrue(rows)
         self.assertFalse(rows[0]["completed"])
+        self.assertNotIn("points", rows[0])
 
     def test_the_commander_order_is_drafted_from_the_plan(self):
         text = plan.draft_commander_order(self.campaign)

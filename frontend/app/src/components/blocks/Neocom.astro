@@ -96,16 +96,6 @@ const page = Astro.url.pathname
                     >
                         <AllianceEvEIcon />
                     </NeocomButton>
-                    {can_view_campaigns &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/campaigns'))}
-                            title='neocom.campaigns'
-                            description='campaigns.description'
-                            href={translatePath('/campaigns/')}
-                        >
-                            <CampaignsEvEIcon />
-                        </NeocomButton>
-                    }
                     <NeocomButton
                         active={page.startsWith(translatePath('/learning'))}
                         title='neocom.learning'
@@ -130,6 +120,16 @@ const page = Astro.url.pathname
                             href={translatePath('/fleets/upcoming/')}
                         >
                             <FleetEvEIcon />
+                        </NeocomButton>
+                    }
+                    {can_view_campaigns &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/campaigns'))}
+                            title='neocom.campaigns'
+                            description='campaigns.description'
+                            href={translatePath('/campaigns/')}
+                        >
+                            <CampaignsEvEIcon />
                         </NeocomButton>
                     }
                     <NeocomButton

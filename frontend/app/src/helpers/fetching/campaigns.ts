@@ -199,6 +199,17 @@ export const clamp_percent = (value:number | null | undefined):number => {
     return Math.min(100, Math.max(0, value))
 }
 
+/**
+ * Offense fills the bar as the system is captured. A hold is the inverse:
+ * a stable system is a full bar, and every point the other side puts on it
+ * takes some of that bar away.
+ */
+export const contest_bar_percent = (goal:string, contested:number | null | undefined):number => {
+    const captured = clamp_percent(contested)
+
+    return normalize_campaign_goal(goal) === 'hold' ? clamp_percent(100 - captured) : captured
+}
+
 /** Turns a 7 day trend into an SVG polyline inside a 100 x 32 viewbox. */
 export const trend_sparkline = (trend:CampaignSystemTrendPoint[], width:number = 100, height:number = 32):SparklinePath => {
     const points = trend.filter(point => point.contested_percent !== null)
@@ -279,6 +290,112 @@ export const pace_color = (pace:CampaignPace):TagColors => {
         case 'behind': return 'fleet-red'
         default: return 'fleet-yellow'
     }
+}
+
+/** A week's move on one system: did it help the goal, hurt it, or hold. */
+export type CampaignWeekMove = 'ahead' | 'behind' | 'holding' | 'slipping'
+
+export type CampaignWeekMoveKey =
+    | 'campaigns.week.move.ahead'
+    | 'campaigns.week.move.behind'
+    | 'campaigns.week.move.holding'
+    | 'campaigns.week.move.slipping'
+
+/** Smaller than this is noise, same band the status chip uses. */
+const WEEK_MOVE_POINT = 0.5
+/** A hold is in a good place while contested stays at or under this line. */
+const HOLD_LOW_PERCENT = 10
+/** A push is holding once contested is this close to the flip threshold. */
+const PUSH_THRESHOLD_PERCENT = 80
+/** Below this progress the bar is red; from here to the good line it is yellow. */
+const PROGRESS_WARN_PERCENT = 40
+
+const contest_delta = (start:number | null, now:number | null):number | null => {
+    if (start === null || now === null) return null
+
+    return now - start
+}
+
+/**
+ * Good and bad follow the system's goal.
+ *
+ * Hold: contested falling, or staying at or under the line, helped.
+ * Take, pressure, and disrupt: contested rising toward the flip threshold
+ * helped. While we are pushing, our advantage rising helped too; a contest
+ * move wins when the two disagree.
+ */
+export const week_contest_move = (
+    goal:string,
+    contested_start:number | null,
+    contested_now:number | null,
+    advantage_our_start:number | null = null,
+    advantage_our_now:number | null = null,
+):CampaignWeekMove => {
+    const normalized = normalize_campaign_goal(goal)
+    const pushing = normalized === 'take' || normalized === 'pressure' || normalized === 'disrupt'
+    const contest = contest_delta(contested_start, contested_now)
+    const contest_up = contest !== null && contest > WEEK_MOVE_POINT
+    const contest_down = contest !== null && contest < -WEEK_MOVE_POINT
+    const advantage = pushing ? contest_delta(advantage_our_start, advantage_our_now) : null
+    const advantage_up = advantage !== null && advantage > WEEK_MOVE_POINT
+    const advantage_down = advantage !== null && advantage < -WEEK_MOVE_POINT
+
+    if (normalized === 'hold') {
+        if (contest_down) return 'ahead'
+        if (contest_up) return 'slipping'
+        if (contested_now === null) return 'holding'
+
+        return contested_now <= HOLD_LOW_PERCENT ? 'holding' : 'behind'
+    }
+
+    if (pushing) {
+        if (contest_up) return 'ahead'
+        if (contest_down) return 'slipping'
+        if (advantage_up) return 'ahead'
+        if (advantage_down) return 'slipping'
+        if (contested_now === null) return 'holding'
+
+        return contested_now >= PUSH_THRESHOLD_PERCENT ? 'holding' : 'behind'
+    }
+
+    return 'holding'
+}
+
+export const week_move_i18n_key = (move:CampaignWeekMove):CampaignWeekMoveKey => {
+    switch (move) {
+        case 'ahead': return 'campaigns.week.move.ahead'
+        case 'behind': return 'campaigns.week.move.behind'
+        case 'holding': return 'campaigns.week.move.holding'
+        case 'slipping': return 'campaigns.week.move.slipping'
+        default: {
+            const _exhaustive: never = move
+            return _exhaustive
+        }
+    }
+}
+
+export const week_move_color = (move:CampaignWeekMove):TagColors => {
+    switch (move) {
+        case 'ahead': return 'green'
+        case 'behind': return 'fleet-red'
+        case 'holding': return 'fleet-yellow'
+        case 'slipping': return 'fleet-red'
+        default: {
+            const _exhaustive: never = move
+            return _exhaustive
+        }
+    }
+}
+
+/** Where the meter ticks the line that matters for this goal. */
+export const week_contest_marker = (goal:string):number | null => {
+    const normalized = normalize_campaign_goal(goal)
+
+    if (normalized === 'hold') return HOLD_LOW_PERCENT
+    if (normalized === 'take' || normalized === 'pressure' || normalized === 'disrupt')
+        return PUSH_THRESHOLD_PERCENT
+
+    return null
 }
 
 export const status_chip_i18n_key = (chip:CampaignStatusChip):CampaignStatusChipKey => {
@@ -390,8 +507,10 @@ export interface CampaignObjectiveRow {
     marker_percent:     number | null;
     /** Where the bar stood 24h ago, so the meter can hatch the change; null when the wire has no delta. */
     delta_from_percent: number | null;
-    /** The three labels under the bar: where we are, what changed in 24h, what we are aiming for. */
+    /** Progress percent, matching the bar. */
     now_text:           string;
+    /** Why the bar is where it is. Defensive rows say "stable" or the contested percent. */
+    detail_text:        string;
     /** What the middle label measures: the last day for contest metrics, the week so far for advantage levels. */
     change_label:       '24h' | 'week';
     change_text:        string;
@@ -443,10 +562,62 @@ export const objective_status_i18n_key = (status:CampaignObjectiveStatus) =>
 
 export const objective_status_color = (status:CampaignObjectiveStatus):TagColors => status === 'winning' ? 'green' : 'fleet-red'
 
+/**
+ * Contest bars follow progress, where higher is better. A hold is already
+ * inverted, so a stable system is green and enemy victory points walk it
+ * through yellow to red. A push is green once it is close to flipping.
+ */
+export const progress_bar_color = (kind:'offense' | 'defense', percent:number):TagColors => {
+    const good = kind === 'defense' ? 100 - HOLD_LOW_PERCENT : PUSH_THRESHOLD_PERCENT
+
+    if (percent >= good) return 'green'
+    if (percent >= PROGRESS_WARN_PERCENT) return 'fleet-yellow'
+
+    return 'fleet-red'
+}
+
 const count_text = (count:number, one:string, many:string, t:ObjectiveT):string =>
     t(count === 1 ? one : many).replace('{count}', String(count))
 
 const change_direction = (change:number):'up' | 'down' | 'flat' => change > 0 ? 'up' : change < 0 ? 'down' : 'flat'
+
+/** 100 and 88 stay whole; 87.6 keeps the tenth. */
+const progress_text = (value:number):string => {
+    const tenths = Math.round(value * 10) / 10
+    const body = Number.isInteger(tenths) ? tenths.toFixed(0) : tenths.toFixed(1)
+
+    return `${body}%`
+}
+
+/**
+ * The bar is progress. A hold at 0% contested is 100% done, and the caption
+ * says why: stable, or how contested it has become.
+ */
+const contest_progress = (
+    kind:CampaignObjectiveKind,
+    goal:string,
+    contested:number,
+    change:number,
+    t:ObjectiveT,
+) => {
+    const contest_goal = kind === 'defense' ? 'hold' : goal
+    const meter_percent = contest_bar_percent(contest_goal, contested)
+    const delta_from_percent = contest_bar_percent(contest_goal, contested - change)
+    const moved = meter_percent - delta_from_percent
+    const detail_text = kind !== 'defense' ? ''
+        : contested < 0.05
+            ? t('campaigns.objective.stable')
+            : t('campaigns.objective.contested_now').replace('{contested}', contested.toFixed(1))
+
+    return {
+        meter_percent,
+        delta_from_percent,
+        now_text: progress_text(meter_percent),
+        detail_text,
+        change_text: Math.abs(moved) < 0.05 ? '' : `${Math.abs(moved).toFixed(1)}%`,
+        change_direction: change_direction(moved),
+    }
+}
 
 /**
  * Behind, on pace or ahead when there is no target row to say so: an
@@ -459,13 +630,11 @@ const fallback_pace = (kind:CampaignObjectiveKind, system:CampaignSystemSummary)
 }
 
 /**
- * The rows of the weekly orders table. One per week target, losing rows
- * first, with the meter and the progress phrase typed by what the target
- * measures:
- *
- *  - offense: victory points earned this week out of the VP target
- *  - defense: contested percent against the ceiling to stay under
- *  - advantage: our net advantage against the level to hold
+ * The rows of the weekly progress table. One per week target, losing rows
+ * first. Contest rows show progress, with no target tick: offense fills as
+ * the system is captured, defense is the inverse so a stable 0% contested
+ * reads 100%. A defensive caption says "stable", or how contested it is.
+ * Advantage and structure rows still measure their own level.
  *
  * With no targets yet, one row per system falls back to the system's own
  * goal so the table never asks for nothing.
@@ -487,6 +656,7 @@ export const campaign_objective_rows = (
                 const contested = clamp_percent(system.contested_percent)
                 const change = system.contested_change_24h ?? 0
                 const pace = fallback_pace(kind, system)
+                const progress = contest_progress(kind, system.goal, contested, change, t)
 
                 return {
                     key: `system-${system.id}`,
@@ -494,13 +664,14 @@ export const campaign_objective_rows = (
                     label: objective_label(kind, t),
                     system,
                     system_name: system.name,
-                    meter_percent: contested,
+                    meter_percent: progress.meter_percent,
                     marker_percent: null,
-                    delta_from_percent: clamp_percent(contested - change),
-                    now_text: `${contested.toFixed(1)}%`,
+                    delta_from_percent: progress.delta_from_percent,
+                    now_text: progress.now_text,
+                    detail_text: progress.detail_text,
                     change_label: '24h' as const,
-                    change_text: change === 0 ? '' : `${Math.abs(change).toFixed(1)}%`,
-                    change_direction: change_direction(change),
+                    change_text: progress.change_text,
+                    change_direction: progress.change_direction,
                     target_text: '',
                     yours_text: t('campaigns.objective.yours_none'),
                     pace,
@@ -526,48 +697,28 @@ export const campaign_objective_rows = (
             let marker_percent:number | null = null
             let delta_from_percent:number | null = null
             let now_text = ''
+            let detail_text = ''
             let change_label:'24h' | 'week' = '24h'
             let change_text = ''
             let direction:'up' | 'down' | 'flat' = 'flat'
             let target_text = ''
             let yours_text = t('campaigns.objective.yours_none')
 
-            if (kind === 'offense') {
-                meter_percent = clamp_percent((target.progress / goal) * 100)
-                marker_percent = clamp_percent((target.pace_expected / goal) * 100)
-                now_text = t('campaigns.objective.value_vp').replace('{value}', Math.round(target.progress).toLocaleString())
-                target_text = t('campaigns.objective.value_vp').replace('{value}', Math.round(target.target).toLocaleString())
-                // The wire carries no 24h VP change, and the contested swing
-                // would read as one next to a VP figure, so the offense row
-                // shows where the system stands instead.
-                if (system?.contested_percent !== null && system?.contested_percent !== undefined)
-                    change_text = t('campaigns.objective.contested_now').replace('{contested}', clamp_percent(system.contested_percent).toFixed(1))
-                if (target.my_complexes > 0)
-                    yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
-            } else if (kind === 'defense') {
+            if (kind === 'offense' || kind === 'defense') {
                 const contested = clamp_percent(system?.contested_percent)
-                // The arc's ceiling is not on the wire; 25% is the plan's default.
-                const ceiling = 25
-                meter_percent = contested
-                marker_percent = ceiling
-                delta_from_percent = clamp_percent(contested - change)
-                now_text = `${contested.toFixed(1)}%`
-                target_text = t('campaigns.objective.target_ceiling').replace('{ceiling}', String(ceiling))
-                change_text = change === 0 ? '' : `${Math.abs(change).toFixed(1)}%`
-                direction = change_direction(change)
+                const progress = contest_progress(kind, target.goal || system?.goal || 'take', contested, change, t)
+                meter_percent = progress.meter_percent
+                delta_from_percent = progress.delta_from_percent
+                now_text = progress.now_text
+                detail_text = progress.detail_text
+                change_text = progress.change_text
+                direction = progress.change_direction
                 if (target.my_complexes > 0)
                     yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
             } else if (kind === 'structures_reported') {
                 meter_percent = clamp_percent((target.progress / goal) * 100)
-                marker_percent = clamp_percent((target.pace_expected / goal) * 100)
                 now_text = count_text(
                     Math.round(target.progress),
-                    'campaigns.objective.value_structure',
-                    'campaigns.objective.value_structures',
-                    t,
-                )
-                target_text = count_text(
-                    Math.round(target.target),
                     'campaigns.objective.value_structure',
                     'campaigns.objective.value_structures',
                     t,
@@ -582,18 +733,16 @@ export const campaign_objective_rows = (
                     )
             } else {
                 // Levels on the 0-100 advantage scale: ours for gain and
-                // maintain, theirs for destroy. The bar is the level itself
-                // with the target ticked, and the hatch is the week's move.
+                // maintain, theirs for destroy. The bar is the level itself,
+                // and the hatch is the week's move.
                 const destroy = kind === 'advantage_destroy'
                 const level = destroy
                     ? (system?.advantage_enemy_pct ?? target.progress)
                     : (system?.advantage_our_pct ?? target.progress)
                 const moved = level - target.baseline
                 meter_percent = clamp_percent(level)
-                marker_percent = clamp_percent(target.target)
                 delta_from_percent = clamp_percent(target.baseline)
                 now_text = t(destroy ? 'campaigns.objective.level_theirs' : 'campaigns.objective.level_ours').replace('{level}', level.toFixed(0))
-                target_text = t(destroy ? 'campaigns.objective.target_under_level' : 'campaigns.objective.target_level').replace('{level}', Math.round(target.target).toString())
                 change_label = 'week'
                 change_text = Math.abs(moved) < 0.5 ? '' : `${Math.abs(moved).toFixed(0)}%`
                 direction = change_direction(moved)
@@ -613,6 +762,7 @@ export const campaign_objective_rows = (
                 marker_percent,
                 delta_from_percent,
                 now_text,
+                detail_text,
                 change_label,
                 change_text,
                 change_direction: direction,

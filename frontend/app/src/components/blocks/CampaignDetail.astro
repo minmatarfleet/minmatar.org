@@ -158,8 +158,6 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <Flexblock gap='var(--space-m)'>
                         {fw_systems.length > 0 &&
                             <Flexblock gap='var(--space-s)'>
-                                <h3>{t('campaigns.theater.fw_objectives')}</h3>
-                                <small>{t('campaigns.theater.fw_hint')}</small>
                                 {fw_systems.map(system =>
                                     <div id={`campaign-system-${system.id}`}>
                                         <CampaignSystemCard system={system} slug={campaign.slug} can_report={campaign.is_enlisted} />
@@ -302,7 +300,7 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                             <CampaignLeaderboard
                                 slug={campaign.slug}
                                 rows={leaderboard}
-                                metric='points'
+                                metric='kills'
                                 period='week'
                             />
                         </Flexblock>

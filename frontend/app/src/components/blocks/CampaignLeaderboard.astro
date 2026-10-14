@@ -28,7 +28,7 @@ const {
 
 delete attributes.class
 
-const metrics:CampaignLeaderboardMetric[] = [ 'points', 'kills', 'isk', 'sites', 'advantage', 'fleets' ]
+const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'isk', 'sites', 'advantage', 'fleets' ]
 const periods:CampaignLeaderboardPeriod[] = [ 'week', 'rolling7', 'all' ]
 
 const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:CampaignLeaderboardPeriod) =>
@@ -116,13 +116,12 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         :
         <CampaignTable
             min_width='24rem'
-            template='2.5rem 1fr 6rem 6rem'
-            numeric={[ 0, 2, 3 ]}
+            template='2.5rem 1fr 6rem'
+            numeric={[ 0, 2 ]}
             columns={[
                 t('campaigns.leaderboard.rank'),
                 t('campaigns.leaderboard.pilot'),
                 t('campaigns.leaderboard.value'),
-                t('campaigns.leaderboard.points'),
             ]}
         >
             {rows.map(row =>
@@ -141,7 +140,6 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         <span>{row.character_name || row.username}</span>
                     </div>
                     <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
-                    <span role="cell" class="[ campaign-table-numeric ]">{row.points}</span>
                 </div>
             )}
         </CampaignTable>

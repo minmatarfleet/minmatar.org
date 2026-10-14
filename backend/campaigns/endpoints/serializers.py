@@ -468,7 +468,6 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 ),
                 "last_active_day": stat.last_active_day if stat else None,
                 "streak_days": stat.streak_days if stat else 0,
-                "points": stat.points if stat else 0,
                 "characters_included": enlistment.included,
                 "characters_tracked": tracked_by_user.get(
                     enlistment.user_id, 0
@@ -476,4 +475,16 @@ def roster_rows(campaign: Campaign) -> list[dict]:
             }
         )
 
-    return sorted(rows, key=lambda row: row["points"], reverse=True)
+    return sorted(
+        rows,
+        key=lambda row: (
+            row["last_active_day"] is None,
+            (
+                0
+                if row["last_active_day"] is None
+                else -row["last_active_day"].toordinal()
+            ),
+            -row["streak_days"],
+            row["username"].lower(),
+        ),
+    )

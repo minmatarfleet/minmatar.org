@@ -30,6 +30,7 @@ from campaigns.helpers import (
 )
 from campaigns.models import (
     Campaign,
+    CampaignAdvantageReading,
     CampaignDailyOrder,
     CampaignOrderProgress,
     CampaignParticipantDay,
@@ -183,6 +184,96 @@ def week_position(campaign: Campaign, week_start: date | None = None) -> dict:
         "week_count": week_count,
         "day_index": day_index,
     }
+
+
+def week_system_progress(
+    campaign: Campaign, week_start: date | None = None
+) -> list[dict]:
+    """Where each FW system stood when the week opened, and where it stands now.
+
+    Start is the last contested/VP snapshot before the week opened (Thursday
+    11:00 UTC). With no reading from before the week, start is the first
+    snapshot inside it — the same fallback victory-point progress uses. Now
+    is the latest snapshot.
+    """
+    week_start = week_start or campaign_week_start()
+    window_start = week_bounds(week_start)[0]
+    systems = list(
+        campaign.systems.filter(
+            retired_at__isnull=True, is_fw_objective=True
+        ).order_by("name")
+    )
+    if not systems:
+        return []
+
+    by_system: dict[int, list[CampaignSystemSnapshot]] = {
+        system.id: [] for system in systems
+    }
+    for snapshot in CampaignSystemSnapshot.objects.filter(
+        campaign_system__in=systems
+    ).order_by("campaign_system_id", "-captured_at"):
+        by_system[snapshot.campaign_system_id].append(snapshot)
+
+    advantage_by_system: dict[int, list[CampaignAdvantageReading]] = {
+        system.id: [] for system in systems
+    }
+    for reading in CampaignAdvantageReading.objects.filter(
+        campaign_system__in=systems,
+        status="accepted",
+    ).order_by("campaign_system_id", "-reported_at"):
+        advantage_by_system[reading.campaign_system_id].append(reading)
+
+    rows = []
+    for system in systems:
+        snaps = by_system[system.id]
+        latest = snaps[0] if snaps else None
+        opening = next(
+            (snap for snap in snaps if snap.captured_at < window_start),
+            None,
+        )
+        if opening is None and snaps:
+            opening = snaps[-1]
+        readings = advantage_by_system[system.id]
+        latest_advantage = readings[0] if readings else None
+        opening_advantage = next(
+            (
+                reading
+                for reading in readings
+                if reading.reported_at < window_start
+            ),
+            None,
+        )
+        if opening_advantage is None and readings:
+            opening_advantage = readings[-1]
+        rows.append(
+            {
+                "system": system.name,
+                "system_id": system.id,
+                "contested_start": (
+                    round(opening.contested_percent, 2) if opening else None
+                ),
+                "contested_now": (
+                    round(latest.contested_percent, 2) if latest else None
+                ),
+                "victory_points_start": (
+                    opening.victory_points if opening else None
+                ),
+                "victory_points_now": (
+                    latest.victory_points if latest else None
+                ),
+                "advantage_our_start": (
+                    round(opening_advantage.our_pct, 2)
+                    if opening_advantage
+                    else None
+                ),
+                "advantage_our_now": (
+                    round(latest_advantage.our_pct, 2)
+                    if latest_advantage
+                    else None
+                ),
+            }
+        )
+    return rows
 
 
 def _capture_target(
@@ -618,7 +709,6 @@ def orders_for(
                 "kind": order.kind,
                 "label": order.get_kind_display(),
                 "params": order.params,
-                "points": order.points,
                 "system": (
                     order.campaign_system.name
                     if order.campaign_system

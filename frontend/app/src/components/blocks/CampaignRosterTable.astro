@@ -5,7 +5,6 @@ const { lang, t } = i18n(Astro.url)
 import type { CampaignRosterPilot } from '@dtypes/api.minmatar.org'
 import { format_date_short } from '@helpers/date'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { number_thousand_separator } from '@helpers/numbers'
 
 /**
  * Every pilot is rendered; a search box and a corporation picker hide the
@@ -89,14 +88,13 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
 
         <CampaignTable
             min_width='46rem'
-            template='minmax(12rem, 1fr) 8rem 9rem 5rem 6rem 6rem'
-            numeric={[ 3, 4, 5 ]}
+            template='minmax(12rem, 1fr) 8rem 9rem 5rem 6rem'
+            numeric={[ 3, 4 ]}
             columns={[
                 t('campaigns.roster.pilot'),
                 t('campaigns.roster.prime_time'),
                 t('campaigns.roster.last_active'),
                 t('campaigns.roster.streak'),
-                t('campaigns.roster.points'),
                 t('campaigns.roster.characters'),
             ]}
         >
@@ -127,7 +125,6 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         {pilot.last_active_day ? format_date_short(lang, pilot.last_active_day) : '—'}
                     </small>
                     <span role="cell" class="[ campaign-table-numeric ]">{pilot.streak_days}</span>
-                    <span role="cell" class="[ campaign-table-numeric ]">{number_thousand_separator(pilot.points)}</span>
                     <span role="cell" class="[ campaign-table-numeric ]">{pilot.characters_included}</span>
                 </div>
             )}

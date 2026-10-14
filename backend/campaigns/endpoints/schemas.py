@@ -156,8 +156,6 @@ class CampaignDetail(Schema):
     fittings: list[CampaignFittingOut] = []
     totals: CampaignTotals
     is_enlisted: bool = False
-    my_points: int = 0
-    my_rank: int | None = None
     my_streak: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
@@ -202,6 +200,20 @@ class WeekTargetOut(Schema):
     my_structures_reported: int = 0
 
 
+class WeekSystemProgressOut(Schema):
+    """Contested percent and victory points at week open and right now."""
+
+    system: str
+    system_id: int
+    contested_start: float | None = None
+    contested_now: float | None = None
+    victory_points_start: int | None = None
+    victory_points_now: int | None = None
+    # Our advantage at week open and now, so a push can show whether ours rose.
+    advantage_our_start: float | None = None
+    advantage_our_now: float | None = None
+
+
 class WeekPlan(Schema):
     week_start: date
     week_end: date | None = None
@@ -209,6 +221,7 @@ class WeekPlan(Schema):
     week_count: int = 1
     day_index: int = 1
     targets: list[WeekTargetOut] = []
+    progress: list[WeekSystemProgressOut] = []
     commander_order_text: str = ""
     summary: dict = {}
 
@@ -238,7 +251,6 @@ class OrderOut(Schema):
     kind: str
     label: str
     params: dict = {}
-    points: int
     system: str | None = None
     gap_share_pct: float = 0
     progress: float = 0
@@ -252,7 +264,6 @@ class LeaderboardRow(Schema):
     character_id: int | None = None
     character_name: str = ""
     value: float
-    points: int
 
 
 class KillmailOut(Schema):
@@ -326,7 +337,6 @@ class RosterRow(Schema):
     observed_prime_time: str = ""
     last_active_day: date | None = None
     streak_days: int = 0
-    points: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
 
@@ -382,7 +392,6 @@ class AdvantageResponse(Schema):
     our_pct: float | None = None
     enemy_pct: float | None = None
     net_pct: float | None = None
-    points: int = 0
 
 
 class GangRequest(Schema):

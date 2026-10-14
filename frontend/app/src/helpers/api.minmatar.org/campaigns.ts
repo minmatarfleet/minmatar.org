@@ -125,7 +125,7 @@ export async function get_campaign_systems(slug:string, access_token:string | fa
 export async function get_campaign_leaderboard(
     slug:string,
     access_token:string | false = false,
-    metric:CampaignLeaderboardMetric = 'points',
+    metric:CampaignLeaderboardMetric = 'kills',
     period:CampaignLeaderboardPeriod = 'week',
     limit:number = 25,
 ) {

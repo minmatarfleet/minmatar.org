@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
-import { clamp_percent, status_chip_color, status_chip_i18n_key, campaign_goal_i18n_key } from '@helpers/fetching/campaigns'
+import { clamp_percent, status_chip_color, status_chip_i18n_key, campaign_goal_i18n_key, contest_bar_percent, normalize_campaign_goal } from '@helpers/fetching/campaigns'
 import { format_date_time, from_now_diff } from '@helpers/date'
 
 interface Props {
@@ -91,84 +91,95 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         </FlexInline>
 
         <div class="[ campaign-system-columns ]">
-            <Flexblock gap='var(--space-2xs)'>
+            <div class="[ campaign-system-column ]">
                 <small>{t('campaigns.system.contested')}</small>
-                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                <FlexInline gap='var(--space-2xs)' class="[ campaign-system-stat ]">
                     <span class="[ campaign-figure ]">{contested.toFixed(1)}%</span>
                     <small>{contested_change >= 0 ? '+' : ''}{contested_change.toFixed(1)} · {t('campaigns.system.change_24h')}</small>
                 </FlexInline>
-                <CampaignMeter percent={contested} label={`${system.name} ${t('campaigns.system.contested')}`} />
-                {system.trend.length > 1 ?
-                    <CampaignSparkline trend={system.trend} title={t('campaigns.system.trend')} />
-                    :
-                    <small>{t('campaigns.system.no_trend')}</small>
-                }
-                <small>
-                    {t('campaigns.system.victory_points')}: {system.victory_points ?? 0} / {system.victory_points_threshold ?? 0}
-                </small>
-            </Flexblock>
+                <Flexblock gap='var(--space-2xs)'>
+                    <CampaignMeter
+                        percent={contest_bar_percent(system.goal, contested)}
+                        label={normalize_campaign_goal(system.goal) === 'hold'
+                            ? `${system.name} ${t('campaigns.system.held_meter')}`
+                            : `${system.name} ${t('campaigns.system.contested')}`}
+                    />
+                    {system.trend.length > 1 ?
+                        <CampaignSparkline trend={system.trend} title={t('campaigns.system.trend')} />
+                        :
+                        <small>{t('campaigns.system.no_trend')}</small>
+                    }
+                    <small>
+                        {t('campaigns.system.victory_points')}: {system.victory_points ?? 0} / {system.victory_points_threshold ?? 0}
+                    </small>
+                </Flexblock>
+            </div>
 
-            <Flexblock gap='var(--space-2xs)'>
+            <div class="[ campaign-system-column ]">
                 <small>{t('campaigns.system.advantage')}</small>
-                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                <FlexInline gap='var(--space-2xs)' class="[ campaign-system-stat ]">
                     <span class="[ campaign-figure ]">{net_pct >= 0 ? '+' : ''}{net_pct.toFixed(1)}%</span>
                     <small>{t('campaigns.system.net')}</small>
                 </FlexInline>
-                <Flexblock gap='var(--space-3xs)'>
-                    <small>{t('campaigns.system.ours')} {our_pct.toFixed(1)}%</small>
-                    <CampaignMeter percent={our_pct} color='var(--green)' label={t('campaigns.system.ours')} />
-                    <small>{t('campaigns.system.enemy')} {enemy_pct.toFixed(1)}%</small>
-                    <CampaignMeter percent={enemy_pct} color='var(--fleet-red)' label={t('campaigns.system.enemy')} />
+                <Flexblock gap='var(--space-2xs)'>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <small class="[ campaign-advantage-ours ]">{t('campaigns.system.ours')} {our_pct.toFixed(1)}%</small>
+                        <CampaignMeter percent={our_pct} color='var(--fleet-red)' label={t('campaigns.system.ours')} />
+                        <small class="[ campaign-advantage-enemy ]">{t('campaigns.system.enemy')} {enemy_pct.toFixed(1)}%</small>
+                        <CampaignMeter percent={enemy_pct} color='var(--fleet-yellow)' label={t('campaigns.system.enemy')} />
+                    </Flexblock>
+                    <small>
+                        {from_frontlines && `${t('campaigns.system.from_frontlines')} · `}
+                        {advantage_age_text}
+                        {system.advantage_basis === 'estimate' && ` · ${t('campaigns.system.estimated')}`}
+                    </small>
+                    {show_report &&
+                        <DialogButton size='sm' color='transparent' max_width='420px'>
+                            {t('campaigns.system.report_advantage')}
+                            <Flexblock slot='dialog' gap='var(--space-s)'>
+                                <h3>{t('campaigns.advantage.dialog_title')} · {system.name}</h3>
+                                <small>{t('campaigns.advantage.hint')}</small>
+                                <form
+                                    hx-post={ADVANTAGE_PARTIAL_URL}
+                                    hx-target={`#campaign-system-${system.id}`}
+                                    hx-swap='outerHTML'
+                                    hx-indicator='.loader'
+                                    x-on:submit="close_dialog()"
+                                >
+                                    <Flexblock gap='var(--space-s)'>
+                                        <label>
+                                            <small>{t('campaigns.advantage.our_pct')}</small>
+                                            <Input type='number' name='our_pct' min='0' max='100' step='0.1' value='0' required />
+                                        </label>
+                                        <label>
+                                            <small>{t('campaigns.advantage.enemy_pct')}</small>
+                                            <Input type='number' name='enemy_pct' min='0' max='100' step='0.1' value='0' required />
+                                        </label>
+                                        <Button size='sm' color='green' type='submit'>
+                                            {t('campaigns.advantage.submit')}
+                                        </Button>
+                                    </Flexblock>
+                                </form>
+                            </Flexblock>
+                        </DialogButton>
+                    }
                 </Flexblock>
-                <small>
-                    {from_frontlines && `${t('campaigns.system.from_frontlines')} · `}
-                    {advantage_age_text}
-                    {system.advantage_basis === 'estimate' && ` · ${t('campaigns.system.estimated')}`}
-                </small>
-                {show_report &&
-                    <DialogButton size='sm' color='transparent' max_width='420px'>
-                        {t('campaigns.system.report_advantage')}
-                        <Flexblock slot='dialog' gap='var(--space-s)'>
-                            <h3>{t('campaigns.advantage.dialog_title')} · {system.name}</h3>
-                            <small>{t('campaigns.advantage.hint')}</small>
-                            <form
-                                hx-post={ADVANTAGE_PARTIAL_URL}
-                                hx-target={`#campaign-system-${system.id}`}
-                                hx-swap='outerHTML'
-                                hx-indicator='.loader'
-                                x-on:submit="close_dialog()"
-                            >
-                                <Flexblock gap='var(--space-s)'>
-                                    <label>
-                                        <small>{t('campaigns.advantage.our_pct')}</small>
-                                        <Input type='number' name='our_pct' min='0' max='100' step='0.1' value='0' required />
-                                    </label>
-                                    <label>
-                                        <small>{t('campaigns.advantage.enemy_pct')}</small>
-                                        <Input type='number' name='enemy_pct' min='0' max='100' step='0.1' value='0' required />
-                                    </label>
-                                    <Button size='sm' color='green' type='submit'>
-                                        {t('campaigns.advantage.submit')}
-                                    </Button>
-                                </Flexblock>
-                            </form>
-                        </Flexblock>
-                    </DialogButton>
-                }
-            </Flexblock>
+            </div>
 
-            <Flexblock gap='var(--space-2xs)'>
+            <div class="[ campaign-system-column ]">
                 <small>{t('campaigns.system.kills_losses')}</small>
-                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
+                <FlexInline gap='var(--space-2xs)' class="[ campaign-system-stat ]">
                     <span class="[ campaign-figure ]">{system.kills_24h}</span>
                     <small>{t('campaigns.system.kills')}</small>
                 </FlexInline>
-                <FlexInline gap='var(--space-2xs)' class="[ items-baseline ]">
-                    <span class="[ campaign-figure ]">{system.losses_24h}</span>
-                    <small>{t('campaigns.system.losses')}</small>
-                </FlexInline>
-                <small>{kills_change >= 0 ? '+' : ''}{kills_change} · {t('campaigns.system.change_24h')}</small>
-            </Flexblock>
+                <Flexblock gap='var(--space-2xs)'>
+                    <FlexInline gap='var(--space-2xs)' class="[ campaign-system-stat ]">
+                        <span class="[ campaign-figure ]">{system.losses_24h}</span>
+                        <small>{t('campaigns.system.losses')}</small>
+                    </FlexInline>
+                    <small>{kills_change >= 0 ? '+' : ''}{kills_change} · {t('campaigns.system.change_24h')}</small>
+                </Flexblock>
+            </div>
         </div>
     </Flexblock>
 </ComponentBlock>
@@ -210,37 +221,67 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         }
     }
 
+    /* Three shared rows: label, primary figure, then whatever else that column has. */
     .campaign-system-columns {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--space-m) var(--space-l);
-        align-items: start;
+        column-gap: var(--space-l);
     }
 
-    .campaign-system-columns > :global(.flex-block) {
+    .campaign-system-column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
         min-width: 0;
         padding-inline-start: var(--space-m);
         border-inline-start: solid 1px var(--border-color);
     }
 
-    .campaign-system-columns > :global(.flex-block:first-child) {
+    .campaign-system-column:first-child {
         padding-inline-start: 0;
         border-inline-start: none;
+    }
+
+    .campaign-system-column :global(.campaign-system-stat) {
+        align-items: baseline;
+    }
+
+    .campaign-advantage-ours {
+        color: var(--fleet-red);
+    }
+
+    .campaign-advantage-enemy {
+        color: var(--fleet-yellow);
+    }
+
+    @supports (grid-template-rows: subgrid) {
+        .campaign-system-column {
+            display: grid;
+            grid-row: span 3;
+            grid-template-rows: subgrid;
+            align-items: start;
+        }
     }
 
     @media screen and (max-width: 991px) {
         .campaign-system-columns {
             grid-template-columns: 1fr;
+            row-gap: 0;
         }
 
-        .campaign-system-columns > :global(.flex-block) {
+        .campaign-system-column {
+            display: flex;
+            flex-direction: column;
+            grid-row: auto;
+            grid-template-rows: none;
+            gap: var(--space-2xs);
             padding-inline-start: 0;
             border-inline-start: none;
             padding-top: var(--space-s);
             border-top: solid 1px var(--border-color);
         }
 
-        .campaign-system-columns > :global(.flex-block:first-child) {
+        .campaign-system-column:first-child {
             padding-top: 0;
             border-top: none;
         }

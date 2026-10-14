@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { CampaignReadiness, CampaignCharacterState } from '@dtypes/api.minmatar.org'
+import type { CampaignReadiness } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
 import { get_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
@@ -59,12 +59,20 @@ let update_all_url = RETURN_URL
 for (const character of [ ...pending ].reverse())
     update_all_url = build_action_url(character.action_url, update_all_url)
 
-const state_color = (state:CampaignCharacterState):TagColors => {
-    switch (state) {
-        case 'ready': return 'green'
-        case 'needs_update': return 'fleet-yellow'
-        case 'lapsed': return 'fleet-red'
-        default: return 'militia-purple'
+const status_for = (character:CampaignReadiness['characters'][number]) => {
+    if (character.state !== 'ready')
+        return {
+            label: t('campaigns.readiness.state.missing_scopes'),
+            color: 'fleet-yellow' as TagColors,
+        }
+    if (mode === 'campaign' && character.included)
+        return {
+            label: t('campaigns.readiness.state.enlisted'),
+            color: 'green' as TagColors,
+        }
+    return {
+        label: t('campaigns.readiness.state.good_to_go'),
+        color: 'green' as TagColors,
     }
 }
 
@@ -114,21 +122,21 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         <small>{t('campaigns.readiness.none')}</small>
         :
         <CampaignTable
-            min_width={show_inclusion ? '54rem' : '46rem'}
+            min_width={show_inclusion ? '42rem' : '36rem'}
             template={show_inclusion
-                ? 'minmax(12rem, 1fr) 7rem 7rem minmax(10rem, 1fr) 7rem 8rem 8rem'
-                : 'minmax(12rem, 1fr) 7.5rem 7rem minmax(10rem, 1fr) 6rem 10rem'}
+                ? 'minmax(12rem, 1fr) 7rem 9rem 8rem 8rem'
+                : 'minmax(12rem, 1fr) 7.5rem 9rem 10rem'}
             columns={[
                 t('campaigns.readiness.character'),
                 t('campaigns.readiness.corporation'),
-                t('campaigns.readiness.token'),
-                t('campaigns.readiness.counts_for'),
                 t('campaigns.readiness.state'),
                 ...(show_inclusion ? [ t('campaigns.readiness.in_campaign') ] : []),
                 t('campaigns.readiness.action'),
             ]}
         >
-            {readiness.characters.map(character =>
+            {readiness.characters.map(character => {
+                const status = status_for(character)
+                return (
                 <div class="[ campaign-table-row ]" role="row">
                     <div class="[ campaign-cell-media ]" role="cell">
                         <img
@@ -156,12 +164,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         :
                         <span role="cell" class="[ campaign-table-muted ]">—</span>
                     }
-                    <small role="cell" class="[ campaign-table-muted ]">{character.token_type || t('campaigns.readiness.no_token')}</small>
-                    <small role="cell" class="[ campaign-table-muted ]">{character.counts_for || '—'}</small>
                     <Tag
                         role="cell"
-                        text={t(`campaigns.readiness.state.${character.state}`)}
-                        color={state_color(character.state)}
+                        text={status.label}
+                        color={status.color}
                         narrow={true}
                     />
                     {show_inclusion && (campaign_slug ?
@@ -214,7 +220,8 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
                     )}
                 </div>
-            )}
+                )
+            })}
         </CampaignTable>
     }
 </Flexblock>

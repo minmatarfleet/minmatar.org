@@ -17,13 +17,19 @@ from campaigns.models import (
     CampaignKillmail,
     CampaignParticipantDay,
     CampaignStatus,
+    CampaignSystem,
+    CampaignSystemSnapshot,
     KillmailOutcome,
+    SystemGoal,
+    SystemRole,
 )
 from campaigns.endpoints import serializers
 from campaigns.services import advantage, plan
 from campaigns.services.attribution import attribute_feed_killmail
+from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.tests.helpers import (
     KAMELA,
+    KOURMONEN,
     auth_headers,
     enlist,
     grant,
@@ -79,6 +85,8 @@ class CampaignApiTests(TestCase):
         )
         self.assertIn("fittings", body)
         self.assertEqual(body["fittings"], [])
+        self.assertNotIn("my_points", body)
+        self.assertNotIn("my_rank", body)
 
     def test_detail_includes_role_labelled_fittings(self):
         fitting = EveFitting.objects.create(
@@ -218,6 +226,7 @@ class CampaignApiTests(TestCase):
         body = response.json()
         self.assertTrue(body["accepted"])
         self.assertEqual(body["net_pct"], 25.0)
+        self.assertNotIn("points", body)
 
     def test_the_week_carries_its_position_and_my_contribution(self):
         plan.propose_week(self.campaign)
@@ -231,6 +240,69 @@ class CampaignApiTests(TestCase):
         self.assertIn("day_index", body)
         self.assertEqual(len(body["targets"]), 1)
         self.assertEqual(body["targets"][0]["my_complexes"], 0)
+        self.assertNotIn("points", body["summary"])
+
+    def test_the_week_reports_opening_and_current_contest(self):
+        """Start is the last snapshot before Thursday 11:00 UTC; now is the latest.
+
+        A system with no pre-week reading falls back to its first snapshot
+        inside the week. Ops-theater systems are not contest progress.
+        """
+        window_start = week_bounds(campaign_week_start())[0]
+        system = self.campaign.systems.get()
+        held = CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=KOURMONEN,
+            name="Kourmonen",
+            goal=SystemGoal.HOLD,
+            role=SystemRole.SECONDARY,
+        )
+        CampaignSystem.objects.create(
+            campaign=self.campaign,
+            solar_system_id=30003070,
+            name="Ops Only",
+            goal=SystemGoal.RECON,
+            role=SystemRole.SUPPORT,
+            is_fw_objective=False,
+        )
+
+        def _snap(system, when, victory_points, contested):
+            CampaignSystemSnapshot.objects.create(
+                campaign_system=system,
+                captured_at=when,
+                victory_points=victory_points,
+                victory_points_threshold=5000,
+                contested_percent=contested,
+            )
+
+        _snap(system, window_start - timedelta(hours=3), 1000, 20.0)
+        _snap(system, window_start + timedelta(minutes=30), 1100, 22.5)
+        _snap(system, window_start + timedelta(days=2), 1400, 35.256)
+        _snap(held, window_start + timedelta(hours=1), 400, 12.0)
+        _snap(held, window_start + timedelta(days=1), 380, 9.5)
+
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        progress = {row["system"]: row for row in response.json()["progress"]}
+        self.assertEqual(set(progress), {"Kamela", "Kourmonen"})
+
+        kamela = progress["Kamela"]
+        self.assertEqual(kamela["contested_start"], 20.0)
+        self.assertEqual(kamela["contested_now"], 35.26)
+        self.assertEqual(kamela["victory_points_start"], 1000)
+        self.assertEqual(kamela["victory_points_now"], 1400)
+        self.assertIsNone(kamela["advantage_our_start"])
+        self.assertIsNone(kamela["advantage_our_now"])
+
+        kourmonen = progress["Kourmonen"]
+        self.assertEqual(kourmonen["contested_start"], 12.0)
+        self.assertEqual(kourmonen["contested_now"], 9.5)
+        self.assertEqual(kourmonen["victory_points_start"], 400)
+        self.assertEqual(kourmonen["victory_points_now"], 380)
+        self.assertIsNone(kourmonen["advantage_our_start"])
+        self.assertIsNone(kourmonen["advantage_our_now"])
 
     def test_fleets_lists_campaign_fleets_with_their_impact(self):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):
@@ -274,7 +346,7 @@ class CampaignApiTests(TestCase):
             campaign=self.campaign,
             user=self.user,
             day=timezone.now().date(),
-            points=10,
+            kills=2,
             active=True,
         )
         response = self.client.get(
@@ -285,6 +357,16 @@ class CampaignApiTests(TestCase):
         row = response.json()[0]
         self.assertEqual(row["character_id"], self.character.character_id)
         self.assertEqual(row["character_name"], self.character.character_name)
+        self.assertEqual(row["value"], 2)
+        self.assertNotIn("points", row)
+
+        scored = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?metric=points&period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(scored.status_code, 200)
+        self.assertNotIn("points", scored.json()[0])
+        self.assertEqual(scored.json()[0]["value"], 2)
 
     def test_leaderboard_and_timeline_respond(self):
         for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):

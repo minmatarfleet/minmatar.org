@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignObjectiveRow as ObjectiveRow } from '@helpers/fetching/campaigns'
-import { objective_status_color, objective_status_i18n_key, holder_militia } from '@helpers/fetching/campaigns'
+import { objective_status_color, objective_status_i18n_key, holder_militia, progress_bar_color } from '@helpers/fetching/campaigns'
 
 interface Props {
     row:                ObjectiveRow;
@@ -22,8 +22,11 @@ const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
     : owner === 'amarr' ? t('campaigns.system.held_by_amarr')
     : t('campaigns.system.held_by_unknown')
 const change_glyph = row.change_direction === 'up' ? '▲' : row.change_direction === 'down' ? '▼' : ''
-const color = objective_status_color(row.status)
+const color = row.kind === 'offense' || row.kind === 'defense'
+    ? progress_bar_color(row.kind, row.meter_percent)
+    : objective_status_color(row.status)
 const system_anchor = row.system ? `#campaign-system-${row.system.id}` : undefined
+const figure_title = [t('campaigns.objective.scale_now'), row.now_text, row.detail_text].filter(Boolean).join(' · ')
 
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
 import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
@@ -58,18 +61,21 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
     <div class="[ campaign-objective-what ]">{row.label}</div>
 
     <div class="[ campaign-objective-progress ]">
-        <CampaignMeter
-            percent={row.meter_percent}
-            marker_percent={row.marker_percent}
-            delta_from_percent={row.delta_from_percent}
-            fill_title={`${t('campaigns.objective.scale_now')} · ${row.now_text}`}
-            delta_title={row.change_text ? `${t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')} · ${change_glyph} ${row.change_text}`.trim() : undefined}
-            marker_title={row.target_text ? `${t('campaigns.objective.scale_target')} · ${row.target_text}` : undefined}
-            color={`var(--${color})`}
-            height='var(--space-s)'
-            label={`${row.system_name} · ${row.label} · ${row.now_text}${row.target_text ? ` → ${row.target_text}` : ''}`}
-        />
-        <span class="[ campaign-objective-figure ]" title={`${t('campaigns.objective.scale_now')} · ${row.now_text}`}>{row.now_text}</span>
+        <div class="[ campaign-objective-meter ]">
+            <CampaignMeter
+                percent={row.meter_percent}
+                marker_percent={row.marker_percent}
+                delta_from_percent={row.delta_from_percent}
+                fill_title={figure_title}
+                delta_title={row.change_text ? `${t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')} · ${change_glyph} ${row.change_text}`.trim() : undefined}
+                marker_title={row.target_text ? `${t('campaigns.objective.scale_target')} · ${row.target_text}` : undefined}
+                color={`var(--${color})`}
+                height='var(--space-s)'
+                label={`${row.system_name} · ${row.label} · ${figure_title}${row.target_text ? ` → ${row.target_text}` : ''}`}
+            />
+            {row.detail_text && <small>{row.detail_text}</small>}
+        </div>
+        <span class="[ campaign-objective-figure ]" style={`color: var(--${color})`} title={figure_title}>{row.now_text}</span>
     </div>
 </div>
 
@@ -137,22 +143,36 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
 
     .campaign-objective-progress {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: var(--space-s);
         min-width: 0;
+    }
+
+    .campaign-objective-meter {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
 
         :global(.campaign-meter) {
-            flex: 1 1 auto;
             cursor: help;
+        }
+
+        small {
+            color: var(--foreground);
+            font-size: var(--step--2);
         }
     }
 
     .campaign-objective-figure {
-        flex: 0 0 6.5em;
-        text-align: right;
+        display: flex;
+        align-items: center;
+        flex: 0 0 4.5em;
+        height: var(--space-s);
         white-space: nowrap;
-        color: var(--highlight);
         font-size: var(--step--1);
+        justify-content: flex-end;
     }
 
     @media screen and (max-width: 991px) {

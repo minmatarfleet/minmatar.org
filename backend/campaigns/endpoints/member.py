@@ -21,7 +21,6 @@ from campaigns.models import (
     CampaignSystem,
 )
 from campaigns.services import advantage
-from campaigns.services.scoring import weights
 from eveonline.models import EveCharacter, EvePlayer
 from eveonline.scopes import TokenType, token_satisfies_type
 from groups.helpers.feature_access import require_feature
@@ -343,11 +342,6 @@ def report_advantage(
         "our_pct": state["our_pct"],
         "enemy_pct": state["enemy_pct"],
         "net_pct": state["net_pct"],
-        "points": (
-            weights(campaign)["advantage_reading"]
-            if reading.status == "accepted"
-            else 0
-        ),
     }
 
 
