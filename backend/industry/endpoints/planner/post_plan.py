@@ -4,6 +4,7 @@ from eveuniverse.models import EveMarketPrice, EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthOptional
+from buyback.helpers.purchase_refine import build_purchase_refine
 from eveonline.models import EveCharacter
 from industry.endpoints.planner.auth_helpers import auth_required_for_character
 from industry.endpoints.planner.schemas import (
@@ -38,6 +39,7 @@ from industry.helpers.loyalty_store import (
 from industry.helpers.plan_stock import (
     apply_stock_to_compressed_ore_plan,
     apply_stock_to_leaf_materials,
+    credit_reprocessed_ore_stock,
     parse_stock_paste,
 )
 from industry.helpers.reprocessing_skills import (
@@ -206,6 +208,34 @@ def _apply_stock_paste(plan, payload):
     )
     plan.leaf_materials = remaining
     return applied, stock
+
+
+def _credit_variant_ore_stock(plan, stock, key, character, payload):
+    """Credit II/III/IV and moon-variant ore as reprocessed minerals."""
+    if stock is None or not stock.by_name:
+        return []
+    refine_holder: list = []
+
+    def refine_rate_for(name: str) -> float:
+        if payload.refine_rate is not None:
+            return float(payload.refine_rate)
+        if not refine_holder:
+            refine_holder.append(
+                build_purchase_refine(
+                    character=character,
+                    facility_key=key,
+                    use_reprocessing_implants=payload.use_reprocessing_implants,
+                )
+            )
+        return refine_holder[0].rate_for_ore(name)
+
+    return credit_reprocessed_ore_stock(
+        plan.leaf_materials,
+        stock.by_type_id,
+        stock.by_name,
+        name_to_type_id=stock.name_to_type_id,
+        refine_rate_for=refine_rate_for,
+    )
 
 
 def _refresh_compressed_payload_after_stock(compressed_payload, ore_plan):
@@ -467,6 +497,9 @@ def post_plan(request, payload: PlanRequestSchema):
     if payload.stock_paste:
         leaf_applied, stock = _apply_stock_paste(plan, payload)
         stock_applied_rows.extend(leaf_applied)
+        stock_applied_rows.extend(
+            _credit_variant_ore_stock(plan, stock, key, character, payload)
+        )
         stock_unresolved = list(stock.unresolved_names)
 
     leaf_materials, total_buy = _leaf_materials_with_prices(plan)

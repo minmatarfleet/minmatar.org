@@ -18,6 +18,7 @@ from buyback.helpers.classify import (
     GROUP_P4,
 )
 from buyback.models import BuybackAcceptedItem
+from industry.helpers.ore_variants import ore_variant_yield_factor
 from industry.helpers.type_breakdown import (
     get_breakdown_for_industry_product,
     type_ids_in_breakdown,
@@ -61,9 +62,8 @@ HIGHSEC_ORE_BASES = BUYBACK_ORE_BASES
 _GRADE_SUFFIX_RE = re.compile(r"\s+(II|III|IV)-Grade$")
 _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
 
-# Jita ore-buy clamp uses the liquid base type, then these CCP variant factors.
-_ORE_GRADE_BUY_FACTORS = {"II": 1.05, "III": 1.10, "IV": 1.15}
-_ORE_MOON_BUY_FACTORS = {"Brimful": 1.15, "Glistening": 2.0}
+# Jita ore-buy clamp uses the liquid base type, then the CCP variant factors
+# in ``ore_variant_yield_factor`` (same scale as reprocessing content).
 
 # Oversupply pause. The weekly seed must not turn these back on.
 # Drop a name here to accept it again on the next seed.
@@ -102,16 +102,7 @@ def compressed_ore_buy_market_name(name: str) -> str | None:
 
 def compressed_ore_buy_factor(name: str) -> float:
     """Scale base-ore Jita buy for II/III/IV-Grade and moon prefixes."""
-    rest = (
-        name[len("Compressed ") :] if name.startswith("Compressed ") else name
-    )
-    grade = _GRADE_SUFFIX_RE.search(rest)
-    if grade:
-        return _ORE_GRADE_BUY_FACTORS[grade.group(1)]
-    moon = _MOON_PREFIX_RE.match(rest)
-    if moon:
-        return _ORE_MOON_BUY_FACTORS[moon.group(1)]
-    return 1.0
+    return ore_variant_yield_factor(name)
 
 
 def ore_jita_buy_unit(

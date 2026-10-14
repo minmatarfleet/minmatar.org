@@ -38,10 +38,8 @@ from industry.helpers.producers import ORE_BATCH_SIZE
 
 
 def _ore_yields(name: str, refine_rate: float) -> dict[str, float]:
-    """Yields for a hangar ore type, using the family name for graded variants."""
-    family = compressed_buyback_ore_base(name)
-    lookup = f"Compressed {family}" if family else name
-    return ore_reprocessing_yields(lookup, refine_rate=refine_rate)
+    """Per-unit yields, including II/III/IV-Grade and moon-variant content."""
+    return ore_reprocessing_yields(name, refine_rate=refine_rate)
 
 
 @dataclass
