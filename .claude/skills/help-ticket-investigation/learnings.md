@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-13 — Grade ore stock ignored on the build planner
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Pasting on-hand ore into the build planner only exact-matched names. II/III/IV-Grade and Brimful/Glistening stacks are not the compressed base the shopping list buys, so their minerals stayed on the buyback purchase. Fill also refined grade ore as the base family.
+**Durable rule:** Credit variant ore from TypeMaterials before sizing the compressed buy. Fallback scale is 1.05/1.10/1.15 and Brimful 1.15 / Glistening 2. Leave exact `Compressed {base}` for the 1:1 pass.
+**Skill update:** added the planner grade-ore row.
+
 ## 2026-10-13 — Fleet MOTD reload steps and guide link
 
 **Category:** pulse.technology

@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Dict, List, Mapping, MutableMapping, Optional, Tuple
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Tuple,
+)
 
 from buyback.helpers.classify import resolve_types_by_name
+from buyback.helpers.ore_names import buyback_ore_family
 from buyback.helpers.paste import parse_eve_paste
+from industry.helpers.compressed_ore import (
+    ORE_BATCH_SIZE,
+    reprocess_output,
+)
 
 
 @dataclass(frozen=True)
@@ -171,6 +185,115 @@ def apply_stock_to_named_bucket(
             bucket[name] = left
         else:
             bucket.pop(name, None)
+    applied.sort(key=lambda row: row.name.lower())
+    return applied
+
+
+def _leaf_type_by_name(
+    leaf: Mapping[int, Tuple[str, int]],
+) -> Dict[str, int]:
+    indexed: Dict[str, int] = {}
+    for type_id, pair in leaf.items():
+        indexed[pair[0]] = type_id
+    return indexed
+
+
+def _variant_batches_needed(
+    leaf: Mapping[int, Tuple[str, int]],
+    per_batch: Mapping[str, int],
+) -> int:
+    leaf_index = _leaf_type_by_name(leaf)
+    batches_needed = 0
+    for mineral, produced in per_batch.items():
+        type_id = leaf_index.get(mineral)
+        if type_id is None or produced <= 0:
+            continue
+        demand = int(leaf[type_id][1])
+        if demand <= 0:
+            continue
+        batches_needed = max(batches_needed, math.ceil(demand / produced))
+    return batches_needed
+
+
+def _subtract_reprocess_outputs(
+    leaf: MutableMapping[int, Tuple[str, int]],
+    outputs: Mapping[str, int],
+) -> bool:
+    leaf_index = _leaf_type_by_name(leaf)
+    credited = False
+    for mineral, produced in outputs.items():
+        type_id = leaf_index.get(mineral)
+        if type_id is None or produced <= 0 or type_id not in leaf:
+            continue
+        mineral_name, needed = leaf[type_id]
+        take = min(int(needed), int(produced))
+        if take <= 0:
+            continue
+        left = int(needed) - take
+        if left > 0:
+            leaf[type_id] = (mineral_name, left)
+        else:
+            leaf.pop(type_id, None)
+        credited = True
+    return credited
+
+
+def credit_reprocessed_ore_stock(
+    leaf: MutableMapping[int, Tuple[str, int]],
+    stock_by_type_id: MutableMapping[int, int],
+    stock_by_name: MutableMapping[str, int],
+    *,
+    name_to_type_id: Optional[Mapping[str, int]] = None,
+    refine_rate_for: Callable[[str], float],
+) -> List[StockAppliedRow]:
+    """
+    Turn grade, moon, and uncompressed ore stock into minerals.
+
+    Exact ``Compressed {base}`` stacks stay in stock so a later pass can
+    match the shopping list 1:1. II/III/IV-Grade and Brimful/Glistening
+    stacks are not on that list; their reprocess output covers leaf minerals
+    before the compressed buy is sized. Only whole 100-unit portions count.
+    """
+    applied: List[StockAppliedRow] = []
+    for name in list(stock_by_name.keys()):
+        family = buyback_ore_family(name)
+        if not family or name == f"Compressed {family}":
+            continue
+        owned = int(stock_by_name.get(name, 0) or 0)
+        batches_available = owned // ORE_BATCH_SIZE
+        if batches_available <= 0:
+            continue
+        rate = float(refine_rate_for(name))
+        if rate <= 0:
+            continue
+        per_batch = reprocess_output(name, ORE_BATCH_SIZE, rate)
+        if not per_batch:
+            continue
+        batches_needed = _variant_batches_needed(leaf, per_batch)
+        batches = min(batches_available, batches_needed)
+        if batches <= 0:
+            continue
+        used = batches * ORE_BATCH_SIZE
+        if not _subtract_reprocess_outputs(
+            leaf, reprocess_output(name, used, rate)
+        ):
+            continue
+        _consume_stock_qty(stock_by_name, name, used)
+        type_id = 0
+        if name_to_type_id is not None:
+            type_id = int(name_to_type_id.get(name, 0) or 0)
+        if type_id:
+            _consume_stock_qty(stock_by_type_id, type_id, used)
+        applied.append(
+            StockAppliedRow(
+                type_id=type_id,
+                name=name,
+                needed=used,
+                owned=owned,
+                used=used,
+                remaining=owned - used,
+            )
+        )
     applied.sort(key=lambda row: row.name.lower())
     return applied
 

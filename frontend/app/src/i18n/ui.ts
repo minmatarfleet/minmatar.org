@@ -1465,7 +1465,7 @@ export const ui = {
         'industry.orders.planner.refine_per_ore': 'Per compressed ore',
         'industry.orders.planner.calculating': 'Updating shopping list…',
         'industry.orders.planner.stocks': 'On-hand stock',
-        'industry.orders.planner.stocks_tip': 'Paste from Inventory or Assets (Ctrl+A, Ctrl+C). Matching quantities count toward the shopping list.',
+        'industry.orders.planner.stocks_tip': 'Paste from Inventory or Assets (Ctrl+A, Ctrl+C). Matching quantities count toward the shopping list. II, III, and IV-Grade ores, plus Brimful and Glistening, count as the minerals they reprocess into.',
         'industry.orders.planner.stocks_placeholder': 'Tritanium\t1000000\nPyerite\t500000',
         'industry.orders.planner.stock_applied': '{n} types applied from stock',
         'industry.orders.planner.stock_unresolved': '{n} names not recognized',
