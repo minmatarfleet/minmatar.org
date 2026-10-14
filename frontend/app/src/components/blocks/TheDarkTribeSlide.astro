@@ -57,9 +57,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         <img src="/images/corporations/darktribe/co-ceo.webp" />
     </StylessButton>
     
-    <img slot="ships" class="[ tempest ]" src="/images/corporations/darktribe/tempest.png" />
-    <img slot="ships" class="[ stabber_2 ]" src="/images/corporations/darktribe/stabber.png" />
-    <img slot="ships" class="[ cenotaph ]" src="/images/corporations/darktribe/cenotaph.png" />
+    <img slot="ships" class="[ vargur ]" src="/images/corporations/darktribe/vargur.webp" />
+    <img slot="ships" class="[ hurricane_2 ]" src="/images/corporations/darktribe/hurricane.webp" />
+    <img slot="ships" class="[ vindicator ]" src="/images/corporations/darktribe/vindicator.webp" />
 
     <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('darktribe_description_fallback'), { renderer })} />
 </CorporationSlide>
@@ -94,7 +94,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         }
     }
 
-    .tempest {
+    .vargur {
         position: absolute;
         top: 14%;
         left: -39%;
@@ -104,27 +104,27 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         transform: scale(0);
     }
 
-    .stabber_2 {
+    .hurricane_2 {
         position: absolute;
         top: 41%;
         left: -20%;
-        width: 56%;
+        width: 74%;
         height: auto;
         z-index: 2;
         transform: scale(0);
     }
 
-    .cenotaph {
+    .vindicator {
         position: absolute;
         top: 39%;
         left: -12%;
-        width: 61%;
+        width: 57%;
         height: auto;
         z-index: 2;
         transform: scale(0);
     }
 
-    @keyframes tempest {
+    @keyframes vargur {
         0% {
             transform: scale(0);
             top: 13%;
@@ -144,7 +144,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         }
     }
 
-    @keyframes stabber_2 {
+    @keyframes hurricane_2 {
         0% {
             transform: scale(0);
             top: 30%;
@@ -153,34 +153,34 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
         33% {
             transform: scale(1);
-            top: 31%;
-            left: 49%;
+            top: 23%;
+            left: 26%;
         }
 
         100% {
             transform: scale(1.05);
-            top: 31%;
-            left: 52%;
+            top: 23%;
+            left: 32%;
         }
     }
 
-    @keyframes cenotaph {
+    @keyframes vindicator {
         0% {
             transform: scale(0);
             left: -12%;
-            top: 15%;
+            top: 7%;
         }
 
         36% {
             transform: scale(1);
-            top: 44%;
-            left: 45%;
+            top: 33%;
+            left: 36%;
         }
 
         100% {
             transform: scale(1.03);
-            top: 47%;
-            left: 48%;
+            top: 36%;
+            left: 43%;
         }
     }
 
@@ -207,24 +207,24 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     .swiper-slide-active {
-        .tempest {
-            animation: tempest cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+        .vargur {
+            animation: vargur cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
             animation-delay: 1.2s;
             animation-iteration-count: 1;
             transform-origin: center;
             animation-fill-mode: forwards;
         }
         
-        .stabber_2 {
-            animation: stabber_2 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+        .hurricane_2 {
+            animation: hurricane_2 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
             animation-delay: 1.3s;
             animation-iteration-count: 1;
             transform-origin: center;
             animation-fill-mode: forwards;
         }
         
-        .cenotaph {
-            animation: cenotaph cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+        .vindicator {
+            animation: vindicator cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
             transform-origin: center;
