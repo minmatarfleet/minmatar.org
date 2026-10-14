@@ -324,6 +324,33 @@ class PurchaseFillTestCase(TestCase):
         self.assertEqual(fill.picks[0].quantity, 1000)
         self.assertEqual(fill.shortfalls, [])
 
+    def test_pyerite_heavy_paste_uses_veldspar_for_trit(self, unused_mock_esi):
+        pyerite = ensure_type(
+            type_id=35,
+            name="Pyerite",
+            group_id=18,
+            group_name="Mineral",
+            category_id=4,
+            category_name="Material",
+        )
+        _ledger(
+            eve_type=self.ore,
+            quantity=100000,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:veld-first",
+        )
+        _ledger(
+            eve_type=self.scordite,
+            quantity=100000,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:scord-pye",
+        )
+        fill = fill_purchase("Pyerite\t50000\nTritanium\t10000")
+        picked = {pick.name for pick in fill.picks}
+        self.assertIn("Compressed Veldspar", picked)
+        self.assertIn("Compressed Scordite", picked)
+        self.assertNotIn(pyerite.name, picked)
+
     def test_tritanium_fills_compressed_veldspar(self, unused_mock_esi):
         _ledger(
             eve_type=self.ore,
