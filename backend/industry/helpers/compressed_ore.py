@@ -48,10 +48,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from eveuniverse.models import EveMarketPrice, EveType, EveTypeMaterial
 
+from industry.helpers.ore_variants import split_ore_variant
 from industry.helpers.producers import DEFAULT_REFINE_RATE, ORE_BATCH_SIZE
 from moons.models import ore_yield_map
 
@@ -363,13 +365,8 @@ def _ensure_type_materials_loaded(eve_type_id: int) -> None:
     )
 
 
-def ore_materials_per_portion(ore_name: str) -> Dict[str, float]:
-    """
-    Base reprocessing outputs per portion (usually 100 units), at 100% yield.
-
-    Prefers TypeMaterials on the base (uncompressed) ore because Compressed *
-    rows are often empty in local SDE mirrors. Falls back to static maps.
-    """
+def _portion_from_type_rows(ore_name: str) -> Dict[str, float]:
+    """TypeMaterials for the uncompressed name, then the Compressed row."""
     base = base_ore_name(ore_name)
     for candidate in (base, compressed_type_name(base)):
         ore = EveType.objects.filter(name=candidate).first()
@@ -388,7 +385,10 @@ def ore_materials_per_portion(ore_name: str) -> Dict[str, float]:
                 yields[mat_name] = float(material.quantity)
         if yields:
             return yields
+    return {}
 
+
+def _static_portion_yields(base: str) -> Dict[str, float]:
     if base in FALLBACK_BELT_ORE_YIELDS_PER_100:
         return dict(FALLBACK_BELT_ORE_YIELDS_PER_100[base])
     if base in FALLBACK_MOON_YIELDS_PER_100:
@@ -397,6 +397,46 @@ def ore_materials_per_portion(ore_name: str) -> Dict[str, float]:
     if base in ore_yield_map:
         return {k: float(v) for k, v in ore_yield_map[base].items() if v}
     return {}
+
+
+def _scale_portion_yields(
+    yields: Dict[str, float], factor: float
+) -> Dict[str, float]:
+    """Round half up, matching CCP's baked-in variant type materials."""
+    if factor == 1:
+        return dict(yields)
+    scaled: Dict[str, float] = {}
+    multiplier = Decimal(str(factor))
+    for name, qty in yields.items():
+        amount = (Decimal(str(qty)) * multiplier).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+        if amount > 0:
+            scaled[name] = float(amount)
+    return scaled
+
+
+def ore_materials_per_portion(ore_name: str) -> Dict[str, float]:
+    """
+    Reprocessing outputs per portion (usually 100 units), at 100% yield.
+
+    Prefers TypeMaterials on the uncompressed variant (Veldspar II-Grade,
+    Brimful Zeolites) because Compressed * rows are often empty. When those
+    rows are missing, scales the base ore by the CCP grade or moon factor.
+    """
+    direct = _portion_from_type_rows(ore_name)
+    if direct:
+        return direct
+
+    variant = base_ore_name(ore_name)
+    family, factor = split_ore_variant(ore_name)
+    if factor != 1:
+        base_yields = _portion_from_type_rows(
+            family
+        ) or _static_portion_yields(family)
+        if base_yields:
+            return _scale_portion_yields(base_yields, factor)
+    return _static_portion_yields(variant)
 
 
 def ore_reprocessing_yields(

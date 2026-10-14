@@ -1,11 +1,14 @@
 """Tests for planner stock paste helpers."""
 
+from unittest.mock import patch
+
 from django.test import TestCase
-from eveuniverse.models import EveCategory, EveGroup, EveType
+from eveuniverse.models import EveCategory, EveGroup, EveType, EveTypeMaterial
 
 from industry.helpers.plan_stock import (
     apply_stock_to_compressed_ore_plan,
     apply_stock_to_leaf_materials,
+    credit_reprocessed_ore_stock,
     parse_stock_paste,
 )
 from industry.helpers.compressed_ore import CompressedOrePlan
@@ -114,3 +117,63 @@ class PlanStockHelperTestCase(TestCase):
         )
         self.assertEqual(ore_plan.belt_ore_compressed, {})
         self.assertEqual(ore_plan.reprocessing_tax, 0.0)
+
+    @patch("industry.helpers.compressed_ore._ensure_type_materials_loaded")
+    def test_grade_ore_stock_covers_minerals_at_variant_yield(
+        self, unused_esi
+    ):
+        grade = EveType.objects.create(
+            id=62522,
+            name="Compressed Veldspar II-Grade",
+            published=True,
+            eve_group=self.veld.eve_group,
+        )
+        leaf = {self.trit.id: ("Tritanium", 1000)}
+        stock_by_type = {grade.id: 500}
+        stock_by_name = {
+            "Compressed Veldspar II-Grade": 500,
+            "Compressed Veldspar": 100,
+        }
+        applied = credit_reprocessed_ore_stock(
+            leaf,
+            stock_by_type,
+            stock_by_name,
+            name_to_type_id={
+                "Compressed Veldspar II-Grade": grade.id,
+                "Compressed Veldspar": self.veld.id,
+            },
+            refine_rate_for=lambda _name: 1.0,
+        )
+        # 420 Tritanium per 100 II-Grade; three portions cover 1000.
+        self.assertNotIn(self.trit.id, leaf)
+        self.assertEqual(stock_by_name["Compressed Veldspar II-Grade"], 200)
+        self.assertEqual(stock_by_name["Compressed Veldspar"], 100)
+        self.assertEqual(stock_by_type[grade.id], 200)
+        self.assertEqual(applied[0].name, "Compressed Veldspar II-Grade")
+        self.assertEqual(applied[0].used, 300)
+        self.assertEqual(applied[0].remaining, 200)
+
+    @patch("industry.helpers.compressed_ore._ensure_type_materials_loaded")
+    def test_grade_stock_uses_type_materials(self, unused_esi):
+        scordite_ii = EveType.objects.create(
+            id=17463,
+            name="Scordite II-Grade",
+            published=True,
+            eve_group=self.veld.eve_group,
+        )
+        EveTypeMaterial.objects.create(
+            eve_type=scordite_ii,
+            material_eve_type=self.pye,
+            quantity=103,
+        )
+        leaf = {self.pye.id: ("Pyerite", 104)}
+        stock_by_name = {"Compressed Scordite II-Grade": 100}
+        credit_reprocessed_ore_stock(
+            leaf,
+            {},
+            stock_by_name,
+            refine_rate_for=lambda _name: 1.0,
+        )
+        # SDE is 103 Pyerite, not round(99 * 1.05) = 104.
+        self.assertEqual(leaf[self.pye.id], ("Pyerite", 1))
+        self.assertEqual(stock_by_name, {})

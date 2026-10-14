@@ -381,6 +381,24 @@ class PurchaseFillTestCase(TestCase):
         self.assertIn("Compressed Veldspar II-Grade\t", fill.janice_tsv)
         self.assertNotIn("Veldspar\t100", fill.janice_tsv)
 
+    def test_grade_variant_covers_more_tritanium_than_base(
+        self, unused_mock_esi
+    ):
+        settings = EveBuybackSettings.load()
+        settings.ore_refine = 1.0
+        settings.save()
+        _ledger(
+            eve_type=self.grade,
+            quantity=100,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:grade-yield",
+        )
+        fill = fill_purchase("Tritanium\t420", settings=settings)
+        self.assertEqual(len(fill.picks), 1)
+        self.assertEqual(fill.picks[0].name, "Compressed Veldspar II-Grade")
+        self.assertEqual(fill.picks[0].quantity, 100)
+        self.assertEqual(fill.shortfalls, [])
+
     def test_ore_paste_does_not_substitute_other_families(
         self, unused_mock_esi
     ):
