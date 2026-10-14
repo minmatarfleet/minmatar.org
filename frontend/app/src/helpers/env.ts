@@ -16,9 +16,19 @@ export const get_auth_url = (redirect_url: string = `${APP_URL}/account/`) => {
     return `${APP_URL}/redirects/auth_init?redirect_url=${encodeURIComponent(redirect_url)}`
 }
 
+/** Backend Discord OAuth endpoint. Keep redirect_url out of this string. */
+export const get_discord_oauth_login_action = () => {
+    return `${API_PUBLIC_URL}/api/users/login`
+}
+
+/** Where Discord OAuth returns the site after login. */
+export const get_discord_oauth_redirect_url = () => {
+    return `${APP_URL}/auth/login`
+}
+
 /** Backend Discord OAuth start (after the notice gate). */
 export const get_discord_oauth_start_url = () => {
-    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${encodeURIComponent(`${APP_URL}/auth/login`)}`
+    return `${get_discord_oauth_login_action()}?redirect_url=${encodeURIComponent(get_discord_oauth_redirect_url())}`
 }
 
 export const get_friend_auth_url = () => {

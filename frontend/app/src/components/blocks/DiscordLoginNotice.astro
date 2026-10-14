@@ -1,0 +1,82 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_discord_oauth_login_action, get_discord_oauth_redirect_url } from '@helpers/env'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Button from '@components/blocks/Button.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+
+const DISCORD_LOGIN_NOTICE_STORAGE_KEY = 'discord_login_notice_accepted'
+const DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE = '1'
+const remember_acceptance = `try{localStorage.setItem(${JSON.stringify(DISCORD_LOGIN_NOTICE_STORAGE_KEY)},${JSON.stringify(DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE)})}catch(e){}`
+const login_action = get_discord_oauth_login_action()
+const login_redirect = get_discord_oauth_redirect_url()
+const home_url = translatePath('/')
+---
+
+<form
+    class="[ discord-login-notice ]"
+    method="get"
+    action={login_action}
+    onsubmit={remember_acceptance}
+>
+    <input type="hidden" name="redirect_url" value={login_redirect} />
+    <Wrapper
+        class="[ light-transparency card border ]"
+        centered={true}
+        padding_block="var(--space-xl)"
+        padding_inline="var(--space-l)"
+        max_width="70rem"
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-m)">
+                <h1 class="[ discord-login-notice-title ]">{t('discord_login_notice_title')}</h1>
+
+                <Markdown
+                    class="[ prose ]"
+                    markdown={t('discord_login_notice_body')}
+                    element='div'
+                />
+
+                <RadioCheckInput
+                    id="discord-login-notice-leave-checkbox"
+                    type="checkbox"
+                    required={true}
+                >
+                    <span>{t('discord_login_notice_leave_checkbox')}</span>
+                </RadioCheckInput>
+            </Flexblock>
+
+            <FlexInline justification="flex-end">
+                <Button
+                    href={home_url}
+                    color="fleet-red"
+                >
+                    {t('cancel')}
+                </Button>
+                <Button
+                    type="submit"
+                    color="green"
+                    off_disable={true}
+                >
+                    {t('continue_to_discord')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+</form>
+
+<style lang="scss">
+    .discord-login-notice {
+        width: 100%;
+    }
+
+    .discord-login-notice-title {
+        font-size: var(--step-3);
+    }
+</style>

@@ -174,6 +174,7 @@ Scan this table before inventing a new theory.
 
 | Reporter says | Check first |
 |---------------|-------------|
+| Discord login notice Continue does nothing | The notice used an Alpine click handler. `Button` stays `disabled` until `x-init`, and `accept_notice` returned with no message when the checkbox model was false. Alpine comes from jsDelivr, so a blocked CDN left Continue dead while the checkbox still toggled. It is now a native GET form: `required` checkbox, submit with `off_disable`, hidden `redirect_url`. Do not put `redirect_url` on the form `action` (GET replaces that query). `HelpTicket.opener` is null until login finishes. |
 | Site 403 / “Docking request denied” | Django `has_perm` vs Discord/auth **group**. A Corp Recruiter **role** is not the perm an Astro page checks. Associate recruiters are not Alliance; Alliance recruiter groups do not automatically cover them. |
 | External button / “Open” reloads the same page | Leaving-site dialog: Open is `x-bind:href="alert_dialog_accept_href"`; `show_alert_dialog` can clear that href in the same click → `href=""` reloads. Not the remote site. Persist-checkbox lives on the dialog; the next Open can still race. |
 | Learning / page progress stuck ~80% | `UserPageProgress` / `UserPageSectionProgress` often n−1 (last `resources` / `additional-resources`). Mark-as-read only after every section dwell. |
