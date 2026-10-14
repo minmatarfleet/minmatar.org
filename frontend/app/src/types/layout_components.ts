@@ -227,6 +227,8 @@ export interface PageCoverOptions {
     animated?:      boolean;
     scrollable?:    boolean;
     overlay?:       boolean;
+    full_screen?:   boolean;
+    align?:         'right' | 'left',
 }
 
 export interface PageYTVideoOptions {
@@ -357,6 +359,7 @@ export interface CorporationObject {
     executor_notes?:        string;
     timezones?:             string[];
     requirements?:          string[];
+    open_application_corporation_name?: string;
 }
 
 export interface CorporationBasic {
@@ -722,6 +725,7 @@ export interface FleetUI {
     tracking:               Tracking;
     audience:               string;
     disable_motd:           boolean;
+    hide_volunteers:        boolean;
     status?:                TrackingStatus;
     aar_link:               string;
     roam_report_url?:       string;
@@ -1133,4 +1137,14 @@ export interface Pages {
     page_title:         string;
     available:          boolean;
     reason?:            string;
+}
+
+import type { BuybackAcceptedItem } from '@dtypes/api.minmatar.org'
+export interface DisplayItem {
+    type_id: number
+    name: string
+    variants?: BuybackAcceptedItem[]
+    used_in?: { type_id: number; name: string }[]
+    used_in_is_ore?: boolean
+    in_demand?: boolean
 }

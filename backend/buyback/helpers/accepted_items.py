@@ -18,6 +18,7 @@ from buyback.helpers.classify import (
     GROUP_P4,
 )
 from buyback.models import BuybackAcceptedItem
+from industry.helpers.ore_variants import ore_variant_yield_factor
 from industry.helpers.type_breakdown import (
     get_breakdown_for_industry_product,
     type_ids_in_breakdown,
@@ -61,9 +62,12 @@ HIGHSEC_ORE_BASES = BUYBACK_ORE_BASES
 _GRADE_SUFFIX_RE = re.compile(r"\s+(II|III|IV)-Grade$")
 _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
 
-# Jita ore-buy clamp uses the liquid base type, then these CCP variant factors.
-_ORE_GRADE_BUY_FACTORS = {"II": 1.05, "III": 1.10, "IV": 1.15}
-_ORE_MOON_BUY_FACTORS = {"Brimful": 1.15, "Glistening": 2.0}
+# Jita ore-buy clamp uses the liquid base type, then the CCP variant factors
+# in ``ore_variant_yield_factor`` (same scale as reprocessing content).
+
+# Oversupply pause. The weekly seed must not turn these back on.
+# Drop a name here to accept it again on the next seed.
+PAUSED_ACCEPTED_TYPE_NAMES = frozenset({"Water"})
 
 P1_P2_GROUPS = frozenset({GROUP_P1, GROUP_P2})
 P3_P4_GROUPS = frozenset({GROUP_P3, GROUP_P4})
@@ -98,16 +102,7 @@ def compressed_ore_buy_market_name(name: str) -> str | None:
 
 def compressed_ore_buy_factor(name: str) -> float:
     """Scale base-ore Jita buy for II/III/IV-Grade and moon prefixes."""
-    rest = (
-        name[len("Compressed ") :] if name.startswith("Compressed ") else name
-    )
-    grade = _GRADE_SUFFIX_RE.search(rest)
-    if grade:
-        return _ORE_GRADE_BUY_FACTORS[grade.group(1)]
-    moon = _MOON_PREFIX_RE.match(rest)
-    if moon:
-        return _ORE_MOON_BUY_FACTORS[moon.group(1)]
-    return 1.0
+    return ore_variant_yield_factor(name)
 
 
 def ore_jita_buy_unit(
@@ -243,7 +238,7 @@ def _upsert_accepted(eve_type: EveType, seed_ids: set[int]) -> str:
     _, was_created = BuybackAcceptedItem.objects.update_or_create(
         eve_type=eve_type,
         defaults={
-            "active": True,
+            "active": eve_type.name not in PAUSED_ACCEPTED_TYPE_NAMES,
             "category": category,
         },
     )
@@ -261,7 +256,8 @@ def seed_accepted_items(
     recent industry orders.
 
     Full P1/P2 stay on the allowlist (surplus rate unless in supply-chain
-    demand). P3/P4 outside the lookback BOM set are deactivated. When
+    demand), except names in PAUSED_ACCEPTED_TYPE_NAMES, which stay inactive.
+    P3/P4 outside the lookback BOM set are deactivated. When
     deactivate_missing is True, active ore rows not in the seed set are also
     deactivated.
     """

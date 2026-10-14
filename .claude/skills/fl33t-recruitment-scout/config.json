@@ -1,0 +1,45 @@
+{
+  "api_base_url": "https://api.minmatar.org/api",
+  "corporation_types": ["alliance", "associate"],
+  "discord_invite": "discord.gg/minmatar",
+  "proof_videos": {
+    "always": {
+      "title": "Bring Fun Shit",
+      "url": "https://youtu.be/7-eGTtq9vWo",
+      "use_for": "every send"
+    },
+    "mining": {
+      "title": "Rock Hoppin'",
+      "url": "https://youtu.be/XCApG7Pt6m4",
+      "use_for": "mining, industry, Extraction, MFA rock fleets, highsec bulwark miners — in addition to Bring Fun Shit"
+    }
+  },
+  "proof_aars": [
+    {
+      "title": "AAR: 625B DOWN IN AMAMAKE",
+      "url": "https://www.reddit.com/r/Eve/comments/1wr8ohf/aar_625b_down_in_amamake/",
+      "date": "2026-09-27",
+      "use_for": "newest big fight; default extra AAR for PvP/FW"
+    },
+    {
+      "title": "AAR: 700B DOWN IN AHBAZON",
+      "url": "https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/",
+      "date": "2026-08-01",
+      "use_for": "capitals, Rattini, dread-feed hook"
+    }
+  ],
+  "proof_pages": {
+    "warzone": "https://my.minmatar.org/warzone/",
+    "corporations": "https://my.minmatar.org/alliance/corporations/",
+    "freight": "https://my.minmatar.org/market/freight/contracts/history/",
+    "auga_siege": "https://my.minmatar.org/alliance/campaigns/auga-yc128/"
+  },
+  "reddit": {
+    "recruitment_account": "MinmatarFleet",
+    "proof_accounts": ["BearThatCares"],
+    "subreddits": ["evejobs", "eve"]
+  },
+  "forums": {
+    "recruitment_center_category": "corporations-alliances/recruitment-center/63"
+  }
+}

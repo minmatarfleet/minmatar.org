@@ -335,7 +335,7 @@ Additional principles:
 - **EUTZ new or early intermediate:** BNSQ. **USTZ new or early intermediate,** especially with wormhole play beside faction warfare: SOEXD.
 - **EUTZ veteran small gang:** FOSFO. **USTZ veteran small gang:** TDT.
 - **Intermediate or veteran, wants the organized corp, no small-gang specialty, no capital ask:** SLTAR.
-- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + **Keldor00** on Discord for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + the FW seat that matches the combat character. On forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume). Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
+- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; the MFA network on `discord.gg/minmatar` for general industry/PvE. Do not name a Discord person. Dual accounts (mining main + PvP alt) can split Extraction + the FW seat that matches the combat character. On forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume). Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
 - **Ex-FL33T returning:** if they already left Rattini and are not asking for dreads or a pile of characters, route **SLTAR** rather than sending them back to ARAT.
 - **Caps / multi-box veterans:** ARAT. Unused capital + learning lowsec → ARAT (own the dread-feed joke). Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
 - **WH-only veterans, or jspace with no USTZ new/early-intermediate hook:** nameless FW redirect plus Bring Fun Shit and the newest kit AAR. Do not close that redirect with Rock Hoppin'. SOEXD is for USTZ new and early-intermediate pilots who still want a hole on the side.
@@ -399,8 +399,8 @@ recruiter knows the direction. The copy block is the nudge.
 - Discord only if they asked where to talk to people. That one line replaces
   the proof link. Do not add both.
 - Industry and wormhole redirects stay honest and shorter. Highsec bulwarks
-  over another null shuffle is the mining nudge. Extraction's fleet pitch and
-  Keldor00 stay on r/evejobs and the forums.
+  over another null shuffle is the mining nudge. Extraction's fleet pitch
+  stays on r/evejobs and the forums. Do not name a Discord person there.
 - Still vary openings across a run. On r/eve, prefer direct answer, contrast,
   or blunt. Corp-first is the r/evejobs opener.
 
@@ -468,8 +468,8 @@ answer plus at most one link.
   paragraph. r/eve does not use this stack.
 - **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
   as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
-- **MFA Discord contact:** `ask for Keldor00` (handle, not the older `Keldor`
-  shorthand).
+- **Industry Discord:** `discord.gg/minmatar` only. Do not name a person to ask
+  for. Minmatar Extraction Company has no public Discord contact on the roster.
 - Keep motivational lines only when OP is about to quit EVE (still one paragraph).
 
 ### Present output
@@ -508,7 +508,7 @@ One block per open thread, in the same order as section 3. Each block:
 - Blank line, then the line `Some links`, then a markdown bullet list.
 - Each bullet is a markdown link whose visible text is the URL: `* [https://…](https://…)` .
 - Discord is `* [discord.gg/minmatar](http://discord.gg/minmatar)` .
-- Do not write `ask for Keldor00` in the pitch. Discord in the list is the contact.
+- Do not name a Discord person in the pitch or the link list. Discord in the list is the contact.
 - Brand-new teach-me Academy posts put `https://my.minmatar.org/learning/` first in the list and skip the AAR.
 - Other Academy / PvP posts: ad, discord, Bring Fun Shit, then one AAR when the kit says so.
 - Mining / industry posts: Bring Fun Shit, the mining ad, Rock Hoppin', discord. Order can put discord first when the ask is a corp home rather than “how do I mine.”
@@ -522,7 +522,7 @@ One block per open thread, in the same order as section 3. Each block:
 
 **Forums** (bare URLs, so Discourse oneboxes):
 
-- Pitch is one paragraph. The corp ad URL and `discord.gg/minmatar` sit in the last sentence as bare text. No markdown links, no bold.
+- Pitch is one paragraph. The corp ad URL and `discord.gg/minmatar` sit in the last sentence as bare text. No markdown links, no bold. Do not add an "ask for" name.
 - Blank line, then each proof URL on its own line: Bring Fun Shit, Rock Hoppin' when mining, then one AAR when the kit says so.
 - Named corp with no ad: bare `discord.gg/minmatar` in the pitch, then `https://my.minmatar.org/alliance/corporations/` on its own line before the videos.
 - A full `https://www.reddit.com/r/evejobs/comments/...` URL oneboxes as Reddit. A `/r/evejobs/s/` shortlink does too.

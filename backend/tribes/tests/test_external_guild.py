@@ -12,6 +12,7 @@ from discord.signals import group_post_save, user_group_changed
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from tribes.helpers.external_guild import (
+    CLEANUP_FAILURE_ALERT_THRESHOLD,
     FISHERMEN_ALERT_CHANNEL_ID,
     FISHERMEN_MEMBER_ROLE_ID,
     append_query,
@@ -47,6 +48,20 @@ def setUpModule():
         sender=User.groups.through,
         dispatch_uid="user_group_changed",
     )
+
+
+def _missing_permissions_error() -> requests.exceptions.HTTPError:
+    response = MagicMock()
+    response.status_code = 403
+    response.json.return_value = {
+        "message": "Missing Permissions",
+        "code": 50013,
+    }
+    err = requests.exceptions.HTTPError(
+        "403 Client Error: Forbidden for url: https://discord.example/kick"
+    )
+    err.response = response
+    return err
 
 
 def _unknown_member_error() -> requests.exceptions.HTTPError:
@@ -208,6 +223,101 @@ class ExternalGuildSeatTestCase(TestCase):
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_REMOVED)
         client.kick_guild_member.assert_called()
+
+    def _present_seat(self) -> TribeExternalGuildSeat:
+        return TribeExternalGuildSeat.objects.create(
+            binding=self.binding,
+            user=self.user,
+            discord_user_id=self.discord_user.id,
+            discord_username="pilot",
+            status=TribeExternalGuildSeat.STATUS_PRESENT,
+        )
+
+    @patch("tribes.helpers.external_guild.DiscordClient")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_kick_permission_denied_alerts_once(
+        self, client_for_binding, discord_cls
+    ):
+        client = client_for_binding.return_value
+        client.kick_guild_member.side_effect = _missing_permissions_error()
+        self._present_seat()
+
+        for _ in range(CLEANUP_FAILURE_ALERT_THRESHOLD - 1):
+            reconcile_external_guilds()
+        discord_cls.return_value.create_message.assert_not_called()
+
+        reconcile_external_guilds()
+        seat = TribeExternalGuildSeat.objects.get()
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        )
+        self.assertEqual(seat.failure_count, CLEANUP_FAILURE_ALERT_THRESHOLD)
+        self.assertIn("Missing Permissions", seat.last_error)
+        self.assertIn("still in the guild", seat.last_error)
+        discord_cls.return_value.create_message.assert_called_once()
+        discord_cls.return_value.send_dm.assert_not_called()
+
+        reconcile_external_guilds()
+        seat.refresh_from_db()
+        self.assertEqual(
+            seat.failure_count, CLEANUP_FAILURE_ALERT_THRESHOLD + 1
+        )
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        )
+        discord_cls.return_value.create_message.assert_called_once()
+
+        client.kick_guild_member.side_effect = None
+        reconcile_external_guilds()
+        seat.refresh_from_db()
+        self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_REMOVED)
+        discord_cls.return_value.create_message.assert_called_once()
+
+    @patch("tribes.helpers.external_guild.DiscordClient")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_existing_cleanup_failed_seat_does_not_realert(
+        self, client_for_binding, discord_cls
+    ):
+        client = client_for_binding.return_value
+        client.kick_guild_member.side_effect = _missing_permissions_error()
+        seat = self._present_seat()
+        seat.status = TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        seat.failure_count = 52
+        seat.last_error = "kick: old"
+        seat.save(update_fields=["status", "failure_count", "last_error"])
+
+        reconcile_external_guilds()
+        discord_cls.return_value.create_message.assert_not_called()
+        discord_cls.return_value.send_dm.assert_not_called()
+        seat.refresh_from_db()
+        self.assertEqual(seat.failure_count, 53)
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        )
+        self.assertIn("Missing Permissions", seat.last_error)
+
+    @patch("tribes.helpers.external_guild.DiscordClient")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_cleanup_alert_channel_failure_dms_chief_once(
+        self, client_for_binding, discord_cls
+    ):
+        self.tribe_group.chief = self.user
+        self.tribe_group.save(update_fields=["chief"])
+        client = client_for_binding.return_value
+        client.kick_guild_member.side_effect = _missing_permissions_error()
+        discord_cls.return_value.create_message.side_effect = (
+            requests.exceptions.HTTPError("403 channel")
+        )
+        self._present_seat()
+
+        for _ in range(CLEANUP_FAILURE_ALERT_THRESHOLD + 1):
+            reconcile_external_guilds()
+
+        discord_cls.return_value.create_message.assert_called_once()
+        discord_cls.return_value.send_dm.assert_called_once()
+        args, kwargs = discord_cls.return_value.send_dm.call_args
+        self.assertEqual(args[0], str(self.discord_user.id))
+        self.assertIn("Missing Permissions", kwargs["message"])
 
     @patch("tribes.helpers.external_guild.client_for_binding")
     @patch("discord.signals.remove_all_roles_from_guild_member")

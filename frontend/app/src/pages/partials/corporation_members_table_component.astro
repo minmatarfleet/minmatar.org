@@ -1,0 +1,683 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
+import { get_player_icon } from '@helpers/eve_image_server'
+import {
+    MEMBER_ACCOUNT_FILTERS,
+    MEMBER_PAGE_SIZE,
+    MEMBER_STATUS_FILTERS,
+    MEMBER_TIMEZONE_FILTERS,
+    corporation_member_characters,
+    corporation_member_page,
+    corporation_member_primary,
+    corporation_member_timezones,
+    filter_corporation_member_rows,
+    group_corporation_members,
+    member_filter_value,
+    paginate_corporation_member_rows,
+} from '@helpers/corporations/detail'
+import type { MemberFilters } from '@helpers/corporations/detail'
+import { query_string } from '@helpers/string'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+const BODY_ID = 'corporation-members-body'
+const VISIBLE_ALTS = 6
+const SEARCH_ID = 'corporation-member-search'
+const FORM_ID = 'corporation-member-filters'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const q = (params.get('q') ?? '').trim().slice(0, 80)
+const timezone = member_filter_value(params.get('tz'), MEMBER_TIMEZONE_FILTERS)
+const status = member_filter_value(params.get('status'), MEMBER_STATUS_FILTERS)
+const account = member_filter_value(params.get('account'), MEMBER_ACCOUNT_FILTERS) ?? 'linked'
+const requested_page = corporation_member_page(params.get('page'))
+
+const members_result = await get_corporation_members(auth_token, corporation_id)
+if (!members_result) return HTTP_403_Forbidden()
+
+const grouped = group_corporation_members(members_result)
+const filters: MemberFilters = { query: q, timezone, status, account }
+const roster = filter_corporation_member_rows(grouped, filters).sort((a, b) =>
+    corporation_member_primary(a).character_name.localeCompare(
+        corporation_member_primary(b).character_name,
+        undefined,
+        { sensitivity: 'base' },
+    ))
+const pagination = paginate_corporation_member_rows(roster, requested_page, MEMBER_PAGE_SIZE)
+
+// Option counts respect the search and the other filters, so each shows what picking it yields.
+function count_with(overrides: Partial<MemberFilters>) {
+    return filter_corporation_member_rows(grouped, { ...filters, ...overrides }).length
+}
+
+function partial_url(page: number) {
+    return translatePath(`/partials/corporation_members_table_component/?${query_string({
+        corporation_id: String(corporation_id),
+        page: String(page),
+    })}`)
+}
+
+function prime_label(code: string): string {
+    switch (code) {
+        case 'US': return t('US')
+        case 'US_AP': return t('US_AP')
+        case 'AP': return t('AP')
+        case 'AP_EU': return t('AP_EU')
+        case 'EU': return t('EU')
+        case 'EU_US': return t('EU_US')
+        default: return code
+    }
+}
+
+function status_label(code: string): string {
+    switch (code) {
+        case 'active': return t('corporations.detail.status_active')
+        case 'trial': return t('corporations.detail.status_trial')
+        case 'on_leave': return t('corporations.detail.status_on_leave')
+        case 'none': return t('corporations.detail.status_none')
+        default: return code
+    }
+}
+
+function option_label(label: string, count: number) {
+    return `${label} (${count})`
+}
+
+const account_options = MEMBER_ACCOUNT_FILTERS.map((code) => ({
+    value: code,
+    label: option_label(
+        t(`corporations.detail.account_${code}` as 'corporations.detail.account_linked'),
+        count_with({ account: code }),
+    ),
+}))
+const timezone_options = [
+    { value: '', label: option_label(t('corporations.detail.all_timezones'), count_with({ timezone: null })) },
+    ...MEMBER_TIMEZONE_FILTERS.map((code) => ({
+        value: code,
+        label: option_label(prime_label(code), count_with({ timezone: code })),
+    })),
+]
+const status_options = [
+    { value: '', label: option_label(t('corporations.detail.all_statuses'), count_with({ status: null })) },
+    ...MEMBER_STATUS_FILTERS.map((code) => ({
+        value: code,
+        label: option_label(status_label(code), count_with({ status: code })),
+    })),
+]
+
+// Every request swaps only the table body plus the three dropdowns (to refresh
+// their counts), so the search box is never replaced and keeps focus. The form
+// listens for bubbled `change` because the dropdowns are new elements after a swap.
+const hx_swap = {
+    'hx-target': `#${BODY_ID}`,
+    'hx-select': `#${BODY_ID}`,
+    'hx-select-oob': '#cm-account,#cm-tz,#cm-status',
+    'hx-swap': 'outerHTML',
+}
+const can_prev = pagination.page > 1
+const can_next = pagination.page < pagination.total_pages
+const page_status = t('corporations.detail.page_status')
+    .replace('~PAGE', String(pagination.page))
+    .replace('~PAGES', String(pagination.total_pages))
+const members_count = t(pagination.total === 1 ? 'corporations.detail.members_count_one' : 'corporations.detail.members_count')
+    .replace('~COUNT', String(pagination.total))
+---
+
+<div class="cm">
+    <form
+        id={FORM_ID}
+        class="cm-toolbar"
+        role="search"
+        hx-get={partial_url(1)}
+        hx-trigger={`keyup changed delay:300ms from:#${SEARCH_ID}, search from:#${SEARCH_ID}, change, submit`}
+        hx-sync="this:replace"
+        {...hx_swap}
+    >
+        <label class="cm-search">
+            <span class="visually-hidden">{t('corporations.detail.search_members')}</span>
+            <Input
+                type="search"
+                name="q"
+                id={SEARCH_ID}
+                value={q}
+                placeholder={t('corporations.detail.search_members_placeholder')}
+                size="sm"
+                width="100%"
+                autocomplete="off"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+        </label>
+        <label class="cm-select">
+            <span class="visually-hidden">{t('corporations.detail.account')}</span>
+            <Select size="sm" width="100%" name="account" id="cm-account">
+                {account_options.map((option) => (
+                    <option value={option.value} selected={option.value === account}>{option.label}</option>
+                ))}
+            </Select>
+        </label>
+        <label class="cm-select">
+            <span class="visually-hidden">{t('corporations.detail.timezone')}</span>
+            <Select size="sm" width="100%" name="tz" id="cm-tz">
+                {timezone_options.map((option) => (
+                    <option value={option.value} selected={option.value === (timezone ?? '')}>{option.label}</option>
+                ))}
+            </Select>
+        </label>
+        <label class="cm-select">
+            <span class="visually-hidden">{t('corporations.detail.community_status')}</span>
+            <Select size="sm" width="100%" name="status" id="cm-status">
+                {status_options.map((option) => (
+                    <option value={option.value} selected={option.value === (status ?? '')}>{option.label}</option>
+                ))}
+            </Select>
+        </label>
+    </form>
+
+<div id={BODY_ID} class="cm-body" aria-live="polite">
+    {pagination.rows.length === 0
+        ? <p class="cm-empty">{t('corporations.detail.no_members')}</p>
+        : (
+            <div class="cm-table-wrap" tabindex="0" role="region" aria-label={t('corporations.detail.members')}>
+                <table class="cm-table">
+                    <colgroup>
+                        <col class="cm-col-primary" />
+                        <col class="cm-col-alts" />
+                        <col class="cm-col-tz" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('corporations.detail.primary_character')}</th>
+                            <th scope="col">{t('characters')}</th>
+                            <th scope="col" class="cm-col-tz">{t('corporations.detail.timezone')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {pagination.rows.map((member) => {
+                            const primary = corporation_member_primary(member)
+                            const characters = corporation_member_characters(member)
+                            const zones = corporation_member_timezones(member)
+                            return (
+                                <tr>
+                                    <td>
+                                        <span class="cm-pilot">
+                                            <img
+                                                class="cm-portrait"
+                                                src={get_player_icon(primary.character_id, 64)}
+                                                alt=""
+                                                width="32"
+                                                height="32"
+                                                loading="lazy"
+                                            />
+                                            <span class="cm-pilot__text">
+                                                <span class="cm-pilot__name">{primary.character_name}</span>
+                                                {zones.codes.length > 0 &&
+                                                    <span class="cm-zones cm-zones--inline">
+                                                        {zones.codes.map((code) => (
+                                                            <span class:list={['cm-tz', { 'cm-tz--declared': zones.declared }]}>{prime_label(code)}</span>
+                                                        ))}
+                                                    </span>
+                                                }
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {member.hidden_character_count > 0
+                                            ? (
+                                                <span
+                                                    class="cm-hidden"
+                                                    data-tippy-content={t('corporations.detail.characters_hidden')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                    tabindex="0"
+                                                    aria-label={`${member.hidden_character_count} ${t('characters')}. ${t('corporations.detail.characters_hidden')}`}
+                                                >
+                                                    <span class="cm-alts" aria-hidden="true">
+                                                        {Array.from({ length: Math.min(member.hidden_character_count, VISIBLE_ALTS) }).map(() => (
+                                                            <span class="cm-portrait cm-portrait--alt cm-portrait--hidden" />
+                                                        ))}
+                                                    </span>
+                                                    <span class="cm-hidden__count">{member.hidden_character_count}</span>
+                                                </span>
+                                            )
+                                            : characters.length > 0
+                                            ? (
+                                                <ul class="cm-alts" aria-label={t('characters')}>
+                                                    {characters.slice(0, VISIBLE_ALTS).map((alt) => (
+                                                        <li>
+                                                            <img
+                                                                class="cm-portrait cm-portrait--alt"
+                                                                src={get_player_icon(alt.character_id, 64)}
+                                                                alt={alt.character_name}
+                                                                data-tippy-content={alt.character_name}
+                                                                x-init="tippy($el, tippy_options)"
+                                                                width="28"
+                                                                height="28"
+                                                                loading="lazy"
+                                                            />
+                                                        </li>
+                                                    ))}
+                                                    {characters.length > VISIBLE_ALTS &&
+                                                        <li>
+                                                            <span
+                                                                class="cm-alts__more"
+                                                                data-tippy-content={characters.slice(VISIBLE_ALTS).map((alt) => alt.character_name).join(', ')}
+                                                                x-init="tippy($el, tippy_options)"
+                                                                tabindex="0"
+                                                            >
+                                                                +{characters.length - VISIBLE_ALTS}
+                                                            </span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            )
+                                            : <span class="cm-none">—</span>
+                                        }
+                                    </td>
+                                    <td class="cm-col-tz">
+                                        {zones.codes.length > 0
+                                            ? (
+                                                <span
+                                                    class="cm-zones"
+                                                    data-tippy-content={zones.declared ? t('corporations.detail.timezone_declared') : undefined}
+                                                    x-init={zones.declared ? 'tippy($el, tippy_options)' : undefined}
+                                                >
+                                                    {zones.codes.map((code) => (
+                                                        <span class:list={['cm-tz', { 'cm-tz--declared': zones.declared }]}>{prime_label(code)}</span>
+                                                    ))}
+                                                </span>
+                                            )
+                                            : <span class="cm-none">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        )
+    }
+
+    <div class="cm-pager">
+        <div class="cm-results">
+            <span class="cm-results__count">{members_count}</span>
+            {(q || timezone || status || account !== 'linked') &&
+                <span class="cm-results__scope">{t('corporations.detail.filtered')}</span>
+            }
+            {pagination.total_pages > 1 &&
+                <small class="cm-meta">{page_status}</small>
+            }
+        </div>
+        {pagination.total_pages > 1 &&
+            <div class="cm-pager__buttons">
+                <Button
+                    size="sm"
+                    color="transparent"
+                    type="button"
+                    disabled={!can_prev}
+                    hx-get={partial_url(pagination.page - 1)}
+                    hx-include={`#${FORM_ID}`}
+                    {...hx_swap}
+                >
+                    {t('corporations.detail.previous')}
+                </Button>
+                <Button
+                    size="sm"
+                    color="transparent"
+                    type="button"
+                    disabled={!can_next}
+                    hx-get={partial_url(pagination.page + 1)}
+                    hx-include={`#${FORM_ID}`}
+                    {...hx_swap}
+                >
+                    {t('corporations.detail.next')}
+                </Button>
+            </div>
+        }
+    </div>
+</div>
+</div>
+
+<style lang="scss">
+    .cm {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .cm-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 15rem));
+        gap: var(--space-xs);
+        align-items: center;
+
+        @media screen and (max-width: 1100px) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+
+            .cm-search {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media screen and (max-width: 720px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .cm-toolbar:global(.htmx-request) .cm-search :global(.input-group input) {
+        border-color: var(--highlight);
+        box-shadow: 0 0 0 1px var(--highlight);
+    }
+
+    .cm-search,
+    .cm-select {
+        display: block;
+        min-width: 0;
+    }
+
+    .cm-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+        transition: opacity var(--fast-transition);
+
+        &:global(.htmx-swapping) {
+            opacity: 0.4;
+        }
+    }
+
+    .cm-results {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-xs);
+    }
+
+    .cm-results__count {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .cm-results__scope {
+        font-size: var(--step--2);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .cm-table-wrap {
+        overflow-x: auto;
+        min-width: 0;
+        width: 100%;
+        border: solid 1px var(--border-color-hover);
+    }
+
+    .cm-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-s);
+            text-align: left;
+            vertical-align: middle;
+            background: transparent;
+            border: none;
+        }
+
+        th {
+            padding-block: var(--space-xs);
+            font-family: var(--heading-font);
+            font-size: var(--step--1);
+            font-weight: normal;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+            white-space: nowrap;
+            border-bottom: solid 1px var(--border-color-hover);
+            background-color: var(--light-transparency-background-mobile);
+
+            @media screen and (min-width: 980px) {
+                background-color: var(--light-transparency-background);
+            }
+        }
+
+        tbody tr + tr td {
+            border-top: solid 1px var(--border-color-hover);
+        }
+
+        tbody tr:nth-child(even) td {
+            background: color-mix(in srgb, var(--highlight) 2%, transparent);
+        }
+
+        td:first-child {
+            box-shadow: inset 2px 0 0 transparent;
+            transition: box-shadow var(--fast-transition), background-color var(--fast-transition);
+        }
+
+        @media screen and (max-width: 720px) {
+            th,
+            td {
+                padding-inline: var(--space-2xs);
+            }
+        }
+    }
+
+    .cm-col-primary {
+        width: 40%;
+    }
+
+    .cm-col-alts {
+        width: 32%;
+    }
+
+    .cm-col-tz {
+        width: 28%;
+    }
+
+    @media (hover: hover) {
+        .cm-table tbody tr:hover td {
+            background: color-mix(in srgb, var(--highlight) 5%, transparent);
+        }
+
+        .cm-table tbody tr:hover td:first-child {
+            box-shadow: inset 2px 0 0 var(--fleet-red);
+        }
+    }
+
+    .cm-pilot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .cm-pilot__text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .cm-pilot__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--step-0);
+        font-weight: 500;
+        color: var(--highlight);
+    }
+
+    .cm-portrait {
+        display: block;
+        flex: 0 0 auto;
+        width: var(--space-l);
+        height: var(--space-l);
+        border: solid 1px var(--border-color);
+    }
+
+    .cm-portrait--alt {
+        width: var(--space-m);
+        height: var(--space-m);
+        border-color: var(--background);
+        box-shadow: 0 0 0 1px var(--border-color);
+        transition: transform var(--fast-transition);
+    }
+
+    .cm-alts {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li + li {
+            margin-inline-start: calc(var(--space-3xs) * -1);
+        }
+
+        @media (hover: hover) {
+            li:hover .cm-portrait--alt {
+                position: relative;
+                transform: translateY(-2px);
+            }
+        }
+    }
+
+    .cm-hidden {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        cursor: help;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        .cm-alts > * + * {
+            margin-inline-start: calc(var(--space-3xs) * -1);
+        }
+    }
+
+    /* A blurred stand-in: no portrait URL is ever sent for hidden characters. */
+    .cm-portrait--hidden {
+        background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--fleet-yellow) 35%, var(--component-background)),
+            color-mix(in srgb, var(--fleet-red) 30%, var(--component-background))
+        );
+        filter: blur(2px);
+    }
+
+    .cm-hidden__count {
+        color: var(--faded);
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cm-alts__more {
+        display: grid;
+        place-items: center;
+        min-width: var(--space-m);
+        height: var(--space-m);
+        padding-inline: var(--space-3xs);
+        margin-inline-start: var(--space-3xs);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        cursor: default;
+    }
+
+    .cm-zones {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: var(--space-3xs);
+    }
+
+    .cm-tz {
+        padding: 0.1em var(--space-3xs);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+        color: var(--fleet-yellow);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .cm-tz--declared {
+        border-style: dashed;
+        opacity: 0.6;
+    }
+
+    .cm-zones--inline {
+        display: none;
+    }
+
+    .cm-none {
+        color: var(--faded);
+        opacity: 0.5;
+    }
+
+    .cm-empty,
+    .cm-meta {
+        margin: 0;
+        color: var(--faded);
+    }
+
+    .cm-meta {
+        font-size: var(--step--1);
+    }
+
+    .cm-pager {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .cm-pager__buttons {
+        display: flex;
+        gap: var(--space-xs);
+    }
+
+    @media screen and (max-width: 720px) {
+        .cm-table colgroup,
+        .cm-col-tz {
+            display: none;
+        }
+
+        .cm-table {
+            table-layout: auto;
+        }
+
+        .cm-zones--inline {
+            display: flex;
+        }
+    }
+</style>

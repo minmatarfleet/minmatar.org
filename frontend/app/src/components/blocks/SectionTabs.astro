@@ -1,0 +1,144 @@
+---
+interface SectionTab {
+    id: string
+    label: string
+}
+
+interface Props {
+    tabs: SectionTab[]
+    aria_label: string
+    id_prefix: string
+    [propName: string]: any
+}
+
+const {
+    tabs,
+    aria_label,
+    id_prefix,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const tab_ids = tabs.map((tab) => tab.id)
+const default_tab = tab_ids[0] ?? ''
+---
+
+{tabs.length > 0 &&
+    <div
+        {...attributes}
+        class:list={['[ section-tabs ]', Astro.props.class]}
+        x-data={`{
+            tabs: ${JSON.stringify(tab_ids)},
+            tab: ${JSON.stringify(default_tab)},
+            init() {
+                const hash = window.location.hash.replace('#', '')
+                if (this.tabs.includes(hash)) this.tab = hash
+                this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
+            },
+            refresh_panel() {
+                const panel = this.$refs['panel-' + this.tab]
+                if (!panel) return
+                requestAnimationFrame(() => {
+                    panel.querySelectorAll('.swiper').forEach((el) => el.swiper?.update())
+                })
+            },
+            select(next) {
+                if (!this.tabs.includes(next)) return
+                this.tab = next
+                history.replaceState(null, '', '#' + next)
+                this.$nextTick(() => this.$refs['tab-' + next]?.focus())
+            },
+            step(offset) {
+                const index = this.tabs.indexOf(this.tab)
+                this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
+            },
+        }`}
+    >
+        <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
+            {tabs.map((tab, index) =>
+                <button
+                    type="button"
+                    role="tab"
+                    id={`${id_prefix}-tab-${tab.id}`}
+                    class:list={['[ section-tab ]', { 'is-active': index === 0 }]}
+                    aria-controls={`${id_prefix}-panel-${tab.id}`}
+                    aria-selected={index === 0 ? 'true' : 'false'}
+                    tabindex={index === 0 ? 0 : -1}
+                    x-ref={`tab-${tab.id}`}
+                    x-bind:class={`{ 'is-active': tab === ${JSON.stringify(tab.id)} }`}
+                    x-bind:aria-selected={`tab === ${JSON.stringify(tab.id)} ? 'true' : 'false'`}
+                    x-bind:tabindex={`tab === ${JSON.stringify(tab.id)} ? 0 : -1`}
+                    x-on:click={`select(${JSON.stringify(tab.id)})`}
+                    x-on:keydown.arrow-right.prevent="step(1)"
+                    x-on:keydown.arrow-left.prevent="step(-1)"
+                    x-on:keydown.home.prevent="select(tabs[0])"
+                    x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
+                >
+                    {tab.label}
+                </button>
+            )}
+        </div>
+        <slot />
+    </div>
+}
+
+<style lang="scss">
+    .section-tabs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .section-tabs-list {
+        display: flex;
+        gap: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color-hover);
+    }
+
+    .section-tab {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        margin-block-end: -1px;
+        padding: var(--space-2xs) var(--space-s);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: var(--foreground);
+        cursor: pointer;
+
+        &.is-active {
+            color: var(--highlight);
+            border-bottom-color: var(--fleet-red);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .section-tab:hover {
+            color: var(--highlight);
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .section-tabs-list {
+            gap: 0;
+        }
+
+        .section-tab {
+            flex: 1 1 0;
+            text-align: center;
+            padding-inline: var(--space-2xs);
+            font-size: var(--step-0);
+        }
+    }
+</style>

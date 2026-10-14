@@ -292,9 +292,10 @@ class AcceptedItemsSeedTestCase(TestCase):
                 eve_type=ore, active=True, category="ore"
             ).exists()
         )
+        # Water is paused for oversupply; the seed must not turn it back on.
         self.assertTrue(
             BuybackAcceptedItem.objects.filter(
-                eve_type=p1, active=True, category="p1"
+                eve_type=p1, active=False, category="p1"
             ).exists()
         )
         # Full P1/P2 catalog: unused types stay active (surplus rate).

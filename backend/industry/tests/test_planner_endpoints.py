@@ -988,6 +988,69 @@ class PlannerPlanEndpointTestCase(TestCase):
             trit_applied["remaining"], base_leaf["quantity"] - owned
         )
 
+    @patch("industry.helpers.compressed_ore._ensure_type_materials_loaded")
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_grade_ore_stock_shrinks_buy(
+        self, resolve_indices, unused_esi
+    ):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        ore_cat, _ = EveCategory.objects.get_or_create(
+            id=25, defaults={"name": "Asteroid", "published": True}
+        )
+        ore_group, _ = EveGroup.objects.get_or_create(
+            id=462,
+            defaults={
+                "name": "Veldspar",
+                "published": True,
+                "eve_category": ore_cat,
+            },
+        )
+        EveType.objects.create(
+            id=62522,
+            name="Compressed Veldspar II-Grade",
+            published=True,
+            eve_group=ore_group,
+        )
+        payload = {
+            "product_type_id": self.hull.id,
+            "quantity": 1,
+            "blueprint_me": 0,
+            "blueprint_te": 0,
+            "facility_key": "amamake",
+            "compressed": True,
+            "refine_rate": 1.0,
+        }
+        baseline = self.client.post(
+            f"{BASE}/plans",
+            data=payload,
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(baseline.status_code, 200, baseline.content)
+        base_veld = baseline.json()["compressed_ore"][
+            "belt_ore_compressed"
+        ].get("Compressed Veldspar", 0)
+        self.assertGreater(base_veld, 0)
+
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                **payload,
+                "stock_paste": "Compressed Veldspar II-Grade\t100",
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        stocked_veld = data["compressed_ore"]["belt_ore_compressed"].get(
+            "Compressed Veldspar", 0
+        )
+        self.assertLess(stocked_veld, base_veld)
+        applied = {row["name"] for row in data["stock_applied"]}
+        self.assertIn("Compressed Veldspar II-Grade", applied)
+        self.assertEqual(data["stock_unresolved"], [])
+
 
 class PlannerCorsTestCase(TestCase):
     def setUp(self):

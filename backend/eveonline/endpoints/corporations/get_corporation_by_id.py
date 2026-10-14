@@ -6,6 +6,12 @@ from ninja import Router
 from authentication import AuthBearer
 from eveonline.endpoints.corporations.schemas import CorporationResponse
 from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.corporations.profile import (
+    load_corporation,
+    public_profile,
+    split_requirements,
+    split_timezones,
+)
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 
 router = Router(tags=["Corporations"])
@@ -18,26 +24,21 @@ router = Router(tags=["Corporations"])
     summary="Get a corporation by ID",
 )
 def get_corporation_by_id(request, corporation_id: int):
-    corporation = EveCorporation.objects.get(corporation_id=corporation_id)
+    corporation = load_corporation(corporation_id)
+    if corporation is None:
+        corporation = EveCorporation.objects.get(corporation_id=corporation_id)
     response = {
         "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
         "introduction": corporation.introduction,
         "biography": corporation.biography,
         "executor_notes": corporation.executor_notes,
-        "timezones": (
-            corporation.timezones.strip().split(",")
-            if corporation.timezones
-            else []
-        ),
-        "requirements": (
-            corporation.requirements.strip().split("\n")
-            if corporation.requirements
-            else []
-        ),
+        "timezones": split_timezones(corporation.timezones),
+        "requirements": split_requirements(corporation.requirements),
         "type": corporation.type,
         "active": corporation.active,
         "trial": corporation.trial,
+        **public_profile(corporation),
         "members": [],
         "directors": [
             {

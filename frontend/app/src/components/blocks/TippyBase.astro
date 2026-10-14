@@ -21,6 +21,7 @@ const {
     placement = 'top',
     width = '340px',
     height = '70px',
+    ...attributes
 } = Astro.props;
 
 import { query_string } from '@helpers/string';
@@ -47,6 +48,7 @@ import Tippy from '@components/blocks/Tippy.astro';
     height={width}
     width={height}
     element={htmltag}
+    {...attributes}
 >
     <slot />
 </Tippy>

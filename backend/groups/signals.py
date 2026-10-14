@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.auth.models import User
 from django.db.models import signals
 from django.dispatch import receiver
 
@@ -24,12 +25,24 @@ logger = logging.getLogger(__name__)
 _previous_status_cache = {}
 
 
+def _user_being_deleted(origin, user_id: int) -> bool:
+    """True when this row is removed because the user is being deleted."""
+    if isinstance(origin, User):
+        return origin.pk == user_id
+    return getattr(origin, "model", None) is User
+
+
 @receiver(
     signals.post_delete,
     sender=UserAffiliation,
     dispatch_uid="user_affiliation_post_delete",
 )
-def user_affiliation_post_delete(sender, instance, **kwargs):
+def user_affiliation_post_delete(sender, instance, origin=None, **kwargs):
+    # Cascade from User.delete() still fires this signal. Inactivating tribe
+    # memberships here writes a new history row after the collector already
+    # removed the old ones, and MySQL then rejects the membership delete.
+    if _user_being_deleted(origin, instance.user_id):
+        return
     # Run after delete so sync_user_community_groups sees no affiliation row.
     logger.info("User affiliation deleted, syncing user community groups")
     reconcile_community_status_for_affiliation(instance.user)

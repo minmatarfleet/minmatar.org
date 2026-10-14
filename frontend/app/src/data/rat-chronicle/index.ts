@@ -3,6 +3,13 @@ import { chapter1 } from './chapter-1'
 import { chapter2 } from './chapter-2'
 import { chapter3 } from './chapter-3'
 import { chapter4 } from './chapter-4'
+import { chapter5 } from './chapter-5'
+import { chapter6 } from './chapter-6'
+import { chapter7 } from './chapter-7'
+import { chapter8 } from './chapter-8'
+import { chapter9 } from './chapter-9'
+import { chapter10 } from './chapter-10'
+import { chapter11 } from './chapter-11'
 import type { ChronicleChapter, ChronicleSection } from './types'
 
 export const ratChronicleChapters: ChronicleChapter[] = [
@@ -10,6 +17,13 @@ export const ratChronicleChapters: ChronicleChapter[] = [
     chapter2,
     chapter3,
     chapter4,
+    chapter5,
+    chapter6,
+    chapter7,
+    chapter8,
+    chapter9,
+    chapter10,
+    chapter11,
 ]
 
 export function getChronicleChapterById(chapter_id: string): ChronicleChapter | undefined {

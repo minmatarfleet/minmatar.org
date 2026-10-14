@@ -74,6 +74,7 @@ const page_description = doctrine?.description
             animated: false,
             scrollable: true,
             overlay: true,
+            align: get_location_video_cover(active_location_id) ? 'right' : 'left',
         }}
         x-data={`{
             recently_fleets_count: ${recently_fleets?.length},

@@ -1,33 +1,19 @@
 ---
 import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import type { BuybackAcceptedItem, BuybackSettings } from '@dtypes/api.minmatar.org'
+import type { DisplayItem } from '@dtypes/layout_components'
 import {
     BUYBACK_ORE_BASES,
     compressed_buyback_ore_base,
 } from '@helpers/buyback_ore'
-
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ItemPicture from '@components/blocks/ItemPicture.astro'
-import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro'
-
-const { t } = i18n(Astro.url)
 
 interface Props {
     settings: BuybackSettings;
 }
 
 const { settings } = Astro.props
-
-interface DisplayItem {
-    type_id: number
-    name: string
-    variants?: BuybackAcceptedItem[]
-    used_in?: { type_id: number; name: string }[]
-    used_in_is_ore?: boolean
-    in_demand?: boolean
-}
 
 const USED_IN_TOOLTIP_LIMIT = 12
 
@@ -140,244 +126,119 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
 }
 
 const grouped_items = CATEGORY_ORDER
-    .map((category) => ({
-        category,
-        label: CATEGORY_LABELS[category],
-        items: display_items_for_category(category),
-    }))
+    .map((category) => {
+        return {
+            category,
+            label: CATEGORY_LABELS[category],
+            items: display_items_for_category(category),
+        }})
     .filter((group) => group.items.length > 0)
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import BuybackItem from '@components/blocks/BuybackItem.astro';
+import BuybackVariants from '@components/blocks/BuybackVariants.astro';
+import ComponentBlock from './ComponentBlock.astro'
+import CollapsableButton from './CollapsableButton.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import TextBadge from './TextBadge.astro'
 ---
 
-<section class="[ buyback-info ]">
-    <ComponentBlock
-        class="[ buyback-info__card ]"
-        padding_block="var(--space-m)"
-        padding_inline="var(--space-m)"
-    >
-        <Flexblock gap='var(--space-xs)' class="[ buyback-info__content ]">
-            <h3>{t('buyback.info.buying')}</h3>
-            {grouped_items.length > 0 ?
-                <div class="[ buyback-info__items ]">
-                    {grouped_items.map((group) =>
-                        <Flexblock gap='var(--space-3xs)' class="[ buyback-info__group ]">
-                            <h4 class="[ buyback-info__group-title ]">{group.label}</h4>
-                            <ul class="[ buyback-info__item-list ]">
-                                {group.items.map((item) => {
-                                    const variants = item.variants ?? []
-                                    const show_variants = variants.length > 1
-                                    const variants_tip_html = show_variants
-                                        ? `<strong>${t('buyback.info.ore_variants')}</strong><br>${variants
-                                            .map((v) => v.name)
-                                            .join('<br>')}`
-                                        : ''
-                                    const used_in = item.used_in ?? []
-                                    const used_in_tip = used_in_tip_html(
-                                        used_in,
-                                        Boolean(item.used_in_is_ore),
-                                    )
-                                    const item_tippy = used_in_tip
-                                        ? `tippy($el, {
-                                            content: ${JSON.stringify(used_in_tip)},
-                                            allowHTML: true,
-                                            delay: [100, 200],
-                                            arrow: true,
-                                            onShow(instance) {
-                                                tippy.hideAll({ exclude: instance })
-                                            },
-                                        })`
-                                        : undefined
-                                    return (
-                                        <li>
-                                            <FlexInline
-                                                gap='var(--space-3xs)'
-                                                class:list={[
-                                                    '[ buyback-info__item ]',
-                                                    item.in_demand
-                                                        ? ''
-                                                        : '[ buyback-info__item--surplus ]',
-                                                ]}
-                                            >
-                                                <ItemPicture
-                                                    item_id={item.type_id}
-                                                    item_name={item.name}
-                                                    size={24}
-                                                    icon_quality={32}
-                                                />
-                                                <span
-                                                    class:list={[
-                                                        '[ buyback-info__name ]',
-                                                        used_in_tip
-                                                            ? '[ buyback-info__name--has-used-in ]'
-                                                            : '',
-                                                    ]}
-                                                    tabindex={used_in_tip ? 0 : undefined}
-                                                    x-init={item_tippy}
-                                                >{item.name}</span>
-                                                <BuybackRateBadge
-                                                    in_demand={Boolean(item.in_demand)}
-                                                />
-                                                {show_variants && (
-                                                    <button
-                                                        type="button"
-                                                        class="[ buyback-info__variants ]"
-                                                        aria-label={t('buyback.info.ore_variants')}
-                                                        x-init={`tippy($el, {
-                                                            content: ${JSON.stringify(variants_tip_html)},
-                                                            allowHTML: true,
-                                                            delay: [100, 200],
-                                                            arrow: true,
-                                                            onShow(instance) {
-                                                                tippy.hideAll({ exclude: instance })
-                                                            },
-                                                        })`}
-                                                    >
-                                                        <span aria-hidden="true">i</span>
-                                                        <span class="[ buyback-info__variants-count ]">
-                                                            {t('buyback.info.ore_variants_count').replace(
-                                                                '{count}',
-                                                                String(variants.length),
-                                                            )}
-                                                        </span>
-                                                    </button>
-                                                )}
-                                            </FlexInline>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
+<Flexblock gap='var(--space-xl)'>
+    <Flexblock>
+        <FlexInline justification='space-between'>
+            <span>{t('click_items_in_demand_tooltip')}</span>
+
+            <FlexInline gap='var(--space-l)'>
+                <FixedFluid class="[ items-center! ]" width='10px' gap='var(--space-2xs)'>
+                    <span class="[ text-green green-glow ]">▲</span>
+                    <TextBadge title={t('buyback.info.in_demand')}>
+                        <small>{t('buyback.info.in_demand_tip')}</small>
+                    </TextBadge>
+                </FixedFluid>
+
+                <FixedFluid class="[ items-center! ]" width='10px' gap='var(--space-2xs)'>
+                    <span class="[ text-muted ]">▼</span>
+                    <TextBadge title={t('buyback.info.surplus')}>
+                        <small>{t('buyback.info.surplus_tip')}</small>
+                    </TextBadge>
+                </FixedFluid>
+            </FlexInline>
+        </FlexInline>
+
+        <ComponentBlock 
+            padding_block='var(--space-s)'
+            padding_inline='var(--space-s)'
+        >
+            <Grid
+                row_gap='var(--space-xs)'
+                column_gap='var(--space-3xs)'
+                min_item_width='310px'
+                class="grid-fill"
+            >
+                {grouped_items.length > 0 ?
+                    <>{grouped_items.map(group =>
+                        <Flexblock gap='var(--space-xs)'>
+                            <h4>{group.label}</h4>
+
+                            <hr class="[ border-bottom ]" />
+
+                            {group.items.length > 0 &&
+                                <Flexblock gap='0'>
+                                    {group.items.map(item =>
+                                        <Wrapper
+                                            class:list={["[ w-full self-start ]", item.in_demand ? 'demand' : 'surplus' ]}
+                                            padding_block='0'
+                                            padding_inline='0'
+                                            x-data={`{
+                                                expanded: false,
+                                                toggle_collapse() {
+                                                    this.expanded = !this.expanded
+                                                }
+                                            }`}
+                                        >
+                                            {item.variants && item.variants?.length > 0 ?
+                                                <FlexInlineSiblings
+                                                    min-shink-width='250px'
+                                                    shrinkable-sibbling='first'
+                                                    gap='0'
+                                                >
+                                                    <BuybackItem item={item} />
+                                                    <CollapsableButton
+                                                        class="[ px-[12px]! py-[19px]! ]"
+                                                        x-on:click="toggle_collapse()"
+                                                    />
+                                                </FlexInlineSiblings>
+                                                <div
+                                                    x-show="expanded"
+                                                    x-collapse.duration.0ms
+                                                    style="display: none"
+                                                >
+                                                    <BuybackVariants item={item} />
+                                                </div> :
+                                                <BuybackItem item={item} />
+                                            }
+                                        </Wrapper>
+                                )}</Flexblock>
+                            }
                         </Flexblock>
-                    )}
-                </div>
-                :
-                <p class="[ buyback-info__empty ]">{t('buyback.info.no_items')}</p>
-            }
-        </Flexblock>
-    </ComponentBlock>
-</section>
+                    )}</>
+                    :
+                    <p>{t('buyback.info.no_items')}</p>
+                }
+            </Grid>
+        </ComponentBlock>
+    </Flexblock>
+</Flexblock>
 
 <style lang="scss">
-    .buyback-info {
-        h3 {
-            margin: 0;
-            font-size: var(--step--1);
-            font-weight: 700;
-            line-height: 1.25;
-            color: var(--fleet-yellow);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        p {
-            margin: 0;
-        }
-
-        :global(.buyback-info__card) {
-            box-sizing: border-box;
-            border-color: var(--border-color-hover);
-        }
-
-        :global(.buyback-info__content) {
-            min-width: 0;
-            width: 100%;
-        }
-
-        .buyback-info__empty {
-            font-size: var(--step--1);
-            font-weight: 400;
-            line-height: 1.45;
-            color: var(--highlight);
-        }
-
-        .buyback-info__items {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-            gap: var(--space-m);
-            max-height: 22rem;
-            overflow: auto;
-            padding-inline-end: var(--space-2xs);
-        }
-
-        .buyback-info__group-title {
-            margin: 0;
-            font-size: var(--step--2);
-            font-weight: 600;
-            line-height: 1.3;
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .buyback-info__item-list {
-            margin: 0;
-            padding: 0;
-            list-style: none;
-            font-size: var(--step--1);
-            font-weight: 400;
-            line-height: 1.35;
-            color: var(--highlight);
-        }
-
-        .buyback-info__item-list li + li {
-            margin-block-start: 0.25em;
-        }
-
-        .buyback-info__item {
-            align-items: center;
-            min-width: 0;
-        }
-
-        .buyback-info__item--surplus {
-            opacity: 0.85;
-        }
-
-        .buyback-info__name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .buyback-info__name--has-used-in {
-            cursor: help;
-        }
-
-        .buyback-info__variants {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35em;
-            flex-shrink: 0;
-            margin: 0;
-            padding: 0;
-            border: none;
-            background: transparent;
-            color: var(--faded);
-            cursor: help;
-            font: inherit;
-            line-height: 1;
-
-            > span[aria-hidden="true"] {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 1.1em;
-                height: 1.1em;
-                border: solid 1px currentColor;
-                border-radius: 50%;
-                font-size: 0.7em;
-                font-weight: 700;
-                font-style: italic;
-                line-height: 1;
-            }
-        }
-
-        .buyback-info__variants:hover,
-        .buyback-info__variants:focus-visible {
-            color: var(--fleet-yellow);
-            outline: none;
-        }
-
-        .buyback-info__variants-count {
-            font-size: var(--step--2);
-            white-space: nowrap;
-        }
+    .demand + .surplus {
+        border-top: solid 1px var(--border-color);
     }
 </style>

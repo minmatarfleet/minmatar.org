@@ -4,6 +4,24 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-10-05 no named industry contact
+
+Recruiter correction after the 5 Oct scout. Forum drafts for the highsec miner, the retired nullsec PvE pilot, and the hisec RP character closed with `ask for Keldor00`. That person is not on the Minmatar Extraction Company roster. Do not name them. Do not use the older `Keldor` shorthand, or `Keldar Atram` / `keldar_atram` from the German industry reply.
+
+Industry and MFA closes are `discord.gg/minmatar` only. On r/evejobs that is the Discord bullet. On forums it is bare `discord.gg/minmatar` in the last sentence, plus the mining ad when they want fleets. No "ask for" clause.
+
+Older entries below that name that handle are historical sends. Do not copy those closers.
+
+### Same scout
+
+- u/420skateman's Academy or alliance paste is still Responded, including when the seat should have been Extraction, a wormhole redirect, or MFA for an Alpha. No second draft.
+- [LF corp with 02:00 activity](https://www.reddit.com/r/evejobs/comments/1wui226/lf_corp_with_0200_activity/) — they answered that they want anything that is not highsec. Same rule as miner alts who refused highsec: do not send a bulwark pitch after that.
+- [Looking for highsec l3 mission running corp](https://www.reddit.com/r/evejobs/comments/1wwd4l7/looking_for_highsec_l3_mission_running_corp/) — Alpha, and they said they do not have Omega. Already replied. Academy stays Omega-only. The note belongs in section 2, not a follow-up.
+- FOSFO's newest ad is older than the 30-day `u/MinmatarFleet` window. Keep linking [FOSFO EUTZ FW nanogang](https://www.reddit.com/r/evejobs/comments/1w2gxzm/fosfo_eutz_fw_nanogang_tight_crew_thick_skin/) until a newer one posts.
+- No kit change. 625B down in Amamake stays the default extra AAR. The September frontline report and the Amamake economic report are not fight AARs.
+
+---
+
 ## 2026-09-27 r/eve is not r/evejobs
 
 Recruiter correction. Earlier r/eve replies used the job-board kit: named corp, evejobs ad, Discord, Bring Fun Shit. That reads as tacky on r/eve because the audience is there for the thread, not to shop corps.
@@ -66,7 +84,7 @@ Discord’s visible text is `discord.gg/minmatar` and the target is `http://disc
 | Twelve-account sov industry | Keldor00 and ad in the pitch | Keldor00 dropped; list is discord, mining ad, Bring Fun Shit, Rock Hoppin' |
 | Forum, Norway 170m, Soltech | pitch with ad URL and discord, then bare YouTube, then Dal AAR | sent as drafted; Discourse oneboxed the ad as Reddit and embedded the video |
 
-Brand-new “teach me” Academy posts get the learning page and can skip the AAR. Mining posts do not name Keldor00 when discord is already in the link list. Forums stay pitch-with-bare-URLs, not the Reddit bullet list.
+Brand-new “teach me” Academy posts get the learning page and can skip the AAR. Mining posts do not name a Discord person. Forums stay pitch-with-bare-URLs, not the Reddit bullet list.
 
 ---
 
@@ -127,7 +145,7 @@ Recruiter iteration on drafts (Solaris added mid-run; forum CTAs; laid-back WH).
 ### Forum CTAs (same run, other threads)
 Scout table left join actions in an after-block of warzone/YouTube. Recruiter could not send them.
 
-**Fix:** last sentence of every forum pitch weaves `discord.gg/minmatar` (Extraction: `and ask for Keldor00`). Named corp with an ad also gets the evejobs URL as its own onebox line. Proof (warzone, AAR, BFS, Rock Hoppin') comes after the CTA.
+**Fix:** last sentence of every forum pitch weaves `discord.gg/minmatar` and does not name a person. Named corp with an ad also gets the evejobs URL as its own onebox line. Proof (warzone, AAR, BFS, Rock Hoppin') comes after the CTA.
 
 ---
 

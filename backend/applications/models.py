@@ -33,10 +33,31 @@ class EveCorporationApplication(models.Model):
 
     def __str__(self):
         primary_character = user_primary_character(self.user)
-        corp = EveCorporation.objects.filter(
-            corporation_id=self.corporation_id
-        ).first()
-        corp_name = corp.name if corp else str(self.corporation_id)
+        corp_name = corporation_name_for_application(self)
         if primary_character:
             return f"{primary_character.character_name}'s application to {corp_name}"
         return f"{self.user}'s application to {corp_name}"
+
+
+def open_application_for_user(user):
+    """The applicant's pending corporation application, if they have one."""
+    return (
+        EveCorporationApplication.objects.filter(user=user, status="pending")
+        .order_by("-created_at", "-id")
+        .first()
+    )
+
+
+def corporation_name_for_application(application) -> str:
+    corporation = EveCorporation.objects.filter(
+        corporation_id=application.corporation_id
+    ).first()
+    return corporation.name if corporation else str(application.corporation_id)
+
+
+def open_application_detail(application) -> str:
+    name = corporation_name_for_application(application)
+    return (
+        f"You already have an open application to {name}. "
+        "Wait for a decision before applying again."
+    )

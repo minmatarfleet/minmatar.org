@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "discord": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcps/run-discord-mcp.sh"]
+    },
+    "reddit": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcps/run-reddit-mcp.sh"]
+    }
+  }
+}

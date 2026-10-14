@@ -119,6 +119,7 @@ const admin_hub = active_location_id != null
             scrollable={true}
             overlay={true}
             oob_swap={true}
+            align={get_location_video_cover(active_location_id ?? 0) ? 'right' : 'left'}
         />
 
         {health ?

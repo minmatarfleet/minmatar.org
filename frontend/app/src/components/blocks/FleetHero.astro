@@ -58,14 +58,11 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import ItemBadge from './ItemBadge.astro';
 import ClipboardButton from './ClipboardButton.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+import TextBox from '@components/layout/TextBox.astro';
 ---
 
-<FixedFluid
-    width='50rem'
-    gap='var(--space-xl)'
-    breakpoint='34%'
->
-    <VerticalCenter class="[ content-section ][ max-w-[50rem] ]">
+<Flexblock gap='var(--space-xl)'>
+    <VerticalCenter class="[ content-section ]">
         <Wrapper
             max_width='100%'
             padding_inline='0'
@@ -156,18 +153,19 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                     }
 
                     {fleet.description &&
-                        <div class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                        <TextBox class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
                             <Markdown markdown={fleet.description as string} />
-                        </div>
+                        </TextBox>
                     }
                 </Flexblock>
             </Flexblock>
         </Wrapper>
     </VerticalCenter>
     {doctrine && show_fittings &&
-        <div
-            class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
+        <Wrapper
+            class="[ !flex hidden! animate-slide-up-fade animate-delay-1000 ]"
             x-on:marquee-started="$el.classList.remove('hidden!')"
+            max_width='var(--max-col-width)'
         >
             <FlexInlineSiblings
                 class="[ w-full ]"
@@ -199,9 +197,9 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                     <ClipboardButton id="supply-contracts">{supply_contracts_copy}</ClipboardButton>
                 }
             </FlexInlineSiblings>
-        </div>
+        </Wrapper>
     }
-</FixedFluid>
+</Flexblock>
 
 <style lang="scss">
     h2 {

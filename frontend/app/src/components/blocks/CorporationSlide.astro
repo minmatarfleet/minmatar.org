@@ -24,6 +24,8 @@ const {
     mirror_slide = false,
 } = Astro.props
 
+// The heading links to this slide within the slider (Swiper hash navigation);
+// "Learn more" is the way into the corporation's own page.
 const current_page = `${Astro.url.pathname}${Astro.url.search}`
 const slide_url = translatePath(`${current_page}#${corporation.corporation_name.replaceAll(' ', '_')}`)
 
@@ -146,7 +148,7 @@ import { query_string } from '@helpers/string';
         transform: scale(0.5);
         opacity: 0;
         height: 99%;
-        filter: drop-shadow(0px 0px 0 black) drop-shadow(0px 0px 0 black) drop-shadow(0px 0px 0 black) drop-shadow(0px 0px 0 black);
+        filter: drop-shadow(0px 0px 0 black) drop-shadow(0px 0px 0 black) drop-shadow(0px 0px 0 black);
 
         img {
             mask-image: linear-gradient(to bottom, black 70%, transparent 95%);

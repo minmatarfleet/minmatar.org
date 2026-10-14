@@ -39,6 +39,46 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-13 — Fleet MOTD reload steps and guide link
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** The new-player guide said to read the fleet MOTD and not how to bring it back after fleet chat scrolls it off. Generated MOTD Resources listed bookmarks, broadcast, and channels, with no guide link. Discord fleet pings already link the same page.
+**Durable rule:** Reload is fleet chat → three dots → Reload Channel's MOTD. The in-game guide line is `SECTION_RESOURCES_GUIDE` and must use `<loc>`.
+**Skill update:** added the MOTD reload / guide-link row.
+
+## 2026-10-13 — Veldspar skipped on pyerite-heavy buyback orders
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A large Veldspar hangar was barely used when mineral orders had more Pyerite than Tritanium. Fill covered the largest mineral first, so Scordite satisfied Tritanium as a byproduct. Water stays off the allowlist via `PAUSED_ACCEPTED_TYPE_NAMES` so the weekly seed cannot turn it back on.
+**Durable rule:** Cover Tritanium from Veldspar while any Veldspar-family ore is on hand, then the other minerals. Paused accepted names stay `active=False` across seed. Hangar sales of stock already on hand are separate from the allowlist.
+**Skill update:** added the Veldspar-first row and the paused-allowlist row.
+
+## 2026-10-13 — Fishermen cleanup DMs every reconcile
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Group chief got a cleanup-failed DM every reconcile. An unentitled seat kick returned 403 (member still in the guild; bot cannot kick). The alert channel post also 403s, so the fallback is a chief DM. `failure_count >= 3` alerted again on every later run.
+**Durable rule:** Alert once when status first becomes `cleanup_failed`. Kick 403 is still-in-guild plus missing permission, not a leave. 404 marks `removed`. Channel 403 falls back to the chief DM.
+**Skill update:** added the repeating-cleanup-DM row.
+
+## 2026-10-10 — No Discord roles, site account never created
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Waited hours in Discord and still had no roles. No `DiscordUser` for that account, so `HelpTicket.opener` is null and role sync has nothing to push.
+**Durable rule:** Missing `DiscordUser` means they have not logged in on the site. Waiting does not grant roles. If the row exists, use the authed-but-no-roles checks.
+**Skill update:** added the unlinked-account row above the authed-but-no-roles row.
+
 ## 2026-09-30 — Hidden tribe-group roster
 
 **Category:** pulse.technology

@@ -1,0 +1,254 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import type { CorporationObject } from '@dtypes/layout_components'
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+import { get_corporation_id_by_slug, get_corporation_info, get_corporation_open_applications, get_corporation_member_access } from '@helpers/api.minmatar.org/corporations'
+import { corporation_path } from '@helpers/corporations/detail'
+import { get_corporation_list_by_id_auth, get_user_corporation_id } from '@helpers/fetching/corporations'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import CorporationDetailHero from '@components/blocks/CorporationDetailHero.astro'
+import CorporationLeadership from '@components/blocks/CorporationLeadership.astro'
+import CorporationTimezoneDistribution from '@components/blocks/CorporationTimezoneDistribution.astro'
+import CorporationMediaGallery from '@components/blocks/CorporationMediaGallery.astro'
+import CorporationAboutStats from '@components/blocks/CorporationAboutStats.astro'
+import CorporationApplicationProcess from '@components/blocks/CorporationApplicationProcess.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+const user = auth_token ? jose.decodeJwt(auth_token) as User : null
+
+// The URL segment is the name slug (/alliance/corporations/rattini-tribe/).
+// Numeric IDs from older links redirect permanently to the slug.
+const segment = Astro.params.corporation ?? ''
+const is_id = /^\d+$/.test(segment)
+const resolved = is_id ? null : await get_corporation_id_by_slug(segment.toLowerCase()).catch(() => null)
+const corporation_id = is_id ? Number(segment) : resolved?.corporation_id ?? Number.NaN
+const corporation = Number.isNaN(corporation_id)
+    ? null
+    : await get_corporation_info(corporation_id) as CorporationInfo | null
+
+if (!corporation)
+    return Astro.redirect(translatePath('/404'))
+
+const canonical_path = translatePath(corporation_path(corporation.corporation_id, corporation.corporation_name))
+if (Astro.url.pathname !== canonical_path)
+    return Astro.redirect(canonical_path, 301)
+
+const page_title = corporation.corporation_name
+const seo_title = t('corporations.detail.seo_title').replace('~NAME', corporation.corporation_name)
+const meta_description = corporation.introduction || corporation.biography || page_title
+const biography = corporation.biography && corporation.biography !== corporation.introduction
+    ? corporation.biography
+    : ''
+const requirements = corporation.requirements ?? []
+const has_timezone_chart = (corporation.timezone_distribution ?? []).some((row) => row.observed > 0)
+    || (corporation.weekday_distribution ?? []).some((row) => row.members > 0 || (row.kills ?? 0) > 0)
+const open_applications = auth_token
+    ? await get_corporation_open_applications(auth_token, corporation_id)
+    : null
+const user_corporation_id = user ? await get_user_corporation_id(user.user_id) : null
+const is_user_corporation = user_corporation_id === corporation.corporation_id
+
+let apply_corporation: CorporationObject = {
+    corporation_id: corporation.corporation_id,
+    corporation_name: corporation.corporation_name,
+    alliance_id: corporation.alliance_id,
+    alliance_name: corporation.alliance_name,
+    corporation_type: corporation.type,
+    active: corporation.active,
+    trial: corporation.trial,
+    status: auth_token ? 'available' : 'unauth',
+    introduction: corporation.introduction,
+    biography: corporation.biography,
+    requirements: corporation.requirements,
+    timezones: corporation.timezones,
+}
+if (auth_token && user) {
+    try {
+        apply_corporation = await get_corporation_list_by_id_auth(
+            auth_token,
+            corporation_id,
+            user.user_id,
+        )
+    } catch {
+        apply_corporation = { ...apply_corporation, status: 'error' }
+    }
+}
+
+type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'apply'
+
+const has_activity = Boolean(corporation.activity_summary)
+const has_about = Boolean(biography)
+    || has_timezone_chart
+    || Boolean(corporation.highlights)
+    || (corporation.media?.length ?? 0) > 0
+    || Boolean(corporation.discord_invite_url)
+    || corporation.public_summary != null
+const has_leadership = (corporation.leadership ?? []).length > 0
+// Roster access is decided by the API; it also hides alts from viewers who
+// may not see which characters belong to whom.
+const member_access = auth_token
+    ? await get_corporation_member_access(auth_token, corporation.corporation_id).catch(() => null)
+    : null
+const can_view_members = member_access?.can_view_members ?? false
+const members_partial = translatePath(`/partials/corporation_members_table_component/?corporation_id=${corporation_id}`)
+
+const tabs: CorporationTab[] = [
+    ...(has_about ? ['about' as const] : []),
+    ...(has_activity ? ['activity' as const] : []),
+    'apply' as const,
+    ...(can_view_members ? ['members' as const] : []),
+    ...(has_leadership ? ['leadership' as const] : []),
+]
+const default_tab = tabs[0]
+
+function tab_label(tab: CorporationTab) {
+    switch (tab) {
+        case 'about':
+            return t('corporations.detail.about')
+        case 'activity':
+            return t('corporations.detail.activity')
+        case 'leadership':
+            return t('corporations.detail.leadership')
+        case 'members':
+            return t('corporations.detail.members')
+        case 'apply':
+            return t('corporations.detail.application_process')
+        default: {
+            const unexpected: never = tab
+            return unexpected
+        }
+    }
+}
+
+const breadcrumbs = [
+    {
+        page_title: t('alliance.page_title'),
+        accumulated_path: translatePath('/alliance/'),
+    },
+    {
+        page_title: t('corporations.page_title'),
+        accumulated_path: translatePath('/alliance/corporations/'),
+    },
+    {
+        page_title,
+        accumulated_path: Astro.url.pathname,
+    },
+]
+---
+
+<Viewport
+    title={seo_title}
+    meta_description={meta_description}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-2xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <CorporationDetailHero corporation={corporation} />
+        </Flexblock>
+
+        {tabs.length > 0 &&
+            <SectionTabs
+                aria_label={t('corporations.detail.tabs_label')}
+                id_prefix="corporation"
+                tabs={tabs.map((tab) => ({ id: tab, label: tab_label(tab) }))}
+            >
+                {has_about &&
+                    <SectionTabPanel id="about" id_prefix="corporation" is_default={default_tab === 'about'}>
+                        <Flexblock gap="var(--space-2xl)">
+                            {biography &&
+                                <TextBox max_width="100%">
+                                    <Markdown markdown={biography} />
+                                </TextBox>
+                            }
+                            {corporation.public_summary &&
+                                <CorporationAboutStats summary={corporation.public_summary} />
+                            }
+                            <CorporationTimezoneDistribution
+                                distribution={corporation.timezone_distribution ?? []}
+                                weekdays={corporation.weekday_distribution ?? []}
+                                window_days={corporation.public_summary?.window_days}
+                            />
+                            {corporation.highlights &&
+                                <Flexblock gap="var(--space-s)">
+                                    <h2>{t('corporations.detail.notable')}</h2>
+                                    <TextBox max_width="100%">
+                                        <Markdown markdown={corporation.highlights} />
+                                    </TextBox>
+                                </Flexblock>
+                            }
+                            <CorporationMediaGallery media={corporation.media ?? []} />
+                        </Flexblock>
+                    </SectionTabPanel>
+                }
+
+                {has_activity &&
+                    <SectionTabPanel id="activity" id_prefix="corporation" is_default={default_tab === 'activity'}>
+                        <Flexblock gap="var(--space-s)">
+                            <h2>{t('corporations.detail.how_we_fly')}</h2>
+                            <TextBox max_width="100%">
+                                <Markdown markdown={corporation.activity_summary ?? ''} />
+                            </TextBox>
+                        </Flexblock>
+                    </SectionTabPanel>
+                }
+
+                {has_leadership &&
+                    <SectionTabPanel id="leadership" id_prefix="corporation" is_default={default_tab === 'leadership'}>
+                        <CorporationLeadership
+                            leadership={corporation.leadership ?? []}
+                            show_heading={false}
+                        />
+                    </SectionTabPanel>
+                }
+
+                {can_view_members &&
+                    <SectionTabPanel id="members" id_prefix="corporation" is_default={default_tab === 'members'}>
+                        <div
+                            hx-get={members_partial}
+                            hx-trigger="intersect once"
+                            hx-swap="outerHTML"
+                        >
+                            <p class="corp-loading">{t('corporations.detail.loading_members')}</p>
+                        </div>
+                    </SectionTabPanel>
+                }
+
+                <SectionTabPanel id="apply" id_prefix="corporation" is_default={default_tab === 'apply'}>
+                    <CorporationApplicationProcess
+                        process={corporation.application_process}
+                        requirements={requirements}
+                        apply_corporation={apply_corporation}
+                        is_user_corporation={is_user_corporation}
+                        open_applications={open_applications}
+                    />
+                </SectionTabPanel>
+            </SectionTabs>
+        }
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .corp-loading {
+        margin: 0;
+        color: var(--faded);
+    }
+</style>

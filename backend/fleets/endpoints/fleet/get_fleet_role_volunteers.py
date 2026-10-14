@@ -7,6 +7,7 @@ from authentication import AuthBearer
 from fleets.endpoints.helpers import (
     _fleet_authorized,
     _system_reveal_predicate,
+    limit_volunteers_to_viewer,
     make_role_volunteer_response,
 )
 from fleets.endpoints.schemas import EveFleetRoleVolunteerResponse
@@ -34,8 +35,12 @@ def get_fleet_role_volunteers(request, fleet_id: int):
         return 404, None
     if not _fleet_authorized(request, fleet):
         return 403, None
-    volunteers = EveFleetRoleVolunteer.objects.filter(
-        eve_fleet=fleet
-    ).order_by("role", "id")
+    volunteers = limit_volunteers_to_viewer(
+        request,
+        fleet,
+        EveFleetRoleVolunteer.objects.filter(eve_fleet=fleet).order_by(
+            "role", "id"
+        ),
+    )
     reveal = _system_reveal_predicate(request, fleet)
     return [make_role_volunteer_response(v, reveal(v)) for v in volunteers]

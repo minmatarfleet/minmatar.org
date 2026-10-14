@@ -18,6 +18,7 @@ interface Props {
     eve_date:                       string;
     eve_time:                       string;
     disable_motd:                   boolean;
+    hide_volunteers?:               boolean;
     lang:                           string;
 }
 
@@ -32,6 +33,7 @@ const {
     eve_date,
     eve_time,
     disable_motd,
+    hide_volunteers = false,
     lang,
 } = Astro.props
 
@@ -86,7 +88,7 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
 } )
 
 const no_location_option = {
-    label: t('select_location'),
+    label: t('select_starting_station'),
     value: '',
 } as SelectOptions
 
@@ -110,7 +112,7 @@ const default_location_id =
     fleet_location_id ??
     staging_location?.location_id ??
     (locations_select_options.length > 1 ? locations_select_options[1].value : '')
-const default_location_value = String(default_location_id ?? '')
+const default_location_value = '' //String(default_location_id ?? '')
 
 const show_audience_picker = audiences.length > 1
 
@@ -280,7 +282,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             }
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                <label for="location_id">{t('select_location')}</label>
+                                <label for="location_id">{t('location')}</label>
                                 <Select
                                     id="location_id"
                                     name="location_id"
@@ -487,7 +489,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             </TextGroup>
 
                             <TextGroup
-                                title={t('select_location')}
+                                title={t('location')}
                                 x-text={`[...document.getElementById('location_id')?.options ?? []].find(o => o.value === location_id)?.textContent?.trim() || ${JSON.stringify(t('select_location'))}`}
                             >
                                 {locations.find((location) => String(location.location_id) === default_location_value)?.location_name ?? t('select_location')}
@@ -547,6 +549,14 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             label={t('disable_motd')}
                             description={t('disable_motd_description')}
                             checked={disable_motd}
+                        />
+
+                        <SwitchSquare
+                            class="[ w-full ]"
+                            name="hide_volunteers"
+                            label={t('hide_volunteers')}
+                            description={t('hide_volunteers_description')}
+                            checked={hide_volunteers}
                         />
                         
                         <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>

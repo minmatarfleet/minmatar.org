@@ -38,10 +38,8 @@ from industry.helpers.producers import ORE_BATCH_SIZE
 
 
 def _ore_yields(name: str, refine_rate: float) -> dict[str, float]:
-    """Yields for a hangar ore type, using the family name for graded variants."""
-    family = compressed_buyback_ore_base(name)
-    lookup = f"Compressed {family}" if family else name
-    return ore_reprocessing_yields(lookup, refine_rate=refine_rate)
+    """Per-unit yields, including II/III/IV-Grade and moon-variant content."""
+    return ore_reprocessing_yields(name, refine_rate=refine_rate)
 
 
 @dataclass
@@ -105,6 +103,46 @@ def _credit_minerals(
         remaining_minerals[name] = max(0, remaining_minerals[name] - credited)
 
 
+def _family_on_hand(
+    remaining: dict[int, int],
+    ore_lots: list[tuple[int, EveType, dict[str, float]]],
+    mineral: str,
+    family: str,
+) -> bool:
+    for type_id, eve_type, yields in ore_lots:
+        if remaining.get(type_id, 0) <= 0 or yields.get(mineral, 0) <= 0:
+            continue
+        if compressed_buyback_ore_base(eve_type.name) == family:
+            return True
+    return False
+
+
+def _next_mineral(
+    remaining_minerals: dict[str, int],
+    remaining: dict[int, int],
+    ore_lots: list[tuple[int, EveType, dict[str, float]]],
+) -> str | None:
+    """Pick the mineral to cover next.
+
+    Tritanium is covered from Veldspar before any larger mineral. Otherwise
+    a Pyerite-heavy paste burns Scordite and the Tritanium byproduct leaves
+    the Veldspar stock unused.
+    """
+    positive = {
+        name: qty for name, qty in remaining_minerals.items() if qty > 0
+    }
+    if not positive:
+        return None
+    veld = PRIMARY_BELT_ORE_FOR_MINERAL.get("Tritanium")
+    if (
+        positive.get("Tritanium", 0) > 0
+        and veld
+        and _family_on_hand(remaining, ore_lots, "Tritanium", veld)
+    ):
+        return "Tritanium"
+    return max(positive, key=lambda name: positive[name])
+
+
 def _allocate_ore_for_minerals(
     remaining: dict[int, int],
     lots: dict[int, EveType],
@@ -128,15 +166,9 @@ def _allocate_ore_for_minerals(
             ore_lots.append((type_id, eve_type, mineral_yields))
 
     while True:
-        remaining_minerals_positive = {
-            name: qty for name, qty in remaining_minerals.items() if qty > 0
-        }
-        if not remaining_minerals_positive:
+        mineral = _next_mineral(remaining_minerals, remaining, ore_lots)
+        if mineral is None:
             return
-        mineral = max(
-            remaining_minerals_positive,
-            key=lambda name: remaining_minerals_positive[name],
-        )
         need = remaining_minerals[mineral]
         preferred = PRIMARY_BELT_ORE_FOR_MINERAL.get(mineral)
         ranked: list[tuple[tuple, int, EveType, dict[str, float]]] = []

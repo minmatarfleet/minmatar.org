@@ -32,6 +32,7 @@ from eveonline.models.corporations import (
     EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
+    EveCorporationMedia,
     EveCorporationWalletJournalEntry,
 )
 from eveonline.models.universe import EveUniverseSchematic
@@ -62,6 +63,7 @@ __all__ = [
     "EveCorporationBlueprint",
     "EveCorporationContract",
     "EveCorporationIndustryJob",
+    "EveCorporationMedia",
     "EveCorporationWalletJournalEntry",
     "EveLocation",
     "EvePlayer",

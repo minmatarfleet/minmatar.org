@@ -62,24 +62,25 @@ import Markdown from '@components/blocks/Markdown.astro';
         }
     </slot>
     
-    <BlockList
-        class="[ relative z-10 !justify-end ][ tile__body ]"
-        gap={gap}
+    <div 
+        class="[ tile__body ][ flex relative z-10 ]"
         style={`min-height: ${min_height}`}
     >
-        <Flexblock gap='var(--space-3xs)'>
-            <slot name="icon" />
-            <h2>{title}</h2>
-        </Flexblock>
-        
-        <Flexblock gap='var(--space-m)'>
-            {description && <Markdown class="[ max-w-[380px] ]" markdown={description} inline={true} />}
+        <BlockList gap={gap} class="[ flex justify-end! ]">
+            <Flexblock gap='var(--space-3xs)'>
+                <slot name="icon" />
+                <h2>{title}</h2>
+            </Flexblock>
+            
+            <Flexblock gap='var(--space-m)'>
+                {description && <Markdown class="[ max-w-[380px] ]" markdown={description} inline={true} />}
 
-            <slot name="subtitle" />
+                <slot name="subtitle" />
 
-            {slot_content && <FlexInline><slot /></FlexInline>}
-        </Flexblock>
-    </BlockList>
+                {slot_content && <FlexInline><slot /></FlexInline>}
+            </Flexblock>
+        </BlockList>
+    </div>
 </Wrapper>
 
 <style lang="scss">

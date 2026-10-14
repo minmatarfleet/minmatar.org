@@ -1,4 +1,6 @@
 ---
+import { corporation_path } from '@helpers/corporations/detail'
+import { open_application_elsewhere_message } from '@helpers/corporations/open_application'
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -8,12 +10,16 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     alert?:                 Alert | false;
+    show_learn_more?:       boolean;
+    show_unavailable?:      boolean;
 }
 
 const {
     corporation,
     is_user_corporation = false,
     alert = false,
+    show_learn_more = true,
+    show_unavailable = false,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
@@ -29,6 +35,27 @@ let reapplication_date = new Date(corporation?.application_updated as Date)
 reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
 const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
 const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
+const open_elsewhere = corporation?.open_application_corporation_name
+    ? open_application_elsewhere_message(
+        t('open_application_elsewhere'),
+        corporation.open_application_corporation_name,
+    )
+    : null
+
+// Why the apply button is unavailable, when it is shown disabled instead of hidden.
+const unavailable_reason = is_user_corporation
+    ? t('joined_corporation_tooltip')
+    : open_elsewhere
+        ? open_elsewhere
+        : corporation?.status === 'pending'
+        ? t('pending_application_tooltip')
+        : corporation?.status === 'accepted' && !is_acceptance_period_passed
+            ? t('application_accepted_tooltip')
+            : corporation?.status === 'rejected' && !is_re_applicable
+                ? APPLICATION_DENIED_TOOLTIP
+                : corporation?.status === 'error'
+                    ? t('error_reload')
+                    : null
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -68,9 +95,11 @@ import Markdown from '@components/blocks/Markdown.astro';
                 {t('enlist_today')}
             </ButtonAddPrimary>
         :
-        (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
-        (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
-        (is_re_applicable && corporation?.status === 'rejected') ?
+        !open_elsewhere && (
+            (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
+            (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
+            (is_re_applicable && corporation?.status === 'rejected')
+        ) ?
             <ButtonCorpApply corporation={corporation} />
         :
         corporation?.status == 'unauth' ?
@@ -80,30 +109,38 @@ import Markdown from '@components/blocks/Markdown.astro';
             >
                 {t('enlist_today')}
             </ButtonAuth>
+        :
+        show_unavailable && unavailable_reason ?
+            <span
+                class="[ unavailable ]"
+                data-tippy-content={unavailable_reason}
+                x-init="tippy($el, tippy_options)"
+                tabindex="0"
+            >
+                <Button color="green" disabled={true} type="button">
+                    {t('enlist_today')}
+                </Button>
+            </span>
             :
             ''
         }
-        <Button
-            x-data={`{
-            show_corporation_modal() {
-                    show_modal({
-                        partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.corporation_id}',
-                    })
-                }
-            }`}
-            x-on:click.stop.prevent="show_corporation_modal()"
-        >
-            {t('learn_more')}
-        </Button>
+        {show_learn_more &&
+            <Button href={translatePath(corporation_path(corporation.corporation_id, corporation.corporation_name))}>
+                {t('learn_more')}
+            </Button>
+        }
     </FlexInline>
 
-    {is_user_corporation?
-        <small class="[ status-text ]">{t('joined_corporation_tooltip')}</small>
+    {!is_user_corporation && open_elsewhere ?
+            <small class="[ status-text ]">{open_elsewhere}</small>
         :
-        corporation?.status === 'accepted' && !is_acceptance_period_passed ?
+        show_unavailable && is_user_corporation ?
+            <small class="[ status-text ]">{t('joined_corporation_tooltip')}</small>
+        :
+        !is_user_corporation && corporation?.status === 'accepted' && !is_acceptance_period_passed ?
             <small class="[ status-text ]">{t('application_accepted_tooltip')}</small>
         :
-        corporation?.status === 'rejected' && !is_re_applicable ?
+        !is_user_corporation && corporation?.status === 'rejected' && !is_re_applicable ?
             <Markdown
                 class="[ status-text ]"
                 markdown={APPLICATION_DENIED_TOOLTIP}
@@ -111,10 +148,10 @@ import Markdown from '@components/blocks/Markdown.astro';
                 inline_element='small'
             />
         :
-        corporation?.status == 'pending' ?
+        !is_user_corporation && corporation?.status == 'pending' ?
             <small class="[ status-text ]">{t('pending_application_tooltip')}</small>
         :
-        corporation?.status == 'error' &&
+        !is_user_corporation && corporation?.status == 'error' &&
             <Tag
                 data-tippy-content={t('error_reload')}
                 x-init="tippy($el, tippy_options)"
@@ -126,5 +163,15 @@ import Markdown from '@components/blocks/Markdown.astro';
 <style lang="scss">
      .status-text {
         color: var(--highlight);
+     }
+
+     .unavailable {
+        display: inline-flex;
+        cursor: not-allowed;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
      }
 </style>

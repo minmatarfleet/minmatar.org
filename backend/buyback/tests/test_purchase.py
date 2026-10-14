@@ -324,6 +324,33 @@ class PurchaseFillTestCase(TestCase):
         self.assertEqual(fill.picks[0].quantity, 1000)
         self.assertEqual(fill.shortfalls, [])
 
+    def test_pyerite_heavy_paste_uses_veldspar_for_trit(self, unused_mock_esi):
+        pyerite = ensure_type(
+            type_id=35,
+            name="Pyerite",
+            group_id=18,
+            group_name="Mineral",
+            category_id=4,
+            category_name="Material",
+        )
+        _ledger(
+            eve_type=self.ore,
+            quantity=100000,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:veld-first",
+        )
+        _ledger(
+            eve_type=self.scordite,
+            quantity=100000,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:scord-pye",
+        )
+        fill = fill_purchase("Pyerite\t50000\nTritanium\t10000")
+        picked = {pick.name for pick in fill.picks}
+        self.assertIn("Compressed Veldspar", picked)
+        self.assertIn("Compressed Scordite", picked)
+        self.assertNotIn(pyerite.name, picked)
+
     def test_tritanium_fills_compressed_veldspar(self, unused_mock_esi):
         _ledger(
             eve_type=self.ore,
@@ -353,6 +380,24 @@ class PurchaseFillTestCase(TestCase):
         self.assertEqual(fill.picks[0].name, "Compressed Veldspar II-Grade")
         self.assertIn("Compressed Veldspar II-Grade\t", fill.janice_tsv)
         self.assertNotIn("Veldspar\t100", fill.janice_tsv)
+
+    def test_grade_variant_covers_more_tritanium_than_base(
+        self, unused_mock_esi
+    ):
+        settings = EveBuybackSettings.load()
+        settings.ore_refine = 1.0
+        settings.save()
+        _ledger(
+            eve_type=self.grade,
+            quantity=100,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:grade-yield",
+        )
+        fill = fill_purchase("Tritanium\t420", settings=settings)
+        self.assertEqual(len(fill.picks), 1)
+        self.assertEqual(fill.picks[0].name, "Compressed Veldspar II-Grade")
+        self.assertEqual(fill.picks[0].quantity, 100)
+        self.assertEqual(fill.shortfalls, [])
 
     def test_ore_paste_does_not_substitute_other_families(
         self, unused_mock_esi

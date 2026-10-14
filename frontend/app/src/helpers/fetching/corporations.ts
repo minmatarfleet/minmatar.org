@@ -7,7 +7,12 @@ const t = useTranslations('en');
 import type { Corporation, CorporationApplication, CorporationType, CorporationApplicationDetails } from '@dtypes/api.minmatar.org'
 import type { CorporationObject, CorporationStatusType, CorporationMembers, CharacterKind, CharacterBasic } from '@dtypes/layout_components'
 import { get_all_corporations, get_corporation_info, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
-import { get_corporation_applications, get_corporation_applications_by_id } from '@helpers/api.minmatar.org/applications'
+import {
+    get_corporation_applications,
+    get_corporation_applications_by_id,
+    get_my_open_application,
+} from '@helpers/api.minmatar.org/applications'
+import { corporations_with_open_application } from '@helpers/corporations/open_application'
 
 export const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
 
@@ -61,8 +66,8 @@ export async function get_corporations_list_auth(access_token:string, user_id:nu
         : await get_all_corporations(corporation_type)
 
     corporations = await Promise.all(api_corporations.map(async (api_corp) => add_status_to_corporation(access_token, api_corp, user_id) ));
-    
-    return corporations
+
+    return annotate_open_application(access_token, corporations)
 }
 
 export async function get_corporations_list(corporation_type:CorporationType) {
@@ -99,7 +104,23 @@ export async function get_corporation_list_by_id_auth(access_token:string, corpo
 
     api_corporation = await get_corporation_by_id(access_token, corporation_id)
 
-    return await add_status_to_corporation(access_token, api_corporation, user_id)
+    const corporation = await add_status_to_corporation(access_token, api_corporation, user_id)
+    const [annotated] = await annotate_open_application(access_token, [corporation])
+    return annotated
+}
+
+async function annotate_open_application<T extends {
+    corporation_id: number
+    open_application_corporation_name?: string
+}>(access_token: string, corporations: T[]) {
+    try {
+        const open_application = await get_my_open_application(access_token)
+        return corporations_with_open_application(corporations, open_application)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.log(`Error fetching open corporation application: ${message}`)
+        return corporations
+    }
 }
 
 const add_status_to_corporation = async (access_token:string, api_corporation:Corporation, user_id:number) => {

@@ -112,7 +112,8 @@ const page_title = `${t('fleet')} ${fleet_id}`;
             image_990: get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg',
             animated: false,
             scrollable: true,
-            overlay: true
+            overlay: true,
+            align: get_location_video_cover(fleet?.location ?? '') ? 'right' : 'left',
         }}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
