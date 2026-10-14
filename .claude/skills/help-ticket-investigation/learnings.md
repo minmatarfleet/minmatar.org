@@ -49,6 +49,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Credit variant ore from TypeMaterials before sizing the compressed buy. Fallback scale is 1.05/1.10/1.15 and Brimful 1.15 / Glistening 2. Leave exact `Compressed {base}` for the 1:1 pass.
 **Skill update:** added the planner grade-ore row.
 
+## 2026-10-13 — Fleet MOTD reload steps and guide link
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** The new-player guide said to read the fleet MOTD and not how to bring it back after fleet chat scrolls it off. Generated MOTD Resources listed bookmarks, broadcast, and channels, with no guide link. Discord fleet pings already link the same page.
+**Durable rule:** Reload is fleet chat → three dots → Reload Channel's MOTD. The in-game guide line is `SECTION_RESOURCES_GUIDE` and must use `<loc>`.
+**Skill update:** added the MOTD reload / guide-link row.
+
 ## 2026-10-13 — Veldspar skipped on pyerite-heavy buyback orders
 
 **Category:** pulse.technology

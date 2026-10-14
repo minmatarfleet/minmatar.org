@@ -207,6 +207,7 @@ Scan this table before inventing a new theory.
 | Buy-from-stock contract doesn’t say where it is created | Sell copy already says contract in Amo. Purchase confirm uses `buyback.purchase.contract_where` from buyback `settings.location`. Structure id is `EveBuybackSettings.stockpile_structure_id`. |
 | Hide Fishermen (or tribe) names on the site | `TribeGroup.roster_hidden`. Active members and managers see names. Everyone else gets `member_count` blurred placeholders and no roster JSON. Showcase contributor names use the same gate. Fishermen (`pulse.fishermen`) ships with the flag on. |
 | Fitting order should accept a pasted fit | Create order posts `fitting_id` from `get_fittings()` (site fits). There is no EFT paste. If someone in-thread already said they will build it, confirm that and do not re-ask. |
+| New player guide missing how to reload the MOTD / MOTD should link the guide | Fleet chat scrolls the MOTD off. Reload is the fleet chat window’s three dots (**More**) → **Reload Channel's MOTD**, documented in `new-player-fleet-guide.md`. Generated MOTD Resources includes `SECTION_RESOURCES_GUIDE` (`<loc>` link to that guide). Discord fleet pings already have a New Player Instructions button to the same URL. |
 
 ### Discord reply
 
