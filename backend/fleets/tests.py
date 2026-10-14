@@ -153,6 +153,11 @@ class FleetHelperTestCase(SimpleTestCase):
         self.assertNotIn("fleet roles are missing", motd)
         self.assertNotIn("Rat", motd.split("Doctrine", 1)[1])
         self.assertFalse(motd.endswith("\n"))
+        self.assertIn(
+            '<loc><a href="https://my.minmatar.org/learning/guides/'
+            'new-player-fleet-guide/">New Player Fleet Guide</a></loc>',
+            motd,
+        )
 
     def test_get_motd_shows_set_doctrine_link_when_no_doctrine(self):
         motd = get_motd(

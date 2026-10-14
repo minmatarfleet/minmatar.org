@@ -28,6 +28,8 @@ The fleet MOTD should communicate nearly everything that you need.
 
 Before you ask a question, read the MOTD.
 
+Fleet chat scrolls the MOTD off the screen. To bring it back, open the fleet chat window, click the three vertical dots (**More**) at the top right, and choose **Reload Channel's MOTD**.
+
 ## Ships
 
 Fleets are often flying a **doctrine**, typically listed in the MOTD. If a fleet is not using a doctrine, they're designated as "kitchen sink" fleets, which means you can bring whatever you want.
