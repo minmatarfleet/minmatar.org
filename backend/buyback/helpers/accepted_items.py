@@ -65,6 +65,10 @@ _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
 _ORE_GRADE_BUY_FACTORS = {"II": 1.05, "III": 1.10, "IV": 1.15}
 _ORE_MOON_BUY_FACTORS = {"Brimful": 1.15, "Glistening": 2.0}
 
+# Oversupply pause. The weekly seed must not turn these back on.
+# Drop a name here to accept it again on the next seed.
+PAUSED_ACCEPTED_TYPE_NAMES = frozenset({"Water"})
+
 P1_P2_GROUPS = frozenset({GROUP_P1, GROUP_P2})
 P3_P4_GROUPS = frozenset({GROUP_P3, GROUP_P4})
 DEFAULT_PI_LOOKBACK_DAYS = 90
@@ -243,7 +247,7 @@ def _upsert_accepted(eve_type: EveType, seed_ids: set[int]) -> str:
     _, was_created = BuybackAcceptedItem.objects.update_or_create(
         eve_type=eve_type,
         defaults={
-            "active": True,
+            "active": eve_type.name not in PAUSED_ACCEPTED_TYPE_NAMES,
             "category": category,
         },
     )
@@ -261,7 +265,8 @@ def seed_accepted_items(
     recent industry orders.
 
     Full P1/P2 stay on the allowlist (surplus rate unless in supply-chain
-    demand). P3/P4 outside the lookback BOM set are deactivated. When
+    demand), except names in PAUSED_ACCEPTED_TYPE_NAMES, which stay inactive.
+    P3/P4 outside the lookback BOM set are deactivated. When
     deactivate_missing is True, active ore rows not in the seed set are also
     deactivated.
     """

@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-13 — Veldspar skipped on pyerite-heavy buyback orders
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A large Veldspar hangar was barely used when mineral orders had more Pyerite than Tritanium. Fill covered the largest mineral first, so Scordite satisfied Tritanium as a byproduct. Water stays off the allowlist via `PAUSED_ACCEPTED_TYPE_NAMES` so the weekly seed cannot turn it back on.
+**Durable rule:** Cover Tritanium from Veldspar while any Veldspar-family ore is on hand, then the other minerals. Paused accepted names stay `active=False` across seed. Hangar sales of stock already on hand are separate from the allowlist.
+**Skill update:** added the Veldspar-first row and the paused-allowlist row.
+
 ## 2026-09-30 — Hidden tribe-group roster
 
 **Category:** pulse.technology
