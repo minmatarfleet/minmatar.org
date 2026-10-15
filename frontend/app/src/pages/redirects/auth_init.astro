@@ -1,6 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
 import { get_discord_oauth_start_url } from '@helpers/env'
+import { get_site_origin, page_seo_for_path, pathname_from_return_target } from '@helpers/seo'
 import Viewport from '@layouts/Viewport.astro'
 import PageCover from '@components/page/partials/PageCover.astro'
 import DiscordLoginNotice from '@components/blocks/DiscordLoginNotice.astro'
@@ -12,15 +13,25 @@ const redirect = Astro.url.searchParams.get('redirect_url')
 if (redirect)
     Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
 
+const return_path = redirect ? pathname_from_return_target(redirect, Astro.url.origin) : null
+const page_seo = return_path ? page_seo_for_path(return_path, t) : null
+const title = page_seo?.title ?? t('discord_login_notice_title')
+const meta_description = page_seo?.description ?? t('discord_login_notice_meta')
+const canonical_url = page_seo && return_path
+    ? new URL(return_path, get_site_origin(Astro.url.origin)).href
+    : undefined
+
 const AUTH_URL = get_discord_oauth_start_url()
 const DISCORD_LOGIN_NOTICE_STORAGE_KEY = 'discord_login_notice_accepted'
 const DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE = '1'
 ---
 
 <Viewport
-    title={t('discord_login_notice_title')}
+    title={title}
     neocom={false}
-    meta_description={t('discord_login_notice_meta')}
+    meta_description={meta_description}
+    canonical_url={canonical_url}
+    robots="noindex, nofollow"
 >
     <script is:inline define:vars={{ AUTH_URL, DISCORD_LOGIN_NOTICE_STORAGE_KEY, DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE }}>
         try {
