@@ -78,8 +78,15 @@ def offboard_group(group_id: int):
 
 
 def get_user_permissions(user_id: int) -> list[str]:
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        legacy_permissions_for_profile,
+    )
+
     user = User.objects.get(id=user_id)
-    permissions = user.get_all_permissions()
+    permissions = set(user.get_all_permissions())
+    permissions.update(legacy_permissions_for_profile(user))
     return list(permissions)
 
 

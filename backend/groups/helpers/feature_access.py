@@ -354,6 +354,42 @@ def check_feature(request, code: str, **context):
     return require_feature(request.user, code, **context)
 
 
+def legacy_permissions_for_profile(user) -> set[str]:
+    """Permission strings the site profile should list for feature wiring.
+
+    Astro gates pages on Django permission strings from
+    ``user.get_all_permissions()``. Affiliation features such as
+    ``campaigns.view`` do not assign those permissions on auth groups, so a
+    wired member 403s on the page even though ``can_use_feature`` would
+    allow the API. Return the feature's ``legacy_permission`` when
+    affiliation scope passes.
+    """
+    if (
+        user is None
+        or isinstance(user, AnonymousUser)
+        or not getattr(user, "is_active", False)
+        or user.is_superuser
+    ):
+        return set()
+
+    affiliation = user_affiliation(user)
+    if affiliation is None:
+        return set()
+    status = user_community_status(user)
+    granted: set[str] = set()
+    for feature in _load_feature_cache().values():
+        if (
+            feature.scope != FeatureScope.AFFILIATION
+            or not feature.legacy_permission
+        ):
+            continue
+        if status and status in feature.deny_community_statuses:
+            continue
+        if affiliation.pk in feature.affiliation_ids:
+            granted.add(feature.legacy_permission)
+    return granted
+
+
 def user_has_legacy_perm(user, perm: str) -> bool:
     """Active superuser or holder of a Django permission codename."""
     if user is None or isinstance(user, AnonymousUser):
