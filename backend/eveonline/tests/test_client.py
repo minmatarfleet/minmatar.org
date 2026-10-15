@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock, patch
 
+from django.core.cache import cache
 from django.test import SimpleTestCase
 from esi.exceptions import ESIErrorLimitException, HTTPClientError
 
+from campaigns.services import esi_gate
 from eveonline.client import (
     ERROR_CALLING_ESI,
     SUCCESS,
@@ -307,3 +309,26 @@ class EsiClientTest(SimpleTestCase):
         self.assertEqual(response.response_code, SUCCESS)
         self.assertEqual(response.results()["name"], "Gankproof Dex")
         self.assertIsInstance(response.results(), dict)
+
+    @patch("eveonline.client.requests.get")
+    @patch("eveonline.client.Token.get_token")
+    def test_notifications_send_cached_etag_and_keep_304(
+        self, get_token_mock, get_mock
+    ):
+        cache.clear()
+        esi_gate.remember_notification_etag(634915984, 'W/"abc"')
+        token = MagicMock()
+        token.valid_access_token.return_value = "access-token-string"
+        get_token_mock.return_value = token
+        http = MagicMock()
+        http.status_code = 304
+        http.headers = {"ETag": 'W/"abc"'}
+        get_mock.return_value = http
+
+        response = EsiClient(634915984).get_character_notifications()
+
+        self.assertEqual(response.response_code, 304)
+        self.assertIs(response.response, http)
+        self.assertIsNone(response.data)
+        headers = get_mock.call_args.kwargs["headers"]
+        self.assertEqual(headers["If-None-Match"], 'W/"abc"')

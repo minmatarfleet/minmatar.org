@@ -500,6 +500,14 @@ CELERYBEAT_CAMPAIGNS = [
         },
     ),
     (
+        "[Campaigns] Poll recent killmails",
+        {
+            "task": "campaigns.tasks.poll_campaign_recent_killmails",
+            "schedule": schedule(timedelta(minutes=30)),
+            "options": {"queue": "eveonline"},
+        },
+    ),
+    (
         "[Campaigns] Link fleets",
         {
             "task": "campaigns.tasks.link_campaign_fleets",

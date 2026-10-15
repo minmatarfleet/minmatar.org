@@ -225,8 +225,34 @@ def _notifications_retry_after_seconds(response) -> int:
     return NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS
 
 
+def _campaign_esi_gate():
+    """The shared ESI ledger. Imported lazily so structures does not load
+    campaigns at import time.
+    """
+    # pylint: disable=import-outside-toplevel
+    from campaigns.services import esi_gate
+
+    return esi_gate
+
+
 def fetch_structure_notifications(character):
+    gate = _campaign_esi_gate()
+    character_id = character.character_id
+    if not gate.can_spend("char-notification", character_id):
+        countdown = (
+            gate.pause_remaining("char-notification", character_id)
+            or NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS
+        )
+        fetch_structure_notifications_for_character.apply_async(
+            args=[character_id],
+            countdown=countdown,
+        )
+        return 0, 0
+
     response = EsiClient(character).get_character_notifications()
+    gate.note_response("char-notification", character_id, response)
+    if response.response_code == 304:
+        return 0, 0
     if response.response_code == 429:
         retry_after = _notifications_retry_after_seconds(response)
         logger.warning(

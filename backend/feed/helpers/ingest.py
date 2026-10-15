@@ -28,6 +28,7 @@ def upsert_feed_killmail_from_r2z2(
     payload: dict[str, Any],
     *,
     allowlist: frozenset[int] | None = None,
+    source: str = "stream",
 ) -> FeedKillmail | None:
     """Ingest R2Z2 payload; returns None if discarded."""
     raw, zkb, sequence_id = parse_r2z2_payload(payload)
@@ -84,11 +85,13 @@ def upsert_feed_killmail_from_r2z2(
         )
         apply_killmail_affiliations(raw, confirmed_at=killmail_time)
 
-    _attribute_to_campaigns(killmail)
+    _attribute_to_campaigns(killmail, source=source)
     return killmail
 
 
-def _attribute_to_campaigns(killmail: FeedKillmail) -> None:
+def _attribute_to_campaigns(
+    killmail: FeedKillmail, source: str = "stream"
+) -> None:
     """Hand the mail to any campaign covering that system.
 
     Campaigns have no backfill, so this runs on every ingest path including
@@ -103,7 +106,7 @@ def _attribute_to_campaigns(killmail: FeedKillmail) -> None:
         # pylint: disable=import-outside-toplevel
         from campaigns.services.attribution import attribute_feed_killmail
 
-        attribute_feed_killmail(killmail, source="stream")
+        attribute_feed_killmail(killmail, source=source)
     except Exception:  # pragma: no cover - defensive
         logger.exception(
             "Campaign attribution failed for killmail %s", killmail.killmail_id
@@ -115,6 +118,9 @@ def upsert_feed_killmail_from_raw(
     *,
     zkb_meta: dict[str, Any] | None = None,
     allowlist: frozenset[int] | None = None,
+    source: str = "stream",
 ) -> FeedKillmail | None:
     payload = {"killmail": raw, "zkb": zkb_meta or raw.get("zkb") or {}}
-    return upsert_feed_killmail_from_r2z2(payload, allowlist=allowlist)
+    return upsert_feed_killmail_from_r2z2(
+        payload, allowlist=allowlist, source=source
+    )

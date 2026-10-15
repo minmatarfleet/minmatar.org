@@ -1305,21 +1305,36 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        # Use direct call as Swagger validation fails
+        # Use direct call as Swagger validation fails. The requests response
+        # stays attached so callers can read ESI budget headers, including
+        # on a 200. A 304 has no body.
+        headers = self._bearer_headers(token)
+        # campaigns owns the shared ETag ledger. Importing it here, not at
+        # module level, avoids a cycle through campaigns.tasks -> EsiClient.
+        # pylint: disable=import-outside-toplevel
+        from campaigns.services.esi_gate import notification_etag
+
+        etag = notification_etag(self.character_id)
+        if etag:
+            headers["If-None-Match"] = etag
+
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/",
             timeout=10,
-            headers=self._bearer_headers(token),
+            headers=headers,
         )
 
+        if response.status_code == 304:
+            return EsiResponse(response_code=304, response=response)
         if response.status_code == 200:
-            return EsiResponse(response_code=200, data=response.json())
-        else:
             return EsiResponse(
-                response_code=response.status_code,
-                data=response.text,
-                response=response,
+                response_code=200, data=response.json(), response=response
             )
+        return EsiResponse(
+            response_code=response.status_code,
+            data=response.text,
+            response=response,
+        )
 
     def get_character_affiliations(self, character_ids) -> EsiResponse:
         """

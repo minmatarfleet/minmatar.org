@@ -819,7 +819,12 @@ class CampaignEnlistmentCharacter(models.Model):
     payouts_polled_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Drives the polling rotation so every character is read.",
+        help_text="Drives the payout polling rotation so every character is read.",
+    )
+    killmails_polled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Drives the recent-killmail polling rotation.",
     )
 
     class Meta:
