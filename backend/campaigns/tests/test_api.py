@@ -171,7 +171,7 @@ class CampaignApiTests(TestCase):
         )
         row = response.json()["characters"][0]
         self.assertEqual(row["state"], "needs_update")
-        self.assertIn("token_type=Campaign", row["action_url"])
+        self.assertIn("token_type=FactionWarfare", row["action_url"])
 
     def test_readiness_route_is_not_swallowed_by_the_slug_route(self):
         """``/readiness`` must not resolve as a campaign called readiness."""

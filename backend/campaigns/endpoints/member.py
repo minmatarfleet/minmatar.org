@@ -35,7 +35,7 @@ DEFAULT_REDIRECT = "/account/campaigns/"
 
 TOKEN_CHAIN_URL = (
     "/api/eveonline/characters/add"
-    "?token_type=Campaign&character_id={character_id}&redirect_url={redirect}"
+    "?token_type=FactionWarfare&character_id={character_id}&redirect_url={redirect}"
 )
 
 
@@ -80,8 +80,8 @@ def _safe_redirect(redirect_url: str) -> str:
 def _has_campaign_scopes(character: EveCharacter) -> bool:
     """Sites and advantage need the notification scope. Kills come from the feed.
 
-    The Campaign token type is Basic plus that one scope, but readiness must
-    not demand every Basic scope. Structure search was added to Basic later,
+    The Faction Warfare token type carries that scope, but readiness must
+    not demand every scope in it. Structure search was added to Basic later,
     and requiring it sent pilots who already had notifications through Discord
     and EVE only to land on the same Missing scopes row.
     """
