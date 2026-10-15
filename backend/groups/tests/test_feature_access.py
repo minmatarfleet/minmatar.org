@@ -14,8 +14,14 @@ from groups.helpers.feature_access import (
 from groups.management.commands.sync_pilot_features import (
     Command as SyncCommand,
 )
-from groups.models import AffiliationType, PilotFeature, UserAffiliation
+from groups.models import (
+    AffiliationType,
+    PilotFeature,
+    UserAffiliation,
+    UserCommunityStatus,
+)
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from users.helpers import get_user_permissions
 
 
 class FeatureAccessTestCase(TestCase):
@@ -69,6 +75,32 @@ class FeatureAccessTestCase(TestCase):
         feature.affiliations.set([affiliation])
         clear_feature_cache()
         self.assertTrue(can_use_feature(user, "fleets.create"))
+
+    def test_profile_lists_campaign_view_for_alliance_member(self):
+        user = User.objects.create_user(username="campaign_member")
+        affiliation = self._alliance_affiliation()
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        feature = PilotFeature.objects.get(code="campaigns.view")
+        feature.affiliations.set([affiliation])
+        clear_feature_cache()
+
+        self.assertFalse(user.has_perm("campaigns.view_campaign"))
+        self.assertIn("campaigns.view_campaign", get_user_permissions(user.id))
+
+    def test_profile_hides_campaign_view_when_on_leave(self):
+        user = User.objects.create_user(username="campaign_leave")
+        affiliation = self._alliance_affiliation()
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        UserCommunityStatus.objects.create(
+            user=user, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        feature = PilotFeature.objects.get(code="campaigns.view")
+        feature.affiliations.set([affiliation])
+        clear_feature_cache()
+
+        self.assertNotIn(
+            "campaigns.view_campaign", get_user_permissions(user.id)
+        )
 
     def test_denied_without_scope_or_legacy(self):
         user = User.objects.create_user(username="denied_user")

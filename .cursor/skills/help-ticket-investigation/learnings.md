@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-15 — Campaign page 403 for alliance members
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Logged-in alliance members got the site 403 on a campaign link. The page checks `campaigns.view_campaign`, which is not on the Alliance group. `campaigns.view` is affiliation-scoped and the PilotFeature row was missing because startup never ran `sync_pilot_features`.
+**Durable rule:** Campaign view is Alliance, Militia, and Associate via the feature. Profile permissions must list `campaigns.view_campaign` when that wiring passes. Sync features after migrate.
+**Skill update:** added the campaign-page 403 row.
+
 ## 2026-10-14 — Discord login notice Continue does nothing
 
 **Category:** pulse.technology
