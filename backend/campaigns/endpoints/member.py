@@ -22,7 +22,7 @@ from campaigns.models import (
 )
 from campaigns.services import advantage
 from eveonline.models import EveCharacter, EvePlayer
-from eveonline.scopes import TokenType, token_satisfies_type
+from eveonline.scopes import CAMPAIGN_SCOPES
 from groups.helpers.feature_access import require_feature
 
 logger = logging.getLogger(__name__)
@@ -77,14 +77,31 @@ def _safe_redirect(redirect_url: str) -> str:
     return DEFAULT_REDIRECT
 
 
+def _has_campaign_scopes(character: EveCharacter) -> bool:
+    """Sites and advantage need the notification scope. Kills come from the feed.
+
+    The Campaign token type is Basic plus that one scope, but readiness must
+    not demand every Basic scope. Structure search was added to Basic later,
+    and requiring it sent pilots who already had notifications through Discord
+    and EVE only to land on the same Missing scopes row.
+    """
+    token = character.token
+    if token is None:
+        return False
+    required = set(CAMPAIGN_SCOPES)
+    have = set(
+        token.scopes.filter(name__in=required).values_list("name", flat=True)
+    )
+    return required.issubset(have)
+
+
 def _character_state(character: EveCharacter) -> tuple[str, str]:
     """One word for what this character is ready for."""
-    token = character.token
     if character.esi_deleted:
         return "removed", "nothing"
-    if character.esi_suspended or token is None:
+    if character.esi_suspended or character.token is None:
         return "lapsed", "nothing"
-    if token_satisfies_type(token, TokenType.CAMPAIGN):
+    if _has_campaign_scopes(character):
         return "ready", "kills, losses, sites and advantage"
     return "needs_update", "kills and losses"
 

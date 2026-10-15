@@ -8,6 +8,7 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 import factory
+from esi.models import Scope, Token
 
 from campaigns.models import (
     CampaignEnlistment,
@@ -37,6 +38,7 @@ from campaigns.tests.helpers import (
     make_feed_killmail,
 )
 from eveonline.models import EveCharacter, EvePlayer
+from eveonline.scopes import BASIC_SCOPES, CAMPAIGN_SCOPES
 from fittings.models import EveFitting
 from fleets.models import EveFleet
 
@@ -131,6 +133,45 @@ class CampaignApiTests(TestCase):
         self.assertEqual(row["character_name"], "Pilot")
         # No token at all, so it counts for nothing and needs one action.
         self.assertEqual(row["state"], "lapsed")
+
+    def test_notification_scope_is_enough_to_count(self):
+        """Structure search is a Basic scope. Campaigns do not use it."""
+        token = Token.objects.create(
+            user=self.user,
+            character_id=self.character.character_id,
+            character_name=self.character.character_name,
+        )
+        for scope_name in CAMPAIGN_SCOPES:
+            scope, _ = Scope.objects.get_or_create(name=scope_name)
+            token.scopes.add(scope)
+        self.character.token = token
+        self.character.save()
+
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        row = response.json()["characters"][0]
+        self.assertEqual(row["state"], "ready")
+        self.assertEqual(row["action_url"], "")
+
+    def test_a_basic_token_without_notifications_still_needs_an_update(self):
+        token = Token.objects.create(
+            user=self.user,
+            character_id=self.character.character_id,
+            character_name=self.character.character_name,
+        )
+        for scope_name in BASIC_SCOPES:
+            scope, _ = Scope.objects.get_or_create(name=scope_name)
+            token.scopes.add(scope)
+        self.character.token = token
+        self.character.save()
+
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        row = response.json()["characters"][0]
+        self.assertEqual(row["state"], "needs_update")
+        self.assertIn("token_type=Campaign", row["action_url"])
 
     def test_readiness_route_is_not_swallowed_by_the_slug_route(self):
         """``/readiness`` must not resolve as a campaign called readiness."""

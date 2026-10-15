@@ -2,6 +2,7 @@
 
 import logging
 from typing import List
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
@@ -80,7 +81,9 @@ def discord_account_mismatch_redirect(
         request.user.id,
         expected,
     )
-    return redirect(f"{redirect_url}?error=wrong_discord_account")
+    return redirect(
+        redirect_with_params(redirect_url, error="wrong_discord_account")
+    )
 
 
 def owner_for_added_character(request, token: Token) -> User | None:
@@ -186,6 +189,22 @@ def set_or_remove_session_value(request, key, value):
         request.session.pop(key, None)
 
 
+def redirect_with_params(url: str, **params: str) -> str:
+    """Add query params without dropping a query or fragment already on the url."""
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update(params)
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query),
+            parts.fragment,
+        )
+    )
+
+
 def check_add_character_session_match(request, token):
     if "add_character_id" not in request.session:
         return None
@@ -199,9 +218,11 @@ def check_add_character_session_match(request, token):
         error_id,
     )
     return redirect(
-        request.session["redirect_url"]
-        + "?error=wrong_character&error_id="
-        + error_id
+        redirect_with_params(
+            request.session["redirect_url"],
+            error="wrong_character",
+            error_id=error_id,
+        )
     )
 
 
@@ -233,7 +254,7 @@ def _delete_other_character_tokens(
 def apply_token_to_existing_character(character, token, token_type, user=None):
     owner = user if user is not None else token.user
     group_name = token_type_str(token_type)
-    character.esi_scope_groups = merge_scope_groups(
+    merged_groups = merge_scope_groups(
         getattr(character, "esi_scope_groups", None),
         group_name,
     )
@@ -241,34 +262,32 @@ def apply_token_to_existing_character(character, token, token_type, user=None):
     new_scope_count = token.scopes.count()
     old_token = character.token
     level = _linked_token_level(token, group_name)
+    keeps_new_token = (
+        old_token is None
+        or old_token == token
+        or new_scope_count >= old_token.scopes.count()
+    )
+    if not keeps_new_token:
+        # A narrower grant must not replace the token, and it must not be
+        # recorded as if the pilot had added the scope group.
+        logger.info(
+            "Discarding narrower token for %s (%s scopes < %s)",
+            token.character_id,
+            new_scope_count,
+            old_token.scopes.count(),
+        )
+        token.delete()
+        return
 
-    if (
-        old_token
-        and old_token != token
-        and new_scope_count >= old_token.scopes.count()
-    ):
+    character.esi_scope_groups = merged_groups
+    character.esi_token_level = level
+    character.esi_suspended = False
+    if old_token != token:
         logger.info("Replacing token for %s", token.character_id)
         character.token = token
         character.user = owner
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif not old_token:
-        character.token = token
-        character.user = owner
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif old_token == token:
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif token != old_token:
-        token.delete()
-        character.save(update_fields=["esi_scope_groups"])
+    character.save()
+    _delete_other_character_tokens(character.character_id, token)
 
 
 def maybe_populate_ceo_corporation(character, token_type):

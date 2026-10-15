@@ -24,6 +24,7 @@ interface Props {
     sites:              { rows:CampaignSite[]; has_more:boolean };
     roster:             CampaignRoster | null;
     readiness:          CampaignReadiness | null;
+    token_error?:       string | false;
     [propName: string]: any;
 }
 
@@ -36,6 +37,7 @@ const {
     sites,
     roster,
     readiness,
+    token_error = false,
     ...attributes
 } = Astro.props
 
@@ -333,7 +335,7 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
             hidden
             x-bind:hidden="tab !== 'you'"
         >
-            <CampaignYouPanel campaign={campaign} readiness={readiness} />
+            <CampaignYouPanel campaign={campaign} readiness={readiness} flash={token_error} />
         </section>
     </div>
 </Flexblock>

@@ -62,6 +62,11 @@ if (!can_view_campaigns)
 
 const slug = Astro.params.slug as string
 
+const token_error = Astro.url.searchParams.get('error')
+const token_error_message = token_error === 'wrong_character' || token_error === 'wrong_discord_account'
+    ? t(token_error)
+    : false
+
 // The You tab sends a character through the ESI sign-in and comes back here
 // with its id; including it now finishes the "Add to campaign" click.
 const include_id = parseInt(Astro.url.searchParams.get('include') ?? '')
@@ -71,7 +76,8 @@ if (Number.isFinite(include_id) && include_id > 0) {
     } catch (error) {
         console.log(`Could not include character ${include_id}: ${error.message}`)
     }
-    return Astro.redirect(`${translatePath(`/campaigns/${slug}/`)}#you`)
+    const error_query = token_error ? `?error=${encodeURIComponent(token_error)}` : ''
+    return Astro.redirect(`${translatePath(`/campaigns/${slug}/`)}${error_query}#you`)
 }
 
 let campaign:CampaignDetail | null = null
@@ -225,6 +231,7 @@ const breadcrumbs = [
                 sites={sites}
                 roster={roster}
                 readiness={readiness}
+                token_error={token_error_message}
             />
         }
     </PageWide>
