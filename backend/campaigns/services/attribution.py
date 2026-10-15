@@ -160,6 +160,10 @@ def _attribute_one(
                 mail.sources = list(mail.sources or []) + [source]
                 update_fields.append("sources")
                 changed = True
+            changed = (
+                _mark_seen_on_zkillboard(mail, source, update_fields)
+                or changed
+            )
             # Re-resolve: characters move between users and pilots enlist
             # mid-campaign, so a sweep can legitimately change the outcome.
             if mail.outcome != outcome or (
@@ -195,6 +199,15 @@ def _attribute_one(
             structure_service.mark_destroyed(matched_structure, mail)
 
     return created
+
+
+def _mark_seen_on_zkillboard(mail, source: str, update_fields: list) -> bool:
+    """A later stream sighting means zKill has the mail ESI found first."""
+    if source != "stream" or mail.on_zkillboard:
+        return False
+    mail.on_zkillboard = True
+    update_fields.append("on_zkillboard")
+    return True
 
 
 def final_blow(attackers: list) -> dict:

@@ -56,3 +56,57 @@ class BudgetTests(TestCase):
         report = esi_gate.snapshot()
         self.assertIn("error_budget", report)
         self.assertIn("char-notification", report["groups"])
+
+    def test_token_cost_matches_esi(self):
+        self.assertEqual(esi_gate.token_cost(200), 2)
+        self.assertEqual(esi_gate.token_cost(304), 1)
+        self.assertEqual(esi_gate.token_cost(429), 5)
+        self.assertEqual(esi_gate.token_cost(500), 0)
+
+    def test_a_429_pauses_one_character_and_leaves_the_budget_clock(self):
+        esi_gate.error_budget()
+        reset_before = cache.get(esi_gate.ERROR_BUDGET_RESET_KEY)
+
+        esi_gate.note_call(
+            "char-notification",
+            1,
+            429,
+            {"Retry-After": "90"},
+        )
+
+        self.assertFalse(esi_gate.can_spend("char-notification", 1))
+        self.assertTrue(esi_gate.can_spend("char-notification", 2))
+        self.assertGreaterEqual(
+            esi_gate.pause_remaining("char-notification", 1), 30
+        )
+        self.assertEqual(
+            cache.get(esi_gate.ERROR_BUDGET_RESET_KEY), reset_before
+        )
+
+    def test_a_4xx_costs_five_tokens(self):
+        esi_gate.note_call("char-notification", 7, 403, {})
+        # 15-token bucket, 20% reserve, so 12 tokens are spendable. One 4xx
+        # is 5 of them; two more would pass, a third would not.
+        esi_gate.note_call("char-notification", 7, 403, {})
+        self.assertTrue(esi_gate.can_spend("char-notification", 7))
+        esi_gate.note_call("char-notification", 7, 403, {})
+        self.assertFalse(esi_gate.can_spend("char-notification", 7))
+
+    def test_a_420_pauses_every_group(self):
+        esi_gate.note_call(
+            "char-notification",
+            1,
+            420,
+            {"X-Esi-Error-Limit-Reset": "45"},
+        )
+        self.assertFalse(esi_gate.can_spend("char-killmail", 99))
+        self.assertFalse(esi_gate.can_spend("affiliation", 1))
+
+    def test_notification_etags_are_remembered(self):
+        esi_gate.note_call(
+            "char-notification",
+            5,
+            200,
+            {"ETag": 'W/"def"'},
+        )
+        self.assertEqual(esi_gate.notification_etag(5), 'W/"def"')

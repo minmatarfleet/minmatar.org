@@ -137,6 +137,21 @@ class AttributionTests(TestCase):
         self.assertEqual(mail.first_seen_via, "stream")
         self.assertCountEqual(mail.sources, ["stream", "sweep"])
 
+    def test_a_later_stream_sighting_marks_the_mail_on_zkillboard(self):
+        feed_killmail = make_feed_killmail(
+            12, victim_character_id=9999, attacker_ids=[1001]
+        )
+        attribute_feed_killmail(feed_killmail, source="esi")
+        mail = CampaignKillmail.objects.get()
+        self.assertFalse(mail.on_zkillboard)
+        self.assertEqual(mail.first_seen_via, "esi")
+
+        attribute_feed_killmail(feed_killmail, source="stream")
+        mail.refresh_from_db()
+        self.assertTrue(mail.on_zkillboard)
+        self.assertEqual(mail.first_seen_via, "esi")
+        self.assertCountEqual(mail.sources, ["esi", "stream"])
+
     def test_sweep_recovers_a_mail_the_stream_never_attributed(self):
         make_feed_killmail(11, victim_character_id=9999, attacker_ids=[1001])
         self.assertEqual(CampaignKillmail.objects.count(), 0)
