@@ -10,9 +10,9 @@ from eveonline.endpoints.characters._helpers import (
     reset_api_session_if_unbound_for_esi_add,
     set_or_remove_session_value,
 )
-from eveonline.helpers.characters import scope_groups_for_token_add
+from eveonline.helpers.characters import scopes_for_token_add
 from eveonline.models import EveCharacter
-from eveonline.scopes import TokenType, scopes_for_groups
+from eveonline.scopes import TokenType
 
 PATH = "add"
 METHOD = "get"
@@ -54,8 +54,7 @@ def add_character(
     if character_id and token_type == TokenType.PUBLIC:
         token_type = TokenType.BASIC
 
-    scope_groups = scope_groups_for_token_add(character, token_type)
-    scopes = scopes_for_groups(scope_groups)
+    scopes = scopes_for_token_add(character, token_type)
 
     @login_required()
     @token_required(scopes=scopes, new=True)

@@ -10,6 +10,7 @@ from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.scopes import (
     TokenType,
+    scope_names,
     scopes_for_groups,
     token_type_str,
 )
@@ -179,6 +180,28 @@ def scope_groups_for_token_add(
     if character is not None:
         existing = character_configured_scope_groups(character)
     return merge_scope_groups(existing, token_type_str(token_type))
+
+
+def scopes_for_token_add(
+    character: EveCharacter | None,
+    token_type: TokenType,
+) -> List[str]:
+    """Scopes to request so a re-auth cannot come back narrower than today.
+
+    The callback keeps a new token only when it has at least as many scopes as
+    the one it would replace. Asking for the configured groups alone drops
+    scopes the pilot already granted, the new token is discarded, and the
+    page they returned to looks unchanged.
+    """
+    scopes = set(
+        scopes_for_groups(scope_groups_for_token_add(character, token_type))
+    )
+    token = (
+        getattr(character, "token", None) if character is not None else None
+    )
+    if token is not None:
+        scopes.update(scope_names(token))
+    return sorted(scopes)
 
 
 def character_has_market_scopes(character: EveCharacter) -> bool:

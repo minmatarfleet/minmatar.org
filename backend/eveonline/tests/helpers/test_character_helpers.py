@@ -1,7 +1,7 @@
 import factory
 
 from django.db.models import signals
-from esi.models import Token
+from esi.models import Scope, Token
 
 from app.test import TestCase
 
@@ -11,6 +11,7 @@ from eveonline.helpers.characters import (
     merge_scope_groups,
     related_characters,
     scope_groups_for_token_add,
+    scopes_for_token_add,
 )
 from eveonline.models import EveCharacter
 from eveonline.scopes import (
@@ -102,6 +103,30 @@ class CharacterHelperTests(TestCase):
                 | set(scopes_for(TokenType.INDUSTRY))
             ),
         )
+
+    def test_scopes_for_token_add_keeps_scopes_already_granted(self):
+        char = EveCharacter.objects.create(
+            character_id=10005,
+            character_name="Wide Token",
+            esi_token_level="Executor",
+            esi_scope_groups=["Executor"],
+        )
+        token = Token.objects.create(
+            user=self.user,
+            character_id=char.character_id,
+            character_name=char.character_name,
+        )
+        char.token = token
+        char.save()
+        add_scopes(TokenType.EXECUTOR, token)
+        extra, _ = Scope.objects.get_or_create(name="esi-custom.extra.v1")
+        token.scopes.add(extra)
+
+        scopes = scopes_for_token_add(char, TokenType.CAMPAIGN)
+
+        self.assertIn("esi-characters.read_notifications.v1", scopes)
+        self.assertIn("esi-custom.extra.v1", scopes)
+        self.assertGreaterEqual(len(scopes), token.scopes.count())
 
     def test_related_characters_returns_same_user_characters(self):
         """related_characters returns all characters for the given character's user."""

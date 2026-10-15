@@ -258,6 +258,22 @@ class CharacterRouterTestCase(TestCase):
 
         self.assertIn("/testing?error=wrong_character", response.url)
 
+    def test_wrong_character_keeps_the_campaign_return_query(self):
+        req = self.make_request(
+            "https://my.minmatar.org/campaigns/aldodan-yc128/?include=3001#you",
+            1000,
+        )
+        token = self.make_token(7891)
+
+        response = handle_add_character_esi_callback(
+            req, token, TokenType.BASIC
+        )
+
+        self.assertIn("include=3001", response.url)
+        self.assertIn("error=wrong_character", response.url)
+        self.assertIn("#you", response.url)
+        self.assertLess(response.url.index("?"), response.url.index("#"))
+
     def test_add_esi_character_update_no_token(self):
         char_id = 3456
         char = self.make_character(self.user, char_id, f"TestChar {char_id}")
@@ -459,6 +475,7 @@ class CharacterRouterTestCase(TestCase):
 
         new_char = EveCharacter.objects.filter(character_id=char_id).first()
         self.assertEqual(director_token_id, new_char.token_id)
+        self.assertNotIn("Industry", new_char.esi_scope_groups)
         self.assertFalse(
             Token.objects.filter(pk=industry_only_token.pk).exists()
         )
