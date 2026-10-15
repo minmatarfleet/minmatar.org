@@ -1,13 +1,26 @@
 import { i18n } from '@helpers/i18n'
 import { prod_error_messages } from '@helpers/env'
-import { is_noindex_path } from '@helpers/seo'
+import { is_auth_init_redirect, is_noindex_path } from '@helpers/seo'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
-export const onRequest = async ({ locals, cookies, request }, next) => {
+function should_rewrite_login_redirect(request: Request, response: Response): boolean {
+    if (request.method !== 'GET') return false
+    if (request.headers.get('HX-Request')) return false
+
+    const url = new URL(request.url)
+    if (url.pathname.startsWith('/partials/')) return false
+    if (response.status < 300 || response.status >= 400) return false
+
+    const location = response.headers.get('location')
+    if (!location) return false
+    return is_auth_init_redirect(location, url.origin)
+}
+
+export const onRequest = async ({ locals, cookies, request, rewrite }, next) => {
     const { t, translatePath } = i18n(new URL(request.url))
 
     locals.clientIP =
@@ -53,6 +66,12 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
     }
 
     const response = await next()
+
+    if (should_rewrite_login_redirect(request, response)) {
+        cookies.set('redirect_after_auth', url.href, { path: '/' })
+        const rewrite_url = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(url.href)}`
+        return rewrite(rewrite_url)
+    }
 
     if (is_noindex_path(url.pathname)) {
         response.headers.set('X-Robots-Tag', 'noindex, nofollow')

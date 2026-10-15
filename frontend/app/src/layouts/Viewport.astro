@@ -70,6 +70,7 @@ interface Props {
 	meta_description?: 		string;
 	canonical_url?:			string;
 	og_type?:               string;
+	robots?:				string;
 	neocom?: 				boolean;
 	components?:			ViewportComponents;
 }
@@ -83,6 +84,7 @@ const {
 	meta_description = t('generic.meta_description'),
 	canonical_url,
 	og_type = 'website',
+	robots,
 	neocom = true,
 	components = {},
 } = Astro.props
@@ -111,6 +113,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}
+		{robots && <meta name="robots" content={robots} />}
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
