@@ -151,3 +151,42 @@ test('desktop settings: GET with the token, PATCH sends only the given keys as J
     assert.deepEqual(JSON.parse(calls[1].body), { values: { show_sneak: false, 'window.fleets': null } })
     assert.ok(calls[1].signal, 'requests carry a timeout so a hung API never blocks settings')
 })
+
+test('polled fleet windows send If-None-Match and reuse the body on 304', async () => {
+    const seen = []
+    let status = 200
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            seen.push(options.headers['If-None-Match'] || null)
+            if (status === 304) return { ok: false, status: 304, headers: { get: () => '"v1"' }, json: async () => { throw new Error('no body') } }
+            return { ok: true, status: 200, headers: { get: name => (name === 'etag' ? '"v1"' : null) }, json: async () => ({ window: { mode: 'fc' } }) }
+        },
+    })
+    const first = await api.current_fleet_window()
+    assert.deepEqual(first, { body: { window: { mode: 'fc' } }, changed: true })
+    status = 304
+    const second = await api.current_fleet_window()
+    assert.deepEqual(second, { body: { window: { mode: 'fc' } }, changed: false })
+    assert.deepEqual(seen, [null, '"v1"'])
+
+    api.forget_cached()
+    status = 200
+    await api.current_fleet_window()
+    assert.equal(seen.at(-1), null)
+})
+
+test('ship sign-up sends one selection for the composition key', async () => {
+    const sent = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            sent.push({ url, method: options.method, body: JSON.parse(options.body) })
+            return { ok: true, status: 200, json: async () => [] }
+        },
+    })
+    await api.set_my_ship(7, 1001, 'm:12')
+    assert.deepEqual(sent, [{ url: 'https://api.example/api/fleets/7/my-ship-volunteers', method: 'PUT', body: { selections: [{ character_id: 1001, fitting_id: null, fleet_fitting_id: 12 }] } }])
+})

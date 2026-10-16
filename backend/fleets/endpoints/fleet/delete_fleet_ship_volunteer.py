@@ -4,6 +4,7 @@ from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 
 from fleets.endpoints.helpers import _fleet_authorized, _fleet_manager
+from fleets.helpers.fleet_window import forget_fleet_window
 from fleets.models import EveFleet, EveFleetShipVolunteer
 
 PATH = "/{fleet_id}/ship-volunteers/{volunteer_id}"
@@ -35,4 +36,5 @@ def delete_fleet_ship_volunteer(request, fleet_id: int, volunteer_id: int):
     ):
         return 403, None
     volunteer.delete()
+    forget_fleet_window(fleet.id)
     return 204, None

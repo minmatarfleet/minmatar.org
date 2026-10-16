@@ -1,6 +1,6 @@
 // Minmatar Fleet desktop app: Discord sign-in, EVE-styled overlay windows (see windows.js) pinned as glass
 // over the EVE client, a Sneak mascot on EVE's notification badge that opens Settings, and the tray.
-const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
@@ -14,6 +14,8 @@ const { EveLogEngine } = require('./eve_logs')
 const { Updater, RELEASES_URL } = require('./updater')
 const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
+const { FleetWindow } = require('./fleet_window')
+const { RouteFinder } = require('./route')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -42,7 +44,7 @@ function diag(entry) {
 
 if (!app.requestSingleInstanceLock()) app.exit(0)   // already running: the first instance gets "second-instance" and shows itself
 
-let tokens, settings, api, eve, eve_window, eve_logs, updater, tray
+let tokens, settings, api, eve, eve_window, eve_logs, updater, tray, fleet_window
 let LEGACY_SETTINGS_FILE = null
 let login_win = null
 let settings_win = null
@@ -52,6 +54,8 @@ const hidden = new Set()         // overlay ids closed/minimised this session (t
 let active_hwnd = null           // last logged-in EVE client that was in front (Sneak sits on its badge)
 let login_flow = null
 let refresh_timer = null
+let list_refreshed_at = 0
+let fleet_snapshot = null        // what the Fleets window's fleet view shows (fleet_window.js), sent on its own channel
 let quitting = false
 let glass_ready = false
 
@@ -102,6 +106,7 @@ function base_window(options) {
         if (glass_ready && win !== mascot_win) eve.apply_glass(win)
         // A 'visibility' sent while the page was still loading is lost; re-send the current one.
         win.webContents.send('visibility', win.isVisible() && !fades.has(win))
+        if (overlay_id_of(win) === 'fleets') win.webContents.send('fleet', fleet_snapshot)
         push_state()
     })
     return win
@@ -226,8 +231,9 @@ function create_overlay(def) {
         event.preventDefault()   // × hides to the tray; Settings or the tray bring it back
         hidden.add(def.id)
         conceal(win)
+        update_polling()
     })
-    win.on('closed', () => overlays.delete(def.id))
+    win.on('closed', () => { overlays.delete(def.id); update_polling() })
     return win
 }
 
@@ -248,6 +254,7 @@ function show_windows() {
     }
     reveal_overlays()
     start_refresh()
+    update_polling()
 }
 
 function set_window_enabled(id, enabled) {
@@ -261,6 +268,7 @@ function set_window_enabled(id, enabled) {
     } else {
         destroy_overlay(id)
     }
+    update_polling()
     update_tray()
     push_state()
 }
@@ -278,6 +286,7 @@ function apply_mode() {
         if (!overlay && !hidden.has(id)) reveal(win)   // unpinned windows don't follow EVE's focus
     }
     update_overlay_visibility()
+    update_polling()
     update_tray()
     push_state()
 }
@@ -422,11 +431,33 @@ function set_user_setting(key, value) {
     settings.set(key, value)
     if (key === 'overlay') apply_mode()
     else update_overlay_visibility({ force: true })
+    update_polling()
     update_tray()
     push_state()
 }
 
 // ---------------------------------------------------------------- data
+
+// The fleet list and the fleet view poll only while the Fleets window is up: not closed to the tray,
+// and (with "Only over EVE") not while EVE isn't running, when the window can't show anyway.
+function polling_wanted() {
+    if (!state.user || !settings) return false
+    const win = overlays.get('fleets')
+    if (!win || win.isDestroyed() || hidden.has('fleets')) return false
+    return !settings.get('overlay') || !settings.get('only_over_eve') || !eve || !eve.supported || eve.eve_running
+}
+
+function update_polling() {
+    if (!fleet_window) return
+    const wanted = polling_wanted()
+    fleet_window.set_active(wanted)
+    if (wanted && list_wanted() && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
+}
+
+// The upcoming list is only fetched while it's on screen; the fleet view has its own poll.
+function list_wanted() {
+    return polling_wanted() && (!fleet_snapshot || fleet_snapshot.view === 'list')
+}
 
 function fetch_error(err, what) {
     return err instanceof ApiError && err.status === 403
@@ -462,7 +493,10 @@ function load(source, fetcher, apply) {
     return done
 }
 
-function refresh_fleets() {
+// The upcoming list is only fetched while it's on screen (force: the refresh button and tray).
+function refresh_fleets({ force = false } = {}) {
+    if (!force && !list_wanted()) return Promise.resolve()
+    list_refreshed_at = Date.now()
     return load('fleets', () => load_upcoming_fleets(api, config.web_url), (fleets, err) => {
         if (err) return void (state.error = fetch_error(err, 'fleets'))
         state.fleets = fleets
@@ -483,8 +517,8 @@ function refresh_campaign() {
 const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
 
 // Data for the windows the pilot has enabled; a disabled window costs no requests.
-function refresh() {
-    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader()
+function refresh({ force = false } = {}) {
+    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader({ force })
 }
 
 function start_refresh() {
@@ -501,6 +535,7 @@ async function verify_session() {
         character_id: character ? character.character_id : null,
         avatar: me.discord_user_profile ? me.discord_user_profile.avatar : null,
     }
+    if (fleet_window) fleet_window.set_primary_character(state.user.character_id)
     diag({ t: 'signed-in', user_id: me.user_id })
 }
 
@@ -535,6 +570,9 @@ async function begin_login() {
 
 function sign_out(reason = null) {
     clearInterval(refresh_timer)
+    fleet_window.reset()
+    api.forget_cached()
+    set_fleet_snapshot(null)
     settings.flush()   // starts with the current token, before it's cleared
     settings.reset()
     tokens.clear()
@@ -569,9 +607,16 @@ function update_location() {
     const name = front_name || (state.user && state.user.name)
     const c = name && eve_logs ? eve_logs.character_by_name(name) : null
     const next = c && c.system ? { character: c.name, system: c.system } : null
+    if (fleet_window) fleet_window.set_front({ name: front_name, system: c && front_name && c.name === front_name ? c.system : null, id: c && c.id })
     if (JSON.stringify(next) === JSON.stringify(state.location)) return
     state.location = next
     push_state()
+}
+
+function set_fleet_snapshot(snapshot) {
+    fleet_snapshot = snapshot
+    const win = overlays.get('fleets')
+    if (win && !win.isDestroyed() && !win.webContents.isLoading()) win.webContents.send('fleet', snapshot)
 }
 
 function push_state() {
@@ -626,7 +671,7 @@ function update_tray() {
     tray.setContextMenu(Menu.buildFromTemplate([
         { label: 'Show windows', enabled: signed_in, click: () => show_windows() },
         { label: 'Settings…', enabled: signed_in, click: () => open_settings() },
-        { label: 'Refresh', enabled: signed_in, click: refresh },
+        { label: 'Refresh', enabled: signed_in, click: () => { refresh({ force: true }); fleet_window.poll() } },
         { type: 'separator' },
         ...update_menu_items(),
         signed_in ? { label: `Sign out (${state.user.name})`, click: () => sign_out() } : { label: 'Sign in…', click: show_login },
@@ -643,12 +688,25 @@ function sender_window(event) {
 ipcMain.on('login:start', () => begin_login())
 ipcMain.on('login:cancel', () => login_flow && login_flow.cancel())
 ipcMain.on('auth:sign-out', () => sign_out())
-ipcMain.on('fleets:refresh', () => refresh())
-ipcMain.on('fleets:open', (event, fleet_id) => {
-    // Only open URLs we built ourselves, never one supplied by the renderer.
-    const fleet = state.fleets.find(f => f.id === fleet_id)
-    if (fleet) shell.openExternal(fleet.url)
+ipcMain.on('fleets:refresh', () => {
+    refresh({ force: true })
+    if (fleet_window && state.user) fleet_window.poll()
 })
+ipcMain.on('fleets:open', (event, fleet_id) => {
+    // Opens the fleet in the window. Only fleets from the list, never an id the renderer made up.
+    const fleet = state.fleets.find(f => f.id === fleet_id)
+    if (fleet && fleet_window) fleet_window.open(fleet.id)
+})
+// Fleet view actions. Each is one click; keys are checked against the fleet's own ships in fleet_window.js.
+const fleet_key = value => (typeof value === 'string' && /^[fm]:\d+$/.test(value) ? value : null)
+ipcMain.on('fleet:back', () => fleet_window && fleet_window.back())
+ipcMain.on('fleet:open-site', () => fleet_window && fleet_window.open_site())
+ipcMain.on('fleet:refresh-motd', () => fleet_window && fleet_window.refresh_motd())
+ipcMain.on('fleet:copy-fit', (event, key) => fleet_window && fleet_key(key) && fleet_window.copy_fit(key))
+ipcMain.on('fleet:sign-up', (event, key) => fleet_window && fleet_key(key) && fleet_window.sign_up(key))
+ipcMain.on('fleet:srp', () => fleet_window && fleet_window.file_srp())
+ipcMain.on('fleet:dismiss-loss', () => fleet_window && fleet_window.dismiss_loss())
+ipcMain.on('fleet:done', () => fleet_window && fleet_window.done())
 ipcMain.on('campaigns:open', () => {
     // Same rule as fleets: only a URL we built.
     if (state.campaign) shell.openExternal(state.campaign.url)
@@ -666,6 +724,7 @@ ipcMain.on('window:minimize', event => {
     if (id && settings.get('overlay')) {
         hidden.add(id)   // overlays have no taskbar button: "minimise" hides until the tray or Settings brings it back
         conceal(win)
+        update_polling()
     } else if (win) {
         win.minimize()
     }
@@ -713,6 +772,19 @@ app.whenReady().then(async () => {
     LEGACY_SETTINGS_FILE = path.join(user_data, 'settings.json')
     tokens = new TokenStore(path.join(user_data, 'session.bin'), safeStorage)
     api = new ApiClient({ api_url: config.api_url, get_token: () => tokens.load() })
+    fleet_window = new FleetWindow({
+        api,
+        routes: new RouteFinder(),
+        web_url: config.web_url,
+        clipboard,
+        open_external: url => shell.openExternal(url),
+    })
+    fleet_window.on('change', snapshot => {
+        const back_to_list = snapshot.view === 'list' && fleet_snapshot && fleet_snapshot.view !== 'list'
+        set_fleet_snapshot(snapshot)
+        if (back_to_list && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
+    })
+    fleet_window.on('unauthorized', () => sign_out('Your session has expired. Sign in again.'))
     settings = new Settings({
         defaults: SETTINGS_DEFAULTS,
         session_keys: SESSION_SETTINGS,
@@ -732,6 +804,7 @@ app.whenReady().then(async () => {
     })
     eve.on('change', () => {
         update_overlay_visibility()
+        update_polling()
         follow_front_character()
         push_state()
     })
@@ -801,6 +874,7 @@ app.on('before-quit', event => {
         return
     }
     clearInterval(refresh_timer)
+    if (fleet_window) fleet_window.stop()
     if (settings) settings.stop()
     if (eve) eve.stop()
     if (eve_window) eve_window.stop()

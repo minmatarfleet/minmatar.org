@@ -25,29 +25,39 @@ class ApiClient {
         this.fetch = fetch_impl
         this.timeout_ms = timeout_ms
         this.doctrine_names = new Map()
+        this.etags = new Map()   // path -> { etag, body } for polled reads
     }
 
     // The token is read and the request built synchronously, so a call made just before sign-out
     // still goes out with the token it started with.
-    async request(method, path, { auth = true, body } = {}) {
+    async request(method, path, { auth = true, body, etag = false } = {}) {
         const headers = { Accept: 'application/json' }
         if (auth) {
             const token = this.get_token()
             if (!token) throw new ApiError(401, 'Not signed in')
             headers.Authorization = `Bearer ${token}`
         }
+        const cached = etag ? this.etags.get(path) : null
+        if (cached) headers['If-None-Match'] = cached.etag
         const options = { method, headers, signal: AbortSignal.timeout(this.timeout_ms) }
         if (body !== undefined) {
             headers['Content-Type'] = 'application/json'
             options.body = JSON.stringify(body)
         }
         const response = await this.fetch(`${this.api_url}${path}`, options)
+        if (etag && response.status === 304 && cached) return { body: cached.body, changed: false }
         if (!response.ok) {
             let detail = ''
             try { detail = (await response.json()).detail || '' } catch (e) {}
             throw new ApiError(response.status, `${method} ${path} -> ${response.status}${detail ? `: ${detail}` : ''}`)
         }
-        return response.json()
+        if (response.status === 204) return null
+        let json = null
+        try { json = await response.json() } catch (e) { if (etag) throw e }   // some writes answer with an empty body
+        if (!etag) return json
+        const tag = response.headers && response.headers.get && response.headers.get('etag')
+        if (tag) this.etags.set(path, { etag: tag, body: json })
+        return { body: json, changed: true }
     }
 
     get(path, options) {
@@ -76,6 +86,38 @@ class ApiClient {
 
     save_desktop_settings(values) {
         return this.request('PATCH', '/api/users/me/desktop-settings', { body: { values } })
+    }
+
+    // The desktop fleet window (backend fleets/helpers/fleet_window.py). Both are polled, so they send
+    // If-None-Match and resolve { body, changed }: an unchanged window costs a 304 and no re-render.
+    current_fleet_window() {
+        return this.request('GET', '/api/fleets/window/current', { etag: true })
+    }
+
+    fleet_window(fleet_id) {
+        return this.request('GET', `/api/fleets/${Number(fleet_id)}/window`, { etag: true })
+    }
+
+    fleet_composition(fleet_id) {
+        return this.get(`/api/fleets/${Number(fleet_id)}/composition`)
+    }
+
+    // key is a composition key: "f:<fitting id>" (catalog/doctrine fit) or "m:<fleet fitting id>".
+    set_my_ship(fleet_id, character_id, key) {
+        const [kind, id] = String(key).split(':')
+        const selection = { character_id, fitting_id: null, fleet_fitting_id: null }
+        if (kind === 'f') selection.fitting_id = Number(id)
+        else if (kind === 'm') selection.fleet_fitting_id = Number(id)
+        return this.request('PUT', `/api/fleets/${Number(fleet_id)}/my-ship-volunteers`, { body: { selections: [selection] } })
+    }
+
+    refresh_motd(fleet_id) {
+        return this.request('POST', `/api/fleets/${Number(fleet_id)}/refresh-motd`)
+    }
+
+    // Signing out must not leave one pilot's cached windows for the next.
+    forget_cached() {
+        this.etags.clear()
     }
 
     profiles(user_ids) {
