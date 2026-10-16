@@ -9,7 +9,7 @@ const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('./
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
-const { overlay_should_show, mascot_should_show, is_logged_in_client, hide_instantly } = require('./overlay_rules')
+const { overlay_should_show, mascot_should_show, is_logged_in_client, client_on_screen, hide_instantly } = require('./overlay_rules')
 const { EveLogEngine } = require('./eve_logs')
 const { Updater, RELEASES_URL } = require('./updater')
 const { OVERLAY_WINDOWS, window_def } = require('./windows')
@@ -90,6 +90,7 @@ function base_window(options) {
         transparent: true,
         backgroundColor: '#00000000',
         resizable: false,          // transparent windows can't use native edge-resize on Windows; we use a grip
+        thickFrame: false,         // no WS_CAPTION: Windows would paint its own title bar over the page on header clicks
         maximizable: false,
         fullscreenable: false,
         hasShadow: false,
@@ -279,13 +280,13 @@ function set_window_enabled(id, enabled) {
     push_state()
 }
 
-// Overlay mode = always above EVE, never takes focus, click-through except the window's controls,
-// and (with "Only over EVE") only visible while a logged-in EVE client or this app is in front.
+// Overlay mode = above EVE, never takes focus, click-through except the window's controls. With "Stay with
+// EVE" the windows sit right on top of the client (see stays_with_eve), otherwise above every app.
 function apply_mode() {
     const overlay = settings.get('overlay')
     for (const [id, win] of overlays) {
         if (win.isDestroyed()) continue
-        win.setAlwaysOnTop(overlay, 'screen-saver')
+        set_topmost(win, overlay && !stays_with_eve())
         win.setFocusable(!overlay)
         win.setSkipTaskbar(overlay)
         win.setIgnoreMouseEvents(overlay, overlay ? { forward: true } : undefined)
@@ -313,26 +314,63 @@ function own_pids() {
     return new Set(app.getAppMetrics().map(m => m.pid))
 }
 
+// "Stay with EVE" (saved as only_over_eve): while pinned and an EVE client is running, the windows drop
+// always-on-top and the helper stacks them directly above the client instead, so an app brought in front
+// of EVE (Discord, a browser) covers them like it covers EVE. Without the helper or a running client there
+// is nothing to sit on, and they float over everything.
+function stays_with_eve() {
+    return !!(settings && settings.get('overlay') && settings.get('only_over_eve') && eve && eve.ready && eve.eve_running)
+}
+
+function set_topmost(win, on) {
+    if (win.__topmost === on) return
+    win.__topmost = on
+    win.setAlwaysOnTop(on, 'screen-saver')
+}
+
+// The client the windows sit on: the last logged-in client in front, or another logged-in one on screen
+// when that one is minimised or gone.
+function stack_client() {
+    const active = active_client()
+    if (client_on_screen(active)) return active
+    return eve.clients.find(client_on_screen) || active
+}
+
+// All visible pinned windows go in one call, so they keep one run directly above the client (helper.cs Stack).
+function stack_windows() {
+    const client = stack_client()
+    if (!client) return
+    const wins = [...overlays].filter(([id, win]) => !win.isDestroyed() && !hidden.has(id) && win.isVisible()).map(([, win]) => win)
+    if (mascot_win && !mascot_win.isDestroyed() && mascot_win.isVisible()) wins.push(mascot_win)
+    eve.stack(client.hwnd, wins)
+}
+
 function update_overlay_visibility({ force = false } = {}) {
     update_mascot()
-    if (!settings.get('overlay') || helper_starting()) return
-    const show = overlay_should_show({
+    if (!settings.get('overlay')) return
+    const stay = stays_with_eve()
+    for (const win of overlays.values()) if (!win.isDestroyed()) set_topmost(win, !stay)
+    if (helper_starting()) return
+    const rule = {
         helper_ready: eve.ready,
         eve_running: eve.eve_running,
         foreground: eve.foreground,
         own_pids: own_pids(),
-        only_over_eve: settings.get('only_over_eve'),
-    })
-    const targets = [...overlays].filter(([id, win]) => !win.isDestroyed() && !hidden.has(id)).map(([, win]) => win)
-    if (settings_win && !settings_win.isDestroyed() && settings_win.__wanted) targets.push(settings_win)
-    for (const win of targets) {
-        if (show || (force && show === null)) {
+        stay_with_eve: settings.get('only_over_eve'),
+    }
+    const show = overlay_should_show({ ...rule, active_client: stack_client() })
+    const targets = [...overlays].filter(([id, win]) => !win.isDestroyed() && !hidden.has(id)).map(([, win]) => [win, show])
+    // Settings stays above every app, so with "Stay with EVE" it still hides when another app comes in front.
+    if (settings_win && !settings_win.isDestroyed() && settings_win.__wanted) targets.push([settings_win, overlay_should_show({ ...rule, active_client: null })])
+    for (const [win, shown] of targets) {
+        if (shown || (force && shown === null)) {
             reveal(win)
-            win.moveTop()
-        } else if (show === false) {
+            if (!stay || win === settings_win) win.moveTop()
+        } else if (shown === false) {
             conceal(win, hide_instantly(eve.foreground) ? { instant: true } : { delay: HIDE_DELAY_MS })
         }
     }
+    if (stay) stack_windows()
 }
 
 // ---------------------------------------------------------------- Sneak (opens Settings)
@@ -342,7 +380,6 @@ function ensure_mascot() {
     mascot_win = base_window({
         width: 40, height: 36, focusable: false, skipTaskbar: true, alwaysOnTop: true, title: 'Minmatar Fleet',
     })
-    mascot_win.setAlwaysOnTop(true, 'screen-saver')
     mascot_win.setIgnoreMouseEvents(true, { forward: true })   // only Sneak himself takes clicks
     mascot_win.loadFile(path.join(RENDERER, 'mascot.html'))
     mascot_win.on('closed', () => { mascot_win = null })
@@ -358,15 +395,18 @@ function update_mascot() {
     if (eve.foreground.client && is_logged_in_client(eve.foreground)) active_hwnd = eve.foreground.hwnd
     const client = active_client()
     const wanted = state.user && settings.get('show_sneak') && !helper_starting()
-    const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client }) : false
+    const stay = stays_with_eve()
+    const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client, stay_with_eve: stay }) : false
     if (show === false) return conceal(mascot_win, { instant: !mascot_win || hide_instantly(eve.foreground) })
     if (show === null && !(mascot_win && mascot_win.isVisible())) return
     const win = ensure_mascot()
+    set_topmost(win, !stay)
     const physical = mascot_rect(client, { offset: state.eve_window.badge_offset, scale: state.eve_window.ui_scale })
     const dip = screen.screenToDipRect(null, physical)
     win.setBounds({ x: Math.round(dip.x), y: Math.round(dip.y), width: Math.max(16, Math.round(dip.width)), height: Math.max(16, Math.round(dip.height)) })
-    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => { reveal(win); win.moveTop() })
-    else { reveal(win); win.moveTop() }
+    const raise = () => { reveal(win); stay ? stack_windows() : win.moveTop() }
+    if (win.webContents.isLoading()) win.webContents.once('did-finish-load', raise)
+    else raise()
 }
 
 // ---------------------------------------------------------------- Settings window
@@ -447,7 +487,7 @@ function set_user_setting(key, value) {
 // ---------------------------------------------------------------- data
 
 // The fleet list and the fleet view poll only while the Fleets window is up: not closed to the tray,
-// and (with "Only over EVE") not while EVE isn't running, when the window can't show anyway.
+// and (with "Stay with EVE") not while EVE isn't running, when the window can't show anyway.
 function polling_wanted() {
     if (!state.user || !settings) return false
     const win = overlays.get('fleets')

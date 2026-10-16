@@ -20,7 +20,7 @@ test('Sneak sits centred on top of the badge, following offset, scale and client
 })
 
 const fg = extra => ({ hwnd: '9', pid: 5, proc: 'chrome', cls: 'x', client: false, ...extra })
-const base = { helper_ready: true, own_pids: new Set([1]), active_client: { hwnd: '7', min: false } }
+const base = { helper_ready: true, own_pids: new Set([1]), active_client: { hwnd: '7', title: 'EVE - Kaleb Snowden', min: false } }
 
 test('Sneak shows over a logged-in client, never over other apps, character select, or without a client', () => {
     assert.equal(mascot_should_show({ ...base, foreground: fg({ client: true, title: 'EVE - Kaleb Snowden' }) }), true)
@@ -31,6 +31,12 @@ test('Sneak shows over a logged-in client, never over other apps, character sele
     assert.equal(mascot_should_show({ ...base, active_client: null, foreground: fg({ pid: 1 }) }), false)
     assert.equal(mascot_should_show({ ...base, active_client: { hwnd: '7', min: true }, foreground: fg({ pid: 1 }) }), false)
     assert.equal(mascot_should_show({ ...base, helper_ready: false, foreground: fg({ pid: 1 }) }), false)
+})
+
+test('with "Stay with EVE" Sneak stays on his client under other apps', () => {
+    assert.equal(mascot_should_show({ ...base, stay_with_eve: true, foreground: fg() }), true)
+    assert.equal(mascot_should_show({ ...base, stay_with_eve: true, active_client: { hwnd: '7', title: 'EVE', min: false }, foreground: fg() }), false)
+    assert.equal(mascot_should_show({ ...base, stay_with_eve: true, active_client: { hwnd: '7', title: 'EVE - Kaleb Snowden', min: true }, foreground: fg() }), false)
 })
 
 test('window registry entries are complete and unique', () => {

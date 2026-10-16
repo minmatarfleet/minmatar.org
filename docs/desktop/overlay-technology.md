@@ -31,6 +31,8 @@ I read EVE Omni's source (`Programm-Quellcode/src/main.js`, `helfer.cs`) to conf
 |---|---|---|
 | Frameless + per-pixel transparent | Electron `frame:false, transparent:true` | We draw the EVE chrome ourselves |
 | Always above EVE | `setAlwaysOnTop(true,'screen-saver')` + re-raise ~300 ms after EVE takes focus | EVE coming to the front can land above the overlay for a frame (seen and fixed in testing) |
+| Stay with EVE (default) | Not topmost; the helper's `stack` puts our windows directly above the EVE client with `SetWindowPos(…, SWP_NOACTIVATE)` on every focus change | Apps brought in front of EVE (Discord, a browser) cover the windows as they cover EVE. Only our windows move; EVE's are only read (`GetWindow`). Not an owned window of the client: that would tie our input queue to EVE's, so the app would freeze whenever EVE hitches |
+| No native caption | `thickFrame:false`, and the helper strips `WS_CAPTION` | With the style left on, Windows painted its classic title bar over the page on header clicks and screenshots |
 | Never steals focus | `focusable:false` → `WS_EX_NOACTIVATE`, `showInactive()` | Keyboard input stays in EVE |
 | Click-through | `setIgnoreMouseEvents(true,{forward:true})`, switched off only while the cursor is over a control | Clicks pass into the game except on our buttons |
 | Square corners | `DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE = DONOTROUND)` | Windows 11 rounds every top-level window; EVE windows are square |

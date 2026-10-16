@@ -1,6 +1,6 @@
 // Wraps the native helper (src/native/helper.cs): which window is in front, where the EVE clients
-// are, and the glass effect for our own windows. Read-only towards EVE: no injection, no memory
-// reading, no input. Windows only; elsewhere the app runs without overlay awareness or glass.
+// are, and the glass effect and window order for our own windows. Read-only towards EVE: no injection,
+// no memory reading, no input. Windows only; elsewhere the app runs without overlay awareness or glass.
 const { spawn } = require('child_process')
 const { EventEmitter } = require('events')
 const fs = require('fs')
@@ -109,10 +109,20 @@ class EveClients extends EventEmitter {
 
     apply_glass(win) {
         if (!this.proc || win.isDestroyed()) return
-        const handle = win.getNativeWindowHandle()
-        const hwnd = (handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0))).toString()
-        this.send(`glass ${hwnd} ${GLASS_TINT}`)
+        this.send(`glass ${hwnd_of(win)} ${GLASS_TINT}`)
     }
+
+    // "Stay with EVE": put our windows directly above an EVE client in the window order, without activating them.
+    stack(client_hwnd, wins) {
+        if (!this.proc || !this.ready) return
+        const hwnds = wins.filter(w => w && !w.isDestroyed()).map(hwnd_of)
+        if (hwnds.length) this.send(`stack ${client_hwnd} ${hwnds.join(' ')}`)
+    }
+}
+
+function hwnd_of(win) {
+    const handle = win.getNativeWindowHandle()
+    return (handle.length >= 8 ? handle.readBigUInt64LE(0) : BigInt(handle.readUInt32LE(0))).toString()
 }
 
 module.exports = { EveClients }
