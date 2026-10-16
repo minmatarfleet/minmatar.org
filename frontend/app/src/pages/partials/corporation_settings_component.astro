@@ -14,6 +14,7 @@ import {
     format_eve_datetime,
     is_corporation_slug,
     parse_delivery_method,
+    REDDIT_AUTOMATIC_POSTING,
     REDDIT_FORMATTING_GUIDE_URL,
     reddit_connect_flash,
     reddit_markdown_problem_key,
@@ -70,7 +71,9 @@ if (Astro.request.method === 'POST') {
             await update_corporation_reddit_post(auth_token, corporation_id, {
                 title: draft.title,
                 content: draft.content,
-                delivery_method: parse_delivery_method(draft.delivery_method),
+                delivery_method: REDDIT_AUTOMATIC_POSTING
+                    ? parse_delivery_method(draft.delivery_method)
+                    : 'discord_reminder',
             })
             flash = { kind: 'success', key: 'corporations.settings.saved' }
             draft = null
@@ -92,14 +95,16 @@ if (!settings) return HTTP_403_Forbidden()
 
 const title = draft?.title ?? settings.title
 const content = draft?.content ?? settings.content
-const delivery_method = parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
+const delivery_method = REDDIT_AUTOMATIC_POSTING
+    ? parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
+    : 'discord_reminder'
 const account = settings.reddit_account
 const is_scheduled = Boolean(settings.posting_day && settings.subreddit)
 // A rejected save lists what Reddit can't render in the typed text; otherwise
 // any warnings about the saved text.
 const markdown_problems = rejected_problems ?? (draft ? [] : settings.markdown_problems)
 const has_blocking_problems = markdown_problems.some((problem) => problem.blocking)
-const summary = reddit_section_summary(settings, {
+const summary = reddit_section_summary({ ...settings, delivery_method }, {
     not_set_up: t('corporations.settings.summary_not_set_up'),
     unscheduled: t('corporations.settings.summary_unscheduled'),
     reminder: t('corporations.settings.summary_reminder'),
@@ -264,15 +269,21 @@ const status_text = (() => {
                                 name="delivery_method"
                                 value="automatic"
                                 checked={delivery_method === 'automatic'}
+                                disabled={!REDDIT_AUTOMATIC_POSTING}
                             />
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t('corporations.settings.delivery_automatic')}</strong>
-                                <small>{t('corporations.settings.delivery_automatic_help')}</small>
+                                <small>
+                                    {REDDIT_AUTOMATIC_POSTING
+                                        ? t('corporations.settings.delivery_automatic_help')
+                                        : t('corporations.settings.delivery_automatic_coming_soon')}
+                                </small>
                             </span>
                         </label>
                     </Flexblock>
                 </fieldset>
 
+                {REDDIT_AUTOMATIC_POSTING &&
                 <section class="[ corp-settings__panel ]" aria-labelledby="corp-settings-automatic">
                     <Flexblock gap="var(--space-xs)">
                         <h3 id="corp-settings-automatic">{t('corporations.settings.automatic_heading')}</h3>
@@ -332,6 +343,7 @@ const status_text = (() => {
                         <small class="[ corp-settings__muted ]">{t('corporations.settings.approval_note')}</small>
                     </Flexblock>
                 </section>
+                }
 
                 <FlexInline gap="var(--space-m)">
                     <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>
@@ -490,6 +502,15 @@ const status_text = (() => {
 
         &:has(input:checked) {
             border-color: var(--fleet-yellow);
+        }
+
+        &:has(input:disabled) {
+            cursor: not-allowed;
+            opacity: 0.6;
+
+            &:hover {
+                border-color: var(--border-color);
+            }
         }
 
         input {

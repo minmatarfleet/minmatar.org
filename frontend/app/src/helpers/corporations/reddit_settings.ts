@@ -3,6 +3,11 @@ import type { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
 
+// Automatic posting from a linked Reddit account is switched off for now: the
+// option shows as "Coming soon" and every save is a Discord reminder. Flip to
+// re-enable; the backend already supports it.
+export const REDDIT_AUTOMATIC_POSTING: boolean = false
+
 // Same order and spelling as RedditScheduledPost.day_choices in the backend.
 export const REDDIT_POSTING_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 

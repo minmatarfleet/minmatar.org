@@ -1943,6 +1943,7 @@ export const ui = {
         'corporations.settings.delivery_reminder': 'Remind me on Discord',
         'corporations.settings.delivery_reminder_help': 'On the day, we DM you the title and body so you can post it yourself.',
         'corporations.settings.delivery_automatic': 'Post it automatically',
+        'corporations.settings.delivery_automatic_coming_soon': 'Coming soon. For now every post goes out as a Discord reminder.',
         'corporations.settings.delivery_automatic_help': 'We post it from your linked Reddit account. A superuser approves the post first; until then you get the Discord reminder instead.',
         'corporations.settings.no_discord': 'Your account has no linked Discord user, so reminders can’t reach you.',
         'corporations.settings.automatic_heading': 'Automatic posting',
