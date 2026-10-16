@@ -7,7 +7,7 @@ import { format_date_time } from '@helpers/date'
 import { number_thousand_separator } from '@helpers/numbers'
 import { get_player_icon } from '@helpers/eve_image_server'
 
-/** When, where, who, and either the complex size or the LP payout. */
+/** When, where, who, and either the complex size or Complex followed by the LP payout. */
 interface Props {
     sites:              CampaignSite[];
     [propName: string]: any;
@@ -41,10 +41,12 @@ const payout = (site:CampaignSite):string =>
     t('campaigns.sites.lp_tooltip').replace('{lp}', number_thousand_separator(site.amount_lp))
 
 const what = (site:CampaignSite):string => {
-    if (site.site_kind === 'complex')
-        return site.plex_size
+    if (site.site_kind === 'complex') {
+        const name = site.plex_size
             ? t('campaigns.sites.kind.complex').replace('{size}', site.plex_size)
-            : payout(site)
+            : t('campaigns.sites.kind.complex_unknown')
+        return site.plex_size ? name : `${name} - ${payout(site)}`
+    }
     const key = KIND_KEYS[site.site_kind]
     return key ? t(key) : site.site_kind.replaceAll('_', ' ')
 }
