@@ -4357,7 +4357,6 @@ export const ui = {
         'campaigns.sites.column_what': 'What',
         'campaigns.sites.lp_tooltip': '{lp} LP',
         'campaigns.sites.kind.complex': '{size} complex',
-        'campaigns.sites.kind.complex_unknown': 'Complex',
         'campaigns.sites.kind.advantage_site': 'Advantage site',
         'campaigns.sites.kind.rendezvous_point': 'Rendezvous point',
         'campaigns.sites.kind.propaganda_beacon': 'Propaganda beacon',
