@@ -36,7 +36,7 @@ from campaigns.models import (
 )
 from campaigns.services import fleets, scoring
 from campaigns.services.prime_time import observed_activity
-from eveonline.models import EvePlayer
+from eveonline.models import EveCorporation, EvePlayer
 from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
@@ -519,6 +519,69 @@ def leaderboard(
         }
         for index, row in enumerate(rows, start=1)
     ]
+
+
+def corporation_leaderboard(
+    campaign: Campaign,
+    metric: str = "kills",
+    period: str = "week",
+    limit: int = 25,
+) -> list[dict]:
+    """The pilot board rolled up by each pilot's main's corporation.
+
+    Pilots without a main share one row with no corporation. ``pilots``
+    counts the pilots who put a number on the board in the window, so a
+    big corporation of idle pilots doesn't read as a busy one.
+    """
+    field = BOARD_METRICS.get(metric, "kills")
+    queryset = CampaignParticipantDay.objects.filter(campaign=campaign)
+
+    if period == "week":
+        queryset = queryset.filter(day__gte=campaign_week_start())
+    elif period == "rolling7":
+        queryset = queryset.filter(day__gte=campaign_day() - timedelta(days=7))
+
+    by_user = dict(
+        queryset.values("user_id")
+        .annotate(value=Sum(field))
+        .filter(value__gt=0)
+        .values_list("user_id", "value")
+    )
+    corporation_by_user = dict(
+        EvePlayer.objects.filter(
+            user_id__in=list(by_user), primary_character__isnull=False
+        ).values_list("user_id", "primary_character__corporation_id")
+    )
+    names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=set(corporation_by_user.values()) - {None}
+        ).values_list("corporation_id", "name")
+    )
+
+    corporations: dict[int | None, dict] = {}
+    for user_id, value in by_user.items():
+        corporation_id = corporation_by_user.get(user_id)
+        row = corporations.setdefault(
+            corporation_id,
+            {
+                "corporation_id": corporation_id,
+                "corporation_name": names.get(corporation_id, ""),
+                "pilots": 0,
+                "value": 0.0,
+            },
+        )
+        row["pilots"] += 1
+        row["value"] += float(value)
+
+    rows = sorted(
+        corporations.values(),
+        key=lambda row: (
+            -row["value"],
+            row["corporation_id"] is None,
+            row["corporation_name"].lower(),
+        ),
+    )[:limit]
+    return [{"rank": index, **row} for index, row in enumerate(rows, start=1)]
 
 
 def primary_characters(user_ids) -> dict[int, tuple[int, str]]:

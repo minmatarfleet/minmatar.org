@@ -37,7 +37,7 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.scopes import BASIC_SCOPES, CAMPAIGN_SCOPES
 from fittings.models import EveFitting
 from fleets.models import EveFleet
@@ -427,6 +427,86 @@ class CampaignApiTests(TestCase):
         self.assertEqual([row["user_id"] for row in body], [self.user.id])
         self.assertEqual(body[0]["value"], 3)
 
+    def _pilot_in(self, username, character_id, corporation_id):
+        user, character = enlist(self.campaign, username, character_id)
+        character.corporation_id = corporation_id
+        character.save()
+        EvePlayer.objects.create(
+            user=user, nickname=username, primary_character=character
+        )
+        return user
+
+    def test_the_corporation_board_sums_each_metric_by_main_corporation(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            EveCorporation.objects.create(corporation_id=1, name="Big")
+            EveCorporation.objects.create(corporation_id=2, name="Small")
+        today = timezone.now().date()
+        big_a = self._pilot_in("big_a", 4001, 1)
+        big_b = self._pilot_in("big_b", 4002, 1)
+        small = self._pilot_in("small", 4003, 2)
+        no_main = User.objects.create(username="no_main")
+        for user, kills, complexes, advantage_generated, fleets_led in (
+            (big_a, 3, 0, 4.0, 0),
+            (big_b, 2, 1, 0.0, 0),
+            (small, 1, 5, 0.0, 2),
+            (no_main, 9, 0, 0.0, 0),
+        ):
+            CampaignParticipantDay.objects.create(
+                campaign=self.campaign,
+                user=user,
+                day=today,
+                kills=kills,
+                complexes=complexes,
+                advantage_generated=advantage_generated,
+                fleets_led=fleets_led,
+            )
+
+        def board(metric):
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}/leaderboard/corporations"
+                f"?metric={metric}&period=all",
+                **auth_headers(self.user),
+            )
+            self.assertEqual(response.status_code, 200)
+            return [
+                (
+                    row["rank"],
+                    row["corporation_name"],
+                    row["pilots"],
+                    row["value"],
+                )
+                for row in response.json()
+            ]
+
+        self.assertEqual(
+            board("kills"),
+            [(1, "", 1, 9), (2, "Big", 2, 5), (3, "Small", 1, 1)],
+        )
+        self.assertEqual(
+            board("sites"), [(1, "Small", 1, 5), (2, "Big", 1, 1)]
+        )
+        self.assertEqual(board("advantage"), [(1, "Big", 1, 4)])
+        self.assertEqual(board("fcs"), [(1, "Small", 1, 2)])
+
+    def test_the_corporation_board_honours_the_period(self):
+        user = self._pilot_in("old_hand", 4004, 1)
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign,
+            user=user,
+            day=campaign_week_start() - timedelta(days=10),
+            kills=4,
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations?period=week",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.json(), [])
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations?period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.json()[0]["value"], 4)
+
     def test_leaderboard_and_timeline_respond(self):
         for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):
             response = self.client.get(
@@ -539,6 +619,7 @@ class CampaignAccessTests(TestCase):
             "/orders",
             "/systems",
             "/leaderboard",
+            "/leaderboard/corporations",
             "/killmails",
             "/sites",
             "/timeline",

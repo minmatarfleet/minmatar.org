@@ -11,6 +11,15 @@ const OVERLAY_WINDOWS = [
         default_enabled: true,
     },
     {
+        id: 'campaigns',
+        title: 'Campaigns',
+        description: 'Your live campaign: whether each system is gaining or losing, and who flew in the last hour.',
+        page: 'campaigns.html',
+        size: { width: 420, height: 340 },
+        min_size: { width: 300, height: 220 },
+        default_enabled: false,
+    },
+    {
         id: 'intel',
         title: 'Intel',
         description: 'Paste a d-scan or Local to share it with the alliance, and see recent intel and capital and fleet pings near you.',

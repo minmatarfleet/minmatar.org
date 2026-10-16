@@ -313,7 +313,7 @@ class ScheduleTestCase(TestCase):
         )
         self.assertEqual(lost, recorded)
 
-    def test_publishing_confirms_and_tells_each_ceo(self, discord):
+    def test_publishing_confirms_without_dms(self, discord):
         ceo_template = self.make_template(98200000, ceo=True)
         schedule.refresh_drafts(OCT_20)
         november = self.november()
@@ -329,10 +329,7 @@ class ScheduleTestCase(TestCase):
             {RedditPost.CONFIRMED},
             set(november.slots.values_list("status", flat=True)),
         )
-        (message,) = self.dm_texts(discord)
-        self.assertIn("Reddit rotation for November", message)
-        for when in mine:
-            self.assertIn(f"{when:%H:%M} EVE", message)
+        self.assertEqual([], self.dm_texts(discord))
 
         # Published months only move by hand.
         before = self.slots()

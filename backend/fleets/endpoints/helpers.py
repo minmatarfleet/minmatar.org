@@ -357,3 +357,25 @@ def make_fleet_refit_response(refit):
         ],
         notes=refit.notes,
     )
+
+
+def etag_json_response(request, model):
+    """
+    Serialize a response model with an ETag, answering 304 when the client
+    already has this exact body (polling clients skip the download, the
+    parse and the re-render).
+    """
+    # pylint: disable=import-outside-toplevel
+    import hashlib
+
+    from django.http import HttpResponse
+
+    body = model.model_dump_json()
+    etag = '"' + hashlib.sha1(body.encode()).hexdigest()[:24] + '"'
+    if etag in request.headers.get("If-None-Match", ""):
+        response = HttpResponse(status=304)
+    else:
+        response = HttpResponse(body, content_type="application/json")
+    response["ETag"] = etag
+    response["Cache-Control"] = "private, no-cache"
+    return response

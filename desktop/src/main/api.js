@@ -25,23 +25,27 @@ class ApiClient {
         this.fetch = fetch_impl
         this.timeout_ms = timeout_ms
         this.doctrine_names = new Map()
+        this.etags = new Map()   // path -> { etag, body } for polled reads
     }
 
     // The token is read and the request built synchronously, so a call made just before sign-out
     // still goes out with the token it started with.
-    async request(method, path, { auth = true, body } = {}) {
+    async request(method, path, { auth = true, body, etag = false } = {}) {
         const headers = { Accept: 'application/json' }
         if (auth) {
             const token = this.get_token()
             if (!token) throw new ApiError(401, 'Not signed in')
             headers.Authorization = `Bearer ${token}`
         }
+        const cached = etag ? this.etags.get(path) : null
+        if (cached) headers['If-None-Match'] = cached.etag
         const options = { method, headers, signal: AbortSignal.timeout(this.timeout_ms) }
         if (body !== undefined) {
             headers['Content-Type'] = 'application/json'
             options.body = JSON.stringify(body)
         }
         const response = await this.fetch(`${this.api_url}${path}`, options)
+        if (etag && response.status === 304 && cached) return { body: cached.body, changed: false }
         if (!response.ok) {
             let detail = ''
             try { detail = (await response.json()).detail || '' } catch (e) {}
@@ -49,7 +53,13 @@ class ApiClient {
             err.detail = detail || null   // the API's own wording, safe to show the pilot
             throw err
         }
-        return response.json()
+        if (response.status === 204) return null
+        let json = null
+        try { json = await response.json() } catch (e) { if (etag) throw e }   // some writes answer with an empty body
+        if (!etag) return json
+        const tag = response.headers && response.headers.get && response.headers.get('etag')
+        if (tag) this.etags.set(path, { etag: tag, body: json })
+        return { body: json, changed: true }
     }
 
     get(path, options) {
@@ -66,6 +76,11 @@ class ApiClient {
         return this.get('/api/fleets/v3?fleet_filter=active')
     }
 
+    // The Campaigns window: the pilot's live campaign, its systems and who flew in the last hour.
+    campaign_overlay() {
+        return this.get('/api/campaigns/overlay')
+    }
+
     // Desktop settings saved on the account (see settings.js). save_ merges: only the keys sent change.
     desktop_settings() {
         return this.get('/api/users/me/desktop-settings')
@@ -73,6 +88,38 @@ class ApiClient {
 
     save_desktop_settings(values) {
         return this.request('PATCH', '/api/users/me/desktop-settings', { body: { values } })
+    }
+
+    // The desktop fleet window (backend fleets/helpers/fleet_window.py). Both are polled, so they send
+    // If-None-Match and resolve { body, changed }: an unchanged window costs a 304 and no re-render.
+    current_fleet_window() {
+        return this.request('GET', '/api/fleets/window/current', { etag: true })
+    }
+
+    fleet_window(fleet_id) {
+        return this.request('GET', `/api/fleets/${Number(fleet_id)}/window`, { etag: true })
+    }
+
+    fleet_composition(fleet_id) {
+        return this.get(`/api/fleets/${Number(fleet_id)}/composition`)
+    }
+
+    // key is a composition key: "f:<fitting id>" (catalog/doctrine fit) or "m:<fleet fitting id>".
+    set_my_ship(fleet_id, character_id, key) {
+        const [kind, id] = String(key).split(':')
+        const selection = { character_id, fitting_id: null, fleet_fitting_id: null }
+        if (kind === 'f') selection.fitting_id = Number(id)
+        else if (kind === 'm') selection.fleet_fitting_id = Number(id)
+        return this.request('PUT', `/api/fleets/${Number(fleet_id)}/my-ship-volunteers`, { body: { selections: [selection] } })
+    }
+
+    refresh_motd(fleet_id) {
+        return this.request('POST', `/api/fleets/${Number(fleet_id)}/refresh-motd`)
+    }
+
+    // Signing out must not leave one pilot's cached windows for the next.
+    forget_cached() {
+        this.etags.clear()
     }
 
     // Intel window (see intel.js in the renderer). The paste goes to the server only when the
@@ -147,4 +194,38 @@ async function load_upcoming_fleets(api, web_url) {
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
 }
 
-module.exports = { ApiClient, ApiError, load_upcoming_fleets, FLEET_TYPE_LABELS }
+// Campaign overlay -> what the Campaigns window draws, or null when no campaign is live.
+async function load_campaign(api, web_url) {
+    const { campaign } = await api.campaign_overlay()
+    if (!campaign) return null
+    return {
+        slug: campaign.slug,
+        name: campaign.name,
+        week_index: campaign.week_index,
+        week_count: campaign.week_count,
+        url: `${web_url}/campaigns/${encodeURIComponent(campaign.slug)}`,
+        systems: campaign.systems.map(system => ({
+            id: system.system_id,
+            name: system.name,
+            holder: ['minmatar', 'amarr'].includes(system.holder) ? system.holder : null,
+            objective: system.objective_label,
+            progress: system.progress_percent,
+            change: system.change_24h,
+            detail: system.detail || '',
+        })),
+        active_window_minutes: campaign.active_window_minutes,
+        pilots: campaign.active_pilots.map(pilot => ({
+            character_id: pilot.character_id,
+            name: pilot.character_name,
+            system: pilot.system,
+            last_at: pilot.last_at,
+            kills: pilot.kills,
+            losses: pilot.losses,
+            complexes: pilot.complexes,
+            advantage_sites: pilot.advantage_sites,
+            in_fleet: pilot.in_fleet,
+        })),
+    }
+}
+
+module.exports = { ApiClient, ApiError, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }

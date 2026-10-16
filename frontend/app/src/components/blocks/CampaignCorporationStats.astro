@@ -7,66 +7,47 @@ import { format_date_short } from '@helpers/date'
 import { format_isk } from '@helpers/numbers'
 import { get_corporation_logo } from '@helpers/eve_image_server'
 
-/**
- * The roster rolled up by each pilot's primary character's corporation.
- * `compact` keeps the columns that fit a half-width card; `limit` caps rows.
- */
+/** The roster rolled up by each pilot's primary character's corporation. */
 interface Props {
     corporations:       CampaignRosterCorporation[];
-    compact?:           boolean;
-    limit?:             number | false;
     [propName: string]: any;
 }
 
 const {
     corporations,
-    compact = false,
-    limit = false,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
-const rows = limit === false ? corporations : corporations.slice(0, limit)
-
-const columns = compact
-    ? [
-        t('campaigns.roster.corporation'),
-        t('campaigns.corporations.pilots'),
-        t('campaigns.corporations.active'),
-        t('campaigns.stat.kills'),
-        t('campaigns.stat.complexes'),
-    ]
-    : [
-        t('campaigns.roster.corporation'),
-        t('campaigns.corporations.pilots'),
-        t('campaigns.corporations.active'),
-        t('campaigns.roster.characters'),
-        t('campaigns.stat.kills'),
-        t('campaigns.stat.losses'),
-        t('campaigns.stat.isk_destroyed'),
-        t('campaigns.stat.complexes'),
-        t('campaigns.corporations.fleets'),
-        t('campaigns.roster.last_active'),
-    ]
+const columns = [
+    t('campaigns.roster.corporation'),
+    t('campaigns.corporations.pilots'),
+    t('campaigns.corporations.active'),
+    t('campaigns.roster.characters'),
+    t('campaigns.stat.kills'),
+    t('campaigns.stat.losses'),
+    t('campaigns.stat.isk_destroyed'),
+    t('campaigns.stat.complexes'),
+    t('campaigns.corporations.fleets'),
+    t('campaigns.roster.last_active'),
+]
 
 import CampaignTable from '@components/blocks/CampaignTable.astro'
 ---
 
-{rows.length === 0 ?
+{corporations.length === 0 ?
     <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.roster.none')}</small>
     :
     <CampaignTable
         class:list={['[ campaign-corporations ]', Astro.props.class]}
-        min_width={compact ? '24rem' : '56rem'}
-        template={compact
-            ? 'minmax(10rem, 1fr) 4rem 4rem 4rem 5rem'
-            : 'minmax(12rem, 1fr) 4rem 4rem 6rem 4rem 4rem 6rem 6rem 4rem 7rem'}
-        numeric={compact ? [ 1, 2, 3, 4 ] : [ 1, 2, 3, 4, 5, 6, 7, 8 ]}
+        min_width='56rem'
+        template='minmax(12rem, 1fr) 4rem 4rem 6rem 4rem 4rem 6rem 6rem 4rem 7rem'
+        numeric={[ 1, 2, 3, 4, 5, 6, 7, 8 ]}
         columns={columns}
         {...attributes}
     >
-        {rows.map(corporation =>
+        {corporations.map(corporation =>
             <div class="[ campaign-table-row ]" role="row">
                 <div class="[ campaign-cell-media ]" role="cell">
                     {corporation.corporation_id &&
@@ -82,17 +63,15 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                 </div>
                 <span role="cell" class="[ campaign-table-numeric ]">{corporation.pilots}</span>
                 <span role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.active_hint')}>{corporation.active_pilots}</span>
-                {!compact && <span role="cell" class="[ campaign-table-numeric ]">{corporation.characters_included}</span>}
+                <span role="cell" class="[ campaign-table-numeric ]">{corporation.characters_included}</span>
                 <span role="cell" class="[ campaign-table-numeric ]">{corporation.kills}</span>
-                {!compact && <span role="cell" class="[ campaign-table-numeric ]">{corporation.losses}</span>}
-                {!compact && <span role="cell" class="[ campaign-table-numeric ]">{format_isk(corporation.isk_destroyed)}</span>}
+                <span role="cell" class="[ campaign-table-numeric ]">{corporation.losses}</span>
+                <span role="cell" class="[ campaign-table-numeric ]">{format_isk(corporation.isk_destroyed)}</span>
                 <span role="cell" class="[ campaign-table-numeric ]">{corporation.complexes}</span>
-                {!compact && <span role="cell" class="[ campaign-table-numeric ]">{corporation.fleets_attended}</span>}
-                {!compact &&
-                    <small role="cell" class="[ campaign-table-muted ]">
-                        {corporation.last_active_day ? format_date_short(lang, corporation.last_active_day) : '—'}
-                    </small>
-                }
+                <span role="cell" class="[ campaign-table-numeric ]">{corporation.fleets_attended}</span>
+                <small role="cell" class="[ campaign-table-muted ]">
+                    {corporation.last_active_day ? format_date_short(lang, corporation.last_active_day) : '—'}
+                </small>
             </div>
         )}
     </CampaignTable>

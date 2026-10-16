@@ -397,3 +397,120 @@ class EveFleetRoleCoverageResponse(BaseModel):
     links: List[EveFleetLinkCoverage]
     cynos: List[EveFleetRolePilot]
     logi: List[EveFleetRolePilot]
+
+
+class FleetWindowFleet(BaseModel):
+    id: int
+    type: str
+    type_label: str
+    title: str
+    description: str = ""
+    doctrine_name: Optional[str] = None
+    location_name: Optional[str] = None
+    location_system_id: Optional[int] = None
+    location_system_name: Optional[str] = None
+    start_time: Optional[datetime] = None
+    status: Optional[str] = None
+    live: bool
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    fc_character_id: Optional[int] = None
+    fc_name: Optional[str] = None
+    fc_system_id: Optional[int] = None
+    fc_system_name: Optional[str] = None
+
+
+class FleetWindowShip(BaseModel):
+    """One doctrine fit with live and signed-up counts."""
+
+    key: str
+    name: str
+    ship_type_id: int
+    ship_name: str
+    role: str
+    role_label: str
+    flying: int
+    signed_up: int
+
+
+class FleetWindowRole(BaseModel):
+    role: str  # links | cyno | logi
+    covered: bool
+
+
+class FleetWindowNeed(BaseModel):
+    kind: str  # ship | role
+    count: int
+    label: str
+    ship_type_id: Optional[int] = None
+
+
+class FleetWindowPilot(BaseModel):
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_name: str
+    solar_system_id: int
+    solar_system_name: str
+    docked: bool
+    doctrine: bool
+    capsule: bool
+
+
+class FleetWindowAttention(BaseModel):
+    reason: str  # capsule | off_doctrine | docked | away
+    names: List[str]
+
+
+class FleetWindowLoss(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    ship_type_id: Optional[int] = None
+    ship_name: str
+    isk_value: int
+    solar_system_name: str
+    srp_filed: bool
+
+
+class FleetWindowMe(BaseModel):
+    character_ids: List[int]
+    characters: List[FleetWindowPilot]
+    ship_volunteers: Dict[int, str]  # character id -> composition key
+    last_loss: Optional[FleetWindowLoss] = None
+
+
+class FleetWindowCounts(BaseModel):
+    in_fleet: int
+    with_fc: int
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+
+
+class FleetWindowAfterAction(BaseModel):
+    pilots: int
+    duration_seconds: int
+    losses: int
+    srp_filed: int
+    aar_link: Optional[str] = None
+
+
+class FleetWindowResponse(BaseModel):
+    """Everything the desktop fleet window shows, for one viewer."""
+
+    mode: str  # fc | member | viewer
+    fleet: FleetWindowFleet
+    counts: FleetWindowCounts
+    ships: List[FleetWindowShip]
+    roles: List[FleetWindowRole]
+    needs: List[FleetWindowNeed]
+    me: FleetWindowMe
+    # FC only: everyone else gets empty lists.
+    pilots: List[FleetWindowPilot] = []
+    attention: List[FleetWindowAttention] = []
+    after_action: Optional[FleetWindowAfterAction] = None
+
+
+class CurrentFleetWindowResponse(BaseModel):
+    window: Optional[FleetWindowResponse] = None

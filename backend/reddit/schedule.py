@@ -1,8 +1,7 @@
 """The alliance Reddit rotation, month by month.
 
 Each month starts as a draft worked out by `reddit.rotation` and is
-published on PUBLISH_DAY of the month before, which confirms its slots and
-DMs each CEO their dates. A draft is only worked out again when something it
+published on PUBLISH_DAY of the month before, which confirms its slots. A draft is only worked out again when something it
 depends on changes (see `rotation.fingerprint`), and then repaired rather
 than rebuilt, so its estimates hold still. A published month only changes
 when an admin moves a slot or a corporation pauses: a paused corporation's
@@ -249,8 +248,8 @@ def refresh_drafts(now: datetime | None = None) -> list[RedditSchedule]:
 def publish(
     schedule: RedditSchedule, now: datetime | None = None, user=None
 ) -> int:
-    """Confirm a draft month's slots and DM each CEO their dates. Slots
-    closer than MIN_NOTICE are dropped. Returns the number confirmed."""
+    """Confirm a draft month's slots. Slots closer than MIN_NOTICE are
+    dropped. Returns the number confirmed."""
     now = now or timezone.now()
     schedule = refresh_month(schedule.month, now)
     with transaction.atomic():
@@ -266,32 +265,8 @@ def publish(
         schedule.published_at = now
         schedule.published_by = user
         schedule.save()
-    _announce(schedule)
     logger.info("Published Reddit rotation %s: %s slots", schedule, confirmed)
     return confirmed
-
-
-def _announce(schedule: RedditSchedule):
-    slots = (
-        schedule.slots.filter(status=RedditPost.CONFIRMED)
-        .select_related("template__corporation")
-        .order_by("scheduled_for")
-    )
-    by_template: dict[int, list[RedditPost]] = {}
-    for post in slots:
-        by_template.setdefault(post.template_id, []).append(post)
-    for posts in by_template.values():
-        template = posts[0].template
-        scheduling.dm_ceo(
-            template,
-            [
-                scheduling.month_message(
-                    template,
-                    schedule.month,
-                    [p.scheduled_for for p in posts],
-                )
-            ],
-        )
 
 
 def publish_due(now: datetime | None = None) -> list[RedditSchedule]:

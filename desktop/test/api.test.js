@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { ApiClient, ApiError, load_upcoming_fleets } = require('../src/main/api')
+const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('../src/main/api')
 const { load_config } = require('../src/main/config')
 
 function fake_fetch(routes, calls = []) {
@@ -91,6 +91,46 @@ test('config defaults to production and accepts overrides', () => {
     assert.equal(load_config([], { MINMATAR_API_URL: 'https://staging.example' }).api_url, 'https://staging.example')
 })
 
+const OVERLAY = {
+    campaign: {
+        slug: 'bleak-lands-push',
+        name: 'Bleak Lands Push',
+        week_index: 3,
+        week_count: 6,
+        systems: [
+            { system_id: 1, name: 'Kamela', solar_system_id: 30003069, priority: 'high', holder: 'amarr', objective: 'capture_complexes', objective_label: 'Capture complexes', progress_percent: 62, change_24h: 8, detail: '1,860 of 3,000 victory points' },
+            { system_id: 2, name: 'Auga', solar_system_id: 30002075, priority: 'low', holder: 'caldari', objective: 'hold_advantage', objective_label: 'Hold advantage', progress_percent: null, change_24h: null, detail: '' },
+        ],
+        active_window_minutes: 60,
+        active_pilots: [
+            { character_id: 3002, character_name: 'Pilot Main', system: 'Kamela', last_at: '2026-10-16T17:57:00Z', kills: 2, losses: 0, complexes: 0, advantage_sites: 0, in_fleet: true },
+        ],
+    },
+}
+
+test('campaign overlay -> window model, with a link we build ourselves', async () => {
+    const calls = []
+    const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': OVERLAY }, calls) })
+    const campaign = await load_campaign(api, 'https://web.example')
+    assert.equal(calls[0].auth, 'Bearer jwt')
+    assert.equal(campaign.url, 'https://web.example/campaigns/bleak-lands-push')
+    assert.deepEqual(campaign.systems.map(s => [s.name, s.objective, s.progress, s.change]), [
+        ['Kamela', 'Capture complexes', 62, 8],
+        ['Auga', 'Hold advantage', null, null],
+    ])
+    assert.equal(campaign.systems[0].holder, 'amarr')
+    assert.equal(campaign.systems[1].holder, null)   // only the two militias have a logo
+    assert.equal(campaign.pilots[0].name, 'Pilot Main')
+    assert.equal(campaign.pilots[0].in_fleet, true)
+})
+
+test('no live campaign -> null; no access -> 403 for the window to explain', async () => {
+    const none = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': { campaign: null } }) })
+    assert.equal(await load_campaign(none, 'https://web.example'), null)
+    const denied = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': 403 }) })
+    await assert.rejects(load_campaign(denied, 'https://web.example'), err => err.status === 403)
+})
+
 test('desktop settings: GET with the token, PATCH sends only the given keys as JSON', async () => {
     const calls = []
     const api = new ApiClient({
@@ -110,6 +150,45 @@ test('desktop settings: GET with the token, PATCH sends only the given keys as J
     assert.equal(calls[1].type, 'application/json')
     assert.deepEqual(JSON.parse(calls[1].body), { values: { show_sneak: false, 'window.fleets': null } })
     assert.ok(calls[1].signal, 'requests carry a timeout so a hung API never blocks settings')
+})
+
+test('polled fleet windows send If-None-Match and reuse the body on 304', async () => {
+    const seen = []
+    let status = 200
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            seen.push(options.headers['If-None-Match'] || null)
+            if (status === 304) return { ok: false, status: 304, headers: { get: () => '"v1"' }, json: async () => { throw new Error('no body') } }
+            return { ok: true, status: 200, headers: { get: name => (name === 'etag' ? '"v1"' : null) }, json: async () => ({ window: { mode: 'fc' } }) }
+        },
+    })
+    const first = await api.current_fleet_window()
+    assert.deepEqual(first, { body: { window: { mode: 'fc' } }, changed: true })
+    status = 304
+    const second = await api.current_fleet_window()
+    assert.deepEqual(second, { body: { window: { mode: 'fc' } }, changed: false })
+    assert.deepEqual(seen, [null, '"v1"'])
+
+    api.forget_cached()
+    status = 200
+    await api.current_fleet_window()
+    assert.equal(seen.at(-1), null)
+})
+
+test('ship sign-up sends one selection for the composition key', async () => {
+    const sent = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            sent.push({ url, method: options.method, body: JSON.parse(options.body) })
+            return { ok: true, status: 200, json: async () => [] }
+        },
+    })
+    await api.set_my_ship(7, 1001, 'm:12')
+    assert.deepEqual(sent, [{ url: 'https://api.example/api/fleets/7/my-ship-volunteers', method: 'PUT', body: { selections: [{ character_id: 1001, fitting_id: null, fleet_fitting_id: 12 }] } }])
 })
 
 test('intel calls: the map is public, shares are POSTed, and API errors keep their detail', async () => {
