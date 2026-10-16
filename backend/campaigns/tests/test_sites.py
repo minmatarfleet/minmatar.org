@@ -83,8 +83,8 @@ class ClassificationTests(TestCase):
         kind, _ = classify_payout(self._payout(516, 15_000, 3))
         self.assertEqual(kind, SiteKind.SUPPLY_CACHE)
 
-    def test_unconfirmed_code_is_stored_but_never_scored(self):
-        """359 and 373 are complex captures, shown but not scored."""
+    def test_october_complex_codes_are_confirmed_and_scorable(self):
+        """359 and 373 are the complex captures the Aldodan campaign runs."""
         for code, amount, notification_id in (
             (359, 26_250, 4),
             (373, 22_500, 6),
@@ -93,11 +93,18 @@ class ClassificationTests(TestCase):
                 self._payout(code, amount, notification_id)
             )
             self.assertEqual(kind, SiteKind.COMPLEX)
-            self.assertFalse(scorable)
+            self.assertTrue(scorable)
+
+    def test_unconfirmed_code_is_stored_but_never_scored(self):
+        FwPayoutEventCode.objects.filter(event_code=359).update(
+            confirmed=False
+        )
+        kind, scorable = classify_payout(self._payout(359, 26_250, 8))
+        self.assertEqual(kind, SiteKind.COMPLEX)
+        self.assertFalse(scorable)
 
     def test_a_scaled_advantage_payout_is_shown_and_not_scored(self):
         """Shares of a 516 payout stay in the family, but only flats score."""
-        FwPayoutEventCode.objects.filter(event_code=516).update(confirmed=True)
         kind, scorable = classify_payout(self._payout(516, 7_500, 7))
         self.assertEqual(kind, SiteKind.ADVANTAGE_SITE)
         self.assertFalse(scorable)
@@ -139,7 +146,7 @@ class ClassificationTests(TestCase):
 
         completion.refresh_from_db()
         self.assertEqual(completion.site_kind, SiteKind.COMPLEX)
-        self.assertFalse(completion.scored)
+        self.assertTrue(completion.scored)
         self.assertIsNotNone(completion.complex_id)
 
 

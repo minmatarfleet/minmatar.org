@@ -1,5 +1,6 @@
 """Boards are recomputed from source, so removals have to land too."""
 
+import importlib
 from datetime import timedelta
 
 from django.test import TestCase
@@ -26,6 +27,11 @@ from campaigns.tests.helpers import (
     make_feed_killmail,
 )
 from eveonline.models import EveCharacterFwLpPayout, FwPayoutEventCode
+
+# Migration modules are named with a number, which is not a valid import.
+confirm_codes_and_recount = importlib.import_module(
+    "campaigns.migrations.0025_confirm_complex_and_advantage_codes"
+).confirm_codes_and_recount
 
 
 class RecomputeTests(TestCase):
@@ -80,6 +86,10 @@ class UnconfirmedCodeTests(TestCase):
 
     def setUp(self):
         sites.seed_event_codes()
+        # 516 ships confirmed; these tests are about the unconfirmed state.
+        FwPayoutEventCode.objects.filter(event_code=516).update(
+            confirmed=False
+        )
         self.campaign = make_campaign()
         self.user, self.character = enlist(self.campaign, "pilot", 8101)
         self.system = self.campaign.systems.first()
@@ -154,6 +164,75 @@ class UnconfirmedCodeTests(TestCase):
         totals = stats.campaign_totals(self.campaign)
         self.assertEqual(totals["advantage_sites"], 0)
         self.assertEqual(totals["advantage_generated"], 0)
+
+
+class ConfirmOctoberCodesTests(TestCase):
+    """Sites stored while 359, 373 and 516 were unconfirmed start counting."""
+
+    def setUp(self):
+        sites.seed_event_codes()
+        FwPayoutEventCode.objects.filter(
+            event_code__in=[359, 373, 516]
+        ).update(confirmed=False)
+        self.campaign = make_campaign()
+        self.user, self.character = enlist(self.campaign, "pilot", 8301)
+        self.system = self.campaign.systems.first()
+        # Older than the two days the stats task rebuilds on its own.
+        self.moment = timezone.now() - timedelta(days=3)
+
+    def _payout(self, event_code, amount, notification_id):
+        return EveCharacterFwLpPayout.objects.create(
+            character=self.character,
+            notification_id=notification_id,
+            notification_type="FacWarLPPayoutEvent",
+            occurred_at=self.moment,
+            amount_lp=amount,
+            event_code=event_code,
+            location_id=self.system.solar_system_id,
+            ref_id=9610 if event_code != 516 else None,
+        )
+
+    def test_confirming_counts_complexes_and_advantage_on_older_days(self):
+        sites.attribute_payouts(
+            [
+                self._payout(359, 26_250, 1),
+                self._payout(373, 22_500, 2),
+                self._payout(516, 10_000, 3),
+            ]
+        )
+        day = campaign_day(self.moment)
+        stats.materialise_day(self.campaign, day)
+        self.assertEqual(stats.campaign_totals(self.campaign)["complexes"], 0)
+
+        confirm_codes_and_recount(None, None)
+
+        self.assertFalse(
+            CampaignSiteCompletion.objects.filter(scored=False).exists()
+        )
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=day
+        )
+        self.assertEqual(row.complexes, 2)
+        self.assertEqual(row.advantage_sites, 1)
+        self.assertGreater(row.advantage_generated, 0)
+        totals = stats.campaign_totals(self.campaign)
+        self.assertEqual(totals["complexes"], 2)
+        self.assertGreater(totals["advantage_generated"], 0)
+        self.assertEqual(
+            CampaignParticipantStat.objects.get(
+                campaign=self.campaign, user=self.user
+            ).complexes,
+            2,
+        )
+
+    def test_a_code_relabelled_by_hand_is_left_alone(self):
+        FwPayoutEventCode.objects.filter(event_code=373).update(
+            site_kind=SiteKind.BATTLEFIELD
+        )
+        confirm_codes_and_recount(None, None)
+        self.assertFalse(
+            FwPayoutEventCode.objects.get(event_code=373).confirmed
+        )
 
 
 class LatePayoutTests(TestCase):

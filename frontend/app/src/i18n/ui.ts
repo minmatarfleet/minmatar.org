@@ -4374,7 +4374,7 @@ export const ui = {
         'campaigns.leaderboard.no_match': 'No pilot matches.',
         'campaigns.leaderboard.metric.kills': 'Kills',
         'campaigns.leaderboard.metric.isk': 'ISK',
-        'campaigns.leaderboard.metric.sites': 'Sites',
+        'campaigns.leaderboard.metric.sites': 'Complexes',
         'campaigns.leaderboard.metric.advantage': 'Advantage',
         'campaigns.leaderboard.metric.fleets': 'Fleets',
         'campaigns.leaderboard.period.week': 'This week',
