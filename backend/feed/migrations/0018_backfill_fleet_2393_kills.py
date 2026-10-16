@@ -9,7 +9,11 @@ It calls the live rollup code because the matching is app logic, not schema.
 It does nothing where fleet 2393 is not BearThatCares's (dev, CI).
 """
 
-from django.db import migrations
+import logging
+
+from django.db import migrations, transaction
+
+logger = logging.getLogger(__name__)
 
 FLEET_ID = 2393
 FC_USERNAME = "bearthatcares"
@@ -32,16 +36,27 @@ def backfill(apps, schema_editor):
     from feed.rollups.writer import write_rollup_results
     from fleets.models import EveFleetInstance
 
-    instances = EveFleetInstance.objects.filter(
-        eve_fleet_id=FLEET_ID,
-        eve_fleet__created_by__username=FC_USERNAME,
-    )
-    results = [
-        result
-        for result in (build_fleet_kills_result(i) for i in instances)
-        if result is not None
-    ]
-    write_rollup_results(results)
+    # A backfill must never block a deploy. app-start.sh runs migrate and
+    # carries on, so a raise here would leave later migrations unapplied.
+    # The savepoint keeps a failed write from poisoning the migration's
+    # own transaction, so it is still recorded as applied.
+    try:
+        with transaction.atomic():
+            instances = EveFleetInstance.objects.filter(
+                eve_fleet_id=FLEET_ID,
+                eve_fleet__created_by__username=FC_USERNAME,
+            )
+            results = [
+                result
+                for result in (build_fleet_kills_result(i) for i in instances)
+                if result is not None
+            ]
+            written = write_rollup_results(results)
+        logger.info(
+            "Backfilled %s fleet_kills card(s) for fleet %s", written, FLEET_ID
+        )
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("fleet_kills backfill for fleet %s failed", FLEET_ID)
 
 
 class Migration(migrations.Migration):
