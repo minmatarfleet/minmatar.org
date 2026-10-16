@@ -27,8 +27,12 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
     'trademarks or registered trademarks of CCP hf. This application has been created under the EVE Developer License Agreement. ' +
     'It is a Minmatar Fleet alliance tool and is not affiliated with or endorsed by CCP hf.'
 
-// Settings the Settings window may change (booleans only).
+// Settings the Settings window may change (booleans only). Saved on the account (settings.js), except
+// "overlay" (pinned), which is back on at every launch.
 const USER_SETTINGS = ['overlay', 'only_over_eve', 'show_sneak']
+const SETTINGS_DEFAULTS = { overlay: true, only_over_eve: true, show_sneak: true }
+const SESSION_SETTINGS = ['overlay']
+const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 
 function diag(entry) {
     const line = JSON.stringify({ ts: new Date().toISOString(), ...entry })
@@ -39,6 +43,7 @@ function diag(entry) {
 if (!app.requestSingleInstanceLock()) app.exit(0)   // already running: the first instance gets "second-instance" and shows itself
 
 let tokens, settings, api, eve, eve_window, eve_logs, updater, tray
+let LEGACY_SETTINGS_FILE = null
 let login_win = null
 let settings_win = null
 let mascot_win = null
@@ -176,27 +181,44 @@ function show_login() {
 
 // ---------------------------------------------------------------- overlay windows
 
+// Each window's settings are one key ("window.fleets": { enabled, bounds }) so a change to one window
+// never overwrites another's on the account.
+const window_key = id => `window.${id}`
+
+function window_saved(id) {
+    return settings.get(window_key(id)) || {}
+}
+
 function window_enabled(id) {
-    const saved = (settings.get('windows') || {})[id]
-    return saved && typeof saved.enabled === 'boolean' ? saved.enabled : window_def(id).default_enabled
+    const saved = window_saved(id)
+    return typeof saved.enabled === 'boolean' ? saved.enabled : window_def(id).default_enabled
 }
 
 function save_window(id, patch) {
-    const windows = { ...(settings.get('windows') || {}) }
-    windows[id] = { ...(windows[id] || {}), ...patch }
-    settings.set('windows', windows)
+    settings.set(window_key(id), { ...window_saved(id), ...patch })
+}
+
+// Moves made by the app (restoring a saved spot, or the fallback when it's off this PC's screens) are
+// not saved, so a position from another PC's monitor layout is only replaced when the pilot moves the window.
+function place(win, bounds) {
+    win.setBounds(bounds)
+    win.__placed = JSON.stringify(win.getBounds())
 }
 
 function create_overlay(def) {
-    const saved = (settings.get('windows') || {})[def.id] || {}
-    const win = base_window({ ...on_screen_bounds(saved.bounds, def), minWidth: def.min_size.width, minHeight: def.min_size.height })
+    const win = base_window({ ...on_screen_bounds(window_saved(def.id).bounds, def), minWidth: def.min_size.width, minHeight: def.min_size.height })
+    win.__placed = JSON.stringify(win.getBounds())
     overlays.set(def.id, win)
     win.loadFile(path.join(RENDERER, def.page))
     win.once('ready-to-show', () => {
         apply_mode()
         reveal_overlays()
     })
-    const save_bounds = debounce(() => { if (!win.isDestroyed()) save_window(def.id, { bounds: win.getBounds() }) }, 400)
+    const save_bounds = debounce(() => {
+        if (win.isDestroyed()) return
+        const bounds = win.getBounds()
+        if (JSON.stringify(bounds) !== win.__placed) save_window(def.id, { bounds })
+    }, 400)
     win.on('move', save_bounds)
     win.on('resize', save_bounds)
     win.on('close', event => {
@@ -357,6 +379,44 @@ function open_settings() {
     settings_win.on('closed', () => { settings_win = null })
 }
 
+// The account's settings arrived after the windows were already up on defaults (slow or down API at launch).
+function apply_loaded_settings(keys) {
+    diag({ t: 'settings-loaded', keys })
+    if (!state.user) return
+    for (const def of OVERLAY_WINDOWS) {
+        if (!keys.includes(window_key(def.id))) continue
+        const win = overlays.get(def.id)
+        if (!window_enabled(def.id)) destroy_overlay(def.id)
+        else if (!win) {
+            create_overlay(def)
+            WINDOW_LOADERS[def.id]?.()   // enabled by the account's settings: it has no data yet
+        } else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
+    }
+    update_overlay_visibility({ force: true })
+    update_tray()
+    push_state()
+}
+
+// Wait briefly for the account's settings so windows open where the pilot left them. If the API is slow
+// or down, go ahead on defaults: settings.js keeps retrying and apply_loaded_settings catches up.
+function load_settings() {
+    return Promise.race([settings.load(), new Promise(resolve => setTimeout(resolve, SETTINGS_WAIT_MS))])
+}
+
+// 0.4 test builds kept settings in settings.json; carry them to the account once, then delete the file.
+function adopt_local_settings_file(remote_values) {
+    if (Object.keys(remote_values).length || !fs.existsSync(LEGACY_SETTINGS_FILE)) return
+    let legacy
+    try { legacy = JSON.parse(fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8')) } catch (e) { legacy = {} }
+    for (const key of USER_SETTINGS) if (!SESSION_SETTINGS.includes(key) && typeof legacy[key] === 'boolean') settings.set(key, legacy[key])
+    const windows = { ...(legacy.windows || {}) }
+    if (legacy.fleets_bounds && !windows.fleets) windows.fleets = { bounds: legacy.fleets_bounds }
+    for (const [id, saved] of Object.entries(windows)) if (window_def(id) && saved) settings.set(window_key(id), saved)
+    diag({ t: 'settings-file-adopted' })
+    apply_loaded_settings(OVERLAY_WINDOWS.map(def => window_key(def.id)))
+    settings.once('saved', () => { try { fs.unlinkSync(LEGACY_SETTINGS_FILE) } catch (e) {} })
+}
+
 function set_user_setting(key, value) {
     if (!USER_SETTINGS.includes(key) || typeof value !== 'boolean') return
     settings.set(key, value)
@@ -454,6 +514,7 @@ async function begin_login() {
         const persisted = tokens.save(token)
         if (!persisted) diag({ t: 'token-not-persisted', reason: 'safeStorage unavailable' })
         await verify_session()
+        await load_settings()
         state.login = { pending: false, error: null }
         update_tray()
         show_windows()
@@ -474,7 +535,10 @@ async function begin_login() {
 
 function sign_out(reason = null) {
     clearInterval(refresh_timer)
+    settings.flush()   // starts with the current token, before it's cleared
+    settings.reset()
     tokens.clear()
+    for (const id of [...overlays.keys()]) destroy_overlay(id)   // the next pilot's windows open from their own settings
     state.user = null
     state.fleets = []
     state.campaign = null
@@ -516,6 +580,7 @@ function push_state() {
         ...state,
         version: app.getVersion(),
         overlay: settings.get('overlay'),
+        settings_sync: settings.status,
         settings: Object.fromEntries(USER_SETTINGS.map(k => [k, settings.get(k)])),
         windows: OVERLAY_WINDOWS.map(def => ({ id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id) })),
         glass: glass_ready,
@@ -537,9 +602,21 @@ function update_menu_items() {
     return []
 }
 
-function install_update() {
+async function install_update() {
     quitting = true
+    await flush_settings_before_quit()
     updater.install()
+}
+
+// Quitting with unsaved changes (e.g. a window moved a moment ago): give the API a moment to take them.
+const QUIT_FLUSH_MS = 2000
+let quit_flushed = false
+async function flush_settings_before_quit() {
+    if (quit_flushed) return
+    quit_flushed = true
+    if (settings && settings.has_pending() && tokens.load()) {
+        await Promise.race([settings.flush(), new Promise(resolve => setTimeout(resolve, QUIT_FLUSH_MS))])
+    }
 }
 
 function update_tray() {
@@ -630,19 +707,21 @@ app.on('second-instance', () => {
     state.user ? show_windows() : show_login()
 })
 
-function migrate_settings() {
-    // 0.4: per-window settings; the fleets window's position used to be a top-level key.
-    if (settings.get('fleets_bounds') && !(settings.get('windows') || {}).fleets) save_window('fleets', { bounds: settings.get('fleets_bounds') })
-}
-
 app.whenReady().then(async () => {
     if (process.platform === 'win32') app.setAppUserModelId('org.minmatar.desktop')
     const user_data = app.getPath('userData')
-    settings = new Settings(path.join(user_data, 'settings.json'), { overlay: true, only_over_eve: true, show_sneak: true, windows: {} })
-    migrate_settings()
-    settings.set('overlay', true)   // every launch starts pinned over EVE; the pin button unpins for the session
+    LEGACY_SETTINGS_FILE = path.join(user_data, 'settings.json')
     tokens = new TokenStore(path.join(user_data, 'session.bin'), safeStorage)
     api = new ApiClient({ api_url: config.api_url, get_token: () => tokens.load() })
+    settings = new Settings({
+        defaults: SETTINGS_DEFAULTS,
+        session_keys: SESSION_SETTINGS,
+        remote: { load: () => api.desktop_settings(), save: values => api.save_desktop_settings(values) },
+    })
+    settings.on('loaded', adopt_local_settings_file)
+    settings.on('change', apply_loaded_settings)
+    settings.on('status', status => { diag({ t: 'settings-sync', status }); push_state() })
+    settings.on('error', err => diag({ t: 'settings-error', ...err }))
 
     eve = new EveClients({ user_data_dir: user_data, client_procs: config.client_procs })
     eve.on('ready', () => {
@@ -691,6 +770,7 @@ app.whenReady().then(async () => {
     if (tokens.load()) {
         try {
             await verify_session()
+            await load_settings()
             update_tray()
             show_windows()
             return
@@ -703,6 +783,7 @@ app.whenReady().then(async () => {
                 // Offline or API down: keep the stored session and let the refresh loop retry.
                 const payload = decode_token_payload(tokens.load()) || {}
                 state.user = { name: payload.username || 'Pilot', character_id: null, avatar: payload.avatar || null }
+                settings.load()   // retries in the background; windows move into place when it lands
                 update_tray()
                 show_windows()
                 return
@@ -712,9 +793,15 @@ app.whenReady().then(async () => {
     show_login()
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', event => {
     quitting = true
+    if (!quit_flushed && settings && settings.has_pending()) {
+        event.preventDefault()
+        flush_settings_before_quit().finally(() => app.quit())
+        return
+    }
     clearInterval(refresh_timer)
+    if (settings) settings.stop()
     if (eve) eve.stop()
     if (eve_window) eve_window.stop()
     if (eve_logs) eve_logs.stop()

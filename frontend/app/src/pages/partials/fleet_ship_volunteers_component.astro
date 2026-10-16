@@ -41,7 +41,7 @@ import {
 let alert:Alert | false = false
 
 const as_role = (raw:string | null):FleetFittingRole =>
-    raw === 'secondary' || raw === 'support' ? raw : 'primary'
+    raw === 'secondary' || raw === 'support' || raw === 'utility' ? raw : 'primary'
 
 // Any pilot: the "Volunteer my ships" modal posts one ship per character.
 if (Astro.request.method === 'POST' && Astro.url.searchParams.get('action') === 'pick_ships') {

@@ -1,4 +1,5 @@
-from typing import List, Optional
+from datetime import datetime
+from typing import Any, List, Optional
 
 from pydantic import BaseModel
 
@@ -37,3 +38,13 @@ class UserProfileSchema(BaseModel):
 
     # discord stuff
     discord_user_profile: Optional[DiscordUserSchema]
+
+
+class DesktopSettingsSchema(BaseModel):
+    values: dict[str, Any] = {}
+    updated_at: datetime | None = None
+
+
+class DesktopSettingsPatchSchema(BaseModel):
+    # A null value removes the key.
+    values: dict[str, Any]

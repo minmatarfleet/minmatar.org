@@ -1220,6 +1220,48 @@ class FleetCompositionRouterTestCase(TestCase):
         # With a doctrine the MOTD keeps the doctrine link, no Fits section
         self.assertEqual([], _motd_composition(self.fleet))
 
+    def test_utility_fits_sort_after_support(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Doc", type="non_strategic", description=""
+        )
+        cyno = EveFitting.objects.create(
+            name="Atron Cyno",
+            ship_id=608,
+            description="",
+            eft_format="[Atron, Atron Cyno]\nCynosural Field Generator I\n",
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=cyno, role="utility"
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=self.catalog_fitting, role="support"
+        )
+        self.fleet.doctrine = doctrine
+        self.fleet.save()
+        response = self.fc_client.post(
+            f"{BASE_URL}/{self.fleet.id}/fittings",
+            {
+                "eft_format": "[Hurricane, Hurricane Booster]\n",
+                "role": "utility",
+            },
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/composition", **self._auth()
+        )
+        roles = [(e["source"], e["role"]) for e in response.json()]
+        self.assertEqual(
+            [
+                ("doctrine", "support"),
+                ("doctrine", "utility"),
+                ("manual", "utility"),
+            ],
+            roles,
+        )
+
 
 class EsiFittingsTestCase(TestCase):
     """EFT → ESI items / DNA, slot-swap refits, scope guard and cleanup."""

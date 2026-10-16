@@ -32,6 +32,7 @@ function doctrine(
         primary_fittings: [fitting(ship)],
         secondary_fittings: [],
         support_fittings: [],
+        utility_fittings: [],
         location_ids: [],
     }
 }

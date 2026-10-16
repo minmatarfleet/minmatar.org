@@ -5,7 +5,7 @@ const { load_config } = require('../src/main/config')
 
 function fake_fetch(routes, calls = []) {
     return async (url, options) => {
-        calls.push({ url, auth: options.headers.Authorization, signal: options.signal })
+        calls.push({ url, auth: options.headers.Authorization })
         const path = url.replace('https://api.example', '')
         if (!(path in routes)) return { ok: false, status: 404, json: async () => ({ detail: 'nope' }) }
         const route = routes[path]
@@ -131,10 +131,23 @@ test('no live campaign -> null; no access -> 403 for the window to explain', asy
     await assert.rejects(load_campaign(denied, 'https://web.example'), err => err.status === 403)
 })
 
-test('every request carries a timeout so a hung call cannot hold a window back', async () => {
+test('desktop settings: GET with the token, PATCH sends only the given keys as JSON', async () => {
     const calls = []
-    const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': { campaign: null } }, calls) })
-    await load_campaign(api, 'https://web.example')
-    assert.ok(calls[0].signal instanceof AbortSignal)
-    assert.equal(calls[0].signal.aborted, false)
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            calls.push({ url, method: options.method, auth: options.headers.Authorization, type: options.headers['Content-Type'], body: options.body, signal: options.signal })
+            return { ok: true, status: 200, json: async () => ({ values: { show_sneak: false }, updated_at: null }) }
+        },
+    })
+    assert.deepEqual((await api.desktop_settings()).values, { show_sneak: false })
+    await api.save_desktop_settings({ show_sneak: false, 'window.fleets': null })
+    assert.equal(calls[0].method, 'GET')
+    assert.equal(calls[0].url, 'https://api.example/api/users/me/desktop-settings')
+    assert.equal(calls[1].method, 'PATCH')
+    assert.equal(calls[1].auth, 'Bearer jwt')
+    assert.equal(calls[1].type, 'application/json')
+    assert.deepEqual(JSON.parse(calls[1].body), { values: { show_sneak: false, 'window.fleets': null } })
+    assert.ok(calls[1].signal, 'requests carry a timeout so a hung API never blocks settings')
 })

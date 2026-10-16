@@ -11,6 +11,7 @@ from fittings.models import (
     DOCTRINE_TYPE_EXPERIMENTAL,
     DOCTRINE_TYPE_NON_STRATEGIC,
     DOCTRINE_TYPE_STRATEGIC,
+    DOCTRINE_FITTING_ROLES,
     EVE_FITTING_VERSIONED_FIELDS,
     EveFitting,
     EveFittingChangeRequest,
@@ -28,6 +29,7 @@ COMPOSITION_ROLE_LABELS = {
     "primary": "Primary",
     "secondary": "Secondary",
     "support": "Support",
+    "utility": "Utility",
 }
 
 FITTING_FIELD_LABELS = {
@@ -165,7 +167,7 @@ def _composition_html(
     fitting_names: dict[int, str],
 ) -> str:
     sections = []
-    for role in ("primary", "secondary", "support"):
+    for role in DOCTRINE_FITTING_ROLES:
         current_ids = set(current_comp.get(role) or [])
         proposed_ids = set(proposed_comp.get(role) or [])
         added_ids = proposed_ids - current_ids
@@ -241,7 +243,7 @@ def _composition_snapshot_html(
     fitting_names: dict[int, str],
 ) -> str:
     sections = []
-    for role in ("primary", "secondary", "support"):
+    for role in DOCTRINE_FITTING_ROLES:
         fitting_ids = sorted(composition.get(role) or [])
         if not fitting_ids:
             continue
@@ -313,7 +315,7 @@ def format_doctrine_history_html(history) -> str:
     composition = history.composition or {}
     location_ids = sorted(history.location_ids or [])
     fitting_ids = set()
-    for role in ("primary", "secondary", "support"):
+    for role in DOCTRINE_FITTING_ROLES:
         fitting_ids.update(composition.get(role) or [])
     fitting_names = _fitting_name_map(list(fitting_ids))
     location_names = _location_name_map(location_ids)
@@ -374,7 +376,7 @@ def format_doctrine_change_request_html(change_request) -> str:
 
     fitting_ids = set()
     for comp in (current_comp, proposed_comp):
-        for role in ("primary", "secondary", "support"):
+        for role in DOCTRINE_FITTING_ROLES:
             fitting_ids.update(comp.get(role) or [])
     fitting_names = _fitting_name_map(list(fitting_ids))
 

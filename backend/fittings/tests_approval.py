@@ -17,6 +17,7 @@ from fittings.helpers.change_request_display import (
 )
 
 from fittings.helpers.doctrine_changes import (
+    apply_doctrine_payload,
     approve_doctrine_change_request,
     cancel_doctrine_change_request,
     reject_doctrine_change_request,
@@ -46,6 +47,7 @@ from fittings.models import (
     EveFitting,
     EveFittingHistory,
     EveFittingRefit,
+    composition_snapshot_for_doctrine,
 )
 
 
@@ -412,6 +414,106 @@ class DoctrineChangeRequestTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         primary_ids = [f["id"] for f in response.json()["primary_fittings"]]
         self.assertEqual([live_fitting.pk], primary_ids)
+
+
+class DoctrineUtilityRoleTestCase(TestCase):
+    """Utility fits (cynos, boosters) are a fourth doctrine role."""
+
+    def setUp(self):
+        super().setUp()
+        self.doctrine = EveDoctrine.objects.create(
+            name="Utility Doc",
+            type=DOCTRINE_TYPE_EXPERIMENTAL,
+            description="",
+        )
+        self.primary = EveFitting.objects.create(
+            name="Hurricane Fleet",
+            eft_format="[Hurricane, Hurricane Fleet]",
+            ship_id=24702,
+            description="",
+        )
+        self.cyno = EveFitting.objects.create(
+            name="Atron Cyno",
+            eft_format="[Atron, Atron Cyno]",
+            ship_id=608,
+            description="",
+        )
+
+    def _payload(self, composition):
+        return {
+            "name": "Utility Doc",
+            "type": DOCTRINE_TYPE_EXPERIMENTAL,
+            "description": "",
+            "composition": composition,
+            "location_ids": [],
+        }
+
+    def test_apply_payload_links_utility_fits(self):
+        apply_doctrine_payload(
+            self.doctrine,
+            self._payload(
+                {"primary": [self.primary.pk], "utility": [self.cyno.pk]}
+            ),
+        )
+        self.assertEqual(
+            "utility",
+            EveDoctrineFitting.objects.get(
+                doctrine=self.doctrine, fitting=self.cyno
+            ).role,
+        )
+        self.assertEqual(
+            [self.cyno.pk],
+            composition_snapshot_for_doctrine(self.doctrine)["utility"],
+        )
+
+        # A later payload without utility drops the link.
+        apply_doctrine_payload(
+            self.doctrine, self._payload({"primary": [self.primary.pk]})
+        )
+        self.assertFalse(
+            EveDoctrineFitting.objects.filter(
+                doctrine=self.doctrine, role="utility"
+            ).exists()
+        )
+
+    def test_api_returns_utility_fittings(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.primary, role="primary"
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.cyno, role="utility"
+        )
+        for url in (f"/api/doctrines/{self.doctrine.id}", "/api/doctrines/"):
+            body = self.client.get(url).json()
+            doctrine = body[0] if isinstance(body, list) else body
+            self.assertEqual(
+                [self.cyno.pk], [f["id"] for f in doctrine["utility_fittings"]]
+            )
+            self.assertEqual(
+                [self.primary.pk],
+                [f["id"] for f in doctrine["primary_fittings"]],
+            )
+
+    def test_change_request_html_shows_utility(self):
+        self.user.user_permissions.add(_perm("change_doctrine_strategic"))
+        req = submit_doctrine_change_request(
+            EveDoctrine.objects.create(
+                name="Strat Utility",
+                type=DOCTRINE_TYPE_STRATEGIC,
+                description="",
+            ),
+            {
+                "name": "Strat Utility",
+                "type": DOCTRINE_TYPE_STRATEGIC,
+                "description": "",
+                "composition": {"utility": [self.cyno.pk]},
+                "location_ids": [],
+            },
+            self.user,
+        )
+        html = format_doctrine_change_request_html(req)
+        self.assertIn("Utility", html)
+        self.assertIn("Atron Cyno", html)
 
 
 class FittingChangeRequestTestCase(TestCase):

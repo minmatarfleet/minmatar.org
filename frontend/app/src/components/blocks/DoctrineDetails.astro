@@ -46,6 +46,16 @@ import DoctrineTier from '@components/blocks/DoctrineTier.astro';
                 </Flexblock>
             }
 
+            {doctrine.utility_fittings.length > 0 &&
+                <Flexblock gap='var(--space-m)'>
+                    <h2>{doctrine.utility_fittings.length !== 1 ? t('utility_fittings') : t('utility_fitting')}</h2>
+                    <p>{t('utility_fittings_description')}</p>
+                    <DoctrineTier
+                        fittings={doctrine.utility_fittings}
+                    />
+                </Flexblock>
+            }
+
             {doctrine.secondary_fittings.length > 0 &&
                 <Flexblock gap='var(--space-m)'>
                     <h2>{doctrine.secondary_fittings.length !== 1 ? t('secondary_fittings') : t('secondary_fitting')}</h2>

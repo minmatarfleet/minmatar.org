@@ -60,6 +60,7 @@ export interface ApiDoctrine {
   primary_fittings: ApiFitting[];
   secondary_fittings: ApiFitting[];
   support_fittings: ApiFitting[];
+  utility_fittings?: ApiFitting[];
 }
 
 export interface ApiEveCharacterProfile {

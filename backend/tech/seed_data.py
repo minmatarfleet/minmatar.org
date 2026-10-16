@@ -343,6 +343,7 @@ def sync_production_fittings():
             ("primary_fittings", "primary"),
             ("support_fittings", "support"),
             ("secondary_fittings", "secondary"),
+            ("utility_fittings", "utility"),
         ]
 
         for fitting_key, role in fitting_types:
