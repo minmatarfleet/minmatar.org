@@ -474,6 +474,53 @@ class CampaignApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["coverage"]), 24)
 
+    def test_roster_rolls_pilots_up_by_primary_corporation(self):
+        today = timezone.now().date()
+
+        def pilot(corporation_id, name, kills, last_active_day):
+            return {
+                "corporation_id": corporation_id,
+                "corporation_name": name,
+                "characters_included": 2,
+                "last_active_day": last_active_day,
+                "kills": kills,
+                "losses": 1,
+                "isk_destroyed": 1000,
+                "complexes": 3,
+                "advantage_sites": 0,
+                "fleets_attended": 1,
+            }
+
+        rows = serializers.roster_corporations(
+            [
+                pilot(None, "", 9, today),
+                pilot(2, "Small", 50, None),
+                pilot(1, "Big", 4, today - timedelta(days=30)),
+                pilot(1, "Big", 6, today - timedelta(days=1)),
+            ],
+            today,
+        )
+
+        self.assertEqual([row["corporation_id"] for row in rows], [1, 2, None])
+        big = rows[0]
+        self.assertEqual(big["pilots"], 2)
+        self.assertEqual(big["active_pilots"], 1)
+        self.assertEqual(big["kills"], 10)
+        self.assertEqual(big["characters_included"], 4)
+        self.assertEqual(big["isk_destroyed"], 2000)
+        self.assertEqual(big["last_active_day"], today - timedelta(days=1))
+        self.assertIsNone(rows[1]["last_active_day"])
+
+    def test_roster_carries_the_corporation_roll_up(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.staff)
+        )
+        corporations = response.json()["corporations"]
+        self.assertEqual(
+            sum(row["pilots"] for row in corporations),
+            len(response.json()["pilots"]),
+        )
+
 
 class CampaignAccessTests(TestCase):
     """Every read is as sensitive as the campaign it belongs to."""

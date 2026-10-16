@@ -336,10 +336,32 @@ class RosterRow(Schema):
     last_active_day: date | None = None
     characters_included: int = 0
     characters_tracked: int = 0
+    kills: int = 0
+    losses: int = 0
+    isk_destroyed: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    fleets_attended: int = 0
+
+
+class RosterCorporation(Schema):
+    corporation_id: int | None = None
+    corporation_name: str = ""
+    pilots: int = 0
+    active_pilots: int = 0
+    characters_included: int = 0
+    kills: int = 0
+    losses: int = 0
+    isk_destroyed: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    fleets_attended: int = 0
+    last_active_day: date | None = None
 
 
 class Roster(Schema):
     pilots: list[RosterRow] = []
+    corporations: list[RosterCorporation] = []
     coverage: list[dict] = []
     by_prime_time: dict = {}
 

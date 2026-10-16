@@ -91,7 +91,7 @@ import CampaignFleetsTable from '@components/blocks/CampaignFleetsTable.astro'
 import CampaignSites from '@components/blocks/CampaignSites.astro'
 import CampaignLeaderboard from '@components/blocks/CampaignLeaderboard.astro'
 import CampaignKillfeed from '@components/blocks/CampaignKillfeed.astro'
-import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
+import CampaignCorporationStats from '@components/blocks/CampaignCorporationStats.astro'
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 ---
@@ -311,12 +311,12 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                         <Flexblock gap='var(--space-s)'>
                             <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                                <h3>{t('campaigns.roster.title')}</h3>
+                                <h3>{t('campaigns.corporations.title')}</h3>
                                 <Button size='sm' color='transparent' href={translatePath(`/campaigns/${campaign.slug}/roster/`)}>
-                                    {t('campaigns.roster.view_full')}
+                                    {t('campaigns.corporations.view_full')}
                                 </Button>
                             </FlexInline>
-                            <CampaignRosterTable pilots={roster?.pilots ?? []} limit={10} />
+                            <CampaignCorporationStats corporations={roster?.corporations ?? []} compact limit={10} />
                         </Flexblock>
                     </ComponentBlock>
                 </Grid>

@@ -3048,6 +3048,29 @@ export interface CampaignRosterPilot {
     last_active_day:        string | null;
     characters_included:    number;
     characters_tracked:     number;
+    kills:                  number;
+    losses:                 number;
+    isk_destroyed:          number;
+    complexes:              number;
+    advantage_sites:        number;
+    fleets_attended:        number;
+}
+
+/** The roster rolled up by each pilot's primary character's corporation. */
+export interface CampaignRosterCorporation {
+    corporation_id:         number | null;
+    corporation_name:       string;
+    pilots:                 number;
+    /** Pilots active in the last 7 days. */
+    active_pilots:          number;
+    characters_included:    number;
+    kills:                  number;
+    losses:                 number;
+    isk_destroyed:          number;
+    complexes:              number;
+    advantage_sites:        number;
+    fleets_attended:        number;
+    last_active_day:        string | null;
 }
 
 export interface CampaignCoverageHour {
@@ -3058,6 +3081,7 @@ export interface CampaignCoverageHour {
 
 export interface CampaignRoster {
     pilots:         CampaignRosterPilot[];
+    corporations:   CampaignRosterCorporation[];
     coverage:       CampaignCoverageHour[];
     by_prime_time:  Record<string, number>;
 }
