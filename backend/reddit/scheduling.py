@@ -7,7 +7,7 @@ that makes that change delivers it.
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.utils import timezone
@@ -287,22 +287,6 @@ def eve_time(when: datetime) -> str:
 
 def _subreddit(template: RedditPostTemplate) -> str:
     return f"r/{normalize_subreddit(template.subreddit)}"
-
-
-def month_message(
-    template: RedditPostTemplate, month: date, times: list[datetime]
-) -> str:
-    dates = "\n".join(f"- {eve_time(t)}" for t in times)
-    return "\n".join(
-        [
-            f"**Reddit rotation for {month:%B}: {template.corporation.name}**",
-            f"Your posts to {_subreddit(template)}:",
-            dates,
-            "We'll DM you the day before each one, and again when it's time "
-            "with the post ready to copy.",
-            f"Edit or pause it: <{settings_url(template)}>",
-        ]
-    )
 
 
 def heads_up_message(template: RedditPostTemplate, when: datetime) -> str:
