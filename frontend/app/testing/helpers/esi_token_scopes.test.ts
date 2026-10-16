@@ -20,7 +20,17 @@ describe('elevated_scopes_for_token_type', () => {
     it('returns Market scopes beyond Basic', () => {
         const scopes = elevated_scopes_for_token_type('Market')
         expect(scopes).toContain('esi-markets.structure_markets.v1')
-        expect(scopes).toContain('esi-corporations.read_corporation_membership.v1')
+        expect(scopes).toContain('esi-contracts.read_character_contracts.v1')
+        expect(scopes).not.toContain('esi-corporations.read_corporation_membership.v1')
         expect(scopes).not.toContain('esi-assets.read_assets.v1')
+    })
+
+    it('returns Faction Warfare scopes beyond Basic, and Campaign as its old name', () => {
+        const scopes = elevated_scopes_for_token_type('FactionWarfare')
+        expect(scopes).toEqual([
+            'esi-characters.read_fw_stats.v1',
+            'esi-characters.read_notifications.v1',
+        ])
+        expect(elevated_scopes_for_token_type('Campaign')).toEqual(scopes)
     })
 })

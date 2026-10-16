@@ -1,0 +1,230 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import {
+    SCOPE_GROUP_OPTIONS,
+    SCOPE_GROUPS_COOKIE,
+    SCOPE_GROUPS_COOKIE_MAX_AGE,
+    SCOPE_GROUPS_COOKIE_NONE,
+    chosen_scope_groups,
+    requested_scope_count,
+} from '@helpers/esi_scope_groups'
+import { BASIC_SCOPES } from '@helpers/esi_token_scopes'
+
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const chosen = chosen_scope_groups(Astro.cookies.get(SCOPE_GROUPS_COOKIE)?.value)
+const optional_groups = SCOPE_GROUP_OPTIONS.filter(group => !group.locked)
+const first_role_specific = SCOPE_GROUP_OPTIONS.find(group => group.role_specific)?.key
+
+const on = Object.fromEntries(optional_groups.map(group => [ group.key, chosen.includes(group.key) ]))
+const group_scopes = Object.fromEntries(SCOPE_GROUP_OPTIONS.map(group => [ group.key, group.scopes ]))
+const locked_keys = SCOPE_GROUP_OPTIONS.filter(group => group.locked).map(group => group.key)
+const total_template = t('scope_groups.total')
+
+const scope_count_label = (count: number, additive: boolean) =>
+    `${additive ? '+' : ''}${t(count === 1 ? 'scope_groups.scope_count_one' : 'scope_groups.scope_count').replace('{count}', String(count))}`
+const scope_description = (scope: string) => t(`${scope}_description` as any) ?? ''
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Switch from '@components/blocks/Switch.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock
+    gap="var(--space-2xs)"
+    class:list={['[ scope-groups ]', Astro.props.class]}
+    x-data={`{
+        on: ${JSON.stringify(on)},
+        group_scopes: ${JSON.stringify(group_scopes)},
+        locked: ${JSON.stringify(locked_keys)},
+        total_template: ${JSON.stringify(total_template)},
+        save() {
+            const chosen = Object.keys(this.on).filter((key) => this.on[key])
+            const value = encodeURIComponent(chosen.length ? chosen.join(',') : ${JSON.stringify(SCOPE_GROUPS_COOKIE_NONE)})
+            const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+            document.cookie = ${JSON.stringify(SCOPE_GROUPS_COOKIE)} + '=' + value + '; path=/; max-age=${SCOPE_GROUPS_COOKIE_MAX_AGE}; SameSite=Lax' + secure
+        },
+        get total_text() {
+            const scopes = new Set(${JSON.stringify(BASIC_SCOPES)})
+            const keys = [ ...this.locked, ...Object.keys(this.on).filter((key) => this.on[key]) ]
+            keys.forEach((key) => this.group_scopes[key].forEach((scope) => scopes.add(scope)))
+            return this.total_template.replace('{count}', scopes.size)
+        },
+    }`}
+    {...attributes}
+>
+    {SCOPE_GROUP_OPTIONS.map((group) =>
+        <>
+            {group.key === first_role_specific &&
+                <FlexInline gap="var(--space-2xs)" class="[ scope-groups-divider ]">
+                    <small>{t('scope_groups.role_specific')}</small>
+                    <span class="[ scope-groups-rule ]" aria-hidden="true" />
+                </FlexInline>
+            }
+            <section
+                class="[ scope-group ][ light-transparency ]"
+                aria-labelledby={`scope-group-${group.key}`}
+                x-bind:class={group.locked ? undefined : `{ 'scope-group-off': !on.${group.key} }`}
+            >
+                <div class="[ scope-group-head ]">
+                    <Flexblock gap="var(--space-3xs)" class="[ scope-group-text ]">
+                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                            <h4 id={`scope-group-${group.key}`}>{t(group.key as any)}</h4>
+                            <small class="[ scope-group-count ]">{scope_count_label(group.scopes.length, group.key !== 'Basic')}</small>
+                        </FlexInline>
+                        <small>{t(`scope_groups.${group.key}.summary` as any)}</small>
+                        <small class="[ scope-group-used-for ]">{t('scope_groups.used_for')}: {t(`scope_groups.${group.key}.used_for` as any)}</small>
+                    </Flexblock>
+
+                    {group.locked ?
+                        <Tag text={t('scope_groups.required')} color="fleet-yellow" />
+                        :
+                        <Switch
+                            checked={chosen.includes(group.key)}
+                            x-model={`on.${group.key}`}
+                            x-on:change="save()"
+                        >
+                            <span class="[ visually-hidden ]">{t('scope_groups.toggle_label').replace('{group}', t(group.key as any))}</span>
+                        </Switch>
+                    }
+                </div>
+
+                {!group.locked && group.default_on &&
+                    <small
+                        class="[ scope-group-off-note ]"
+                        x-show={`!on.${group.key}`}
+                        style={chosen.includes(group.key) ? 'display: none' : undefined}
+                    >
+                        {t('scope_groups.off_note').replace('{group}', t(group.key as any))}
+                    </small>
+                }
+
+                <details class="[ scope-group-details ]">
+                    <summary>{t('scope_groups.show_scopes')}</summary>
+                    <ul role="list">
+                        {group.scopes.map((scope) =>
+                            <li>
+                                <code>{scope}</code>
+                                <small>{scope_description(scope)}</small>
+                            </li>
+                        )}
+                    </ul>
+                </details>
+            </section>
+        </>
+    )}
+
+    <p class="[ scope-groups-total ]" aria-live="polite">
+        <strong x-text="total_text">{total_template.replace('{count}', String(requested_scope_count(chosen)))}</strong>
+    </p>
+</Flexblock>
+
+<style lang="scss">
+    .scope-group {
+        border: 1px solid var(--transparency-border-color);
+        transition: opacity var(--fast-transition);
+
+        &.scope-group-off .scope-group-text {
+            opacity: 0.55;
+        }
+    }
+
+    /* Text on the left, the switch or Required tag pinned top right. */
+    .scope-group-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-xs) var(--space-2xs);
+    }
+
+    h4 {
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .scope-group-count {
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--2);
+    }
+
+    .scope-group-used-for {
+        color: var(--faded);
+    }
+
+    .scope-group-off-note {
+        display: block;
+        padding: 0 var(--space-xs) var(--space-2xs);
+        color: var(--fleet-red-blind);
+    }
+
+    .scope-group-details {
+        border-top: 1px solid var(--border-color-hover);
+
+        summary {
+            cursor: pointer;
+            padding: var(--space-2xs) var(--space-xs);
+            font-size: var(--step--1);
+            font-weight: 600;
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0 var(--space-xs) var(--space-xs);
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        code {
+            align-self: flex-start;
+            padding: 0 var(--space-3xs);
+            background-color: var(--background);
+            color: var(--highlight);
+            font-size: var(--step--2);
+            word-break: break-all;
+        }
+    }
+
+    .scope-groups-divider {
+        align-items: center;
+        flex-wrap: nowrap;
+        padding-top: var(--space-2xs);
+
+        small {
+            white-space: nowrap;
+            text-transform: uppercase;
+            color: var(--faded);
+        }
+    }
+
+    .scope-groups-rule {
+        flex: 1 1 auto;
+        height: 1px;
+        background-color: var(--border-color-hover);
+    }
+
+    .scope-groups-total {
+        padding-top: var(--space-2xs);
+        color: var(--highlight);
+    }
+</style>

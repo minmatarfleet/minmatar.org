@@ -16,6 +16,7 @@ from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
 from eveonline.endpoints.characters.schemas import UserCharacter
 from eveonline.helpers.characters import (
     merge_scope_groups,
+    scope_groups_granted,
     set_primary_character,
     user_primary_character,
 )
@@ -27,6 +28,7 @@ from eveonline.models import (
     EveCorporation,
 )
 from eveonline.scopes import (
+    parse_scope_groups,
     scope_group,
     TokenType,
     token_type_str,
@@ -251,12 +253,14 @@ def _delete_other_character_tokens(
     ).delete()
 
 
-def apply_token_to_existing_character(character, token, token_type, user=None):
+def apply_token_to_existing_character(
+    character, token, token_type, user=None, extra_groups=()
+):
     owner = user if user is not None else token.user
     group_name = token_type_str(token_type)
     merged_groups = merge_scope_groups(
         getattr(character, "esi_scope_groups", None),
-        group_name,
+        *scope_groups_granted(token, token_type, extra_groups),
     )
 
     new_scope_count = token.scopes.count()
@@ -311,17 +315,22 @@ def handle_add_character_esi_callback(request, token, token_type):
     if wrong_char_redirect is not None:
         return wrong_char_redirect
     owner = owner_for_added_character(request, token)
+    extra_groups = parse_scope_groups(
+        ",".join(request.session.pop("add_scope_groups", None) or [])
+    )
     if EveCharacter.objects.filter(character_id=token.character_id).exists():
         character = EveCharacter.objects.get(character_id=token.character_id)
         apply_token_to_existing_character(
-            character, token, token_type, user=owner
+            character, token, token_type, user=owner, extra_groups=extra_groups
         )
     else:
         character = EveCharacter.objects.create(
             character_id=token.character_id,
             character_name=token.character_name,
             esi_token_level=token_type_str(token_type),
-            esi_scope_groups=[token_type_str(token_type)],
+            esi_scope_groups=scope_groups_granted(
+                token, token_type, extra_groups
+            ),
             token=token,
             user=owner,
         )
@@ -337,5 +346,12 @@ def handle_add_character_esi_callback(request, token, token_type):
     )
     if user_primary_character(request.user) is None:
         set_primary_character(request.user, character)
-    maybe_populate_ceo_corporation(character, token_type)
+    maybe_populate_ceo_corporation(
+        character,
+        (
+            TokenType.DIRECTOR
+            if TokenType.DIRECTOR in extra_groups
+            else token_type
+        ),
+    )
     return redirect(request.session["redirect_url"])

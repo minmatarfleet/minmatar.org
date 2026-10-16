@@ -11,7 +11,9 @@ class TribeGroup(models.Model):
     """
 
     TOKEN_TYPE_CHOICES = [
-        (t.value, t.value) for t in TokenType if t != TokenType.PUBLIC
+        (t.value, t.value)
+        for t in TokenType
+        if t not in (TokenType.PUBLIC, TokenType.CAMPAIGN)
     ]
 
     tribe = models.ForeignKey(

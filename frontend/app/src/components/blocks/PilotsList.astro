@@ -29,7 +29,7 @@ const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : 
 const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
-const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}&token_type=Basic${account_user_query}`
+const ADD_CHARACTER_URL = `${translatePath('/redirects/add_character_init')}?redirect=${translatePath('/account')}`
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}${account_user_query}`
 const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/pilots_list_component')}`
 const SET_MAIN_CHARACTER_PARTIAL_URL = translatePath('/partials/set_primary_character')
@@ -109,6 +109,9 @@ delete attributes.class
                                 if (pilots.length == 0) {
                                     return root_data.show_alert_dialog({
                                         title: ${JSON.stringify(t('add_primary_pilot_dialog_title'))},
+                                        accept_label: ${JSON.stringify(t('scope_groups.continue'))},
+                                        cancel_label: ${JSON.stringify(t('cancel'))},
+                                        show_cancel: true,
                                         partial: ${JSON.stringify(`${translatePath('/partials/add_pilot_dialog/')}?${query_string({
                                             is_main: JSON.stringify(true),
                                         })}`)},
@@ -116,6 +119,9 @@ delete attributes.class
                                 }
                                 return root_data.show_alert_dialog({
                                     title: ${JSON.stringify(t('add_pilot_dialog_title'))},
+                                    accept_label: ${JSON.stringify(t('scope_groups.continue'))},
+                                    cancel_label: ${JSON.stringify(t('cancel'))},
+                                    show_cancel: true,
                                     partial: ${JSON.stringify(`${translatePath('/partials/add_pilot_dialog/')}?${query_string({
                                         is_main: JSON.stringify(false),
                                     })}`)},

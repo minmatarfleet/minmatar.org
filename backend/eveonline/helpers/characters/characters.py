@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Sequence
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -9,9 +9,11 @@ from audit.models import AuditEntry
 from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.scopes import (
+    NEW_CHARACTER_SCOPE_GROUPS,
     TokenType,
     scope_names,
     scopes_for_groups,
+    token_satisfies_type,
     token_type_str,
 )
 from tribes.models import (
@@ -135,7 +137,12 @@ def player_characters(player: EvePlayer) -> List[EveCharacter]:
 
 def _normalize_token_level(level: str) -> str:
     """Map legacy token level names to current TokenType values."""
-    legacy = {"CEO": "Director", "Freight": "Market", "Advanced": "Industry"}
+    legacy = {
+        "CEO": "Director",
+        "Freight": "Market",
+        "Advanced": "Industry",
+        "Campaign": "FactionWarfare",
+    }
     return legacy.get(level, level)
 
 
@@ -174,17 +181,54 @@ def character_desired_scopes(character: EveCharacter) -> List[str]:
 def scope_groups_for_token_add(
     character: EveCharacter | None,
     token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
 ) -> List[str]:
-    """Scope groups to request in SSO when adding token_type to a character."""
+    """Scope groups to request in SSO when adding token_type to a character.
+
+    extra_groups are the ones picked in the add-character dialog. A character
+    added without naming one also gets the new-character groups. Public is
+    the guest login and never widens.
+    """
+    if token_type == TokenType.PUBLIC:
+        return merge_scope_groups([], token_type_str(token_type))
     existing: List[str] = []
     if character is not None:
         existing = character_configured_scope_groups(character)
-    return merge_scope_groups(existing, token_type_str(token_type))
+    groups = merge_scope_groups(
+        existing,
+        token_type_str(token_type),
+        *(group.value for group in extra_groups),
+    )
+    if character is None:
+        groups = merge_scope_groups(
+            groups, *(group.value for group in NEW_CHARACTER_SCOPE_GROUPS)
+        )
+    return groups
+
+
+def scope_groups_granted(
+    token: Token,
+    token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
+) -> List[str]:
+    """The group that was asked for, plus every other one the token holds.
+
+    The callback reads the extra and new-character groups off the token
+    rather than assuming the SSO request carried them.
+    """
+    groups = merge_scope_groups([], token_type_str(token_type))
+    if token_type == TokenType.PUBLIC:
+        return groups
+    for group in [*extra_groups, *NEW_CHARACTER_SCOPE_GROUPS]:
+        if token_satisfies_type(token, group):
+            groups = merge_scope_groups(groups, group.value)
+    return groups
 
 
 def scopes_for_token_add(
     character: EveCharacter | None,
     token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
 ) -> List[str]:
     """Scopes to request so a re-auth cannot come back narrower than today.
 
@@ -194,7 +238,9 @@ def scopes_for_token_add(
     page they returned to looks unchanged.
     """
     scopes = set(
-        scopes_for_groups(scope_groups_for_token_add(character, token_type))
+        scopes_for_groups(
+            scope_groups_for_token_add(character, token_type, extra_groups)
+        )
     )
     token = (
         getattr(character, "token", None) if character is not None else None
