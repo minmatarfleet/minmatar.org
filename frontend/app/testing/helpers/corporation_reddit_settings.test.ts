@@ -11,6 +11,7 @@ import {
     reddit_section_summary,
 } from '@helpers/corporations/reddit_settings'
 import { ui } from '@i18n/ui'
+import type { RedditDeliveryMethod } from '@dtypes/api.minmatar.org'
 import { reddit_connect_url } from '@helpers/api.minmatar.org/reddit'
 
 describe('corporation Reddit settings', () => {
@@ -34,10 +35,11 @@ describe('corporation Reddit settings', () => {
     })
 
     it('only accepts known delivery methods', () => {
+        expect(parse_delivery_method('alliance')).toBe('alliance')
         expect(parse_delivery_method('automatic')).toBe('automatic')
         expect(parse_delivery_method('discord_reminder')).toBe('discord_reminder')
-        expect(parse_delivery_method('carrier_pigeon')).toBe('discord_reminder')
-        expect(parse_delivery_method(null)).toBe('discord_reminder')
+        expect(parse_delivery_method('carrier_pigeon')).toBe('alliance')
+        expect(parse_delivery_method(null)).toBe('alliance')
     })
 
     it('only builds return paths from slugs', () => {
@@ -93,7 +95,8 @@ describe('corporation Reddit settings', () => {
             admin_paused: 'Paused by an admin',
             next: 'Next: ~WHEN EVE',
             reminder: 'Discord reminder',
-            automatic: 'Automatic',
+            alliance: 'u/MinmatarFleet',
+            automatic: 'Your Reddit account',
             approved: 'Approved',
             awaiting: 'Awaiting approval',
         }
@@ -101,14 +104,15 @@ describe('corporation Reddit settings', () => {
             exists: true,
             rotation_status: 'active' as const,
             upcoming: [{ scheduled_for: '2026-11-19T14:20:00Z', confirmed: true }],
-            delivery_method: 'automatic' as const,
+            delivery_method: 'alliance' as RedditDeliveryMethod,
             approved: true,
         }
         const next = `Next: ${format_eve_datetime('2026-11-19T14:20:00Z')} EVE`
-        expect(reddit_section_summary(base, labels)).toBe(`${next} · Automatic · Approved`)
-        expect(reddit_section_summary({ ...base, approved: false }, labels)).toBe(`${next} · Automatic · Awaiting approval`)
+        expect(reddit_section_summary(base, labels)).toBe(`${next} · u/MinmatarFleet · Approved`)
+        expect(reddit_section_summary({ ...base, approved: false }, labels)).toBe(`${next} · u/MinmatarFleet · Awaiting approval`)
+        expect(reddit_section_summary({ ...base, delivery_method: 'automatic' }, labels)).toBe(`${next} · Your Reddit account · Approved`)
         expect(reddit_section_summary({ ...base, delivery_method: 'discord_reminder' }, labels)).toBe(`${next} · Discord reminder`)
-        expect(reddit_section_summary({ ...base, upcoming: [] }, labels)).toBe('Automatic · Approved')
+        expect(reddit_section_summary({ ...base, upcoming: [] }, labels)).toBe('u/MinmatarFleet · Approved')
         expect(reddit_section_summary({ ...base, rotation_status: 'paused' }, labels)).toBe('Paused')
         expect(reddit_section_summary({ ...base, rotation_status: 'admin_paused' }, labels)).toBe('Paused by an admin')
         expect(reddit_section_summary({ ...base, exists: false }, labels)).toBe('Not set up')

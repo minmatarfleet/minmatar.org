@@ -156,10 +156,7 @@ setInterval(() => {
     document.querySelectorAll('#fleet [data-start]').forEach(el => { el.textContent = until(el.dataset.start) })
 }, 1000)
 
-
-document.querySelectorAll('[data-command]').forEach(button => {
-    button.addEventListener('click', () => send(button.dataset.command))
-})
+window.eve_window.wire_overlay(send)
 $('sign-out').addEventListener('click', () => send('auth:sign-out'))
 $('update').addEventListener('click', () => send($('update').dataset.action))
 
@@ -173,30 +170,4 @@ $('list').addEventListener('keydown', event => {
         event.preventDefault()
         send('fleets:open', Number(row.dataset.fleet))
     }
-})
-
-// Overlay mode is click-through except over controls and rows: tell main when the cursor is over one.
-let interactive = false
-document.addEventListener('mousemove', event => {
-    const over = !!event.target.closest('[data-interactive]')
-    if (over !== interactive) {
-        interactive = over
-        send('mouse:interactive', over)
-    }
-})
-document.addEventListener('mouseleave', () => {
-    if (interactive) { interactive = false; send('mouse:interactive', false) }
-})
-
-// Bottom-right grip resizes the window (transparent windows have no native resize border).
-$('resize').addEventListener('pointerdown', event => {
-    $('resize').setPointerCapture(event.pointerId)
-    send('resize:start', { x: event.screenX, y: event.screenY })
-})
-$('resize').addEventListener('pointermove', event => {
-    if ($('resize').hasPointerCapture(event.pointerId)) send('resize:move', { x: event.screenX, y: event.screenY })
-})
-$('resize').addEventListener('pointerup', event => {
-    $('resize').releasePointerCapture(event.pointerId)
-    send('resize:end')
 })

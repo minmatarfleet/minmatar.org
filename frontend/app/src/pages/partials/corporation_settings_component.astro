@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
 
-import type { CorporationRedditPost, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
+import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import {
     RedditSettingsError,
@@ -15,7 +15,6 @@ import {
     is_corporation_slug,
     parse_delivery_method,
     parse_paused,
-    REDDIT_AUTOMATIC_POSTING,
     REDDIT_FORMATTING_GUIDE_URL,
     reddit_change_key,
     reddit_connect_flash,
@@ -35,6 +34,11 @@ import Tag from '@components/blocks/Tag.astro'
 
 const ROOT_ID = 'corporation-settings'
 const PROBLEMS_ID = 'corp-settings-markdown-problems'
+const SCHEDULE_ID = 'corp-settings-schedule-panel'
+const AUTOMATIC_ID = 'corp-settings-automatic-panel'
+const STATUS_ID = 'corp-settings-save-status'
+const PREVIEW_ID = 'corp-settings-preview'
+const WRITE_ID = 'corp-settings-write'
 // Lives in the accordion header on the corporation page; refreshed out of band.
 const SUMMARY_ID = 'corporation-settings-reddit-summary'
 
@@ -51,11 +55,18 @@ const PARTIAL_URL = translatePath(`/partials/corporation_settings_component/?${q
     corporation: slug,
 })}`)
 const CONNECT_URL = translatePath(`/redirects/reddit_connect_init?${query_string({ corporation: slug })}`)
+const PREVIEW_URL = translatePath('/partials/reddit_markdown_preview_component/')
+// Autosaves only swap these in, so the fields keep focus while typing.
+const AUTOSAVE_TARGETS = [SCHEDULE_ID, PROBLEMS_ID, STATUS_ID, AUTOMATIC_ID]
+    .map((id) => `#${id}`)
+    .join(',')
 
 let flash: RedditFlash | null = reddit_connect_flash(params)
 // Unsaved edits survive a failed save or an unlink.
-let draft: { title: string, content: string, delivery_method: string, paused: boolean } | null = null
+let draft: { title: string, content: string, delivery_method: RedditDeliveryMethod, paused: boolean } | null = null
 let rejected_problems: RedditMarkdownProblem[] | null = null
+// The result of an autosave, shown next to the fields.
+let save_status: RedditFlash | null = null
 
 if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData()
@@ -73,23 +84,23 @@ if (Astro.request.method === 'POST') {
             await update_corporation_reddit_post(auth_token, corporation_id, {
                 title: draft.title,
                 content: draft.content,
-                delivery_method: REDDIT_AUTOMATIC_POSTING
-                    ? parse_delivery_method(draft.delivery_method)
-                    : 'discord_reminder',
+                delivery_method: draft.delivery_method,
                 paused: draft.paused,
             })
-            flash = { kind: 'success', key: 'corporations.settings.saved' }
+            save_status = { kind: 'success', key: 'corporations.settings.saved' }
             draft = null
         }
     } catch (error) {
         if (error instanceof RedditSettingsError && error.problems.length > 0)
             rejected_problems = error.problems
-        flash = {
+        const failure: RedditFlash = {
             kind: 'error',
             key: error instanceof RedditSettingsError
                 ? reddit_save_error_key(error.message)
                 : 'corporations.settings.error_save',
         }
+        if (form.get('action') === 'disconnect') flash = failure
+        else save_status = failure
     }
 }
 
@@ -98,9 +109,8 @@ if (!settings) return HTTP_403_Forbidden()
 
 const title = draft?.title ?? settings.title
 const content = draft?.content ?? settings.content
-const delivery_method = REDDIT_AUTOMATIC_POSTING
-    ? parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
-    : 'discord_reminder'
+const delivery_method = parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
+const posts_automatically = delivery_method !== 'discord_reminder'
 const paused = draft?.paused ?? settings.paused
 const account = settings.reddit_account
 const subreddit = settings.subreddit.replace(/^\/?r\//, '')
@@ -115,6 +125,7 @@ const summary = reddit_section_summary({ ...settings, delivery_method }, {
     admin_paused: t('corporations.settings.summary_admin_paused'),
     next: t('corporations.settings.summary_next'),
     reminder: t('corporations.settings.summary_reminder'),
+    alliance: t('corporations.settings.summary_alliance'),
     automatic: t('corporations.settings.summary_automatic'),
     approved: t('corporations.settings.summary_approved'),
     awaiting: t('corporations.settings.summary_awaiting'),
@@ -123,7 +134,9 @@ const summary = reddit_section_summary({ ...settings, delivery_method }, {
 const status_text = (() => {
     switch (settings.automatic_status) {
         case 'ready':
-            return t('corporations.settings.status_ready').replace('~NAME', account?.username ?? '')
+            return settings.delivery_method === 'alliance'
+                ? t('corporations.settings.status_ready_alliance')
+                : t('corporations.settings.status_ready').replace('~NAME', account?.username ?? '')
         case 'not_approved':
             return t('corporations.settings.status_not_approved')
         case 'no_account':
@@ -151,7 +164,7 @@ const status_text = (() => {
             </p>
         }
 
-        <section class="[ corp-settings__panel ]" aria-labelledby="corp-settings-schedule">
+        <section id={SCHEDULE_ID} class="[ corp-settings__panel ]" aria-labelledby="corp-settings-schedule">
             <Flexblock gap="var(--space-xs)">
                 <h3 id="corp-settings-schedule">{t('corporations.settings.schedule')}</h3>
                 {settings.rotation_status === 'not_set_up' &&
@@ -240,11 +253,18 @@ const status_text = (() => {
         </section>
 
         <form
-            method="post"
-            action={PARTIAL_URL}
+            class="[ corp-settings__form ]"
+            novalidate
             hx-post={PARTIAL_URL}
-            hx-target={`#${ROOT_ID}`}
-            hx-swap="outerHTML"
+            hx-trigger="input delay:800ms"
+            hx-sync="this:queue last"
+            hx-swap="none"
+            hx-select-oob={AUTOSAVE_TARGETS}
+            x-data="{ pending: false }"
+            x-bind:class="{ 'is-pending': pending }"
+            x-on:input="pending = true"
+            {...{ 'x-on:htmx:before-request': 'if ($event.detail.elt === $el) pending = false' }}
+            x-on:submit.prevent
         >
             <Flexblock gap="var(--space-m)">
                 <Flexblock gap="var(--space-3xs)">
@@ -258,11 +278,10 @@ const status_text = (() => {
                         maxlength="250"
                         autocomplete="off"
                         value={title}
-                        required
                     />
                 </Flexblock>
 
-                <Flexblock gap="var(--space-3xs)">
+                <Flexblock gap="var(--space-3xs)" x-data="{ tab: 'write' }">
                     <FlexInline gap="var(--space-xs)" justification="space-between">
                         <label class="[ corp-settings__label ]" for="corp-settings-content">
                             {t('corporations.settings.content_label')}
@@ -271,25 +290,60 @@ const status_text = (() => {
                             <small>{t('corporations.settings.markdown_guide')}</small>
                         </a>
                     </FlexInline>
-                    <MarkdownTextArea
-                        id="corp-settings-content"
-                        name="content"
-                        rows="16"
-                        maxlength="40000"
-                        guide_url={REDDIT_FORMATTING_GUIDE_URL}
-                        guide_label={t('corporations.settings.markdown_guide')}
-                        aria-invalid={has_blocking_problems ? 'true' : undefined}
-                        aria-describedby={markdown_problems.length > 0 ? PROBLEMS_ID : undefined}
-                        required
-                    >{content}</MarkdownTextArea>
-                    {markdown_problems.length > 0 &&
-                        <div
-                            id={PROBLEMS_ID}
-                            class:list={['[ corp-settings__problems ]', { 'is-blocking': has_blocking_problems }]}
+                    <div class="[ corp-settings__tabs ]" role="tablist" aria-label={t('corporations.settings.content_label')}>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-controls={WRITE_ID}
+                            x-bind:aria-selected="tab === 'write'"
+                            x-on:click="tab = 'write'"
                         >
-                            {!has_blocking_problems &&
-                                <p>{t('corporations.settings.markdown_warnings')}</p>
-                            }
+                            {t('corporations.settings.tab_write')}
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-controls={PREVIEW_ID}
+                            aria-selected="false"
+                            x-bind:aria-selected="tab === 'preview'"
+                            x-on:click="tab = 'preview'"
+                            hx-post={PREVIEW_URL}
+                            hx-target={`#${PREVIEW_ID}`}
+                            hx-swap="innerHTML"
+                            hx-select-oob="unset"
+                        >
+                            {t('corporations.settings.tab_preview')}
+                        </button>
+                    </div>
+                    <div id={WRITE_ID} role="tabpanel" x-show="tab === 'write'">
+                        <MarkdownTextArea
+                            id="corp-settings-content"
+                            name="content"
+                            rows="16"
+                            maxlength="40000"
+                            guide_url={REDDIT_FORMATTING_GUIDE_URL}
+                            guide_label={t('corporations.settings.markdown_guide')}
+                            aria-describedby={PROBLEMS_ID}
+                        >{content}</MarkdownTextArea>
+                    </div>
+                    <div
+                        id={PREVIEW_ID}
+                        class="[ corp-settings__preview ]"
+                        role="tabpanel"
+                        x-show="tab === 'preview'"
+                        style="display: none"
+                    >
+                        <p class="[ corp-settings__muted ]">{t('corporations.settings.preview_loading')}</p>
+                    </div>
+                    <div
+                        id={PROBLEMS_ID}
+                        class:list={['[ corp-settings__problems ]', { 'is-blocking': has_blocking_problems }]}
+                        hidden={markdown_problems.length === 0}
+                    >
+                        {markdown_problems.length > 0 && !has_blocking_problems &&
+                            <p>{t('corporations.settings.markdown_warnings')}</p>
+                        }
+                        {markdown_problems.length > 0 &&
                             <ul>
                                 {markdown_problems.map((problem) =>
                                     <li class:list={[{ 'is-blocking': problem.blocking }]}>
@@ -298,8 +352,8 @@ const status_text = (() => {
                                     </li>
                                 )}
                             </ul>
-                        </div>
-                    }
+                        }
+                    </div>
                 </Flexblock>
 
                 <label class="[ corp-settings__option ]">
@@ -317,6 +371,32 @@ const status_text = (() => {
                             <input
                                 type="radio"
                                 name="delivery_method"
+                                value="alliance"
+                                checked={delivery_method === 'alliance'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_alliance')}</strong>
+                                <small>{t('corporations.settings.delivery_alliance_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
+                                value="automatic"
+                                checked={delivery_method === 'automatic'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_automatic')}</strong>
+                                <small>{t('corporations.settings.delivery_automatic_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
                                 value="discord_reminder"
                                 checked={delivery_method === 'discord_reminder'}
                             />
@@ -328,35 +408,24 @@ const status_text = (() => {
                                 }
                             </span>
                         </label>
-
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="automatic"
-                                checked={delivery_method === 'automatic'}
-                                disabled={!REDDIT_AUTOMATIC_POSTING}
-                            />
-                            <span class="[ corp-settings__option-body ]">
-                                <strong>{t('corporations.settings.delivery_automatic')}</strong>
-                                <small>
-                                    {REDDIT_AUTOMATIC_POSTING
-                                        ? t('corporations.settings.delivery_automatic_help')
-                                        : t('corporations.settings.delivery_automatic_coming_soon')}
-                                </small>
-                            </span>
-                        </label>
                     </Flexblock>
                 </fieldset>
 
-                {REDDIT_AUTOMATIC_POSTING &&
-                <section class="[ corp-settings__panel ]" aria-labelledby="corp-settings-automatic">
+                {/* Always rendered so autosave can swap it in when the method changes. */}
+                <section
+                    id={AUTOMATIC_ID}
+                    class="[ corp-settings__panel ]"
+                    aria-labelledby="corp-settings-automatic"
+                    hidden={!posts_automatically}
+                >
+                    {posts_automatically &&
                     <Flexblock gap="var(--space-xs)">
                         <h3 id="corp-settings-automatic">{t('corporations.settings.automatic_heading')}</h3>
-                        {settings.delivery_method === 'automatic' && status_text &&
+                        {settings.delivery_method === delivery_method && status_text &&
                             <p class="[ corp-settings__status ]">{status_text}</p>
                         }
                         <dl class="[ corp-settings__facts ]">
+                            {delivery_method === 'automatic' &&
                             <div>
                                 <dt>{t('corporations.settings.reddit_account')}</dt>
                                 <dd>
@@ -380,6 +449,9 @@ const status_text = (() => {
                                                 off_disable={true}
                                                 hx-post={PARTIAL_URL}
                                                 hx-vals='{"action": "disconnect"}'
+                                                hx-target={`#${ROOT_ID}`}
+                                                hx-swap="outerHTML"
+                                                hx-select-oob="unset"
                                             >
                                                 {t('corporations.settings.disconnect')}
                                             </Button>
@@ -390,6 +462,7 @@ const status_text = (() => {
                                     }
                                 </dd>
                             </div>
+                            }
                             <div>
                                 <dt>{t('corporations.settings.approval')}</dt>
                                 <dd>
@@ -408,13 +481,20 @@ const status_text = (() => {
                         </dl>
                         <small class="[ corp-settings__muted ]">{t('corporations.settings.approval_note')}</small>
                     </Flexblock>
+                    }
                 </section>
-                }
 
                 <FlexInline gap="var(--space-m)">
-                    <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>
-                        {t('corporations.settings.save')}
-                    </Button>
+                    <p
+                        id={STATUS_ID}
+                        class:list={['[ corp-settings__save-status ]', { 'is-error': save_status?.kind === 'error' }]}
+                        role="status"
+                    >
+                        <span class="[ corp-settings__saving ]">{t('corporations.settings.saving')}</span>
+                        <span class="[ corp-settings__saved ]">
+                            {save_status ? t(save_status.key) : t('corporations.settings.autosave_note')}
+                        </span>
+                    </p>
                     {settings.last_post_at &&
                         <small class="[ corp-settings__muted ]">
                             {t('corporations.settings.last_posted')}:
@@ -487,6 +567,69 @@ const status_text = (() => {
 
     .corp-settings__status {
         color: var(--highlight);
+    }
+
+    .corp-settings__save-status {
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        &.is-error .corp-settings__saved {
+            color: var(--fleet-red);
+        }
+    }
+
+    .corp-settings__saving {
+        display: none;
+        color: var(--fleet-yellow);
+    }
+
+    // Unsaved edits or a save in flight.
+    .corp-settings__form.is-pending,
+    .corp-settings__form.htmx-request {
+        .corp-settings__saving {
+            display: inline;
+        }
+
+        .corp-settings__saved {
+            display: none;
+        }
+    }
+
+    .corp-settings__tabs {
+        display: flex;
+        gap: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+
+        button {
+            padding: var(--space-3xs) var(--space-xs);
+            border: none;
+            border-bottom: solid var(--space-3xs) transparent;
+            margin-block-end: -1px;
+            background: none;
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            color: var(--faded);
+            cursor: pointer;
+            transition: color var(--fast-transition), border-color var(--fast-transition);
+
+            &[aria-selected="true"] {
+                border-bottom-color: var(--fleet-red);
+                color: var(--highlight);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    color: var(--highlight);
+                }
+            }
+        }
+    }
+
+    .corp-settings__preview {
+        min-height: var(--space-3xl);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
     }
 
     .corp-settings__problems {

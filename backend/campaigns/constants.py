@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+# Paths under /api/campaigns that a campaign slug would otherwise shadow.
+RESERVED_SLUGS = frozenset({"entities", "overlay"})
+
 # --- Complex LP base tiers -------------------------------------------------
 # Base LP by complex class before the system multiplier, contested factor and
 # insurgency suppression are applied. Several classes collide on the same

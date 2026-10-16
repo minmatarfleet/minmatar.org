@@ -283,7 +283,8 @@ export interface CorporationOpenApplication {
     created_at: string;
 }
 
-export type RedditDeliveryMethod = 'discord_reminder' | 'automatic'
+/** alliance: posted as u/MinmatarFleet; automatic: posted from the CEO's linked account */
+export type RedditDeliveryMethod = 'alliance' | 'automatic' | 'discord_reminder'
 
 export type RedditPriority = 'high' | 'normal'
 
@@ -3007,6 +3008,15 @@ export interface CampaignLeaderboardRow {
     character_id:   number | null;
     character_name: string;
     value:          number;
+}
+
+export interface CampaignCorporationLeaderboardRow {
+    rank:               number;
+    corporation_id:     number | null;
+    corporation_name:   string;
+    /** Pilots who scored on this metric in the window. */
+    pilots:             number;
+    value:              number;
 }
 
 export interface CampaignKillmail {
