@@ -3,34 +3,27 @@ import {
     format_eve_datetime,
     is_corporation_slug,
     parse_delivery_method,
-    parse_posting_day,
+    parse_paused,
+    reddit_change_key,
     reddit_connect_flash,
     reddit_markdown_problem_key,
     reddit_save_error_key,
     reddit_section_summary,
-    reddit_weekday_label,
 } from '@helpers/corporations/reddit_settings'
 import { ui } from '@i18n/ui'
 import { reddit_connect_url } from '@helpers/api.minmatar.org/reddit'
 
 describe('corporation Reddit settings', () => {
-    it('names the backend posting days', () => {
-        expect(reddit_weekday_label('monday')).toBe('Monday')
-        expect(reddit_weekday_label('thursday')).toBe('Thursday')
-        expect(reddit_weekday_label('sunday')).toBe('Sunday')
-        expect(reddit_weekday_label('')).toBe('')
-        expect(reddit_weekday_label('caturday')).toBe('')
+    it('reads the pause checkbox', () => {
+        expect(parse_paused('on')).toBe(true)
+        expect(parse_paused('true')).toBe(true)
+        expect(parse_paused(null)).toBe(false)
+        expect(parse_paused('')).toBe(false)
     })
 
-    it('accepts only backend posting days from the form', () => {
-        expect(parse_posting_day('friday')).toBe('friday')
-        expect(parse_posting_day('')).toBe('')
-        expect(parse_posting_day('Friday')).toBe('')
-        expect(parse_posting_day(null)).toBe('')
-    })
-
-    it('explains an invalid day', () => {
-        expect(reddit_save_error_key('invalid_posting_day')).toBe('corporations.settings.error_posting_day')
+    it('has a message for slots gained and lost', () => {
+        expect(ui.en[reddit_change_key({ gained: true })]).toContain('~DATE')
+        expect(ui.en[reddit_change_key({ gained: false })]).toContain('~DATE')
     })
 
     it('shows times in EVE time whatever the server timezone', () => {
@@ -96,7 +89,9 @@ describe('corporation Reddit settings', () => {
     it('summarises the Reddit section for its collapsed header', () => {
         const labels = {
             not_set_up: 'Not set up',
-            unscheduled: 'Not scheduled',
+            paused: 'Paused',
+            admin_paused: 'Paused by an admin',
+            next: 'Next: ~WHEN EVE',
             reminder: 'Discord reminder',
             automatic: 'Automatic',
             approved: 'Approved',
@@ -104,16 +99,18 @@ describe('corporation Reddit settings', () => {
         }
         const base = {
             exists: true,
-            posting_day: 'thursday',
-            posting_time: '17:00',
-            subreddit: 'evejobs',
+            rotation_status: 'active' as const,
+            upcoming: [{ scheduled_for: '2026-11-19T14:20:00Z', confirmed: true }],
             delivery_method: 'automatic' as const,
             approved: true,
         }
-        expect(reddit_section_summary(base, labels)).toBe('Thursday 17:00 EVE · Automatic · Approved')
-        expect(reddit_section_summary({ ...base, approved: false }, labels)).toBe('Thursday 17:00 EVE · Automatic · Awaiting approval')
-        expect(reddit_section_summary({ ...base, delivery_method: 'discord_reminder' }, labels)).toBe('Thursday 17:00 EVE · Discord reminder')
-        expect(reddit_section_summary({ ...base, posting_day: '' }, labels)).toBe('Not scheduled · Automatic · Approved')
+        const next = `Next: ${format_eve_datetime('2026-11-19T14:20:00Z')} EVE`
+        expect(reddit_section_summary(base, labels)).toBe(`${next} · Automatic · Approved`)
+        expect(reddit_section_summary({ ...base, approved: false }, labels)).toBe(`${next} · Automatic · Awaiting approval`)
+        expect(reddit_section_summary({ ...base, delivery_method: 'discord_reminder' }, labels)).toBe(`${next} · Discord reminder`)
+        expect(reddit_section_summary({ ...base, upcoming: [] }, labels)).toBe('Automatic · Approved')
+        expect(reddit_section_summary({ ...base, rotation_status: 'paused' }, labels)).toBe('Paused')
+        expect(reddit_section_summary({ ...base, rotation_status: 'admin_paused' }, labels)).toBe('Paused by an admin')
         expect(reddit_section_summary({ ...base, exists: false }, labels)).toBe('Not set up')
     })
 })

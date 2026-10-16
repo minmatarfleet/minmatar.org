@@ -4,9 +4,16 @@ from django.contrib import messages
 from django.db.models import Max
 from django.utils import timezone
 
+from reddit import rotation, schedule
 from reddit.client import RedditClient
 from reddit.markdown import blocking_problems
-from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
+from reddit.models import (
+    RedditAccount,
+    RedditPost,
+    RedditPostTemplate,
+    RedditSchedule,
+    RedditScheduleChange,
+)
 from reddit.service import link_reddit_post_to_discord, RedditService
 
 reddit_client = RedditClient()
@@ -75,15 +82,16 @@ class RedditPostInline(admin.TabularInline):
     max_num = 0
     can_delete = False
     fields = [
+        "slot_date",
         "scheduled_for",
         "status",
         "fallback_reason",
         "title",
         "reddit_url",
-        "created_at",
+        "delivered_at",
     ]
     readonly_fields = fields
-    ordering = ["-created_at"]
+    ordering = ["-slot_date", "-created_at"]
 
 
 @admin.register(RedditPostTemplate)
@@ -95,14 +103,22 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
         "title",
         "corporation",
         "subreddit",
-        "posting_day",
-        "posting_time",
+        "priority",
+        "paused",
+        "posting_window",
         "delivery_method",
         "approved",
         "discord_channel",
         "last_delivered_at",
     ]
-    list_filter = ["approved", "delivery_method", "posting_day", "subreddit"]
+    list_editable = ["priority", "paused", "posting_window"]
+    list_filter = [
+        "priority",
+        "paused",
+        "approved",
+        "delivery_method",
+        "subreddit",
+    ]
     list_select_related = ["corporation", "discord_channel"]
     search_fields = ["title", "corporation__name", "corporation__ticker"]
     autocomplete_fields = ["corporation", "discord_channel"]
@@ -117,7 +133,7 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .annotate(last_delivered_at=Max("posts__created_at"))
+            .annotate(last_delivered_at=Max("posts__delivered_at"))
         )
 
     @admin.display(ordering="last_delivered_at")
@@ -146,6 +162,8 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
         if "approved" in form.changed_data:
             _record_approval(obj, request.user)
         super().save_model(request, obj, form, change)
+        # Priority, pausing and the window show in the drafts straight away.
+        schedule.refresh_drafts()
 
     @admin.action(description="Approve for automatic posting")
     def action_approve(self, request, queryset):
@@ -229,22 +247,195 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
             )
 
 
+class SlotForm(forms.ModelForm):
+    """A confirmed slot still ahead can be moved to another corporation or
+    time; anything else is read-only."""
+
+    class Meta:
+        model = RedditPost
+        fields = ["template", "scheduled_for"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        post = self.instance
+        self.editable = bool(
+            post.pk
+            and post.status == RedditPost.CONFIRMED
+            and post.scheduled_for
+            and post.scheduled_for > timezone.now()
+        )
+        if not self.editable:
+            for field in self.fields.values():
+                field.disabled = True
+
+    def clean(self):
+        cleaned = super().clean()
+        template = cleaned.get("template")
+        when = cleaned.get("scheduled_for")
+        if not self.editable or not template or not when:
+            return cleaned
+        if not self.has_changed():
+            return cleaned
+        clash = (
+            RedditPost.objects.filter(
+                template=template, status__in=schedule.LIVE_STATUSES
+            )
+            .exclude(pk=self.instance.pk)
+            .filter(
+                scheduled_for__gt=when - rotation.COOLDOWN,
+                scheduled_for__lt=when + rotation.COOLDOWN,
+            )
+            .first()
+        )
+        if clash:
+            raise forms.ValidationError(
+                f"{template.corporation.name} already posts on "
+                f"{clash.scheduled_for:%d %b}; slots must be at least "
+                f"{rotation.COOLDOWN.days} days apart."
+            )
+        return cleaned
+
+
+class SlotInline(admin.TabularInline):
+    model = RedditPost
+    form = SlotForm
+    fk_name = "schedule"
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "slot_date",
+        "template",
+        "scheduled_for",
+        "status",
+        "heads_up_sent_at",
+        "fallback_reason",
+    ]
+    readonly_fields = [
+        "slot_date",
+        "status",
+        "heads_up_sent_at",
+        "fallback_reason",
+    ]
+    ordering = ["slot_date"]
+    autocomplete_fields = ["template"]
+
+
+class ScheduleChangeInline(admin.TabularInline):
+    model = RedditScheduleChange
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "created_at",
+        "slot_date",
+        "from_template",
+        "to_template",
+        "reason",
+        "detail",
+    ]
+    readonly_fields = fields
+
+
+@admin.register(RedditSchedule)
+class RedditScheduleAdmin(admin.ModelAdmin):
+    """The rotation, month by month. Drafts are worked out automatically;
+    move a published slot by editing it here."""
+
+    list_display = [
+        "month",
+        "status",
+        "slot_count",
+        "generated_at",
+        "published_at",
+    ]
+    list_filter = ["status"]
+    readonly_fields = [
+        "month",
+        "status",
+        "weights",
+        "quotas",
+        "inputs_hash",
+        "generated_at",
+        "published_at",
+        "published_by",
+    ]
+    inlines = [SlotInline, ScheduleChangeInline]
+    actions = ["action_publish", "action_regenerate"]
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description="Slots")
+    def slot_count(self, obj):
+        return obj.slots.count()
+
+    def changelist_view(self, request, extra_context=None):
+        # Opening the list makes sure this month and next have drafts.
+        schedule.refresh_drafts()
+        return super().changelist_view(request, extra_context)
+
+    def save_formset(self, request, form, formset, change):
+        moves = []
+        for slot_form in formset.forms:
+            if not getattr(slot_form, "editable", False):
+                continue
+            if not slot_form.has_changed():
+                continue
+            old_template = RedditPostTemplate.objects.get(
+                pk=slot_form.initial["template"]
+            )
+            moves.append(
+                (
+                    slot_form.instance,
+                    old_template,
+                    slot_form.initial["scheduled_for"],
+                )
+            )
+        super().save_formset(request, form, formset, change)
+        for post, old_template, old_time in moves:
+            schedule.move_slot(
+                post, post.template, post.scheduled_for, old_template, old_time
+            )
+
+    @admin.action(description="Publish (confirm slots and DM each CEO)")
+    def action_publish(self, request, queryset):
+        for month in queryset.filter(status=RedditSchedule.DRAFT):
+            confirmed = schedule.publish(month, user=request.user)
+            self.message_user(
+                request,
+                f"Published {month.month:%B %Y}: {confirmed} slot(s).",
+                messages.SUCCESS,
+            )
+
+    @admin.action(description="Work out the draft again")
+    def action_regenerate(self, request, queryset):
+        drafts = queryset.filter(status=RedditSchedule.DRAFT)
+        drafts.update(inputs_hash="")
+        for month in drafts:
+            schedule.refresh_month(month.month, timezone.now())
+        self.message_user(
+            request, f"Updated {drafts.count()} draft(s).", messages.SUCCESS
+        )
+
+
 @admin.register(RedditPost)
 class RedditPostAdmin(admin.ModelAdmin):
     """Read-only log of every Reddit post and reminder."""
 
     list_display = [
         "template",
+        "slot_date",
         "scheduled_for",
         "status",
         "fallback_reason",
         "reddit_url",
-        "created_at",
+        "delivered_at",
     ]
-    list_filter = ["status", "fallback_reason"]
+    list_filter = ["status", "fallback_reason", "schedule"]
     list_select_related = ["template__corporation"]
     search_fields = ["template__title", "template__corporation__name"]
-    date_hierarchy = "created_at"
+    date_hierarchy = "scheduled_for"
 
     def has_add_permission(self, request):
         return False

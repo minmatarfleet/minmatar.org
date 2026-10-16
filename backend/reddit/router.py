@@ -79,7 +79,7 @@ def get_corporation_post(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="Edit the corporation's Reddit post, its day and how it is sent (CEO only)",
+    summary="Edit the corporation's Reddit post, pause it, or change how it is sent (CEO only)",
 )
 def put_corporation_post(
     request, corporation_id: int, payload: CorporationRedditPostUpdate
@@ -93,7 +93,7 @@ def put_corporation_post(
             payload.title,
             payload.content,
             payload.delivery_method,
-            payload.posting_day,
+            payload.paused,
         )
     except PostSettingsError as e:
         return 400, {"detail": e.code, "problems": e.problems}

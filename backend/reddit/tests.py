@@ -20,7 +20,6 @@ class RedditServiceTestCase(TestCase):
             title=title,
             content="Testing",
             subreddit="foo",
-            posting_day="monday",
         )
 
     @patch("reddit.scheduling.RedditClient")
@@ -40,6 +39,7 @@ class RedditServiceTestCase(TestCase):
         self.assertEqual(20, len(post.title))
         self.assertEqual(RedditPost.POSTED, post.status)
         self.assertIsNone(post.scheduled_for)
+        self.assertIsNotNone(post.delivered_at)
         self.assertEqual(
             post.reddit_url, client.submit_post.return_value["url"]
         )

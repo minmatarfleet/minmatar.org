@@ -4,11 +4,8 @@ from app.errors import create_error_id
 
 from reddit.client import RedditClient
 from reddit.models import RedditPost, RedditPostTemplate
-from reddit.scheduling import (
-    link_reddit_post_to_discord,
-    run_scheduled_posts,
-    submit,
-)
+from reddit import schedule
+from reddit.scheduling import link_reddit_post_to_discord, submit
 
 logger = logging.getLogger(__name__)
 client = RedditClient()
@@ -40,7 +37,7 @@ class RedditService:
         return post_id
 
     def scheduled_posts(self):
-        return run_scheduled_posts()
+        return schedule.run()
 
     def post_recriutment_ad(self, template: RedditPostTemplate) -> RedditPost:
         """Submit a post right now (admin action), ignoring the schedule

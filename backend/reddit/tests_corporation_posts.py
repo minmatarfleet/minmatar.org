@@ -1,9 +1,7 @@
 from datetime import datetime, time, timedelta, timezone as dt_timezone
-from importlib import import_module
 from unittest.mock import patch
 
 import jwt
-from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import connection
@@ -19,6 +17,7 @@ from reddit.markdown import check_reddit_markdown
 from reddit.corporation_posts import PostSettingsError, save_post_settings
 from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
 from reddit.oauth import RedditOAuthError
+from reddit import schedule
 from reddit.scheduling import (
     ACCOUNT_INVALID,
     DISCORD_MESSAGE_LIMIT,
@@ -27,10 +26,7 @@ from reddit.scheduling import (
     POST_FAILED,
     claim,
     deliver,
-    due_posts,
-    next_slot,
     reminder_messages,
-    run_scheduled_posts,
     submit,
 )
 
@@ -62,11 +58,25 @@ class CorporationPostTestCase(TestCase):
             "subreddit": "evejobs",
             "title": "Join the Rat",
             "content": "We fly together.",
-            "posting_day": "thursday",
-            "posting_time": time(17, 0),
         }
         values.update(fields)
         return RedditPostTemplate.objects.create(**values)
+
+    def confirmed_slot(self, template, when=THURSDAY_1800, **fields):
+        values = {
+            "template": template,
+            "slot_date": when.date(),
+            "scheduled_for": when,
+            "status": RedditPost.CONFIRMED,
+        }
+        values.update(fields)
+        return RedditPost.objects.create(**values)
+
+    def claimed(self, template):
+        post = self.confirmed_slot(template)
+        self.assertTrue(claim(post))
+        post.refresh_from_db()
+        return post
 
     def other_corporation(self):
         return EveCorporation.objects.create(
@@ -88,104 +98,53 @@ class CorporationPostTestCase(TestCase):
         )
 
 
-class ScheduleTestCase(CorporationPostTestCase):
-    """When a post is due, and that it is handled once per slot."""
-
-    def test_due_after_its_time_on_its_day(self):
-        post = self.make_post()
-        self.assertEqual(
-            [(post, THURSDAY_1800 - timedelta(hours=1))],
-            due_posts(THURSDAY_1800),
-        )
-
-    def test_not_due_before_its_time(self):
-        self.make_post(posting_time=time(19, 0))
-        self.assertEqual([], due_posts(THURSDAY_1800))
-
-    def test_not_due_on_other_days(self):
-        self.make_post(posting_day="friday")
-        self.assertEqual([], due_posts(THURSDAY_1800))
-
-    def test_unscheduled_drafts_are_never_due(self):
-        self.make_post(posting_day="")
-        self.make_post(
-            corporation=self.other_corporation(),
-            subreddit="",
-            title="Paused by an admin",
-        )
-        self.assertEqual([], due_posts(THURSDAY_1800))
-
-    def test_late_slot_still_runs_after_midnight(self):
-        # 23:55 Thursday is caught by the 00:00 Friday run.
-        self.make_post(posting_time=time(23, 55))
-        friday = datetime(2026, 10, 16, 0, 0, tzinfo=dt_timezone.utc)
-        self.assertEqual(1, len(due_posts(friday)))
-
-    def test_slot_missed_by_more_than_the_catch_up_window_is_skipped(self):
-        self.make_post(posting_time=time(1, 0))
-        self.assertEqual([], due_posts(THURSDAY_1800))
-
-    def test_post_submitted_by_hand_since_the_slot_is_not_repeated(self):
-        template = self.make_post()
-        RedditPost.objects.create(
-            template=template,
-            status=RedditPost.POSTED,
-            created_at=THURSDAY_1800 - timedelta(minutes=30),
-        )
-        self.assertEqual([], due_posts(THURSDAY_1800))
-
-    def test_post_from_last_week_does_not_block_this_week(self):
-        template = self.make_post()
-        RedditPost.objects.create(
-            template=template,
-            scheduled_for=THURSDAY_1800 - timedelta(days=7, hours=1),
-            status=RedditPost.REMINDED,
-            created_at=THURSDAY_1800 - timedelta(days=7),
-        )
-        self.assertEqual(1, len(due_posts(THURSDAY_1800)))
+class DeliveryTestCase(CorporationPostTestCase):
+    """Confirmed slots go out once, when due."""
 
     def test_a_slot_can_only_be_claimed_once(self):
-        template = self.make_post()
-        slot = THURSDAY_1800 - timedelta(hours=1)
-        self.assertIsNotNone(claim(template, slot, THURSDAY_1800))
-        self.assertIsNone(claim(template, slot, THURSDAY_1800))
-        self.assertEqual(1, template.posts.count())
+        post = self.confirmed_slot(self.make_post())
+        self.assertTrue(claim(post))
+        self.assertFalse(claim(post))
+        post.refresh_from_db()
+        self.assertEqual(RedditPost.PENDING, post.status)
+
+    def test_drafts_are_never_claimed(self):
+        post = self.confirmed_slot(self.make_post(), status=RedditPost.DRAFT)
+        self.assertFalse(claim(post))
 
     @patch("reddit.scheduling.deliver", return_value="reminded")
     def test_each_slot_is_delivered_once(self, deliver_mock):
-        self.make_post()
-        self.assertEqual(["reminded"], run_scheduled_posts(THURSDAY_1800))
+        self.confirmed_slot(self.make_post())
+        self.assertEqual(["reminded"], schedule.deliver_due(THURSDAY_1800))
         self.assertEqual(
-            [], run_scheduled_posts(THURSDAY_1800 + timedelta(minutes=15))
+            [], schedule.deliver_due(THURSDAY_1800 + timedelta(minutes=15))
         )
         self.assertEqual(1, deliver_mock.call_count)
-        post = RedditPost.objects.get()
-        self.assertEqual(
-            THURSDAY_1800 - timedelta(hours=1), post.scheduled_for
-        )
 
     @patch("reddit.scheduling.deliver", return_value="reminded")
-    def test_runs_again_next_week(self, deliver_mock):
-        self.make_post()
-        run_scheduled_posts(THURSDAY_1800)
-        run_scheduled_posts(THURSDAY_1800 + timedelta(days=7))
-        self.assertEqual(2, deliver_mock.call_count)
+    def test_not_delivered_before_its_time(self, deliver_mock):
+        self.confirmed_slot(self.make_post())
+        schedule.deliver_due(THURSDAY_1800 - timedelta(minutes=1))
+        deliver_mock.assert_not_called()
 
-    def test_next_slot(self):
-        post = self.make_post()
-        self.assertEqual(
-            THURSDAY_1800 - timedelta(hours=1),
-            next_slot(post, THURSDAY_1800),
-        )
-        RedditPost.objects.create(
-            template=post,
-            scheduled_for=THURSDAY_1800 - timedelta(hours=1),
-            created_at=THURSDAY_1800,
-        )
-        self.assertEqual(
-            THURSDAY_1800 + timedelta(days=7, hours=-1),
-            next_slot(post, THURSDAY_1800),
-        )
+    @patch("reddit.scheduling.deliver", return_value="reminded")
+    def test_slot_missed_by_more_than_the_catch_up_window_is_skipped(
+        self, deliver_mock
+    ):
+        post = self.confirmed_slot(self.make_post())
+        schedule.deliver_due(THURSDAY_1800 + timedelta(hours=13))
+        deliver_mock.assert_not_called()
+        post.refresh_from_db()
+        self.assertEqual(RedditPost.SKIPPED, post.status)
+        self.assertEqual("missed", post.fallback_reason)
+
+    @patch("reddit.scheduling.deliver", return_value="reminded")
+    def test_paused_post_is_skipped(self, deliver_mock):
+        post = self.confirmed_slot(self.make_post(paused=True))
+        schedule.deliver_due(THURSDAY_1800)
+        deliver_mock.assert_not_called()
+        post.refresh_from_db()
+        self.assertEqual(RedditPost.SKIPPED, post.status)
 
 
 @patch("reddit.scheduling.DiscordClient")
@@ -201,7 +160,7 @@ class DeliverTestCase(CorporationPostTestCase):
         self, submit_post, discord
     ):
         template = self.make_post()
-        post = claim(template, THURSDAY_1800, THURSDAY_1800)
+        post = self.claimed(template)
         self.assertEqual("reminded", deliver(template, post))
         submit_post.assert_not_called()
         (dm_user,) = {c.args[0] for c in discord().send_dm.call_args_list}
@@ -217,17 +176,18 @@ class DeliverTestCase(CorporationPostTestCase):
         client_class.return_value.submit_post.return_value = SUBMITTED
         account = self.link_reddit()
         template = self.make_post(delivery_method="automatic", approved=True)
-        post = claim(template, THURSDAY_1800, THURSDAY_1800)
-        self.assertEqual("posted", deliver(template, post))
+        post = self.claimed(template)
+        self.assertEqual("posted", deliver(template, post, THURSDAY_1800))
         client_class.assert_called_once_with(account)
         discord().send_dm.assert_not_called()
         post.refresh_from_db()
         self.assertEqual(RedditPost.POSTED, post.status)
         self.assertEqual(SUBMITTED["url"], post.reddit_url)
         self.assertEqual("Join the Rat", post.title)
+        self.assertEqual(THURSDAY_1800, post.delivered_at)
 
     def _reminder_reason(self, template, discord):
-        post = claim(template, THURSDAY_1800, THURSDAY_1800)
+        post = self.claimed(template)
         with patch(
             "reddit.scheduling.reminder_messages", return_value=["hi"]
         ) as messages:
@@ -271,7 +231,7 @@ class NoDiscordTestCase(CorporationPostTestCase):
     @patch("reddit.scheduling.DiscordClient")
     def test_ceo_without_discord_is_skipped(self, discord):
         template = self.make_post()
-        post = claim(template, THURSDAY_1800, THURSDAY_1800)
+        post = self.claimed(template)
         self.assertEqual("skipped", deliver(template, post))
         discord().send_dm.assert_not_called()
 
@@ -308,30 +268,31 @@ class SaveSettingsTestCase(CorporationPostTestCase):
             self.corporation, " Title ", "Body", "automatic"
         )
         self.assertEqual("Title", post.title)
-        self.assertEqual("", post.posting_day)
         self.assertEqual("evejobs", post.subreddit)
+        self.assertTrue(post.in_rotation)
         self.assertFalse(post.approved)
 
-    def test_ceo_picks_the_day(self):
-        post = save_post_settings(
-            self.corporation, "Title", "Body", "discord_reminder", "friday"
-        )
-        self.assertEqual("friday", post.posting_day)
-        self.assertTrue(post.is_scheduled)
-
-    def test_day_left_out_keeps_the_day(self):
-        self.make_post(posting_day="tuesday")
+    def test_saving_puts_the_post_in_the_draft(self):
         post = save_post_settings(
             self.corporation, "Title", "Body", "discord_reminder"
         )
-        self.assertEqual("tuesday", post.posting_day)
+        self.assertTrue(post.posts.filter(status=RedditPost.DRAFT).exists())
 
-    def test_blank_day_unschedules(self):
-        self.make_post(posting_day="tuesday")
+    def test_ceo_pauses_and_resumes(self):
         post = save_post_settings(
-            self.corporation, "Title", "Body", "discord_reminder", ""
+            self.corporation, "Title", "Body", "discord_reminder", True
         )
-        self.assertFalse(post.is_scheduled)
+        self.assertFalse(post.in_rotation)
+        self.assertFalse(post.posts.exists())
+        post = save_post_settings(
+            self.corporation, "Title", "Body", "discord_reminder"
+        )
+        self.assertTrue(post.paused)
+        post = save_post_settings(
+            self.corporation, "Title", "Body", "discord_reminder", False
+        )
+        self.assertTrue(post.in_rotation)
+        self.assertTrue(post.posts.exists())
 
     def test_editing_words_withdraws_approval(self):
         post = self.make_post(approved=True, approved_by=self.user)
@@ -357,10 +318,6 @@ class SaveSettingsTestCase(CorporationPostTestCase):
             (("Title", "  ", "automatic"), "content_required"),
             (("T" * 251, "Body", "automatic"), "title_too_long"),
             (("Title", "Body", "carrier_pigeon"), "invalid_delivery_method"),
-            (
-                ("Title", "Body", "automatic", "caturday"),
-                "invalid_posting_day",
-            ),
         ):
             with self.assertRaises(PostSettingsError) as raised:
                 save_post_settings(self.corporation, *args)
@@ -390,12 +347,12 @@ class RouterTestCase(CorporationPostTestCase):
             template=template,
             status=RedditPost.POSTED,
             reddit_url=SUBMITTED["url"],
-            created_at=THURSDAY_1800 - timedelta(days=7),
+            delivered_at=THURSDAY_1800 - timedelta(days=7),
         )
         RedditPost.objects.create(
             template=template,
             status=RedditPost.REMINDED,
-            created_at=THURSDAY_1800,
+            delivered_at=THURSDAY_1800,
         )
         self.link_reddit()
         body = self.client.get(self.url, **self.auth()).json()
@@ -403,8 +360,9 @@ class RouterTestCase(CorporationPostTestCase):
         self.assertTrue(body["last_post_at"].startswith("2026-10-08"))
         self.assertTrue(body["last_reminder_at"].startswith("2026-10-15"))
         self.assertTrue(body["exists"])
-        self.assertEqual("thursday", body["posting_day"])
-        self.assertEqual("17:00", body["posting_time"])
+        self.assertEqual("active", body["rotation_status"])
+        self.assertEqual("normal", body["priority"])
+        self.assertFalse(body["paused"])
         self.assertEqual("ready", body["automatic_status"])
         self.assertEqual("BearThatCares", body["reddit_account"]["username"])
         self.assertNotIn("refresh_token", str(body))
@@ -441,16 +399,17 @@ class RouterTestCase(CorporationPostTestCase):
                 "title": "Join the Rat",
                 "content": "# Rattini\nWe fly.",
                 "delivery_method": "discord_reminder",
-                "posting_day": "saturday",
             },
             content_type="application/json",
             **self.auth(),
         )
         self.assertEqual(200, response.status_code)
         body = response.json()
-        self.assertEqual("saturday", body["posting_day"])
+        self.assertEqual("active", body["rotation_status"])
         self.assertEqual("evejobs", body["subreddit"])
-        self.assertIsNotNone(body["next_run_at"])
+        self.assertTrue(body["upcoming"])
+        self.assertFalse(body["upcoming"][0]["confirmed"])
+        self.assertEqual(2 * 1, body["interval_days"])
         post = RedditPostTemplate.objects.get(corporation=self.corporation)
         self.assertEqual("# Rattini\nWe fly.", post.content)
 
@@ -458,22 +417,26 @@ class RouterTestCase(CorporationPostTestCase):
         body = self.client.get(self.url, **self.auth()).json()
         self.assertFalse(body["exists"])
         self.assertEqual("evejobs", body["subreddit"])
-        self.assertEqual("13:00", body["posting_time"])
+        self.assertEqual("not_set_up", body["rotation_status"])
+        self.assertEqual([], body["upcoming"])
 
-    def test_invalid_day_is_a_400(self):
+    def test_ceo_pauses_the_post(self):
+        self.make_post()
         response = self.client.put(
             self.url,
             data={
                 "title": "Title",
                 "content": "Body",
                 "delivery_method": "discord_reminder",
-                "posting_day": "caturday",
+                "paused": True,
             },
             content_type="application/json",
             **self.auth(),
         )
-        self.assertEqual(400, response.status_code)
-        self.assertEqual("invalid_posting_day", response.json()["detail"])
+        body = response.json()
+        self.assertEqual("paused", body["rotation_status"])
+        self.assertEqual([], body["upcoming"])
+        self.assertIsNone(body["interval_days"])
 
     def test_invalid_settings_are_a_400(self):
         response = self.client.put(
@@ -782,8 +745,8 @@ class AdminMarkdownTestCase(CorporationPostTestCase):
             "subreddit": "evejobs",
             "title": "Title",
             "content": "Fine",
-            "posting_day": "thursday",
-            "posting_time": "17:00",
+            "priority": "normal",
+            "posting_window": "any",
             "delivery_method": "automatic",
         }
         values.update(data)
@@ -798,7 +761,7 @@ class AdminMarkdownTestCase(CorporationPostTestCase):
     def test_admin_keeps_existing_content_editable(self, flairs):
         post = self.make_post(content="Legacy<br>ad")
         form = self.form(
-            instance=post, content="Legacy<br>ad", posting_day="friday"
+            instance=post, content="Legacy<br>ad", priority="high"
         )
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -901,50 +864,70 @@ class PostTemplateMigrationTestCase(TransactionTestCase):
         )
 
 
-class RestoreCorporationPostsTestCase(CorporationPostTestCase):
-    """0011 puts back the corporation posts 0008 deleted."""
+class RestoreCorporationPostsTestCase(TransactionTestCase):
+    """0011 puts back the corporation posts 0008 deleted; 0012 then puts
+    them in the rotation."""
 
-    def restore(self):
-        migration = import_module(
-            "reddit.migrations.0011_restore_corporation_posts"
-        )
-        with patch("builtins.print") as printed:
-            migration.restore_posts(django_apps, None)
-        return " ".join(str(call.args[0]) for call in printed.call_args_list)
+    before = [("reddit", "0010_drop_last_fields")]
+    after = [("reddit", "0012_rotation")]
 
-    def test_restores_posts_for_corporations_that_exist(self):
-        EveCorporation.objects.filter(pk=self.corporation.pk).update(
-            corporation_id=98726134
-        )
-        DiscordGuild.objects.get_or_create(
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        with patch("builtins.print"):
+            executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def migrate(self, corporation_ids, existing_title=None):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.before)
+        old = executor.loader.project_state(self.before).apps
+        corporations = old.get_model("eveonline", "EveCorporation").objects
+        for corporation_id in corporation_ids:
+            corporation = corporations.create(
+                corporation_id=corporation_id, name=f"Corp {corporation_id}"
+            )
+            if existing_title:
+                old.get_model("reddit", "RedditPostTemplate").objects.create(
+                    corporation=corporation,
+                    title=existing_title,
+                    content="Body",
+                )
+        old.get_model("discord", "DiscordGuild").objects.get_or_create(
             guild_id=1041384161505722368, defaults={"name": "Minmatar Fleet"}
         )
-        output = self.restore()
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        with patch("builtins.print") as printed:
+            executor.migrate(self.after)
+        return " ".join(str(c.args[0]) for c in printed.call_args_list)
 
-        template = RedditPostTemplate.objects.get()
-        self.assertEqual("rats", template.discord_channel.name)
-        self.assertEqual(
-            1267941181732556902, template.discord_channel.channel_id
-        )
-        self.assertEqual(self.corporation, template.corporation)
-        self.assertTrue(template.title.startswith("Rattini Tribe"))
-        self.assertEqual("wednesday", template.posting_day)
-        self.assertEqual("evejobs", template.subreddit)
-        self.assertEqual("discord_reminder", template.delivery_method)
-        self.assertTrue(template.approved)
-        (post,) = template.posts.all()
+    def test_restores_posts_into_the_rotation(self):
+        output = self.migrate([98726134, 98741376])
+        templates = {
+            t.corporation.corporation_id: t
+            for t in RedditPostTemplate.objects.select_related(
+                "corporation", "discord_channel"
+            )
+        }
+        rats = templates[98726134]
+        self.assertEqual("rats", rats.discord_channel.name)
+        self.assertEqual(1267941181732556902, rats.discord_channel.channel_id)
+        self.assertTrue(rats.title.startswith("Rattini Tribe"))
+        self.assertEqual("evejobs", rats.subreddit)
+        self.assertEqual("discord_reminder", rats.delivery_method)
+        self.assertTrue(rats.approved)
+        self.assertTrue(rats.in_rotation)
+        self.assertEqual("normal", rats.priority)
+        (post,) = rats.posts.all()
         self.assertEqual(RedditPost.POSTED, post.status)
         self.assertIn("reddit.com", post.reddit_url)
-        self.assertIn("Not restoring Minmatar Fleet Academy", output)
+        self.assertEqual(post.created_at, post.delivered_at)
+        self.assertEqual("high", templates[98741376].priority)
+        self.assertIn("Not restoring The Dark Tribe", output)
         self.assertNotIn("FL33T", output)
 
-    def test_keeps_a_post_the_ceo_already_made(self):
-        EveCorporation.objects.filter(pk=self.corporation.pk).update(
-            corporation_id=98726134
-        )
-        self.make_post(title="Written since the deploy")
-        self.restore()
-        self.assertEqual(
-            ["Written since the deploy"],
-            list(RedditPostTemplate.objects.values_list("title", flat=True)),
-        )
+    def test_keeps_a_post_the_ceo_already_made_paused(self):
+        self.migrate([98726134], existing_title="Written since the deploy")
+        (template,) = RedditPostTemplate.objects.all()
+        self.assertEqual("Written since the deploy", template.title)
+        # It never had a day, so it waits for the CEO to resume it.
+        self.assertTrue(template.paused)

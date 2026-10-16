@@ -4,8 +4,9 @@ from django.utils import timezone
 
 from discord.models import DiscordUser
 from reddit.markdown import check_reddit_markdown
+from reddit import schedule
 from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
-from reddit.scheduling import DAY_NAMES, automatic_blocker, next_slot
+from reddit.scheduling import automatic_blocker
 
 # Reddit's own limits for self posts.
 TITLE_MAX = 250
@@ -13,6 +14,12 @@ CONTENT_MAX = 40000
 
 UNSCHEDULED = "unscheduled"
 READY = "ready"
+
+# Where the post stands in the rotation.
+ACTIVE = "active"
+PAUSED = "paused"
+ADMIN_PAUSED = "admin_paused"
+NOT_SET_UP = "not_set_up"
 
 
 class PostSettingsError(ValueError):
@@ -38,7 +45,21 @@ def markdown_problems(content: str) -> list[dict]:
 
 
 def _latest(template: RedditPostTemplate, status: str) -> RedditPost | None:
-    return template.posts.filter(status=status).first()
+    return (
+        template.posts.filter(status=status, delivered_at__isnull=False)
+        .order_by("-delivered_at")
+        .first()
+    )
+
+
+def rotation_status(template: RedditPostTemplate | None) -> str:
+    if template is None:
+        return NOT_SET_UP
+    if template.paused:
+        return PAUSED
+    if not template.subreddit:
+        return ADMIN_PAUSED
+    return ACTIVE
 
 
 def post_settings(corporation, user) -> dict:
@@ -54,11 +75,12 @@ def post_settings(corporation, user) -> dict:
         "content": "",
         "delivery_method": RedditPostTemplate.DISCORD_REMINDER,
         "subreddit": RedditPostTemplate._meta.get_field("subreddit").default,
-        "posting_day": "",
-        "posting_time": RedditPostTemplate._meta.get_field(
-            "posting_time"
-        ).default.strftime("%H:%M"),
-        "next_run_at": None,
+        "paused": False,
+        "priority": RedditPostTemplate.NORMAL,
+        "rotation_status": NOT_SET_UP,
+        "interval_days": None,
+        "upcoming": [],
+        "recent_changes": [],
         "approved": False,
         "approved_at": None,
         "automatic_status": UNSCHEDULED,
@@ -78,30 +100,47 @@ def post_settings(corporation, user) -> dict:
     }
     if template is None:
         return data
+    now = timezone.now()
     last_post = _latest(template, RedditPost.POSTED)
     last_reminder = _latest(template, RedditPost.REMINDED)
+    in_rotation = template.in_rotation
     data.update(
         {
             "title": template.title,
             "content": template.content,
             "delivery_method": template.delivery_method,
             "subreddit": template.subreddit,
-            "posting_day": template.posting_day,
-            "posting_time": template.posting_time.strftime("%H:%M"),
-            "next_run_at": next_slot(template, timezone.now()),
+            "paused": template.paused,
+            "priority": template.priority,
+            "rotation_status": rotation_status(template),
+            "interval_days": schedule.typical_interval_days(template),
+            "upcoming": (
+                [
+                    {
+                        "scheduled_for": post.scheduled_for,
+                        "confirmed": post.status == RedditPost.CONFIRMED,
+                    }
+                    for post in schedule.upcoming(template, now)
+                ]
+                if in_rotation
+                else []
+            ),
+            "recent_changes": (
+                schedule.recent_changes(template, now) if in_rotation else []
+            ),
             "approved": template.approved,
             "approved_at": template.approved_at,
             "automatic_status": (
                 (automatic_blocker(template) or READY)
-                if template.is_scheduled
+                if in_rotation
                 else UNSCHEDULED
             ),
-            "last_post_at": last_post.created_at if last_post else None,
+            "last_post_at": last_post.delivered_at if last_post else None,
             "last_reddit_post_url": (
                 last_post.reddit_url or None if last_post else None
             ),
             "last_reminder_at": (
-                last_reminder.created_at if last_reminder else None
+                last_reminder.delivered_at if last_reminder else None
             ),
             "markdown_problems": markdown_problems(template.content),
         }
@@ -114,11 +153,12 @@ def save_post_settings(
     title: str,
     content: str,
     delivery_method: str,
-    posting_day: str | None = None,
+    paused: bool | None = None,
 ) -> RedditPostTemplate:
-    """Create or update the corporation's template. A `posting_day` of None
-    leaves the day as it is; "" unschedules. Editing the title or body
-    withdraws approval: a superuser approved the old words, not the new."""
+    """Create or update the corporation's template. `paused` of None leaves
+    it as it is. Editing the title or body withdraws approval: a superuser
+    approved the old words, not the new. The rotation's drafts are brought
+    up to date straight away, so the CEO sees their new estimates."""
     # Line numbers in Markdown problems refer to the text as typed.
     typed_content = content or ""
     title = (title or "").strip()
@@ -133,8 +173,6 @@ def save_post_settings(
         raise PostSettingsError("content_too_long")
     if delivery_method not in dict(RedditPostTemplate.DELIVERY_CHOICES):
         raise PostSettingsError("invalid_delivery_method")
-    if posting_day is not None and posting_day not in ("", *DAY_NAMES):
-        raise PostSettingsError("invalid_posting_day")
     problems = markdown_problems(typed_content)
     if any(problem["blocking"] for problem in problems):
         raise PostSettingsError("markdown_invalid", problems)
@@ -151,7 +189,8 @@ def save_post_settings(
     template.title = title
     template.content = content
     template.delivery_method = delivery_method
-    if posting_day is not None:
-        template.posting_day = posting_day
+    if paused is not None:
+        template.paused = paused
     template.save()
+    schedule.refresh_drafts()
     return template

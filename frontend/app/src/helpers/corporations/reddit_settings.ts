@@ -1,4 +1,4 @@
-import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblemCode, RedditPostingDay } from '@dtypes/api.minmatar.org'
+import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblemCode, RedditScheduleChange } from '@dtypes/api.minmatar.org'
 import type { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
@@ -8,20 +8,9 @@ type UiKey = keyof typeof ui['en']
 // re-enable; the backend already supports it.
 export const REDDIT_AUTOMATIC_POSTING: boolean = false
 
-// Same order and spelling as RedditPostTemplate.day_choices in the backend.
-export const REDDIT_POSTING_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
-
-/** A posting day from form input; anything else means not scheduled. */
-export function parse_posting_day(value: unknown): RedditPostingDay | '' {
-    return (REDDIT_POSTING_DAYS as readonly unknown[]).includes(value) ? value as RedditPostingDay : ''
-}
-
-export function reddit_weekday_label(day: string, locale: string = 'en'): string {
-    const index = (REDDIT_POSTING_DAYS as readonly string[]).indexOf(day)
-    if (index < 0) return ''
-    // 2024-01-01 was a Monday.
-    return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' })
-        .format(new Date(Date.UTC(2024, 0, 1 + index)))
+/** The pause checkbox: checked means out of the rotation. */
+export function parse_paused(value: unknown): boolean {
+    return value === 'on' || value === 'true'
 }
 
 /** A timestamp in EVE time (UTC), e.g. "Thu, Oct 23, 17:00". */
@@ -35,6 +24,13 @@ export function format_eve_datetime(iso: string, locale: string = 'en'): string 
         hourCycle: 'h23',
         timeZone: 'UTC',
     }).format(new Date(iso))
+}
+
+/** The message for a slot the post gained or lost. */
+export function reddit_change_key(change: Pick<RedditScheduleChange, 'gained'>): UiKey {
+    return change.gained
+        ? 'corporations.settings.change_gained'
+        : 'corporations.settings.change_lost'
 }
 
 export function parse_delivery_method(value: unknown): RedditDeliveryMethod {
@@ -71,7 +67,6 @@ const SAVE_ERRORS: Record<string, UiKey> = {
     title_too_long: 'corporations.settings.error_title_too_long',
     content_required: 'corporations.settings.error_content_required',
     content_too_long: 'corporations.settings.error_content_too_long',
-    invalid_posting_day: 'corporations.settings.error_posting_day',
 }
 
 export function reddit_save_error_key(code: string): UiKey {
@@ -94,18 +89,32 @@ export function reddit_markdown_problem_key(code: RedditMarkdownProblemCode): Ui
 
 export const REDDIT_FORMATTING_GUIDE_URL = 'https://support.reddithelp.com/hc/en-us/articles/360043033952-Formatting-Guide'
 
-/** One line for the collapsed Reddit section header, e.g. "Thursday 17:00 EVE · Automatic · Approved". */
+/** One line for the collapsed Reddit section header, e.g. "Next: Thu, Nov 19, 14:20 EVE · Discord reminder". */
 export function reddit_section_summary(
-    settings: Pick<CorporationRedditPost, 'exists' | 'posting_day' | 'posting_time' | 'subreddit' | 'delivery_method' | 'approved'>,
-    labels: { not_set_up: string, unscheduled: string, reminder: string, automatic: string, approved: string, awaiting: string },
+    settings: Pick<CorporationRedditPost, 'exists' | 'rotation_status' | 'upcoming' | 'delivery_method' | 'approved'>,
+    labels: {
+        not_set_up: string,
+        paused: string,
+        admin_paused: string,
+        next: string,
+        reminder: string,
+        automatic: string,
+        approved: string,
+        awaiting: string,
+    },
     locale: string = 'en',
 ): string {
     if (!settings.exists)
         return labels.not_set_up
-    const when = settings.posting_day && settings.subreddit
-        ? `${reddit_weekday_label(settings.posting_day, locale)} ${settings.posting_time} EVE`
-        : labels.unscheduled
+    if (settings.rotation_status === 'paused')
+        return labels.paused
+    if (settings.rotation_status === 'admin_paused')
+        return labels.admin_paused
+    const parts: string[] = []
+    const next = settings.upcoming[0]
+    if (next)
+        parts.push(labels.next.replace('~WHEN', format_eve_datetime(next.scheduled_for, locale)))
     if (settings.delivery_method !== 'automatic')
-        return [when, labels.reminder].join(' · ')
-    return [when, labels.automatic, settings.approved ? labels.approved : labels.awaiting].join(' · ')
+        return [...parts, labels.reminder].join(' · ')
+    return [...parts, labels.automatic, settings.approved ? labels.approved : labels.awaiting].join(' · ')
 }

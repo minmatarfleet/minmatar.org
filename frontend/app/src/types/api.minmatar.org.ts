@@ -285,7 +285,24 @@ export interface CorporationOpenApplication {
 
 export type RedditDeliveryMethod = 'discord_reminder' | 'automatic'
 
-export type RedditPostingDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+export type RedditPriority = 'high' | 'normal'
+
+export type RedditRotationStatus = 'active' | 'paused' | 'admin_paused' | 'not_set_up'
+
+export interface RedditUpcomingSlot {
+    scheduled_for:  string;
+    /** false: an estimate from next month's draft, which can still move */
+    confirmed:      boolean;
+}
+
+export interface RedditScheduleChange {
+    created_at:     string;
+    slot_date:      string;
+    scheduled_for:  string;
+    /** true: the post gained this slot; false: it lost it */
+    gained:         boolean;
+    reason:         'rotation' | 'paused' | 'admin';
+}
 
 export type RedditAutomaticStatus = 'ready' | 'not_approved' | 'no_account' | 'account_invalid' | 'unscheduled'
 
@@ -310,9 +327,12 @@ export interface CorporationRedditPost {
     content:                string;
     delivery_method:        RedditDeliveryMethod;
     subreddit:              string;
-    posting_day:            string;
-    posting_time:           string;
-    next_run_at:            string | null;
+    paused:                 boolean;
+    priority:               RedditPriority;
+    rotation_status:        RedditRotationStatus;
+    interval_days:          number | null;
+    upcoming:               RedditUpcomingSlot[];
+    recent_changes:         RedditScheduleChange[];
     approved:               boolean;
     approved_at:            string | null;
     automatic_status:       RedditAutomaticStatus;
@@ -328,8 +348,8 @@ export interface CorporationRedditPostUpdate {
     title:              string;
     content:            string;
     delivery_method:    RedditDeliveryMethod;
-    /** monday..sunday, or '' to unschedule. Omit to leave the day as it is. */
-    posting_day?:       RedditPostingDay | '';
+    /** Take the post out of the rotation, or put it back. Omit to leave it. */
+    paused?:            boolean;
 }
 
 export interface CorporationForumPost {
