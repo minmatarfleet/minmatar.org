@@ -64,6 +64,11 @@ class ApiClient {
         return this.get('/api/fleets/v3?fleet_filter=active')
     }
 
+    // The Campaigns window: the pilot's live campaign, its systems and who flew in the last hour.
+    campaign_overlay() {
+        return this.get('/api/campaigns/overlay')
+    }
+
     // Desktop settings saved on the account (see settings.js). save_ merges: only the keys sent change.
     desktop_settings() {
         return this.get('/api/users/me/desktop-settings')
@@ -123,4 +128,38 @@ async function load_upcoming_fleets(api, web_url) {
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
 }
 
-module.exports = { ApiClient, ApiError, load_upcoming_fleets, FLEET_TYPE_LABELS }
+// Campaign overlay -> what the Campaigns window draws, or null when no campaign is live.
+async function load_campaign(api, web_url) {
+    const { campaign } = await api.campaign_overlay()
+    if (!campaign) return null
+    return {
+        slug: campaign.slug,
+        name: campaign.name,
+        week_index: campaign.week_index,
+        week_count: campaign.week_count,
+        url: `${web_url}/campaigns/${encodeURIComponent(campaign.slug)}`,
+        systems: campaign.systems.map(system => ({
+            id: system.system_id,
+            name: system.name,
+            holder: ['minmatar', 'amarr'].includes(system.holder) ? system.holder : null,
+            objective: system.objective_label,
+            progress: system.progress_percent,
+            change: system.change_24h,
+            detail: system.detail || '',
+        })),
+        active_window_minutes: campaign.active_window_minutes,
+        pilots: campaign.active_pilots.map(pilot => ({
+            character_id: pilot.character_id,
+            name: pilot.character_name,
+            system: pilot.system,
+            last_at: pilot.last_at,
+            kills: pilot.kills,
+            losses: pilot.losses,
+            complexes: pilot.complexes,
+            advantage_sites: pilot.advantage_sites,
+            in_fleet: pilot.in_fleet,
+        })),
+    }
+}
+
+module.exports = { ApiClient, ApiError, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }

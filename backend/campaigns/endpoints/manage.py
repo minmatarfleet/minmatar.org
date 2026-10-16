@@ -8,7 +8,7 @@ from django.utils import timezone
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from campaigns.endpoints.base import router
-from campaigns.constants import STRUCTURE_TYPE_IDS
+from campaigns.constants import RESERVED_SLUGS, STRUCTURE_TYPE_IDS
 from campaigns.endpoints import schemas
 from campaigns.endpoints import serializers
 from campaigns.models import (
@@ -91,6 +91,8 @@ def create_campaign(request, payload: schemas.CampaignCreateRequest):
         }
 
     short_code = payload.short_code.upper()
+    if payload.slug in RESERVED_SLUGS:
+        return 400, {"detail": f"slug {payload.slug} is reserved"}
     if Campaign.objects.filter(slug=payload.slug).exists():
         return 400, {"detail": f"slug {payload.slug} is already taken"}
     if Campaign.objects.filter(short_code=short_code).exists():

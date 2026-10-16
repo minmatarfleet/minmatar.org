@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
 const { start_login, decode_token_payload, TokenStore, LoginCancelled, LoginFailed } = require('./auth')
-const { ApiClient, ApiError, load_upcoming_fleets } = require('./api')
+const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('./api')
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
@@ -62,6 +62,10 @@ const state = {
     loading: false,
     error: null,
     updated_at: null,
+    // The Campaigns window's data (null: no live campaign). Only fetched while that window is enabled.
+    campaign: null,
+    campaign_error: null,
+    campaign_updated_at: null,
     // EVE's own settings for the character in front: Settings > Windows transparency (1.0 = default),
     // notification badge offset, UI scale.
     eve_window: { transparency: 1, character_id: null, found: false, badge_offset: null, ui_scale: 1 },
@@ -253,6 +257,7 @@ function set_window_enabled(id, enabled) {
         hidden.delete(id)
         if (state.user && !overlays.has(id)) create_overlay(window_def(id))
         reveal_overlays()
+        WINDOW_LOADERS[id]?.()   // a window enabled mid-session has no data yet
     } else {
         destroy_overlay(id)
     }
@@ -382,8 +387,10 @@ function apply_loaded_settings(keys) {
         if (!keys.includes(window_key(def.id))) continue
         const win = overlays.get(def.id)
         if (!window_enabled(def.id)) destroy_overlay(def.id)
-        else if (!win) create_overlay(def)
-        else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
+        else if (!win) {
+            create_overlay(def)
+            WINDOW_LOADERS[def.id]?.()   // enabled by the account's settings: it has no data yet
+        } else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
     }
     update_overlay_visibility({ force: true })
     update_tray()
@@ -421,24 +428,63 @@ function set_user_setting(key, value) {
 
 // ---------------------------------------------------------------- data
 
-async function refresh() {
-    if (!state.user) return
+function fetch_error(err, what) {
+    return err instanceof ApiError && err.status === 403
+        ? `Your account does not have access to ${what}.`
+        : 'Could not reach Minmatar Fleet. Retrying…'
+}
+
+// Each window's data loads on its own, so a slow campaign request never holds back the fleets list.
+// A load already in flight is reused rather than started twice (interval tick, refresh button, enabling a window).
+const in_flight = new Map()   // source -> promise
+
+function load(source, fetcher, apply) {
+    if (!state.user) return Promise.resolve()
+    if (in_flight.has(source)) return in_flight.get(source)
+    const done = (async () => {
+        try {
+            const value = await fetcher()
+            if (state.user) apply(value, null)   // not if the pilot signed out meanwhile
+        } catch (err) {
+            diag({ t: 'refresh-error', source, status: err.status, message: err.message })
+            if (!state.user) return
+            if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
+            apply(null, err)
+        }
+    })().finally(() => {
+        in_flight.delete(source)
+        state.loading = in_flight.size > 0
+        push_state()
+    })
+    in_flight.set(source, done)
     state.loading = true
     push_state()
-    try {
-        state.fleets = await load_upcoming_fleets(api, config.web_url)
+    return done
+}
+
+function refresh_fleets() {
+    return load('fleets', () => load_upcoming_fleets(api, config.web_url), (fleets, err) => {
+        if (err) return void (state.error = fetch_error(err, 'fleets'))
+        state.fleets = fleets
         state.error = null
         state.updated_at = new Date().toISOString()
-    } catch (err) {
-        diag({ t: 'refresh-error', status: err.status, message: err.message })
-        if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
-        state.error = err instanceof ApiError && err.status === 403
-            ? 'Your account does not have access to fleets.'
-            : 'Could not reach Minmatar Fleet. Retrying…'
-    } finally {
-        state.loading = false
-        push_state()
-    }
+    })
+}
+
+function refresh_campaign() {
+    return load('campaign', () => load_campaign(api, config.web_url), (campaign, err) => {
+        if (err) return void (state.campaign_error = fetch_error(err, 'campaigns'))
+        state.campaign = campaign
+        state.campaign_error = null
+        state.campaign_updated_at = new Date().toISOString()
+    })
+}
+
+const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
+
+// Data for the windows the pilot has enabled; a disabled window costs no requests.
+function refresh() {
+    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader()
 }
 
 function start_refresh() {
@@ -495,6 +541,9 @@ function sign_out(reason = null) {
     for (const id of [...overlays.keys()]) destroy_overlay(id)   // the next pilot's windows open from their own settings
     state.user = null
     state.fleets = []
+    state.campaign = null
+    state.campaign_error = null
+    state.campaign_updated_at = null
     state.login = { pending: false, error: reason }
     if (settings_win && !settings_win.isDestroyed()) settings_win.close()
     show_login()
@@ -599,6 +648,10 @@ ipcMain.on('fleets:open', (event, fleet_id) => {
     // Only open URLs we built ourselves, never one supplied by the renderer.
     const fleet = state.fleets.find(f => f.id === fleet_id)
     if (fleet) shell.openExternal(fleet.url)
+})
+ipcMain.on('campaigns:open', () => {
+    // Same rule as fleets: only a URL we built.
+    if (state.campaign) shell.openExternal(state.campaign.url)
 })
 ipcMain.on('update:install', () => install_update())
 ipcMain.on('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })

@@ -10,9 +10,10 @@ from django.utils import timezone
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from campaigns.endpoints.base import router
-from campaigns.endpoints import schemas, serializers
+from campaigns.endpoints import overlay, schemas, serializers
 from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
+    ADVANTAGE_SITE_KINDS,
     Campaign,
     CampaignAdvantageReading,
     CampaignAward,
@@ -119,6 +120,24 @@ def search_entities(request, kind: str, q: str = ""):
     if kind not in ("corporation", "alliance"):
         return 400, {"detail": "kind must be corporation or alliance"}
     return entity_service.search_entities(request.user, kind, q)
+
+
+@router.get(
+    "/overlay",
+    response={200: schemas.CampaignOverlay, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def get_overlay(request):
+    """The desktop app's Campaigns window: the pilot's live campaign.
+
+    Declared above ``/{slug}`` so it is not read as a slug. It names pilots,
+    so it needs the feature even when the campaign itself is public.
+    """
+    denied = require_feature(request.user, VIEW_FEATURE)
+    if denied:
+        return denied
+    campaign = overlay.pick_campaign(request.user)
+    return {"campaign": overlay.overlay(campaign) if campaign else None}
 
 
 @router.get(
@@ -333,16 +352,6 @@ def get_week(request, slug: str):
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
-
-
-ADVANTAGE_SITE_KINDS = (
-    SiteKind.ADVANTAGE_SITE,
-    SiteKind.RENDEZVOUS_POINT,
-    SiteKind.PROPAGANDA_BEACON,
-    SiteKind.LISTENING_OUTPOST,
-    SiteKind.SUPPLY_CACHE,
-    SiteKind.BATTLEFIELD,
-)
 
 
 def _my_contribution(campaign_system, user, window) -> dict:

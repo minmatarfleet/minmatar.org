@@ -9,12 +9,14 @@ counted: kills, losses, complex captures, advantage sites, fleets. See
 from __future__ import annotations
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
 from campaigns.constants import (
     ADVANTAGE_DELTA_BY_SITE_KIND,
     CAMPAIGN_COVER_CHOICES,
+    RESERVED_SLUGS,
 )
 
 # The campaign week and campaign day both roll over at 11:00 UTC, which is
@@ -90,6 +92,17 @@ class SiteKind(models.TextChoices):
     BATTLEFIELD = "battlefield", "Battlefield"
     KILL = "kill", "Kill payout"
     UNKNOWN = "unknown", "Unknown"
+
+
+# Every site that moves advantage rather than victory points.
+ADVANTAGE_SITE_KINDS = (
+    SiteKind.ADVANTAGE_SITE,
+    SiteKind.RENDEZVOUS_POINT,
+    SiteKind.PROPAGANDA_BEACON,
+    SiteKind.LISTENING_OUTPOST,
+    SiteKind.SUPPLY_CACHE,
+    SiteKind.BATTLEFIELD,
+)
 
 
 class KillmailOutcome(models.TextChoices):
@@ -186,6 +199,11 @@ class Campaign(models.Model):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def clean(self):
+        super().clean()
+        if self.slug in RESERVED_SLUGS:
+            raise ValidationError({"slug": f"{self.slug} is reserved"})
 
     @property
     def is_live(self) -> bool:
