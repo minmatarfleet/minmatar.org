@@ -1,16 +1,15 @@
-"""When corporation Reddit posts are due, and how each one is delivered.
+"""Delivering rotation slots, and the Discord DMs that go with them.
 
-Each weekly slot is delivered at most once: the scheduler claims it by
-inserting a `RedditPost` for (template, slot), which is unique, so two
-overlapping runs cannot both deliver it.
+Which corporation gets which slot is `reddit.schedule`'s business; this
+module posts or reminds for a slot once it is due, exactly once: the
+scheduler claims a confirmed slot by moving it to pending, and only the run
+that makes that change delivers it.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import date, datetime, timedelta
 
 from django.conf import settings
-from django.db import IntegrityError, transaction
-from django.db.models import Max
 from django.utils import timezone
 
 from app.errors import create_error_id
@@ -22,8 +21,6 @@ from reddit.client import RedditClient, normalize_subreddit
 from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
 
 logger = logging.getLogger(__name__)
-
-DAY_NAMES = [day for day, _ in RedditPostTemplate.day_choices]
 
 # A slot missed by more than this (e.g. workers down) is skipped rather than
 # posted late.
@@ -38,90 +35,13 @@ POST_FAILED = "post_failed"
 DISCORD_MESSAGE_LIMIT = 2000
 
 
-def latest_slot(
-    template: RedditPostTemplate, now: datetime
-) -> datetime | None:
-    """The most recent posting slot at or before `now` (UTC)."""
-    if template.posting_day not in DAY_NAMES:
-        return None
-    days_back = (now.weekday() - DAY_NAMES.index(template.posting_day)) % 7
-    slot = datetime.combine(
-        now.date() - timedelta(days=days_back),
-        template.posting_time,
-        tzinfo=dt_timezone.utc,
+def claim(post: RedditPost) -> bool:
+    """Take a confirmed slot for delivery. False if another run has it."""
+    return bool(
+        RedditPost.objects.filter(
+            pk=post.pk, status=RedditPost.CONFIRMED
+        ).update(status=RedditPost.PENDING)
     )
-    if slot > now:
-        slot -= timedelta(days=7)
-    return slot
-
-
-def _last_handled_at(template: RedditPostTemplate) -> datetime | None:
-    if hasattr(template, "last_handled_at"):
-        return template.last_handled_at
-    return template.posts.aggregate(Max("created_at"))["created_at__max"]
-
-
-def next_slot(template: RedditPostTemplate, now: datetime) -> datetime | None:
-    """The next slot the scheduler will act on, or None if unscheduled."""
-    if not template.is_scheduled:
-        return None
-    slot = latest_slot(template, now)
-    if slot is None:
-        return None
-    if _slot_pending(template, slot, now):
-        return slot
-    return slot + timedelta(days=7)
-
-
-def _slot_pending(
-    template: RedditPostTemplate, slot: datetime, now: datetime
-) -> bool:
-    if now - slot > CATCH_UP_WINDOW:
-        return False
-    # Claimed by an earlier run, or posted by hand since the slot.
-    last_handled_at = _last_handled_at(template)
-    return last_handled_at is None or last_handled_at < slot
-
-
-def due_posts(now: datetime) -> list[tuple[RedditPostTemplate, datetime]]:
-    due = []
-    templates = (
-        RedditPostTemplate.objects.exclude(posting_day="")
-        .exclude(subreddit="")
-        .annotate(last_handled_at=Max("posts__created_at"))
-    )
-    for template in templates:
-        slot = latest_slot(template, now)
-        if slot and _slot_pending(template, slot, now):
-            due.append((template, slot))
-    return due
-
-
-def claim(
-    template: RedditPostTemplate, slot: datetime, now: datetime
-) -> RedditPost | None:
-    """The new pending post for this slot, or None if another run has it."""
-    try:
-        with transaction.atomic():
-            return RedditPost.objects.create(
-                template=template, scheduled_for=slot, created_at=now
-            )
-    except IntegrityError:
-        return None
-
-
-def run_scheduled_posts(now: datetime | None = None) -> list[str]:
-    """Deliver every post whose slot has arrived. Returns the outcomes."""
-    now = now or timezone.now()
-    outcomes = []
-    for template, slot in due_posts(now):
-        post = claim(template, slot, now)
-        if post is None:
-            continue
-        outcome = deliver(template, post)
-        logger.info("Scheduled Reddit post %s: %s", template.pk, outcome)
-        outcomes.append(outcome)
-    return outcomes
 
 
 def posting_account(template: RedditPostTemplate) -> RedditAccount | None:
@@ -153,8 +73,13 @@ def reddit_client_for(template: RedditPostTemplate) -> RedditClient:
     return RedditClient()
 
 
-def deliver(template: RedditPostTemplate, post: RedditPost) -> str:
+def deliver(
+    template: RedditPostTemplate,
+    post: RedditPost,
+    now: datetime | None = None,
+) -> str:
     """Post or remind for a claimed slot. Returns the post's final status."""
+    post.delivered_at = now or timezone.now()
     reason = None
     if template.delivery_method == RedditPostTemplate.AUTOMATIC:
         reason = automatic_blocker(template)
@@ -169,7 +94,7 @@ def deliver(template: RedditPostTemplate, post: RedditPost) -> str:
         if send_reminder(template, reason)
         else RedditPost.SKIPPED
     )
-    post.save(update_fields=["status", "fallback_reason"])
+    post.save(update_fields=["status", "fallback_reason", "delivered_at"])
     return post.status
 
 
@@ -190,6 +115,7 @@ def submit(
     )
     if post is None:
         post = RedditPost(template=template)
+    post.delivered_at = post.delivered_at or timezone.now()
     post.title = title
     if result and result.get("url"):
         post.status = RedditPost.POSTED
@@ -280,7 +206,7 @@ def reminder_messages(
         header.append(REASON_TEXT[reason])
     header += [
         f"Post it here: <https://www.reddit.com/r/{subreddit}/submit>",
-        f"Edit it, or change the day or how it's sent: <{settings_url(template)}>",
+        f"Edit it, pause it, or change how it's sent: <{settings_url(template)}>",
         "",
         # Reddit's rich text editor would show the Markdown as literal text.
         "**SWITCH TO MARKDOWN MODE IN THE EDITOR FIRST**",
@@ -328,22 +254,98 @@ def _chunks(text: str, limit: int) -> list[str]:
 def send_reminder(
     template: RedditPostTemplate, reason: str | None = None
 ) -> bool:
+    return dm_ceo(template, reminder_messages(template, reason))
+
+
+def dm_ceo(template: RedditPostTemplate, messages: list[str]) -> bool:
+    """DM the corporation's CEO. False if they have no Discord or it fails."""
     user = ceo_user(template.corporation)
     discord_user = (
         DiscordUser.objects.filter(user=user).first() if user else None
     )
     if discord_user is None:
         logger.warning(
-            "No Discord-linked CEO to remind for Reddit post %s", template.pk
+            "No Discord-linked CEO to DM for Reddit post %s", template.pk
         )
         return False
     client = DiscordClient()
     try:
-        for message in reminder_messages(template, reason):
+        for message in messages:
             client.send_dm(str(discord_user.id), message=message)
     except Exception:
         logger.warning(
-            "Failed to DM Reddit post reminder %s", template.pk, exc_info=True
+            "Failed to DM about Reddit post %s", template.pk, exc_info=True
         )
         return False
     return True
+
+
+def eve_time(when: datetime) -> str:
+    """e.g. "Tue 3 Nov at 14:20 EVE"."""
+    return f"{when:%a} {when.day} {when:%b} at {when:%H:%M} EVE"
+
+
+def _subreddit(template: RedditPostTemplate) -> str:
+    return f"r/{normalize_subreddit(template.subreddit)}"
+
+
+def month_message(
+    template: RedditPostTemplate, month: date, times: list[datetime]
+) -> str:
+    dates = "\n".join(f"- {eve_time(t)}" for t in times)
+    return "\n".join(
+        [
+            f"**Reddit rotation for {month:%B}: {template.corporation.name}**",
+            f"Your posts to {_subreddit(template)}:",
+            dates,
+            "We'll DM you the day before each one, and again when it's time "
+            "with the post ready to copy.",
+            f"Edit or pause it: <{settings_url(template)}>",
+        ]
+    )
+
+
+def heads_up_message(template: RedditPostTemplate, when: datetime) -> str:
+    return "\n".join(
+        [
+            f"**Reddit post tomorrow: {template.corporation.name}**",
+            f"Your post to {_subreddit(template)} is due {eve_time(when)}. "
+            "We'll DM it to you ready to copy.",
+            f"Want to freshen it up first? <{settings_url(template)}>",
+        ]
+    )
+
+
+def extra_slot_message(template: RedditPostTemplate, when: datetime) -> str:
+    return "\n".join(
+        [
+            f"**Extra Reddit slot: {template.corporation.name}**",
+            f"A slot opened up in the rotation: your post to "
+            f"{_subreddit(template)} is now also due {eve_time(when)}.",
+            f"See your schedule: <{settings_url(template)}>",
+        ]
+    )
+
+
+def slot_removed_message(template: RedditPostTemplate, when: datetime) -> str:
+    return "\n".join(
+        [
+            f"**Reddit slot moved: {template.corporation.name}**",
+            f"An alliance admin moved your {eve_time(when)} post to another "
+            "corporation.",
+            f"See your schedule: <{settings_url(template)}>",
+        ]
+    )
+
+
+def slot_moved_message(
+    template: RedditPostTemplate, old: datetime, new: datetime
+) -> str:
+    return "\n".join(
+        [
+            f"**Reddit slot moved: {template.corporation.name}**",
+            f"Your post to {_subreddit(template)} moved from {eve_time(old)} "
+            f"to {eve_time(new)}.",
+            f"See your schedule: <{settings_url(template)}>",
+        ]
+    )

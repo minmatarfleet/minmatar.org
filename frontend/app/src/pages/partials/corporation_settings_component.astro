@@ -14,15 +14,14 @@ import {
     format_eve_datetime,
     is_corporation_slug,
     parse_delivery_method,
-    parse_posting_day,
+    parse_paused,
     REDDIT_AUTOMATIC_POSTING,
-    REDDIT_POSTING_DAYS,
     REDDIT_FORMATTING_GUIDE_URL,
+    reddit_change_key,
     reddit_connect_flash,
     reddit_markdown_problem_key,
     reddit_save_error_key,
     reddit_section_summary,
-    reddit_weekday_label,
 } from '@helpers/corporations/reddit_settings'
 import type { RedditFlash } from '@helpers/corporations/reddit_settings'
 import { query_string } from '@helpers/string'
@@ -31,7 +30,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
-import Select from '@components/blocks/Select.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import Tag from '@components/blocks/Tag.astro'
 
@@ -56,7 +54,7 @@ const CONNECT_URL = translatePath(`/redirects/reddit_connect_init?${query_string
 
 let flash: RedditFlash | null = reddit_connect_flash(params)
 // Unsaved edits survive a failed save or an unlink.
-let draft: { title: string, content: string, delivery_method: string, posting_day: string } | null = null
+let draft: { title: string, content: string, delivery_method: string, paused: boolean } | null = null
 let rejected_problems: RedditMarkdownProblem[] | null = null
 
 if (Astro.request.method === 'POST') {
@@ -65,7 +63,7 @@ if (Astro.request.method === 'POST') {
         title: String(form.get('title') ?? ''),
         content: String(form.get('content') ?? ''),
         delivery_method: parse_delivery_method(form.get('delivery_method')),
-        posting_day: parse_posting_day(form.get('posting_day')),
+        paused: parse_paused(form.get('paused')),
     }
     try {
         if (form.get('action') === 'disconnect') {
@@ -78,7 +76,7 @@ if (Astro.request.method === 'POST') {
                 delivery_method: REDDIT_AUTOMATIC_POSTING
                     ? parse_delivery_method(draft.delivery_method)
                     : 'discord_reminder',
-                posting_day: parse_posting_day(draft.posting_day),
+                paused: draft.paused,
             })
             flash = { kind: 'success', key: 'corporations.settings.saved' }
             draft = null
@@ -103,16 +101,19 @@ const content = draft?.content ?? settings.content
 const delivery_method = REDDIT_AUTOMATIC_POSTING
     ? parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
     : 'discord_reminder'
-const posting_day = draft?.posting_day ?? settings.posting_day
+const paused = draft?.paused ?? settings.paused
 const account = settings.reddit_account
-const is_scheduled = Boolean(settings.posting_day && settings.subreddit)
+const subreddit = settings.subreddit.replace(/^\/?r\//, '')
+const has_estimates = settings.upcoming.some((slot) => !slot.confirmed)
 // A rejected save lists what Reddit can't render in the typed text; otherwise
 // any warnings about the saved text.
 const markdown_problems = rejected_problems ?? (draft ? [] : settings.markdown_problems)
 const has_blocking_problems = markdown_problems.some((problem) => problem.blocking)
 const summary = reddit_section_summary({ ...settings, delivery_method }, {
     not_set_up: t('corporations.settings.summary_not_set_up'),
-    unscheduled: t('corporations.settings.summary_unscheduled'),
+    paused: t('corporations.settings.summary_paused'),
+    admin_paused: t('corporations.settings.summary_admin_paused'),
+    next: t('corporations.settings.summary_next'),
     reminder: t('corporations.settings.summary_reminder'),
     automatic: t('corporations.settings.summary_automatic'),
     approved: t('corporations.settings.summary_approved'),
@@ -153,39 +154,86 @@ const status_text = (() => {
         <section class="[ corp-settings__panel ]" aria-labelledby="corp-settings-schedule">
             <Flexblock gap="var(--space-xs)">
                 <h3 id="corp-settings-schedule">{t('corporations.settings.schedule')}</h3>
-                {is_scheduled ?
-                    <dl class="[ corp-settings__facts ]">
-                        <div>
-                            <dt>{t('corporations.settings.subreddit')}</dt>
-                            <dd>
-                                <a
-                                    href={`https://www.reddit.com/r/${settings.subreddit.replace(/^\/?r\//, '')}/`}
-                                    target="_blank"
-                                    rel="noreferrer noopener"
-                                >r/{settings.subreddit.replace(/^\/?r\//, '')}</a>
-                            </dd>
-                        </div>
-                        <div>
-                            <dt>{t('corporations.settings.when')}</dt>
-                            <dd>
-                                {t('corporations.settings.when_value')
-                                    .replace('~DAY', reddit_weekday_label(settings.posting_day, lang))
-                                    .replace('~TIME', settings.posting_time)}
-                            </dd>
-                        </div>
-                        {settings.next_run_at &&
+                {settings.rotation_status === 'not_set_up' &&
+                    <p>{t('corporations.settings.not_set_up')}</p>
+                }
+                {settings.rotation_status === 'paused' &&
+                    <p>{t('corporations.settings.paused')}</p>
+                }
+                {settings.rotation_status === 'admin_paused' &&
+                    <p>{t('corporations.settings.admin_paused')}</p>
+                }
+                {settings.rotation_status === 'active' &&
+                    <Flexblock gap="var(--space-s)">
+                        <dl class="[ corp-settings__facts ]">
                             <div>
-                                <dt>{t('corporations.settings.next')}</dt>
-                                <dd>{format_eve_datetime(settings.next_run_at, lang)}</dd>
+                                <dt>{t('corporations.settings.subreddit')}</dt>
+                                <dd>
+                                    <a
+                                        href={`https://www.reddit.com/r/${subreddit}/`}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                    >r/{subreddit}</a>
+                                </dd>
                             </div>
+                            <div>
+                                <dt>{t('corporations.settings.priority')}</dt>
+                                <dd>
+                                    {settings.priority === 'high'
+                                        ? t('corporations.settings.priority_high')
+                                        : t('corporations.settings.priority_normal')}
+                                </dd>
+                            </div>
+                            {settings.interval_days &&
+                                <div>
+                                    <dt>{t('corporations.settings.frequency')}</dt>
+                                    <dd>
+                                        {t('corporations.settings.frequency_value')
+                                            .replace('~DAYS', String(settings.interval_days))}
+                                    </dd>
+                                </div>
+                            }
+                        </dl>
+
+                        <Flexblock gap="var(--space-3xs)">
+                            <p class="[ corp-settings__label ]">{t('corporations.settings.upcoming')}</p>
+                            {settings.upcoming.length > 0 ?
+                                <ul class="[ corp-settings__slots ]" role="list">
+                                    {settings.upcoming.map((slot) =>
+                                        <li>
+                                            <time datetime={slot.scheduled_for}>
+                                                {t('corporations.settings.eve_time').replace('~TIME', format_eve_datetime(slot.scheduled_for, lang))}
+                                            </time>
+                                            {slot.confirmed ?
+                                                <Tag text={t('corporations.settings.confirmed')} color="green" />
+                                                :
+                                                <Tag text={t('corporations.settings.estimate')} color="fleet-yellow" />
+                                            }
+                                        </li>
+                                    )}
+                                </ul>
+                                :
+                                <p>{t('corporations.settings.upcoming_none')}</p>
+                            }
+                            {has_estimates &&
+                                <small class="[ corp-settings__muted ]">{t('corporations.settings.estimate_note')}</small>
+                            }
+                        </Flexblock>
+
+                        {settings.recent_changes.length > 0 &&
+                            <Flexblock gap="var(--space-3xs)">
+                                <p class="[ corp-settings__label ]">{t('corporations.settings.changes')}</p>
+                                <ul class="[ corp-settings__changes ]">
+                                    {settings.recent_changes.map((change) =>
+                                        <li>
+                                            {t(reddit_change_key(change))
+                                                .replace('~DATE', format_eve_datetime(change.scheduled_for, lang))}
+                                        </li>
+                                    )}
+                                </ul>
+                            </Flexblock>
                         }
-                    </dl>
-                    :
-                    <p>
-                        {settings.posting_day
-                            ? t('corporations.settings.paused')
-                            : t('corporations.settings.unscheduled')}
-                    </p>
+                    </Flexblock>
                 }
                 <small class="[ corp-settings__muted ]">{t('corporations.settings.schedule_note')}</small>
             </Flexblock>
@@ -254,25 +302,13 @@ const status_text = (() => {
                     }
                 </Flexblock>
 
-                <Flexblock gap="var(--space-3xs)">
-                    <label class="[ corp-settings__label ]" for="corp-settings-day">
-                        {t('corporations.settings.day_label')}
-                    </label>
-                    <Select
-                        id="corp-settings-day"
-                        name="posting_day"
-                        size="sm"
-                        aria-describedby="corp-settings-day-help"
-                    >
-                        <option value="" selected={!posting_day}>{t('corporations.settings.day_none')}</option>
-                        {REDDIT_POSTING_DAYS.map((day) =>
-                            <option value={day} selected={posting_day === day}>{reddit_weekday_label(day, lang)}</option>
-                        )}
-                    </Select>
-                    <small id="corp-settings-day-help" class="[ corp-settings__muted ]">
-                        {t('corporations.settings.day_help').replace('~TIME', settings.posting_time)}
-                    </small>
-                </Flexblock>
+                <label class="[ corp-settings__option ]">
+                    <input type="checkbox" name="paused" checked={paused} />
+                    <span class="[ corp-settings__option-body ]">
+                        <strong>{t('corporations.settings.pause_label')}</strong>
+                        <small>{t('corporations.settings.pause_help')}</small>
+                    </span>
+                </label>
 
                 <fieldset class="[ corp-settings__delivery ]">
                     <legend class="[ corp-settings__label ]">{t('corporations.settings.delivery_label')}</legend>
@@ -505,6 +541,30 @@ const status_text = (() => {
             margin: 0;
             color: var(--highlight);
         }
+    }
+
+    .corp-settings__slots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            align-items: center;
+            color: var(--highlight);
+        }
+    }
+
+    .corp-settings__changes {
+        margin: 0;
+        padding-inline-start: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
     }
 
     .corp-settings__delivery {

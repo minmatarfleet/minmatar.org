@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from ninja import Schema
@@ -18,6 +18,22 @@ class MarkdownProblem(Schema):
     blocking: bool
 
 
+class UpcomingSlot(Schema):
+    scheduled_for: datetime
+    # False: an estimate from next month's draft, which can still move.
+    confirmed: bool
+
+
+class ScheduleChange(Schema):
+    created_at: datetime
+    slot_date: date
+    scheduled_for: datetime
+    # True: the post gained this slot; False: it lost it.
+    gained: bool
+    # rotation | paused | admin
+    reason: str
+
+
 class CorporationRedditPost(Schema):
     corporation_id: int
     exists: bool
@@ -25,9 +41,14 @@ class CorporationRedditPost(Schema):
     content: str
     delivery_method: str
     subreddit: str
-    posting_day: str
-    posting_time: str
-    next_run_at: Optional[datetime] = None
+    paused: bool
+    # high | normal
+    priority: str
+    # active | paused | admin_paused | not_set_up
+    rotation_status: str
+    interval_days: Optional[int] = None
+    upcoming: list[UpcomingSlot] = []
+    recent_changes: list[ScheduleChange] = []
     approved: bool
     approved_at: Optional[datetime] = None
     # ready | not_approved | no_account | account_invalid | unscheduled
@@ -49,5 +70,5 @@ class CorporationRedditPostUpdate(Schema):
     title: str
     content: str
     delivery_method: str
-    # monday..sunday, or "" to unschedule. Omit to leave the day unchanged.
-    posting_day: Optional[str] = None
+    # Take the post out of the rotation, or put it back. Omit to leave it.
+    paused: Optional[bool] = None
