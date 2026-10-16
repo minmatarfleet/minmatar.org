@@ -14,7 +14,7 @@ from django.test import override_settings
 from esi.models import Token, Scope
 
 from app.test import TestCase
-from eveuniverse.models import EveType
+from eveuniverse.models import EveCategory, EveGroup, EveType
 from eveonline.client import EsiResponse
 from eveonline.models import (
     EvePlayer,
@@ -231,11 +231,20 @@ class SkillsUpdateTestCase(TestCase):
         char = EveCharacter.objects.create(
             character_id=123, character_name="Test Character 1"
         )
+        category = EveCategory.objects.create(
+            id=16, name="Skill", published=True
+        )
+        EveGroup.objects.create(
+            id=1, name="Skill Group", published=True, eve_category=category
+        )
         EveType.objects.create(
             id=234,
             name="Skill 234",
             published=True,
             eve_group_id=1,
+            # Matches EVEUNIVERSE_LOAD_DOGMAS so get_or_create_esi
+            # treats the row as complete instead of refetching it.
+            enabled_sections=EveType.enabled_sections.dogmas,
         )
         esi_skill = {
             "skill_id": 234,

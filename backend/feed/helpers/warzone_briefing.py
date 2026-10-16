@@ -8,6 +8,7 @@ from django.db.models import Count, Max, Min, Q
 from django.utils import timezone
 from eveuniverse.models import EveConstellation, EveSolarSystem
 
+from eveonline.client import live_esi_allowed
 from feed.helpers.fw_contested import _occupier_payload_key
 from feed.models import (
     FeedKillmail,
@@ -123,7 +124,7 @@ def _resolve_system_metadata(
         )
     )
     found = {system.id for system in systems}
-    missing = system_ids - found
+    missing = system_ids - found if live_esi_allowed() else set()
     for system_id in missing:
         system, _ = EveSolarSystem.objects.get_or_create_esi(id=system_id)
         systems.append(system)

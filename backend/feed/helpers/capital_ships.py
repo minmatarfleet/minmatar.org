@@ -5,6 +5,7 @@ from typing import Any, Iterable
 
 from eveuniverse.models import EveType
 
+from eveonline.client import live_esi_allowed
 from feed.constants import CAPITAL_SHIP_GROUPS
 
 
@@ -14,6 +15,8 @@ def is_capital_ship_type(ship_type_id: int | None) -> bool:
 
     ship_type = EveType.objects.filter(id=ship_type_id).first()
     if ship_type is None:
+        if not live_esi_allowed():
+            return False
         ship_type, _ = EveType.objects.get_or_create_esi(id=ship_type_id)
     group = ship_type.eve_group
     if group is None:
