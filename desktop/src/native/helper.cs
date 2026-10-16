@@ -2,7 +2,7 @@
 // Read-only towards EVE: it watches which window is in front and where the EVE client windows are.
 // It never reads EVE memory, never injects, never sends input to EVE.
 // The only windows it changes are the overlay's own (glass, square corners, no native caption, their place in
-// the window order). EVE's windows are only looked at, never moved or restyled.
+// the window order, a repaint after they lose focus). EVE's windows are only looked at, never moved or restyled.
 //
 // Compiled at launch by PowerShell Add-Type (C# 5, .NET Framework, ships with Windows) so the app needs no native build step.
 //
@@ -47,6 +47,7 @@ public static class MfoHelper {
   [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
   [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
   [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern bool RedrawWindow(IntPtr h, IntPtr rect, IntPtr rgn, uint flags);
 
   const uint EVENT_SYSTEM_FOREGROUND = 0x0003, EVENT_SYSTEM_MINIMIZEEND = 0x0017;
   const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B, EVENT_OBJECT_NAMECHANGE = 0x800C;
@@ -54,6 +55,7 @@ public static class MfoHelper {
   const long WS_CAPTION = 0x00C00000, WS_EX_TOPMOST = 0x8;
   const uint GW_HWNDPREV = 3;
   static readonly IntPtr HWND_TOP = IntPtr.Zero;
+  const uint RDW_INVALIDATE = 0x1, RDW_ERASE = 0x4, RDW_ALLCHILDREN = 0x80, RDW_UPDATENOW = 0x100, RDW_FRAME = 0x400;
   const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
   const uint WM_APP = 0x8000, WM_APP_CMD = WM_APP + 1, WM_APP_SCAN = WM_APP + 2;
 
@@ -63,6 +65,8 @@ public static class MfoHelper {
   static readonly HashSet<string> procNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   static readonly Dictionary<uint, string> pidNames = new Dictionary<uint, string>();
   static readonly HashSet<long> clientHwnds = new HashSet<long>();
+  static readonly HashSet<long> ownHwnds = new HashSet<long>();   // our windows (every one gets glass)
+  static long lastFg;
   static string lastClients = "";
 
   static void Out(string s) { lock (Console.Out) { Console.Out.WriteLine(s); Console.Out.Flush(); } }
@@ -112,6 +116,8 @@ public static class MfoHelper {
   }
 
   static void OnForeground(IntPtr hook, uint ev, IntPtr h, int obj, int child, uint thread, uint time) {
+    if (ownHwnds.Contains(lastFg) || ownHwnds.Contains(h.ToInt64())) Repaint();
+    lastFg = h.ToInt64();
     uint pid; string n = ProcName(h, out pid);
     bool client = IsClient(h);   // only an EVE client's title is reported; other apps' titles never leave this process
     var cls = new StringBuilder(64); GetClassName(h, cls, 64);   // process + window class let the app recognise the shell and screenshot tools
@@ -125,10 +131,26 @@ public static class MfoHelper {
     if (clientHwnds.Contains(h.ToInt64())) Scan(); // client moved/resized/minimised
   }
 
+  // When one of our windows loses focus (pin/unpin, or a click on it while unpinned), Windows paints its classic
+  // inactive caption into the window's GDI surface even without WS_CAPTION: Chromium counts the frame as
+  // system-drawn, so the undocumented caption-draw messages reach DefWindowProc. The page is drawn over that
+  // surface and is see-through at the header, so the light-blue "Intel" bar shows and stays. Removing the
+  // window's theme or turning off DWM non-client rendering doesn't stop it; a full repaint wipes it.
+  static void Repaint() {
+    var gone = new List<long>();
+    foreach (var id in ownHwnds) {
+      var h = new IntPtr(id);
+      if (!IsWindow(h)) { gone.Add(id); continue; }
+      RedrawWindow(h, IntPtr.Zero, IntPtr.Zero, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME);
+    }
+    foreach (var id in gone) ownHwnds.Remove(id);
+  }
+
   static void Glass(string[] p) {
     // glass <hwnd> <AABBGGRR>: live blur-behind that keeps working while the window is NOT focused.
     // (Windows 11's DWMWA_SYSTEMBACKDROP_TYPE acrylic falls back to a flat colour when inactive - see evidence/.)
     var h = new IntPtr(long.Parse(p[1]));
+    ownHwnds.Add(h.ToInt64());
     uint tint = Convert.ToUInt32(p.Length > 2 ? p[2] : "B0080808", 16);
     var a = new ACCENT { State = 4 /*ACCENT_ENABLE_ACRYLICBLURBEHIND*/, Flags = 2, Gradient = tint, Anim = 0 };
     int sz = Marshal.SizeOf(a); IntPtr mem = Marshal.AllocHGlobal(sz);
