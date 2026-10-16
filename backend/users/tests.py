@@ -1,5 +1,7 @@
 from unittest.mock import patch, MagicMock
 
+import jwt
+
 from django.conf import settings
 from django.db import connection
 from django.db.models import signals
@@ -20,6 +22,7 @@ from users.helpers import (
     make_user_objects,
     offboard_user,
 )
+from users.models import UserDesktopSettings
 from users.router import callback
 
 # Create your tests here.
@@ -357,6 +360,83 @@ class UserRouterTestCase(TestCase):
         self.assertEqual(
             "mobile://auth/callback",
             self.client.session["authentication_redirect_url"],
+        )
+
+
+class DesktopSettingsTestCase(TestCase):
+    """Desktop app settings saved on the account."""
+
+    URL = "/api/users/me/desktop-settings"
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="desktop_pilot")
+        token = jwt.encode(
+            {"user_id": self.user.id}, settings.SECRET_KEY, algorithm="HS256"
+        )
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+    def patch_values(self, values, **extra):
+        return self.client.patch(
+            self.URL,
+            {"values": values},
+            content_type="application/json",
+            **{**self.auth, **extra},
+        )
+
+    def test_requires_sign_in(self):
+        self.assertEqual(self.client.get(self.URL).status_code, 401)
+        self.assertEqual(
+            self.client.patch(
+                self.URL, {"values": {}}, content_type="application/json"
+            ).status_code,
+            401,
+        )
+
+    def test_empty_until_first_save(self):
+        response = self.client.get(self.URL, **self.auth)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"values": {}, "updated_at": None})
+        self.assertFalse(UserDesktopSettings.objects.exists())
+
+    def test_patch_merges_keys_and_null_removes(self):
+        bounds = {"x": 10, "y": 20, "width": 380, "height": 520}
+        self.patch_values(
+            {"show_sneak": False, "window.fleets": {"bounds": bounds}}
+        )
+        response = self.patch_values(
+            {"only_over_eve": True, "show_sneak": None}
+        )
+        self.assertEqual(response.status_code, 200)
+        expected = {
+            "window.fleets": {"bounds": bounds},
+            "only_over_eve": True,
+        }
+        self.assertEqual(response.json()["values"], expected)
+        self.assertEqual(
+            self.client.get(self.URL, **self.auth).json()["values"], expected
+        )
+
+    def test_settings_are_per_user(self):
+        self.patch_values({"show_sneak": False})
+        other = User.objects.create_user(username="someone_else")
+        token = jwt.encode(
+            {"user_id": other.id}, settings.SECRET_KEY, algorithm="HS256"
+        )
+        response = self.client.get(
+            self.URL, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.json()["values"], {})
+
+    def test_rejects_oversized_settings(self):
+        response = self.patch_values({"x" * 65: 1})
+        self.assertEqual(response.status_code, 400)
+        response = self.patch_values({f"k{i}": i for i in range(101)})
+        self.assertEqual(response.status_code, 400)
+        response = self.patch_values({"big": "x" * 33_000})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            self.client.get(self.URL, **self.auth).json()["values"], {}
         )
 
 

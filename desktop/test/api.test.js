@@ -90,3 +90,24 @@ test('config defaults to production and accepts overrides', () => {
     assert.equal(load_config(['--api=http://localhost:8000/'], {}).api_url, 'http://localhost:8000')
     assert.equal(load_config([], { MINMATAR_API_URL: 'https://staging.example' }).api_url, 'https://staging.example')
 })
+
+test('desktop settings: GET with the token, PATCH sends only the given keys as JSON', async () => {
+    const calls = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            calls.push({ url, method: options.method, auth: options.headers.Authorization, type: options.headers['Content-Type'], body: options.body, signal: options.signal })
+            return { ok: true, status: 200, json: async () => ({ values: { show_sneak: false }, updated_at: null }) }
+        },
+    })
+    assert.deepEqual((await api.desktop_settings()).values, { show_sneak: false })
+    await api.save_desktop_settings({ show_sneak: false, 'window.fleets': null })
+    assert.equal(calls[0].method, 'GET')
+    assert.equal(calls[0].url, 'https://api.example/api/users/me/desktop-settings')
+    assert.equal(calls[1].method, 'PATCH')
+    assert.equal(calls[1].auth, 'Bearer jwt')
+    assert.equal(calls[1].type, 'application/json')
+    assert.deepEqual(JSON.parse(calls[1].body), { values: { show_sneak: false, 'window.fleets': null } })
+    assert.ok(calls[1].signal, 'requests carry a timeout so a hung API never blocks settings')
+})

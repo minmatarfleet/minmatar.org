@@ -1,9 +1,11 @@
+import json
 import logging
 
 import jwt
 from typing import List, Optional
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.shortcuts import redirect
 from django.utils import timezone
 from ninja import Router
@@ -32,7 +34,12 @@ from .helpers import (
     make_user_objects,
     offboard_user,
 )
-from .schemas import UserProfileSchema
+from .models import UserDesktopSettings
+from .schemas import (
+    DesktopSettingsPatchSchema,
+    DesktopSettingsSchema,
+    UserProfileSchema,
+)
 
 logger = logging.getLogger(__name__)
 auth_url_discord = discord_authorize_url(
@@ -208,6 +215,63 @@ def get_session(request):
 )
 def get_current_user(request):
     return get_user_profile(request.user.id)
+
+
+DESKTOP_SETTINGS_MAX_KEYS = 100
+DESKTOP_SETTINGS_MAX_KEY_LENGTH = 64
+DESKTOP_SETTINGS_MAX_BYTES = 32_000
+
+
+def desktop_settings_response(row):
+    if row is None:
+        return DesktopSettingsSchema(values={}, updated_at=None)
+    return DesktopSettingsSchema(values=row.values, updated_at=row.updated_at)
+
+
+@router.get(
+    "/me/desktop-settings",
+    summary="Get the desktop app settings saved on your account",
+    auth=AuthBearer(),
+    response={200: DesktopSettingsSchema},
+)
+def get_desktop_settings(request):
+    row = UserDesktopSettings.objects.filter(user=request.user).first()
+    return desktop_settings_response(row)
+
+
+@router.patch(
+    "/me/desktop-settings",
+    summary="Merge changes into the desktop app settings on your account",
+    description=(
+        "Sets each key in values; a null value removes the key. Keys not "
+        "sent are left alone, so two PCs changing different settings don't "
+        "overwrite each other."
+    ),
+    auth=AuthBearer(),
+    response={200: DesktopSettingsSchema, 400: ErrorResponse},
+)
+def patch_desktop_settings(request, payload: DesktopSettingsPatchSchema):
+    for key in payload.values:
+        if not key or len(key) > DESKTOP_SETTINGS_MAX_KEY_LENGTH:
+            return 400, ErrorResponse(detail=f"Invalid setting key: {key!r}")
+
+    with transaction.atomic():
+        row, _ = UserDesktopSettings.objects.select_for_update().get_or_create(
+            user=request.user
+        )
+        values = dict(row.values or {})
+        for key, value in payload.values.items():
+            if value is None:
+                values.pop(key, None)
+            else:
+                values[key] = value
+        if len(values) > DESKTOP_SETTINGS_MAX_KEYS:
+            return 400, ErrorResponse(detail="Too many settings.")
+        if len(json.dumps(values)) > DESKTOP_SETTINGS_MAX_BYTES:
+            return 400, ErrorResponse(detail="Settings are too large.")
+        row.values = values
+        row.save()
+    return desktop_settings_response(row)
 
 
 def redirect_url_from_session(request):
