@@ -1,4 +1,4 @@
-import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblemCode } from '@dtypes/api.minmatar.org'
+import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblemCode, RedditPostingDay } from '@dtypes/api.minmatar.org'
 import type { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
@@ -8,8 +8,13 @@ type UiKey = keyof typeof ui['en']
 // re-enable; the backend already supports it.
 export const REDDIT_AUTOMATIC_POSTING: boolean = false
 
-// Same order and spelling as RedditScheduledPost.day_choices in the backend.
+// Same order and spelling as RedditPostTemplate.day_choices in the backend.
 export const REDDIT_POSTING_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+
+/** A posting day from form input; anything else means not scheduled. */
+export function parse_posting_day(value: unknown): RedditPostingDay | '' {
+    return (REDDIT_POSTING_DAYS as readonly unknown[]).includes(value) ? value as RedditPostingDay : ''
+}
 
 export function reddit_weekday_label(day: string, locale: string = 'en'): string {
     const index = (REDDIT_POSTING_DAYS as readonly string[]).indexOf(day)
@@ -66,6 +71,7 @@ const SAVE_ERRORS: Record<string, UiKey> = {
     title_too_long: 'corporations.settings.error_title_too_long',
     content_required: 'corporations.settings.error_content_required',
     content_too_long: 'corporations.settings.error_content_too_long',
+    invalid_posting_day: 'corporations.settings.error_posting_day',
 }
 
 export function reddit_save_error_key(code: string): UiKey {

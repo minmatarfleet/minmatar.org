@@ -3,6 +3,7 @@ import {
     format_eve_datetime,
     is_corporation_slug,
     parse_delivery_method,
+    parse_posting_day,
     reddit_connect_flash,
     reddit_markdown_problem_key,
     reddit_save_error_key,
@@ -19,6 +20,17 @@ describe('corporation Reddit settings', () => {
         expect(reddit_weekday_label('sunday')).toBe('Sunday')
         expect(reddit_weekday_label('')).toBe('')
         expect(reddit_weekday_label('caturday')).toBe('')
+    })
+
+    it('accepts only backend posting days from the form', () => {
+        expect(parse_posting_day('friday')).toBe('friday')
+        expect(parse_posting_day('')).toBe('')
+        expect(parse_posting_day('Friday')).toBe('')
+        expect(parse_posting_day(null)).toBe('')
+    })
+
+    it('explains an invalid day', () => {
+        expect(reddit_save_error_key('invalid_posting_day')).toBe('corporations.settings.error_posting_day')
     })
 
     it('shows times in EVE time whatever the server timezone', () => {

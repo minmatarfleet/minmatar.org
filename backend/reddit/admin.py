@@ -1,22 +1,23 @@
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
+from django.db.models import Max
 from django.utils import timezone
 
 from reddit.client import RedditClient
 from reddit.markdown import blocking_problems
-from reddit.models import RedditAccount, RedditScheduledPost
+from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
 from reddit.service import link_reddit_post_to_discord, RedditService
 
 reddit_client = RedditClient()
 reddit_service = RedditService()
 
 
-class RedditScheduledPostAdminForm(forms.ModelForm):
+class RedditPostTemplateAdminForm(forms.ModelForm):
     """On edit, populate flair dropdown from the instance's subreddit."""
 
     class Meta:
-        model = RedditScheduledPost
+        model = RedditPostTemplate
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
@@ -57,19 +58,39 @@ class RedditScheduledPostAdminForm(forms.ModelForm):
         return content
 
 
-def _record_approval(scheduled_post, user):
-    if scheduled_post.approved:
-        scheduled_post.approved_by = user
-        scheduled_post.approved_at = timezone.now()
+def _record_approval(template, user):
+    if template.approved:
+        template.approved_by = user
+        template.approved_at = timezone.now()
     else:
-        scheduled_post.approved_by = None
-        scheduled_post.approved_at = None
+        template.approved_by = None
+        template.approved_at = None
 
 
-class RedditPostAdmin(admin.ModelAdmin):
-    """Custom admin model for RedditScheduledPost entities"""
+class RedditPostInline(admin.TabularInline):
+    """What happened each time the template came due (newest first)."""
 
-    form = RedditScheduledPostAdminForm
+    model = RedditPost
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "scheduled_for",
+        "status",
+        "fallback_reason",
+        "title",
+        "reddit_url",
+        "created_at",
+    ]
+    readonly_fields = fields
+    ordering = ["-created_at"]
+
+
+@admin.register(RedditPostTemplate)
+class RedditPostTemplateAdmin(admin.ModelAdmin):
+    """A corporation's recurring Reddit post and its delivery history."""
+
+    form = RedditPostTemplateAdminForm
     list_display = [
         "title",
         "corporation",
@@ -78,18 +99,31 @@ class RedditPostAdmin(admin.ModelAdmin):
         "posting_time",
         "delivery_method",
         "approved",
-        "last_post_at",
-        "last_reminder_at",
+        "discord_channel",
+        "last_delivered_at",
     ]
     list_filter = ["approved", "delivery_method", "posting_day", "subreddit"]
-    search_fields = ["title", "corporation__name"]
-    autocomplete_fields = ["corporation"]
+    list_select_related = ["corporation", "discord_channel"]
+    search_fields = ["title", "corporation__name", "corporation__ticker"]
+    autocomplete_fields = ["corporation", "discord_channel"]
     readonly_fields = [
         "approved_by",
         "approved_at",
-        "last_scheduled_on",
         "updated_at",
     ]
+    inlines = [RedditPostInline]
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(last_delivered_at=Max("posts__created_at"))
+        )
+
+    @admin.display(ordering="last_delivered_at")
+    def last_delivered_at(self, obj):
+        return obj.last_delivered_at
+
     actions = [
         "action_approve",
         "action_manually_submit_post",
@@ -118,10 +152,10 @@ class RedditPostAdmin(admin.ModelAdmin):
         if not request.user.is_superuser:
             return
         count = 0
-        for scheduled_post in queryset.filter(approved=False):
-            scheduled_post.approved = True
-            _record_approval(scheduled_post, request.user)
-            scheduled_post.save()
+        for template in queryset.filter(approved=False):
+            template.approved = True
+            _record_approval(template, request.user)
+            template.save()
             count += 1
         self.message_user(
             request, f"Approved {count} post(s).", messages.SUCCESS
@@ -130,14 +164,22 @@ class RedditPostAdmin(admin.ModelAdmin):
     @admin.action(description="Manually submit post")
     def action_manually_submit_post(self, request, queryset):
         done = 0
-        for scheduled_post in queryset:
+        for template in queryset:
             try:
-                reddit_service.post_recriutment_ad(scheduled_post)
-                done += 1
+                post = reddit_service.post_recriutment_ad(template)
             except Exception as e:
                 self.message_user(
                     request,
-                    f"Failed to submit '{scheduled_post.title}': {e}",
+                    f"Failed to submit '{template.title}': {e}",
+                    messages.ERROR,
+                )
+                continue
+            if post.status == RedditPost.POSTED:
+                done += 1
+            else:
+                self.message_user(
+                    request,
+                    f"Reddit rejected '{template.title}'.",
                     messages.ERROR,
                 )
         if done:
@@ -151,21 +193,27 @@ class RedditPostAdmin(admin.ModelAdmin):
     def action_manually_link_to_discord(self, request, queryset):
         done = 0
         skipped = 0
-        for scheduled_post in queryset:
-            if not scheduled_post.discord_channel_id:
+        for template in queryset:
+            if not template.discord_channel_id:
                 skipped += 1
                 continue
-            url = scheduled_post.last_reddit_post_url
-            title = scheduled_post.last_reddit_post_title
-            if not url or not title:
+            post = (
+                template.posts.filter(status=RedditPost.POSTED)
+                .exclude(reddit_url="")
+                .first()
+            )
+            if post is None:
                 self.message_user(
                     request,
-                    f"'{scheduled_post.title}' has no last Reddit post URL/title. Submit a post first.",
+                    f"'{template.title}' has never been posted to Reddit. "
+                    "Submit a post first.",
                     messages.WARNING,
                 )
                 skipped += 1
                 continue
-            if link_reddit_post_to_discord(scheduled_post, url, title):
+            if link_reddit_post_to_discord(
+                template, post.reddit_url, post.title
+            ):
                 done += 1
         if done:
             self.message_user(
@@ -181,7 +229,28 @@ class RedditPostAdmin(admin.ModelAdmin):
             )
 
 
-admin.site.register(RedditScheduledPost, RedditPostAdmin)
+@admin.register(RedditPost)
+class RedditPostAdmin(admin.ModelAdmin):
+    """Read-only log of every Reddit post and reminder."""
+
+    list_display = [
+        "template",
+        "scheduled_for",
+        "status",
+        "fallback_reason",
+        "reddit_url",
+        "created_at",
+    ]
+    list_filter = ["status", "fallback_reason"]
+    list_select_related = ["template__corporation"]
+    search_fields = ["template__title", "template__corporation__name"]
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(RedditAccount)

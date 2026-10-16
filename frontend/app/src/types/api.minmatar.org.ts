@@ -285,6 +285,8 @@ export interface CorporationOpenApplication {
 
 export type RedditDeliveryMethod = 'discord_reminder' | 'automatic'
 
+export type RedditPostingDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+
 export type RedditAutomaticStatus = 'ready' | 'not_approved' | 'no_account' | 'account_invalid' | 'unscheduled'
 
 export interface LinkedRedditAccount {
@@ -326,6 +328,8 @@ export interface CorporationRedditPostUpdate {
     title:              string;
     content:            string;
     delivery_method:    RedditDeliveryMethod;
+    /** monday..sunday, or '' to unschedule. Omit to leave the day as it is. */
+    posting_day?:       RedditPostingDay | '';
 }
 
 export interface CorporationPublicSummary {
