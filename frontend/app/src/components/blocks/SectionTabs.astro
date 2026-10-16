@@ -130,13 +130,18 @@ const default_tab = tab_ids[0] ?? ''
     }
 
     @media screen and (max-width: 767px) {
+        // Tabs share the width while they fit; past that the strip scrolls
+        // sideways instead of widening the page.
         .section-tabs-list {
             gap: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
         }
 
         .section-tab {
-            flex: 1 1 0;
+            flex: 1 0 auto;
             text-align: center;
+            white-space: nowrap;
             padding-inline: var(--space-2xs);
             font-size: var(--step-0);
         }

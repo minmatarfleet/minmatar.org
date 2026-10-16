@@ -208,6 +208,8 @@ class CorporationMemberDetails(Schema):
 class CorporationMemberAccess(Schema):
     can_view_members: bool
     can_view_characters: bool
+    # CEO only: the corporation page's Settings tab.
+    can_edit_settings: bool = False
 
 
 class CorporationMembersTopResponse(Schema):

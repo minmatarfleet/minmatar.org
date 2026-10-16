@@ -144,7 +144,7 @@ export async function get_corporation_id_by_slug(slug: string) {
 
 export async function get_corporation_member_access(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/members/access`
-    return await authorized_get<{ can_view_members: boolean, can_view_characters: boolean }>(access_token, endpoint)
+    return await authorized_get<{ can_view_members: boolean, can_view_characters: boolean, can_edit_settings?: boolean }>(access_token, endpoint)
 }
 
 export async function get_corporation_open_applications(access_token: string, id: number) {

@@ -283,6 +283,51 @@ export interface CorporationOpenApplication {
     created_at: string;
 }
 
+export type RedditDeliveryMethod = 'discord_reminder' | 'automatic'
+
+export type RedditAutomaticStatus = 'ready' | 'not_approved' | 'no_account' | 'account_invalid' | 'unscheduled'
+
+export interface LinkedRedditAccount {
+    username:       string;
+    token_invalid:  boolean;
+}
+
+export type RedditMarkdownProblemCode = 'html' | 'image' | 'footnote' | 'task_list' | 'soft_line_break' | 'fenced_code' | 'heading_space'
+
+export interface RedditMarkdownProblem {
+    code:       RedditMarkdownProblemCode;
+    line:       number;
+    excerpt:    string;
+    blocking:   boolean;
+}
+
+export interface CorporationRedditPost {
+    corporation_id:         number;
+    exists:                 boolean;
+    title:                  string;
+    content:                string;
+    delivery_method:        RedditDeliveryMethod;
+    subreddit:              string;
+    posting_day:            string;
+    posting_time:           string;
+    next_run_at:            string | null;
+    approved:               boolean;
+    approved_at:            string | null;
+    automatic_status:       RedditAutomaticStatus;
+    last_post_at:           string | null;
+    last_reddit_post_url:   string | null;
+    last_reminder_at:       string | null;
+    reddit_account:         LinkedRedditAccount | null;
+    discord_linked:         boolean;
+    markdown_problems:      RedditMarkdownProblem[];
+}
+
+export interface CorporationRedditPostUpdate {
+    title:              string;
+    content:            string;
+    delivery_method:    RedditDeliveryMethod;
+}
+
 export interface CorporationPublicSummary {
     window_days:            number;
     community: {

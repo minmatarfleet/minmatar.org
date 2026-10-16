@@ -340,8 +340,9 @@ CELERYBEAT_OTHER = [
     (
         "[Misc] Reddit scheduled post",
         {
+            # Each post has its own day and time; this delivers the due ones.
             "task": "reddit.tasks.scheduled_reddit_posts",
-            "schedule": crontab(minute=0, hour=13),
+            "schedule": crontab(minute="*/15"),
         },
     ),
     (

@@ -6,6 +6,17 @@ from eveonline.models import EveCorporation
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 
+def ceo_user(corporation: EveCorporation) -> User | None:
+    """The site user who owns the CEO character, matched like user_is_ceo."""
+    ceo = corporation.ceo
+    if ceo is None:
+        return None
+    if ceo.user_id:
+        return ceo.user
+    token = ceo.token
+    return token.user if token and token.user_id else None
+
+
 def user_is_ceo(user: User, corporation: EveCorporation) -> bool:
     ceo = corporation.ceo
     if ceo is None:

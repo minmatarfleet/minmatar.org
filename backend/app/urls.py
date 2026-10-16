@@ -55,6 +55,7 @@ from notifications.router import router as notifications_router
 from feed.router import router as feed_router
 from help_tickets.router import router as help_tickets_router
 from creators.router import router as creators_router
+from reddit.router import router as reddit_router
 from surveys.router import router as surveys_router
 from campaigns.router import router as campaigns_router
 
@@ -89,6 +90,7 @@ api.add_router("notifications", notifications_router)
 api.add_router("discord", discord_router)
 api.add_router("help-tickets", help_tickets_router)
 api.add_router("creators", creators_router)
+api.add_router("reddit", reddit_router)
 api.add_router("surveys", surveys_router)
 api.add_router("campaigns", campaigns_router)
 
