@@ -35,7 +35,7 @@ def seed_codes_and_relabel_sites(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("campaigns", "0022_campaign_parties"),
+        ("campaigns", "0023_enlistment_character_killmails_polled_at"),
         ("eveonline", "0106_merge_fw_payout_corporation_profile"),
     ]
 

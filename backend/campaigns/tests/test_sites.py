@@ -18,7 +18,7 @@ from eveonline.models import EveCharacterFwLpPayout, FwPayoutEventCode
 
 # Migration modules are named with a number, which is not a valid import.
 seed_codes_and_relabel_sites = importlib.import_module(
-    "campaigns.migrations.0023_seed_fw_event_codes"
+    "campaigns.migrations.0024_seed_fw_event_codes"
 ).seed_codes_and_relabel_sites
 
 # Verbatim from a live pull on 18 Sep YC128.
