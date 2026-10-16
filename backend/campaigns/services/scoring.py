@@ -106,13 +106,6 @@ def day_multiplier(campaign, hour_utc: int) -> float:
     return 1.0
 
 
-def streak_points(campaign, streak_days: int) -> int:
-    w = weights(campaign)
-    if streak_days < 3:
-        return 0
-    return int(min(w["streak_per_day"] * (streak_days - 2), w["streak_cap"]))
-
-
 def contribution_mix_bonus(campaign, ways_scored: int) -> float:
     """A bonus for doing three different things in a week, supply included."""
     w = weights(campaign)

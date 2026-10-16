@@ -1116,7 +1116,6 @@ class CampaignEnlistmentAdmin(admin.ModelAdmin):
                     "notify_gang_forming",
                     "notify_standing_fleet",
                     "notify_activity_nearby",
-                    "notify_streak_at_risk",
                     "notify_fleets",
                     "notify_thresholds",
                     "notify_digest",
@@ -1313,7 +1312,6 @@ class CampaignParticipantStatAdmin(admin.ModelAdmin):
         "campaign",
         "points",
         "rank_points",
-        "streak_days",
         "characters_tracked",
     )
     list_filter = ("campaign",)

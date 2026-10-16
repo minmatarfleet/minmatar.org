@@ -772,7 +772,6 @@ class CampaignEnlistment(models.Model):
     notify_gang_forming = models.BooleanField(default=True)
     notify_standing_fleet = models.BooleanField(default=True)
     notify_activity_nearby = models.BooleanField(default=False)
-    notify_streak_at_risk = models.BooleanField(default=True)
     notify_fleets = models.BooleanField(default=True)
     notify_thresholds = models.BooleanField(default=True)
     notify_digest = models.BooleanField(default=True)
@@ -1284,9 +1283,6 @@ class CampaignParticipantStat(models.Model):
     standing_fleet_minutes = models.PositiveIntegerField(default=0)
     active_days = models.PositiveIntegerField(default=0)
 
-    streak_days = models.PositiveIntegerField(default=0)
-    best_streak_days = models.PositiveIntegerField(default=0)
-    shields_used_this_week = models.PositiveSmallIntegerField(default=0)
     last_active_day = models.DateField(null=True, blank=True)
 
     rank_points = models.PositiveIntegerField(null=True, blank=True)

@@ -467,7 +467,6 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                     stat.observed_prime_time if stat else ""
                 ),
                 "last_active_day": stat.last_active_day if stat else None,
-                "streak_days": stat.streak_days if stat else 0,
                 "characters_included": enlistment.included,
                 "characters_tracked": tracked_by_user.get(
                     enlistment.user_id, 0
@@ -484,7 +483,6 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 if row["last_active_day"] is None
                 else -row["last_active_day"].toordinal()
             ),
-            -row["streak_days"],
             row["username"].lower(),
         ),
     )

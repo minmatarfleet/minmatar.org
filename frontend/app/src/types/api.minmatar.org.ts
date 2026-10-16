@@ -2673,7 +2673,7 @@ export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
 export type CampaignSystemPriority = 'high' | 'medium' | 'low'
-export type CampaignLeaderboardMetric = 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
+export type CampaignLeaderboardMetric = 'kills' | 'sites' | 'advantage' | 'fcs'
 export type CampaignLeaderboardPeriod = 'week' | 'rolling7' | 'all'
 export type CampaignCharacterState = 'ready' | 'needs_update' | 'lapsed' | 'removed' | 'missing'
 export type CampaignKillmailOutcome = 'kill' | 'loss'
@@ -2839,7 +2839,6 @@ export interface CampaignDetail {
     fittings:                   CampaignFitting[];
     totals:                     CampaignTotals;
     is_enlisted:                boolean;
-    my_streak:                  number;
     characters_included:        number;
     characters_tracked:         number;
     standing_fleet_up:          boolean;
@@ -2877,7 +2876,6 @@ export interface CampaignRightNow {
     standing_fleet_members: number;
     standing_fleet_boss:    string | null;
     gangs_forming:          CampaignGangForming[];
-    my_streak:              number;
     my_orders_done:         number;
     my_orders_total:        number;
     ticker:                 CampaignTickerEntry[];
@@ -3030,7 +3028,6 @@ export interface CampaignRosterPilot {
     prime_time:             string;
     observed_prime_time:    string;
     last_active_day:        string | null;
-    streak_days:            number;
     characters_included:    number;
     characters_tracked:     number;
 }
@@ -3070,7 +3067,6 @@ export interface CampaignEnlistRequest {
     notify_gang_forming?:       boolean;
     notify_standing_fleet?:     boolean;
     notify_activity_nearby?:    boolean;
-    notify_streak_at_risk?:     boolean;
     digest_hour?:               number;
 }
 

@@ -206,7 +206,6 @@ export async function enlist_campaign(slug:string, access_token:string, options:
         notify_gang_forming: true,
         notify_standing_fleet: true,
         notify_activity_nearby: false,
-        notify_streak_at_risk: true,
         digest_hour: 18,
         ...options,
     }

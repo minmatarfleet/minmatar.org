@@ -43,7 +43,7 @@ const show_report = can_report && !(from_frontlines && !system.advantage_is_stal
 
 const ADVANTAGE_PARTIAL_URL = translatePath(`/partials/campaign_advantage_component?slug=${slug}&system_id=${system.id}`)
 
-/** The quiet "last updated" stack: when each figure on the card was last pulled, full date on hover. */
+/** Everything about how fresh the card is, kept behind one info hover so the header stays clean. */
 const updated = [
     {
         key: 'campaigns.system.updated_contested' as const,
@@ -55,8 +55,21 @@ const updated = [
     },
 ].map(item => ({
     text: t(item.key).replace('{ago}', item.at ? from_now_diff(lang, new Date(item.at)) : t('campaigns.system.updated_never')),
-    title: item.at ? format_date_time(lang, item.at) : undefined,
+    full_date: item.at ? format_date_time(lang, item.at) : undefined,
 }))
+
+const advantage_source_text = [
+    from_frontlines ? t('campaigns.system.from_frontlines') : null,
+    advantage_age_text,
+    system.advantage_basis === 'estimate' ? t('campaigns.system.estimated') : null,
+].filter(Boolean).join(' · ')
+
+/** A reading nobody can trust changes how the numbers read, so that warning stays on the card. */
+const advantage_warning = system.advantage_basis === 'unknown' || system.advantage_age_minutes === null
+    ? t('campaigns.system.no_reading')
+    : system.advantage_is_stale
+        ? t('campaigns.system.reading_stale')
+        : false
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -79,14 +92,37 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
     <Flexblock gap='var(--space-m)'>
         {flash && <small class="[ campaign-system-flash ]" role="status">{flash}</small>}
 
-        <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-baseline ]">
+        <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
             <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
                 <CampaignPriorityIcon priority={system.priority} />
                 <h3 title={`${t(goal_key)} · ${t(status_chip_i18n_key(system.status_chip))}`}>{system.name}</h3>
             </FlexInline>
-            <div class="[ campaign-system-updated ]">
-                {updated.map(item => <small title={item.title}>{item.text}</small>)}
-                <small>{t('campaigns.system.updated_kills')}</small>
+            <div class="[ campaign-system-freshness ]" x-data="{}">
+                <button
+                    type="button"
+                    class="[ campaign-system-freshness-button ]"
+                    aria-label={t('campaigns.system.freshness')}
+                    x-init="tippy($el, Object.assign({}, tippy_options, { allowHTML: true, placement: 'bottom-end', content: $refs.freshness.innerHTML }))"
+                >
+                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.25" />
+                        <circle cx="8" cy="4.75" r="0.9" fill="currentColor" />
+                        <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </button>
+                <template x-ref="freshness">
+                    <div class="[ campaign-freshness-tip ]">
+                        <strong>{t('campaigns.system.freshness')}</strong>
+                        {updated.map(item =>
+                            <div>
+                                <span>{item.text}</span>
+                                {item.full_date && <small>{item.full_date}</small>}
+                            </div>
+                        )}
+                        <div><span>{advantage_source_text}</span></div>
+                        <div><span>{t('campaigns.system.updated_kills')}</span></div>
+                    </div>
+                </template>
             </div>
         </FlexInline>
 
@@ -128,11 +164,7 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                         <small class="[ campaign-advantage-enemy ]">{t('campaigns.system.enemy')} {enemy_pct.toFixed(1)}%</small>
                         <CampaignMeter percent={enemy_pct} color='var(--fleet-yellow)' label={t('campaigns.system.enemy')} />
                     </Flexblock>
-                    <small>
-                        {from_frontlines && `${t('campaigns.system.from_frontlines')} · `}
-                        {advantage_age_text}
-                        {system.advantage_basis === 'estimate' && ` · ${t('campaigns.system.estimated')}`}
-                    </small>
+                    {advantage_warning && <small class="[ campaign-advantage-warning ]">{advantage_warning}</small>}
                     {show_report &&
                         <DialogButton size='sm' color='transparent' max_width='420px'>
                             {t('campaigns.system.report_advantage')}
@@ -202,23 +234,24 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         color: var(--highlight);
     }
 
-    .campaign-system-updated {
-        display: flex;
-        gap: var(--space-2xs);
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        font-size: var(--step--2);
+    .campaign-system-freshness-button {
+        display: inline-flex;
+        padding: var(--space-3xs);
+        border: none;
+        background: none;
         color: var(--foreground);
-        opacity: 0.7;
+        cursor: help;
+        transition: color var(--fast-transition);
+    }
 
-        small + small::before {
-            content: '·';
-            padding-inline-end: var(--space-2xs);
+    @media (hover: hover) {
+        .campaign-system-freshness-button:hover {
+            color: var(--highlight);
         }
+    }
 
-        small[title] {
-            cursor: help;
-        }
+    .campaign-advantage-warning {
+        color: var(--fleet-yellow);
     }
 
     /* Three shared rows: label, primary figure, then whatever else that column has. */
@@ -291,5 +324,24 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
+    }
+</style>
+
+<style lang="scss" is:global>
+    /* Rendered inside the tippy popper, which lives outside this component. */
+    .campaign-freshness-tip {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        text-align: start;
+
+        div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        small {
+            color: var(--foreground);
+        }
     }
 </style>

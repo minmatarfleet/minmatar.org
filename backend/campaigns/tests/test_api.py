@@ -409,6 +409,24 @@ class CampaignApiTests(TestCase):
         self.assertNotIn("points", scored.json()[0])
         self.assertEqual(scored.json()[0]["value"], 2)
 
+    def test_the_fc_board_lists_only_pilots_who_led(self):
+        member = User.objects.create(username="line_member")
+        today = timezone.now().date()
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=self.user, day=today, fleets_led=3
+        )
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=member, day=today, fleets_attended=4
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?metric=fcs&period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual([row["user_id"] for row in body], [self.user.id])
+        self.assertEqual(body[0]["value"], 3)
+
     def test_leaderboard_and_timeline_respond(self):
         for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):
             response = self.client.get(
