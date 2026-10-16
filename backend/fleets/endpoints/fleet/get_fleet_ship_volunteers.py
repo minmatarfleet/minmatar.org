@@ -6,6 +6,7 @@ from authentication import AuthBearer
 
 from fleets.endpoints.helpers import (
     _fleet_authorized,
+    _system_reveal_predicate,
     limit_volunteers_to_viewer,
     make_ship_volunteer_response,
 )
@@ -38,4 +39,8 @@ def get_fleet_ship_volunteers(request, fleet_id: int):
         .select_related("fitting", "fleet_fitting")
         .order_by("fitting_id", "fleet_fitting_id", "id"),
     )
-    return [make_ship_volunteer_response(v) for v in volunteers]
+    reveal = _system_reveal_predicate(request, fleet)
+    return [
+        make_ship_volunteer_response(v, reveal_system=reveal(v))
+        for v in volunteers
+    ]

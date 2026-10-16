@@ -187,6 +187,17 @@ class AssignRoleVolunteerSystemRequest(BaseModel):
     solar_system_name: Optional[str] = Field(default=None, max_length=255)
 
 
+class EveFleetFitRolesResponse(BaseModel):
+    """Roles a composition fit fills. Burst counts are keyed by kind."""
+
+    links: bool = False
+    burst_slots: int = 0
+    bursts_online: Dict[str, int] = {}
+    bursts_fitted: Dict[str, int] = {}
+    cyno: bool = False
+    logi: bool = False
+
+
 class EveFleetShipVolunteerResponse(BaseModel):
     id: int
     character_id: int
@@ -195,6 +206,11 @@ class EveFleetShipVolunteerResponse(BaseModel):
     fleet_fitting_id: Optional[int] = None
     fitting_name: str
     ship_id: int
+    # Command bursts the pilot will run online (kinds, canonical order).
+    bursts: List[str] = []
+    # FC-assigned cyno system; only serialized for the FC and the pilot.
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = None
 
 
 class EveFleetFittingRefitOption(BaseModel):
@@ -217,6 +233,7 @@ class EveFleetCompositionEntryResponse(BaseModel):
     eft_format: str
     refits: List[EveFleetFittingRefitOption]
     module_slots: Dict[str, str] = {}
+    fit_roles: EveFleetFitRolesResponse = EveFleetFitRolesResponse()
 
 
 class CreateEveFleetFittingRequest(BaseModel):
@@ -298,6 +315,8 @@ class ShipSelection(BaseModel):
     character_id: int
     fitting_id: Optional[int] = None
     fleet_fitting_id: Optional[int] = None
+    # Command bursts to run online. Omitted: the fit's online bursts.
+    bursts: Optional[List[str]] = None
 
 
 class MyFleetPilotResponse(BaseModel):
@@ -345,3 +364,36 @@ class EveFleetKillsResponse(BaseModel):
     ships_lost: int
     pods_lost: int
     killmails: List[EveFleetKillmailResponse]
+
+
+class EveFleetRolePilot(BaseModel):
+    """A pilot filling a role, from a ship volunteer or their ship in fleet."""
+
+    character_id: int
+    character_name: str
+    ship_id: int
+    ship_name: str
+    fitting_name: str = ""
+    source: str  # volunteer | in_fleet
+    in_fleet: bool = False
+    # Bursts of the row's kind this pilot runs (links rows only).
+    count: int = 0
+    # Set for a volunteered ship; the FC assigns cyno systems through it.
+    ship_volunteer_id: Optional[int] = None
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = None
+
+
+class EveFleetLinkCoverage(BaseModel):
+    kind: str
+    label: str
+    pilots: List[EveFleetRolePilot]
+
+
+class EveFleetRoleCoverageResponse(BaseModel):
+    """Who fills each fleet role, worked out from ships."""
+
+    logi_fc: List[EveFleetRoleVolunteerResponse]
+    links: List[EveFleetLinkCoverage]
+    cynos: List[EveFleetRolePilot]
+    logi: List[EveFleetRolePilot]

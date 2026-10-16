@@ -837,6 +837,16 @@ class EveFleetShipVolunteer(models.Model):
         blank=True,
         related_name="ship_volunteers",
     )
+    # Command bursts this pilot will run online, by kind ("skirmish",
+    # "information", ...). Defaults to the fit's online bursts; the pilot can
+    # switch to any fitted ones (see fleets.helpers.fit_roles).
+    bursts = models.JSONField(default=list, blank=True)
+    # FC-assigned cyno system for a cyno fit. Private: shown only to the FC
+    # and the pilot, DM'd on Discord, never in the MOTD.
+    solar_system_id = models.BigIntegerField(null=True, blank=True)
+    solar_system_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
@@ -877,6 +887,12 @@ class EveFleetShipVolunteer(models.Model):
             if self.fitting_id
             else self.fleet_fitting.ship_id
         )
+
+    @property
+    def target_eft(self) -> str:
+        if self.fitting_id:
+            return self.fitting.eft_format
+        return self.fleet_fitting.effective_eft
 
     def __str__(self):
         return f"{self.character_name} — {self.target_name}"
@@ -985,25 +1001,21 @@ class EveFleetFittingRefit(models.Model):
 def _motd_role_volunteers(eve_fleet):
     """
     Build role_volunteers list for get_motd: Logi FC, Cynos.
-    The FC-assigned cyno system is intentionally NOT included: it is
-    private and delivered to the pilot by Discord DM.
+    Logi FC is a sign-up; cynos are the pilots in (or volunteered for) a
+    cyno fit. The FC-assigned cyno system is intentionally NOT included: it
+    is private and delivered to the pilot by Discord DM.
     """
-    critical_roles = [
-        (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi FC"),
-        (EveFleetRoleVolunteer.ROLE_CYNO, "Cynos"),
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.role_coverage import fleet_role_pilots
+
+    logi_fc = EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
+    ).order_by("id")
+    cynos = [p for p in fleet_role_pilots(eve_fleet) if p.roles.cyno]
+    return [
+        ("Logi FC", [(v.character_id, v.character_name) for v in logi_fc]),
+        ("Cynos", [(p.character_id, p.character_name) for p in cynos]),
     ]
-    result = []
-    for role_value, role_label in critical_roles:
-        volunteers = EveFleetRoleVolunteer.objects.filter(
-            eve_fleet=eve_fleet, role=role_value
-        ).order_by("id")
-        result.append(
-            (
-                role_label,
-                [(v.character_id, v.character_name) for v in volunteers],
-            )
-        )
-    return result
 
 
 def close_fleet_cleanup(eve_fleet) -> None:

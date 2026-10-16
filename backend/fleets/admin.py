@@ -183,7 +183,15 @@ class FleetShipVolunteerInline(admin.TabularInline):
     extra = 0
     autocomplete_fields = ("fitting",)
     raw_id_fields = ("fleet_fitting",)
-    fields = ("character_name", "character_id", "fitting", "fleet_fitting")
+    fields = (
+        "character_name",
+        "character_id",
+        "fitting",
+        "fleet_fitting",
+        "bursts",
+        "solar_system_name",
+        "solar_system_id",
+    )
     verbose_name = "Ship volunteer"
     verbose_name_plural = "Ship volunteers"
 

@@ -550,19 +550,19 @@ export async function get_fleet_commander_metrics(access_token:string) {
         throw new Error(`Error fetching fleet commander metrics: ${error.message}`, { cause: error.cause });
     }
 }
-// --- Cyno system assignment -------------------------------------------------
+// --- Cyno system assignment (on a pilot volunteered in a cyno fit) ----------
 
-export async function assign_fleet_role_volunteer_system(
+export async function assign_fleet_ship_volunteer_system(
     access_token: string,
     fleet_id: number,
-    volunteer_id: number,
+    ship_volunteer_id: number,
     payload: { solar_system_id: number | null; solar_system_name: string | null }
-): Promise<FleetRoleVolunteer> {
+): Promise<FleetShipVolunteer> {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${access_token}`,
     }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers/${volunteer_id}`
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/ship-volunteers/${ship_volunteer_id}`
     const response = await fetch(ENDPOINT, {
         method: 'PATCH',
         headers,
@@ -570,7 +570,52 @@ export async function assign_fleet_role_volunteer_system(
     })
     if (!response.ok)
         throw new Error(await parse_response_error(response, `PATCH ${ENDPOINT}`))
-    return await response.json() as FleetRoleVolunteer
+    return await response.json() as FleetShipVolunteer
+}
+
+// --- Fleet roles, worked out from ships --------------------------------------
+
+export type BurstKind = 'armor' | 'shield' | 'skirmish' | 'information' | 'mining'
+
+export interface FleetRolePilot {
+    character_id: number
+    character_name: string
+    ship_id: number
+    ship_name: string
+    fitting_name: string
+    source: 'volunteer' | 'in_fleet'
+    in_fleet: boolean
+    /** Bursts of the row's kind this pilot runs (links rows only). */
+    count: number
+    ship_volunteer_id: number | null
+    solar_system_id?: number | null
+    solar_system_name?: string | null
+}
+
+export interface FleetLinkCoverage {
+    kind: BurstKind
+    label: string
+    pilots: FleetRolePilot[]
+}
+
+export interface FleetRoleCoverage {
+    /** Logi FC is the one role still signed up for. */
+    logi_fc: FleetRoleVolunteer[]
+    links: FleetLinkCoverage[]
+    cynos: FleetRolePilot[]
+    logi: FleetRolePilot[]
+}
+
+export async function get_fleet_roles(access_token: string, fleet_id: number): Promise<FleetRoleCoverage> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/roles`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as FleetRoleCoverage
 }
 
 // --- Ship volunteers (doctrine composition) ----------------------------------
@@ -583,6 +628,10 @@ export interface FleetShipVolunteer {
     fleet_fitting_id: number | null
     fitting_name: string
     ship_id: number
+    /** Command bursts this pilot runs online. */
+    bursts: BurstKind[]
+    solar_system_id?: number | null
+    solar_system_name?: string | null
 }
 
 // --- Fleet composition (doctrine fits + fleet fittings) ---------------------
@@ -606,6 +655,18 @@ export interface FleetCompositionEntry {
     refits: { id: number; name: string }[]
     /** Module name → slot for every module named in the EFT, when the universe cache knows it. */
     module_slots: Record<string, ModuleSlot>
+    /** Links / cyno / logi this fit fills. */
+    fit_roles: FleetFitRoles
+}
+
+export interface FleetFitRoles {
+    links: boolean
+    /** How many bursts the fit runs at once. */
+    burst_slots: number
+    bursts_online: Partial<Record<BurstKind, number>>
+    bursts_fitted: Partial<Record<BurstKind, number>>
+    cyno: boolean
+    logi: boolean
 }
 
 export type ModuleSlot = 'high' | 'mid' | 'low' | 'rig'
@@ -631,6 +692,8 @@ export interface ShipSelection {
     character_id: number
     fitting_id?: number | null
     fleet_fitting_id?: number | null
+    /** Bursts to run online; omitted = the fit's online bursts. */
+    bursts?: BurstKind[] | null
 }
 
 export interface MyFleetPilot {

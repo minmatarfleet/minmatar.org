@@ -168,6 +168,14 @@ Medium Trimark Armor Pump I
 Warrior II x5
 """
 
+CYNO_EFT = """[Devoter, Devoter [FL33T]]
+Damage Control II
+
+Warp Disruption Field Generator II
+
+Cynosural Field Generator I
+"""
+
 
 class RefitHelperTestCase(TestCase):
     """Pure helpers for EFT parsing and cargo diffs."""
@@ -577,19 +585,34 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
     # --- cyno system assignment -----------------------------------------
 
+    def _cyno_volunteer(self, character_id=1001, name="Pilot One"):
+        """A ship volunteer in a cyno fit that is part of the doctrine."""
+        cyno_fit = EveFitting.objects.filter(name="Devoter [FL33T]").first()
+        if cyno_fit is None:
+            cyno_fit = EveFitting.objects.create(
+                name="Devoter [FL33T]",
+                ship_id=12017,
+                description="",
+                eft_format=CYNO_EFT,
+            )
+            EveDoctrineFitting.objects.create(
+                doctrine=self.doctrine, fitting=cyno_fit, role="support"
+            )
+        return EveFleetShipVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=character_id,
+            character_name=name,
+            fitting=cyno_fit,
+        )
+
     @patch("fleets.helpers.cyno_notifications.DiscordClient")
     def test_fc_assigns_and_clears_cyno_system(self, discord_mock):
         add_user_permission(self.fc_user, "view_evefleet")
         DiscordUser.objects.create(
             id=555, discord_tag="pilot#1", user=self.user
         )
-        volunteer = EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
-        )
-        url = f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}"
+        volunteer = self._cyno_volunteer()
+        url = f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}"
 
         # Not the FC
         response = self.client.patch(
@@ -635,7 +658,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
         # The pilot's own user sees the assignment in the listing...
         response = self.client.get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers", **self._auth()
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers", **self._auth()
         )
         self.assertEqual("Sosala", response.json()[0]["solar_system_name"])
 
@@ -643,7 +666,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         other = User.objects.create(username="other")
         add_user_permission(other, "view_evefleet")
         response = Client().get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers",
             **self._auth(token_for(other)),
         )
         self.assertEqual(200, response.status_code)
@@ -652,7 +675,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
         # The FC sees it.
         response = self.fc_client.get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers",
             **self._auth(self.fc_token),
         )
         self.assertEqual("Sosala", response.json()[0]["solar_system_name"])
@@ -676,14 +699,9 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         self, discord_mock
     ):
         add_user_permission(self.fc_user, "view_evefleet")
-        volunteer = EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
-        )
+        volunteer = self._cyno_volunteer()
         response = self.fc_client.patch(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
             {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
             "application/json",
             **self._auth(self.fc_token),
@@ -695,14 +713,15 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
     def test_system_assignment_only_for_cynos(self):
         add_user_permission(self.fc_user, "view_evefleet")
-        volunteer = EveFleetRoleVolunteer.objects.create(
+        # A Hurricane is not a cyno fit.
+        volunteer = EveFleetShipVolunteer.objects.create(
             eve_fleet=self.fleet,
             character_id=1001,
             character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,
+            fitting=self.fitting,
         )
         response = self.fc_client.patch(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
             {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
             "application/json",
             **self._auth(self.fc_token),
@@ -722,7 +741,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             eve_fleet=self.fleet,
             character_id=1001,
             character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
+            role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,
         )
         ship_url = f"{BASE_URL}/{self.fleet.id}/ship-volunteers"
         role_url = f"{BASE_URL}/{self.fleet.id}/role-volunteers"
@@ -758,12 +777,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
     def test_hidden_roster_omitted_from_motd(self):
         set_primary_character(self.fc_user, self.fc_character)
-        EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
-        )
+        self._cyno_volunteer()
         instance = EveFleetInstance.objects.create(
             id=9001, eve_fleet=self.fleet, boss_id=2001
         )

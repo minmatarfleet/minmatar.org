@@ -23,6 +23,8 @@ import {
     type MyFleetPilot,
 } from '@helpers/api.minmatar.org/fleets'
 import { is_capital_entry } from '@helpers/fleet_ships'
+import { BURST_KINDS, counts_from_bursts, default_burst_counts } from '@helpers/fleet_roles'
+import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
 
 let composition: FleetCompositionEntry[] = []
@@ -54,6 +56,27 @@ const selected_key = (pilot:MyFleetPilot) => {
     if (!pilot.selection) return ''
     return pilot.selection.fitting_id ? `f:${pilot.selection.fitting_id}` : `m:${pilot.selection.fleet_fitting_id}`
 }
+
+// Links fits: the pilot picks which fitted bursts run online. The form
+// starts from their saved pick, else the doctrine's online bursts.
+const links_entries = composition.filter(entry => entry.fit_roles?.links)
+
+const burst_label = (kind:BurstKind) => t(`burst_kind_${kind}` as any)
+
+const fitted_kinds = (entry:FleetCompositionEntry):BurstKind[] =>
+    BURST_KINDS.filter(kind => (entry.fit_roles.bursts_fitted[kind] ?? 0) > 0)
+
+const initial_counts = (pilot:MyFleetPilot, entry:FleetCompositionEntry) => {
+    const saved = selected_key(pilot) === entry.key && (pilot.selection?.bursts?.length ?? 0) > 0
+    const counts = saved ?
+        counts_from_bursts(pilot.selection!.bursts!) :
+        default_burst_counts(entry.fit_roles)
+    return Object.fromEntries(fitted_kinds(entry).map(kind => [kind, counts[kind] ?? 0]))
+}
+
+const links_prompt = (entry:FleetCompositionEntry) => t('pick_ships_links_prompt')
+    .replace('{ship}', entry.ship_name || entry.name)
+    .replace('{slots}', entry.fit_roles.burst_slots.toString())
 
 const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}?${query_string({
     fleet_id: fleet_id,
@@ -100,6 +123,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                             class="[ pick-ships__row ]"
                             x-show={pilot.recent_fleets ? 'true' : 'show_all'}
                             x-cloak={!pilot.recent_fleets && !show_all_by_default ? true : undefined}
+                            x-data={`{ ship: ${JSON.stringify(selected_key(pilot))} }`}
                         >
                             <PilotBadge
                                 character_id={pilot.character_id}
@@ -113,7 +137,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                     <small class="[ pick-ships__quiet ]">{t('pick_ships_no_recent')}</small>
                                 }
                             </PilotBadge>
-                            <Select name={`ship_${pilot.character_id}`} size='sm'>
+                            <Select name={`ship_${pilot.character_id}`} size='sm' x-model="ship">
                                 <option value="" selected={selected_key(pilot) === ''}>{t('pick_ships_not_flying')}</option>
                                 {groups.map(group =>
                                     <optgroup label={group.title}>
@@ -123,6 +147,40 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                     </optgroup>
                                 )}
                             </Select>
+                            {links_entries.map(entry =>
+                                <fieldset
+                                    class="[ pick-ships__links ]"
+                                    x-show={`ship === ${JSON.stringify(entry.key)}`}
+                                    x-cloak={selected_key(pilot) !== entry.key ? true : undefined}
+                                    x-data={`{
+                                        counts: ${JSON.stringify(initial_counts(pilot, entry))},
+                                        slots: ${entry.fit_roles.burst_slots},
+                                        get total() { return Object.values(this.counts).reduce((sum, n) => sum + (Number(n) || 0), 0) },
+                                    }`}
+                                >
+                                    <legend><small>{links_prompt(entry)}</small></legend>
+                                    <div class="[ pick-ships__bursts ]">
+                                        {fitted_kinds(entry).map(kind =>
+                                            <label class="[ pick-ships__burst ]">
+                                                <span>{burst_label(kind)}</span>
+                                                <input
+                                                    type="number"
+                                                    name={`bursts_${pilot.character_id}_${kind}`}
+                                                    min="0"
+                                                    max={entry.fit_roles.bursts_fitted[kind]}
+                                                    value={initial_counts(pilot, entry)[kind]}
+                                                    x-model.number={`counts.${kind}`}
+                                                    x-bind:disabled={`ship !== ${JSON.stringify(entry.key)}`}
+                                                />
+                                                <small>/ {entry.fit_roles.bursts_fitted[kind]}</small>
+                                            </label>
+                                        )}
+                                    </div>
+                                    <small class="[ pick-ships__over ]" x-show="total > slots" x-cloak>
+                                        {t('pick_ships_links_over').replace('{slots}', entry.fit_roles.burst_slots.toString())}
+                                    </small>
+                                </fieldset>
+                            )}
                         </div>
                     )}
                 </div>
@@ -178,6 +236,45 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         @media screen and (max-width: 640px) {
             grid-template-columns: minmax(0, 1fr);
         }
+    }
+
+    .pick-ships__links {
+        grid-column: 1 / -1;
+        border: solid 1px var(--border-color);
+        padding: var(--space-2xs) var(--space-xs);
+        margin: 0;
+
+        legend {
+            padding: 0 var(--space-3xs);
+        }
+    }
+
+    .pick-ships__bursts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-m);
+        margin-top: var(--space-3xs);
+    }
+
+    .pick-ships__burst {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+
+        input {
+            width: 4ch;
+            text-align: center;
+            background: var(--background);
+            color: var(--highlight);
+            border: solid 1px var(--border-color-hover);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .pick-ships__over {
+        display: block;
+        margin-top: var(--space-3xs);
+        color: var(--fleet-red);
     }
 
     .pick-ships__quiet {

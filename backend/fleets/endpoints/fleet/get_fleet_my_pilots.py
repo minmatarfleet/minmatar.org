@@ -53,6 +53,7 @@ def get_fleet_my_pilots(request, fleet_id: int):
             character_id=v.character_id,
             fitting_id=v.fitting_id,
             fleet_fitting_id=v.fleet_fitting_id,
+            bursts=list(v.bursts or []),
         )
         for v in EveFleetShipVolunteer.objects.filter(
             eve_fleet=fleet, character_id__in=character_ids
