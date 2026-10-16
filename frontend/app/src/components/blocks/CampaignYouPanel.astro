@@ -49,11 +49,6 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
         <Flexblock gap='var(--space-m)'>
             <div class="[ campaign-you-overview ][ light-transparency ]">
                 <div class="[ campaign-you-stat ]">
-                    <small class="[ campaign-you-label ]">{t('campaigns.you.streak_title')}</small>
-                    <span class="[ campaign-you-figure ]">{campaign.my_streak}</span>
-                    <small class="[ campaign-you-sub ]">{t('campaigns.you.streak_sub').replace('{next}', String(campaign.my_streak + 1))}</small>
-                </div>
-                <div class="[ campaign-you-stat ]">
                     <small class="[ campaign-you-label ]">{t('campaigns.you.characters_title')}</small>
                     <span class="[ campaign-you-figure ]">{campaign.characters_included}</span>
                     <small class="[ campaign-you-sub ]">
@@ -118,7 +113,7 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
 
     .campaign-you-overview {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
         border: solid 1px var(--border-color-hover);
     }
 
@@ -170,10 +165,6 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
     }
 
     @media screen and (max-width: 767px) {
-        .campaign-you-overview {
-            grid-template-columns: 1fr;
-        }
-
         .campaign-you-stat {
             border-inline-start: none;
             border-top: solid 1px var(--border-color-hover);

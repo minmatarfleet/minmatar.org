@@ -375,57 +375,6 @@ class AwardTests(TestCase):
         self.assertEqual(warlord.user_id, self.hunter.id)
 
 
-class StreakTests(TestCase):
-    """A streak survives the day it is still in, and nothing else."""
-
-    def setUp(self):
-        self.campaign = make_campaign()
-        self.user, _ = enlist(self.campaign, "regular", 8401)
-        self.today = campaign_day()
-
-    def _active(self, *offsets):
-        for offset in offsets:
-            CampaignParticipantDay.objects.create(
-                campaign=self.campaign,
-                user=self.user,
-                day=self.today - timedelta(days=offset),
-                kills=1,
-                points=10,
-                active=True,
-            )
-        stats.rebuild_stats(self.campaign)
-        return CampaignParticipantStat.objects.get(
-            campaign=self.campaign, user=self.user
-        )
-
-    def test_consecutive_days_build_a_streak(self):
-        stat = self._active(0, 1, 2)
-        self.assertEqual(stat.streak_days, 3)
-
-    def test_a_gap_breaks_it(self):
-        stat = self._active(0, 2, 3)
-        self.assertEqual(stat.streak_days, 1)
-        self.assertEqual(stat.best_streak_days, 2)
-
-    def test_flying_last_night_keeps_the_streak_alive(self):
-        """The campaign day does not roll over until 11:00 UTC."""
-        stat = self._active(1, 2)
-        self.assertEqual(stat.streak_days, 2)
-
-    def test_an_old_streak_is_over_but_still_the_best(self):
-        stat = self._active(5, 6, 7, 8)
-        self.assertEqual(stat.streak_days, 0)
-        self.assertEqual(stat.best_streak_days, 4)
-
-    def test_no_activity_is_no_streak(self):
-        stats.rebuild_stats(self.campaign)
-        self.assertFalse(
-            CampaignParticipantStat.objects.filter(
-                campaign=self.campaign, streak_days__gt=0
-            ).exists()
-        )
-
-
 class ZeroOutTests(TestCase):
     """Clearing a withdrawn day must not clear what it does not own."""
 
@@ -473,7 +422,7 @@ class MaterialisationOrderTests(TestCase):
 
     def setUp(self):
         self.campaign = make_campaign()
-        self.user, _ = enlist(self.campaign, "streaker", 8601)
+        self.user, _ = enlist(self.campaign, "nightly", 8601)
         self.today = campaign_day()
         self.days = [
             self.today - timedelta(days=offset) for offset in (2, 1, 0)
@@ -498,7 +447,7 @@ class MaterialisationOrderTests(TestCase):
         }
 
     def test_a_window_scores_the_same_whichever_end_you_pass_in(self):
-        """A streak is read from the days before it.
+        """The contribution-mix bonus is read from the days before it.
 
         Walking a window backwards scores the older days as if the ones
         before them had never happened, so the first pass under-awards and
@@ -526,15 +475,3 @@ class MaterialisationOrderTests(TestCase):
 
         stats.materialise_recent(self.campaign, days=3)
         self.assertEqual(first_pass, self._points())
-
-    def test_the_streak_bonus_is_actually_being_paid(self):
-        """Otherwise this test would pass on two equally broken runs."""
-        stats.materialise_recent(self.campaign, days=3)
-        rows = CampaignParticipantDay.objects.filter(
-            campaign=self.campaign
-        ).order_by("day")
-
-        self.assertEqual(rows.count(), 3)
-        # Day three of a streak is the first that pays, so it must be worth
-        # more than day one despite identical activity.
-        self.assertGreater(rows[2].points, rows[0].points)

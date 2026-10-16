@@ -195,7 +195,6 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
             "notify_gang_forming": payload.notify_gang_forming,
             "notify_standing_fleet": payload.notify_standing_fleet,
             "notify_activity_nearby": payload.notify_activity_nearby,
-            "notify_streak_at_risk": payload.notify_streak_at_risk,
             "digest_hour": payload.digest_hour,
         },
     )

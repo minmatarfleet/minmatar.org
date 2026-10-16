@@ -101,16 +101,6 @@ class ModifierTests(TestCase):
             scoring.day_multiplier(self.campaign, 19),
         )
 
-    def test_a_streak_only_starts_paying_on_day_three(self):
-        self.assertEqual(scoring.streak_points(self.campaign, 2), 0)
-        self.assertGreater(scoring.streak_points(self.campaign, 3), 0)
-
-    def test_streak_points_are_capped(self):
-        self.assertEqual(
-            scoring.streak_points(self.campaign, 60),
-            scoring.weights(self.campaign)["streak_cap"],
-        )
-
     def test_mixing_three_kinds_of_work_earns_a_bonus(self):
         self.assertEqual(scoring.contribution_mix_bonus(self.campaign, 2), 0)
         self.assertGreater(scoring.contribution_mix_bonus(self.campaign, 3), 0)

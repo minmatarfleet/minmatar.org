@@ -178,7 +178,6 @@ def get_campaign(request, slug: str):
         "fittings": serializers.campaign_fittings(campaign),
         "totals": stats.campaign_totals(campaign),
         "is_enlisted": enlistment is not None,
-        "my_streak": my_stat.streak_days if my_stat else 0,
         "characters_included": (
             enlistment.characters.filter(included_until__isnull=True).count()
             if enlistment
@@ -235,14 +234,6 @@ def get_right_now(request, slug: str):
         .order_by("-occurred_at")[:5]
     )
 
-    my_stat = (
-        CampaignParticipantStat.objects.filter(
-            campaign=campaign, user=user
-        ).first()
-        if user
-        else None
-    )
-
     orders = plan.orders_for(campaign, user) if user else []
 
     ticker = [
@@ -286,7 +277,6 @@ def get_right_now(request, slug: str):
             }
             for event in forming
         ],
-        "my_streak": my_stat.streak_days if my_stat else 0,
         "my_orders_done": sum(1 for order in orders if order["completed"]),
         "my_orders_total": len(orders),
         "ticker": ticker,

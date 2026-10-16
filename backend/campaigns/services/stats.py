@@ -35,11 +35,7 @@ from campaigns.models import (
     SystemRole,
 )
 from campaigns.services import fleets, scoring
-from campaigns.services.streaks import (
-    observed_activity,
-    streak_length,
-    streaks,
-)
+from campaigns.services.prime_time import observed_activity
 from eveonline.models import EvePlayer
 from feed.models import FeedKillmail
 
@@ -51,6 +47,7 @@ BOARD_METRICS = {
     "sites": "complexes",
     "advantage": "advantage_generated",
     "fleets": "fleets_attended",
+    "fcs": "fleets_led",
     "structures": "structure_kills",
     "capitals": "capital_kills",
     # "supply" arrives with the community layer, which writes
@@ -354,8 +351,9 @@ ACTIVITY_FIELDS = (
 def materialise_day(campaign: Campaign, day: date) -> int:
     """Rebuild every pilot's row for one campaign day.
 
-    The streak bonus is read from the day rows before this one, so those have
-    to already be correct. Use ``materialise_days`` for a window; it sorts.
+    The contribution-mix bonus is read from this week's earlier day rows, so
+    those have to already be correct. Use ``materialise_days`` for a window;
+    it sorts.
     """
     start, end = day_bounds(day)
     rows: dict[int, dict] = {}
@@ -376,9 +374,6 @@ def materialise_day(campaign: Campaign, day: date) -> int:
 
         if active:
             raw_points += active_day_points
-            raw_points += scoring.streak_points(
-                campaign, streak_length(campaign, user_id, day)
-            )
             ways = _ways_scored_this_week(campaign, user_id, day, values)
             raw_points *= 1 + scoring.contribution_mix_bonus(campaign, ways)
 
@@ -410,9 +405,9 @@ def materialise_days(campaign: Campaign, days: Iterable[date]) -> int:
     """Rebuild a set of campaign days, always oldest first.
 
     Order matters, which is why this sorts rather than trusting the caller: a
-    day's streak bonus is read from the days before it, so walking a window
-    backwards would score the older days as if the ones before them had never
-    happened, and every later recompute would quietly change history. Prefer
+    day's contribution-mix bonus is read from the days before it in the week,
+    so walking a window backwards would score the older days as if the ones
+    before them had never happened, and every later recompute would quietly change history. Prefer
     this over calling ``materialise_day`` in a loop.
     """
     written = 0
@@ -430,8 +425,7 @@ def materialise_recent(campaign: Campaign, days: int = 2) -> int:
 
 
 def rebuild_stats(campaign: Campaign) -> int:
-    """Roll the day rows up per pilot, including streaks and ranks."""
-    today = campaign_day()
+    """Roll the day rows up per pilot, including ranks."""
     user_ids = (
         CampaignParticipantDay.objects.filter(campaign=campaign)
         .values_list("user_id", flat=True)
@@ -461,7 +455,6 @@ def rebuild_stats(campaign: Campaign) -> int:
             "active_days": sum(1 for d in days if d.active),
         }
 
-        streak, best = streaks([d.day for d in days if d.active], today)
         last_active = next((d.day for d in days if d.active), None)
         active_hours, prime_time = observed_activity(campaign, user_id)
 
@@ -470,8 +463,6 @@ def rebuild_stats(campaign: Campaign) -> int:
             user_id=user_id,
             defaults={
                 **totals,
-                "streak_days": streak,
-                "best_streak_days": best,
                 "last_active_day": last_active,
                 "active_hours_utc": active_hours,
                 "observed_prime_time": prime_time,
@@ -508,11 +499,13 @@ def leaderboard(
     elif period == "rolling7":
         queryset = queryset.filter(day__gte=campaign_day() - timedelta(days=7))
 
-    rows = list(
-        queryset.values("user_id", "user__username")
-        .annotate(value=Sum(field))
-        .order_by("-value")[:limit]
+    rows = queryset.values("user_id", "user__username").annotate(
+        value=Sum(field)
     )
+    if metric == "fcs":
+        # Most pilots never lead; the FC board lists only those who did.
+        rows = rows.filter(value__gt=0)
+    rows = list(rows.order_by("-value")[:limit])
     primaries = primary_characters([row["user_id"] for row in rows])
 
     return [

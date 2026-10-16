@@ -168,8 +168,6 @@ DEFAULT_SCORING: dict = {
     "fleet_led": 40,
     "gang_led": 20,
     "active_day": 5,
-    "streak_per_day": 5,
-    "streak_cap": 25,
     "off_peak_multiplier": 1.25,
     "off_peak_hours": list(range(3, 14)),
     "contribution_mix_bonus": 0.20,

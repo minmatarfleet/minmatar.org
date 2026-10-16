@@ -156,7 +156,6 @@ class CampaignDetail(Schema):
     fittings: list[CampaignFittingOut] = []
     totals: CampaignTotals
     is_enlisted: bool = False
-    my_streak: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
     standing_fleet_up: bool = False
@@ -172,7 +171,6 @@ class RightNow(Schema):
     standing_fleet_members: int = 0
     standing_fleet_boss: str | None = None
     gangs_forming: list[dict] = []
-    my_streak: int = 0
     my_orders_done: int = 0
     my_orders_total: int = 0
     ticker: list[dict] = []
@@ -336,7 +334,6 @@ class RosterRow(Schema):
     prime_time: str = ""
     observed_prime_time: str = ""
     last_active_day: date | None = None
-    streak_days: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
 
@@ -370,7 +367,6 @@ class EnlistRequest(Schema):
     notify_gang_forming: bool = True
     notify_standing_fleet: bool = True
     notify_activity_nearby: bool = False
-    notify_streak_at_risk: bool = True
     digest_hour: int = Field(default=18, ge=0, le=23)
 
 

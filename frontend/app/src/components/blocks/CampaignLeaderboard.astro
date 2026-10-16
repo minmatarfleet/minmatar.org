@@ -7,7 +7,6 @@ import type {
     CampaignLeaderboardMetric,
     CampaignLeaderboardPeriod,
 } from '@dtypes/api.minmatar.org'
-import { format_isk } from '@helpers/numbers'
 import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
@@ -28,13 +27,13 @@ const {
 
 delete attributes.class
 
-const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'isk', 'sites', 'advantage', 'fleets' ]
+const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'sites', 'advantage', 'fcs' ]
 const periods:CampaignLeaderboardPeriod[] = [ 'week', 'rolling7', 'all' ]
 
 const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:CampaignLeaderboardPeriod) =>
     translatePath(`/partials/campaign_leaderboard_component?slug=${slug}&metric=${next_metric}&period=${next_period}`)
 
-const format_value = (value:number) => metric === 'isk' ? format_isk(value) : value.toFixed(0)
+const format_value = (value:number) => value.toFixed(0)
 
 const haystack = (row:CampaignLeaderboardRow) => `${row.character_name} ${row.username}`.toLowerCase()
 
