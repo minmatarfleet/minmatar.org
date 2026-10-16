@@ -398,7 +398,7 @@ class RedditScheduleAdmin(admin.ModelAdmin):
                 post, post.template, post.scheduled_for, old_template, old_time
             )
 
-    @admin.action(description="Publish (confirm slots and DM each CEO)")
+    @admin.action(description="Publish (confirm slots)")
     def action_publish(self, request, queryset):
         for month in queryset.filter(status=RedditSchedule.DRAFT):
             confirmed = schedule.publish(month, user=request.user)
