@@ -16,28 +16,42 @@ const FLEET_TYPE_LABELS = {
     gang: 'Gang',
 }
 
+const REQUEST_TIMEOUT_MS = 10_000
+
 class ApiClient {
-    constructor({ api_url, get_token, fetch_impl = globalThis.fetch }) {
+    constructor({ api_url, get_token, fetch_impl = globalThis.fetch, timeout_ms = REQUEST_TIMEOUT_MS }) {
         this.api_url = api_url
         this.get_token = get_token
         this.fetch = fetch_impl
+        this.timeout_ms = timeout_ms
         this.doctrine_names = new Map()
     }
 
-    async get(path, { auth = true } = {}) {
+    // The token is read and the request built synchronously, so a call made just before sign-out
+    // still goes out with the token it started with.
+    async request(method, path, { auth = true, body } = {}) {
         const headers = { Accept: 'application/json' }
         if (auth) {
             const token = this.get_token()
             if (!token) throw new ApiError(401, 'Not signed in')
             headers.Authorization = `Bearer ${token}`
         }
-        const response = await this.fetch(`${this.api_url}${path}`, { headers })
+        const options = { method, headers, signal: AbortSignal.timeout(this.timeout_ms) }
+        if (body !== undefined) {
+            headers['Content-Type'] = 'application/json'
+            options.body = JSON.stringify(body)
+        }
+        const response = await this.fetch(`${this.api_url}${path}`, options)
         if (!response.ok) {
             let detail = ''
             try { detail = (await response.json()).detail || '' } catch (e) {}
-            throw new ApiError(response.status, `GET ${path} -> ${response.status}${detail ? `: ${detail}` : ''}`)
+            throw new ApiError(response.status, `${method} ${path} -> ${response.status}${detail ? `: ${detail}` : ''}`)
         }
         return response.json()
+    }
+
+    get(path, options) {
+        return this.request('GET', path, options)
     }
 
     me() {
@@ -48,6 +62,15 @@ class ApiClient {
     // have not ended yet (future pending fleets plus ones running now).
     fleets() {
         return this.get('/api/fleets/v3?fleet_filter=active')
+    }
+
+    // Desktop settings saved on the account (see settings.js). save_ merges: only the keys sent change.
+    desktop_settings() {
+        return this.get('/api/users/me/desktop-settings')
+    }
+
+    save_desktop_settings(values) {
+        return this.request('PATCH', '/api/users/me/desktop-settings', { body: { values } })
     }
 
     profiles(user_ids) {

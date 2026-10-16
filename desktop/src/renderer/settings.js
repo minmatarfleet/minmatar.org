@@ -31,12 +31,21 @@ function render_update(state) {
     button.dataset.command = command || ''
 }
 
+// Settings live on the account (src/main/settings.js); say where they stand when the API is slow or down.
+const SYNC_TEXT = {
+    synced: 'Settings are saved to your account.',
+    saving: 'Saving settings to your account…',
+    offline: "Can't reach Minmatar Fleet. Changes are kept and saved when it's back.",
+    local: 'Loading your settings…',
+}
+
 on_state(state => {
     window.eve_window.apply(state)
     render_windows(state.windows || [])
     for (const input of document.querySelectorAll('[data-setting]')) input.checked = !!state.settings[input.dataset.setting]
     $('user').textContent = state.user ? state.user.name : ''
     $('api').textContent = state.api_url.replace(/^https?:\/\//, '')
+    $('sync').textContent = SYNC_TEXT[state.settings_sync] || ''
     const id = state.user && state.user.character_id
     $('portrait').hidden = !id
     if (id && !$('portrait').src.includes(String(id))) $('portrait').src = `https://images.evetech.net/characters/${encodeURIComponent(id)}/portrait?size=64`
