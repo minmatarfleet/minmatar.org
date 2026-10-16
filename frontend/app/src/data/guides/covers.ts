@@ -6,6 +6,7 @@ export const GUIDES_INDEX_COVER = {
 }
 
 const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
+    'Onboarding': '/images/alliance-cover.jpg',
     'Faction Warfare Mechanics': '/images/guides/wiki_frontlines.png',
     'Faction Warfare Ships': '/images/doctrines-cover.jpg',
     'PVP': '/images/fleets-cover.jpg',
@@ -16,6 +17,14 @@ const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
 }
 
 const GUIDE_COVERS: Record<string, string> = {
+    'onboarding-home-base': '/images/alliance-cover.jpg',
+    'onboarding-first-fleet': '/images/fleets-cover.jpg',
+    'onboarding-fleet-types-and-hangar': '/images/doctrines-cover.jpg',
+    'onboarding-faction-warfare-essentials': '/images/guides/faction-warfare-basics-map.png',
+    'onboarding-first-billion': '/images/loyalty-points-cover.webp',
+    'onboarding-make-content': '/images/warzone-cover.jpg',
+    'onboarding-trial-srp-help': '/images/readiness-cover.webp',
+    'onboarding-culture-map': '/images/intel-cover.jpg',
     'faction-warfare-basics': '/images/guides/faction-warfare-basics-map.png',
     'faction-warfare-advantage': '/images/frontlines-cover.png',
     'faction-warfare-plexing': '/images/guides/wiki_frontlines.png',
