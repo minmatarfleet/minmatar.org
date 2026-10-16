@@ -1,7 +1,7 @@
 // Minmatar Fleet desktop - native window helper.
 // Read-only towards EVE: it watches which window is in front and where the EVE client windows are.
 // It never reads EVE memory, never injects, never sends input to EVE.
-// The only windows it changes are the overlay's own (glass + square corners).
+// The only windows it changes are the overlay's own (glass, square corners, no native caption).
 //
 // Compiled at launch by PowerShell Add-Type (C# 5, .NET Framework, ships with Windows) so the app needs no native build step.
 //
@@ -41,9 +41,15 @@ public static class MfoHelper {
   [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr ctx);
   [DllImport("user32.dll", SetLastError = true)] static extern int SetWindowCompositionAttribute(IntPtr h, ref WCAD d);
   [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s);
+  [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
+  [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr h, int i, IntPtr v);
+  [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
   const uint EVENT_SYSTEM_FOREGROUND = 0x0003, EVENT_SYSTEM_MINIMIZEEND = 0x0017;
   const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B, EVENT_OBJECT_NAMECHANGE = 0x800C;
+  const int GWL_STYLE = -16;
+  const long WS_CAPTION = 0x00C00000;
+  const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
   const uint WM_APP = 0x8000, WM_APP_CMD = WM_APP + 1, WM_APP_SCAN = WM_APP + 2;
 
   static WinEventProc fgProc, objProc;   // keep delegates alive (GC would free the callback otherwise)
@@ -130,7 +136,17 @@ public static class MfoHelper {
     int hr = DwmSetWindowAttribute(h, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, ref corner, 4);
     // Don't set DWMWA_TRANSITIONS_FORCEDISABLED here: on Electron's frameless windows it makes Windows draw
     // a native title bar over the page (seen in 0.3.2 - 0.4.0-dev.2).
-    Out("{\"t\":\"glass\",\"hwnd\":\"" + p[1] + "\",\"ok\":" + (ok != 0 ? "true" : "false") + ",\"err\":" + err + ",\"cornerHr\":" + hr + "}");
+    // Electron leaves WS_CAPTION on frameless windows. Windows then paints its classic caption over the page
+    // whenever the window gets a non-client activation: clicking the drag-region header, or a screenshot tool
+    // taking focus. Without the style there is no caption to paint; dragging by the header still works.
+    long style = GetWindowLongPtr(h, GWL_STYLE).ToInt64();
+    bool caption = (style & WS_CAPTION) != 0;
+    if (caption) {
+      SetWindowLongPtr(h, GWL_STYLE, new IntPtr(style & ~WS_CAPTION));
+      SetWindowPos(h, IntPtr.Zero, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+    Out("{\"t\":\"glass\",\"hwnd\":\"" + p[1] + "\",\"ok\":" + (ok != 0 ? "true" : "false") + ",\"err\":" + err + ",\"cornerHr\":" + hr +
+        ",\"captionRemoved\":" + (caption ? "true" : "false") + "}");
   }
 
   public static void Run(string procs) {

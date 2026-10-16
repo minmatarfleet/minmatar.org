@@ -90,6 +90,7 @@ function base_window(options) {
         transparent: true,
         backgroundColor: '#00000000',
         resizable: false,          // transparent windows can't use native edge-resize on Windows; we use a grip
+        thickFrame: false,         // no WS_CAPTION: Windows would paint its own title bar over the page on header clicks
         maximizable: false,
         fullscreenable: false,
         hasShadow: false,
