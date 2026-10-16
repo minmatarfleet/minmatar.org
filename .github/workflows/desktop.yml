@@ -45,7 +45,8 @@ jobs:
       - run: npm test
       - name: Version check
         run: |
-          base_version=$(git show "origin/${{ github.base_ref }}:desktop/package.json" 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).version)}catch(e){console.log('')}})")
+          # No desktop/package.json on the base branch yet (first desktop PR) -> empty base version.
+          base_version=$({ git show "origin/${{ github.base_ref }}:desktop/package.json" 2>/dev/null || true; } | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).version)}catch(e){console.log('')}})")
           if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- src build package.json package-lock.json; then changed=false; else changed=true; fi
           released=$(gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName' | grep '^v' || true)
           node scripts/check_version.js pr "$base_version" "$changed" $released
