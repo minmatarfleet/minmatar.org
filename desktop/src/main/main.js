@@ -235,7 +235,7 @@ function set_window_enabled(id, enabled) {
         hidden.delete(id)
         if (state.user && !overlays.has(id)) create_overlay(window_def(id))
         reveal_overlays()
-        refresh()   // a window enabled mid-session has no data yet
+        WINDOW_LOADERS[id]?.()   // a window enabled mid-session has no data yet
     } else {
         destroy_overlay(id)
     }
@@ -374,38 +374,57 @@ function fetch_error(err, what) {
         : 'Could not reach Minmatar Fleet. Retrying…'
 }
 
-async function refresh() {
-    if (!state.user) return
-    const campaigns = window_enabled('campaigns')
+// Each window's data loads on its own, so a slow campaign request never holds back the fleets list.
+// A load already in flight is reused rather than started twice (interval tick, refresh button, enabling a window).
+const in_flight = new Map()   // source -> promise
+
+function load(source, fetcher, apply) {
+    if (!state.user) return Promise.resolve()
+    if (in_flight.has(source)) return in_flight.get(source)
+    const done = (async () => {
+        try {
+            const value = await fetcher()
+            if (state.user) apply(value, null)   // not if the pilot signed out meanwhile
+        } catch (err) {
+            diag({ t: 'refresh-error', source, status: err.status, message: err.message })
+            if (!state.user) return
+            if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
+            apply(null, err)
+        }
+    })().finally(() => {
+        in_flight.delete(source)
+        state.loading = in_flight.size > 0
+        push_state()
+    })
+    in_flight.set(source, done)
     state.loading = true
     push_state()
-    const [fleets, campaign] = await Promise.allSettled([
-        load_upcoming_fleets(api, config.web_url),
-        campaigns ? load_campaign(api, config.web_url) : Promise.resolve(null),
-    ])
-    state.loading = false
-    for (const result of [fleets, campaign]) {
-        if (result.status === 'rejected') diag({ t: 'refresh-error', status: result.reason.status, message: result.reason.message })
-    }
-    const expired = [fleets, campaign].some(r => r.status === 'rejected' && r.reason instanceof ApiError && r.reason.status === 401)
-    if (expired) return sign_out('Your session has expired. Sign in again.')
+    return done
+}
 
-    const now = new Date().toISOString()
-    if (fleets.status === 'fulfilled') {
-        state.fleets = fleets.value
+function refresh_fleets() {
+    return load('fleets', () => load_upcoming_fleets(api, config.web_url), (fleets, err) => {
+        if (err) return void (state.error = fetch_error(err, 'fleets'))
+        state.fleets = fleets
         state.error = null
-        state.updated_at = now
-    } else {
-        state.error = fetch_error(fleets.reason, 'fleets')
-    }
-    if (campaigns && campaign.status === 'fulfilled') {
-        state.campaign = campaign.value
+        state.updated_at = new Date().toISOString()
+    })
+}
+
+function refresh_campaign() {
+    return load('campaign', () => load_campaign(api, config.web_url), (campaign, err) => {
+        if (err) return void (state.campaign_error = fetch_error(err, 'campaigns'))
+        state.campaign = campaign
         state.campaign_error = null
-        state.campaign_updated_at = now
-    } else if (campaigns) {
-        state.campaign_error = fetch_error(campaign.reason, 'campaigns')
-    }
-    push_state()
+        state.campaign_updated_at = new Date().toISOString()
+    })
+}
+
+const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
+
+// Data for the windows the pilot has enabled; a disabled window costs no requests.
+function refresh() {
+    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader()
 }
 
 function start_refresh() {

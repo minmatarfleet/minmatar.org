@@ -13,6 +13,7 @@ from campaigns.endpoints.base import router
 from campaigns.endpoints import overlay, schemas, serializers
 from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
+    ADVANTAGE_SITE_KINDS,
     Campaign,
     CampaignAdvantageReading,
     CampaignAward,
@@ -351,16 +352,6 @@ def get_week(request, slug: str):
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
-
-
-ADVANTAGE_SITE_KINDS = (
-    SiteKind.ADVANTAGE_SITE,
-    SiteKind.RENDEZVOUS_POINT,
-    SiteKind.PROPAGANDA_BEACON,
-    SiteKind.LISTENING_OUTPOST,
-    SiteKind.SUPPLY_CACHE,
-    SiteKind.BATTLEFIELD,
-)
 
 
 def _my_contribution(campaign_system, user, window) -> dict:

@@ -4,21 +4,28 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import signals
 from django.test import Client, TestCase
 from django.utils import timezone
 
 import factory
 
+from campaigns.endpoints import overlay
 from campaigns.helpers import campaign_week_start
 from campaigns.models import (
+    Campaign,
+    CampaignAdvantageReading,
+    CampaignAdvantageState,
     CampaignKillmail,
     CampaignKillmailParticipant,
+    CampaignSiteCompletion,
     CampaignStatus,
     CampaignSystem,
     CampaignSystemSnapshot,
     CampaignWeekTarget,
     KillmailOutcome,
+    SiteKind,
     SystemGoal,
     SystemPriority,
 )
@@ -30,7 +37,7 @@ from campaigns.tests.helpers import (
     grant,
     make_campaign,
 )
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.models import EveCharacter, EveCharacterFwLpPayout, EvePlayer
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 URL = "/api/campaigns/overlay"
@@ -157,28 +164,39 @@ class CampaignOverlayTests(TestCase):
             [("Kamela", "gain_advantage")],
         )
 
-    def _kill(self, killmail_id, minutes_ago, character_id, role="attacker"):
+    def _kill(
+        self,
+        killmail_id,
+        minutes_ago,
+        character_ids,
+        role="attacker",
+        outcome=None,
+    ):
         mail = CampaignKillmail.objects.create(
             campaign=self.campaign,
             killmail_id=killmail_id,
             killmail_time=self.now - timedelta(minutes=minutes_ago),
             solar_system_id=KAMELA,
-            outcome=(
+            outcome=outcome
+            or (
                 KillmailOutcome.KILL
                 if role == "attacker"
                 else KillmailOutcome.LOSS
             ),
         )
-        CampaignKillmailParticipant.objects.create(
-            killmail=mail,
-            character_id=character_id,
-            character_name="Alt",
-            user=EveCharacter.objects.get(character_id=character_id).user,
-            enlisted=True,
-            role=role,
-        )
+        if isinstance(character_ids, int):
+            character_ids = [character_ids]
+        for character_id in character_ids:
+            CampaignKillmailParticipant.objects.create(
+                killmail=mail,
+                character_id=character_id,
+                character_name="Alt",
+                user=EveCharacter.objects.get(character_id=character_id).user,
+                enlisted=True,
+                role=role,
+            )
 
-    def _fleet_member(self, character_id, minutes_ago):
+    def _fleet_member(self, character_id, minutes_ago, ended_ago=None):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):
             fleet = EveFleet.objects.create(
                 type="standing",
@@ -186,7 +204,13 @@ class CampaignOverlayTests(TestCase):
                 campaign=self.campaign,
             )
         instance = EveFleetInstance.objects.create(
-            id=fleet.id * 1000, eve_fleet=fleet
+            id=fleet.id * 1000,
+            eve_fleet=fleet,
+            end_time=(
+                self.now - timedelta(minutes=ended_ago)
+                if ended_ago is not None
+                else None
+            ),
         )
         member = EveFleetInstanceMember.objects.create(
             eve_fleet_instance=instance,
@@ -238,3 +262,137 @@ class CampaignOverlayTests(TestCase):
         (pilot,) = self._get()["active_pilots"]
         self.assertEqual(pilot["losses"], 1)
         self.assertEqual(pilot["kills"], 0)
+
+    def test_two_characters_on_one_mail_are_one_kill(self):
+        alt = EveCharacter.objects.create(
+            character_id=3003, character_name="Pilot Alt", user=self.user
+        )
+        self._kill(1, 10, [self.character.character_id, alt.character_id])
+        (pilot,) = self._get()["active_pilots"]
+        self.assertEqual(pilot["kills"], 1)
+
+    def test_shooting_at_our_own_loss_is_not_a_kill(self):
+        self._kill(
+            1,
+            10,
+            self.character.character_id,
+            outcome=KillmailOutcome.LOSS,
+        )
+        self.assertEqual(self._get()["active_pilots"], [])
+
+    def test_a_fleet_that_ended_before_the_hour_is_not_activity(self):
+        _, flyer = enlist(self.campaign, "flyer", 4001)
+        # The member row still says "seen 5 minutes ago", but its fleet
+        # instance closed two hours ago.
+        self._fleet_member(flyer.character_id, 5, ended_ago=120)
+        self.assertEqual(self._get()["active_pilots"], [])
+
+    def test_site_captures_count_as_activity(self):
+        for notification_id, kind in (
+            (1, SiteKind.COMPLEX),
+            (2, SiteKind.COMPLEX),
+            (3, SiteKind.ADVANTAGE_SITE),
+            (4, SiteKind.KILL),
+        ):
+            payout = EveCharacterFwLpPayout.objects.create(
+                character=self.character,
+                notification_id=notification_id,
+                notification_type="FacWarLPPayoutEvent",
+                occurred_at=self.now - timedelta(minutes=15),
+                amount_lp=10_000,
+                event_code=371,
+                location_id=KAMELA,
+            )
+            CampaignSiteCompletion.objects.create(
+                campaign=self.campaign,
+                payout=payout,
+                user=self.user,
+                character_id=self.character.character_id,
+                campaign_system=self.kamela,
+                occurred_at=payout.occurred_at,
+                event_code=371,
+                site_kind=kind,
+            )
+        (pilot,) = self._get()["active_pilots"]
+        self.assertEqual(pilot["complexes"], 2)
+        self.assertEqual(pilot["advantage_sites"], 1)
+        self.assertEqual(pilot["system"], "Kamela")
+
+    def _advantage(
+        self, system, metric, our, enemy, our_day_ago, enemy_day_ago
+    ):
+        CampaignWeekTarget.objects.create(
+            campaign_system=system,
+            week_start=campaign_week_start(),
+            metric=metric,
+            target=75,
+        )
+        CampaignAdvantageState.objects.create(
+            campaign_system=system,
+            our_pct=our,
+            enemy_pct=enemy,
+            basis="reading",
+        )
+        CampaignAdvantageReading.objects.create(
+            campaign_system=system,
+            reported_at=self.now - timedelta(hours=25),
+            our_pct=our_day_ago,
+            enemy_pct=enemy_day_ago,
+        )
+        # A newer reading inside the day is not the 24h baseline.
+        CampaignAdvantageReading.objects.create(
+            campaign_system=system,
+            reported_at=self.now - timedelta(hours=2),
+            our_pct=0,
+            enemy_pct=0,
+        )
+
+    def test_advantage_rows_measure_the_level_and_its_day(self):
+        self._advantage(
+            self.kamela,
+            CampaignWeekTarget.Metric.ADVANTAGE_GAIN,
+            our=41,
+            enemy=30,
+            our_day_ago=47,
+            enemy_day_ago=30,
+        )
+        self._advantage(
+            self.kourmonen,
+            CampaignWeekTarget.Metric.ADVANTAGE_DESTROY,
+            our=20,
+            enemy=35,
+            our_day_ago=20,
+            enemy_day_ago=50,
+        )
+        rows = {row["name"]: row for row in self._get()["systems"]}
+
+        gain = rows["Kamela"]
+        self.assertEqual(gain["objective"], "gain_advantage")
+        self.assertEqual(gain["progress_percent"], 41.0)
+        self.assertEqual(gain["change_24h"], -6.0)
+        self.assertEqual(gain["detail"], "Our advantage 41%")
+
+        # Destroy reads as how far theirs has fallen: 35 left is 65 done,
+        # and theirs dropping 15 is 15 gained.
+        destroy = rows["Kourmonen"]
+        self.assertEqual(destroy["objective"], "destroy_advantage")
+        self.assertEqual(destroy["progress_percent"], 65.0)
+        self.assertEqual(destroy["change_24h"], 15.0)
+
+    def test_a_fresh_copy_is_served_without_touching_the_database(self):
+        overlay.overlay(self.campaign)
+        with self.assertNumQueries(0):
+            overlay.overlay(self.campaign)
+
+    def test_a_stale_copy_is_served_while_another_request_rebuilds(self):
+        overlay.overlay(self.campaign)
+        key = overlay.CACHE_KEY.format(campaign_id=self.campaign.id)
+        stale = cache.get(key)
+        cache.set(key, {**stale, "fresh_until": 0}, 600)
+        cache.add(overlay.LOCK_KEY.format(campaign_id=self.campaign.id), 1, 30)
+        with self.assertNumQueries(0):
+            self.assertEqual(overlay.overlay(self.campaign), stale["payload"])
+
+    def test_route_slugs_cannot_be_campaign_slugs(self):
+        with self.assertRaises(ValidationError):
+            Campaign(slug="overlay").clean()

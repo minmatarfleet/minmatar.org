@@ -16,6 +16,9 @@ const FLEET_TYPE_LABELS = {
     gang: 'Gang',
 }
 
+// A request that hangs would hold a window's data back forever; give up and let the next refresh retry.
+const REQUEST_TIMEOUT_MS = 20_000
+
 class ApiClient {
     constructor({ api_url, get_token, fetch_impl = globalThis.fetch }) {
         this.api_url = api_url
@@ -31,7 +34,7 @@ class ApiClient {
             if (!token) throw new ApiError(401, 'Not signed in')
             headers.Authorization = `Bearer ${token}`
         }
-        const response = await this.fetch(`${this.api_url}${path}`, { headers })
+        const response = await this.fetch(`${this.api_url}${path}`, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
         if (!response.ok) {
             let detail = ''
             try { detail = (await response.json()).detail || '' } catch (e) {}

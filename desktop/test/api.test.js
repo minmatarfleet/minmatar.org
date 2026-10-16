@@ -5,7 +5,7 @@ const { load_config } = require('../src/main/config')
 
 function fake_fetch(routes, calls = []) {
     return async (url, options) => {
-        calls.push({ url, auth: options.headers.Authorization })
+        calls.push({ url, auth: options.headers.Authorization, signal: options.signal })
         const path = url.replace('https://api.example', '')
         if (!(path in routes)) return { ok: false, status: 404, json: async () => ({ detail: 'nope' }) }
         const route = routes[path]
@@ -129,4 +129,12 @@ test('no live campaign -> null; no access -> 403 for the window to explain', asy
     assert.equal(await load_campaign(none, 'https://web.example'), null)
     const denied = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': 403 }) })
     await assert.rejects(load_campaign(denied, 'https://web.example'), err => err.status === 403)
+})
+
+test('every request carries a timeout so a hung call cannot hold a window back', async () => {
+    const calls = []
+    const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': { campaign: null } }, calls) })
+    await load_campaign(api, 'https://web.example')
+    assert.ok(calls[0].signal instanceof AbortSignal)
+    assert.equal(calls[0].signal.aborted, false)
 })
