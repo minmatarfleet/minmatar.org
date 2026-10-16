@@ -128,8 +128,8 @@ public static class MfoHelper {
     Marshal.FreeHGlobal(mem);
     int corner = 1; // DWMWCP_DONOTROUND: EVE windows are square; Windows 11 rounds top-level windows by default
     int hr = DwmSetWindowAttribute(h, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, ref corner, 4);
-    int off = 1;    // DWMWA_TRANSITIONS_FORCEDISABLED: no Windows show/hide animation on top of the app's own fade
-    DwmSetWindowAttribute(h, 3, ref off, 4);
+    // Don't set DWMWA_TRANSITIONS_FORCEDISABLED here: on Electron's frameless windows it makes Windows draw
+    // a native title bar over the page (seen in 0.3.2 - 0.4.0-dev.2).
     Out("{\"t\":\"glass\",\"hwnd\":\"" + p[1] + "\",\"ok\":" + (ok != 0 ? "true" : "false") + ",\"err\":" + err + ",\"cornerHr\":" + hr + "}");
   }
 

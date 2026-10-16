@@ -89,8 +89,10 @@ function base_window(options) {
     })
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
     win.webContents.on('will-navigate', event => event.preventDefault())
-    win.webContents.once('did-finish-load', () => {
+    win.webContents.on('did-finish-load', () => {
         if (glass_ready && win !== mascot_win) eve.apply_glass(win)
+        // A 'visibility' sent while the page was still loading is lost; re-send the current one.
+        win.webContents.send('visibility', win.isVisible() && !fades.has(win))
         push_state()
     })
     return win
@@ -279,8 +281,9 @@ function update_overlay_visibility({ force = false } = {}) {
         own_pids: own_pids(),
         only_over_eve: settings.get('only_over_eve'),
     })
-    for (const [id, win] of overlays) {
-        if (win.isDestroyed() || hidden.has(id)) continue
+    const targets = [...overlays].filter(([id, win]) => !win.isDestroyed() && !hidden.has(id)).map(([, win]) => win)
+    if (settings_win && !settings_win.isDestroyed() && settings_win.__wanted) targets.push(settings_win)
+    for (const win of targets) {
         if (show || (force && show === null)) {
             reveal(win)
             win.moveTop()
@@ -326,16 +329,26 @@ function update_mascot() {
 
 // ---------------------------------------------------------------- Settings window
 
+// Settings behaves like the overlays: no taskbar button and it never takes focus, so EVE stays the active
+// window (an active non-EVE window makes Windows pop the taskbar over a Fixed Window client). Clicks still
+// work on a window that can't be focused; it only needs the mouse.
 function open_settings() {
-    if (settings_win && !settings_win.isDestroyed()) return reveal(settings_win, { activate: true }), settings_win.focus()
+    if (settings_win && !settings_win.isDestroyed()) {
+        settings_win.__wanted = true
+        reveal(settings_win)
+        settings_win.moveTop()
+        return
+    }
     const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
     settings_win = base_window({
         width: 420, height: 680,
         x: Math.round(area.x + (area.width - 420) / 2), y: Math.round(area.y + Math.max(0, (area.height - 680) / 2)),
-        alwaysOnTop: true,   // opened from over EVE: stay above the client until closed
+        focusable: false, skipTaskbar: true, alwaysOnTop: true,
     })
+    settings_win.__wanted = true
+    settings_win.setAlwaysOnTop(true, 'screen-saver')
     settings_win.loadFile(path.join(RENDERER, 'settings.html'))
-    settings_win.once('ready-to-show', () => reveal(settings_win, { activate: true }))
+    settings_win.once('ready-to-show', () => { reveal(settings_win); settings_win.moveTop() })
     settings_win.on('closed', () => { settings_win = null })
 }
 
