@@ -26,8 +26,12 @@ class VictimNameTests(TestCase):
         attribute_feed_killmail(feed_killmail)
 
     def test_a_character_we_already_know_is_named_for_free(self):
-        """Our own losses need no ESI call at all."""
+        """Our own losses are named when the mail lands, with no ESI call."""
         self._make_kill(1, 5001)
+
+        mail = CampaignKillmail.objects.get(killmail_id=1)
+        self.assertEqual(mail.victim_character_name, "Pilot")
+        self.assertEqual(mail.killer_character_name, "Pilot")
 
         with mock.patch(
             "eveonline.client.EsiClient.resolve_universe_names"
@@ -35,12 +39,7 @@ class VictimNameTests(TestCase):
             result = names.backfill_victim_names()
             resolver.assert_not_called()
 
-        # The victim and the killer are both our pilot, so both are named.
-        self.assertEqual(result["named"], 2)
-        self.assertEqual(result["from_esi"], 0)
-        mail = CampaignKillmail.objects.get(killmail_id=1)
-        self.assertEqual(mail.victim_character_name, "Pilot")
-        self.assertEqual(mail.killer_character_name, "Pilot")
+        self.assertEqual(result["pending"], 0)
 
     def test_a_stranger_is_resolved_from_esi(self):
         self._make_kill(2, 9001)
@@ -74,9 +73,9 @@ class VictimNameTests(TestCase):
         ):
             result = names.backfill_victim_names()
 
-        # The killer is our own pilot and needs no lookup; the stranger
-        # who died stays unnamed until the next pass.
-        self.assertEqual(result["named"], 1)
+        # The killer is our own pilot and was named when the mail landed.
+        # The stranger who died stays unnamed until a lookup succeeds.
+        self.assertEqual(result["named"], 0)
         mail = CampaignKillmail.objects.get(killmail_id=3)
         self.assertEqual(mail.victim_character_name, "")
         self.assertEqual(mail.killer_character_name, "Pilot")

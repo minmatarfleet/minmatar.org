@@ -63,42 +63,58 @@ STRUCTURE_TYPE_BY_ID: dict[int, str] = {
 
 
 # --- Event codes -----------------------------------------------------------
-# Seeded from a live pull on BearThatCares, 18 Sep YC128. Everything except
-# the kill payout is unconfirmed: the wording is rendered client-side from the
-# code, so we cannot tell a Rendezvous Point from a beacon or an outpost yet.
-# Unconfirmed codes are stored and shown but never scored.
+# Seeded from a live pull on BearThatCares, 18 Sep YC128, then revised against
+# the October YC128 campaign. Everything except the kill payout and the old
+# 371 complex code is unconfirmed: the wording is rendered client-side from
+# the code. Unconfirmed codes are stored and shown but never scored.
 EVENT_CODE_SEED: list[dict] = [
     {
         "event_code": 371,
         "site_kind": "complex",
-        "label": "Complex capture",
+        "label": "Complex capture (legacy)",
         "amount_rule": "base by class x system x contested x suppression / pilots inside",
         "confirmed": True,
-        "notes": "Three captures observed in Dal, all resolving to Small plexes.",
+        "notes": (
+            "September captures in Dal, small LP amounts (about 30 to 300). "
+            "October payouts with a site id moved to 359 and 373."
+        ),
     },
     {
         "event_code": 516,
         "site_kind": "advantage_site",
         "label": "Advantage site",
-        "amount_rule": "10,000 flat (RP/beacon/outpost); 15,000 supply cache",
+        "amount_rule": "10,000 flat (RP/beacon/outpost); 15,000 supply cache; other amounts shown, not scored",
         "confirmed": False,
         "notes": (
-            "50 payouts observed, 49 at 10,000 LP and one at 15,000. "
-            "Rendezvous Point, Propaganda Beacon and Listening Outpost all "
-            "pay 10,000, so they may or may not share this code. Probe: "
-            "deploy a beacon or an outpost on a tracked character."
+            "No itemRefID on any of these. September was almost all 10,000 LP "
+            "with one 15,000. October also has shares (7,500, 5,000, 8,333), "
+            "which stay in this family for display but are not scored. "
+            "Rendezvous Point, beacon and outpost may share the code."
         ),
     },
     {
         "event_code": 359,
-        "site_kind": "unknown",
-        "label": "Large payout, unconfirmed",
-        "amount_rule": "variable",
+        "site_kind": "complex",
+        "label": "Complex capture",
+        "amount_rule": "base by class x system x contested x suppression / pilots inside",
         "confirmed": False,
         "notes": (
-            "One payout of 52,500 LP in Sosala, 27 Aug 01:02. Battlefields "
-            "pay variable amounts, sometimes over 100k, so this is a "
-            "candidate but is not confirmed. Probe: name a battlefield run."
+            "September saw a single 52,500 LP payout and left the code "
+            "unconfirmed. October has hundreds, every one carrying an "
+            "itemRefID, with LP on the complex tiers (11,250, 22,500, "
+            "26,250, 37,500, 45,000, 52,500). Shown as a complex, not scored "
+            "until someone confirms the code."
+        ),
+    },
+    {
+        "event_code": 373,
+        "site_kind": "complex",
+        "label": "Complex capture",
+        "amount_rule": "base by class x system x contested x suppression / pilots inside",
+        "confirmed": False,
+        "notes": (
+            "Same shape as 359: an itemRefID on every payout and the same "
+            "complex-tier amounts. Shown, not scored, until confirmed."
         ),
     },
     {

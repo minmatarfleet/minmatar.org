@@ -181,6 +181,7 @@ def poll_campaign_payouts(limit: int | None = None) -> dict:
             if payout:
                 stored += 1
 
+    _apply_seeded_event_codes()
     attributed = attribute_new_payouts()
     return {
         "polled": polled,
@@ -328,6 +329,16 @@ def _recent_killmail_identity(entry) -> tuple[int | None, str | None]:
         return int(entry.get("killmail_id")), str(killmail_hash)
     except (TypeError, ValueError):
         return None, None
+
+
+def _apply_seeded_event_codes() -> None:
+    """Seed payout codes the migration has not reached, then relabel sites.
+
+    A code that was still unknown when its completions were stored gets its
+    name here. A human confirmation is never overwritten.
+    """
+    if sites.seed_event_codes():
+        sites.rescore_completions()
 
 
 def attribute_new_payouts(hours: int = 72) -> dict:
