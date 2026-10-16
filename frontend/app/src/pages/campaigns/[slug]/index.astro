@@ -13,6 +13,7 @@ import type {
     CampaignWeek,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignKillmail,
     CampaignSite,
     CampaignRoster,
@@ -23,6 +24,7 @@ import {
     get_campaign_week,
     get_campaign_fleets,
     get_campaign_leaderboard,
+    get_campaign_corporation_leaderboard,
     get_campaign_killmails,
     get_campaign_sites,
     get_campaign_roster,
@@ -95,6 +97,7 @@ try {
 let week:CampaignWeek | null = null
 let fleets:CampaignFleet[] = []
 let leaderboard:CampaignLeaderboardRow[] = []
+let corporation_board:CampaignCorporationLeaderboardRow[] = []
 let killmails:{ rows:CampaignKillmail[]; has_more:boolean } = { rows: [], has_more: false }
 let sites:{ rows:CampaignSite[]; has_more:boolean } = { rows: [], has_more: false }
 let roster:CampaignRoster | null = null
@@ -110,6 +113,7 @@ if (campaign) {
         get_campaign_sites(slug, auth_token as string, ACTIVITY_PAGE_SIZE + 1),
         get_campaign_roster(slug, auth_token as string),
         get_campaign_readiness(auth_token as string),
+        get_campaign_corporation_leaderboard(slug, auth_token as string, 'kills', 'week'),
     ])
 
     week = results[0].status === 'fulfilled' ? results[0].value : null
@@ -119,6 +123,7 @@ if (campaign) {
     sites = paginate(results[4].status === 'fulfilled' ? results[4].value : [])
     roster = results[5].status === 'fulfilled' ? results[5].value : null
     readiness = results[6].status === 'fulfilled' ? results[6].value : null
+    corporation_board = results[7].status === 'fulfilled' ? results[7].value : []
 }
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
@@ -227,6 +232,7 @@ const breadcrumbs = [
                 week={week}
                 fleets={fleets}
                 leaderboard={leaderboard}
+                corporation_board={corporation_board}
                 killmails={killmails}
                 sites={sites}
                 roster={roster}

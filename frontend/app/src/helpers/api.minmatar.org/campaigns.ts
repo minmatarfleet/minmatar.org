@@ -7,6 +7,7 @@ import type {
     CampaignSystemSummary,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignLeaderboardMetric,
     CampaignLeaderboardPeriod,
     CampaignKillmail,
@@ -139,6 +140,26 @@ export async function get_campaign_leaderboard(
         `${API_ENDPOINT}/${slug}/leaderboard?${params.toString()}`,
         access_token,
         'campaign leaderboard',
+    )
+}
+
+export async function get_campaign_corporation_leaderboard(
+    slug:string,
+    access_token:string | false = false,
+    metric:CampaignLeaderboardMetric = 'kills',
+    period:CampaignLeaderboardPeriod = 'week',
+    limit:number = 25,
+) {
+    const params = new URLSearchParams({
+        metric: metric,
+        period: period,
+        limit: String(limit),
+    })
+
+    return await request_json<CampaignCorporationLeaderboardRow[]>(
+        `${API_ENDPOINT}/${slug}/leaderboard/corporations?${params.toString()}`,
+        access_token,
+        'campaign corporation leaderboard',
     )
 }
 

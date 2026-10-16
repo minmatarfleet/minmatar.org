@@ -4568,6 +4568,8 @@ export const ui = {
         'campaigns.corporations.active_hint': 'Pilots active in the last 7 days',
         'campaigns.corporations.fleets': 'Fleets',
         'campaigns.corporations.unknown': 'No primary character',
+        'campaigns.corporations.board_none': 'No corporation on the board yet.',
+        'campaigns.corporations.board_pilots_hint': 'Pilots who scored in this window',
 
         'campaigns.coverage.title': 'Timezone coverage',
         'campaigns.coverage.subtitle': 'Our activity against hostile activity, by UTC hour.',

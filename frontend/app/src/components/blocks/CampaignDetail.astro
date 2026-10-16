@@ -7,6 +7,7 @@ import type {
     CampaignWeek,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignKillmail,
     CampaignSite,
     CampaignRoster,
@@ -20,6 +21,7 @@ interface Props {
     week:               CampaignWeek | null;
     fleets:             CampaignFleet[];
     leaderboard:        CampaignLeaderboardRow[];
+    corporation_board:  CampaignCorporationLeaderboardRow[];
     killmails:          { rows:CampaignKillmail[]; has_more:boolean };
     sites:              { rows:CampaignSite[]; has_more:boolean };
     roster:             CampaignRoster | null;
@@ -33,6 +35,7 @@ const {
     week,
     fleets,
     leaderboard,
+    corporation_board,
     killmails,
     sites,
     roster,
@@ -91,7 +94,7 @@ import CampaignFleetsTable from '@components/blocks/CampaignFleetsTable.astro'
 import CampaignSites from '@components/blocks/CampaignSites.astro'
 import CampaignLeaderboard from '@components/blocks/CampaignLeaderboard.astro'
 import CampaignKillfeed from '@components/blocks/CampaignKillfeed.astro'
-import CampaignCorporationStats from '@components/blocks/CampaignCorporationStats.astro'
+import CampaignCorporationBoard from '@components/blocks/CampaignCorporationBoard.astro'
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 ---
@@ -316,7 +319,12 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                                     {t('campaigns.corporations.view_full')}
                                 </Button>
                             </FlexInline>
-                            <CampaignCorporationStats corporations={roster?.corporations ?? []} compact limit={10} />
+                            <CampaignCorporationBoard
+                                slug={campaign.slug}
+                                rows={corporation_board}
+                                metric='kills'
+                                period='week'
+                            />
                         </Flexblock>
                     </ComponentBlock>
                 </Grid>
