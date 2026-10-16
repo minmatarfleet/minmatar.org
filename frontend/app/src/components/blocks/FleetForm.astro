@@ -6,6 +6,7 @@ import type { Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
+import { AMAMAKE_LOCATION_ID } from '@helpers/market_ops_redirect'
 
 interface Props {
     fleet?:                         FleetUI | null;
@@ -99,8 +100,7 @@ const locations_select_options = [no_location_option].concat(
     }))
 )
 
-const staging_location = locations.find((location) => location.staging_active)
-let fleet_location_id: number | string | null = null
+let fleet_location_id: number | null = null
 if (fleet?.location) {
     const fleet_location = locations.find(
         (location) => location.location_name === fleet.location
@@ -108,11 +108,10 @@ if (fleet?.location) {
     fleet_location_id = fleet_location?.location_id ?? null
 }
 
-const default_location_id =
-    fleet_location_id ??
-    staging_location?.location_id ??
-    (locations_select_options.length > 1 ? locations_select_options[1].value : '')
-const default_location_value = '' //String(default_location_id ?? '')
+// Keep the fleet's own location when editing; otherwise always Amamake.
+const amamake_location = locations.find((location) => location.location_id === AMAMAKE_LOCATION_ID)
+const default_location_id = fleet_location_id ?? amamake_location?.location_id ?? null
+const default_location_value = default_location_id !== null ? String(default_location_id) : ''
 
 const show_audience_picker = audiences.length > 1
 
