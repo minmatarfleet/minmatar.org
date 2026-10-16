@@ -1246,3 +1246,42 @@ class FleetTaskTests(TestCase):
         fleet.refresh_from_db()
         self.assertIsNone(efi.end_time)
         self.assertEqual("active", fleet.status)
+
+
+class FleetKillsRouterTestCase(TestCase):
+    """GET /api/fleets/{id}/kills"""
+
+    def setUp(self):
+        self.client = Client()
+        disconnect_fleet_signals()
+        setup_fleet_reference_data()
+        super().setUp()
+
+    def test_not_found(self):
+        add_user_permission(self.user, "view_evefleet")
+        response = self.client.get(
+            f"{BASE_URL}/999999/kills",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(404, response.status_code)
+
+    def test_forbidden_without_fleet_access(self):
+        other = User.objects.create(username="other")
+        fleet = make_test_fleet("Someone else's fleet", other)
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}/kills",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+
+    def test_untracked_fleet_is_empty(self):
+        fleet = make_test_fleet("Test fleet", self.user)
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}/kills",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertFalse(body["tracked"])
+        self.assertEqual(0, body["isk_destroyed"])
+        self.assertEqual([], body["killmails"])

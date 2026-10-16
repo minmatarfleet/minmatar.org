@@ -51,6 +51,7 @@ const {
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
+const FLEET_KILLS_PARTIAL_URL = `${translatePath('/partials/fleet_kills_component')}?fleet_id=${fleet.id}`
 
 import { minutes_to } from '@helpers/date';
 
@@ -145,6 +146,24 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 fleet_id={fleet.id}
                 can_edit={can_remove_fleet}
             />
+        </Wrapper>
+    }
+
+    {history && fleet.tracking &&
+        <Wrapper
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+        >
+            <div
+                id="fleet-kills"
+                hx-get={FLEET_KILLS_PARTIAL_URL}
+                hx-trigger="load"
+                hx-swap="outerHTML transition:true"
+            >
+                <p class="[ loading ]">{t('fleets.kills.loading')}</p>
+            </div>
         </Wrapper>
     }
     

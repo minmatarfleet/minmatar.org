@@ -24,6 +24,8 @@ export function getActivityAccent(item: ActivityItem): ActivityAccentStyle {
     case 'killmail_batch':
     case 'communication':
       return accentStyles.combat;
+    case 'fleet_kills':
+      return accentStyles.militia;
     case 'fleet_active':
       if (item.faction === 'amarr') return accentStyles.amarr;
       if (item.faction === 'minmatar') return accentStyles.militia;
@@ -77,6 +79,15 @@ function formatShipsLine(item: ActivityItem): string | undefined {
     .join(' · ');
 }
 
+function formatIsk(isk: number | undefined): string {
+  const value = isk ?? 0;
+  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
+  return String(value);
+}
+
 function truncate(text: string, max = ACTIVITY_PREVIEW_MAX_CHARS): string {
   const trimmed = text.trim();
   if (trimmed.length <= max) return trimmed;
@@ -97,6 +108,8 @@ export function kindLabel(item: ActivityItem | ActivityKind): string {
       return 'Comms';
     case 'contested_change':
       return 'Contested';
+    case 'fleet_kills':
+      return 'Fleet kills';
   }
 }
 
@@ -145,6 +158,12 @@ export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
           item.summary ??
             `${item.system ?? 'System'} moved ${item.delta_percent ?? 0}% contested.`,
         ),
+      };
+    case 'fleet_kills':
+      return {
+        title: `${item.ships_destroyed ?? 0} ships destroyed, ${formatIsk(item.isk_destroyed)} ISK`,
+        subheader: item.systems?.join(', ') ?? 'Warzone',
+        preview: truncate(formatShipsLine(item) ?? ''),
       };
   }
 }
@@ -209,6 +228,22 @@ export function mapActivityToDetail(item: ActivityItem): ActivityDetail {
           { label: 'System', value: item.system ?? '—' },
           { label: 'Contested', value: `${item.contested_percent ?? 0}%` },
           { label: '1h change', value: `${item.delta_percent ?? 0}%` },
+        ],
+      };
+    case 'fleet_kills':
+      return {
+        kind: item.kind,
+        timestamp: item.timestamp,
+        title: card.title,
+        subheader: card.subheader,
+        body: item.summary,
+        sections: [
+          { label: 'ISK destroyed', value: formatIsk(item.isk_destroyed) },
+          { label: 'Ships destroyed', value: String(item.ships_destroyed ?? 0) },
+          { label: 'ISK lost', value: formatIsk(item.isk_lost) },
+          { label: 'Ships lost', value: String(item.ships_lost ?? 0) },
+          { label: 'Systems', value: item.systems?.join(', ') ?? '—' },
+          ...(formatShipsLine(item) ? [{ label: 'Top kills', value: formatShipsLine(item)! }] : []),
         ],
       };
   }

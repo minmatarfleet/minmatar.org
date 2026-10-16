@@ -175,6 +175,7 @@ class FeedEvent(models.Model):
         FLEET_ACTIVE = "fleet_active", "Fleet active"
         KILLMAIL_BATCH = "killmail_batch", "Killmail batch"
         CONTESTED_CHANGE = "contested_change", "Contested change"
+        FLEET_KILLS = "fleet_kills", "Fleet kills"
 
     class Accent(models.TextChoices):
         COMBAT = "combat", "Combat"

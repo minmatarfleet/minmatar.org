@@ -50,7 +50,7 @@ def run_feed_rollups(*, since_hours: int = 48) -> int:
     ctx = build_context(since, now)
     results = run_all_rollups(
         ctx,
-        codes=["kill_burst", "fleet_active"],
+        codes=["kill_burst", "fleet_active", "fleet_kills"],
     )
     written = write_rollup_results(results)
     logger.info("Wrote %s feed rollup events", written)

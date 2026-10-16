@@ -132,6 +132,7 @@ ROLLUP_VERSIONS: dict[str, int] = {
     "kill_burst": 6,
     "fleet_active": 11,
     "contested_change": 1,
+    "fleet_kills": 1,
 }
 
 # Capital kill Discord pings (radius from Amamake)

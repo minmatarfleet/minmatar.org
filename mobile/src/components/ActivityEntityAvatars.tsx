@@ -42,7 +42,7 @@ export function ActivityEntityAvatars({ item }: ActivityEntityAvatarsProps) {
     );
   }
 
-  if (item.kind === 'killmail_batch' && item.ships?.length) {
+  if ((item.kind === 'killmail_batch' || item.kind === 'fleet_kills') && item.ships?.length) {
     const visible = item.ships.filter((ship) => ship.type_id != null).slice(0, MAX_VISIBLE);
     if (!visible.length) {
       return null;
