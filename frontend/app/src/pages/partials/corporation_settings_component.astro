@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
 
-import type { CorporationRedditPost, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
+import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import {
     RedditSettingsError,
@@ -15,7 +15,6 @@ import {
     is_corporation_slug,
     parse_delivery_method,
     parse_paused,
-    REDDIT_AUTOMATIC_POSTING,
     REDDIT_FORMATTING_GUIDE_URL,
     reddit_change_key,
     reddit_connect_flash,
@@ -58,13 +57,13 @@ const PARTIAL_URL = translatePath(`/partials/corporation_settings_component/?${q
 const CONNECT_URL = translatePath(`/redirects/reddit_connect_init?${query_string({ corporation: slug })}`)
 const PREVIEW_URL = translatePath('/partials/reddit_markdown_preview_component/')
 // Autosaves only swap these in, so the fields keep focus while typing.
-const AUTOSAVE_TARGETS = [SCHEDULE_ID, PROBLEMS_ID, STATUS_ID, ...(REDDIT_AUTOMATIC_POSTING ? [AUTOMATIC_ID] : [])]
+const AUTOSAVE_TARGETS = [SCHEDULE_ID, PROBLEMS_ID, STATUS_ID, AUTOMATIC_ID]
     .map((id) => `#${id}`)
     .join(',')
 
 let flash: RedditFlash | null = reddit_connect_flash(params)
 // Unsaved edits survive a failed save or an unlink.
-let draft: { title: string, content: string, delivery_method: string, paused: boolean } | null = null
+let draft: { title: string, content: string, delivery_method: RedditDeliveryMethod, paused: boolean } | null = null
 let rejected_problems: RedditMarkdownProblem[] | null = null
 // The result of an autosave, shown next to the fields.
 let save_status: RedditFlash | null = null
@@ -85,9 +84,7 @@ if (Astro.request.method === 'POST') {
             await update_corporation_reddit_post(auth_token, corporation_id, {
                 title: draft.title,
                 content: draft.content,
-                delivery_method: REDDIT_AUTOMATIC_POSTING
-                    ? parse_delivery_method(draft.delivery_method)
-                    : 'discord_reminder',
+                delivery_method: draft.delivery_method,
                 paused: draft.paused,
             })
             save_status = { kind: 'success', key: 'corporations.settings.saved' }
@@ -112,9 +109,8 @@ if (!settings) return HTTP_403_Forbidden()
 
 const title = draft?.title ?? settings.title
 const content = draft?.content ?? settings.content
-const delivery_method = REDDIT_AUTOMATIC_POSTING
-    ? parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
-    : 'discord_reminder'
+const delivery_method = parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
+const posts_automatically = delivery_method !== 'discord_reminder'
 const paused = draft?.paused ?? settings.paused
 const account = settings.reddit_account
 const subreddit = settings.subreddit.replace(/^\/?r\//, '')
@@ -129,6 +125,7 @@ const summary = reddit_section_summary({ ...settings, delivery_method }, {
     admin_paused: t('corporations.settings.summary_admin_paused'),
     next: t('corporations.settings.summary_next'),
     reminder: t('corporations.settings.summary_reminder'),
+    alliance: t('corporations.settings.summary_alliance'),
     automatic: t('corporations.settings.summary_automatic'),
     approved: t('corporations.settings.summary_approved'),
     awaiting: t('corporations.settings.summary_awaiting'),
@@ -137,7 +134,9 @@ const summary = reddit_section_summary({ ...settings, delivery_method }, {
 const status_text = (() => {
     switch (settings.automatic_status) {
         case 'ready':
-            return t('corporations.settings.status_ready').replace('~NAME', account?.username ?? '')
+            return settings.delivery_method === 'alliance'
+                ? t('corporations.settings.status_ready_alliance')
+                : t('corporations.settings.status_ready').replace('~NAME', account?.username ?? '')
         case 'not_approved':
             return t('corporations.settings.status_not_approved')
         case 'no_account':
@@ -372,6 +371,32 @@ const status_text = (() => {
                             <input
                                 type="radio"
                                 name="delivery_method"
+                                value="alliance"
+                                checked={delivery_method === 'alliance'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_alliance')}</strong>
+                                <small>{t('corporations.settings.delivery_alliance_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
+                                value="automatic"
+                                checked={delivery_method === 'automatic'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_automatic')}</strong>
+                                <small>{t('corporations.settings.delivery_automatic_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
                                 value="discord_reminder"
                                 checked={delivery_method === 'discord_reminder'}
                             />
@@ -383,35 +408,24 @@ const status_text = (() => {
                                 }
                             </span>
                         </label>
-
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="automatic"
-                                checked={delivery_method === 'automatic'}
-                                disabled={!REDDIT_AUTOMATIC_POSTING}
-                            />
-                            <span class="[ corp-settings__option-body ]">
-                                <strong>{t('corporations.settings.delivery_automatic')}</strong>
-                                <small>
-                                    {REDDIT_AUTOMATIC_POSTING
-                                        ? t('corporations.settings.delivery_automatic_help')
-                                        : t('corporations.settings.delivery_automatic_coming_soon')}
-                                </small>
-                            </span>
-                        </label>
                     </Flexblock>
                 </fieldset>
 
-                {REDDIT_AUTOMATIC_POSTING &&
-                <section id={AUTOMATIC_ID} class="[ corp-settings__panel ]" aria-labelledby="corp-settings-automatic">
+                {/* Always rendered so autosave can swap it in when the method changes. */}
+                <section
+                    id={AUTOMATIC_ID}
+                    class="[ corp-settings__panel ]"
+                    aria-labelledby="corp-settings-automatic"
+                    hidden={!posts_automatically}
+                >
+                    {posts_automatically &&
                     <Flexblock gap="var(--space-xs)">
                         <h3 id="corp-settings-automatic">{t('corporations.settings.automatic_heading')}</h3>
-                        {settings.delivery_method === 'automatic' && status_text &&
+                        {settings.delivery_method === delivery_method && status_text &&
                             <p class="[ corp-settings__status ]">{status_text}</p>
                         }
                         <dl class="[ corp-settings__facts ]">
+                            {delivery_method === 'automatic' &&
                             <div>
                                 <dt>{t('corporations.settings.reddit_account')}</dt>
                                 <dd>
@@ -448,6 +462,7 @@ const status_text = (() => {
                                     }
                                 </dd>
                             </div>
+                            }
                             <div>
                                 <dt>{t('corporations.settings.approval')}</dt>
                                 <dd>
@@ -466,8 +481,8 @@ const status_text = (() => {
                         </dl>
                         <small class="[ corp-settings__muted ]">{t('corporations.settings.approval_note')}</small>
                     </Flexblock>
+                    }
                 </section>
-                }
 
                 <FlexInline gap="var(--space-m)">
                     <p

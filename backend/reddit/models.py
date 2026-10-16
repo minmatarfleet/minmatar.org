@@ -34,20 +34,24 @@ class RedditPostTemplate(models.Model):
     A corporation's recurring Reddit recruitment post. Each corporation has
     at most one.
 
-    The CEO writes the title and body, can pause it, and chooses between a
-    Discord DM reminder and automatic posting from their linked Reddit
-    account. Automatic posting needs superuser approval. Alliance admins
+    The CEO writes the title and body, can pause it, and chooses how it goes
+    out: posted automatically as the alliance account (the default), posted
+    automatically from their own linked Reddit account, or a Discord DM
+    reminder. Either automatic method needs superuser approval. Alliance admins
     pick the subreddit, priority, posting window, flair and Discord channel.
     When the post goes out is decided by the alliance rotation
     (`RedditSchedule`); each slot is a `RedditPost` row.
     """
 
-    DISCORD_REMINDER = "discord_reminder"
+    ALLIANCE = "alliance"
     AUTOMATIC = "automatic"
+    DISCORD_REMINDER = "discord_reminder"
     DELIVERY_CHOICES = [
+        (ALLIANCE, "Automatic post as the alliance account"),
+        (AUTOMATIC, "Automatic post from the CEO's account"),
         (DISCORD_REMINDER, "Discord DM reminder"),
-        (AUTOMATIC, "Automatic post"),
     ]
+    AUTOMATIC_METHODS = (ALLIANCE, AUTOMATIC)
 
     corporation = models.OneToOneField(
         "eveonline.EveCorporation",
@@ -100,7 +104,7 @@ class RedditPostTemplate(models.Model):
     delivery_method = models.CharField(
         max_length=20,
         choices=DELIVERY_CHOICES,
-        default=DISCORD_REMINDER,
+        default=ALLIANCE,
     )
     approved = models.BooleanField(
         default=False,

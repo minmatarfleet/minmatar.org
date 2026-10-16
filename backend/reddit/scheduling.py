@@ -45,7 +45,9 @@ def claim(post: RedditPost) -> bool:
 
 
 def posting_account(template: RedditPostTemplate) -> RedditAccount | None:
-    """The CEO's linked account; corporation posts are submitted as them."""
+    """The CEO's linked account, when the post goes out as them."""
+    if template.delivery_method != RedditPostTemplate.AUTOMATIC:
+        return None
     user = ceo_user(template.corporation)
     if user is None:
         return None
@@ -56,6 +58,8 @@ def automatic_blocker(template: RedditPostTemplate) -> str | None:
     """Why this post can't be submitted automatically right now, if at all."""
     if not template.approved:
         return NOT_APPROVED
+    if template.delivery_method == RedditPostTemplate.ALLIANCE:
+        return None
     account = posting_account(template)
     if account is None:
         return NO_ACCOUNT
@@ -65,8 +69,9 @@ def automatic_blocker(template: RedditPostTemplate) -> str | None:
 
 
 def reddit_client_for(template: RedditPostTemplate) -> RedditClient:
-    """Posts go out as the CEO when they have linked an account; admin
-    resubmits without a link go out as the alliance."""
+    """Posts go out as the CEO when they chose their own linked account;
+    everything else (including admin resubmits without a link) goes out as
+    the alliance."""
     account = posting_account(template)
     if account is not None and not account.token_invalid:
         return RedditClient(account)
@@ -81,7 +86,7 @@ def deliver(
     """Post or remind for a claimed slot. Returns the post's final status."""
     post.delivered_at = now or timezone.now()
     reason = None
-    if template.delivery_method == RedditPostTemplate.AUTOMATIC:
+    if template.delivery_method in RedditPostTemplate.AUTOMATIC_METHODS:
         reason = automatic_blocker(template)
         if reason is None:
             submit(template, post=post)

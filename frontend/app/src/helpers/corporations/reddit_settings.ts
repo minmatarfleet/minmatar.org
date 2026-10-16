@@ -3,11 +3,6 @@ import type { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
 
-// Automatic posting from a linked Reddit account is switched off for now: the
-// option shows as "Coming soon" and every save is a Discord reminder. Flip to
-// re-enable; the backend already supports it.
-export const REDDIT_AUTOMATIC_POSTING: boolean = false
-
 /** The pause checkbox: checked means out of the rotation. */
 export function parse_paused(value: unknown): boolean {
     return value === 'on' || value === 'true'
@@ -33,8 +28,9 @@ export function reddit_change_key(change: Pick<RedditScheduleChange, 'gained'>):
         : 'corporations.settings.change_lost'
 }
 
+/** Posts go out as the alliance account unless the CEO picks otherwise. */
 export function parse_delivery_method(value: unknown): RedditDeliveryMethod {
-    return value === 'automatic' ? 'automatic' : 'discord_reminder'
+    return value === 'automatic' || value === 'discord_reminder' ? value : 'alliance'
 }
 
 export function is_corporation_slug(value: string | null | undefined): value is string {
@@ -98,6 +94,7 @@ export function reddit_section_summary(
         admin_paused: string,
         next: string,
         reminder: string,
+        alliance: string,
         automatic: string,
         approved: string,
         awaiting: string,
@@ -114,7 +111,8 @@ export function reddit_section_summary(
     const next = settings.upcoming[0]
     if (next)
         parts.push(labels.next.replace('~WHEN', format_eve_datetime(next.scheduled_for, locale)))
-    if (settings.delivery_method !== 'automatic')
+    if (settings.delivery_method === 'discord_reminder')
         return [...parts, labels.reminder].join(' · ')
-    return [...parts, labels.automatic, settings.approved ? labels.approved : labels.awaiting].join(' · ')
+    const method = settings.delivery_method === 'automatic' ? labels.automatic : labels.alliance
+    return [...parts, method, settings.approved ? labels.approved : labels.awaiting].join(' · ')
 }

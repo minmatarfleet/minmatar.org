@@ -159,7 +159,7 @@ class DeliverTestCase(CorporationPostTestCase):
     def test_reminder_method_sends_dm_and_does_not_post(
         self, submit_post, discord
     ):
-        template = self.make_post()
+        template = self.make_post(delivery_method="discord_reminder")
         post = self.claimed(template)
         self.assertEqual("reminded", deliver(template, post))
         submit_post.assert_not_called()
@@ -186,6 +186,30 @@ class DeliverTestCase(CorporationPostTestCase):
         self.assertEqual("Join the Rat", post.title)
         self.assertEqual(THURSDAY_1800, post.delivered_at)
 
+    @patch("reddit.scheduling.RedditClient")
+    def test_alliance_method_posts_as_the_alliance_account(
+        self, client_class, submit_post, discord
+    ):
+        client_class.return_value.submit_post.return_value = SUBMITTED
+        # Even with the CEO's account linked, it goes out as the alliance.
+        self.link_reddit()
+        template = self.make_post(approved=True)
+        self.assertEqual("alliance", template.delivery_method)
+        post = self.claimed(template)
+        self.assertEqual("posted", deliver(template, post, THURSDAY_1800))
+        client_class.assert_called_once_with()
+        discord().send_dm.assert_not_called()
+        post.refresh_from_db()
+        self.assertEqual(SUBMITTED["url"], post.reddit_url)
+
+    def test_alliance_method_needs_no_linked_account(
+        self, submit_post, discord
+    ):
+        template = self.make_post(approved=True)
+        post = self.claimed(template)
+        self.assertEqual("posted", deliver(template, post))
+        submit_post.assert_called_once()
+
     def _reminder_reason(self, template, discord):
         post = self.claimed(template)
         with patch(
@@ -204,6 +228,18 @@ class DeliverTestCase(CorporationPostTestCase):
         post = self.make_post(delivery_method="automatic", approved=False)
         self.assertEqual(NOT_APPROVED, self._reminder_reason(post, discord))
         submit_post.assert_not_called()
+
+    def test_unapproved_alliance_post_falls_back_to_reminder(
+        self, submit_post, discord
+    ):
+        post = self.make_post(approved=False)
+        self.assertEqual(NOT_APPROVED, self._reminder_reason(post, discord))
+        submit_post.assert_not_called()
+
+    def test_failed_alliance_post_reminds(self, submit_post, discord):
+        submit_post.return_value = None
+        post = self.make_post(approved=True)
+        self.assertEqual(POST_FAILED, self._reminder_reason(post, discord))
 
     def test_automatic_without_linked_account_reminds(
         self, submit_post, discord
@@ -419,6 +455,7 @@ class RouterTestCase(CorporationPostTestCase):
         self.assertEqual("evejobs", body["subreddit"])
         self.assertEqual("not_set_up", body["rotation_status"])
         self.assertEqual([], body["upcoming"])
+        self.assertEqual("alliance", body["delivery_method"])
 
     def test_ceo_pauses_the_post(self):
         self.make_post()
@@ -931,3 +968,47 @@ class RestoreCorporationPostsTestCase(TransactionTestCase):
         self.assertEqual("Written since the deploy", template.title)
         # It never had a day, so it waits for the CEO to resume it.
         self.assertTrue(template.paused)
+
+
+class AllianceAccountMigrationTestCase(TransactionTestCase):
+    """0013 moves the reminder-only posts to the alliance account."""
+
+    before = [("reddit", "0012_rotation")]
+    after = [("reddit", "0013_alliance_account_default")]
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        with patch("builtins.print"):
+            executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_reminders_move_to_the_alliance_account(self):
+        executor = MigrationExecutor(connection)
+        with patch("builtins.print"):
+            executor.migrate(self.before)
+        old = executor.loader.project_state(self.before).apps
+        corporations = old.get_model("eveonline", "EveCorporation").objects
+        templates = old.get_model("reddit", "RedditPostTemplate").objects
+        for corporation_id, method in (
+            (1, "discord_reminder"),
+            (2, "automatic"),
+        ):
+            templates.create(
+                corporation=corporations.create(
+                    corporation_id=corporation_id, name=f"Corp {method}"
+                ),
+                title="Title",
+                content="Body",
+                delivery_method=method,
+            )
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        with patch("builtins.print"):
+            executor.migrate(self.after)
+        self.assertEqual(
+            {1: "alliance", 2: "automatic"},
+            dict(
+                RedditPostTemplate.objects.values_list(
+                    "corporation__corporation_id", "delivery_method"
+                )
+            ),
+        )
