@@ -1,7 +1,9 @@
 from datetime import datetime, time, timedelta, timezone as dt_timezone
+from importlib import import_module
 from unittest.mock import patch
 
 import jwt
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, override_settings
@@ -702,3 +704,25 @@ class AdminMarkdownTestCase(CorporationPostTestCase):
             instance=post, content="Legacy<br>ad", posting_day="friday"
         )
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class ReminderOnlyMigrationTestCase(CorporationPostTestCase):
+    def test_flips_corp_posts_and_deletes_alliance_posts(self):
+        migration = import_module(
+            "reddit.migrations.0008_reminder_only_and_drop_alliance_posts"
+        )
+        corp_post = self.make_post(delivery_method="automatic", approved=True)
+        self.make_post(corporation=None, delivery_method="automatic")
+
+        with patch("builtins.print"):
+            migration.reminder_only(django_apps, None)
+
+        self.assertEqual(
+            [corp_post.pk],
+            list(RedditScheduledPost.objects.values_list("pk", flat=True)),
+        )
+        corp_post.refresh_from_db()
+        self.assertEqual("discord_reminder", corp_post.delivery_method)
+        # Approval is kept, so switching back to automatic later needs no
+        # second approval for unchanged words.
+        self.assertTrue(corp_post.approved)
