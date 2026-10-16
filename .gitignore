@@ -63,6 +63,7 @@ local_settings.py
 settings.py
 **/settings.py
 backend/test_db.sqlite3
+backend/.test-db/
 db.sqlite3
 db.sqlite3-journal
 

@@ -1169,6 +1169,8 @@ class EsiClient:
         return EsiResponse(response_code=response.status_code, data=data)
 
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
+        if not live_esi_allowed():
+            return EsiResponse(ERROR_CALLING_ESI)
         operation = esi_provider.client.Universe.PostUniverseNames(
             body=ids_to_resolve
         )

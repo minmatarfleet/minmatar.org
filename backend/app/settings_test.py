@@ -120,6 +120,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "test_db.sqlite3",
+        # In-memory by default. CI points this at a file so the migrated
+        # schema can be cached between runs with --keepdb.
+        "TEST": {"NAME": os.environ.get("TEST_DB_NAME") or None},
     }
 }
 
@@ -204,3 +207,9 @@ NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND = float(
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_CONTACT = os.environ.get("VAPID_CONTACT", "")
+
+# Unit tests must never touch the network — see app/test_network_guard.py.
+if os.environ.get("ALLOW_NETWORK_IN_TESTS", "") != "True":
+    from app.test_network_guard import install as _block_network
+
+    _block_network()

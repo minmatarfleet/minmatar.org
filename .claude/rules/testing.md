@@ -12,3 +12,8 @@ Run from the **backend** directory (`/root/minmatar.org/backend` or project's `b
 - To run a specific test class or method: `pipenv run python manage.py test eveonline.tests.test_models.EveSkillsetTestCase --settings=app.settings_test`
 
 Do **not** use `python manage.py test` without `--settings=app.settings_test` unless the environment is configured for a test database (e.g. CI with DB create permissions).
+
+## Speed and isolation
+
+- Add `--parallel auto` to run across all cores (CI does this). Add `--keepdb` with `TEST_DB_NAME=.test-db/test_db.sqlite3` to reuse the migrated schema between runs.
+- The test settings block all non-loopback network access (`app/test_network_guard.py`). A test that reaches ESI, zKill or Discord fails with `NetworkAccessBlocked`. Seed the eveuniverse rows it needs, mock the client, or gate the production call with `live_esi_allowed()`. Set `ALLOW_NETWORK_IN_TESTS=True` only for a deliberate live run.

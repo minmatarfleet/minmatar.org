@@ -1,4 +1,8 @@
 [run]
+# Django's --parallel runs tests in worker processes; combine afterwards
+# with `coverage combine`.
+parallel = True
+concurrency = multiprocessing
 omit = 
     */migrations/*
     */__init__.py

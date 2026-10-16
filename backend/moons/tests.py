@@ -8,10 +8,9 @@ from django.test import Client
 from app.test import TestCase
 from moons.helpers import calc_metanox_yield
 from moons.models import EveMoon, EveMoonDistribution
+from moons.parser import process_moon_paste
 from moons.router import count_scanned_moons
 from moons.tasks import update_moon_revenues
-
-from .parser import process_moon_paste
 
 BASE_URL = "/api/moons"
 
