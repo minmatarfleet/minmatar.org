@@ -11,6 +11,7 @@ from fittings.models import (
     EveDoctrineChangeRequest,
     EveDoctrineFitting,
     EveDoctrineHistory,
+    DOCTRINE_FITTING_ROLES,
     composition_snapshot_for_doctrine,
     location_ids_for_doctrine,
 )
@@ -27,15 +28,10 @@ def build_doctrine_payload_from_form(cleaned_data) -> dict:
         "type": cleaned_data["type"],
         "description": cleaned_data["description"],
         "composition": {
-            "primary": sorted(
-                f.pk for f in cleaned_data.get("primary_fittings", [])
-            ),
-            "secondary": sorted(
-                f.pk for f in cleaned_data.get("secondary_fittings", [])
-            ),
-            "support": sorted(
-                f.pk for f in cleaned_data.get("support_fittings", [])
-            ),
+            role: sorted(
+                f.pk for f in cleaned_data.get(f"{role}_fittings", [])
+            )
+            for role in DOCTRINE_FITTING_ROLES
         },
         "location_ids": sorted(
             loc.pk for loc in cleaned_data.get("locations", [])
@@ -45,9 +41,7 @@ def build_doctrine_payload_from_form(cleaned_data) -> dict:
 
 def _normalized_composition(comp: dict) -> dict:
     return {
-        "primary": sorted(comp.get("primary") or []),
-        "secondary": sorted(comp.get("secondary") or []),
-        "support": sorted(comp.get("support") or []),
+        role: sorted(comp.get(role) or []) for role in DOCTRINE_FITTING_ROLES
     }
 
 
@@ -122,7 +116,7 @@ def apply_doctrine_payload(doctrine: EveDoctrine, payload: dict):
                 doctrine=doctrine, fitting_id=fitting_id, role=role
             )
 
-    for role in ("primary", "secondary", "support"):
+    for role in DOCTRINE_FITTING_ROLES:
         existing = EveDoctrineFitting.objects.filter(
             doctrine=doctrine, role=role
         )

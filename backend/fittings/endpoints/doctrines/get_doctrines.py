@@ -23,6 +23,7 @@ def get_doctrines(request):
         primary_fittings = []
         secondary_fittings = []
         support_fittings = []
+        utility_fittings = []
         for doctrine_fitting in doctrine.evedoctrinefitting_set.all():
             fitting = doctrine_fitting.fitting
             fitting_response = make_fitting_response(fitting)
@@ -32,6 +33,8 @@ def get_doctrines(request):
                 secondary_fittings.append(fitting_response)
             elif doctrine_fitting.role == "support":
                 support_fittings.append(fitting_response)
+            elif doctrine_fitting.role == "utility":
+                utility_fittings.append(fitting_response)
         doctrine_response = DoctrineResponse(
             id=doctrine.id,
             name=doctrine.name,
@@ -42,6 +45,7 @@ def get_doctrines(request):
             primary_fittings=primary_fittings,
             secondary_fittings=secondary_fittings,
             support_fittings=support_fittings,
+            utility_fittings=utility_fittings,
             sig_ids=[],
             location_ids=[
                 location.location_id for location in doctrine.locations.all()

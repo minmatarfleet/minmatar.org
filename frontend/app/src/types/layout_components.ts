@@ -672,6 +672,7 @@ export interface DoctrineType {
     primary_fittings:       FittingItem[];
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
+    utility_fittings:       FittingItem[];
     location_ids:           number[];
 }
 

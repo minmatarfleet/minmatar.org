@@ -27,6 +27,7 @@ const [ system, station ] = fleet?.location?.split(' - ') ?? []
 let hero_fittings:HeroFittings[] = [
     ...doctrine?.primary_fittings ?? [],
     ...doctrine?.support_fittings ?? [],
+    ...doctrine?.utility_fittings ?? [],
     ...doctrine?.secondary_fittings ?? []
 ]
 
