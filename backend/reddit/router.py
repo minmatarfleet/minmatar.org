@@ -61,7 +61,7 @@ def _ceo_corporation(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="The corporation's scheduled Reddit post (CEO only)",
+    summary="The corporation's Reddit post template (CEO only)",
 )
 def get_corporation_post(request, corporation_id: int):
     corporation, error = _ceo_corporation(request, corporation_id)
@@ -79,7 +79,7 @@ def get_corporation_post(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="Edit the corporation's Reddit post and how it is sent (CEO only)",
+    summary="Edit the corporation's Reddit post, its day and how it is sent (CEO only)",
 )
 def put_corporation_post(
     request, corporation_id: int, payload: CorporationRedditPostUpdate
@@ -93,6 +93,7 @@ def put_corporation_post(
             payload.title,
             payload.content,
             payload.delivery_method,
+            payload.posting_day,
         )
     except PostSettingsError as e:
         return 400, {"detail": e.code, "problems": e.problems}

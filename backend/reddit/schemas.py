@@ -49,3 +49,5 @@ class CorporationRedditPostUpdate(Schema):
     title: str
     content: str
     delivery_method: str
+    # monday..sunday, or "" to unschedule. Omit to leave the day unchanged.
+    posting_day: Optional[str] = None

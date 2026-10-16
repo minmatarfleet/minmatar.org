@@ -102,6 +102,8 @@ INSTALLED_APPS = [
     "audit",
     # Reddit integration
     "reddit",
+    # Corporation recruitment threads on the EVE Online forums
+    "recruitment.apps.RecruitmentConfig",
     # Creator Twitch / YouTube / Reddit OAuth + ingest
     "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",

@@ -222,6 +222,10 @@ class StructureHelperTest(unittest.TestCase):
         self.assertFalse(is_new_event(event, now))
 
     def test_structure_ping_discord_message(self):
+        # Plain unittest: nothing is rolled back, so don't assume a pk.
+        corp, _ = EveCorporation.objects.get_or_create(
+            corporation_id=1002, defaults={"name": "Structure Corp"}
+        )
         structure = EveStructure.objects.create(
             id=20001,
             name="Homebase",
@@ -230,7 +234,7 @@ class StructureHelperTest(unittest.TestCase):
             type_id=1234,
             type_name="Bouncy Castle",
             reinforce_hour=12,
-            corporation_id=1,
+            corporation=corp,
         )
         ping = EveStructurePing.objects.create(
             notification_id=10001,

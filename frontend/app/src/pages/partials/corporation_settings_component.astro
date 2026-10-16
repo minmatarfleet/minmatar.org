@@ -14,7 +14,9 @@ import {
     format_eve_datetime,
     is_corporation_slug,
     parse_delivery_method,
+    parse_posting_day,
     REDDIT_AUTOMATIC_POSTING,
+    REDDIT_POSTING_DAYS,
     REDDIT_FORMATTING_GUIDE_URL,
     reddit_connect_flash,
     reddit_markdown_problem_key,
@@ -29,6 +31,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import Tag from '@components/blocks/Tag.astro'
 
@@ -53,7 +56,7 @@ const CONNECT_URL = translatePath(`/redirects/reddit_connect_init?${query_string
 
 let flash: RedditFlash | null = reddit_connect_flash(params)
 // Unsaved edits survive a failed save or an unlink.
-let draft: { title: string, content: string, delivery_method: string } | null = null
+let draft: { title: string, content: string, delivery_method: string, posting_day: string } | null = null
 let rejected_problems: RedditMarkdownProblem[] | null = null
 
 if (Astro.request.method === 'POST') {
@@ -62,6 +65,7 @@ if (Astro.request.method === 'POST') {
         title: String(form.get('title') ?? ''),
         content: String(form.get('content') ?? ''),
         delivery_method: parse_delivery_method(form.get('delivery_method')),
+        posting_day: parse_posting_day(form.get('posting_day')),
     }
     try {
         if (form.get('action') === 'disconnect') {
@@ -74,6 +78,7 @@ if (Astro.request.method === 'POST') {
                 delivery_method: REDDIT_AUTOMATIC_POSTING
                     ? parse_delivery_method(draft.delivery_method)
                     : 'discord_reminder',
+                posting_day: parse_posting_day(draft.posting_day),
             })
             flash = { kind: 'success', key: 'corporations.settings.saved' }
             draft = null
@@ -98,6 +103,7 @@ const content = draft?.content ?? settings.content
 const delivery_method = REDDIT_AUTOMATIC_POSTING
     ? parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
     : 'discord_reminder'
+const posting_day = draft?.posting_day ?? settings.posting_day
 const account = settings.reddit_account
 const is_scheduled = Boolean(settings.posting_day && settings.subreddit)
 // A rejected save lists what Reddit can't render in the typed text; otherwise
@@ -175,7 +181,11 @@ const status_text = (() => {
                         }
                     </dl>
                     :
-                    <p>{t('corporations.settings.unscheduled')}</p>
+                    <p>
+                        {settings.posting_day
+                            ? t('corporations.settings.paused')
+                            : t('corporations.settings.unscheduled')}
+                    </p>
                 }
                 <small class="[ corp-settings__muted ]">{t('corporations.settings.schedule_note')}</small>
             </Flexblock>
@@ -242,6 +252,26 @@ const status_text = (() => {
                             </ul>
                         </div>
                     }
+                </Flexblock>
+
+                <Flexblock gap="var(--space-3xs)">
+                    <label class="[ corp-settings__label ]" for="corp-settings-day">
+                        {t('corporations.settings.day_label')}
+                    </label>
+                    <Select
+                        id="corp-settings-day"
+                        name="posting_day"
+                        size="sm"
+                        aria-describedby="corp-settings-day-help"
+                    >
+                        <option value="" selected={!posting_day}>{t('corporations.settings.day_none')}</option>
+                        {REDDIT_POSTING_DAYS.map((day) =>
+                            <option value={day} selected={posting_day === day}>{reddit_weekday_label(day, lang)}</option>
+                        )}
+                    </Select>
+                    <small id="corp-settings-day-help" class="[ corp-settings__muted ]">
+                        {t('corporations.settings.day_help').replace('~TIME', settings.posting_time)}
+                    </small>
                 </Flexblock>
 
                 <fieldset class="[ corp-settings__delivery ]">

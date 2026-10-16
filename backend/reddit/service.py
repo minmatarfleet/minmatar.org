@@ -3,10 +3,9 @@ import logging
 from app.errors import create_error_id
 
 from reddit.client import RedditClient
-from reddit.models import RedditScheduledPost
+from reddit.models import RedditPost, RedditPostTemplate
 from reddit.scheduling import (
     link_reddit_post_to_discord,
-    reddit_client_for,
     run_scheduled_posts,
     submit,
 )
@@ -43,14 +42,8 @@ class RedditService:
     def scheduled_posts(self):
         return run_scheduled_posts()
 
-    def post_recriutment_ad(self, scheduled_post: RedditScheduledPost):
+    def post_recriutment_ad(self, template: RedditPostTemplate) -> RedditPost:
         """Submit a post right now (admin action), ignoring the schedule
         and the approval flag."""
-        logging.info(">  %s", scheduled_post.title)
-        reddit_client = (
-            reddit_client_for(scheduled_post)
-            if scheduled_post.corporation_id
-            else client
-        )
-        title, _ = submit(scheduled_post, reddit_client)
-        return title
+        logging.info(">  %s", template.title)
+        return submit(template)
