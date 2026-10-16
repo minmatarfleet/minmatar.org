@@ -264,7 +264,7 @@ def _system_reveal_predicate(request, fleet: EveFleet):
     return lambda volunteer: volunteer.character_id in own_ids
 
 
-def make_ship_volunteer_response(volunteer):
+def make_ship_volunteer_response(volunteer, reveal_system: bool = False):
     from fleets.endpoints.schemas import (  # pylint: disable=import-outside-toplevel
         EveFleetShipVolunteerResponse,
     )
@@ -277,6 +277,11 @@ def make_ship_volunteer_response(volunteer):
         fleet_fitting_id=volunteer.fleet_fitting_id,
         fitting_name=volunteer.target_name,
         ship_id=volunteer.target_ship_id,
+        bursts=list(volunteer.bursts or []),
+        solar_system_id=volunteer.solar_system_id if reveal_system else None,
+        solar_system_name=(
+            volunteer.solar_system_name or None if reveal_system else None
+        ),
     )
 
 
@@ -302,6 +307,22 @@ def make_composition_entry_response(entry):
             for rid, rname in entry.refits
         ],
         module_slots=entry.module_slots,
+        fit_roles=make_fit_roles_response(entry.roles),
+    )
+
+
+def make_fit_roles_response(roles):
+    from fleets.endpoints.schemas import (  # pylint: disable=import-outside-toplevel
+        EveFleetFitRolesResponse,
+    )
+
+    return EveFleetFitRolesResponse(
+        links=roles.links,
+        burst_slots=roles.burst_slots,
+        bursts_online=roles.bursts_online,
+        bursts_fitted=roles.bursts_fitted,
+        cyno=roles.cyno,
+        logi=roles.logi,
     )
 
 

@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics, Contract } from '@dtypes/api.minmatar.org'
-import type { FleetRoleVolunteer, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
     fleet:                      FleetUI;
@@ -16,7 +16,8 @@ interface Props {
     can_manage?:                boolean;
     fleet_composition?:         FleetCompositionUI[];
     fleet_radar?:               FleetRadarUI[];
-    volunteers:                 FleetRoleVolunteer[],
+    /** Fleet roles from ships; null on a completed fleet. */
+    roles?:                     FleetRoleCoverage | null,
     pilots:                     SummaryCharacter[],
     update_cover:               boolean;
     fleet_metrics:              FleetMetrics | undefined;
@@ -37,7 +38,7 @@ const {
     can_manage = is_fleet_commander,
     fleet_composition,
     fleet_radar,
-    volunteers,
+    roles = null,
     pilots,
     update_cover,
     fleet_metrics,
@@ -169,7 +170,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     
     <hr class="[ border-bottom animate-fade-in animate-duration-250 animate-delay-1000 ]" />
 
-    {!history &&
+    {!history && roles &&
         <Wrapper
             padding_block='0'
             padding_inline='0'
@@ -177,7 +178,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
         >
             <FleetRoles
-                volunteers={volunteers}
+                roles={roles}
+                composition={composition}
                 pilots={pilots}
                 fleet_id={fleet.id}
                 readonly={fleet.status === 'cancelled'}

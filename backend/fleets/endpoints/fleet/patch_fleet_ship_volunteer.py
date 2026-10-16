@@ -1,4 +1,4 @@
-"""PATCH /{fleet_id}/role-volunteers/{volunteer_id} — FC assigns a cyno system."""
+"""PATCH /{fleet_id}/ship-volunteers/{volunteer_id} — FC assigns a cyno system."""
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -7,35 +7,48 @@ from eveuniverse.models import EveSolarSystem
 from fleets.endpoints.helpers import (
     _fleet_authorized,
     _fleet_manager,
-    make_role_volunteer_response,
+    make_ship_volunteer_response,
 )
 from fleets.helpers.cyno_notifications import notify_cyno_system_assignment
 from fleets.endpoints.schemas import (
     AssignRoleVolunteerSystemRequest,
-    EveFleetRoleVolunteerResponse,
+    EveFleetShipVolunteerResponse,
 )
-from fleets.models import EveFleet, EveFleetRoleVolunteer
+from fleets.helpers.composition import fleet_composition
+from fleets.models import EveFleet, EveFleetShipVolunteer
 
-PATH = "/{fleet_id}/role-volunteers/{volunteer_id}"
+PATH = "/{fleet_id}/ship-volunteers/{volunteer_id}"
 METHOD = "patch"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {
-        200: EveFleetRoleVolunteerResponse,
+        200: EveFleetShipVolunteerResponse,
         400: ErrorResponse,
         403: None,
         404: None,
     },
     "description": (
-        "Assign (or clear) the solar system for a cyno volunteer. Fleet "
-        "commander only. Send both fields null to clear. The system is "
+        "Assign (or clear) the solar system for a pilot volunteered in a "
+        "cyno fit. Fleet commander only. Send both fields null to clear. The system is "
         "private: it is DM'd to the pilot on Discord and never shown in "
         "the MOTD."
     ),
 }
 
 
-def assign_fleet_role_volunteer_system(
+def _is_cyno_fit(fleet, volunteer) -> bool:
+    key = (
+        f"f:{volunteer.fitting_id}"
+        if volunteer.fitting_id
+        else f"m:{volunteer.fleet_fitting_id}"
+    )
+    return any(
+        entry.key == key and entry.roles.cyno
+        for entry in fleet_composition(fleet)
+    )
+
+
+def assign_fleet_ship_volunteer_system(
     request,
     fleet_id: int,
     volunteer_id: int,
@@ -48,13 +61,17 @@ def assign_fleet_role_volunteer_system(
         return 403, None
     if not _fleet_manager(request, fleet):
         return 403, None
-    volunteer = EveFleetRoleVolunteer.objects.filter(
-        id=volunteer_id, eve_fleet=fleet
-    ).first()
+    volunteer = (
+        EveFleetShipVolunteer.objects.filter(id=volunteer_id, eve_fleet=fleet)
+        .select_related("fitting", "fleet_fitting")
+        .first()
+    )
     if not volunteer:
         return 404, None
-    if volunteer.role != EveFleetRoleVolunteer.ROLE_CYNO:
-        return 400, {"detail": "Only cyno volunteers can be assigned a system"}
+    if not _is_cyno_fit(fleet, volunteer):
+        return 400, {
+            "detail": "Only pilots in a cyno fit can be assigned a system"
+        }
 
     system_name = (payload.solar_system_name or "").strip()
     system_id = payload.solar_system_id
@@ -75,4 +92,4 @@ def assign_fleet_role_volunteer_system(
         notify_cyno_system_assignment(fleet, volunteer)
     elif had_system:
         notify_cyno_system_assignment(fleet, volunteer, cleared=True)
-    return 200, make_role_volunteer_response(volunteer, reveal_system=True)
+    return 200, make_ship_volunteer_response(volunteer, reveal_system=True)

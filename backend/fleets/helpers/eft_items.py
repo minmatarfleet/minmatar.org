@@ -23,6 +23,9 @@ _SLOT_FLAG_PREFIX = {
     "subsystem": "SubSystemSlot",
 }
 _QTY_SUFFIX_RE = re.compile(r"\s+x\d+$")
+# EFT marks a fitted-but-offline module with a trailing ``/offline``. In-game
+# fittings do not store online state, so the module itself still counts.
+_OFFLINE_SUFFIX_RE = re.compile(r"\s*/offline$", re.IGNORECASE)
 # Fit names may themselves contain brackets: ``[Hurricane, Cane [FL33T]]``.
 _HEADER_RE = re.compile(r"^\[(?P<ship>[^,\]]+)(?:,\s*(?P<name>.*))?\]$")
 
@@ -43,7 +46,7 @@ def eft_item_names(eft_format: str) -> set[str]:
         line = raw.strip()
         if not line or line.startswith("[Empty "):
             continue
-        line = _QTY_SUFFIX_RE.sub("", line)
+        line = _QTY_SUFFIX_RE.sub("", _OFFLINE_SUFFIX_RE.sub("", line))
         names.add(line.split(",", 1)[0].strip())
     names.discard("")
     return names
@@ -78,6 +81,7 @@ class EftItem:
     quantity: int = 1
     charge: str | None = None
     stacked: bool = False  # ``Name xN`` line: drones or cargo, never a slot
+    offline: bool = False  # fitted with a trailing ``/offline``
 
 
 def parse_eft_header(eft_format: str) -> tuple[str, str]:
@@ -102,8 +106,16 @@ def parse_eft_items(eft_format: str) -> list[EftItem]:
             name, qty = _split_qty(line)
             items.append(EftItem(name=name, quantity=qty, stacked=True))
             continue
+        offline = bool(_OFFLINE_SUFFIX_RE.search(line))
+        line = _OFFLINE_SUFFIX_RE.sub("", line)
         name, _, charge = line.partition(",")
-        items.append(EftItem(name=name.strip(), charge=charge.strip() or None))
+        items.append(
+            EftItem(
+                name=name.strip(),
+                charge=charge.strip() or None,
+                offline=offline,
+            )
+        )
     return items
 
 

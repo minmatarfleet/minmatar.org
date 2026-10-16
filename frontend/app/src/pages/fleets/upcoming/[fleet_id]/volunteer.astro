@@ -20,11 +20,11 @@ import type { FleetUI } from '@dtypes/layout_components'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import {
-    get_fleet_role_volunteers,
+    get_fleet_roles,
     get_fleet_ship_volunteers,
     get_fleet_composition,
     get_fleet_refits,
-    type FleetRoleVolunteer,
+    type FleetRoleCoverage,
     type FleetShipVolunteer,
     type FleetCompositionEntry,
     type FleetRefit,
@@ -36,7 +36,7 @@ import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 
 let fleet: FleetUI | null = null
 let pilots: SummaryCharacter[] = []
-let volunteers: FleetRoleVolunteer[] = []
+let roles: FleetRoleCoverage | null = null
 let ship_volunteers: FleetShipVolunteer[] = []
 let composition: FleetCompositionEntry[] = []
 let refits: FleetRefit[] = []
@@ -60,7 +60,7 @@ if (fleet) {
     try {
         const summary = await get_characters_summary_sorted(auth_token as string)
         pilots = summary.characters ?? []
-        volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+        roles = await get_fleet_roles(auth_token as string, fleet_id)
         const [fetched_composition, fetched_ship_volunteers, fetched_refits, fetched_supply] = await Promise.all([
             get_fleet_composition(auth_token as string, fleet_id),
             get_fleet_ship_volunteers(auth_token as string, fleet_id),
@@ -161,13 +161,16 @@ const breadcrumbs = [
             />
             :
             <Flexblock gap='var(--space-2xl)'>
+                {roles &&
                 <FleetRoles
-                    volunteers={volunteers}
+                    roles={roles}
+                    composition={composition}
                     pilots={pilots}
                     fleet_id={fleet_id}
                     readonly={false}
                     is_fleet_commander={can_manage_fleet}
                 />
+                }
 
                 <FleetShips
                     fleet_id={fleet_id}

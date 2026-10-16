@@ -25,8 +25,14 @@ ROUTE_SPEC = {
         404: None,
         400: ErrorResponse,
     },
-    "description": "Volunteer a character for a fleet role. Character must belong to the user.",
+    "description": (
+        "Sign a character up as Logi FC. Character must belong to the user. "
+        "Other roles come from ship volunteers."
+    ),
 }
+
+
+SIGNUP_ROLES = (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,)
 
 
 def create_fleet_role_volunteer(
@@ -44,23 +50,23 @@ def create_fleet_role_volunteer(
         return 400, {
             "detail": "Character not found or not one of your characters"
         }
-    valid_roles = [c[0] for c in EveFleetRoleVolunteer.ROLE_CHOICES]
-    if payload.role not in valid_roles:
-        return 400, {"detail": f"Invalid role. Must be one of: {valid_roles}"}
-    if payload.subtype is not None and payload.subtype != "":
-        valid_subtypes = [c[0] for c in EveFleetRoleVolunteer.SUBTYPE_CHOICES]
-        if payload.subtype not in valid_subtypes:
-            return 400, {
-                "detail": f"Invalid subtype. Must be one of: {valid_subtypes}"
-            }
+    # Links, cynos and logi come from the ships pilots volunteer for. Logi
+    # FC is a person, not a ship, so it is the one role still signed up for.
+    if payload.role not in SIGNUP_ROLES:
+        return 400, {
+            "detail": (
+                "Only Logi FC is signed up for. Links and cynos come from "
+                "the ship you volunteer."
+            )
+        }
     volunteer, _ = EveFleetRoleVolunteer.objects.update_or_create(
         eve_fleet=fleet,
         character_id=payload.character_id,
         role=payload.role,
         defaults={
             "character_name": allowed_ids[payload.character_id],
-            "subtype": payload.subtype or None,
-            "quantity": payload.quantity,
+            "subtype": None,
+            "quantity": None,
         },
     )
     try_refresh_active_fleet_motd(fleet)

@@ -24,6 +24,12 @@ from fleets.endpoints.fleet.get_fleet_members import (
     get_fleet_members,
     METHOD as get_fleet_members_method,
 )
+from fleets.endpoints.fleet.get_fleet_roles import (
+    PATH as get_fleet_roles_path,
+    ROUTE_SPEC as get_fleet_roles_spec,
+    get_fleet_roles,
+    METHOD as get_fleet_roles_method,
+)
 from fleets.endpoints.fleet.get_fleet_role_volunteers import (
     PATH as get_fleet_role_volunteers_path,
     ROUTE_SPEC as get_fleet_role_volunteers_spec,
@@ -67,11 +73,11 @@ from fleets.endpoints.fleet.post_refresh_fleet_motd import (
     METHOD as post_refresh_fleet_motd_method,
 )
 
-from fleets.endpoints.fleet.patch_fleet_role_volunteer import (
-    PATH as patch_fleet_role_volunteer_path,
-    ROUTE_SPEC as patch_fleet_role_volunteer_spec,
-    assign_fleet_role_volunteer_system,
-    METHOD as patch_fleet_role_volunteer_method,
+from fleets.endpoints.fleet.patch_fleet_ship_volunteer import (
+    PATH as patch_fleet_ship_volunteer_path,
+    ROUTE_SPEC as patch_fleet_ship_volunteer_spec,
+    assign_fleet_ship_volunteer_system,
+    METHOD as patch_fleet_ship_volunteer_method,
 )
 from fleets.endpoints.fleet.get_fleet_ship_volunteers import (
     PATH as get_fleet_ship_volunteers_path,
@@ -167,6 +173,12 @@ _ROUTES = (
         get_fleet_members,
     ),
     (
+        get_fleet_roles_method,
+        get_fleet_roles_path,
+        get_fleet_roles_spec,
+        get_fleet_roles,
+    ),
+    (
         get_fleet_role_volunteers_method,
         get_fleet_role_volunteers_path,
         get_fleet_role_volunteers_spec,
@@ -185,10 +197,10 @@ _ROUTES = (
         delete_fleet_role_volunteer,
     ),
     (
-        patch_fleet_role_volunteer_method,
-        patch_fleet_role_volunteer_path,
-        patch_fleet_role_volunteer_spec,
-        assign_fleet_role_volunteer_system,
+        patch_fleet_ship_volunteer_method,
+        patch_fleet_ship_volunteer_path,
+        patch_fleet_ship_volunteer_spec,
+        assign_fleet_ship_volunteer_system,
     ),
     (
         get_fleet_ship_volunteers_method,

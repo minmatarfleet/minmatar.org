@@ -34,6 +34,12 @@ const {
 import { query_string } from '@helpers/string';
 import { get_item_icon } from '@helpers/eve_image_server'
 import { parse_eft, swappable_cargo } from '@helpers/eft'
+import { BURST_KINDS, bursts_summary } from '@helpers/fleet_roles'
+import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
+
+const burst_labels = Object.fromEntries(
+    BURST_KINDS.map(kind => [kind, t(`burst_kind_${kind}` as any)])
+) as Record<BurstKind, string>
 
 const FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteer_item_component/')
 
@@ -226,7 +232,12 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             x-cloak
         >
             {volunteers.map(volunteer =>
-                <div class="[ fleet-ship-row__volunteer ]" title={volunteer.character_name}>
+                <div
+                    class="[ fleet-ship-row__volunteer ]"
+                    title={volunteer.bursts?.length ?
+                        `${volunteer.character_name} — ${bursts_summary(volunteer.bursts, burst_labels)}` :
+                        volunteer.character_name}
+                >
                     <CharacterPicture
                         character_id={volunteer.character_id}
                         character_name={volunteer.character_name}

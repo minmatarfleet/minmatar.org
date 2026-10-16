@@ -19,6 +19,7 @@ import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+import { BURST_KINDS, bursts_from_counts } from '@helpers/fleet_roles'
 import {
     get_fleet_ship_volunteers,
     get_fleet_composition,
@@ -26,6 +27,9 @@ import {
     create_fleet_fitting,
     delete_fleet_fitting,
     set_my_ship_volunteers,
+    get_fleet_roles,
+    type BurstKind,
+    type FleetRoleCoverage,
     type ShipSelection,
     type FleetShipVolunteer,
     type FleetCompositionEntry,
@@ -43,16 +47,31 @@ const as_role = (raw:string | null):FleetFittingRole =>
 if (Astro.request.method === 'POST' && Astro.url.searchParams.get('action') === 'pick_ships') {
     try {
         const data = await Astro.request.formData()
+        // Only the chosen fit's burst inputs are enabled, so these belong to it.
+        const burst_counts:Record<number, Partial<Record<BurstKind, number>>> = {}
+        for (const [field, raw] of data.entries()) {
+            const match = field.match(/^bursts_(\d+)_([a-z]+)$/)
+            if (!match || !BURST_KINDS.includes(match[2] as BurstKind)) continue
+            const character_id = parseInt(match[1])
+            burst_counts[character_id] = {
+                ...burst_counts[character_id],
+                [match[2]]: Math.max(0, parseInt(String(raw)) || 0),
+            }
+        }
         const selections:ShipSelection[] = []
         for (const [field, raw] of data.entries()) {
             const match = field.match(/^ship_(\d+)$/)
             if (!match) continue
+            const character_id = parseInt(match[1])
             const value = String(raw)
             const key_match = value.match(/^([fm]):(\d+)$/)
             selections.push({
-                character_id: parseInt(match[1]),
+                character_id,
                 fitting_id: key_match?.[1] === 'f' ? parseInt(key_match[2]) : null,
                 fleet_fitting_id: key_match?.[1] === 'm' ? parseInt(key_match[2]) : null,
+                ...(key_match && burst_counts[character_id] && {
+                    bursts: bursts_from_counts(burst_counts[character_id]),
+                }),
             })
         }
         await set_my_ship_volunteers(auth_token as string, fleet_id, selections)
@@ -98,6 +117,10 @@ let refits: FleetRefit[] = []
 let fleet: FleetUI | null = null
 let supply: FleetSupply = EMPTY_SUPPLY
 let history:boolean = false
+// A change here can change who runs links or cynos; the roles section is
+// re-rendered out of band so it never shows a stale roster.
+const refresh_roles = Astro.request.method !== 'GET'
+let roles: FleetRoleCoverage | null = null
 
 try {
     if (isNaN(fleet_id))
@@ -107,13 +130,15 @@ try {
     history = Boolean(fleet?.tracking?.end_time)
 
     if (!history) {
-        const [summary, fetched_volunteers, fetched_composition, fetched_refits, fetched_supply] = await Promise.all([
+        const [summary, fetched_volunteers, fetched_composition, fetched_refits, fetched_supply, fetched_roles] = await Promise.all([
             get_characters_summary_sorted(auth_token as string),
             get_fleet_ship_volunteers(auth_token as string, fleet_id),
             get_fleet_composition(auth_token as string, fleet_id),
             get_fleet_refits(auth_token as string, fleet_id),
             fetch_fleet_supply(auth_token as string, fleet_id),
+            refresh_roles ? get_fleet_roles(auth_token as string, fleet_id) : Promise.resolve(null),
         ])
+        roles = fetched_roles
         volunteers = fetched_volunteers
         composition = fetched_composition
         refits = fetched_refits
@@ -138,6 +163,7 @@ const FLEET_SHIPS_PARTIAL_URL = translatePath(`/partials/fleet_ship_volunteers_c
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
+import FleetRoles from '@components/blocks/FleetRoles.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
@@ -166,4 +192,16 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
             can_manage={can_manage}
             doctrine_name={fleet?.doctrine?.name ?? null}
         />
+}
+
+{!fetch_error && !history && roles &&
+    <FleetRoles
+        hx-swap-oob="true"
+        roles={roles}
+        composition={composition}
+        pilots={pilots}
+        fleet_id={fleet_id}
+        readonly={readonly}
+        is_fleet_commander={can_manage}
+    />
 }

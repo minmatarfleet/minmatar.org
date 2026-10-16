@@ -3,63 +3,84 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
-import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
+import type {
+    BurstKind,
+    FleetCompositionEntry,
+    FleetRoleCoverage,
+} from '@helpers/api.minmatar.org/fleets'
 import { get_item_icon } from '@helpers/eve_image_server'
+import { link_kinds, ships_for_role } from '@helpers/fleet_roles'
 
+/**
+ * Fleet roles, filled by ships: links, cynos and logi come from the ships
+ * pilots volunteer for or are flying in fleet. Logi FC is a person, so it
+ * is the one role still signed up for.
+ */
 interface Props {
-    volunteers:     FleetRoleVolunteer[],
-    pilots:         SummaryCharacter[],
-    fleet_id:       number;
-    readonly?:      boolean;
+    roles:              FleetRoleCoverage;
+    composition:        FleetCompositionEntry[];
+    pilots:             SummaryCharacter[];
+    fleet_id:           number;
+    readonly?:          boolean;
     is_fleet_commander?: boolean;
+    [propName: string]: any;
 }
 
 const {
-    volunteers,
+    roles,
+    composition,
     pilots,
     fleet_id,
     readonly,
     is_fleet_commander = false,
+    ...attributes
 } = Astro.props
 
-const logi_anchors = volunteers.filter((v) => v.role === 'logi_anchor')
-const cynos = volunteers.filter((v) => v.role === 'cyno')
-const links = volunteers.filter((v) => v.role === 'links')
-const ehp_links = links.filter((v) => v.subtype === 'ehp' || v.subtype === 'armor' || v.subtype === 'shield')
-const info_links = links.filter((v) => v.subtype === 'info')
-const skirmish_links = links.filter((v) => v.subtype === 'skirmish')
+delete attributes.class
 
-// Minimum the MOTD considers "filled": 1 logi anchor, 2 cynos, one of each link.
 const CYNOS_WANTED = 2
-const filled_roles = [
-    logi_anchors.length >= 1,
-    cynos.length >= CYNOS_WANTED,
-    ehp_links.length >= 1,
-    info_links.length >= 1,
-    skirmish_links.length >= 1,
-].filter(Boolean).length
 
-// Large Remote Armor Repairer II for logi anchor, Cynosural Field Generator I
-// for cynos, Armor / Information / Skirmish Command Burst I for links.
+const links = link_kinds(roles, composition)
+const cyno_ships = ships_for_role(composition, entry => entry.fit_roles?.cyno ?? false)
+const logi_ships = ships_for_role(composition, entry => entry.fit_roles?.logi ?? false)
+const show_cynos = cyno_ships.length > 0 || roles.cynos.length > 0
+
+// Rows with a target count towards "filled": Logi FC, cynos, each link kind.
+const targets = [
+    roles.logi_fc.length >= 1,
+    ...(show_cynos ? [roles.cynos.length >= CYNOS_WANTED] : []),
+    ...links.map(row => row.pilots.length >= 1),
+]
+const filled_roles = targets.filter(Boolean).length
+
+// Large Remote Armor Repairer II (Logi FC), Guardian (logi ships),
+// Cynosural Field Generator I and the Command Burst I of each kind.
 const LOGI_ICON_TYPE_ID = 26914
+const LOGI_SHIPS_ICON_TYPE_ID = 11987
 const CYNO_ICON_TYPE_ID = 21096
-const ARMOR_BURST_TYPE_ID = 42526
-const INFO_BURST_TYPE_ID = 42527
-const SKIRMISH_BURST_TYPE_ID = 42530
+const BURST_ICON_TYPE_IDS:Record<BurstKind, number> = {
+    armor: 42526,
+    information: 42527,
+    mining: 42528,
+    shield: 42529,
+    skirmish: 42530,
+}
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import BlockList from '@components/compositions/BlockList.astro'
 
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
+import FleetRoleShips from '@components/blocks/FleetRoleShips.astro'
 ---
 
-<section id="fleet-roles" aria-labelledby="fleet-roles-title">
+<section id="fleet-roles" aria-labelledby="fleet-roles-title" class:list={[Astro.props.class]} {...attributes}>
     <Flexblock gap='var(--space-m)'>
         <Flexblock gap="var(--space-3xs)">
             <h2 id="fleet-roles-title">{t('fleet_roles')}</h2>
             <small class="!mt-[var(--space-3xs)]">
-                {t('fleet_roles_summary').replace('{filled}', filled_roles.toString()).replace('{total}', '5')}
+                {t('fleet_roles_summary').replace('{filled}', filled_roles.toString()).replace('{total}', targets.length.toString())}
             </small>
+            <small>{t('fleet_roles_from_ships')}</small>
         </Flexblock>
 
         <BlockList gap='var(--space-3xs)' role="list">
@@ -68,7 +89,7 @@ import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
                 title={t('logi_anchor_label')}
                 fleet_id={fleet_id}
                 role='logi_anchor'
-                volunteers={logi_anchors}
+                volunteers={roles.logi_fc}
                 pilots={pilots}
                 readonly={readonly}
                 wanted={1}
@@ -76,58 +97,48 @@ import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
                 <img slot="icon" src={get_item_icon(LOGI_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
             </FleetRoleItem>
 
-            <FleetRoleItem
-                id='cynos-role'
-                title={t('cyno_label')}
-                fleet_id={fleet_id}
-                role='cyno'
-                volunteers={cynos}
-                pilots={pilots}
-                readonly={readonly}
-                can_assign_system={is_fleet_commander}
-                wanted={CYNOS_WANTED}
-            >
-                <img slot="icon" src={get_item_icon(CYNO_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
-            </FleetRoleItem>
+            {links.map(row =>
+                <FleetRoleShips
+                    id={`${row.kind}-links-role`}
+                    title={t('links_kind').replace('{kind}', row.label)}
+                    fleet_id={fleet_id}
+                    pilots={row.pilots}
+                    ship_names={row.ship_names}
+                    wanted={1}
+                    show_counts={true}
+                    readonly={readonly}
+                >
+                    <img slot="icon" src={get_item_icon(BURST_ICON_TYPE_IDS[row.kind], 32)} width="32" height="32" alt="" loading="lazy" />
+                </FleetRoleShips>
+            )}
 
-            <FleetRoleItem
-                id='ehp-links-role'
-                title={t('ehp_links')}
-                fleet_id={fleet_id}
-                role='links'
-                subtype='ehp'
-                volunteers={ehp_links}
-                pilots={pilots}
-                readonly={readonly}
-            >
-                <img slot="icon" src={get_item_icon(ARMOR_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
-            </FleetRoleItem>
+            {show_cynos &&
+                <FleetRoleShips
+                    id='cynos-role'
+                    title={t('cyno_label')}
+                    fleet_id={fleet_id}
+                    pilots={roles.cynos}
+                    ship_names={cyno_ships}
+                    wanted={CYNOS_WANTED}
+                    can_assign_system={is_fleet_commander}
+                    readonly={readonly}
+                >
+                    <img slot="icon" src={get_item_icon(CYNO_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+                </FleetRoleShips>
+            }
 
-            <FleetRoleItem
-                id='info-links-role'
-                title={t('info_links')}
-                fleet_id={fleet_id}
-                role='links'
-                subtype='info'
-                volunteers={info_links}
-                pilots={pilots}
-                readonly={readonly}
-            >
-                <img slot="icon" src={get_item_icon(INFO_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
-            </FleetRoleItem>
-
-            <FleetRoleItem
-                id='skirmish-links-role'
-                title={t('skirmish_links')}
-                fleet_id={fleet_id}
-                role='links'
-                subtype='skirmish'
-                volunteers={skirmish_links}
-                pilots={pilots}
-                readonly={readonly}
-            >
-                <img slot="icon" src={get_item_icon(SKIRMISH_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
-            </FleetRoleItem>
+            {(logi_ships.length > 0 || roles.logi.length > 0) &&
+                <FleetRoleShips
+                    id='logi-role'
+                    title={t('logi_label')}
+                    fleet_id={fleet_id}
+                    pilots={roles.logi}
+                    ship_names={logi_ships}
+                    readonly={readonly}
+                >
+                    <img slot="icon" src={get_item_icon(LOGI_SHIPS_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+                </FleetRoleShips>
+            }
         </BlockList>
     </Flexblock>
 </section>
