@@ -12,7 +12,12 @@ from feed.helpers.amarr_fleet_pings import (
     build_amarr_fleet_alert_payload,
     maybe_notify_amarr_fleet,
 )
-from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
+from feed.models import (
+    FeedAmarrFleetAlert,
+    FeedAmarrFleetPing,
+    FeedCluster,
+    FeedEvent,
+)
 from feed.rollups.types import RollupResult
 from feed.rollups.writer import write_rollup_results
 from ratelimit import RateLimitException
@@ -138,6 +143,38 @@ class AmarrFleetPingTestCase(TestCase):
             "Large Amarr fleet active",
             edit_payload["embeds"][0]["description"],
         )
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_alert_keeps_the_fights_ship_counts(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client.create_message.return_value.json.return_value = {
+            "id": "999888702"
+        }
+        mock_client_cls.return_value = mock_client
+        now = timezone.now()
+        cluster = FeedCluster.objects.create(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            cluster_key="fleet_engagement:30002537:1",
+            solar_system_id=30002537,
+            started_at=now,
+            last_kill_at=now,
+            ship_counts={"24696": 2, "2006": 6},
+        )
+        event = _amarr_event()
+        event.payload = {
+            **event.payload,
+            "related_cluster_key": cluster.cluster_key,
+        }
+        event.save()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert = FeedAmarrFleetAlert.objects.get()
+        self.assertEqual(alert.ship_counts, {"24696": 2, "2006": 6})
+
+        cluster.ship_counts = {"24696": 3, "2006": 6}
+        cluster.save()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert.refresh_from_db()
+        self.assertEqual(alert.ship_counts["24696"], 3)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_same_system_coalesces_different_cluster_keys(

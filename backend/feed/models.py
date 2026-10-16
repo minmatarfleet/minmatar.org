@@ -335,6 +335,9 @@ class FeedAmarrFleetAlert(models.Model):
     # [{character_id, name}, ...]
     roster = models.JSONField(default=list)
     roster_total = models.PositiveIntegerField(default=0)
+    # {"type_id": count} of the fight's Amarr hulls, from its FeedCluster
+    # (the intel window shows the biggest ones).
+    ship_counts = models.JSONField(default=dict)
     cluster_key = models.CharField(max_length=256, db_index=True)
     # [{channel_id, message_id}, ...]
     discord_messages = models.JSONField(default=list)
