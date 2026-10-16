@@ -506,3 +506,44 @@ class CommanderOrderRequest(Schema):
 class WeekTargetPatch(Schema):
     target: float
     accept: bool = True
+
+
+class CampaignOverlaySystem(Schema):
+    system_id: int
+    name: str
+    solar_system_id: int
+    priority: str = "medium"
+    holder: Literal["minmatar", "amarr"] | None = None
+    objective: str
+    objective_label: str
+    progress_percent: float | None = None
+    change_24h: float | None = None
+    detail: str = ""
+
+
+class CampaignOverlayPilot(Schema):
+    character_id: int
+    character_name: str
+    system: str | None = None
+    last_at: datetime
+    kills: int = 0
+    losses: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    in_fleet: bool = False
+
+
+class CampaignOverlayCampaign(Schema):
+    slug: str
+    name: str
+    week_index: int
+    week_count: int
+    systems: list[CampaignOverlaySystem]
+    active_window_minutes: int
+    active_pilots: list[CampaignOverlayPilot]
+
+
+class CampaignOverlay(Schema):
+    """The desktop app's Campaigns window."""
+
+    campaign: CampaignOverlayCampaign | None = None
