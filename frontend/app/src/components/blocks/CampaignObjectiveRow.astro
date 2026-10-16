@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignObjectiveRow as ObjectiveRow } from '@helpers/fetching/campaigns'
-import { objective_status_color, objective_status_i18n_key, holder_militia, progress_bar_color } from '@helpers/fetching/campaigns'
+import { objective_change_tone, objective_status_color, objective_status_i18n_key, holder_militia, progress_bar_color } from '@helpers/fetching/campaigns'
 
 interface Props {
     row:                ObjectiveRow;
@@ -27,6 +27,16 @@ const color = row.kind === 'offense' || row.kind === 'defense'
     : objective_status_color(row.status)
 const system_anchor = row.system ? `#campaign-system-${row.system.id}` : undefined
 const figure_title = [t('campaigns.objective.scale_now'), row.now_text, row.detail_text].filter(Boolean).join(' · ')
+const change_period = t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')
+const change_title = row.change_text ? `${change_period} · ${change_glyph} ${row.change_text}`.trim() : undefined
+// Only rows whose bar hatches a change get a trend; a move too small to print reads as steady.
+const show_change = row.delta_from_percent !== null
+const change_tone = row.change_text ? objective_change_tone(row) : 'flat'
+// The word and glyph say whether the objective is better or worse; the arrow on the bar says which way the bar moved.
+const trend_glyph = change_tone === 'good' ? '▲' : change_tone === 'bad' ? '▼' : '■'
+const trend_word = t(change_tone === 'good' ? 'campaigns.objective.trend_gaining'
+    : change_tone === 'bad' ? 'campaigns.objective.trend_losing'
+    : 'campaigns.objective.trend_steady')
 
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
 import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
@@ -67,7 +77,8 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                 marker_percent={row.marker_percent}
                 delta_from_percent={row.delta_from_percent}
                 fill_title={figure_title}
-                delta_title={row.change_text ? `${t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')} · ${change_glyph} ${row.change_text}`.trim() : undefined}
+                delta_title={change_title}
+                delta_arrow={show_change && change_tone !== 'flat'}
                 marker_title={row.target_text ? `${t('campaigns.objective.scale_target')} · ${row.target_text}` : undefined}
                 color={`var(--${color})`}
                 height='var(--space-s)'
@@ -75,7 +86,17 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
             />
             {row.detail_text && <small>{row.detail_text}</small>}
         </div>
-        <span class="[ campaign-objective-figure ]" style={`color: var(--${color})`} title={figure_title}>{row.now_text}</span>
+        <div class="[ campaign-objective-reading ]">
+            <span class="[ campaign-objective-figure ]" style={`color: var(--${color})`} title={figure_title}>{row.now_text}</span>
+            {show_change &&
+                <small class="[ campaign-objective-change ]" data-tone={change_tone} title={change_title ?? change_period}>
+                    <span aria-hidden="true" class="[ campaign-objective-trend-glyph ]">{trend_glyph}</span>
+                    <span>{trend_word}</span>
+                    {row.change_text && <span class="[ campaign-objective-trend-amount ]">{row.change_text}</span>}
+                    <span class="[ campaign-objective-trend-period ]">{change_period}</span>
+                </small>
+            }
+        </div>
     </div>
 </div>
 
@@ -165,14 +186,56 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
         }
     }
 
+    .campaign-objective-reading {
+        flex: 0 0 9.5em;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+    }
+
     .campaign-objective-figure {
         display: flex;
         align-items: center;
-        flex: 0 0 4.5em;
         height: var(--space-s);
         white-space: nowrap;
         font-size: var(--step--1);
         justify-content: flex-end;
+    }
+
+    .campaign-objective-change {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        white-space: nowrap;
+        cursor: help;
+
+        &[data-tone="good"] {
+            color: var(--green);
+        }
+
+        &[data-tone="bad"] {
+            color: var(--fleet-red);
+        }
+
+        &[data-tone="flat"] {
+            color: var(--foreground);
+            opacity: 0.6;
+        }
+    }
+
+    .campaign-objective-trend-glyph {
+        font-size: var(--step--2);
+    }
+
+    .campaign-objective-trend-amount {
+        font-weight: 600;
+    }
+
+    .campaign-objective-trend-period {
+        color: var(--foreground);
+        font-size: var(--step--2);
     }
 
     @media screen and (max-width: 991px) {
@@ -186,6 +249,19 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
 
         .campaign-objective-progress {
             grid-column: 1 / -1;
+            flex-wrap: wrap;
+            row-gap: var(--space-3xs);
+        }
+
+        .campaign-objective-meter {
+            flex-basis: 100%;
+        }
+
+        .campaign-objective-reading {
+            flex: 1 1 100%;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
         }
     }
 </style>
