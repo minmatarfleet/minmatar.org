@@ -1,0 +1,113 @@
+name: Desktop app
+# Releases are driven by the version in desktop/package.json (semantic versioning):
+#   - Pull requests touching desktop/: tests + a version check (semver, moves forward, not already
+#     released). Changing the app without bumping the version is allowed; it just won't release yet.
+#   - Push to main touching desktop/: if v<version> has no published release yet, tag the commit,
+#     build on Windows and publish the release. Installed apps pick it up through electron-updater.
+# To ship: bump the version (cd desktop && npm version patch|minor|major --no-git-tag-version) and merge.
+# GitHub Releases on this repo tagged v* are reserved for the desktop app.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:   # re-run a release that failed part-way
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Only desktop/ is needed, and the rest of the repo has a path Windows can't create
+          # (frontend/app/public/videos/Watermellon.webm:Zone.Identifier).
+          sparse-checkout: desktop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Version check
+        run: |
+          # No desktop/package.json on the base branch yet (first desktop PR) -> empty base version.
+          base_version=$({ git show "origin/${{ github.base_ref }}:desktop/package.json" 2>/dev/null || true; } | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).version)}catch(e){console.log('')}})")
+          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- src build package.json package-lock.json; then changed=false; else changed=true; fi
+          released=$(gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName' | grep '^v' || true)
+          node scripts/check_version.js pr "$base_version" "$changed" $released
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    concurrency:
+      group: desktop-release
+      cancel-in-progress: false
+    permissions:
+      contents: write   # push the tag, create the release, upload the installer
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Only desktop/ is needed, and the rest of the repo has a path Windows can't create
+          # (frontend/app/public/videos/Watermellon.webm:Zone.Identifier).
+          sparse-checkout: desktop
+      - name: Decide whether this version still needs releasing
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Released = a published release with the update manifest. A half-finished release gets finished.
+          if gh release view "v$version" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx 'latest.yml'; then
+            echo "v$version is already released; nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.release == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - if: steps.version.outputs.release == 'true'
+        run: npm ci
+      - if: steps.version.outputs.release == 'true'
+        run: npm test
+      - name: Tag this commit
+        if: steps.version.outputs.release == 'true'
+        run: |
+          tag="v${{ steps.version.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists at $(git rev-list -n 1 "$tag"); publishing to it."
+          else
+            git tag "$tag" "$GITHUB_SHA"
+            git push origin "$tag"
+          fi
+      - name: Build and publish installer, blockmap, latest.yml and portable exe
+        if: steps.version.outputs.release == 'true'
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

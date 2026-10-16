@@ -1,0 +1,5 @@
+.login { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.login__logo { width: 56px; height: 56px; }
+.login__lead { margin: 0; max-width: 300px; }
+.login__pending { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.login__pending p { margin: 0; }

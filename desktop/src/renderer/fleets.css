@@ -1,0 +1,37 @@
+.fleet-group { margin-top: 6px; padding: 3px 6px; background: var(--eve-group); color: var(--eve-text); display: flex; justify-content: space-between; }
+.fleet-group--live { color: var(--eve-text-strong); }
+
+.fleet { display: grid; grid-template-columns: 36px 1fr auto; gap: 2px 8px; padding: 6px; border-bottom: 1px solid var(--eve-line); cursor: default; }
+.fleet:hover { background: var(--eve-hover); }
+.fleet:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+.fleet--cancelled { opacity: 0.45; }
+.fleet__portrait { grid-row: span 3; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.04); outline: 1px solid var(--eve-line); }
+.fleet__headline { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.fleet__doctrine { color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fleet__when { text-align: right; white-space: nowrap; color: var(--eve-text-strong); font-variant-numeric: tabular-nums; }
+.fleet__countdown { grid-column: 3; text-align: right; white-space: nowrap; color: var(--eve-text-dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+.fleet__meta, .fleet__description { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--eve-text-dim); font-size: 12px; }
+.fleet__description { grid-column: 2 / 4; }
+.fleet__fc { color: var(--eve-text); }
+
+.fleet-type { flex: none; padding: 0 5px; font-size: 11px; line-height: 16px; border-left: 2px solid currentColor; background: rgba(255, 255, 255, 0.05); }
+.fleet-type--strategic { color: #e0563c; }
+.fleet-type--non_strategic { color: #6f93e0; }
+.fleet-type--training { color: #3fbf7f; }
+.fleet-type--npsi { color: #a07ad8; }
+.fleet-live { flex: none; font-size: 11px; color: var(--eve-live); }
+.fleet-live::before { content: "● "; }
+
+/* loading */
+.eve-icon-button.is-loading svg { animation: eve-spin 0.9s linear infinite; }
+.fleet--skeleton { cursor: default; }
+.fleet--skeleton:hover { background: none; }
+.skeleton {
+    display: block; height: 10px; margin: 3px 0; width: 70%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)) 0 0 / 200px 100%;
+    animation: eve-shimmer 1.2s linear infinite;
+}
+.skeleton--short { width: 35%; }
+.skeleton--wide { grid-column: 2 / 4; width: 90%; }
+.fleet__portrait.skeleton { height: 36px; margin: 0; width: 36px; }
+#list.is-arriving > * { animation: eve-fade-in 220ms ease-out both; }
