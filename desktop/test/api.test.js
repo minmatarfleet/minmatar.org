@@ -111,3 +111,25 @@ test('desktop settings: GET with the token, PATCH sends only the given keys as J
     assert.deepEqual(JSON.parse(calls[1].body), { values: { show_sneak: false, 'window.fleets': null } })
     assert.ok(calls[1].signal, 'requests carry a timeout so a hung API never blocks settings')
 })
+
+test('intel calls: the map is public, shares are POSTed, and API errors keep their detail', async () => {
+    const calls = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: async (url, options) => {
+            calls.push({ url, method: options.method, auth: options.headers.Authorization, body: options.body })
+            if (url.endsWith('/api/intel/reports')) return { ok: false, status: 400, json: async () => ({ detail: 'Pick the system this is from.' }) }
+            return { ok: true, status: 200, json: async () => ({ systems: {}, edges: {} }) }
+        },
+    })
+    await api.intel_map()
+    assert.equal(calls[0].auth, undefined)
+    await assert.rejects(api.intel_share({ text: 'Ardo Kesh', system: '' }), err => {
+        assert.equal(err.status, 400)
+        assert.equal(err.detail, 'Pick the system this is from.')
+        return true
+    })
+    assert.equal(calls[1].method, 'POST')
+    assert.deepEqual(JSON.parse(calls[1].body), { text: 'Ardo Kesh', kind: null, system: '', note: '', character_name: null })
+})

@@ -1,6 +1,6 @@
 // Minmatar Fleet desktop app: Discord sign-in, EVE-styled overlay windows (see windows.js) pinned as glass
 // over the EVE client, a Sneak mascot on EVE's notification badge that opens Settings, and the tray.
-const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard, Notification } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
@@ -14,6 +14,7 @@ const { EveLogEngine } = require('./eve_logs')
 const { Updater, RELEASES_URL } = require('./updater')
 const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
+const { IntelController } = require('./intel')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -29,8 +30,9 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
 
 // Settings the Settings window may change (booleans only). Saved on the account (settings.js), except
 // "overlay" (pinned), which is back on at every launch.
-const USER_SETTINGS = ['overlay', 'only_over_eve', 'show_sneak']
-const SETTINGS_DEFAULTS = { overlay: true, only_over_eve: true, show_sneak: true }
+const USER_SETTINGS = ['overlay', 'only_over_eve', 'show_sneak', 'intel_alerts']
+const SETTINGS_DEFAULTS = { overlay: true, only_over_eve: true, show_sneak: true, intel_alerts: true }
+const INTEL_DEFAULT_RANGE = 5   // jumps
 const SESSION_SETTINGS = ['overlay']
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 
@@ -42,7 +44,7 @@ function diag(entry) {
 
 if (!app.requestSingleInstanceLock()) app.exit(0)   // already running: the first instance gets "second-instance" and shows itself
 
-let tokens, settings, api, eve, eve_window, eve_logs, updater, tray
+let tokens, settings, api, eve, eve_window, eve_logs, updater, tray, intel
 let LEGACY_SETTINGS_FILE = null
 let login_win = null
 let settings_win = null
@@ -68,6 +70,8 @@ const state = {
     // Character whose client is in front (or was last) and its solar system, from the log engine.
     location: null,
     update: { status: 'idle', version: null, percent: null, portable: false },
+    // Intel window (intel.js view()); only fetched while that window is enabled.
+    intel: null,
 }
 
 // ---------------------------------------------------------------- window plumbing
@@ -244,6 +248,7 @@ function show_windows() {
     }
     reveal_overlays()
     start_refresh()
+    sync_intel()
 }
 
 function set_window_enabled(id, enabled) {
@@ -256,6 +261,7 @@ function set_window_enabled(id, enabled) {
     } else {
         destroy_overlay(id)
     }
+    sync_intel()
     update_tray()
     push_state()
 }
@@ -386,6 +392,7 @@ function apply_loaded_settings(keys) {
         else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
     }
     update_overlay_visibility({ force: true })
+    sync_intel()
     update_tray()
     push_state()
 }
@@ -414,6 +421,7 @@ function set_user_setting(key, value) {
     if (!USER_SETTINGS.includes(key) || typeof value !== 'boolean') return
     settings.set(key, value)
     if (key === 'overlay') apply_mode()
+    else if (key === 'intel_alerts') intel.set_options({ alerts: value })
     else update_overlay_visibility({ force: true })
     update_tray()
     push_state()
@@ -445,6 +453,52 @@ function start_refresh() {
     clearInterval(refresh_timer)
     refresh()
     refresh_timer = setInterval(refresh, config.refresh_ms)
+}
+
+// ---------------------------------------------------------------- intel
+
+// Poll the intel sheet only while the Intel window is on.
+function sync_intel() {
+    const on = !!state.user && window_enabled('intel')
+    if (on && !intel.timer) {
+        const range = window_saved('intel').range
+        intel.set_options({ range: range === undefined ? INTEL_DEFAULT_RANGE : range, alerts: settings.get('intel_alerts') })
+        intel.set_origin(state.location)
+        intel.start()
+    } else if (!on && intel.timer) {
+        intel.stop()
+    }
+}
+
+// Typing a note needs keyboard focus, which pinned overlays never take. Let the Intel window take it
+// while a report is being written, and give it back after.
+function intel_typing(on) {
+    const win = overlays.get('intel')
+    if (!win || win.isDestroyed()) return
+    const pinned = settings.get('overlay')
+    if (on) {
+        if (pinned) { win.setFocusable(true); win.setIgnoreMouseEvents(false) }
+        win.focus()
+    } else if (pinned) {
+        win.setFocusable(false)
+        win.setIgnoreMouseEvents(true, { forward: true })
+    }
+}
+
+const KIND_TITLES = { caps: 'Capital ping', fleet: 'Fleet ping' }
+
+// Alerts only inform (CCP rule 2): a Windows notification for a new ping within range.
+function notify_ping(item) {
+    if (!Notification.isSupported()) return
+    const where = item.jumps == null ? '' : item.jumps === 0 ? ' (here)' : ` (${item.jumps} ${item.jumps === 1 ? 'jump' : 'jumps'})`
+    const toast = new Notification({
+        title: `${KIND_TITLES[item.kind] || 'Intel'} · ${item.system_name}${where}`,
+        body: item.summary,
+        icon: path.join(ASSETS, 'icon.png'),
+    })
+    toast.on('click', () => { hidden.delete('intel'); show_windows() })
+    toast.show()
+    diag({ t: 'intel-ping', id: item.id })
 }
 
 async function verify_session() {
@@ -489,6 +543,7 @@ async function begin_login() {
 
 function sign_out(reason = null) {
     clearInterval(refresh_timer)
+    intel.sign_out()
     settings.flush()   // starts with the current token, before it's cleared
     settings.reset()
     tokens.clear()
@@ -522,6 +577,7 @@ function update_location() {
     const next = c && c.system ? { character: c.name, system: c.system } : null
     if (JSON.stringify(next) === JSON.stringify(state.location)) return
     state.location = next
+    intel.set_origin(next)
     push_state()
 }
 
@@ -577,7 +633,7 @@ function update_tray() {
     tray.setContextMenu(Menu.buildFromTemplate([
         { label: 'Show windows', enabled: signed_in, click: () => show_windows() },
         { label: 'Settings…', enabled: signed_in, click: () => open_settings() },
-        { label: 'Refresh', enabled: signed_in, click: refresh },
+        { label: 'Refresh', enabled: signed_in, click: () => { refresh(); if (intel.timer) intel.refresh() } },
         { type: 'separator' },
         ...update_menu_items(),
         signed_in ? { label: `Sign out (${state.user.name})`, click: () => sign_out() } : { label: 'Sign in…', click: show_login },
@@ -599,6 +655,32 @@ ipcMain.on('fleets:open', (event, fleet_id) => {
     // Only open URLs we built ourselves, never one supplied by the renderer.
     const fleet = state.fleets.find(f => f.id === fleet_id)
     if (fleet) shell.openExternal(fleet.url)
+})
+ipcMain.on('intel:refresh', () => intel.refresh())
+// The paste button reads the clipboard here, on the pilot's click; Ctrl+V in a focused window sends the text.
+ipcMain.on('intel:paste', () => { intel_typing(true); intel.paste(clipboard.readText()) })
+ipcMain.on('intel:paste-text', (event, text) => { intel_typing(true); intel.paste(text) })
+ipcMain.on('intel:kind', (event, kind) => intel.set_kind(kind))
+ipcMain.on('intel:edit', (event, change) => change && intel.edit_draft(change))
+ipcMain.on('intel:share', async () => {
+    const url = await intel.share()
+    if (url) clipboard.writeText(url)
+})
+ipcMain.on('intel:discard', () => { intel.discard(); intel_typing(false) })
+ipcMain.on('intel:open-report', (event, report_id) => intel.open_report(report_id))
+ipcMain.on('intel:close-report', () => intel.close_report())
+ipcMain.on('intel:copy-link', (event, report_id) => {
+    const url = intel.url_for(report_id)
+    if (url) clipboard.writeText(url)
+})
+ipcMain.on('intel:open-site', (event, report_id) => {
+    const url = intel.url_for(report_id)
+    if (url) shell.openExternal(url)
+})
+ipcMain.on('intel:range', (event, range) => {
+    if (range !== null && !Number.isInteger(range)) return
+    save_window('intel', { range })
+    intel.set_options({ range })
 })
 ipcMain.on('update:install', () => install_update())
 ipcMain.on('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
@@ -660,6 +742,14 @@ app.whenReady().then(async () => {
     LEGACY_SETTINGS_FILE = path.join(user_data, 'settings.json')
     tokens = new TokenStore(path.join(user_data, 'session.bin'), safeStorage)
     api = new ApiClient({ api_url: config.api_url, get_token: () => tokens.load() })
+    intel = new IntelController({
+        api,
+        web_url: config.web_url,
+        on_change: view => { state.intel = view; push_state() },
+        on_unauthorized: () => sign_out('Your session has expired. Sign in again.'),
+        notify: notify_ping,
+        diag,
+    })
     settings = new Settings({
         defaults: SETTINGS_DEFAULTS,
         session_keys: SESSION_SETTINGS,
@@ -748,6 +838,7 @@ app.on('before-quit', event => {
         return
     }
     clearInterval(refresh_timer)
+    if (intel) intel.stop()
     if (settings) settings.stop()
     if (eve) eve.stop()
     if (eve_window) eve_window.stop()

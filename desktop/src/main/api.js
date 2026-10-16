@@ -45,7 +45,9 @@ class ApiClient {
         if (!response.ok) {
             let detail = ''
             try { detail = (await response.json()).detail || '' } catch (e) {}
-            throw new ApiError(response.status, `${method} ${path} -> ${response.status}${detail ? `: ${detail}` : ''}`)
+            const err = new ApiError(response.status, `${method} ${path} -> ${response.status}${detail ? `: ${detail}` : ''}`)
+            err.detail = detail || null   // the API's own wording, safe to show the pilot
+            throw err
         }
         return response.json()
     }
@@ -71,6 +73,28 @@ class ApiClient {
 
     save_desktop_settings(values) {
         return this.request('PATCH', '/api/users/me/desktop-settings', { body: { values } })
+    }
+
+    // Intel window (see intel.js in the renderer). The paste goes to the server only when the
+    // pilot clicks Share; preview parses it without saving.
+    intel_recent() {
+        return this.get('/api/intel/recent')
+    }
+
+    intel_map() {
+        return this.get('/api/intel/map', { auth: false })
+    }
+
+    intel_preview(text, kind) {
+        return this.request('POST', '/api/intel/reports/preview', { body: { text, kind: kind || null } })
+    }
+
+    intel_share({ text, kind, system, note, character_name }) {
+        return this.request('POST', '/api/intel/reports', { body: { text, kind: kind || null, system, note: note || '', character_name: character_name || null } })
+    }
+
+    intel_report(report_id) {
+        return this.get(`/api/intel/reports/${encodeURIComponent(report_id)}`)
     }
 
     profiles(user_ids) {

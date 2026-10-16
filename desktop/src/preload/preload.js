@@ -9,6 +9,8 @@ const COMMANDS = [
     'resize:start', 'resize:move', 'resize:end',
     'update:install', 'update:download', 'update:check',
     'settings:open', 'settings:set', 'window:set-enabled',
+    'intel:refresh', 'intel:paste', 'intel:paste-text', 'intel:kind', 'intel:edit', 'intel:share', 'intel:discard',
+    'intel:open-report', 'intel:close-report', 'intel:copy-link', 'intel:open-site', 'intel:range',
 ]
 
 contextBridge.exposeInMainWorld('minmatar', {
