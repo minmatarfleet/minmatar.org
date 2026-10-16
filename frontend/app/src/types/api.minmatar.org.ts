@@ -283,7 +283,8 @@ export interface CorporationOpenApplication {
     created_at: string;
 }
 
-export type RedditDeliveryMethod = 'discord_reminder' | 'automatic'
+/** alliance: posted as u/MinmatarFleet; automatic: posted from the CEO's linked account */
+export type RedditDeliveryMethod = 'alliance' | 'automatic' | 'discord_reminder'
 
 export type RedditPriority = 'high' | 'normal'
 

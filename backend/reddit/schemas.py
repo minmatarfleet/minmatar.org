@@ -39,6 +39,7 @@ class CorporationRedditPost(Schema):
     exists: bool
     title: str
     content: str
+    # alliance | automatic | discord_reminder
     delivery_method: str
     subreddit: str
     paused: bool

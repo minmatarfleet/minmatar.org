@@ -73,7 +73,7 @@ def post_settings(corporation, user) -> dict:
         "exists": template is not None,
         "title": "",
         "content": "",
-        "delivery_method": RedditPostTemplate.DISCORD_REMINDER,
+        "delivery_method": RedditPostTemplate.ALLIANCE,
         "subreddit": RedditPostTemplate._meta.get_field("subreddit").default,
         "paused": False,
         "priority": RedditPostTemplate.NORMAL,
