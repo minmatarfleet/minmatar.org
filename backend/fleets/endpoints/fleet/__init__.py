@@ -24,6 +24,12 @@ from fleets.endpoints.fleet.get_fleet_members import (
     get_fleet_members,
     METHOD as get_fleet_members_method,
 )
+from fleets.endpoints.fleet.get_fleet_window import (
+    PATH as get_fleet_window_path,
+    ROUTE_SPEC as get_fleet_window_spec,
+    get_fleet_window,
+    METHOD as get_fleet_window_method,
+)
 from fleets.endpoints.fleet.get_fleet_roles import (
     PATH as get_fleet_roles_path,
     ROUTE_SPEC as get_fleet_roles_spec,
@@ -171,6 +177,12 @@ _ROUTES = (
         get_fleet_members_path,
         get_fleet_members_spec,
         get_fleet_members,
+    ),
+    (
+        get_fleet_window_method,
+        get_fleet_window_path,
+        get_fleet_window_spec,
+        get_fleet_window,
     ),
     (
         get_fleet_roles_method,

@@ -21,6 +21,7 @@ from fleets.endpoints.schemas import (
 from fleets.helpers.composition import resolve_composition_target
 from fleets.helpers.eft_items import parse_eft_header
 from fleets.helpers.fit_roles import canonical_bursts, fit_roles
+from fleets.helpers.fleet_window import forget_fleet_window
 from fleets.models import EveFleet, EveFleetShipVolunteer
 
 PATH = "/{fleet_id}/my-ship-volunteers"
@@ -139,6 +140,7 @@ def set_my_ship_volunteers(
             )
         EveFleetShipVolunteer.objects.bulk_create(rows)
 
+    forget_fleet_window(fleet.id)
     # Cynos in the MOTD come from ship volunteers.
     try_refresh_active_fleet_motd(fleet)
 
