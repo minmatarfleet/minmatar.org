@@ -318,3 +318,30 @@ class MyFleetFittingResponse(BaseModel):
     ship_id: int
     ship_name: str
     eft_format: str
+
+
+class EveFleetKillmailResponse(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    outcome: str
+    solar_system_id: int
+    solar_system_name: str
+    victim_ship_type_id: int | None = None
+    victim_ship_name: str
+    victim_character_id: int | None = None
+    victim_character_name: str
+    isk_value: int
+    fleet_pilots: int
+    is_capsule: bool
+
+
+class EveFleetKillsResponse(BaseModel):
+    fleet_id: int
+    tracked: bool
+    isk_destroyed: int
+    isk_lost: int
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+    killmails: List[EveFleetKillmailResponse]

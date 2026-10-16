@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import type { FleetKills as FleetKillsData } from '@helpers/api.minmatar.org/fleets'
+import { get_fleet_kills } from '@helpers/api.minmatar.org/fleets'
+
+let fetch_kills_error:Error | false = false
+let fleet_kills:FleetKillsData | null = null
+
+try {
+    fleet_kills = await get_fleet_kills(auth_token as string, fleet_id)
+} catch (error) {
+    fetch_kills_error = error
+}
+
+const FLEET_KILLS_PARTIAL_URL = translatePath(`/partials/fleet_kills_component?fleet_id=${fleet_id}`)
+
+import FleetKills from '@components/blocks/FleetKills.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_kills_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_KILLS_PARTIAL_URL,
+            error: fetch_kills_error,
+            delay: delay,
+            target: '#fleet-kills',
+        }}
+    />
+    :
+    <FleetKills fleet_kills={fleet_kills as FleetKillsData} />
+}

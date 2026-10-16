@@ -110,6 +110,12 @@ from fleets.endpoints.fleet.get_fleet_composition import (
     get_fleet_composition,
     METHOD as get_fleet_composition_method,
 )
+from fleets.endpoints.fleet.get_fleet_kills import (
+    PATH as get_fleet_kills_path,
+    ROUTE_SPEC as get_fleet_kills_spec,
+    get_fleet_kills,
+    METHOD as get_fleet_kills_method,
+)
 from fleets.endpoints.fleet.get_fleet_my_pilots import (
     PATH as get_fleet_my_pilots_path,
     ROUTE_SPEC as get_fleet_my_pilots_spec,
@@ -219,6 +225,12 @@ _ROUTES = (
         get_fleet_composition_path,
         get_fleet_composition_spec,
         get_fleet_composition,
+    ),
+    (
+        get_fleet_kills_method,
+        get_fleet_kills_path,
+        get_fleet_kills_spec,
+        get_fleet_kills,
     ),
     (
         get_fleet_supply_method,

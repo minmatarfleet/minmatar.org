@@ -877,3 +877,42 @@ export async function delete_fleet_refit(access_token: string, fleet_id: number,
     if (!response.ok && response.status !== 204)
         throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
 }
+
+export interface FleetKillmail {
+    killmail_id:            number;
+    killmail_time:          string;
+    outcome:                'kill' | 'loss';
+    solar_system_id:        number;
+    solar_system_name:      string;
+    victim_ship_type_id:    number | null;
+    victim_ship_name:       string;
+    victim_character_id:    number | null;
+    victim_character_name:  string;
+    isk_value:              number;
+    fleet_pilots:           number;
+    is_capsule:             boolean;
+}
+
+export interface FleetKills {
+    fleet_id:           number;
+    tracked:            boolean;
+    isk_destroyed:      number;
+    isk_lost:           number;
+    ships_destroyed:    number;
+    pods_destroyed:     number;
+    ships_lost:         number;
+    pods_lost:          number;
+    killmails:          FleetKillmail[];
+}
+
+export async function get_fleet_kills(access_token: string, fleet_id: number): Promise<FleetKills> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/kills`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as FleetKills
+}

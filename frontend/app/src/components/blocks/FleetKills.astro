@@ -1,0 +1,118 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FleetKills } from '@helpers/api.minmatar.org/fleets'
+import type { CampaignStat } from '@components/blocks/CampaignStatBar.astro'
+import { format_isk } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+/**
+ * What a completed fleet destroyed, from the killmail feed. Totals count
+ * pods towards ISK but not ships, so the ship count matches the hulls.
+ */
+interface Props {
+    fleet_kills:        FleetKills;
+    [propName: string]: any;
+}
+
+const {
+    fleet_kills,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const kills = fleet_kills.killmails.filter(killmail => killmail.outcome === 'kill')
+
+const stats:CampaignStat[] = [
+    { label: t('fleets.kills.isk_destroyed'), value: format_isk(fleet_kills.isk_destroyed) },
+    {
+        label: t('fleets.kills.ships_destroyed'),
+        value: fleet_kills.ships_destroyed.toString(),
+        title: fleet_kills.pods_destroyed > 0 ? t('fleets.kills.pods_destroyed').replace('{count}', fleet_kills.pods_destroyed.toString()) : undefined,
+    },
+    { label: t('fleets.kills.isk_lost'), value: format_isk(fleet_kills.isk_lost) },
+    { label: t('fleets.kills.ships_lost'), value: fleet_kills.ships_lost.toString() },
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+<Flexblock
+    id='fleet-kills'
+    gap='var(--space-s)'
+    class:list={['[ fleet-kills ]', Astro.props.class]}
+    {...attributes}
+>
+    <h3>{t('fleets.kills.title')}</h3>
+
+    {!fleet_kills.tracked ?
+        <small>{t('fleets.kills.untracked')}</small>
+        :
+        <>
+            <CampaignStatBar stats={stats} />
+
+            {kills.length === 0 ?
+                <small>{t('fleets.kills.none')}</small>
+                :
+                <CampaignTable
+                    min_width='40rem'
+                    template='10rem 7rem minmax(12rem, 1fr) 6rem 4rem'
+                    numeric={[3, 4]}
+                    columns={[
+                        t('fleets.kills.column_when'),
+                        t('fleets.kills.column_where'),
+                        t('fleets.kills.column_what'),
+                        t('fleets.kills.column_value'),
+                        t('fleets.kills.column_pilots'),
+                    ]}
+                >
+                    {kills.map(killmail =>
+                        <div class="[ campaign-table-row ]" role="row">
+                            <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
+                            <span role="cell">{killmail.solar_system_name}</span>
+                            <div class="[ campaign-cell-media ]" role="cell">
+                                {killmail.victim_ship_type_id &&
+                                    <img
+                                        loading='lazy'
+                                        width='32'
+                                        height='32'
+                                        src={get_item_icon(killmail.victim_ship_type_id, 32)}
+                                        alt=''
+                                    />
+                                }
+                                <Flexblock gap='0' class="[ min-w-0 ]">
+                                    <a
+                                        href={`https://zkillboard.com/kill/${killmail.killmail_id}/`}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                    >
+                                        {killmail.victim_ship_name || t('fleets.kills.unknown_ship')}
+                                    </a>
+                                    <small class="[ campaign-table-muted ]">
+                                        {t('fleets.kills.flown_by').replace('{pilot}', killmail.victim_character_name || t('fleets.kills.unknown_pilot'))}
+                                    </small>
+                                </Flexblock>
+                            </div>
+                            <span role="cell" class="[ campaign-table-numeric ]">{format_isk(killmail.isk_value)}</span>
+                            <span role="cell" class="[ campaign-table-numeric ]">{killmail.fleet_pilots}</span>
+                        </div>
+                    )}
+                </CampaignTable>
+            }
+
+            <small class="[ campaign-table-muted ]">{t('fleets.kills.source_note')}</small>
+        </>
+    }
+</Flexblock>
+
+<style lang="scss">
+    /* "Ships destroyed" is wider than a phone-width stat column. */
+    .fleet-kills :global(.campaign-stat-label) {
+        white-space: normal;
+    }
+</style>

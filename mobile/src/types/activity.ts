@@ -4,7 +4,8 @@ export type ActivityKind =
   | 'fleet_active'
   | 'killmail_batch'
   | 'communication'
-  | 'contested_change';
+  | 'contested_change'
+  | 'fleet_kills';
 
 export interface ActivityPilot {
   character_id: number;
@@ -42,6 +43,12 @@ export interface ActivityItem {
   killmail_count?: number;
   window_minutes?: number;
   ships?: ActivityShip[];
+  /** fleet_kills — `ships` carries the headline kills */
+  isk_destroyed?: number;
+  isk_lost?: number;
+  ships_destroyed?: number;
+  ships_lost?: number;
+  systems?: string[];
   /** communication */
   author?: string;
   message?: string;
