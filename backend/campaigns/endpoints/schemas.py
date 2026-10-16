@@ -264,6 +264,14 @@ class LeaderboardRow(Schema):
     value: float
 
 
+class CorporationLeaderboardRow(Schema):
+    rank: int
+    corporation_id: int | None = None
+    corporation_name: str = ""
+    pilots: int = 0
+    value: float
+
+
 class KillmailOut(Schema):
     killmail_id: int
     killmail_time: datetime

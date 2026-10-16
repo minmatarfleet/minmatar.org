@@ -539,6 +539,32 @@ def get_leaderboard(
 
 
 @router.get(
+    "/{slug}/leaderboard/corporations",
+    response={
+        200: list[schemas.CorporationLeaderboardRow],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_corporation_leaderboard(
+    request,
+    slug: str,
+    metric: str = "kills",
+    period: str = "week",
+    limit: int = 25,
+):
+    """The pilot leaderboard summed by each pilot's main's corporation."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    return stats.corporation_leaderboard(
+        campaign, metric=metric, period=period, limit=_clamp(limit)
+    )
+
+
+@router.get(
     "/{slug}/killmails",
     response={200: list[schemas.KillmailOut], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),

@@ -3009,6 +3009,15 @@ export interface CampaignLeaderboardRow {
     value:          number;
 }
 
+export interface CampaignCorporationLeaderboardRow {
+    rank:               number;
+    corporation_id:     number | null;
+    corporation_name:   string;
+    /** Pilots who scored on this metric in the window. */
+    pilots:             number;
+    value:              number;
+}
+
 export interface CampaignKillmail {
     killmail_id:                number;
     killmail_time:              string;

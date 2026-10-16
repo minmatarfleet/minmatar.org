@@ -1,0 +1,146 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    CampaignCorporationLeaderboardRow,
+    CampaignLeaderboardMetric,
+    CampaignLeaderboardPeriod,
+} from '@dtypes/api.minmatar.org'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+
+/**
+ * The pilot leaderboard summed by each pilot's main's corporation, with the
+ * same metric and period switches. Only corporations that scored are listed.
+ */
+interface Props {
+    slug:               string;
+    rows:               CampaignCorporationLeaderboardRow[];
+    metric:             CampaignLeaderboardMetric;
+    period:             CampaignLeaderboardPeriod;
+    [propName: string]: any;
+}
+
+const {
+    slug,
+    rows,
+    metric,
+    period,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'sites', 'advantage', 'fcs' ]
+const periods:CampaignLeaderboardPeriod[] = [ 'week', 'rolling7', 'all' ]
+
+const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:CampaignLeaderboardPeriod) =>
+    translatePath(`/partials/campaign_corporations_component?slug=${slug}&metric=${next_metric}&period=${next_period}`)
+
+const format_value = (value:number) => value.toFixed(0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignTable from '@components/blocks/CampaignTable.astro'
+---
+
+<Flexblock
+    id='campaign-corporation-board'
+    gap='var(--space-s)'
+    class:list={['[ campaign-corporation-board ]', Astro.props.class]}
+    {...attributes}
+>
+    <FlexInline gap='var(--space-3xs)' class="[ campaign-segmented ]" role="group">
+        {metrics.map(item =>
+            <Button
+                size='sm'
+                color='transparent'
+                class={item === metric ? 'is-active' : undefined}
+                aria-pressed={item === metric ? 'true' : 'false'}
+                hx-get={partial_url(item, period)}
+                hx-target='#campaign-corporation-board'
+                hx-swap='outerHTML'
+                hx-indicator='.loader'
+            >
+                {t(`campaigns.leaderboard.metric.${item}`)}
+            </Button>
+        )}
+    </FlexInline>
+
+    <FlexInline gap='var(--space-3xs)' class="[ campaign-segmented ]" role="group">
+        {periods.map(item =>
+            <Button
+                size='sm'
+                color='transparent'
+                class={item === period ? 'is-active' : undefined}
+                aria-pressed={item === period ? 'true' : 'false'}
+                hx-get={partial_url(metric, item)}
+                hx-target='#campaign-corporation-board'
+                hx-swap='outerHTML'
+                hx-indicator='.loader'
+            >
+                {t(`campaigns.leaderboard.period.${item}`)}
+            </Button>
+        )}
+    </FlexInline>
+
+    {rows.length === 0 ?
+        <small>{t('campaigns.corporations.board_none')}</small>
+        :
+        <CampaignTable
+            min_width='17rem'
+            template='2.5rem minmax(6rem, 1fr) 3.5rem 5.5rem'
+            numeric={[ 0, 2, 3 ]}
+            columns={[
+                t('campaigns.leaderboard.rank'),
+                t('campaigns.roster.corporation'),
+                t('campaigns.corporations.pilots'),
+                t(`campaigns.leaderboard.metric.${metric}`),
+            ]}
+        >
+            {rows.map(row =>
+                <div class="[ campaign-table-row ]" role="row">
+                    <span role="cell" class="[ campaign-table-numeric ]">{row.rank}</span>
+                    <div class="[ campaign-cell-media ]" role="cell">
+                        {row.corporation_id &&
+                            <img
+                                loading='lazy'
+                                width='32'
+                                height='32'
+                                src={get_corporation_logo(row.corporation_id, 32)}
+                                alt=''
+                            />
+                        }
+                        <span>{row.corporation_name || t('campaigns.corporations.unknown')}</span>
+                    </div>
+                    <span role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.board_pilots_hint')}>{row.pilots}</span>
+                    <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
+                </div>
+            )}
+        </CampaignTable>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .campaign-segmented {
+        gap: 0 !important;
+        border: solid 1px var(--border-color-hover);
+        width: fit-content;
+    }
+
+    .campaign-segmented :global(.button) {
+        border: none;
+        border-radius: 0;
+        padding-block: var(--space-3xs);
+    }
+
+    .campaign-segmented :global(.button + .button) {
+        border-inline-start: solid 1px var(--border-color-hover);
+    }
+
+    .campaign-segmented :global(.button.is-active) {
+        background-color: var(--fleet-red);
+        color: var(--highlight);
+    }
+</style>
