@@ -10,6 +10,15 @@ const OVERLAY_WINDOWS = [
         min_size: { width: 320, height: 220 },
         default_enabled: true,
     },
+    {
+        id: 'campaigns',
+        title: 'Campaigns',
+        description: 'Your live campaign: whether each system is gaining or losing, and who flew in the last hour.',
+        page: 'campaigns.html',
+        size: { width: 420, height: 340 },
+        min_size: { width: 300, height: 220 },
+        default_enabled: false,
+    },
 ]
 
 function window_def(id) {

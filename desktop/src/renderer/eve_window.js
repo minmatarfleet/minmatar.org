@@ -29,7 +29,41 @@
         on_visibility(visible => document.body.classList.toggle('is-hidden', !visible))
     }
 
-    const api = { background_alpha, apply, follow_visibility }
+    // Shared overlay-window behaviour: header buttons, click-through, and the resize grip.
+    function wire_overlay(send) {
+        document.querySelectorAll('[data-command]').forEach(button => {
+            button.addEventListener('click', () => send(button.dataset.command))
+        })
+
+        // Overlay mode is click-through except over [data-interactive]: tell main when the cursor is over one.
+        let interactive = false
+        document.addEventListener('mousemove', event => {
+            const over = !!event.target.closest('[data-interactive]')
+            if (over !== interactive) {
+                interactive = over
+                send('mouse:interactive', over)
+            }
+        })
+        document.addEventListener('mouseleave', () => {
+            if (interactive) { interactive = false; send('mouse:interactive', false) }
+        })
+
+        // Bottom-right grip resizes the window (transparent windows have no native resize border).
+        const grip = document.getElementById('resize')
+        grip.addEventListener('pointerdown', event => {
+            grip.setPointerCapture(event.pointerId)
+            send('resize:start', { x: event.screenX, y: event.screenY })
+        })
+        grip.addEventListener('pointermove', event => {
+            if (grip.hasPointerCapture(event.pointerId)) send('resize:move', { x: event.screenX, y: event.screenY })
+        })
+        grip.addEventListener('pointerup', event => {
+            grip.releasePointerCapture(event.pointerId)
+            send('resize:end')
+        })
+    }
+
+    const api = { background_alpha, apply, follow_visibility, wire_overlay }
     if (typeof module !== 'undefined' && module.exports) module.exports = api
     else root.eve_window = api
 })(this)

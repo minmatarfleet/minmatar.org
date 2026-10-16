@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
 const { start_login, decode_token_payload, TokenStore, LoginCancelled, LoginFailed } = require('./auth')
-const { ApiClient, ApiError, load_upcoming_fleets } = require('./api')
+const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('./api')
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
@@ -57,6 +57,10 @@ const state = {
     loading: false,
     error: null,
     updated_at: null,
+    // The Campaigns window's data (null: no live campaign). Only fetched while that window is enabled.
+    campaign: null,
+    campaign_error: null,
+    campaign_updated_at: null,
     // EVE's own settings for the character in front: Settings > Windows transparency (1.0 = default),
     // notification badge offset, UI scale.
     eve_window: { transparency: 1, character_id: null, found: false, badge_offset: null, ui_scale: 1 },
@@ -231,6 +235,7 @@ function set_window_enabled(id, enabled) {
         hidden.delete(id)
         if (state.user && !overlays.has(id)) create_overlay(window_def(id))
         reveal_overlays()
+        refresh()   // a window enabled mid-session has no data yet
     } else {
         destroy_overlay(id)
     }
@@ -363,24 +368,44 @@ function set_user_setting(key, value) {
 
 // ---------------------------------------------------------------- data
 
+function fetch_error(err, what) {
+    return err instanceof ApiError && err.status === 403
+        ? `Your account does not have access to ${what}.`
+        : 'Could not reach Minmatar Fleet. Retrying…'
+}
+
 async function refresh() {
     if (!state.user) return
+    const campaigns = window_enabled('campaigns')
     state.loading = true
     push_state()
-    try {
-        state.fleets = await load_upcoming_fleets(api, config.web_url)
-        state.error = null
-        state.updated_at = new Date().toISOString()
-    } catch (err) {
-        diag({ t: 'refresh-error', status: err.status, message: err.message })
-        if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
-        state.error = err instanceof ApiError && err.status === 403
-            ? 'Your account does not have access to fleets.'
-            : 'Could not reach Minmatar Fleet. Retrying…'
-    } finally {
-        state.loading = false
-        push_state()
+    const [fleets, campaign] = await Promise.allSettled([
+        load_upcoming_fleets(api, config.web_url),
+        campaigns ? load_campaign(api, config.web_url) : Promise.resolve(null),
+    ])
+    state.loading = false
+    for (const result of [fleets, campaign]) {
+        if (result.status === 'rejected') diag({ t: 'refresh-error', status: result.reason.status, message: result.reason.message })
     }
+    const expired = [fleets, campaign].some(r => r.status === 'rejected' && r.reason instanceof ApiError && r.reason.status === 401)
+    if (expired) return sign_out('Your session has expired. Sign in again.')
+
+    const now = new Date().toISOString()
+    if (fleets.status === 'fulfilled') {
+        state.fleets = fleets.value
+        state.error = null
+        state.updated_at = now
+    } else {
+        state.error = fetch_error(fleets.reason, 'fleets')
+    }
+    if (campaigns && campaign.status === 'fulfilled') {
+        state.campaign = campaign.value
+        state.campaign_error = null
+        state.campaign_updated_at = now
+    } else if (campaigns) {
+        state.campaign_error = fetch_error(campaign.reason, 'campaigns')
+    }
+    push_state()
 }
 
 function start_refresh() {
@@ -433,6 +458,9 @@ function sign_out(reason = null) {
     tokens.clear()
     state.user = null
     state.fleets = []
+    state.campaign = null
+    state.campaign_error = null
+    state.campaign_updated_at = null
     state.login = { pending: false, error: reason }
     if (settings_win && !settings_win.isDestroyed()) settings_win.close()
     show_login()
@@ -524,6 +552,10 @@ ipcMain.on('fleets:open', (event, fleet_id) => {
     // Only open URLs we built ourselves, never one supplied by the renderer.
     const fleet = state.fleets.find(f => f.id === fleet_id)
     if (fleet) shell.openExternal(fleet.url)
+})
+ipcMain.on('campaigns:open', () => {
+    // Same rule as fleets: only a URL we built.
+    if (state.campaign) shell.openExternal(state.campaign.url)
 })
 ipcMain.on('update:install', () => install_update())
 ipcMain.on('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })

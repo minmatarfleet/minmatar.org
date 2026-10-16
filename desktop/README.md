@@ -10,7 +10,8 @@ An Electron app for Windows that signs you in with Discord, the same way my.minm
 - **Overlay mode** is on at every launch; the pin button (or the tray menu) unpins it for the session. The window stays above EVE, never takes focus from the game, and lets clicks pass through everywhere except its buttons and rows. It only shows while a logged-in EVE client (or this app) is in front. A client still at character select doesn't count. The background is a live blur of the game behind it.
 - **Matches your EVE transparency.** The window background follows the **Settings → Windows** transparency (`windowTransparency`) of the character whose client is in front. That character is identified from its window title (`EVE - <name>`, resolved to an ID with ESI's public name lookup). The app reads it, read-only, from EVE's own `%LOCALAPPDATA%\CCP\EVE\*_tq_tranquility\settings_*\core_char_<id>.dat`. With no client in front it uses the last character that saved settings, and it picks up a changed value when EVE next saves the file. Only the background changes; text stays fully opaque.
 
-- **Settings and Sneak.** Settings lists the overlay windows from `src/main/windows.js` so pilots pick which ones they use (only Upcoming Fleets so far), plus the overlay toggles, account, version and updates. Open it by clicking **Sneak**, who peeks over EVE's notification badge, or from the gear button or the tray. Sneak's spot is computed from EVE's own settings: `notification_badge_offset` in `core_char_<id>.dat` (from the client's bottom-right corner, default 16,16) and the UI scale in `core_public__.yaml`. He only shows while a logged-in client is in front.
+- **Campaigns.** Your live Faction Warfare campaign (the one you're enlisted in, else the newest live one) from `GET /api/campaigns/overlay`. One line per system: who holds it, the objective, a bar for progress and the 24h move (▲ +8% / ▼ -3%). Complex objectives are measured in victory points, advantage objectives in advantage. Below that, portraits of the enlisted pilots who got a kill, captured a site or flew in a campaign fleet in the last hour; hover one for what they did. Narrow the window for a one-line-per-system strip. Off by default: turn it on in Settings.
+- **Settings and Sneak.** Settings lists the overlay windows from `src/main/windows.js` so pilots pick which ones they use (Upcoming Fleets and Campaigns), plus the overlay toggles, account, version and updates. Open it by clicking **Sneak**, who peeks over EVE's notification badge, or from the gear button or the tray. Sneak's spot is computed from EVE's own settings: `notification_badge_offset` in `core_char_<id>.dat` (from the client's bottom-right corner, default 16,16) and the UI scale in `core_public__.yaml`. He only shows while a logged-in client is in front.
 - **Version** is shown in every window's footer and in Settings.
 
 It never reads EVE's memory, injects into the client, reads the screen, or sends input to the game. It only looks at which window is in front and where the EVE windows are.
@@ -39,13 +40,13 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 | Path | |
 |---|---|
 | `src/main/auth.js` | Loopback Discord login + encrypted token store |
-| `src/main/api.js` | API client and the fleet → row view model |
+| `src/main/api.js` | API client and the fleet and campaign view models |
 | `src/main/eve_clients.js` + `src/native/helper.cs` | Foreground/EVE-window tracking and glass, via a C# helper compiled at launch by PowerShell `Add-Type` (no native build step) |
 | `src/main/eve_settings.js` | Reads EVE's window transparency from the client's settings files |
 | `src/main/eve_logs/` | Chat/game log engine (below) |
 | `src/main/overlay_rules.js` | When the pinned window shows (only over EVE; screenshot tools and the taskbar don't hide it) |
 | `src/main/main.js` | Windows, overlay mode, tray, refresh loop |
-| `src/renderer/` | EVE-styled windows (`eve-window.css`), sign-in and fleets UI |
+| `src/renderer/` | EVE-styled windows (`eve-window.css`, shared chrome in `eve_window.js`), sign-in, fleets and campaigns UI |
 
 ## Updates and releases
 
