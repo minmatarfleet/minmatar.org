@@ -6,7 +6,14 @@ An Electron app for Windows that signs you in with Discord, the same way my.minm
 
 - **Discord sign-in.** The app calls the backend's existing `GET /api/users/login?redirect_url=…`. The backend sends your browser to Discord, then redirects back to `redirect_url?token=<JWT>`, exactly as it does for the website. The desktop app's `redirect_url` is a one-shot listener on `http://127.0.0.1:<random port>/callback/<random nonce>`, so the token goes straight to the app. No backend changes were needed.
 - **Token storage.** The JWT is encrypted with Electron `safeStorage` (Windows DPAPI, tied to your Windows account) in `%APPDATA%\Minmatar Fleet\session.bin`. It is only ever used from the main process as `Authorization: Bearer …`; the windows never see it. **Sign out** deletes it.
-- **Upcoming Fleets.** Shows the same list as the website's Upcoming Fleets page (`GET /api/fleets/v3?fleet_filter=active`), with FC names from `/api/users/profiles`, doctrine names from `/api/doctrines/{id}`, EVE-time start, and a live countdown. It refreshes every minute. Click a fleet to open it on my.minmatar.org.
+- **Upcoming Fleets.** Shows the same list as the website's Upcoming Fleets page (`GET /api/fleets/v3?fleet_filter=active`), with FC names from `/api/users/profiles`, doctrine names from `/api/doctrines/{id}`, EVE-time start, and a live countdown. It refreshes every minute while it's on screen. Click a fleet to open it in the window.
+- **Fleet view.** When you're in a fleet (or open one from the list), the same window shows that fleet, from one call: `GET /api/fleets/window/current` (or `/api/fleets/{id}/window` for a fleet you opened). What you see depends on who you are:
+  - **FC** (you created the fleet, or one of your characters is the in-game boss): pilots in fleet, how many are with you, kills and losses, each doctrine ship flying vs signed up, roles nobody covers, and the pilots who need a nudge (in a pod, off doctrine, docked, not with the fleet). The **Pilots** tab is the roster; only the FC gets it. **Refresh MOTD** pushes the in-game MOTD. At the window's minimum size this becomes a glance strip.
+  - **Member**: your ship (doctrine ship or not), how many jumps you are behind the fleet, what the fleet is short of, and the doctrine fits to copy as EFT. No roster.
+  - **Not in it yet**: countdown, form-up place and jumps, and the ships to pick from; picking one signs you up (`PUT /my-ship-volunteers`).
+  - **Ship lost**: shown once per loss, with SRP (the killmail link goes on your clipboard) and where to reship. **After-action** (FC, once the fleet closes): ISK killed vs lost and what's still open (AAR link, unfiled SRP).
+
+  "You" is always the character whose EVE client is in front. Jumps come from ESI's public route API, asked once per pair of systems.
 - **Overlay mode** is on at every launch; the pin button (or the tray menu) unpins it for the session. The window stays above EVE, never takes focus from the game, and lets clicks pass through everywhere except its buttons and rows. It only shows while a logged-in EVE client (or this app) is in front. A client still at character select doesn't count. The background is a live blur of the game behind it.
 - **Matches your EVE transparency.** The window background follows the **Settings → Windows** transparency (`windowTransparency`) of the character whose client is in front. That character is identified from its window title (`EVE - <name>`, resolved to an ID with ESI's public name lookup). The app reads it, read-only, from EVE's own `%LOCALAPPDATA%\CCP\EVE\*_tq_tranquility\settings_*\core_char_<id>.dat`. With no client in front it uses the last character that saved settings, and it picks up a changed value when EVE next saves the file. Only the background changes; text stays fully opaque.
 
@@ -39,7 +46,9 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 | Path | |
 |---|---|
 | `src/main/auth.js` | Loopback Discord login + encrypted token store |
-| `src/main/api.js` | API client and the fleet → row view model |
+| `src/main/api.js` | API client and the fleet → row view model; ETag reads for polled calls |
+| `src/main/fleet_window.js` | Fleet view: which fleet to show, polling, actions (copy fit, sign up, MOTD, SRP) |
+| `src/main/route.js` | Jump counts from ESI's route API, cached per pair |
 | `src/main/eve_clients.js` + `src/native/helper.cs` | Foreground/EVE-window tracking and glass, via a C# helper compiled at launch by PowerShell `Add-Type` (no native build step) |
 | `src/main/eve_settings.js` | Reads EVE's window transparency from the client's settings files |
 | `src/main/eve_logs/` | Chat/game log engine (below) |

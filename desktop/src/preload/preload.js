@@ -9,11 +9,14 @@ const COMMANDS = [
     'resize:start', 'resize:move', 'resize:end',
     'update:install', 'update:download', 'update:check',
     'settings:open', 'settings:set', 'window:set-enabled',
+    'fleet:back', 'fleet:open-site', 'fleet:refresh-motd', 'fleet:copy-fit', 'fleet:sign-up',
+    'fleet:srp', 'fleet:dismiss-loss', 'fleet:done',
 ]
 
 contextBridge.exposeInMainWorld('minmatar', {
     on_state: fn => ipcRenderer.on('state', (event, state) => fn(state)),
     on_visibility: fn => ipcRenderer.on('visibility', (event, visible) => fn(visible)),
+    on_fleet: fn => ipcRenderer.on('fleet', (event, snapshot) => fn(snapshot)),
     send: (command, value) => {
         if (COMMANDS.includes(command)) ipcRenderer.send(command, value)
     },
