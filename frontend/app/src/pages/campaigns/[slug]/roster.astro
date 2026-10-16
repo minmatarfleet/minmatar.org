@@ -50,7 +50,7 @@ try {
 
 const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
 
-const page_title = campaign ? `${campaign.name} · ${t('campaigns.roster.title')}` : t('campaigns.roster.page_title')
+const page_title = campaign ? `${campaign.name} · ${t('campaigns.corporations.title')}` : t('campaigns.roster.page_title')
 
 const breadcrumbs = [
     { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
@@ -59,7 +59,7 @@ const breadcrumbs = [
         accumulated_path: `/campaigns/${slug}/`,
     },
     {
-        page_title: t('campaigns.roster.title'),
+        page_title: t('campaigns.corporations.title'),
         accumulated_path: `/campaigns/${slug}/roster/`,
     },
 ]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -396,6 +396,20 @@ def coverage_by_hour(campaign: Campaign, days: int = 7) -> list[dict]:
     ]
 
 
+# Per-pilot counts the roster carries and the corporation roll-up sums.
+ROSTER_COUNTS = (
+    "kills",
+    "losses",
+    "isk_destroyed",
+    "complexes",
+    "advantage_sites",
+    "fleets_attended",
+)
+
+# A pilot counts as active in the roll-up if they did something this recently.
+ROSTER_ACTIVE_DAYS = 7
+
+
 def roster_rows(campaign: Campaign) -> list[dict]:
     """The roster, in a handful of queries rather than three per pilot."""
     enlistments = list(
@@ -471,6 +485,10 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 "characters_tracked": tracked_by_user.get(
                     enlistment.user_id, 0
                 ),
+                **{
+                    field: getattr(stat, field) if stat else 0
+                    for field in ROSTER_COUNTS
+                },
             }
         )
 
@@ -484,5 +502,53 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 else -row["last_active_day"].toordinal()
             ),
             row["username"].lower(),
+        ),
+    )
+
+
+def roster_corporations(rows: list[dict], today: date) -> list[dict]:
+    """Roll the roster up by each pilot's primary character's corporation.
+
+    Pilots with no primary character land in one row with no corporation,
+    last. The biggest corporations come first.
+    """
+    active_since = today - timedelta(days=ROSTER_ACTIVE_DAYS)
+    corporations: dict[int | None, dict] = {}
+    for row in rows:
+        corporation = corporations.setdefault(
+            row["corporation_id"],
+            {
+                "corporation_id": row["corporation_id"],
+                "corporation_name": row["corporation_name"],
+                "pilots": 0,
+                "active_pilots": 0,
+                "characters_included": 0,
+                "last_active_day": None,
+                **{field: 0 for field in ROSTER_COUNTS},
+            },
+        )
+        corporation["pilots"] += 1
+        corporation["characters_included"] += row["characters_included"]
+        for field in ROSTER_COUNTS:
+            corporation[field] += row[field]
+
+        last_active = row["last_active_day"]
+        if last_active is None:
+            continue
+        if last_active >= active_since:
+            corporation["active_pilots"] += 1
+        if (
+            corporation["last_active_day"] is None
+            or last_active > corporation["last_active_day"]
+        ):
+            corporation["last_active_day"] = last_active
+
+    return sorted(
+        corporations.values(),
+        key=lambda row: (
+            row["corporation_id"] is None,
+            -row["pilots"],
+            -row["kills"],
+            row["corporation_name"].lower(),
         ),
     )

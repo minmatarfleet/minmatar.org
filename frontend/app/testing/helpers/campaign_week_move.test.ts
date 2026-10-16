@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CampaignSystemSummary, CampaignWeek, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
-import { campaign_objective_rows, contest_bar_percent, progress_bar_color, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
+import { campaign_objective_rows, contest_bar_percent, objective_change_tone, progress_bar_color, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
 
 describe('week_contest_move', () => {
     it('treats a falling or low hold as good and a rising hold as bad', () => {
@@ -55,6 +55,15 @@ describe('week_contest_move', () => {
         expect(huola?.delta_from_percent).toBeCloseTo(93)
         expect(huola?.marker_percent).toBeNull()
         expect(huola?.change_direction).toBe('down')
+        expect(kamela && objective_change_tone(kamela)).toBe('good')
+        expect(huola && objective_change_tone(huola)).toBe('bad')
+    })
+
+    it('reads a falling enemy advantage as good on a destroy row', () => {
+        expect(objective_change_tone({ kind: 'advantage_destroy', change_direction: 'down' })).toBe('good')
+        expect(objective_change_tone({ kind: 'advantage_destroy', change_direction: 'up' })).toBe('bad')
+        expect(objective_change_tone({ kind: 'advantage_gain', change_direction: 'up' })).toBe('good')
+        expect(objective_change_tone({ kind: 'offense', change_direction: 'flat' })).toBe('flat')
     })
 
     it('reads a stable hold as 100% progress', () => {

@@ -17,6 +17,7 @@ const {
 delete attributes.class
 
 const prime_times = Object.entries(roster.by_prime_time ?? {})
+const corporations = roster.corporations ?? []
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -24,7 +25,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Tag from '@components/blocks/Tag.astro'
 
-import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
+import CampaignCorporationStats from '@components/blocks/CampaignCorporationStats.astro'
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 ---
 
@@ -32,10 +33,14 @@ import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astr
     <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
         <Flexblock gap='var(--space-s)'>
             <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                <h2>{t('campaigns.roster.title')}</h2>
-                <small>{t('campaigns.roster.pilot_count').replace('{count}', String(roster.pilots.length))}</small>
+                <h2>{t('campaigns.corporations.title')}</h2>
+                <small>
+                    {t('campaigns.corporations.summary')
+                        .replace('{pilots}', String(roster.pilots.length))
+                        .replace('{corporations}', String(corporations.length))}
+                </small>
             </FlexInline>
-            <CampaignRosterTable pilots={roster.pilots} />
+            <CampaignCorporationStats corporations={corporations} />
         </Flexblock>
     </ComponentBlock>
 

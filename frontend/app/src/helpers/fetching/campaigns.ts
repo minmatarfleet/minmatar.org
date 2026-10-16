@@ -563,6 +563,18 @@ export const objective_status_i18n_key = (status:CampaignObjectiveStatus) =>
 export const objective_status_color = (status:CampaignObjectiveStatus):TagColors => status === 'winning' ? 'green' : 'fleet-red'
 
 /**
+ * Whether a row's move helped. Every bar fills toward done except destroy,
+ * which measures their advantage, so there a falling bar is the good news.
+ */
+export const objective_change_tone = (row:Pick<CampaignObjectiveRow, 'kind' | 'change_direction'>):'good' | 'bad' | 'flat' => {
+    if (row.change_direction === 'flat') return 'flat'
+
+    const better = row.kind === 'advantage_destroy' ? 'down' : 'up'
+
+    return row.change_direction === better ? 'good' : 'bad'
+}
+
+/**
  * Contest bars follow progress, where higher is better. A hold is already
  * inverted, so a stable system is green and enemy victory points walk it
  * through yellow to red. A push is green once it is close to flipping.

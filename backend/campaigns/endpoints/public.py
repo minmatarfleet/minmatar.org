@@ -695,6 +695,9 @@ def get_roster(request, slug: str):
 
     return {
         "pilots": rows,
+        "corporations": serializers.roster_corporations(
+            rows, timezone.now().date()
+        ),
         "coverage": serializers.coverage_by_hour(campaign),
         "by_prime_time": by_prime_time,
     }
