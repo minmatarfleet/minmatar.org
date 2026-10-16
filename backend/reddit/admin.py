@@ -1,9 +1,11 @@
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
+from django.utils import timezone
 
 from reddit.client import RedditClient
-from reddit.models import RedditScheduledPost
+from reddit.markdown import blocking_problems
+from reddit.models import RedditAccount, RedditScheduledPost
 from reddit.service import link_reddit_post_to_discord, RedditService
 
 reddit_client = RedditClient()
@@ -39,6 +41,30 @@ class RedditScheduledPostAdminForm(forms.ModelForm):
                 "Save with a subreddit first; on next edit the flair dropdown will be set from that subreddit."
             )
 
+    def clean_content(self):
+        content = self.cleaned_data["content"]
+        # Only on change, so older posts can still be rescheduled as-is.
+        if "content" in self.changed_data:
+            problems = blocking_problems(content)
+            if problems:
+                raise forms.ValidationError(
+                    [
+                        f"Line {p.line}: Reddit can't render {p.excerpt!r} "
+                        f"({p.code.replace('_', ' ')})."
+                        for p in problems
+                    ]
+                )
+        return content
+
+
+def _record_approval(scheduled_post, user):
+    if scheduled_post.approved:
+        scheduled_post.approved_by = user
+        scheduled_post.approved_at = timezone.now()
+    else:
+        scheduled_post.approved_by = None
+        scheduled_post.approved_at = None
+
 
 class RedditPostAdmin(admin.ModelAdmin):
     """Custom admin model for RedditScheduledPost entities"""
@@ -46,18 +72,60 @@ class RedditPostAdmin(admin.ModelAdmin):
     form = RedditScheduledPostAdminForm
     list_display = [
         "title",
+        "corporation",
         "subreddit",
         "posting_day",
-        "discord_channel_id",
-        "flair_id",
+        "posting_time",
+        "delivery_method",
+        "approved",
         "last_post_at",
-        "last_reddit_post_url",
+        "last_reminder_at",
     ]
-    list_filter = ["posting_day", "subreddit"]
+    list_filter = ["approved", "delivery_method", "posting_day", "subreddit"]
+    search_fields = ["title", "corporation__name"]
+    autocomplete_fields = ["corporation"]
+    readonly_fields = [
+        "approved_by",
+        "approved_at",
+        "last_scheduled_on",
+        "updated_at",
+    ]
     actions = [
+        "action_approve",
         "action_manually_submit_post",
         "action_manually_link_to_discord",
     ]
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if not request.user.is_superuser:
+            fields.append("approved")
+        return fields
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("action_approve", None)
+        return actions
+
+    def save_model(self, request, obj, form, change):
+        if "approved" in form.changed_data:
+            _record_approval(obj, request.user)
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description="Approve for automatic posting")
+    def action_approve(self, request, queryset):
+        if not request.user.is_superuser:
+            return
+        count = 0
+        for scheduled_post in queryset.filter(approved=False):
+            scheduled_post.approved = True
+            _record_approval(scheduled_post, request.user)
+            scheduled_post.save()
+            count += 1
+        self.message_user(
+            request, f"Approved {count} post(s).", messages.SUCCESS
+        )
 
     @admin.action(description="Manually submit post")
     def action_manually_submit_post(self, request, queryset):
@@ -114,3 +182,22 @@ class RedditPostAdmin(admin.ModelAdmin):
 
 
 admin.site.register(RedditScheduledPost, RedditPostAdmin)
+
+
+@admin.register(RedditAccount)
+class RedditAccountAdmin(admin.ModelAdmin):
+    """Linked Reddit accounts. The refresh token is never displayed."""
+
+    list_display = ["reddit_username", "user", "token_invalid", "updated_at"]
+    search_fields = ["reddit_username", "user__username"]
+    exclude = ["refresh_token"]
+    readonly_fields = [
+        "user",
+        "reddit_username",
+        "scopes",
+        "created_at",
+        "updated_at",
+    ]
+
+    def has_add_permission(self, request):
+        return False

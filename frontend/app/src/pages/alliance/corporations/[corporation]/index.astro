@@ -7,7 +7,7 @@ import type { CorporationObject } from '@dtypes/layout_components'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { get_corporation_id_by_slug, get_corporation_info, get_corporation_open_applications, get_corporation_member_access } from '@helpers/api.minmatar.org/corporations'
-import { corporation_path } from '@helpers/corporations/detail'
+import { corporation_path, corporation_slug } from '@helpers/corporations/detail'
 import { get_corporation_list_by_id_auth, get_user_corporation_id } from '@helpers/fetching/corporations'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -24,6 +24,7 @@ import CorporationAboutStats from '@components/blocks/CorporationAboutStats.astr
 import CorporationApplicationProcess from '@components/blocks/CorporationApplicationProcess.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
 const user = auth_token ? jose.decodeJwt(auth_token) as User : null
@@ -86,7 +87,7 @@ if (auth_token && user) {
     }
 }
 
-type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'apply'
+type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'apply' | 'settings'
 
 const has_activity = Boolean(corporation.activity_summary)
 const has_about = Boolean(biography)
@@ -103,6 +104,17 @@ const member_access = auth_token
     : null
 const can_view_members = member_access?.can_view_members ?? false
 const members_partial = translatePath(`/partials/corporation_members_table_component/?corporation_id=${corporation_id}`)
+// CEO only. The Reddit link round trip lands back here with ?reddit=… for the partial to report.
+const can_edit_settings = member_access?.can_edit_settings ?? false
+const settings_params = new URLSearchParams({
+    corporation_id: String(corporation_id),
+    corporation: corporation_slug(corporation.corporation_name),
+})
+for (const key of ['reddit', 'reddit_error']) {
+    const value = Astro.url.searchParams.get(key)
+    if (value) settings_params.set(key, value)
+}
+const settings_partial = translatePath(`/partials/corporation_settings_component/?${settings_params}`)
 
 const tabs: CorporationTab[] = [
     ...(has_about ? ['about' as const] : []),
@@ -110,6 +122,7 @@ const tabs: CorporationTab[] = [
     'apply' as const,
     ...(can_view_members ? ['members' as const] : []),
     ...(has_leadership ? ['leadership' as const] : []),
+    ...(can_edit_settings ? ['settings' as const] : []),
 ]
 const default_tab = tabs[0]
 
@@ -125,6 +138,8 @@ function tab_label(tab: CorporationTab) {
             return t('corporations.detail.members')
         case 'apply':
             return t('corporations.detail.application_process')
+        case 'settings':
+            return t('corporations.detail.settings')
         default: {
             const unexpected: never = tab
             return unexpected
@@ -231,6 +246,30 @@ const breadcrumbs = [
                     </SectionTabPanel>
                 }
 
+                {can_edit_settings &&
+                    <SectionTabPanel id="settings" id_prefix="corporation" is_default={default_tab === 'settings'}>
+                        <Flexblock gap="var(--space-s)">
+                            <small class="corp-loading">{t('corporations.settings.only_ceo')}</small>
+                            {/* One collapsible section per setting area; each loads its own partial when opened. */}
+                            <section class="corp-settings-section">
+                                <CollapsibleBlock id="corporation-settings-reddit" expanded={true} padding_inline="0">
+                                    <span slot="head" class="corp-settings-section__head">
+                                        <span class="corp-settings-section__title">{t('corporations.settings.reddit_section')}</span>
+                                        <span id="corporation-settings-reddit-summary" class="corp-settings-section__summary"></span>
+                                    </span>
+                                    <div
+                                        hx-get={settings_partial}
+                                        hx-trigger="intersect once"
+                                        hx-swap="outerHTML"
+                                    >
+                                        <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
+                                    </div>
+                                </CollapsibleBlock>
+                            </section>
+                        </Flexblock>
+                    </SectionTabPanel>
+                }
+
                 <SectionTabPanel id="apply" id_prefix="corporation" is_default={default_tab === 'apply'}>
                     <CorporationApplicationProcess
                         process={corporation.application_process}
@@ -249,6 +288,36 @@ const breadcrumbs = [
 <style lang="scss">
     .corp-loading {
         margin: 0;
+        color: var(--faded);
+    }
+
+    .corp-settings-section {
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--border-color);
+    }
+
+    // Space under the header lives inside the body, so a collapsed section stays tight.
+    .corp-settings-section :global(#corporation-settings),
+    .corp-settings-section .corp-loading {
+        padding-block-start: var(--space-m);
+    }
+
+    .corp-settings-section__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-3xs) var(--space-s);
+    }
+
+    .corp-settings-section__title {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .corp-settings-section__summary {
+        font-size: var(--step--1);
         color: var(--faded);
     }
 </style>

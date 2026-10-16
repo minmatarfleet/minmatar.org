@@ -172,6 +172,9 @@ REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
 REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
 REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
+REDDIT_REDIRECT_URL = os.environ.get(
+    "REDDIT_REDIRECT_URL", "http://testserver/api/reddit/callback"
+)
 
 TWITCH_CLIENT_ID = os.environ.get("TWITCH_CLIENT_ID", "test-twitch-client")
 TWITCH_CLIENT_SECRET = os.environ.get(

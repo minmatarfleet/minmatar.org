@@ -4,11 +4,15 @@ const { t } = i18n(Astro.url)
 
 interface Props {
     is_transparent?:    boolean;
+    guide_url?:         string;
+    guide_label?:       string;
     [propName: string]: any;
 }
 
 const {
     is_transparent = false,
+    guide_url = 'https://www.markdownguide.org/',
+    guide_label = t('markdown_support'),
     ...attributes
 } = Astro.props;
 
@@ -24,11 +28,12 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
         <Textarea {...attributes}><slot /></Textarea>
     }
     <a
-        href="https://www.markdownguide.org/"
+        href={guide_url}
         class="[ w-fit ]"
         target="_blank"
         rel="noreferrer noopener nofollow"
-        data-tippy-content={t('markdown_support')}
+        data-tippy-content={guide_label}
+        aria-label={guide_label}
     >
         <MarkdownIcon />
     </a>

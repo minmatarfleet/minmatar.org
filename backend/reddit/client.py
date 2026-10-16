@@ -3,11 +3,21 @@ import logging
 
 from django.conf import settings
 
+from reddit.oauth import RedditOAuthError, refresh_access_token
+
 logger = logging.getLogger(__name__)
 
 EVEJOBS_SR = "/r/evejobs"
 FL33T_SR = "/r/MinmatarFleet"
 TEST_SR = "r/sltest1"
+
+
+def normalize_subreddit(subreddit: str | None) -> str:
+    """Bare subreddit name from "evejobs", "r/evejobs" or "/r/evejobs/"."""
+    name = (subreddit or "").strip().strip("/")
+    if name[:2].lower() == "r/":
+        name = name[2:]
+    return name.strip("/")
 
 
 class RedditClient:
@@ -19,7 +29,10 @@ class RedditClient:
     username = ""
     password = ""
 
-    def __init__(self):
+    def __init__(self, account=None):
+        """With a RedditAccount, act as that linked user (refresh token);
+        otherwise as the alliance account (password grant)."""
+        self.account = account
         self.client_id = settings.REDDIT_CLIENT_ID
         self.client_secret = settings.REDDIT_SECRET
         self.username = settings.REDDIT_USERNAME
@@ -33,6 +46,8 @@ class RedditClient:
         self.user_agent = "minmatar.org " + settings.ENV
 
     def get_access_token(self) -> str | None:
+        if self.account is not None:
+            return self._linked_account_token()
         logger.info(
             "Getting reddit access token for %s / %s",
             self.username,
@@ -68,6 +83,18 @@ class RedditClient:
             logger.error("No access token found in %s", data)
             return None
 
+    def _linked_account_token(self) -> str | None:
+        try:
+            return refresh_access_token(self.account.refresh_token)
+        except RedditOAuthError as e:
+            logger.warning(
+                "Reddit refresh failed for %s: %s", self.account, e.code
+            )
+            if e.code == "invalid_grant":
+                self.account.token_invalid = True
+                self.account.save(update_fields=["token_invalid"])
+            return None
+
     def get_my_details(self):
         token = self.get_access_token()
         if not token:
@@ -100,7 +127,7 @@ class RedditClient:
 
         data = [
             ("kind", "self"),
-            ("sr", subreddit.lstrip("/r")),
+            ("sr", normalize_subreddit(subreddit)),
             ("title", title),
             ("text", content),
         ]
@@ -181,15 +208,7 @@ class RedditClient:
         if not token:
             return []
         # Normalize: strip /r/ prefix and use lowercase (Reddit API expects lowercase)
-        sr = (
-            (subreddit or "")
-            .strip()
-            .lstrip("/")
-            .lstrip("r")
-            .lstrip("/")
-            .strip()
-            .lower()
-        )
+        sr = normalize_subreddit(subreddit).lower()
         if not sr:
             return []
         response = requests.get(

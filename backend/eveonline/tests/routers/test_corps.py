@@ -463,7 +463,12 @@ class CorporationRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         ).json()
         self.assertEqual(
-            {"can_view_members": True, "can_view_characters": False}, access
+            {
+                "can_view_members": True,
+                "can_view_characters": False,
+                "can_edit_settings": False,
+            },
+            access,
         )
 
     def test_superuser_sees_every_character(self):
