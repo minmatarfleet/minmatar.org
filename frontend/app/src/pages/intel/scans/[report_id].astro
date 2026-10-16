@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return HTTP_404_Not_Found()
+
+import { get_intel_report } from '@helpers/api.minmatar.org/intel'
+import type { IntelReport } from '@dtypes/api.minmatar.org'
+
+const report_id = Astro.params.report_id ?? ''
+
+let report:IntelReport | null = null
+let error_message:string | null = null
+
+try {
+    report = await get_intel_report(auth_token, report_id)
+} catch (error) {
+    error_message = error.cause === 404 ? t('intel.scan.not_found_error')
+        : error.cause === 403 ? t('intel.scan.forbidden_error')
+        : error.message
+}
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import IntelReportView from '@components/blocks/IntelReportView.astro'
+import Button from '@components/blocks/Button.astro'
+
+const kind_label = report ? t(report.kind === 'dscan' ? 'intel.scan.dscan' : 'intel.scan.local') : ''
+const page_title = report ? `${kind_label} · ${report.system_name}` : t('intel.scan.page_title')
+---
+
+<Viewport title={page_title}>
+    <PageWide
+        cover={{
+            image: "/images/intel-cover.jpg",
+            image_990: "/images/intel-cover-990.jpg",
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/intel/')}>
+                    {t('keep_browsing')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        {error_message
+            ? <p>{error_message}</p>
+            : <IntelReportView report={report as IntelReport} />
+        }
+    </PageWide>
+</Viewport>

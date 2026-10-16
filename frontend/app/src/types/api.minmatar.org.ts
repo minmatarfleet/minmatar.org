@@ -3159,3 +3159,66 @@ export interface CampaignGangRequest {
     note?:              string;
     voice_channel_id?:  number | null;
 }
+
+export interface IntelHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+    rank?:              number;
+}
+
+export interface IntelShipClass {
+    name:               string;
+    count:              number;
+    rank:               number;
+    hulls:              IntelHull[];
+}
+
+export interface IntelOtherItem {
+    type_id:            number;
+    name:               string;
+    group:              string;
+    count:              number;
+}
+
+export interface IntelDscanSummary {
+    objects:            number;
+    ships:              number;
+    capsules:           number;
+    other:              number;
+    classes:            IntelShipClass[];
+    hulls:              IntelHull[];
+    other_items:        IntelOtherItem[];
+}
+
+export type IntelStanding = 'hostile' | 'neutral' | 'friendly';
+
+export interface IntelLocalAlliance {
+    id:                 number | null;
+    name:               string;
+    count:              number;
+    standing:           IntelStanding;
+}
+
+export interface IntelLocalSummary {
+    pilots:             number;
+    resolved:           boolean;
+    unknown?:           number;
+    standings?:         Record<IntelStanding, number>;
+    militia?:           { amarr: number; minmatar: number; none: number };
+    alliances?:         IntelLocalAlliance[];
+}
+
+export interface IntelReport {
+    report_id:          string;
+    kind:               'dscan' | 'local';
+    system_id:          number | null;
+    system_name:        string;
+    reporter_name:      string;
+    note:               string;
+    created_at:         string;
+    summary_line:       string;
+    summary:            IntelDscanSummary | IntelLocalSummary;
+    raw:                string;
+    previous?:          { report_id: string; created_at: string; hostile: number; hostile_delta: number } | null;
+}
