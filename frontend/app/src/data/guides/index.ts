@@ -15,6 +15,14 @@ import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
 import * as bookmarks from '@markdown/guides/bookmarks.md'
 import * as selling_loyalty_points from '@markdown/guides/selling-loyalty-points.md'
 import * as capital_ship_basics from '@markdown/guides/capital-ship-basics.md'
+import * as onboarding_home_base from '@markdown/guides/onboarding-home-base.md'
+import * as onboarding_first_fleet from '@markdown/guides/onboarding-first-fleet.md'
+import * as onboarding_fleet_types_and_hangar from '@markdown/guides/onboarding-fleet-types-and-hangar.md'
+import * as onboarding_faction_warfare_essentials from '@markdown/guides/onboarding-faction-warfare-essentials.md'
+import * as onboarding_first_billion from '@markdown/guides/onboarding-first-billion.md'
+import * as onboarding_make_content from '@markdown/guides/onboarding-make-content.md'
+import * as onboarding_trial_srp_help from '@markdown/guides/onboarding-trial-srp-help.md'
+import * as onboarding_culture_map from '@markdown/guides/onboarding-culture-map.md'
 
 
 type GuideModule = {
@@ -43,14 +51,128 @@ const guideModules: Record<string, GuideModule> = {
     'bookmarks': bookmarks,
     'selling-loyalty-points': selling_loyalty_points,
     'capital-ship-basics': capital_ship_basics,
+    'onboarding-home-base': onboarding_home_base,
+    'onboarding-first-fleet': onboarding_first_fleet,
+    'onboarding-fleet-types-and-hangar': onboarding_fleet_types_and_hangar,
+    'onboarding-faction-warfare-essentials': onboarding_faction_warfare_essentials,
+    'onboarding-first-billion': onboarding_first_billion,
+    'onboarding-make-content': onboarding_make_content,
+    'onboarding-trial-srp-help': onboarding_trial_srp_help,
+    'onboarding-culture-map': onboarding_culture_map,
 }
 
-export const guideCategories = ["Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
+export const guideCategories = ["Onboarding","Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
 
 /** Preferred subsection order within a category (index page). */
-export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {}
+export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
+    'Onboarding': ['Day One', 'Week One', 'Month One', 'Trial'],
+}
 
 export const guides: GuideMeta[] = [
+    {
+        slug: "onboarding-home-base",
+        title: "Home Base: Three Discords and Amamake",
+        excerpt: "Day one: which Discord is which, how roles work, and why Amamake is home.",
+        category: "Onboarding",
+        section: "Day One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-first-fleet",
+        title: "Your First Fleet",
+        excerpt: "Day one: find tonight's fleet, bring what you have, and undock without panic.",
+        category: "Onboarding",
+        section: "Day One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-fleet-types-and-hangar",
+        title: "Fleet Types and Your Hangar",
+        excerpt: "Week one: strategic versus everything else, what to keep in your hangar, and where fits live.",
+        category: "Onboarding",
+        section: "Week One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-faction-warfare-essentials",
+        title: "Faction Warfare Essentials",
+        excerpt: "Week one: the faction warfare you need to not be lost, written for returning players.",
+        category: "Onboarding",
+        section: "Week One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-first-billion",
+        title: "Your First Billion ISK",
+        excerpt: "Month one: plex frontlines, sell LP on the loyalty desk, and pay for your own ships.",
+        category: "Onboarding",
+        section: "Month One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-make-content",
+        title: "You're Allowed to Make Content",
+        excerpt: "Month one: form standing fleet, run a battlefield, and schedule fleets without being a famous FC.",
+        category: "Onboarding",
+        section: "Month One",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-trial-srp-help",
+        title: "Trial, SRP, and Getting Help",
+        excerpt: "Trial: what trial means, how ship replacement works, and where to take problems.",
+        category: "Onboarding",
+        section: "Trial",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "onboarding-culture-map",
+        title: "The Culture Map",
+        excerpt: "Trial: town hall, values, tribes, and where the rest of the alliance lives once you are fleeting.",
+        category: "Onboarding",
+        section: "Trial",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
     {
         slug: "faction-warfare-basics",
         title: "Faction Warfare Basics",
