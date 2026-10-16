@@ -264,6 +264,8 @@ def reminder_messages(
         f"Post it here: <https://www.reddit.com/r/{subreddit}/submit>",
         f"Edit it or change how it's sent: <{settings_url(post)}>",
         "",
+        # Reddit's rich text editor would show the Markdown as literal text.
+        "**SWITCH TO MARKDOWN MODE IN THE EDITOR FIRST**",
         "**Title**",
         _fence(title),
         "**Body**",

@@ -254,6 +254,10 @@ class ReminderMessageTestCase(CorporationPostTestCase):
         self.assertIn("r/evejobs/submit", messages[0])
         self.assertIn("waiting for approval", messages[0])
         self.assertIn(
+            "**SWITCH TO MARKDOWN MODE IN THE EDITOR FIRST**\n**Title**",
+            messages[0],
+        )
+        self.assertIn(
             "/alliance/corporations/rattini-tribe/#settings", messages[0]
         )
         joined = "".join(m.strip("`\n") for m in messages[1:])
