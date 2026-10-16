@@ -137,12 +137,14 @@ def classify_payout(payout: EveCharacterFwLpPayout) -> tuple[str, bool]:
 
     kind = code_row.site_kind
 
-    # The advantage-site family splits on the amount, not the code.
+    # The advantage-site family splits on the amount, not the code. A share
+    # or a scaled figure is still that family, but only the two flat amounts
+    # are safe to score.
     if kind == SiteKind.ADVANTAGE_SITE:
         if payout.amount_lp == SUPPLY_CACHE_LP:
             kind = SiteKind.SUPPLY_CACHE
         elif payout.amount_lp != ADVANTAGE_SITE_LP:
-            return SiteKind.UNKNOWN, False
+            return kind, False
 
     return kind, bool(code_row.confirmed)
 
@@ -448,10 +450,15 @@ def rescore_completions(event_code: int | None = None) -> dict:
 
 
 def seed_event_codes() -> int:
-    """Seed the calibration table. Never overwrites a human confirmation."""
-    created = 0
+    """Seed the calibration table. Never overwrites a human confirmation.
+
+    An unconfirmed row still sitting on ``unknown`` is filled in from the
+    seed. That is a code we have since learned to name, not a decision
+    somebody made.
+    """
+    written = 0
     for row in EVENT_CODE_SEED:
-        _, was_created = FwPayoutEventCode.objects.get_or_create(
+        code, was_created = FwPayoutEventCode.objects.get_or_create(
             event_code=row["event_code"],
             defaults={
                 "site_kind": row["site_kind"],
@@ -461,5 +468,17 @@ def seed_event_codes() -> int:
                 "notes": row["notes"],
             },
         )
-        created += int(was_created)
-    return created
+        if was_created:
+            written += 1
+            continue
+        if code.confirmed or code.site_kind != SiteKind.UNKNOWN:
+            continue
+        if row["site_kind"] == SiteKind.UNKNOWN:
+            continue
+        code.site_kind = row["site_kind"]
+        code.label = row["label"]
+        code.amount_rule = row["amount_rule"]
+        code.notes = row["notes"]
+        code.save(update_fields=["site_kind", "label", "amount_rule", "notes"])
+        written += 1
+    return written

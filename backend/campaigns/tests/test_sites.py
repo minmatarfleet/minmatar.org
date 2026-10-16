@@ -1,10 +1,13 @@
 """LP payouts: parsing, classification and complex-class inference."""
 
+import importlib
+
 from django.test import TestCase
 from django.utils import timezone
 
-from campaigns.models import SiteKind
+from campaigns.models import CampaignSiteCompletion, SiteKind
 from campaigns.services.sites import (
+    attribute_payouts,
     classify_payout,
     infer_complex_class,
     parse_payout_text,
@@ -12,6 +15,11 @@ from campaigns.services.sites import (
 )
 from campaigns.tests.helpers import enlist, make_campaign
 from eveonline.models import EveCharacterFwLpPayout, FwPayoutEventCode
+
+# Migration modules are named with a number, which is not a valid import.
+seed_codes_and_relabel_sites = importlib.import_module(
+    "campaigns.migrations.0024_seed_fw_event_codes"
+).seed_codes_and_relabel_sites
 
 # Verbatim from a live pull on 18 Sep YC128.
 COMPLEX_TEXT = """amount: 265
@@ -76,8 +84,22 @@ class ClassificationTests(TestCase):
         self.assertEqual(kind, SiteKind.SUPPLY_CACHE)
 
     def test_unconfirmed_code_is_stored_but_never_scored(self):
-        """Event 359 is a candidate battlefield, not a confirmed one."""
-        _, scorable = classify_payout(self._payout(359, 52_500, 4))
+        """359 and 373 are complex captures, shown but not scored."""
+        for code, amount, notification_id in (
+            (359, 26_250, 4),
+            (373, 22_500, 6),
+        ):
+            kind, scorable = classify_payout(
+                self._payout(code, amount, notification_id)
+            )
+            self.assertEqual(kind, SiteKind.COMPLEX)
+            self.assertFalse(scorable)
+
+    def test_a_scaled_advantage_payout_is_shown_and_not_scored(self):
+        """Shares of a 516 payout stay in the family, but only flats score."""
+        FwPayoutEventCode.objects.filter(event_code=516).update(confirmed=True)
+        kind, scorable = classify_payout(self._payout(516, 7_500, 7))
+        self.assertEqual(kind, SiteKind.ADVANTAGE_SITE)
         self.assertFalse(scorable)
 
     def test_unknown_code_is_unknown_and_not_scored(self):
@@ -93,6 +115,32 @@ class ClassificationTests(TestCase):
         row = FwPayoutEventCode.objects.get(event_code=359)
         self.assertTrue(row.confirmed)
         self.assertEqual(row.site_kind, SiteKind.BATTLEFIELD)
+
+    def test_seeding_fills_an_unconfirmed_code_left_as_unknown(self):
+        FwPayoutEventCode.objects.filter(event_code=359).update(
+            site_kind=SiteKind.UNKNOWN, confirmed=False, label="old"
+        )
+        written = seed_event_codes()
+        row = FwPayoutEventCode.objects.get(event_code=359)
+        self.assertEqual(written, 1)
+        self.assertEqual(row.site_kind, SiteKind.COMPLEX)
+        self.assertFalse(row.confirmed)
+
+    def test_seeding_relabels_completions_stored_as_unknown(self):
+        FwPayoutEventCode.objects.all().delete()
+        payout = self._payout(359, 26_250, 30)
+        payout.ref_id = 9610
+        payout.save(update_fields=["ref_id"])
+        attribute_payouts([payout])
+        completion = CampaignSiteCompletion.objects.get()
+        self.assertEqual(completion.site_kind, SiteKind.UNKNOWN)
+
+        seed_codes_and_relabel_sites(None, None)
+
+        completion.refresh_from_db()
+        self.assertEqual(completion.site_kind, SiteKind.COMPLEX)
+        self.assertFalse(completion.scored)
+        self.assertIsNotNone(completion.complex_id)
 
 
 class ComplexInferenceTests(TestCase):
