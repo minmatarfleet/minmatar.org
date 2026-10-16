@@ -115,6 +115,7 @@ for (const key of ['reddit', 'reddit_error']) {
     if (value) settings_params.set(key, value)
 }
 const settings_partial = translatePath(`/partials/corporation_settings_component/?${settings_params}`)
+const forum_post_partial = translatePath(`/partials/corporation_forum_post_component/?corporation_id=${corporation_id}`)
 
 const tabs: CorporationTab[] = [
     ...(has_about ? ['about' as const] : []),
@@ -266,6 +267,21 @@ const breadcrumbs = [
                                     </div>
                                 </CollapsibleBlock>
                             </section>
+                            <section class="corp-settings-section">
+                                <CollapsibleBlock id="corporation-settings-forum" expanded={true} padding_inline="0">
+                                    <span slot="head" class="corp-settings-section__head">
+                                        <span class="corp-settings-section__title">{t('corporations.settings.forum_section')}</span>
+                                        <span id="corporation-settings-forum-summary" class="corp-settings-section__summary"></span>
+                                    </span>
+                                    <div
+                                        hx-get={forum_post_partial}
+                                        hx-trigger="intersect once"
+                                        hx-swap="outerHTML"
+                                    >
+                                        <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
+                                    </div>
+                                </CollapsibleBlock>
+                            </section>
                         </Flexblock>
                     </SectionTabPanel>
                 }
@@ -298,6 +314,7 @@ const breadcrumbs = [
 
     // Space under the header lives inside the body, so a collapsed section stays tight.
     .corp-settings-section :global(#corporation-settings),
+    .corp-settings-section :global(#corporation-forum-post),
     .corp-settings-section .corp-loading {
         padding-block-start: var(--space-m);
     }

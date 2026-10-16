@@ -332,6 +332,20 @@ export interface CorporationRedditPostUpdate {
     posting_day?:       RedditPostingDay | '';
 }
 
+export interface CorporationForumPost {
+    corporation_id:     number;
+    exists:             boolean;
+    url:                string | null;
+    topic_id:           number | null;
+    title:              string;
+    updated_at:         string | null;
+    last_bumped_at:     string | null;
+}
+
+export interface CorporationForumPostUpdate {
+    url:                string;
+}
+
 export interface CorporationPublicSummary {
     window_days:            number;
     community: {
