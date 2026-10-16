@@ -1,0 +1,71 @@
+/* Photon-style EVE window chrome. The blur behind the window is native (src/native/helper.cs);
+   this file only adds the tint layers, lines and type on top of it. Without glass (non-Windows,
+   or before the helper is up) the window falls back to an opaque body. */
+:root {
+    --eve-font: "EVE Sans Neue", "Bahnschrift", "Segoe UI", Tahoma, sans-serif;
+    --eve-text: #d6d6d6;
+    --eve-text-strong: #ffffff;
+    --eve-text-dim: #8c8c8c;
+    --eve-line: rgba(255, 255, 255, 0.07);
+    --eve-group: rgba(255, 255, 255, 0.075);
+    --eve-hover: rgba(255, 255, 255, 0.06);
+    --eve-fade: 90ms;           /* keep in sync with FADE_MS in main.js */
+    --eve-window-alpha: 0.9;    /* set from EVE's window transparency setting (eve_window.js) */
+    --eve-header-h: 32px;
+    --eve-danger: #e0362a;
+    --eve-live: #4fbf4a;
+    --eve-accent: #b53620;      /* fleet red */
+    --eve-accent-soft: rgba(181, 54, 32, 0.28);
+    --eve-gold: #f1d9a0;        /* fleet yellow */
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+body { font: 13px/1.35 var(--eve-font); color: var(--eve-text); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+
+.eve-window { position: fixed; inset: 0; display: flex; flex-direction: column; background: rgba(10, 10, 10, var(--eve-window-alpha)); border: 1px solid var(--eve-line); }
+body.glass .eve-window { background: rgba(0, 0, 0, var(--eve-window-alpha)); border-color: transparent; }
+.eve-window { transition: opacity var(--eve-fade) ease-out; }
+body.is-hidden .eve-window { opacity: 0; transition-timing-function: ease-in; }
+.eve-window::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg, var(--eve-accent), transparent 70%); }
+
+.eve-window__header { height: var(--eve-header-h); flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 10px; -webkit-app-region: drag; }
+.eve-window__icon { width: 18px; height: 18px; flex: none; }
+.eve-window__title { flex: 1; margin: 0; font-size: 14px; font-weight: 400; color: var(--eve-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eve-window__controls { display: flex; gap: 2px; -webkit-app-region: no-drag; }
+.eve-icon-button { width: 24px; height: 22px; padding: 0; border: 0; background: none; color: var(--eve-text-dim); display: grid; place-items: center; }
+.eve-icon-button:hover { color: var(--eve-text-strong); background: var(--eve-hover); }
+.eve-icon-button:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+.eve-icon-button[aria-pressed="true"] { color: var(--eve-gold); }
+.eve-icon-button svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.3; fill: none; }
+.eve-window__body { flex: 1; min-height: 0; padding: 4px 10px 10px; overflow-y: auto; }
+.eve-window__body::-webkit-scrollbar { width: 4px; }
+.eve-window__body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
+.eve-window__footer { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 22px 6px 10px; font-size: 11px; color: var(--eve-text-dim); }
+.eve-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.eve-resize::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border-right: 1px solid var(--eve-text-dim); border-bottom: 1px solid var(--eve-text-dim); }
+
+@keyframes eve-spin { to { transform: rotate(360deg); } }
+@keyframes eve-fade-in { from { opacity: 0; } }
+@keyframes eve-shimmer { from { background-position: -200px 0; } to { background-position: 200px 0; } }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; }
+}
+
+/* controls */
+.eve-button { padding: 6px 14px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.06); color: var(--eve-text-strong); cursor: default; }
+.eve-button:hover { background: rgba(255, 255, 255, 0.12); }
+.eve-button:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 1px; }
+.eve-button:disabled { opacity: 0.5; }
+.eve-button--primary { border-color: var(--eve-accent); background: var(--eve-accent-soft); }
+.eve-link { padding: 0; border: 0; background: none; color: var(--eve-text-dim); text-decoration: underline; cursor: default; }
+.eve-link:hover { color: var(--eve-text-strong); }
+.eve-link--update { margin-left: auto; color: var(--eve-gold); }
+.eve-version { color: var(--eve-text-dim); opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+/* text */
+.eve-dim { color: var(--eve-text-dim); }
+.eve-danger { color: var(--eve-danger); }
+.eve-section { margin: 10px 0 4px; color: var(--eve-text); }
+.eve-empty { padding: 24px 6px; text-align: center; color: var(--eve-text-dim); }
+.eve-error { margin: 4px 0; padding: 4px 6px; background: rgba(224, 54, 42, 0.14); color: var(--eve-text-strong); }
