@@ -38,6 +38,7 @@ const groups = [
     { key: 'primary', title: t('primary_ships'), entries: subcapitals.filter(e => e.role === 'primary') },
     { key: 'secondary', title: t('secondary_ships'), entries: subcapitals.filter(e => e.role === 'secondary') },
     { key: 'support', title: t('support_ships'), entries: subcapitals.filter(e => e.role === 'support') },
+    { key: 'utility', title: t('utility_ships'), entries: subcapitals.filter(e => e.role === 'utility') },
     { key: 'capital', title: t('capital_ships'), entries: capitals },
 ].filter(group => group.entries.length > 0)
 

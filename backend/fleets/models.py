@@ -758,6 +758,7 @@ class EveFleetFitting(models.Model):
         ("primary", "Primary"),
         ("secondary", "Secondary"),
         ("support", "Support"),
+        ("utility", "Utility"),
     )
 
     eve_fleet = models.ForeignKey(

@@ -57,9 +57,14 @@ def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
     return (old_val or "") == (new_val or "")
 
 
+# Doctrine fitting roles in display order. Utility holds ships a fleet
+# brings a few of regardless of doctrine size: cynos, boosters, scouts.
+DOCTRINE_FITTING_ROLES = ("primary", "secondary", "support", "utility")
+
+
 def composition_snapshot_for_doctrine(doctrine) -> dict:
-    """Snapshot primary/secondary/support fitting ids for a doctrine."""
-    composition = {"primary": [], "secondary": [], "support": []}
+    """Snapshot fitting ids per role for a doctrine."""
+    composition = {role: [] for role in DOCTRINE_FITTING_ROLES}
     for row in EveDoctrineFitting.objects.filter(doctrine=doctrine).values(
         "role", "fitting_id"
     ):
@@ -670,6 +675,7 @@ class EveDoctrineFitting(models.Model):
         ("primary", "Primary"),
         ("secondary", "Secondary"),
         ("support", "Support"),
+        ("utility", "Utility"),
     )
 
     doctrine = models.ForeignKey(EveDoctrine, on_delete=models.CASCADE)

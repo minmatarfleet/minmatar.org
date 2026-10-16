@@ -15,6 +15,7 @@ from fittings.helpers.fitting_changes import fitting_change_request_tier
 from fittings.helpers.permissions import effective_protection_tier
 from fittings.models import (
     ChangeRequestStatus,
+    DOCTRINE_FITTING_ROLES,
     EveDoctrine,
     EveDoctrineChangeRequest,
     EveDoctrineFitting,
@@ -120,7 +121,7 @@ def doctrines_manage_view(request):
             role: EveDoctrineFitting.objects.filter(
                 doctrine=doctrine, role=role
             ).count()
-            for role in ("primary", "secondary", "support")
+            for role in DOCTRINE_FITTING_ROLES
         }
         rows.append(
             {

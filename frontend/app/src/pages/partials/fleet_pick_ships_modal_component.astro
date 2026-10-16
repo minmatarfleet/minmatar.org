@@ -49,6 +49,7 @@ const groups = [
     { title: t('primary_ships'), entries: composition.filter(e => e.role === 'primary' && !is_capital_entry(e)) },
     { title: t('secondary_ships'), entries: composition.filter(e => e.role === 'secondary' && !is_capital_entry(e)) },
     { title: t('support_ships'), entries: composition.filter(e => e.role === 'support' && !is_capital_entry(e)) },
+    { title: t('utility_ships'), entries: composition.filter(e => e.role === 'utility' && !is_capital_entry(e)) },
     { title: t('capital_ships'), entries: composition.filter(is_capital_entry) },
 ].filter(group => group.entries.length > 0)
 

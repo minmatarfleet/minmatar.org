@@ -48,6 +48,7 @@
         <th>{% translate "Primary" %}</th>
         <th>{% translate "Secondary" %}</th>
         <th>{% translate "Support" %}</th>
+        <th>{% translate "Utility" %}</th>
         <th>{% translate "Status" %}</th>
         <th></th>
       </tr>
@@ -60,6 +61,7 @@
         <td>{{ row.composition.primary }}</td>
         <td>{{ row.composition.secondary }}</td>
         <td>{{ row.composition.support }}</td>
+        <td>{{ row.composition.utility }}</td>
         <td>
           {% if row.has_pending %}
           <span class="fittings-pending-badge">{% translate "Pending change" %}</span>
@@ -71,7 +73,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7">{% translate "No doctrines yet." %}</td>
+        <td colspan="8">{% translate "No doctrines yet." %}</td>
       </tr>
       {% endfor %}
     </tbody>

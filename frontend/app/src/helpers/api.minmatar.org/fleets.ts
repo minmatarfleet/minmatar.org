@@ -637,7 +637,7 @@ export interface FleetShipVolunteer {
 // --- Fleet composition (doctrine fits + fleet fittings) ---------------------
 
 export type FleetCompositionSource = 'doctrine' | 'catalog' | 'manual'
-export type FleetFittingRole = 'primary' | 'secondary' | 'support'
+export type FleetFittingRole = 'primary' | 'secondary' | 'support' | 'utility'
 
 export interface FleetCompositionEntry {
     /** Stable key: `f:<fitting_id>` for catalog fits, `m:<fleet_fitting_id>` for manual fits. */
