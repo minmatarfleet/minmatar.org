@@ -287,6 +287,25 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="surveys.change_surveycampaign",
         deny_community_statuses=(),
     ),
+    "intel.view": FeatureDefinition(
+        code="intel.view",
+        label="View intel",
+        scope=FeatureScope.AFFILIATION,
+        description=(
+            "See shared d-scans and Local reports and the capital and fleet "
+            "pings in the desktop app's Intel window."
+        ),
+        legacy_permission="intel.view_intelreport",
+        default_affiliation_names=_aff("Alliance", "Associate"),
+    ),
+    "intel.report": FeatureDefinition(
+        code="intel.report",
+        label="Share intel",
+        scope=FeatureScope.AFFILIATION,
+        description="Paste a d-scan or Local list into the shared intel sheet.",
+        legacy_permission="intel.add_intelreport",
+        default_affiliation_names=_aff("Alliance", "Associate"),
+    ),
     "campaigns.view": FeatureDefinition(
         code="campaigns.view",
         label="View campaigns",

@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     # Creator Twitch / YouTube / Reddit OAuth + ingest
     "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",
+    "intel.apps.IntelConfig",
     "help_tickets.apps.HelpTicketsConfig",
     # Quarterly community surveys
     "surveys.apps.SurveysConfig",

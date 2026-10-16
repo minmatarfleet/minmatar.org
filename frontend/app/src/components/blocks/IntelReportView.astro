@@ -1,0 +1,305 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { IntelReport, IntelDscanSummary, IntelLocalSummary, IntelStanding } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    report:             IntelReport;
+    [propName: string]: any;
+}
+
+const {
+    report,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const AMARR_FACTION_ID = 500003
+const MINMATAR_FACTION_ID = 500002
+const RAW_LINES = 40
+
+const type_icon = (type_id:number) => `https://images.evetech.net/types/${type_id}/icon?size=64`
+const corporation_logo = (id:number) => `https://images.evetech.net/corporations/${id}/logo?size=64`
+const alliance_logo = (id:number) => `https://images.evetech.net/alliances/${id}/logo?size=64`
+
+const dscan = report.kind === 'dscan' ? report.summary as IntelDscanSummary : null
+const local = report.kind === 'local' ? report.summary as IntelLocalSummary : null
+
+const other_rows = dscan ? [
+    ...(dscan.capsules ? [{ type_id: 670, name: 'Capsule', group: 'Capsule', count: dscan.capsules }] : []),
+    ...dscan.other_items,
+] : []
+
+const raw_lines = report.raw.split('\n').filter(line => line.trim())
+const raw_preview = raw_lines.slice(0, RAW_LINES).join('\n')
+
+const standings: IntelStanding[] = ['hostile', 'neutral', 'friendly']
+const eve_time = (iso:string) => new Date(iso).toISOString().slice(11, 16)
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ intel-report ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap="var(--space-3xs)">
+        <p class="[ byline ]">
+            {t('intel.scan.reported_by')} <strong>{report.reporter_name}</strong> · {eve_time(report.created_at)} EVE · {report.summary_line}
+        </p>
+        {report.note && <q class="[ note ]">{report.note}</q>}
+    </Flexblock>
+
+    {dscan &&
+        <Fragment>
+            <Grid min_item_width="8rem" class="[ stats ]">
+                <div><strong>{dscan.ships}</strong><span>{t('intel.scan.ships')}</span></div>
+                <div><strong>{dscan.capsules}</strong><span>{t('intel.scan.capsules')}</span></div>
+                <div><strong>{dscan.other}</strong><span>{t('intel.scan.other')}</span></div>
+            </Grid>
+
+            {dscan.classes.length === 0 && <p>{t('intel.scan.no_ships')}</p>}
+            {dscan.classes.map(ship_class =>
+                <section class="[ group ]" aria-label={ship_class.name}>
+                    <FlexInline justification="space-between" class="[ heading ]">
+                        <h2>{ship_class.name}</h2>
+                        <span class="[ number ]">{ship_class.count}</span>
+                    </FlexInline>
+                    <Grid min_item_width="14rem" row_gap="var(--space-2xs)">
+                        {ship_class.hulls.map(hull =>
+                            <FlexInline gap="var(--space-xs)" class="[ item ]">
+                                <img src={type_icon(hull.type_id)} alt="" width="32" height="32" loading="lazy" />
+                                <span class="[ name ]">{hull.name}</span>
+                                <span class="[ number ]">{hull.count}</span>
+                            </FlexInline>
+                        )}
+                    </Grid>
+                </section>
+            )}
+
+            {other_rows.length > 0 &&
+                <section class="[ group ]" aria-label={t('intel.scan.other')}>
+                    <FlexInline justification="space-between" class="[ heading ]">
+                        <h2>{t('intel.scan.other')}</h2>
+                        <span class="[ number ]">{dscan.other + dscan.capsules}</span>
+                    </FlexInline>
+                    <Grid min_item_width="14rem" row_gap="var(--space-2xs)">
+                        {other_rows.map(row =>
+                            <FlexInline gap="var(--space-xs)" class="[ item ]">
+                                <img src={type_icon(row.type_id)} alt="" width="32" height="32" loading="lazy" />
+                                <span class="[ name ]">{row.name} <small>{row.group}</small></span>
+                                <span class="[ number ]">{row.count}</span>
+                            </FlexInline>
+                        )}
+                    </Grid>
+                </section>
+            }
+        </Fragment>
+    }
+
+    {local &&
+        <Fragment>
+            <FlexInline gap="var(--space-xs)" class="[ headline ]">
+                <strong>{local.pilots}</strong>
+                <span>{t('intel.scan.pilots')}</span>
+                {report.previous && report.previous.hostile_delta !== 0 &&
+                    <span class="[ delta ]">
+                        {report.previous.hostile_delta > 0 ? '+' : ''}{report.previous.hostile_delta} {t('intel.scan.hostile_since')} {eve_time(report.previous.created_at)}
+                    </span>
+                }
+            </FlexInline>
+
+            {!local.resolved && <p>{t('intel.scan.unresolved')}</p>}
+
+            {local.resolved && local.standings && local.militia &&
+                <Fragment>
+                    <FlexInline gap="var(--space-s)" class="[ legend ]">
+                        {standings.map(side =>
+                            <span class={`[ standing standing--${side} ]`}>{t(`intel.scan.${side}`)} {local.standings?.[side] ?? 0}</span>
+                        )}
+                    </FlexInline>
+
+                    <Grid min_item_width="10rem" class="[ stats ]">
+                        <FlexInline gap="var(--space-xs)">
+                            <img src={corporation_logo(AMARR_FACTION_ID)} alt="" width="40" height="40" />
+                            <div><strong>{local.militia.amarr}</strong><span>{t('intel.scan.amarr_militia')}</span></div>
+                        </FlexInline>
+                        <div><strong>{local.militia.none}</strong><span>{t('intel.scan.no_militia')}</span></div>
+                        <FlexInline gap="var(--space-xs)">
+                            <img src={corporation_logo(MINMATAR_FACTION_ID)} alt="" width="40" height="40" />
+                            <div><strong>{local.militia.minmatar}</strong><span>{t('intel.scan.minmatar_militia')}</span></div>
+                        </FlexInline>
+                    </Grid>
+
+                    <section class="[ group ]" aria-label={t('intel.scan.by_alliance')}>
+                        <FlexInline justification="space-between" class="[ heading ]">
+                            <h2>{t('intel.scan.by_alliance')}</h2>
+                            {local.unknown ? <span>{local.unknown} {t('intel.scan.not_found')}</span> : null}
+                        </FlexInline>
+                        <Flexblock gap="var(--space-2xs)">
+                            {(local.alliances ?? []).map(alliance =>
+                                <FlexInline gap="var(--space-xs)" class="[ item ]">
+                                    {alliance.id
+                                        ? <img src={alliance_logo(alliance.id)} alt="" width="32" height="32" loading="lazy" />
+                                        : <span class="[ blank ]" aria-hidden="true"></span>}
+                                    <span class="[ name ]">{alliance.name}</span>
+                                    <span class={`[ standing standing--${alliance.standing} ]`}>{t(`intel.scan.${alliance.standing}`)}</span>
+                                    <span class="[ number ]">{alliance.count}</span>
+                                </FlexInline>
+                            )}
+                        </Flexblock>
+                    </section>
+                </Fragment>
+            }
+        </Fragment>
+    }
+
+    <details class="[ raw ]">
+        <summary>{t('intel.scan.raw')} ({raw_lines.length})</summary>
+        <pre>{raw_preview}{raw_lines.length > RAW_LINES ? `\n… ${raw_lines.length - RAW_LINES}` : ''}</pre>
+    </details>
+
+    <p class="[ hint ]">{t('intel.scan.desktop_hint')}</p>
+</Flexblock>
+
+<style lang="scss">
+    .intel-report {
+        max-width: var(--max-content-width, 60rem);
+    }
+
+    .byline, .hint {
+        color: var(--faded);
+        font-size: var(--step--1);
+
+        strong {
+            color: var(--highlight);
+            font-weight: normal;
+        }
+    }
+
+    .note {
+        color: var(--highlight);
+    }
+
+    .stats {
+        padding-block: var(--space-xs);
+        border-block: 1px solid var(--border-color-hover);
+
+        div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        strong {
+            font-size: var(--step-2);
+            color: var(--highlight);
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        span {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .heading {
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+
+        h2 {
+            margin: 0;
+            font-size: inherit;
+            font-weight: normal;
+        }
+    }
+
+    .item {
+        flex-wrap: nowrap;
+
+        img, .blank {
+            flex: none;
+            width: 2rem;
+            height: 2rem;
+            outline: 1px solid var(--border-color-hover);
+            outline-offset: -1px;
+        }
+
+        .blank {
+            background-color: var(--component-background);
+        }
+
+        .name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--highlight);
+
+            small {
+                color: var(--faded);
+            }
+        }
+    }
+
+    .number {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .headline {
+        align-items: baseline;
+
+        strong {
+            font-size: var(--step-2);
+            color: var(--highlight);
+            font-weight: 500;
+        }
+
+        .delta {
+            color: var(--fleet-red);
+        }
+    }
+
+    .standing {
+        font-size: var(--step--1);
+    }
+
+    .standing--hostile {
+        color: var(--fleet-red);
+    }
+
+    .standing--neutral {
+        color: var(--faded);
+    }
+
+    .standing--friendly {
+        color: var(--alliance-blue);
+        filter: brightness(1.6);
+    }
+
+    .raw {
+        summary {
+            cursor: pointer;
+            color: var(--faded);
+        }
+
+        pre {
+            margin-block-start: var(--space-2xs);
+            padding: var(--space-xs);
+            overflow-x: auto;
+            font-size: var(--step--2);
+            background-color: var(--component-background);
+        }
+    }
+</style>

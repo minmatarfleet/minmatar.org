@@ -13,7 +13,12 @@ from feed.constants import (
     AMARR_FLEET_PING_MAX_AGE_SECONDS,
     AMARR_FLEET_PING_SESSION_SECONDS,
 )
-from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
+from feed.models import (
+    FeedAmarrFleetAlert,
+    FeedAmarrFleetPing,
+    FeedCluster,
+    FeedEvent,
+)
 from ratelimit import RateLimitException
 from requests.exceptions import HTTPError
 
@@ -158,6 +163,18 @@ def build_amarr_fleet_alert_payload(
     return {"embeds": [embed]}
 
 
+def _cluster_ship_counts(payload: dict[str, Any]) -> dict[str, int]:
+    related = payload.get("related_cluster_key")
+    if not related:
+        return {}
+    counts = (
+        FeedCluster.objects.filter(cluster_key=related)
+        .values_list("ship_counts", flat=True)
+        .first()
+    )
+    return dict(counts or {})
+
+
 def _event_snapshot(event: FeedEvent) -> dict[str, Any]:
     payload = event.payload or {}
     system_id = payload.get("system_id")
@@ -176,6 +193,7 @@ def _event_snapshot(event: FeedEvent) -> dict[str, Any]:
         "pilots": int(payload.get("pilots") or 0),
         "roster": list(payload.get("roster") or []),
         "roster_total": int(payload.get("roster_total") or 0),
+        "ship_counts": _cluster_ship_counts(payload),
         "cluster_key": event.cluster_key or "",
         "is_active": bool(event.is_active),
         "occurred_at": event.occurred_at,
@@ -301,6 +319,7 @@ def _create_amarr_fleet_alert(
         pilots=snapshot["pilots"],
         roster=snapshot["roster"],
         roster_total=snapshot["roster_total"],
+        ship_counts=snapshot.get("ship_counts") or {},
         cluster_key=snapshot["cluster_key"],
         discord_messages=discord_messages,
         last_activity_at=timezone.now(),
@@ -358,6 +377,7 @@ def _update_amarr_fleet_alert(
     alert.pilots = snapshot["pilots"]
     alert.roster = snapshot["roster"]
     alert.roster_total = snapshot["roster_total"]
+    alert.ship_counts = snapshot.get("ship_counts") or alert.ship_counts
     alert.cluster_key = snapshot["cluster_key"] or alert.cluster_key
     if should_edit:
         alert.last_activity_at = now
@@ -387,6 +407,7 @@ def _update_amarr_fleet_alert(
             "pilots",
             "roster",
             "roster_total",
+            "ship_counts",
             "cluster_key",
             "last_activity_at",
         ]

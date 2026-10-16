@@ -1176,6 +1176,13 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def resolve_universe_ids(self, names) -> EsiResponse:
+        """Exact names -> ids (POST /universe/ids/, at most 500 names)."""
+        if not live_esi_allowed():
+            return EsiResponse(ERROR_CALLING_ESI)
+        operation = esi_provider.client.Universe.PostUniverseIds(body=names)
+        return self._operation_results(operation)
+
     def get_fleet(self, fleet_id) -> EsiResponse:
         required_scopes = ["esi-fleets.read_fleet.v1"]
         token, status = self._valid_token(required_scopes)

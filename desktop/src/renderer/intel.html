@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.evetech.net; style-src 'self'; script-src 'self'">
+<link rel="stylesheet" href="eve-window.css">
+<link rel="stylesheet" href="intel.css">
+<title>Intel</title>
+</head>
+<body class="is-hidden">
+<section class="eve-window">
+    <header class="eve-window__header" data-interactive>
+        <img class="eve-window__icon" src="../assets/icon.png" alt="">
+        <h1 class="eve-window__title intel-title"><span id="title">Intel</span>
+            <button class="intel-range" id="range" title="Only show intel this many jumps from you (click to change)"></button>
+        </h1>
+        <nav class="eve-window__controls">
+            <button class="eve-icon-button" id="alerts" aria-label="Ping notifications" aria-pressed="false" title="Ping notifications">
+                <svg viewBox="0 0 12 12"><path d="M3 8.5V5.5a3 3 0 0 1 6 0v3l1 1H2zM5 10.5h2"/></svg>
+            </button>
+            <button class="eve-icon-button" id="overlay" data-command="overlay:toggle" aria-label="Overlay over EVE" aria-pressed="false" title="Overlay over EVE">
+                <svg viewBox="0 0 12 12"><path d="M4.5 1.5h3l-.5 3 2 1.5H3l2-1.5zM6 6v4.5"/></svg>
+            </button>
+            <button class="eve-icon-button" data-command="settings:open" aria-label="Settings" title="Settings">
+                <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="1.8"/><path d="M6 1v1.6M6 9.4V11M1 6h1.6M9.4 6H11M2.5 2.5l1.1 1.1M8.4 8.4l1.1 1.1M2.5 9.5l1.1-1.1M8.4 3.6l1.1-1.1"/></svg>
+            </button>
+            <button class="eve-icon-button" data-command="window:minimize" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12"><path d="M2 6.5h8"/></svg></button>
+            <button class="eve-icon-button" data-command="window:close" aria-label="Close to tray" title="Close to tray"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+        </nav>
+    </header>
+    <main class="eve-window__body intel" id="view" aria-live="polite"></main>
+    <footer class="eve-window__footer" data-interactive>
+        <span class="intel-live" id="status"></span>
+        <span class="eve-version" id="version"></span>
+    </footer>
+    <div class="eve-resize" id="resize" data-interactive aria-hidden="true"></div>
+</section>
+<script src="eve_window.js"></script>
+<script src="intel_format.js"></script>
+<script src="intel.js"></script>
+</body>
+</html>
