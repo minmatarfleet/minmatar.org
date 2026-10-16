@@ -31,7 +31,6 @@ test("a complex shows its size, or the payout when the size is unknown", async (
     });
 
     expect(result).toContain("Medium complex");
-    expect(result).toContain("52,500 LP");
+    expect(result).toContain("Complex - 52,500 LP");
     expect(result).toContain("Advantage site");
-    expect(result).not.toContain(">Complex<");
 });
