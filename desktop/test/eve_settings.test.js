@@ -111,3 +111,19 @@ test('reads UI scale from core_public__.yaml for the current window mode', () =>
     assert.equal(ui_scale_from({}), 1)
     assert.deepEqual(read_public_settings(path.join(dir, 'missing')), {})
 })
+
+test('picks up a moved notification badge as soon as EVE rewrites the file', async () => {
+    const { EveWindowSettings } = require('../src/main/eve_settings')
+    const { root, dir } = fake_eve_install()
+    const file = path.join(dir, 'core_char_111.dat')
+    const badge = (x, y) => setting('notification_badge_offset', Buffer.from([0x2c, 0x06, x, 0x06, y]))
+    fs.writeFileSync(file, settings_file(badge(16, 16)))
+    const watcher = new EveWindowSettings({ local_app_data: root, poll_ms: 1e9 })   // no interval: only the folder watch
+    watcher.start()
+    assert.deepEqual(watcher.current.badge_offset, [16, 16])
+    const moved = new Promise(resolve => watcher.on('change', resolve))
+    fs.writeFileSync(file, settings_file(badge(16, 10)))
+    const value = await Promise.race([moved, new Promise((_, reject) => setTimeout(() => reject(new Error('no change within 3 s')), 3000))])
+    watcher.stop()
+    assert.deepEqual(value.badge_offset, [16, 10])
+})

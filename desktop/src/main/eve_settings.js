@@ -140,10 +140,33 @@ class EveWindowSettings extends EventEmitter {
     start() {
         this.poll()
         this.timer = setInterval(() => this.poll(), this.poll_ms)
+        this.watch_profiles()
         return this
     }
 
-    stop() { clearInterval(this.timer) }
+    stop() {
+        clearInterval(this.timer)
+        clearTimeout(this.soon)
+        for (const watcher of this.watchers || []) watcher.close()
+        this.watchers = []
+    }
+
+    // EVE writes and closes these files when a setting changes (e.g. dragging the notification badge), so
+    // directory notifications are reliable here, unlike for the log files it keeps open. React within ~0.25 s;
+    // the interval poll stays as a fallback.
+    watch_profiles() {
+        this.watchers = []
+        const dirs = new Set(find_character_files(this.local_app_data).map(f => path.dirname(f.file)))
+        for (const dir of dirs) {
+            try {
+                this.watchers.push(fs.watch(dir, (event, name) => {
+                    if (name && !/^core_(char_\d+\.dat|public__\.yaml)$/.test(String(name))) return
+                    clearTimeout(this.soon)
+                    this.soon = setTimeout(() => this.poll(), 250)
+                }))
+            } catch (e) {}
+        }
+    }
 
     set_character(character_id) {
         if (character_id === this.character_id) return
