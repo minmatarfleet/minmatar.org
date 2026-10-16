@@ -257,6 +257,41 @@ class UserRouterTestCase(TestCase):
 
         settings.FAKE_LOGIN_USER_ID = fake_user
 
+    def test_desktop_loopback_login_round_trip(self):
+        """The desktop app's sign-in contract: login with a loopback
+        redirect_url, Discord callback lands back on it with a usable JWT."""
+        fake_user = settings.FAKE_LOGIN_USER_ID
+        del settings.FAKE_LOGIN_USER_ID
+        loopback = "http://127.0.0.1:53123/callback/0123456789abcdef"
+
+        try:
+            response = self.client.get(
+                "/api/users/login",
+                {"redirect_url": loopback},
+            )
+            self.assertEqual(response.status_code, 302)
+
+            with patch("users.router.discord") as discord_request_mock:
+                discord_request_mock.complete_oauth_login.return_value = {
+                    "id": 1000003,
+                    "username": "desktop_user",
+                    "discriminator": "0",
+                    "avatar": "abc",
+                }
+                response = self.client.get("/api/users/callback?code=20004")
+        finally:
+            settings.FAKE_LOGIN_USER_ID = fake_user
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(f"{loopback}?token="))
+        token = response.url.split("?token=", 1)[1]
+
+        me = self.client.get(
+            "/api/users/me", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.json()["username"], "desktop_user")
+
     def test_eve_mobile_complete_linked_character(self):
         esi_token = Token.objects.create(
             character_id=634915984,
