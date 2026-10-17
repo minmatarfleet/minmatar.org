@@ -60,7 +60,7 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 
 ## Updates and releases
 
-The **installer** build updates itself from this repo's GitHub Releases ([electron-updater](https://www.electron.build/auto-update), `src/main/updater.js`). It checks at start-up and every 4 hours and downloads new versions in the background. When an update is ready, the fleets window footer and the tray menu show **Restart to update**; otherwise the update installs the next time the app quits. The **portable** exe can't replace itself: it shows "v… available" and links to the release.
+The **installer** build updates itself from this repo's GitHub Releases ([electron-updater](https://www.electron.build/auto-update), `src/main/updater.js`). It checks at start-up and every 4 hours and downloads new versions in the background. When an update is ready, the footer of every overlay window (Fleets, Campaigns, Intel) and the tray menu show **Restart to update**; otherwise the update installs the next time the app quits. The **portable** exe can't replace itself: the same footers show "v… available" and link to the release.
 
 To release, bump the version and merge. It uses semantic versioning: **patch** for fixes, **minor** for features, **major** for breaking changes. The full rules are in [.claude/rules/desktop-release.md](../.claude/rules/desktop-release.md).
 

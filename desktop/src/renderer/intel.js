@@ -66,6 +66,7 @@ on_state(next => {
     $('status').textContent = intel.error ? 'Offline' : intel.updated_at ? 'Live' : 'Connecting…'
     $('status').classList.toggle('is-error', !!intel.error)
     $('version').textContent = `v${state.version}`
+    window.eve_window.show_update($('update'), state.update)
     render()
 })
 
@@ -124,3 +125,4 @@ $('range').addEventListener('click', () => {
 })
 
 window.eve_window.wire_overlay(send)
+window.eve_window.wire_update($('update'), send)

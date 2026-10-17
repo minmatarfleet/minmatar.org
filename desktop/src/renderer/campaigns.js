@@ -23,10 +23,7 @@ on_state(state => {
     $('status').textContent = state.campaign_updated_at ? `Updated ${eve_time(state.campaign_updated_at)} EVE` : ''
     $('open-site').hidden = !state.campaign
     $('version').textContent = `v${state.version}`
-    const update = state.update || {}
-    $('update').hidden = !['ready', 'available'].includes(update.status)
-    $('update').textContent = update.status === 'ready' ? `Restart to update (v${update.version})` : `v${update.version} available`
-    $('update').dataset.action = update.status === 'ready' ? 'update:install' : 'update:download'
+    window.eve_window.show_update($('update'), state.update)
 
     // State is pushed on every focus change; only rebuild when the content changed so portraits don't flicker.
     const signature = JSON.stringify([state.campaign, state.campaign_error, !!state.campaign_updated_at])
@@ -78,7 +75,7 @@ $('content').addEventListener('scroll', hide_tip)
 // ---------------------------------------------------------------- actions
 
 window.eve_window.wire_overlay(send)
-$('update').addEventListener('click', () => send($('update').dataset.action))
+window.eve_window.wire_update($('update'), send)
 
 $('content').addEventListener('click', event => {
     if (event.target.closest('[data-open]')) send('campaigns:open')

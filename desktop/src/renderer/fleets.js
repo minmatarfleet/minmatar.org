@@ -48,8 +48,9 @@ function render() {
 
     patch($('actions'), parts.actions || '')
     $('foot').classList.toggle('has-actions', !!parts.actions)
-    const update = state.update && state.update.status === 'ready'
-        ? `<button class="fw-update" data-app-command="update:install">Restart to update</button>` : ''
+    const prompt = window.eve_window.update_prompt(state.update)
+    const update = prompt
+        ? `<button class="fw-update" data-app-command="${prompt.command}" title="${view.esc(prompt.title)}">${view.esc(prompt.label)}</button>` : ''
     patch($('status'), view.status(fleet, { update }))
     $('site').hidden = !parts.site_id
     if (parts.site_id) $('site').dataset.id = String(parts.site_id)
