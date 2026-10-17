@@ -1,45 +1,42 @@
 ---
-import Grid from '@components/compositions/Grid.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+// Placeholder for the decision strip (buyback / deep offers / capital).
 ---
 
 <section class="[ loyalty-offers-metrics-skeleton ]" aria-hidden="true">
-    <Grid
-        class="[ loyalty-offers-metrics-skeleton__grid ]"
-        min_item_width="220px"
-        row_gap="var(--space-s)"
-        column_gap="var(--space-s)"
-    >
+    <div class="[ loyalty-offers-metrics-skeleton__strip ]">
         {Array.from({ length: 3 }).map(() => (
-            <ComponentBlock
-                class="[ loyalty-offers-metrics-skeleton__card ]"
-                padding_block="var(--space-m)"
-                padding_inline="var(--space-m)"
-            >
-                <div class="[ loyalty-offers-metrics-skeleton__header ]">
-                    <div class="[ skel skel-label ]"></div>
-                    <div class="[ skel skel-info ]"></div>
-                </div>
+            <div class="[ loyalty-offers-metrics-skeleton__cell ]">
+                <div class="[ skel skel-label ]"></div>
                 <div class="[ skel skel-value ]"></div>
-            </ComponentBlock>
+                <div class="[ skel skel-note ]"></div>
+            </div>
         ))}
-    </Grid>
+    </div>
+    <div class="[ skel skel-summary ]"></div>
 </section>
 
 <style lang="scss">
-    .loyalty-offers-metrics-skeleton :global(.loyalty-offers-metrics-skeleton__card) {
+    .loyalty-offers-metrics-skeleton {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
-        height: 100%;
-        box-sizing: border-box;
+        gap: var(--space-2xs);
     }
 
-    .loyalty-offers-metrics-skeleton__header {
+    .loyalty-offers-metrics-skeleton__strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: 1px;
+        border: solid 1px var(--border-color);
+        background-color: var(--border-color);
+    }
+
+    .loyalty-offers-metrics-skeleton__cell {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
+        flex-direction: column;
         gap: var(--space-2xs);
+        padding-block: var(--space-s);
+        padding-inline: var(--space-m);
+        background-color: var(--component-background);
     }
 
     .loyalty-offers-metrics-skeleton .skel {
@@ -49,21 +46,26 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
     }
 
     .skel-label {
-        width: 8rem;
-        height: 0.75rem;
-    }
-
-    .skel-info {
-        width: var(--space-s);
-        height: var(--space-s);
-        border-radius: 50%;
-        flex-shrink: 0;
+        width: 10rem;
+        max-width: 80%;
+        height: var(--step--1);
     }
 
     .skel-value {
-        width: 5rem;
-        height: clamp(2rem, 4.5vw, 3rem);
+        width: 7rem;
         max-width: 70%;
+        height: var(--step-3);
+    }
+
+    .skel-note {
+        width: 12rem;
+        max-width: 90%;
+        height: var(--step--1);
+    }
+
+    .skel-summary {
+        width: min(100%, 32rem);
+        height: var(--step--2);
     }
 
     @keyframes loyalty-offers-metrics-skel {

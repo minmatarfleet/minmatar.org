@@ -6,7 +6,6 @@ import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
     conversion_for_side,
     market_price_for_side,
-    offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
 } from '@helpers/loyalty_offers_metrics'
 import {
@@ -14,15 +13,31 @@ import {
     loyalty_conversion_breakdown,
     loyalty_conversion_tip_lines,
 } from '@helpers/loyalty_conversion_breakdown'
+import {
+    CAPITAL_LP_BASIS,
+    bar_percent,
+    format_short_amount,
+    offer_lp_waterfall,
+    offer_recipe,
+    offer_row_figures,
+    type LoyaltyOfferRowFigures,
+} from '@helpers/loyalty_offers_rows'
+import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Tag from '@components/blocks/Tag.astro'
 
 interface Props {
     offer: LoyaltyOffer
+    figures?: LoyaltyOfferRowFigures
     side?: 'sell' | 'buy' | 'avg_7d'
     include_freight?: boolean
     include_sales_tax?: boolean
+    /** ISK/LP that fills the whole net bar. */
+    bar_scale?: number
+    buyback_isk_per_lp?: number | null
+    /** Buyback marker position on the net bar (0–100). */
+    buyback_percent?: number | null
     [propName: string]: any
 }
 
@@ -31,22 +46,13 @@ const {
     side = 'buy',
     include_freight = true,
     include_sales_tax = true,
+    bar_scale = 1000,
+    buyback_isk_per_lp = null,
+    buyback_percent = null,
 } = Astro.props
 
-function format_int(value: number | null | undefined): string {
-    if (value == null)
-        return '—'
-    return number_thousand_separator(value)
-}
-
-function volume_lp_tooltip(volume: number | null | undefined): string | undefined {
-    if (volume == null)
-        return undefined
-    return t('industry.loyalty.offers.volume_lp_tooltip').replace(
-        '{lp}',
-        number_thousand_separator(offer_lp_for_volume(offer, volume)),
-    )
-}
+const figures = Astro.props.figures
+    ?? offer_row_figures(offer, side, include_freight, include_sales_tax)
 
 function escape_html(value: string): string {
     return value
@@ -56,70 +62,58 @@ function escape_html(value: string): string {
         .replaceAll('"', '&quot;')
 }
 
-function parse_required_item_line(part: string): string {
-    const trimmed = part.trim()
-    if (!trimmed)
-        return ''
-    const match = trimmed.match(/^(.*)\s+x(\d+)\s*$/i)
-    if (!match)
-        return escape_html(trimmed)
-    const name = match[1].trim()
-    const qty = Number.parseInt(match[2], 10)
-    return escape_html(
-        t('industry.loyalty.offers.other_cost_tip.item')
-            .replace('{name}', name)
-            .replace('{qty}', number_thousand_separator(qty)),
-    )
-}
-
 const is_blueprint = offer.kind === 'blueprint'
+const recipe = offer_recipe(offer)
 
-function other_cost_tooltip(): string {
-    const summary = (offer.required_items_summary || '').trim()
+function other_cost_tooltip(): string | undefined {
     const lines: string[] = []
     const has_other = offer.other_cost != null && offer.other_cost > 0
 
-    if (summary) {
+    if (recipe.items.length) {
         lines.push(escape_html(t('industry.loyalty.offers.other_cost_tip.required')))
-        for (const part of summary.split(',')) {
-            const line = parse_required_item_line(part)
-            if (line)
-                lines.push(line)
+        for (const item of recipe.items) {
+            lines.push(escape_html(
+                t('industry.loyalty.offers.other_cost_tip.item')
+                    .replace('{name}', item.name)
+                    .replace('{qty}', number_thousand_separator(item.quantity)),
+            ))
         }
     }
 
-    if (is_blueprint && has_other) {
+    if (is_blueprint && has_other)
         lines.push(escape_html(t('industry.loyalty.offers.other_cost_tip.manufacturing')))
-    }
 
-    if (!lines.length && !has_other) {
-        return escape_html(t('industry.loyalty.offers.other_cost_tip.empty'))
-    }
+    if (!lines.length)
+        return undefined
 
     if (offer.other_cost != null) {
-        lines.push(
-            escape_html(
-                t('industry.loyalty.offers.other_cost_tip.total').replace(
-                    '{value}',
-                    number_thousand_separator(offer.other_cost),
-                ),
+        lines.push(escape_html(
+            t('industry.loyalty.offers.other_cost_tip.total').replace(
+                '{value}',
+                number_thousand_separator(offer.other_cost),
             ),
-        )
+        ))
     }
 
     return lines.join('<br>')
 }
 
-const icon_type = is_blueprint ? 'bp' : 'icon'
+const recipe_parts = [
+    t('industry.loyalty.offers.recipe.lp').replace('{value}', number_thousand_separator(recipe.lp_cost)),
+    ...(recipe.isk_cost > 0
+        ? [t('industry.loyalty.offers.recipe.isk').replace('{value}', format_short_amount(recipe.isk_cost))]
+        : []),
+    ...recipe.items.map((item) => item.show_quantity
+        ? t('industry.loyalty.offers.recipe.item_qty')
+            .replace('{qty}', number_thousand_separator(item.quantity))
+            .replace('{name}', item.name)
+        : item.name),
+]
+
+const icon_src = is_blueprint
+    ? get_bpc_icon(offer.type_id, false, 64)
+    : get_item_icon(offer.type_id, 64)
 const cost_options = { include_freight, include_sales_tax }
-const conversion = conversion_for_side(
-    offer,
-    side,
-    include_freight,
-    include_sales_tax,
-)
-const is_low_volume = offer_is_low_weekly_lp_volume(offer)
-const other_cost_tippy = other_cost_tooltip()
 const breakdown = loyalty_conversion_breakdown({
     lp_cost: offer.lp_cost,
     quantity: offer.quantity,
@@ -142,94 +136,276 @@ const conversion_tippy = loyalty_conversion_tip_lines(
     },
     cost_options,
 ).map(escape_html).join('<br>')
+
+const net = figures.net_isk_per_lp
+const net_percent = bar_percent(net, bar_scale)
+const beats_buyback = net != null && buyback_isk_per_lp != null && net >= buyback_isk_per_lp
+
+function weekly_tooltip(): string | undefined {
+    if (offer.volume_7d == null)
+        return undefined
+    const units = t('industry.loyalty.offers.weekly_units_tip')
+        .replace('{units_7d}', number_thousand_separator(offer.volume_7d))
+        .replace('{units_30d}', offer.volume_30d != null ? number_thousand_separator(offer.volume_30d) : '—')
+    const lp = t('industry.loyalty.offers.volume_lp_tooltip').replace(
+        '{lp}',
+        number_thousand_separator(offer_lp_for_volume(offer, offer.volume_7d)),
+    )
+    return `${escape_html(units)}<br>${escape_html(lp)}`
+}
+
+const depth_tag = {
+    thin: { text: t('industry.loyalty.offers.depth.thin'), color: 'fleet-red' },
+    steady: { text: t('industry.loyalty.offers.depth.steady'), color: 'fleet-yellow' },
+    deep: { text: t('industry.loyalty.offers.depth.deep'), color: 'green' },
+}[figures.depth]
+
+// "Where each LP goes": a waterfall from gross Jita value down to net.
+const waterfall = offer_lp_waterfall(offer, side, cost_options)
+const gross = waterfall.gross_isk_per_lp
+const side_label = side === 'buy'
+    ? t('industry.loyalty.offers.side.jita_buy')
+    : side === 'avg_7d'
+        ? t('industry.loyalty.offers.side.avg_7d')
+        : t('industry.loyalty.offers.side.jita_sell')
+const cost_labels: Record<string, string> = {
+    store_isk: t('industry.loyalty.offers.waterfall.store_isk'),
+    required_items: t('industry.loyalty.offers.waterfall.required_items'),
+    freight_in: t('industry.loyalty.offers.waterfall.freight_in'),
+    sales_tax: t('industry.loyalty.offers.waterfall.sales_tax'),
+    freight_out: t('industry.loyalty.offers.waterfall.freight_out'),
+}
+
+function clamp_percent(value: number): number {
+    return Math.min(100, Math.max(0, value))
+}
+
+interface WaterfallLine {
+    key: string
+    label: string
+    sign: '' | '−' | '='
+    value: number
+    start: number
+    size: number
+}
+
+const waterfall_lines: WaterfallLine[] = []
+if (gross != null && gross > 0) {
+    waterfall_lines.push({
+        key: 'gross',
+        label: t('industry.loyalty.offers.waterfall.gross'),
+        sign: '',
+        value: gross,
+        start: 0,
+        size: 100,
+    })
+    let remaining = gross
+    for (const cost of waterfall.costs) {
+        const after = remaining - cost.isk_per_lp
+        const start = clamp_percent(after / gross * 100)
+        const end = clamp_percent(remaining / gross * 100)
+        waterfall_lines.push({
+            key: cost.key,
+            label: cost_labels[cost.key],
+            sign: '−',
+            value: cost.isk_per_lp,
+            start,
+            size: end - start,
+        })
+        remaining = after
+    }
+    if (waterfall.net_isk_per_lp != null) {
+        waterfall_lines.push({
+            key: 'net',
+            label: t('industry.loyalty.offers.waterfall.net'),
+            sign: '=',
+            value: waterfall.net_isk_per_lp,
+            start: 0,
+            size: clamp_percent(waterfall.net_isk_per_lp / gross * 100),
+        })
+    }
+}
+
+const buyback_diff = net != null && buyback_isk_per_lp != null
+    ? net - buyback_isk_per_lp
+    : null
+const buyback_verdict = buyback_diff == null
+    ? null
+    : buyback_diff >= 0
+        ? t('industry.loyalty.offers.waterfall.above_buyback')
+            .replace('{diff}', format_isk_per_lp_rate(buyback_diff))
+            .replace('{total}', format_short_amount(buyback_diff * CAPITAL_LP_BASIS))
+        : t('industry.loyalty.offers.waterfall.below_buyback')
+            .replace('{diff}', format_isk_per_lp_rate(Math.abs(buyback_diff)))
+
+const detail_id = `loyalty-offer-detail-${offer.offer_id}`
 ---
 
 <div
     class:list={[
         '[ loyalty-offer-item ]',
-        { 'loyalty-offer-item--low-volume': is_low_volume },
+        `loyalty-offer-item--${figures.depth}`,
     ]}
-    role="row"
+    x-data="{ open: false }"
+    x-bind:class="open && 'is-open'"
 >
-    <div class="[ loyalty-offer-item__item ]" role="cell">
-        <span class="[ loyalty-offer-item__item-inner ]">
+    <div class="[ loyalty-offer-item__row ]" role="row" @click="open = !open">
+        <div class="[ loyalty-offer-item__item ]" role="cell">
+            <span class="[ loyalty-offer-item__chevron ]" aria-hidden="true">›</span>
             <img
                 class="[ loyalty-offer-item__icon ]"
-                src={`https://images.evetech.net/types/${offer.type_id}/${icon_type}?size=32`}
-                width="32"
-                height="32"
+                src={icon_src}
+                width="64"
+                height="64"
                 alt=""
                 loading="lazy"
                 onerror="this.hidden=true"
             />
-            <span class="[ loyalty-offer-item__name text-highlight ]">{offer.type_name}</span>
-            {is_low_volume && (
-                <span
-                    class="[ loyalty-offer-item__low-volume ]"
-                    data-tippy-content={t('industry.loyalty.offers.low_volume_warning')}
+            <span class="[ loyalty-offer-item__text ]">
+                <button
+                    type="button"
+                    class="[ loyalty-offer-item__toggle ]"
+                    aria-controls={detail_id}
+                    x-bind:aria-expanded="open ? 'true' : 'false'"
+                    aria-expanded="false"
+                    aria-label={t('industry.loyalty.offers.expand_label').replace('{name}', offer.type_name)}
+                    @click.stop="open = !open"
                 >
-                    <Tag
-                        text={t('industry.loyalty.offers.low_volume_tag')}
-                        color="fleet-red"
-                        narrow
-                    />
-                </span>
-            )}
-        </span>
+                    <span class="[ loyalty-offer-item__name ]">{offer.type_name}</span>
+                    {offer.quantity > 1 && (
+                        <span class="[ loyalty-offer-item__qty ]">×{number_thousand_separator(offer.quantity)}</span>
+                    )}
+                </button>
+                <span
+                    class="[ loyalty-offer-item__recipe ]"
+                    data-tippy-content={other_cost_tooltip()}
+                >{recipe_parts.join(' + ')}</span>
+            </span>
+        </div>
+
+        <div class="[ loyalty-offer-item__net ]" role="cell">
+            <span
+                class:list={[
+                    '[ loyalty-offer-item__bar ]',
+                    { 'loyalty-offer-item__bar--beats': beats_buyback },
+                ]}
+                aria-hidden="true"
+                style={`--fill: ${net_percent}%;${buyback_percent != null ? ` --marker: ${buyback_percent}%;` : ''}`}
+            >
+                <span class="[ loyalty-offer-item__fill ]"></span>
+                {buyback_percent != null && <span class="[ loyalty-offer-item__marker ]"></span>}
+            </span>
+            <span
+                class="[ loyalty-offer-item__num loyalty-offer-item__net-value ]"
+                data-tippy-content={conversion_tippy}
+            >{format_isk_per_lp_rate(net)}</span>
+        </div>
+
+        <div class="[ loyalty-offer-item__num ]" role="cell">
+            {format_short_amount(figures.capital_per_100k_lp)}
+        </div>
+
+        <div class="[ loyalty-offer-item__num ]" role="cell">
+            <span data-tippy-content={weekly_tooltip()}>{format_short_amount(figures.weekly_lp)}</span>
+        </div>
+
+        <div class="[ loyalty-offer-item__depth ]" role="cell">
+            <Tag text={depth_tag.text} color={depth_tag.color} narrow />
+        </div>
     </div>
-    <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.quantity)}</div>
+
     <div
-        class="[ loyalty-offer-item__num ]"
-        role="cell"
-        data-tippy-content={other_cost_tippy}
-    >{format_int(offer.other_cost)}</div>
-    <div
-        class="[ loyalty-offer-item__num ]"
-        role="cell"
-        data-tippy-content={conversion_tippy}
-    >{format_isk_per_lp_rate(conversion)}</div>
-    <div
-        class="[ loyalty-offer-item__num ]"
-        role="cell"
-        data-tippy-content={volume_lp_tooltip(offer.volume_7d)}
-    >{format_int(offer.volume_7d)}</div>
-    <div
-        class="[ loyalty-offer-item__num ]"
-        role="cell"
-        data-tippy-content={volume_lp_tooltip(offer.volume_30d)}
-    >{format_int(offer.volume_30d)}</div>
+        id={detail_id}
+        class="[ loyalty-offer-item__detail ]"
+        role="row"
+        x-show="open"
+        style="display: none"
+    >
+        <div class="[ loyalty-offer-item__detail-cell ]" role="cell">
+            <div class="[ loyalty-offer-item__detail-head ]">
+                <strong>{t('industry.loyalty.offers.waterfall.title')}</strong>
+                <small>{t('industry.loyalty.offers.waterfall.subtitle').replace('{side}', side_label)}</small>
+            </div>
+            {waterfall_lines.length ? (
+                <ol class="[ loyalty-offer-item__waterfall ]">
+                    {waterfall_lines.map((line) => (
+                        <li class:list={[
+                            '[ loyalty-offer-item__step ]',
+                            `loyalty-offer-item__step--${line.key}`,
+                        ]}>
+                            <span class="[ loyalty-offer-item__step-label ]">{line.label}</span>
+                            <span
+                                class="[ loyalty-offer-item__step-track ]"
+                                aria-hidden="true"
+                                style={`--start: ${line.start}%; --size: ${line.size}%;`}
+                            >
+                                <span class="[ loyalty-offer-item__step-bar ]"></span>
+                            </span>
+                            <span class="[ loyalty-offer-item__step-value ]">
+                                {line.sign && `${line.sign} `}{format_isk_per_lp_rate(line.value)}
+                            </span>
+                        </li>
+                    ))}
+                </ol>
+            ) : (
+                <p class="[ loyalty-offer-item__detail-empty ]">{t('industry.loyalty.offers.waterfall.no_price')}</p>
+            )}
+            {buyback_verdict && (
+                <p class:list={[
+                    '[ loyalty-offer-item__verdict ]',
+                    { 'loyalty-offer-item__verdict--beats': beats_buyback },
+                ]}>{buyback_verdict}</p>
+            )}
+        </div>
+    </div>
 </div>
 
 <style lang="scss">
     .loyalty-offer-item {
+        border-bottom: solid 1px var(--border-color);
+
+        &.is-open {
+            background: color-mix(in srgb, var(--highlight) 4%, transparent);
+        }
+    }
+
+    .loyalty-offer-item__row {
         display: grid;
-        grid-template-columns:
-            minmax(14rem, 2fr)
-            minmax(3.5rem, 0.45fr)
-            minmax(5.5rem, 0.75fr)
-            minmax(5.5rem, 0.75fr)
-            minmax(4rem, 0.55fr)
-            minmax(4.5rem, 0.6fr);
+        grid-template-columns: var(--loyalty_offers_columns);
         gap: var(--space-s);
         align-items: center;
         padding-block: var(--space-2xs);
         padding-inline: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
         font-size: var(--step--1);
-        min-width: 40rem;
+        cursor: pointer;
+        transition: background-color var(--fast-transition), opacity var(--fast-transition);
 
         @media (hover: hover) {
             &:hover {
                 background: color-mix(in srgb, var(--highlight) 6%, transparent);
             }
         }
+    }
 
-        &--low-volume {
-            background: color-mix(in srgb, var(--fleet-red) 6%, transparent);
+    .loyalty-offer-item--thin .loyalty-offer-item__row {
+        opacity: 0.62;
+
+        &:focus-within {
+            opacity: 1;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                opacity: 1;
+            }
         }
     }
 
-    .loyalty-offer-item__item-inner {
+    .loyalty-offer-item.is-open .loyalty-offer-item__row {
+        opacity: 1;
+    }
+
+    .loyalty-offer-item__item {
         display: flex;
         align-items: center;
         gap: var(--space-2xs);
@@ -238,21 +414,118 @@ const conversion_tippy = loyalty_conversion_tip_lines(
 
     .loyalty-offer-item__icon {
         flex-shrink: 0;
-        width: 2rem;
-        height: 2rem;
+        width: var(--space-l);
+        height: var(--space-l);
         border-radius: 2px;
         background: color-mix(in srgb, var(--background) 80%, var(--foreground));
     }
 
-    .loyalty-offer-item__name {
-        font-weight: 600;
+    .loyalty-offer-item__text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
         min-width: 0;
-        overflow-wrap: anywhere;
     }
 
-    .loyalty-offer-item__low-volume {
+    .loyalty-offer-item__toggle {
+        appearance: none;
+        display: inline;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--highlight);
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover .loyalty-offer-item__name {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .loyalty-offer-item__name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        transition: color var(--fast-transition);
+    }
+
+    .loyalty-offer-item__qty {
+        margin-inline-start: var(--space-3xs);
+        color: var(--faded);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .loyalty-offer-item__chevron {
         flex-shrink: 0;
-        cursor: help;
+        width: var(--space-xs);
+        color: var(--faded);
+        font-size: var(--step-1);
+        line-height: 1;
+        text-align: center;
+        transition: transform var(--fast-transition), color var(--fast-transition);
+    }
+
+    .is-open .loyalty-offer-item__chevron {
+        transform: rotate(90deg);
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-offer-item__recipe {
+        color: var(--faded);
+        font-size: var(--step--2);
+        overflow-wrap: anywhere;
+
+        &[data-tippy-content] {
+            cursor: help;
+        }
+    }
+
+    .loyalty-offer-item__net {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .loyalty-offer-item__bar {
+        position: relative;
+        flex: 1 1 auto;
+        height: var(--space-2xs);
+        background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    }
+
+    .loyalty-offer-item__fill {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 0;
+        width: var(--fill);
+        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+    }
+
+    .loyalty-offer-item__bar--beats .loyalty-offer-item__fill {
+        background: var(--green);
+    }
+
+    .loyalty-offer-item__marker {
+        position: absolute;
+        inset-block: calc(var(--space-3xs) * -1);
+        inset-inline-start: var(--marker);
+        width: 2px;
+        background: var(--highlight);
+    }
+
+    .loyalty-offer-item__net-value {
+        flex: 0 0 auto;
+        min-width: 4.5ch;
     }
 
     .loyalty-offer-item__num {
@@ -260,18 +533,103 @@ const conversion_tippy = loyalty_conversion_tip_lines(
         text-align: right;
         white-space: nowrap;
 
+        [data-tippy-content],
         &[data-tippy-content] {
             cursor: help;
             text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
             text-underline-offset: 0.2em;
-            transition: var(--fast-transition);
-
-            @media (hover: hover) {
-                &:hover {
-                    color: var(--fleet-yellow);
-                    text-decoration-color: currentColor;
-                }
-            }
         }
+    }
+
+    .loyalty-offer-item__depth {
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .loyalty-offer-item__detail {
+        padding-block: var(--space-2xs) var(--space-s);
+        padding-inline: calc(var(--space-2xs) + var(--space-l) + var(--space-xs)) var(--space-2xs);
+    }
+
+    .loyalty-offer-item__detail-cell {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        max-width: 40rem;
+    }
+
+    .loyalty-offer-item__detail-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--highlight);
+
+        small {
+            color: var(--faded);
+            font-size: var(--step--2);
+        }
+    }
+
+    .loyalty-offer-item__waterfall {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .loyalty-offer-item__step {
+        display: grid;
+        grid-template-columns: minmax(7rem, 9rem) 1fr minmax(5rem, auto);
+        gap: var(--space-xs);
+        align-items: center;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .loyalty-offer-item__step-track {
+        position: relative;
+        height: var(--space-2xs);
+    }
+
+    .loyalty-offer-item__step-bar {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: var(--start);
+        width: var(--size);
+        background: color-mix(in srgb, var(--fleet-red) 75%, transparent);
+    }
+
+    .loyalty-offer-item__step--gross .loyalty-offer-item__step-bar {
+        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+    }
+
+    .loyalty-offer-item__step--net {
+        color: var(--highlight);
+        font-weight: 600;
+
+        .loyalty-offer-item__step-bar {
+            background: var(--green);
+        }
+    }
+
+    .loyalty-offer-item__step-value {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .loyalty-offer-item__detail-empty,
+    .loyalty-offer-item__verdict {
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .loyalty-offer-item__verdict--beats {
+        color: var(--foreground);
     }
 </style>

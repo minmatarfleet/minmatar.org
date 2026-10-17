@@ -2,7 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { DEFAULT_LOYALTY_OFFERS_PARAMS } from '@helpers/loyalty_offers_metrics'
+import { DEFAULT_LOYALTY_OFFERS_PARAMS, TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
+import { get_corporation_logo } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
 
 const LOYALTY_OFFERS_PARTIAL_URL = translatePath(
@@ -49,14 +50,26 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
         }`}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <Flexblock gap="var(--space-s)">
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>{page_title}</PageTitle>
+            <Flexblock gap="var(--space-2xs)" class="[ loyalty-offers-header ]">
+                <FlexInline gap="var(--space-2xs)" class="[ !items-center ]">
+                    <img
+                        class="[ loyalty-offers-header__logo ]"
+                        src={get_corporation_logo(TLIB_CORP_ID, 64)}
+                        width="64"
+                        height="64"
+                        alt={t('industry.loyalty.offers.corp_logo_alt')}
+                    />
+                    <span class="[ loyalty-offers-header__eyebrow ]">{t('industry.loyalty.offers.eyebrow')}</span>
+                </FlexInline>
+                <PageTitle>{page_title}</PageTitle>
+                <p class="[ loyalty-offers-header__lede ]">{t('industry.loyalty.offers.lede')}</p>
+                <FlexInline gap="var(--space-xs)">
                     <small
+                        class="[ loyalty-offers-header__meta ]"
                         x-text="(offers_count != 1 ? offers_plural : offers_singular).replace('{count}', String(offers_count))"
                     >{offers_count_text}</small>
-                    <small x-show="last_updated_text" x-text="last_updated_text"></small>
-                </Flexblock>
+                    <small class="[ loyalty-offers-header__meta ]" x-show="last_updated_text" x-text="last_updated_text"></small>
+                </FlexInline>
             </Flexblock>
         </FlexInline>
 
@@ -74,6 +87,33 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
         </div>
     </PageWide>
 </Viewport>
+
+<style lang="scss">
+    .loyalty-offers-header__eyebrow {
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-offers-header__logo {
+        width: var(--space-l);
+        height: var(--space-l);
+        border-radius: 2px;
+        background-color: var(--background);
+    }
+
+    .loyalty-offers-header__lede {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .loyalty-offers-header__meta {
+        color: var(--faded);
+    }
+</style>
 
 <script>
     function refreshLoyaltyOffersSlot() {

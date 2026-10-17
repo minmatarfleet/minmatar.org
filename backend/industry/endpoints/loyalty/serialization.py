@@ -8,6 +8,7 @@ from industry.endpoints.loyalty.schemas import (
     LoyaltyMarketOrderResponse,
     LoyaltyOfferResponse,
 )
+from industry.helpers.lp_corporation_ids import corporation_ids
 from industry.helpers.lp_market_orders import (
     claimed_quantity,
     express_due_at,
@@ -51,15 +52,41 @@ def currency_response(
     )
 
 
+def order_destination_names(
+    order: IndustryLoyaltyPointMarketOrder,
+) -> list[str]:
+    """Corporation names an order's LP goes to (order and its claims)."""
+    names = [order.destination_character_name]
+    names += [c.destination_corporation_name for c in order.claims.all()]
+    return [n for n in names if n]
+
+
+def orders_corporation_ids(orders) -> dict[str, int]:
+    """One lookup for every destination named across ``orders``."""
+    names = []
+    for order in orders:
+        names += order_destination_names(order)
+    return corporation_ids(names)
+
+
+def _corporation_id(name: str, ids: dict[str, int]) -> int | None:
+    return ids.get((name or "").strip().lower())
+
+
 def market_order_claim_response(
     claim: IndustryLoyaltyPointMarketOrderClaim,
+    corporation_id_map: dict[str, int] | None = None,
 ) -> LoyaltyMarketOrderClaimResponse:
     claimed_by = claim.claimed_by
+    ids = corporation_id_map or {}
     return LoyaltyMarketOrderClaimResponse(
         id=claim.pk,
         amount=int(claim.amount),
         destination_character_name=claim.destination_character_name or "",
         destination_corporation_name=claim.destination_corporation_name or "",
+        destination_corporation_id=_corporation_id(
+            claim.destination_corporation_name, ids
+        ),
         claimed_by_user_id=claimed_by.pk if claimed_by else None,
         claimed_by_name=(
             _user_display_name(claimed_by) if claimed_by else None
@@ -73,12 +100,19 @@ def market_order_claim_response(
 
 def market_order_response(
     order: IndustryLoyaltyPointMarketOrder,
+    corporation_id_map: dict[str, int] | None = None,
 ) -> LoyaltyMarketOrderResponse:
+    """Serialize an order; pass ``corporation_id_map`` when listing many."""
     claimed_by = order.claimed_by
     created_by = order.created_by
     qty_claimed = claimed_quantity(order)
+    ids = (
+        corporation_id_map
+        if corporation_id_map is not None
+        else corporation_ids(order_destination_names(order))
+    )
     claims = [
-        market_order_claim_response(claim) for claim in order.claims.all()
+        market_order_claim_response(claim, ids) for claim in order.claims.all()
     ]
     return LoyaltyMarketOrderResponse(
         id=order.pk,
@@ -108,6 +142,9 @@ def market_order_response(
             _user_character_id(claimed_by) if claimed_by else None
         ),
         destination_character_name=order.destination_character_name or "",
+        destination_corporation_id=_corporation_id(
+            order.destination_character_name, ids
+        ),
         discord_thread_id=order.discord_thread_id,
         notes=order.notes or "",
         claims=claims,

@@ -1,0 +1,88 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import { ORDER_STAGES, order_stage_index } from '@helpers/loyalty_desk'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    order: LoyaltyMarketOrder
+    [propName: string]: any
+}
+
+const { order, ...attributes } = Astro.props
+
+delete attributes.class
+
+const STAGE_LABELS = {
+    posted: t('industry.loyalty.stage.posted'),
+    claimed: t('industry.loyalty.stage.claimed'),
+    lp_sent: t('industry.loyalty.stage.lp_sent'),
+    paid: t('industry.loyalty.stage.paid'),
+}
+const done = order_stage_index(order)
+const active = order.status === 'completed' || order.status === 'cancelled' ? -1 : done + 1
+---
+
+<ol class:list={['[ loyalty-progress ]', Astro.props.class]} aria-label={t('industry.loyalty.tracker.progress')} {...attributes}>
+    {ORDER_STAGES.map((stage, index) => (
+        <li
+            class:list={{
+                'is-done': index <= done,
+                'is-active': index === active,
+            }}
+            aria-current={index === active ? 'step' : undefined}
+        >
+            <span class="[ loyalty-progress__bar ]" aria-hidden="true"></span>
+            <span class="[ loyalty-progress__label ]">{STAGE_LABELS[stage]}</span>
+        </li>
+    ))}
+</ol>
+
+<style lang="scss">
+    .loyalty-progress {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+        }
+    }
+
+    .loyalty-progress__bar {
+        height: var(--space-3xs);
+        background-color: var(--border-color-hover);
+
+        .is-done & {
+            background-color: var(--fleet-yellow);
+        }
+
+        .is-active & {
+            background: repeating-linear-gradient(
+                90deg,
+                var(--fleet-yellow) 0 6px,
+                transparent 6px 10px
+            );
+        }
+    }
+
+    .loyalty-progress__label {
+        font-size: var(--step--2);
+        color: var(--faded);
+
+        .is-done & {
+            color: var(--foreground);
+        }
+
+        .is-active & {
+            font-weight: 700;
+            color: var(--highlight);
+        }
+    }
+</style>
