@@ -29,14 +29,19 @@ from fleets.models import (
     EveFleetInstanceMemberShipSnapshot,
 )
 from groups.models import UserCommunityStatus
+from surveys.constants import (
+    ACTIVITY_CORE,
+    ACTIVITY_INACTIVE,
+    ACTIVITY_LAPSING,
+    ACTIVITY_REGULAR,
+    activity_tier,
+)
 
-# surveys.constants activity tiers: distinct fleets in a trailing quarter.
-TIER_INACTIVE = "inactive"  # 0
-TIER_LAPSING = "lapsing"  # 1-2
-TIER_REGULAR = "regular"  # 3-9
-TIER_CORE = "core"  # 10+
-LAPSING_MAX_FLEETS = 2
-REGULAR_MAX_FLEETS = 9
+# The surveys activity tiers: distinct fleets in a trailing quarter.
+TIER_INACTIVE = ACTIVITY_INACTIVE
+TIER_LAPSING = ACTIVITY_LAPSING
+TIER_REGULAR = ACTIVITY_REGULAR
+TIER_CORE = ACTIVITY_CORE
 
 # Attacker buckets from eveonline.killmail_classes, shared with alliance
 # health. The 11+ signal is "kill" there.
@@ -200,13 +205,7 @@ def corporation_public_summary(
 
 
 def fleet_tier(fleet_count: int) -> str:
-    if fleet_count <= 0:
-        return TIER_INACTIVE
-    if fleet_count <= LAPSING_MAX_FLEETS:
-        return TIER_LAPSING
-    if fleet_count <= REGULAR_MAX_FLEETS:
-        return TIER_REGULAR
-    return TIER_CORE
+    return activity_tier(fleet_count)
 
 
 def kill_bucket(attacker_count: int) -> str:

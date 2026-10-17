@@ -406,7 +406,10 @@ ROSTER_COUNTS = (
     "fleets_attended",
 )
 
-# A pilot counts as active in the roll-up if they did something this recently.
+# A pilot counts as active in the roll-up if they had an active campaign day
+# (CampaignParticipantDay.active: any scored activity, a loss included) this
+# many campaign days ago or later. Not the alliance-health "active", which is
+# any fleet, kill or supply signal in 90 days.
 ROSTER_ACTIVE_DAYS = 7
 
 
