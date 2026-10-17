@@ -22,6 +22,7 @@ from eveonline.models import (
 
 from eveonline.helpers.characters.assets import create_character_assets
 from eveonline.helpers.db_sync import replace_with_bulk_create
+from eveonline.helpers.killmail_text import dump_killmail_list
 from eveonline.helpers.characters.skills import (
     create_eve_character_skillset,
     upsert_character_skills,
@@ -154,7 +155,11 @@ def update_character_killmails(eve_character_id: int) -> None:
 def _store_character_killmail(
     character: EveCharacter, killmail_id: int, killmail_hash: str, details
 ) -> None:
-    """One killmail and its attacker rows, written together."""
+    """One killmail and its attacker rows, written together.
+
+    attackers/items are stored as JSON text (older rows hold Python repr;
+    read either with eveonline.helpers.killmail_text.parse_killmail_list).
+    """
     victim = details["victim"]
     attackers = details["attackers"]
     with transaction.atomic():
@@ -169,8 +174,8 @@ def _store_character_killmail(
             victim_corporation_id=victim.get("corporation_id"),
             victim_alliance_id=victim.get("alliance_id"),
             victim_faction_id=victim.get("faction_id"),
-            attackers=attackers,
-            items=victim["items"],
+            attackers=dump_killmail_list(attackers),
+            items=dump_killmail_list(victim.get("items")),
             character=character,
         )
         EveCharacterKillmailAttacker.objects.bulk_create(

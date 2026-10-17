@@ -1,5 +1,6 @@
-"""Killmail sync: skip stored mails before fetching."""
+"""Killmail sync: skip stored mails before fetching, store JSON text."""
 
+import json
 from unittest.mock import patch
 
 import factory
@@ -9,9 +10,11 @@ from django.utils import timezone
 from app.test import TestCase
 from eveonline.client import EsiResponse
 from eveonline.helpers.characters.update import update_character_killmails
+from eveonline.helpers.killmail_text import parse_killmail_list
 from eveonline.models import (
     EveCharacter,
     EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
 )
 
 ATTACKERS = [
@@ -93,3 +96,43 @@ class UpdateCharacterKillmailsTest(TestCase):
 
         esi.get_character_killmail.assert_called_once_with(13, "h13")
         self.assertEqual(EveCharacterKillmail.objects.count(), 3)
+
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_attackers_and_items_are_json(self, esi_cls):
+        esi = esi_cls.return_value
+        self._recent(esi, [21])
+        esi.get_character_killmail.return_value = _detail(21)
+
+        update_character_killmails(self.char.character_id)
+
+        killmail = EveCharacterKillmail.objects.get(id=21)
+        self.assertEqual(json.loads(killmail.attackers), ATTACKERS)
+        self.assertEqual(json.loads(killmail.items), ITEMS)
+        self.assertEqual(parse_killmail_list(killmail.items), ITEMS)
+        self.assertEqual(killmail.victim_character_id, 1001)
+        self.assertIsNone(killmail.victim_corporation_id)
+        rows = list(
+            EveCharacterKillmailAttacker.objects.filter(
+                killmail=killmail
+            ).values_list(
+                "character_id",
+                "corporation_id",
+                "faction_id",
+                "ship_type_id",
+            )
+        )
+        self.assertCountEqual(
+            rows, [(2, 3, 500002, 670), (None, 1000125, None, 3740)]
+        )
+
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_missing_items_store_an_empty_list(self, esi_cls):
+        esi = esi_cls.return_value
+        self._recent(esi, [31])
+        detail = _detail(31)
+        del detail.data["victim"]["items"]
+        esi.get_character_killmail.return_value = detail
+
+        update_character_killmails(self.char.character_id)
+
+        self.assertEqual(EveCharacterKillmail.objects.get(id=31).items, "[]")
