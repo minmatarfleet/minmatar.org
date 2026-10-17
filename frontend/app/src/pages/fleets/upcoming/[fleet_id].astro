@@ -115,8 +115,10 @@ try {
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 const supply = fleet && !history ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
 
+// fleet is null when the fetch failed (e.g. the fleet's audience excludes
+// the viewer); the page then shows fetch_fleets_error instead of a 500.
 const can_remove_fleet = can(gates, 'fleets.delete') ||
-                         (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id
+                         (fleet !== null && (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id)
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(true)}`)
 
