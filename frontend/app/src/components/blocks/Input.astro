@@ -66,6 +66,11 @@ const {
             padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-xs-s);
         }
 
+        /* iOS zooms the page when focusing a field under 16px. */
+        @media (max-width: 48rem) {
+            font-size: max(1rem, 1em);
+        }
+
         &[type="date"],
         &[type="time"] {
             color-scheme: dark;
