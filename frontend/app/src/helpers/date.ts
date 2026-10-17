@@ -20,6 +20,26 @@ export const format_date_short = (locale, date):string => {
     return new Date(date).toLocaleDateString(locale, date_short_options)
 }
 
+/*
+ * EVE time is UTC. These helpers say so explicitly instead of relying on the
+ * server's (or browser's) time zone.
+ */
+
+/** EVE (UTC) day key, e.g. 2026-10-17. */
+export const eve_day = (date:Date | string | number):string => new Date(date).toISOString().slice(0, 10)
+
+/** HH:MM in EVE time, e.g. 18:05. */
+export const eve_clock = (date:Date | string | number):string => new Date(date).toISOString().slice(11, 16)
+
+/** Short EVE-time day label: "Oct 17", or "Sat, Oct 17" with `weekday` (word order follows the locale). */
+export const eve_day_short = (locale:string, date:Date | string | number, options:{ weekday?: boolean } = {}):string =>
+    new Date(date).toLocaleDateString(locale, {
+        ...(options.weekday ? { weekday: 'short' as const } : {}),
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+    })
+
 export const days_diff_text = (locale:Locales = 'en', from:Date, to:Date):string => {
     const t = useTranslations(locale);
     

@@ -19,14 +19,14 @@ const {
 delete attributes.class
 
 import { format_isk, number_thousand_separator } from '@helpers/numbers'
-import { from_now_diff } from '@helpers/date'
+import { eve_day_short, from_now_diff } from '@helpers/date'
 
 const { built, orders, sales, hangars, losses } = insights
 
 const n = (value: number) => number_thousand_separator(value)
 const ago = (value: string | null) => value ? from_now_diff(lang, new Date(value)) : t('industry.product.never')
 // Month and day in EVE time (UTC); everything here is from the last 13 weeks.
-const day = (value: string) => new Date(value).toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+const day = (value: string) => eve_day_short(lang, value)
 
 const sold_30d = sales.market_units_30d + sales.contract_units_30d
 const sold_90d = sales.market_units_90d + sales.contract_units_90d

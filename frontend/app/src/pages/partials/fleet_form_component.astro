@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day, eve_clock } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
@@ -67,8 +68,8 @@ const eve_datetime = timer ? new Date(timer) : new Date()
 if (!timer) eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
 
 // The form labels these as EVE time, so both parts must come from UTC
-const eve_date = eve_datetime.toISOString().slice(0, 10)
-const eve_time = eve_datetime.toISOString().slice(11, 16)
+const eve_date = eve_day(eve_datetime)
+const eve_time = eve_clock(eve_datetime)
 ---
 
 {fetch_doctrines_error ?

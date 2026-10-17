@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_clock } from '@helpers/date'
 const { t } = i18n(Astro.url)
 
 import type { IntelReport, IntelDscanSummary, IntelLocalSummary, IntelStanding } from '@dtypes/api.minmatar.org'
@@ -40,7 +41,7 @@ const raw_lines = report.raw.split('\n').filter(line => line.trim())
 const raw_preview = raw_lines.slice(0, RAW_LINES).join('\n')
 
 const standings: IntelStanding[] = ['hostile', 'neutral', 'friendly']
-const eve_time = (iso:string) => new Date(iso).toISOString().slice(11, 16)
+const eve_time = (iso:string) => eve_clock(iso)
 ---
 
 <Flexblock gap="var(--space-l)" class:list={['[ intel-report ]', Astro.props.class]} {...attributes}>
