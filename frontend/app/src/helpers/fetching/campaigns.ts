@@ -7,6 +7,7 @@ import type {
     CampaignStatusChip,
     CampaignTotals,
     CampaignWeek,
+    CampaignWeekProgress,
 } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
 import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
@@ -435,12 +436,16 @@ export interface CampaignObjectiveRow {
     now_text:           string;
     /** The exact figure behind the bar, for hover: victory points for complexes, the level for advantage. */
     detail_text:        string;
-    /** What the change measures: the last day for contest metrics, the week so far for advantage levels. */
+    /** What the change measures: the week so far, or the last day when the week has no opening reading. */
     change_label:       '24h' | 'week';
     /** The bar's move in whole points, signed ("+13%", "-1%", "0%"); empty when there is no reading to compare. */
     change_text:        string;
     /** Which way the bar moved. Every bar reads higher is better, so up is always good news. */
     change_direction:   'up' | 'down' | 'flat';
+    /** The last day's move beside a weekly one, for the hover; empty when there is none. */
+    change_24h_text:    string;
+    /** A complex row whose system changed hands this week: the flip replaces the move, which the reset contest makes meaningless. */
+    flipped:            'captured' | 'lost' | null;
     target_text:        string;
     /** The viewer's own contribution this week, for the You tab. */
     yours_text:         string;
@@ -520,24 +525,42 @@ const victory_points_text = (system:CampaignSystemSummary | null, t:ObjectiveT):
  * The bar is progress in victory points against the flip threshold. Capturing,
  * it fills as ours climb; defending, it is how far the attackers are from
  * flipping it, so a quiet system is full and their victory points drain it.
+ *
+ * The move is the week's, from the last reading before the week opened, as
+ * the row is a weekly objective; the last day's move rides along for the
+ * hover. Without a week reading the row falls back to the day. A system that
+ * changed hands this week shows the flip instead of a move.
  */
 const contest_progress = (
     kind:CampaignObjectiveKind,
     goal:string,
     system:CampaignSystemSummary | null,
+    week_progress:CampaignWeekProgress | null,
     t:ObjectiveT,
 ) => {
     const contested = clamp_percent(system?.contested_percent)
-    const change = system?.contested_change_24h ?? null
     const contest_goal = kind === 'defense' ? 'hold' : goal
     const meter_percent = contest_bar_percent(contest_goal, contested)
-    const delta_from_percent = change === null ? null : contest_bar_percent(contest_goal, contested - change)
+    const from = (change:number | null) => change === null ? null : contest_bar_percent(contest_goal, contested - change)
+
+    const day_change = system?.contested_change_24h ?? null
+    const day_from = from(day_change)
+    const day_text = day_from === null ? '' : bar_change(meter_percent - day_from).change_text
+    const flipped = week_progress?.flipped ?? null
+    const week_start = week_progress?.contested_start ?? null
+    const weekly = week_progress !== null && (flipped !== null || week_start !== null)
+    const delta_from_percent = flipped !== null ? null
+        : weekly ? from(contested - (week_start as number))
+        : day_from
 
     return {
         meter_percent,
         delta_from_percent,
         now_text: progress_text(meter_percent),
         detail_text: victory_points_text(system, t),
+        change_label: (weekly ? 'week' : '24h') as '24h' | 'week',
+        change_24h_text: weekly ? day_text : '',
+        flipped,
         ...(delta_from_percent === null
             ? { change_text: '', change_direction: 'flat' as const }
             : bar_change(meter_percent - delta_from_percent)),
@@ -570,6 +593,7 @@ export const campaign_objective_rows = (
     t:ObjectiveT,
 ):CampaignObjectiveRow[] => {
     const by_name = new Map(systems.map(system => [system.name, system]))
+    const week_by_name = new Map((week?.progress ?? []).map(row => [row.system, row]))
     const targets = week?.targets ?? []
 
     if (targets.length === 0) {
@@ -579,7 +603,7 @@ export const campaign_objective_rows = (
             .map(system => {
                 const kind:CampaignObjectiveKind = objective_kind('', system.goal)
                 const pace = fallback_pace(kind, system)
-                const progress = contest_progress(kind, system.goal, system, t)
+                const progress = contest_progress(kind, system.goal, system, week_by_name.get(system.name) ?? null, t)
 
                 return {
                     key: `system-${system.id}`,
@@ -592,9 +616,11 @@ export const campaign_objective_rows = (
                     delta_from_percent: progress.delta_from_percent,
                     now_text: progress.now_text,
                     detail_text: progress.detail_text,
-                    change_label: '24h' as const,
+                    change_label: progress.change_label,
                     change_text: progress.change_text,
                     change_direction: progress.change_direction,
+                    change_24h_text: progress.change_24h_text,
+                    flipped: progress.flipped,
                     target_text: '',
                     yours_text: t('campaigns.objective.yours_none'),
                     pace,
@@ -622,17 +648,22 @@ export const campaign_objective_rows = (
             let detail_text = ''
             let change_label:'24h' | 'week' = '24h'
             let change_text = ''
+            let change_24h_text = ''
+            let flipped:'captured' | 'lost' | null = null
             let direction:'up' | 'down' | 'flat' = 'flat'
             let target_text = ''
             let yours_text = t('campaigns.objective.yours_none')
 
             if (kind === 'offense' || kind === 'defense') {
-                const progress = contest_progress(kind, target.goal || system?.goal || 'take', system, t)
+                const progress = contest_progress(kind, target.goal || system?.goal || 'take', system, week_by_name.get(target.system) ?? null, t)
                 meter_percent = progress.meter_percent
                 delta_from_percent = progress.delta_from_percent
                 now_text = progress.now_text
                 detail_text = progress.detail_text
+                change_label = progress.change_label
                 change_text = progress.change_text
+                change_24h_text = progress.change_24h_text
+                flipped = progress.flipped
                 direction = progress.change_direction
                 if (target.my_complexes > 0)
                     yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
@@ -690,6 +721,8 @@ export const campaign_objective_rows = (
                 change_label,
                 change_text,
                 change_direction: direction,
+                change_24h_text,
+                flipped,
                 target_text,
                 yours_text,
                 pace: target.pace,

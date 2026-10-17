@@ -1,9 +1,10 @@
 """The desktop app's Campaigns window: where each system stands, who is out.
 
 The window is glanced at over the game, so it carries one progress figure
-per objective and the 24h move, never the contest breakdown. Complex
-objectives are measured in victory points; advantage objectives in the
-advantage level. Every progress figure reads "higher is better", so a
+per objective and its move, never the contest breakdown. The rows are the
+week's targets, so the move is measured from when the week opened; the 24h
+move rides along for the hover. Complex objectives are measured in victory
+points; advantage objectives in the advantage level. Every progress figure reads "higher is better", so a
 defensive or destroy objective is inverted before it gets here.
 
 Every desktop app polls this once a minute, so it is built from a handful
@@ -17,9 +18,10 @@ import time
 from datetime import timedelta
 
 from django.db.models import OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from campaigns.helpers import campaign_week_start
+from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
     ADVANTAGE_SITE_KINDS,
     Campaign,
@@ -135,14 +137,16 @@ def objective_rows(campaign: Campaign) -> list[dict]:
         campaign_system_id__in=systems.keys(),
         week_start=campaign_week_start(),
         metric__in=METRIC_OBJECTIVES.keys(),
-    ).values_list("campaign_system_id", "metric")
+    ).values_list("campaign_system_id", "metric", "baseline")
+    # Advantage rows measure the week from the target's baseline, the level
+    # it opened at, as the website does.
     pairs = [
-        (systems[system_id], METRIC_OBJECTIVES[metric])
-        for system_id, metric in targets
+        (systems[system_id], METRIC_OBJECTIVES[metric], baseline)
+        for system_id, metric, baseline in targets
     ]
     if not pairs:
         pairs = [
-            (system, _goal_objective(system.goal))
+            (system, _goal_objective(system.goal), None)
             for system in systems.values()
             if system.is_fw_objective
         ]
@@ -150,10 +154,11 @@ def objective_rows(campaign: Campaign) -> list[dict]:
     snapshots = CampaignSystemSnapshot.objects.in_bulk(
         [
             snapshot_id
-            for system, _ in pairs
+            for system, _, _ in pairs
             for snapshot_id in (
                 system.latest_snapshot,
                 system.day_ago_snapshot,
+                system.week_open_snapshot,
             )
             if snapshot_id
         ]
@@ -161,13 +166,13 @@ def objective_rows(campaign: Campaign) -> list[dict]:
     readings = CampaignAdvantageReading.objects.in_bulk(
         [
             system.day_ago_reading
-            for system, objective in pairs
+            for system, objective, _ in pairs
             if objective not in COMPLEX_OBJECTIVES and system.day_ago_reading
         ]
     )
     rows = [
-        _row(system, objective, snapshots, readings)
-        for system, objective in pairs
+        _row(system, objective, baseline, snapshots, readings)
+        for system, objective, baseline in pairs
     ]
     return sorted(
         rows,
@@ -176,9 +181,14 @@ def objective_rows(campaign: Campaign) -> list[dict]:
 
 
 def _systems_with_readings(campaign: Campaign):
-    """Live systems, each with the ids of its latest and 24h-old snapshot
-    and 24h-old advantage reading, in one query."""
+    """Live systems, each with the ids of its latest, 24h-old and week-open
+    snapshot and its 24h-old advantage reading, in one query.
+
+    The week opens on the last snapshot before it began; with none, on the
+    first inside it, as the website's weekly progress does.
+    """
     day_ago = timezone.now() - timedelta(hours=24)
+    week_open = week_bounds(campaign_week_start())[0]
     snapshots = CampaignSystemSnapshot.objects.filter(
         campaign_system=OuterRef("pk")
     ).order_by("-captured_at")
@@ -196,6 +206,18 @@ def _systems_with_readings(campaign: Campaign):
                 snapshots.filter(captured_at__lte=day_ago).values("id")[:1]
             ),
             day_ago_reading=Subquery(readings.values("id")[:1]),
+            week_open_snapshot=Coalesce(
+                Subquery(
+                    snapshots.filter(captured_at__lt=week_open).values("id")[
+                        :1
+                    ]
+                ),
+                Subquery(
+                    snapshots.filter(captured_at__gte=week_open)
+                    .order_by("captured_at")
+                    .values("id")[:1]
+                ),
+            ),
         )
     )
 
@@ -206,18 +228,30 @@ def _goal_objective(goal: str) -> str:
     )
 
 
-def _row(system, objective: str, snapshots: dict, readings: dict) -> dict:
+def _row(
+    system, objective: str, baseline, snapshots: dict, readings: dict
+) -> dict:
     latest = snapshots.get(system.latest_snapshot)
+    flipped = None
     if objective in COMPLEX_OBJECTIVES:
+        week_open = snapshots.get(system.week_open_snapshot)
         progress, change, detail = _complex_progress(
             objective, latest, snapshots.get(system.day_ago_snapshot)
         )
+        _, change_week, _ = _complex_progress(objective, latest, week_open)
+        if latest and week_open:
+            flipped = plan.flip_outcome(
+                week_open.occupier_faction_id, latest.occupier_faction_id
+            )
+        if flipped:
+            # The contest reset when it changed hands; the flip is the move.
+            change_week = None
     else:
+        card = advantage.card_for(system)
         progress, change, detail = _advantage_progress(
-            objective,
-            advantage.card_for(system),
-            readings.get(system.day_ago_reading),
+            objective, card, readings.get(system.day_ago_reading)
         )
+        change_week = _advantage_week_change(objective, card, baseline)
     return {
         "system_id": system.id,
         "name": system.name,
@@ -227,7 +261,9 @@ def _row(system, objective: str, snapshots: dict, readings: dict) -> dict:
         "objective": objective,
         "objective_label": OBJECTIVE_LABELS[objective],
         "progress_percent": progress,
+        "change_week": change_week,
         "change_24h": change,
+        "flipped": flipped,
         "detail": detail,
     }
 
@@ -282,6 +318,20 @@ def _advantage_progress(objective: str, card: dict, day_ago):
             detail,
         )
     return _round(level), _round(change), detail
+
+
+def _advantage_week_change(objective: str, card: dict, baseline):
+    """The level's move since the week opened, inverted for destroy.
+
+    The baseline is the target's own level at week open: ours for gain and
+    hold, theirs for destroy.
+    """
+    destroy = objective == "destroy_advantage"
+    level = card["enemy_pct" if destroy else "our_pct"]
+    if level is None or baseline is None:
+        return None
+    change = level - baseline
+    return _round(-change if destroy else change)
 
 
 def _round(value):

@@ -307,20 +307,21 @@ class CampaignApiTests(TestCase):
             is_fw_objective=False,
         )
 
-        def _snap(system, when, victory_points, contested):
+        def _snap(system, when, victory_points, contested, occupier=None):
             CampaignSystemSnapshot.objects.create(
                 campaign_system=system,
                 captured_at=when,
                 victory_points=victory_points,
                 victory_points_threshold=5000,
                 contested_percent=contested,
+                occupier_faction_id=occupier,
             )
 
         _snap(system, window_start - timedelta(hours=3), 1000, 20.0)
         _snap(system, window_start + timedelta(minutes=30), 1100, 22.5)
         _snap(system, window_start + timedelta(days=2), 1400, 35.256)
-        _snap(held, window_start + timedelta(hours=1), 400, 12.0)
-        _snap(held, window_start + timedelta(days=1), 380, 9.5)
+        _snap(held, window_start + timedelta(hours=1), 400, 12.0, 500002)
+        _snap(held, window_start + timedelta(days=1), 380, 9.5, 500003)
 
         response = self.client.get(
             f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
@@ -336,6 +337,7 @@ class CampaignApiTests(TestCase):
         self.assertEqual(kamela["victory_points_now"], 1400)
         self.assertIsNone(kamela["advantage_our_start"])
         self.assertIsNone(kamela["advantage_our_now"])
+        self.assertIsNone(kamela["flipped"])
 
         kourmonen = progress["Kourmonen"]
         self.assertEqual(kourmonen["contested_start"], 12.0)
@@ -344,6 +346,8 @@ class CampaignApiTests(TestCase):
         self.assertEqual(kourmonen["victory_points_now"], 380)
         self.assertIsNone(kourmonen["advantage_our_start"])
         self.assertIsNone(kourmonen["advantage_our_now"])
+        # Ours when the week opened, theirs now.
+        self.assertEqual(kourmonen["flipped"], "lost")
 
     def test_fleets_lists_campaign_fleets_with_their_impact(self):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):

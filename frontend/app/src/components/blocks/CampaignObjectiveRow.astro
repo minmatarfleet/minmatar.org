@@ -23,15 +23,22 @@ const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
     : t('campaigns.system.held_by_unknown')
 const system_anchor = row.system ? `#campaign-system-${row.system.id}` : undefined
 const change_period = t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')
+// A system that changed hands this week shows the flip where the move would be.
+const flipped_text = row.flipped === 'captured' ? t('campaigns.objective.flipped_captured')
+    : row.flipped === 'lost' ? t('campaigns.objective.flipped_lost')
+    : ''
 // As in the desktop window: the bar is neutral and only the move is coloured, always beside an arrow.
-const change_tone = row.change_direction === 'up' ? 'up' : row.change_direction === 'down' ? 'down' : 'steady'
-const show_change = row.change_text !== ''
-// Exact figures stay in the hover: progress, what it is made of, and the move.
+const change_tone = row.flipped === 'captured' ? 'up' : row.flipped === 'lost' ? 'down'
+    : row.change_direction === 'up' ? 'up' : row.change_direction === 'down' ? 'down' : 'steady'
+const show_change = row.change_text !== '' || flipped_text !== ''
+// Exact figures stay in the hover: progress, what it is made of, the week's move and the day's.
 const row_title = [
     t(objective_status_i18n_key(row.status)),
     row.now_text,
     row.detail_text,
-    show_change ? `${row.change_text} ${change_period}` : '',
+    flipped_text,
+    row.change_text ? `${row.change_text} ${change_period}` : '',
+    row.change_24h_text ? t('campaigns.objective.change_24h').replace('{change}', row.change_24h_text) : '',
 ].filter(Boolean).join(' · ')
 
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
@@ -87,8 +94,14 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                     {change_tone === 'down' && <svg viewBox="0 0 12 12"><path d="M6 10l5-8H1z"/></svg>}
                     {change_tone === 'steady' && <svg viewBox="0 0 12 12"><path d="M1.5 6h9"/></svg>}
                 </span>
-                <span>{row.change_text}</span>
-                <small class="[ campaign-objective-period ]">{change_period}</small>
+                {flipped_text ?
+                    <span>{flipped_text}</span>
+                    :
+                    <>
+                        <span>{row.change_text}</span>
+                        <small class="[ campaign-objective-period ]">{change_period}</small>
+                    </>
+                }
             </>
             :
             <span class="[ campaign-objective-figure ]">{row.now_text}</span>
