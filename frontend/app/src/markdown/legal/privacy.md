@@ -41,7 +41,7 @@ We store profiles, corporation and tribe applications, group membership, fleet a
 
 ### Technical data
 
-We collect server logs and similar technical data (for example IP address, timestamps, user agent, and referring URL). Referral tracking may record IP and path. Error reporting may include request context.
+We collect server logs and similar technical data (for example IP address, timestamps, user agent, and referring URL). Referral tracking may record IP and path. Recruitment links (`/go/` URLs in our recruiting replies) record which link was followed, the user agent, and a keyed hash of the IP address, not the address itself. Error reporting may include request context.
 
 ### Cookies and similar storage
 

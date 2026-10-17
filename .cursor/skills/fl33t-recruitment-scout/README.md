@@ -33,6 +33,7 @@ implementation.
 | `fetch_reddit.py` | Raw subreddit `/new` (default 7d) | Yes |
 | `fetch_forums.py` | Forum recruitment-center latest (default 7d) | No |
 | `match_corp_ads.py` | Map ad URLs → corp names | No |
+| `track_outreach.py` | Register a reply's tracking code; read click stats | No (`MINMATAR_API_TOKEN`) |
 
 Shared helpers live in `scout_lib.py` (not invoked directly).
 
@@ -78,6 +79,7 @@ Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | Invite link for outreach closers (skill only) |
+| `tracked_links.targets` | Click-tracked link targets (`my.minmatar.org/go/<code>/<target>`) |
 | `proof_videos.always` | Bring Fun Shit — every r/evejobs and forum send; not on r/eve |
 | `proof_videos.mining` | Rock Hoppin' — extra mining/industry close |
 | `proof_aars` | Current billion-ISK AARs (rotate when a new one posts) |
@@ -99,6 +101,23 @@ python scripts/fetch_reddit.py --json
 ```
 
 `fetch_corporations.py` and `fetch_forums.py` work without OAuth.
+
+### Click tracking
+
+Discord and my.minmatar.org links in each reply point at
+`https://my.minmatar.org/go/<code>/<target>`, which counts the click and
+redirects. The link text stays the real URL. `track_outreach.py` registers a
+reply's code and reads click stats; it needs `MINMATAR_API_TOKEN` (your
+`auth_token` cookie from my.minmatar.org, for a user with the
+`recruitment.scout` feature). Add it to `backend/.env` locally; never commit it.
+
+```bash
+python scripts/track_outreach.py register --surface forums \
+  --thread https://forums.eveonline.com/t/... --prospect "Pilot Name" --seat L3ARN
+python scripts/track_outreach.py stats --days 30
+```
+
+Click counts per reply are also in Django admin under Recruitment → Scout outreach.
 
 ## Cursor usage
 
