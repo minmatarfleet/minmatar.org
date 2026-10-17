@@ -185,6 +185,7 @@ class DiscordChannel(models.Model):
     )
     receive_lp_conversion_alerts = models.BooleanField(
         default=False,
+        db_default=False,
         help_text=(
             "When enabled, the Conversion Team is told here about LP buyback "
             "orders left open for a week. Only one channel should have this "

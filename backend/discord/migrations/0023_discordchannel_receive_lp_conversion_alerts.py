@@ -43,6 +43,7 @@ class Migration(migrations.Migration):
             name="receive_lp_conversion_alerts",
             field=models.BooleanField(
                 default=False,
+                db_default=False,
                 help_text=(
                     "When enabled, the Conversion Team is told here about LP "
                     "buyback orders left open for a week. Only one channel "

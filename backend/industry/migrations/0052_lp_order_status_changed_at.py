@@ -15,7 +15,7 @@ def backfill_status_changed_at(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("industry", "0050_merge_20261004_1310"),
+        ("industry", "0051_drop_target_estimated_margin"),
     ]
 
     operations = [
