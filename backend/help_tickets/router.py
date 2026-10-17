@@ -6,7 +6,7 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
 
-from authentication import AuthBearer
+from authentication import AuthBearer, require_service_account
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from help_tickets.helpers.panel import build_help_ticket_panel_config
@@ -109,6 +109,7 @@ def get_help_ticket_panel_state(request):
 def update_help_ticket_panel_state(
     request, payload: HelpTicketPanelStateUpdateSchema
 ):
+    require_service_account(request)
     panel = HelpTicketPanel.get_solo()
     panel.channel_id = payload.channel_id
     panel.message_id = payload.message_id
@@ -136,6 +137,7 @@ def _resolve_user(discord_id: int):
     auth=AuthBearer(),
 )
 def create_help_ticket(request, payload: CreateHelpTicketRequest):
+    require_service_account(request)
     category = get_object_or_404(
         HelpRequestCategory,
         pk=payload.category_id,
@@ -198,6 +200,7 @@ def get_help_ticket(request, ticket_id: int):
 def close_help_ticket(
     request, ticket_id: int, payload: CloseHelpTicketRequest
 ):
+    require_service_account(request)
     ticket = get_object_or_404(HelpTicket, pk=ticket_id)
     if ticket.status == HelpTicket.STATUS_CLOSED:
         raise HttpError(400, "Ticket is already closed.")

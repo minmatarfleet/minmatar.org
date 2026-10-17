@@ -5,6 +5,7 @@ import jwt
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
+from ninja.errors import HttpError
 from ninja.security import HttpBearer
 
 logger = logging.getLogger("authentication")
@@ -24,6 +25,24 @@ class AuthBearer(HttpBearer):
         except Exception as e:
             print(e)
             return None
+
+
+def is_service_account(user) -> bool:
+    """
+    The Discord bot calls the API with a staff/superuser token.
+
+    Same rule the notification and buyback acks already use for the bot.
+    """
+    return bool(
+        getattr(user, "is_staff", False)
+        or getattr(user, "is_superuser", False)
+    )
+
+
+def require_service_account(request) -> None:
+    """Endpoints only the bot may call: any member token gets a 403."""
+    if not is_service_account(getattr(request, "user", None)):
+        raise HttpError(403, "Only the Discord bot may call this endpoint.")
 
 
 class AuthOptional(AuthBearer):
