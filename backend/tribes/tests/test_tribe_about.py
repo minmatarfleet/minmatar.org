@@ -4,8 +4,6 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import factory
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
@@ -14,6 +12,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from app.testing import make_token
 from discord.models import DiscordRole
 from discord.signals import (
     group_post_save,
@@ -69,12 +68,6 @@ def setUpModule():
         resolve_existing_discord_role_from_server,
         sender=DiscordRole,
         dispatch_uid="resolve_existing_discord_role_from_server",
-    )
-
-
-def _make_token(user: User) -> str:
-    return jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
     )
 
 
@@ -350,7 +343,7 @@ class TribeAboutEndpointTestCase(TestCase):
     def _get(self, user=None):
         headers = {}
         if user:
-            headers["HTTP_AUTHORIZATION"] = f"Bearer {_make_token(user)}"
+            headers["HTTP_AUTHORIZATION"] = f"Bearer {make_token(user)}"
         with patch(
             "tribes.endpoints.tribes.get_tribe_about.tribe_about",
             return_value=self._payload(),

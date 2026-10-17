@@ -4,8 +4,6 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
@@ -13,6 +11,7 @@ from eveonline.models import EveCharacter
 from eveuniverse.models import EveCategory, EveGroup, EveType
 from ninja.testing import TestClient
 
+from app.testing import make_token
 from fittings.models import EveFitting
 from industry.models import IndustryOrder, IndustryOrderItem
 from industry.test_utils import create_industry_order
@@ -51,12 +50,7 @@ def _type(type_id: int, name: str) -> EveType:
 
 
 def _auth_headers(user: User) -> dict:
-    token = jwt.encode(
-        {"user_id": user.id},
-        settings.SECRET_KEY,
-        algorithm="HS256",
-    )
-    return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {make_token(user)}"}
 
 
 class FittingBuyContractPricesTestCase(TestCase):

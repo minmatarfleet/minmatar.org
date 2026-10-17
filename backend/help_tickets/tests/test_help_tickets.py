@@ -1,7 +1,5 @@
 """Tests for help ticket bot API endpoints."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from unittest import mock
@@ -14,13 +12,9 @@ from help_tickets.models import (
     HelpTicketPanel,
 )
 from tribes.models import Tribe, TribeGroup
+from app.testing import make_token
 
 BASE_URL = "/api/help-tickets"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class HelpTicketPanelConfigTestCase(TestCase):
@@ -30,7 +24,7 @@ class HelpTicketPanelConfigTestCase(TestCase):
         self.user = User.objects.create_user(
             username="bot", password="x", is_staff=True
         )
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.enabled_group = TribeGroup.objects.create(
             tribe=self.tribe,
@@ -90,7 +84,7 @@ class HelpTicketApiTestCase(TestCase):
         self.user = User.objects.create_user(
             username="bot", password="x", is_staff=True
         )
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
@@ -289,7 +283,7 @@ class HelpTicketBotOnlyTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.member = User.objects.create_user(username="member", password="x")
-        self.token = _make_token(self.member)
+        self.token = make_token(self.member)
         tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         group = TribeGroup.objects.create(
             tribe=tribe, name="Technology", code="pulse.technology"
