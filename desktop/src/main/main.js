@@ -18,6 +18,7 @@ const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
 const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE } = require('./intel')
 const { MenuFade, intersects } = require('./menu_fade')
+const { COMMANDS, id_of, fleet_ship, intel_range, window_toggle } = require('./ipc_commands')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -801,28 +802,35 @@ function update_tray() {
 
 // ---------------------------------------------------------------- IPC (renderer -> main)
 
+// The commands and the checks on their values live in ipc_commands.js (preload.js allows the same list).
+const registered = new Set()
+function on_command(command, handler) {
+    if (!COMMANDS.includes(command)) throw new Error(`IPC command ${command} is not in ipc_commands.js`)
+    registered.add(command)
+    ipcMain.on(command, handler)
+}
+
 function sender_window(event) {
     return BrowserWindow.fromWebContents(event.sender)
 }
 
-ipcMain.on('login:start', () => begin_login())
-ipcMain.on('login:cancel', () => login_flow && login_flow.cancel())
-ipcMain.on('auth:sign-out', () => sign_out())
-ipcMain.on('fleets:refresh', () => {
+on_command('login:start', () => begin_login())
+on_command('login:cancel', () => login_flow && login_flow.cancel())
+on_command('auth:sign-out', () => sign_out())
+// The refresh button in any window's title bar refreshes every enabled window's data, like the tray's Refresh.
+on_command('app:refresh', () => {
     refresh({ force: true })
     if (fleet_window && state.user) fleet_window.poll()
 })
 // Fleet window clicks. Each is one click; fleet_window.js only acts on fleets, ships, killmails and
 // systems it is showing, never on ids the renderer made up.
-const fleet_key = value => (typeof value === 'string' && /^[fm]:\d+$/.test(value) ? value : null)
-const id_of = value => (Number.isSafeInteger(value) && value > 0 ? value : null)
-const on_fleet = (command, act) => ipcMain.on(command, (event, value) => { if (fleet_window && state.user) act(value) })
-on_fleet('fleets:open', value => id_of(value) && fleet_window.open(value))
+const on_fleet = (command, act) => on_command(command, (event, value) => { if (fleet_window && state.user) act(value) })
+on_fleet('fleet:open', value => id_of(value) && fleet_window.open(value))
 on_fleet('fleet:close', () => fleet_window.close())
 on_fleet('fleet:open-site', value => id_of(value) && fleet_window.open_site(value))
 on_fleet('fleet:refresh-motd', () => fleet_window.refresh_motd())
-on_fleet('fleet:copy-fit', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.copy_fit(value.fleet_id, value.key))
-on_fleet('fleet:sign-up', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.sign_up(value.fleet_id, value.key))
+on_fleet('fleet:copy-fit', value => { const ship = fleet_ship(value); if (ship) fleet_window.copy_fit(ship.fleet_id, ship.key) })
+on_fleet('fleet:sign-up', value => { const ship = fleet_ship(value); if (ship) fleet_window.sign_up(ship.fleet_id, ship.key) })
 on_fleet('fleet:srp', value => id_of(value) && fleet_window.file_srp(value))
 on_fleet('fleet:dismiss-loss', value => id_of(value) && fleet_window.dismiss_loss(value))
 on_fleet('fleet:done', () => fleet_window.done())
@@ -830,11 +838,10 @@ on_fleet('fleet:destination', value => id_of(value) && fleet_window.set_destinat
 on_fleet('fleet:preping', value => id_of(value) && fleet_window.preping(value))
 on_fleet('fleet:start', value => id_of(value) && fleet_window.start(value))
 on_fleet('fleet:remind', value => id_of(value) && fleet_window.toggle_reminder(value))
-ipcMain.on('campaigns:open', () => {
+on_command('campaigns:open', () => {
     // Same rule as fleets: only a URL we built.
     if (state.campaign) shell.openExternal(state.campaign.url)
 })
-ipcMain.on('intel:refresh', () => intel.refresh())
 // The paste button reads the clipboard here, on the pilot's click; Ctrl+V in a focused window sends the text.
 // The draft starts on the system of the client in front (EVE's logs), which the pilot can overwrite.
 function start_draft(text) {
@@ -843,40 +850,44 @@ function start_draft(text) {
     intel.set_origin(state.location)
     intel.paste(text)
 }
-ipcMain.on('intel:paste', () => start_draft(clipboard.readText()))
-ipcMain.on('intel:paste-text', (event, text) => start_draft(text))
-ipcMain.on('intel:kind', (event, kind) => intel.set_kind(kind))
-ipcMain.on('intel:edit', (event, change) => change && intel.edit_draft(change))
-ipcMain.on('intel:share', async () => {
+on_command('intel:paste', () => start_draft(clipboard.readText()))
+on_command('intel:paste-text', (event, text) => start_draft(text))
+on_command('intel:kind', (event, kind) => intel.set_kind(kind))
+on_command('intel:edit', (event, change) => change && intel.edit_draft(change))
+on_command('intel:share', async () => {
     const url = await intel.share()
     if (!url) return   // failed: the draft stays open for another try
     clipboard.writeText(url)
     intel_typing(false)
 })
-ipcMain.on('intel:discard', () => { intel.discard(); intel_typing(false) })
-ipcMain.on('intel:open-report', (event, report_id) => intel.open_report(report_id))
-ipcMain.on('intel:close-report', () => intel.close_report())
-ipcMain.on('intel:copy-link', (event, report_id) => {
+on_command('intel:discard', () => { intel.discard(); intel_typing(false) })
+on_command('intel:open-report', (event, report_id) => intel.open_report(report_id))
+on_command('intel:close-report', () => intel.close_report())
+on_command('intel:copy-link', (event, report_id) => {
     const url = intel.url_for(report_id)
     if (url) clipboard.writeText(url)
 })
-ipcMain.on('intel:open-site', (event, report_id) => {
+on_command('intel:open-site', (event, report_id) => {
     const url = intel.url_for(report_id)
     if (url) shell.openExternal(url)
 })
-ipcMain.on('intel:range', (event, range) => {
-    if (range !== null && !Number.isInteger(range)) return
+on_command('intel:range', (event, value) => {
+    const range = intel_range(value)
+    if (range === undefined) return
     save_window('intel', { range })
     intel.set_options({ range })
 })
-ipcMain.on('update:install', () => install_update())
-ipcMain.on('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
-ipcMain.on('update:check', () => updater && updater.check())
-ipcMain.on('settings:open', () => { if (state.user) open_settings() })
-ipcMain.on('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
-ipcMain.on('window:set-enabled', (event, change) => change && typeof change.enabled === 'boolean' && set_window_enabled(change.id, change.enabled))
-ipcMain.on('lock:toggle', () => set_user_setting('locked', !settings.get('locked')))
-ipcMain.on('window:minimize', event => {
+on_command('update:install', () => install_update())
+on_command('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
+on_command('update:check', () => updater && updater.check())
+on_command('settings:open', () => { if (state.user) open_settings() })
+on_command('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
+on_command('window:set-enabled', (event, value) => {
+    const change = window_toggle(value)
+    if (change) set_window_enabled(change.id, change.enabled)
+})
+on_command('lock:toggle', () => set_user_setting('locked', !settings.get('locked')))
+on_command('window:minimize', event => {
     const win = sender_window(event)
     const id = overlay_id_of(win)
     if (id) {
@@ -887,11 +898,11 @@ ipcMain.on('window:minimize', event => {
         win.minimize()
     }
 })
-ipcMain.on('window:close', event => {
+on_command('window:close', event => {
     const win = sender_window(event)
     if (win) win.close()
 })
-ipcMain.on('mouse:interactive', (event, interactive) => {
+on_command('mouse:interactive', (event, interactive) => {
     const win = sender_window(event)
     if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable()) {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
@@ -899,12 +910,12 @@ ipcMain.on('mouse:interactive', (event, interactive) => {
 })
 // Unpinned windows move by the header and resize from the grip (eve_window.js wire_drag).
 let drag = null
-ipcMain.on('drag:start', (event, start) => {
+on_command('drag:start', (event, start) => {
     const win = sender_window(event)
     if (!win || settings.get('locked') || !start || !['move', 'resize'].includes(start.kind)) return
     drag = { win, kind: start.kind, point: start.point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
 })
-ipcMain.on('drag:move', (event, point) => {
+on_command('drag:move', (event, point) => {
     if (!drag || drag.win.isDestroyed() || drag.win !== sender_window(event)) return
     const dx = Math.round(point.x - drag.point.x)
     const dy = Math.round(point.y - drag.point.y)
@@ -912,7 +923,8 @@ ipcMain.on('drag:move', (event, point) => {
     if (drag.kind === 'move') drag.win.setBounds({ ...drag.bounds, x: drag.bounds.x + dx, y: drag.bounds.y + dy })
     else drag.win.setBounds({ ...drag.bounds, width: Math.max(drag.min.width, drag.bounds.width + dx), height: Math.max(drag.min.height, drag.bounds.height + dy) })
 })
-ipcMain.on('drag:end', () => { drag = null })
+on_command('drag:end', () => { drag = null })
+for (const command of COMMANDS) if (!registered.has(command)) throw new Error(`IPC command ${command} has no handler in main.js`)
 
 // ---------------------------------------------------------------- lifecycle
 

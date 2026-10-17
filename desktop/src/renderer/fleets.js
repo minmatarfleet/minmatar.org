@@ -101,7 +101,7 @@ document.addEventListener('click', event => {
         if (fleet && fleet.live && fleet.live.id === id) return set_tab('fleet')
         ui.tab = 'upcoming'
         render()
-        return send('fleets:open', id)
+        return send('fleet:open', id)
     }
     if ('close' in target.dataset) return send('fleet:close')
     if (target.dataset.appCommand) return send(target.dataset.appCommand)
