@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
 const { start_login, decode_token_payload, TokenStore, LoginCancelled, LoginFailed } = require('./auth')
-const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('./api')
+const { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign } = require('./api')
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
@@ -16,7 +16,8 @@ const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
-const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE } = require('./intel')
+const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE, REFRESH_MS: INTEL_REFRESH_MS } = require('./intel')
+const { Poller, window_data_wanted } = require('./poller')
 const { MenuFade, intersects } = require('./menu_fade')
 const { COMMANDS, id_of, fleet_ship, intel_range, window_toggle } = require('./ipc_commands')
 
@@ -56,8 +57,9 @@ const overlays = new Map()       // window id -> BrowserWindow
 const hidden = new Set()         // overlay ids closed/minimised this session (the tray or Settings brings them back)
 let active_hwnd = null           // last logged-in EVE client that was in front (Sneak sits on its badge)
 let login_flow = null
-let refresh_timer = null
-let list_refreshed_at = 0
+let reminder_timer = null
+let pollers = {}                 // window id -> Poller for that window's data (created at start-up)
+let intel_on = false             // the Intel window is enabled for the signed-in pilot
 let fleet_snapshot = null        // what the Fleets window's fleet view shows (fleet_window.js), sent on its own channel
 let quitting = false
 let glass_ready = false
@@ -271,9 +273,9 @@ function show_windows() {
         if (!overlays.has(def.id)) create_overlay(def)
     }
     reveal_overlays()
-    start_refresh()
-    update_polling()
+    start_reminders()
     sync_intel()
+    update_polling()
 }
 
 function set_window_enabled(id, enabled) {
@@ -283,12 +285,11 @@ function set_window_enabled(id, enabled) {
         hidden.delete(id)
         if (state.user && !overlays.has(id)) create_overlay(window_def(id))
         reveal_overlays()
-        WINDOW_LOADERS[id]?.()   // a window enabled mid-session has no data yet
     } else {
         destroy_overlay(id)
     }
-    update_polling()
     sync_intel()
+    update_polling()   // a window enabled mid-session loads at once (it has no data yet)
     update_tray()
     push_state()
 }
@@ -479,12 +480,12 @@ function apply_loaded_settings(keys) {
         const win = overlays.get(def.id)
         if (!window_enabled(def.id)) destroy_overlay(def.id)
         else if (!win) {
-            create_overlay(def)
-            WINDOW_LOADERS[def.id]?.()   // enabled by the account's settings: it has no data yet
+            create_overlay(def)   // enabled by the account's settings: update_polling below loads it
         } else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
     }
     update_overlay_visibility({ force: true })
     sync_intel()
+    update_polling()
     update_tray()
     push_state()
 }
@@ -521,26 +522,39 @@ function set_user_setting(key, value) {
 
 // ---------------------------------------------------------------- data
 
-// The fleet list and the fleet view poll only while the Fleets window is up: not closed to the tray,
-// and not while EVE isn't running, when the window can't show anyway.
-function polling_wanted() {
-    if (!state.user || !settings) return false
-    const win = overlays.get('fleets')
-    if (!win || win.isDestroyed() || hidden.has('fleets')) return false
-    return !eve || !eve.supported || eve.failed || eve.eve_running
+// A window's data is polled only while the window can show (poller.js window_data_wanted); otherwise
+// polling would only load the API. Coming back loads at once if the data is stale.
+function window_wanted(id) {
+    const win = overlays.get(id)
+    return window_data_wanted({
+        signed_in: !!(state.user && settings),
+        open: !!(win && !win.isDestroyed()),
+        hidden: hidden.has(id),
+        helper: eve,
+    })
 }
 
+// Re-check every poller. Called whenever a window opens, closes or hides, EVE starts or stops, or the pilot changes.
 function update_polling() {
     if (!fleet_window) return
-    const wanted = polling_wanted()
-    fleet_window.set_active(wanted)
-    if (wanted && list_wanted() && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
+    fleet_window.set_active(window_wanted('fleets'))   // the fleet views (fleet_window.js)
+    for (const poller of Object.values(pollers)) poller.sync()
 }
 
-// The schedule feeds every tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed), so it
-// is fetched whenever the window is up; the fleet views have their own poll.
-function list_wanted() {
-    return polling_wanted()
+// The schedule feeds every Fleets tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed);
+// Campaigns and Intel each have their own data. Same rule for all (poller.js).
+function create_pollers() {
+    const poller = (id, interval_ms, run) => new Poller({ interval_ms, run, wanted: () => window_wanted(id), on_unauthorized: session_expired })
+    pollers = {
+        fleets: poller('fleets', config.refresh_ms, refresh_fleets),
+        campaigns: poller('campaigns', config.refresh_ms, refresh_campaign),
+        intel: poller('intel', INTEL_REFRESH_MS, () => intel.refresh()),
+    }
+}
+
+// Every 401 from the API ends up here: the session is gone, sign out once.
+function session_expired() {
+    if (state.user) sign_out('Your session has expired. Sign in again.')
 }
 
 function fetch_error(err, what) {
@@ -550,21 +564,24 @@ function fetch_error(err, what) {
 }
 
 // Each window's data loads on its own, so a slow campaign request never holds back the fleets list.
-// A load already in flight is reused rather than started twice (interval tick, refresh button, enabling a window).
+// A load already in flight is reused rather than started twice (poll, refresh button, enabling a window).
+// Resolves true when it loaded, false when it failed (the poller backs off).
 const in_flight = new Map()   // source -> promise
 
 function load(source, fetcher, apply) {
-    if (!state.user) return Promise.resolve()
+    if (!state.user) return Promise.resolve(false)
     if (in_flight.has(source)) return in_flight.get(source)
     const done = (async () => {
         try {
             const value = await fetcher()
             if (state.user) apply(value, null)   // not if the pilot signed out meanwhile
+            return true
         } catch (err) {
             diag({ t: 'refresh-error', source, status: err.status, message: err.message })
-            if (!state.user) return
-            if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
-            apply(null, err)
+            if (!state.user) return false
+            if (is_unauthorized(err)) session_expired()
+            else apply(null, err)
+            return false
         }
     })().finally(() => {
         in_flight.delete(source)
@@ -577,10 +594,7 @@ function load(source, fetcher, apply) {
     return done
 }
 
-// The upcoming list is only fetched while it's on screen (force: the refresh button and tray).
-function refresh_fleets({ force = false } = {}) {
-    if (!force && !list_wanted()) return Promise.resolve()
-    list_refreshed_at = Date.now()
+function refresh_fleets() {
     return load('fleets', () => load_upcoming_fleets(api, config.web_url), (fleets, err) => {
         if (err) return void (state.error = fetch_error(err, 'fleets'))
         state.fleets = fleets
@@ -599,34 +613,38 @@ function refresh_campaign() {
     })
 }
 
-const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
+// The refresh buttons and the tray's Refresh: every enabled window's data now, whether or not it's on
+// screen. A disabled window costs no requests.
+function refresh_all() {
+    if (!state.user) return
+    for (const [id, poller] of Object.entries(pollers)) if (window_enabled(id)) poller.poll()
+    if (fleet_window) fleet_window.poll()
+    check_reminders()
+}
 
-// Data for the windows the pilot has enabled; a disabled window costs no requests.
-function refresh({ force = false } = {}) {
-    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader({ force })
-    // "Remind me" toasts fire whether or not the Fleets window is up.
+// "Remind me" toasts fire whether or not the Fleets window is up.
+function check_reminders() {
     if (fleet_window && state.user) fleet_window.check_reminders()
 }
 
-function start_refresh() {
-    clearInterval(refresh_timer)
-    refresh()
-    refresh_timer = setInterval(refresh, config.refresh_ms)
+function start_reminders() {
+    clearInterval(reminder_timer)
+    check_reminders()
+    reminder_timer = setInterval(check_reminders, config.refresh_ms)
 }
 
 // ---------------------------------------------------------------- intel
 
-// Poll the intel sheet only while the Intel window is on.
+// The Intel window was turned on (or off) for this pilot: give it the saved range and where the pilot is.
+// Its poller (update_polling) does the fetching.
 function sync_intel() {
     const on = !!state.user && window_enabled('intel')
-    if (on && !intel.timer) {
+    if (on && !intel_on) {
         const range = window_saved('intel').range
         intel.set_options({ range: range === undefined ? INTEL_DEFAULT_RANGE : range })
         intel.set_origin(state.location)
-        intel.start()
-    } else if (!on && intel.timer) {
-        intel.stop()
     }
+    intel_on = on
 }
 
 // Typing a note needs keyboard focus, which overlay windows never take. Let the Intel window take it
@@ -687,7 +705,9 @@ async function begin_login() {
 }
 
 function sign_out(reason = null) {
-    clearInterval(refresh_timer)
+    clearInterval(reminder_timer)
+    for (const poller of Object.values(pollers)) poller.reset()
+    intel_on = false
     fleet_window.reset()
     api.forget_cached()
     set_fleet_snapshot(null)
@@ -792,7 +812,7 @@ function update_tray() {
     tray.setContextMenu(Menu.buildFromTemplate([
         { label: 'Show windows', enabled: signed_in, click: () => show_windows() },
         { label: 'Settings…', enabled: signed_in, click: () => open_settings() },
-        { label: 'Refresh', enabled: signed_in, click: () => { refresh({ force: true }); fleet_window.poll(); if (intel.timer) intel.refresh() } },
+        { label: 'Refresh', enabled: signed_in, click: () => refresh_all() },
         { type: 'separator' },
         ...update_menu_items(),
         signed_in ? { label: `Sign out (${state.user.name})`, click: () => sign_out() } : { label: 'Sign in…', click: show_login },
@@ -818,10 +838,7 @@ on_command('login:start', () => begin_login())
 on_command('login:cancel', () => login_flow && login_flow.cancel())
 on_command('auth:sign-out', () => sign_out())
 // The refresh button in any window's title bar refreshes every enabled window's data, like the tray's Refresh.
-on_command('app:refresh', () => {
-    refresh({ force: true })
-    if (fleet_window && state.user) fleet_window.poll()
-})
+on_command('app:refresh', () => refresh_all())
 // Fleet window clicks. Each is one click; fleet_window.js only acts on fleets, ships, killmails and
 // systems it is showing, never on ids the renderer made up.
 const on_fleet = (command, act) => on_command(command, (event, value) => { if (fleet_window && state.user) act(value) })
@@ -956,14 +973,15 @@ app.whenReady().then(async () => {
         store: { get: key => settings && settings.get(key), set: (key, value) => settings && settings.set(key, value) },
     })
     fleet_window.on('change', set_fleet_snapshot)
-    fleet_window.on('unauthorized', () => sign_out('Your session has expired. Sign in again.'))
+    fleet_window.on('unauthorized', session_expired)
     intel = new IntelController({
         api,
         web_url: config.web_url,
         on_change: view => { state.intel = view; push_state() },
-        on_unauthorized: () => sign_out('Your session has expired. Sign in again.'),
+        on_unauthorized: session_expired,
         diag,
     })
+    create_pollers()
     settings = new Settings({
         defaults: SETTINGS_DEFAULTS,
         session_keys: SESSION_SETTINGS,
@@ -980,6 +998,7 @@ app.whenReady().then(async () => {
         for (const win of all_windows()) if (win !== mascot_win) eve.apply_glass(win)
         push_state()
         update_overlay_visibility({ force: true })
+        update_polling()
     })
     eve.on('change', () => {
         update_overlay_visibility()
@@ -1055,9 +1074,9 @@ app.on('before-quit', event => {
         flush_settings_before_quit().finally(() => app.quit())
         return
     }
-    clearInterval(refresh_timer)
+    clearInterval(reminder_timer)
+    for (const poller of Object.values(pollers)) poller.stop()
     if (fleet_window) fleet_window.stop()
-    if (intel) intel.stop()
     if (settings) settings.stop()
     if (eve) eve.stop()
     if (eve_window) eve_window.stop()
