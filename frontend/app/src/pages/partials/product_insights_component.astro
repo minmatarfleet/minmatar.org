@@ -32,13 +32,14 @@ const PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?pr
 const POLL_URL = `${PARTIAL_URL}&attempt=${attempt + 1}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
 ---
 
 {!auth_token ?
-    <div class="[ insights-notice ]">
-        <p>{t('industry.product.login_for_insights')}</p>
-    </div>
+    <FlexInline>
+        <p class="[ text-[var(--foreground)] ]">{t('industry.product.login_for_insights')}</p>
+    </FlexInline>
     : fetch_error ?
     <ErrorRefetch
         args={{
@@ -50,26 +51,15 @@ import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
     : insights && insights.ready ?
     <ProductInsightsPanel insights={insights} />
     : attempt < MAX_ATTEMPTS ?
-    <div
-        class="[ insights-notice ]"
+    <FlexInline
         hx-get={POLL_URL}
         hx-trigger={`load delay:${POLL_SECONDS}s`}
         hx-swap="outerHTML"
     >
-        <p class="[ loading ]">{t('industry.product.computing')}</p>
-    </div>
+        <p class="[ loading text-[var(--foreground)] ]">{t('industry.product.computing')}</p>
+    </FlexInline>
     :
-    <div class="[ insights-notice ]">
-        <p>{t('industry.product.computing_slow')}</p>
-    </div>
+    <FlexInline>
+        <p class="[ text-[var(--foreground)] ]">{t('industry.product.computing_slow')}</p>
+    </FlexInline>
 }
-
-<style lang="scss">
-    .insights-notice {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-s);
-        color: var(--foreground);
-    }
-</style>

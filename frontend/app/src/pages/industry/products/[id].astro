@@ -4,8 +4,8 @@ const { t, translatePath } = i18n(Astro.url)
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
 
-import type { Product } from '@dtypes/api.minmatar.org'
-import { get_product_by_id } from '@helpers/api.minmatar.org/industry'
+import type { Product, ProductInsights } from '@dtypes/api.minmatar.org'
+import { get_product_by_id, get_product_insights } from '@helpers/api.minmatar.org/industry'
 
 const product_id = parseInt(Astro.params.id ?? '0')
 
@@ -23,6 +23,18 @@ try {
 
 if (fetching_error && (fetching_error.cause === 404 || fetching_error.cause === 400))
     return Astro.redirect(translatePath('/industry/products/'))
+
+// Render the panel here when the cache is warm. Its styles only reach the
+// page if the page renders it; htmx drops the <link> a partial leads with.
+let insights: ProductInsights | null = null
+
+if (product && auth_token) {
+    try {
+        insights = await get_product_insights(auth_token, product_id)
+    } catch {
+        // The partial below retries and shows the error.
+    }
+}
 
 import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
@@ -56,6 +68,7 @@ import Button from '@components/blocks/Button.astro'
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
 import Picture from '@components/blocks/Picture.astro'
 import Tag from '@components/blocks/Tag.astro'
 
@@ -138,7 +151,9 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
             />
             :
             <Flexblock gap="var(--space-xl)">
-                {auth_token ?
+                {auth_token && insights?.ready ?
+                    <ProductInsightsPanel insights={insights} />
+                    : auth_token ?
                     <div
                         hx-get={INSIGHTS_PARTIAL_URL}
                         hx-trigger="load"
