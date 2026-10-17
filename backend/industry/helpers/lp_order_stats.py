@@ -8,7 +8,7 @@ from statistics import median
 from django.db.models import Min, Q
 from django.utils import timezone
 
-from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EvePlayer
 from industry.helpers.lp_market_orders import CANCELLED, COMPLETED, EXPRESS
 from industry.models import (
     IndustryLoyaltyPointMarketOrder,
@@ -99,10 +99,16 @@ def _converters(completed_ids: list[int]) -> list[dict]:
                 (order.completed_at - claim.created_at).total_seconds()
             )
 
+    primaries = {
+        player.user_id: player.primary_character
+        for player in EvePlayer.objects.filter(
+            user_id__in=by_user
+        ).select_related("primary_character")
+    }
     converters = []
     for user_id, row in by_user.items():
         user = row["user"]
-        primary = user_primary_character(user)
+        primary = primaries.get(user_id)
         converters.append(
             {
                 "user_id": user_id,

@@ -36,6 +36,8 @@ const {
 } = Astro.props
 
 const lanes = desk_lanes(orders)
+// Busy lanes show the oldest few; the rest open per lane.
+const VISIBLE_CARDS = 6
 const now = new Date()
 const seconds_since = (date: Date | string) => (now.getTime() - new Date(date).getTime()) / 1000
 
@@ -70,7 +72,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
 
 <div class="[ loyalty-lanes ]">
     {LANES.map((lane) => (
-        <section class="[ loyalty-lanes__lane ]" aria-labelledby={`loyalty-lane-${lane.key}`}>
+        <section class="[ loyalty-lanes__lane ]" aria-labelledby={`loyalty-lane-${lane.key}`} x-data="{ more: false }">
             <div class="[ loyalty-lanes__head ]">
                 <h3 id={`loyalty-lane-${lane.key}`}>{lane.title}</h3>
                 <span class="[ tabular-nums ]">{lanes[lane.key].length}</span>
@@ -78,13 +80,17 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
             {lanes[lane.key].length === 0 && (
                 <p class="[ loyalty-lanes__empty ]">{t('industry.loyalty.desk.lane.empty')}</p>
             )}
-            {lanes[lane.key].map((order) => {
+            {lanes[lane.key].map((order, index) => {
                 const chip = chip_for(order, lane.key)
                 const destination = order_destination(order)
                 const converter = order_converter(order)
                 const seller_id = order.side === 'buy' ? null : order.created_by_character_id
                 return (
-                    <article class:list={['loyalty-lanes__card', { 'is-late': chip.tone === 'late' }]}>
+                    <article
+                        class:list={['loyalty-lanes__card', { 'is-late': chip.tone === 'late' }]}
+                        x-show={index >= VISIBLE_CARDS ? 'more' : undefined}
+                        style={index >= VISIBLE_CARDS ? 'display: none' : undefined}
+                    >
                         <div class="[ loyalty-lanes__row ]">
                             <span class:list={['loyalty-lanes__chip', `is-${chip.tone}`]}>{chip.text}</span>
                             <a href={translatePath(`/industry/loyalty/orders/${order.id}/`)}>#{order.id}</a>
@@ -129,6 +135,14 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                     </article>
                 )
             })}
+            {lanes[lane.key].length > VISIBLE_CARDS && (
+                <button type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
+                    <span x-show="!more">
+                        {t('industry.loyalty.desk.lane.show_more').replace('{count}', String(lanes[lane.key].length - VISIBLE_CARDS))}
+                    </span>
+                    <span x-show="more" style="display: none">{t('industry.loyalty.desk.lane.show_fewer')}</span>
+                </button>
+            )}
             {lane.note && <p class="[ loyalty-lanes__note ]">{lane.note}</p>}
         </section>
     ))}
@@ -180,6 +194,23 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     .loyalty-lanes__note {
         border: 0;
         padding-block: 0;
+    }
+
+    .loyalty-lanes__more {
+        min-height: var(--space-l);
+        border: 1px dashed var(--border-color-hover);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+            }
+        }
     }
 
     .loyalty-lanes__card {
