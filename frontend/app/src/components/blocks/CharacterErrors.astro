@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -48,12 +48,12 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                     <Flexblock gap="var(--space-3xs)">
                         <h4>
                             {character_error?.character?.character_name ?
-                                ((t(`${character_error.error}_title` as any) ?? t('DATA_ERROR_title')).replace('CHARACTER_NAME', character_error.character.character_name as string)) :
-                                (t(`${character_error.error}_title` as any) ?? t('DATA_ERROR_title'))
+                                ((t(t_key('', character_error.error, '_title')) ?? t('DATA_ERROR_title')).replace('CHARACTER_NAME', character_error.character.character_name as string)) :
+                                (t(t_key('', character_error.error, '_title')) ?? t('DATA_ERROR_title'))
                             }
                         </h4>
                         <Markdown
-                            markdown={t(`${character_error.error}_description` as any) ?? t('DATA_ERROR_description')}
+                            markdown={t(t_key('', character_error.error, '_description')) ?? t('DATA_ERROR_description')}
                             inline={true}
                             inline_element='small'
                         />

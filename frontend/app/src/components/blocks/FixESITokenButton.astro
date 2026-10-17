@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, ESITokenRoles } from '@dtypes/api.minmatar.org'
@@ -72,7 +72,7 @@ import Tag from '@components/blocks/Tag.astro';
                     <Select x-model="esi_token">
                         <option value="">{t('select_group_to_add')}</option>
                         {esi_tokens_roles.map(role =>
-                            <option value={role}>{t(role as any) ?? role}</option>
+                            <option value={role}>{t(dynamic_key(role)) ?? role}</option>
                         )}
                     </Select>
                 </Grid>

@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
@@ -17,7 +17,7 @@ try {
     const id = Astro.url.searchParams.get('id') as string
 
     if (error) {
-        const error_text = t(error as any) ?? error
+        const error_text = t(dynamic_key(error)) ?? error
         const error_message = error_text !== undefined ? error_text : t('exchange_token_failed')
         throw new Error(`${error_message}. ${t('code_hint').replace('CODE', id ?? '---')}`)
     }

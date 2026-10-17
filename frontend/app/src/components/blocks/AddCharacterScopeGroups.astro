@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import {
@@ -34,7 +34,7 @@ const total_template = t('scope_groups.total')
 
 const scope_count_label = (count: number, additive: boolean) =>
     `${additive ? '+' : ''}${t(count === 1 ? 'scope_groups.scope_count_one' : 'scope_groups.scope_count').replace('{count}', String(count))}`
-const scope_description = (scope: string) => t(`${scope}_description` as any) ?? ''
+const scope_description = (scope: string) => t(t_key('', scope, '_description')) ?? ''
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -81,11 +81,11 @@ import Tag from '@components/blocks/Tag.astro'
                 <div class="[ scope-group-head ]">
                     <Flexblock gap="var(--space-3xs)" class="[ scope-group-text ]">
                         <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
-                            <h4 id={`scope-group-${group.key}`}>{t(group.key as any)}</h4>
+                            <h4 id={`scope-group-${group.key}`}>{t(dynamic_key(group.key))}</h4>
                             <small class="[ scope-group-count ]">{scope_count_label(group.scopes.length, group.key !== 'Basic')}</small>
                         </FlexInline>
-                        <small>{t(`scope_groups.${group.key}.summary` as any)}</small>
-                        <small class="[ scope-group-used-for ]">{t('scope_groups.used_for')}: {t(`scope_groups.${group.key}.used_for` as any)}</small>
+                        <small>{t(t_key('scope_groups.', group.key, '.summary'))}</small>
+                        <small class="[ scope-group-used-for ]">{t('scope_groups.used_for')}: {t(t_key('scope_groups.', group.key, '.used_for'))}</small>
                     </Flexblock>
 
                     {group.locked ?
@@ -96,7 +96,7 @@ import Tag from '@components/blocks/Tag.astro'
                             x-model={`on.${group.key}`}
                             x-on:change="save()"
                         >
-                            <span class="[ visually-hidden ]">{t('scope_groups.toggle_label').replace('{group}', t(group.key as any))}</span>
+                            <span class="[ visually-hidden ]">{t('scope_groups.toggle_label').replace('{group}', t(dynamic_key(group.key)))}</span>
                         </Switch>
                     }
                 </div>
@@ -107,7 +107,7 @@ import Tag from '@components/blocks/Tag.astro'
                         x-show={`!on.${group.key}`}
                         style={chosen.includes(group.key) ? 'display: none' : undefined}
                     >
-                        {t('scope_groups.off_note').replace('{group}', t(group.key as any))}
+                        {t('scope_groups.off_note').replace('{group}', t(dynamic_key(group.key)))}
                     </small>
                 }
 

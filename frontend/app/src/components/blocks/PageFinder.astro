@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import { is_prod_mode } from '@helpers/env'
@@ -55,7 +55,7 @@ const filter_pages = pages.map( (page) => {
     return {
         slug: page.slug,
         keywords: page?.keywords ?? [],
-        title: t(`${page.slug}.page_title` as any) ?? page.slug
+        title: t(t_key('', page.slug, '.page_title')) ?? page.slug
     }
 })
 
@@ -178,17 +178,17 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                 >
                                     <picture>
                                         {page.icon &&
-                                            <img loading="lazy" src={page.icon} height="48" width="48" alt={t(page.alt as any) ?? page.alt} />
+                                            <img loading="lazy" src={page.icon} height="48" width="48" alt={t(dynamic_key(page.alt)) ?? page.alt} />
                                         }
                                     </picture>
                                     <FluidFixed width='32px' class="[ items-center grow ]">
                                         <Flexblock gap='0' class="[ items-start ]">
                                             <span class="[ truncate ]">
-                                                {t(`${page.slug}.page_title` as any) ?? page.slug}
+                                                {t(t_key('', page.slug, '.page_title')) ?? page.slug}
                                                 <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
                                             </span>
                                             {page?.description &&
-                                                <small>{t(page.description as any) ?? page.description}</small>
+                                                <small>{t(dynamic_key(page.description)) ?? page.description}</small>
                                             }
                                             {page.path && page.path !== '/' &&
                                                 <small><code class="[ p-0 ]">{page.path}</code></small>

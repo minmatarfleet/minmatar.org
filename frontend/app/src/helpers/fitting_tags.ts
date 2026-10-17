@@ -1,6 +1,6 @@
 export function fitting_tag_label(slug: string, t: (key: string) => string): string {
     const key = `fitting.tag.${slug}`
-    const label = t(key as any)
+    const label = t(key)
     return !label || label === key ? slug.replace(/_/g, ' ') : label
 }
 

@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 import type { BreadcrumbLinkProps } from '@dtypes/layout_components'
@@ -47,7 +47,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
     if (!page.publish && is_prod_mode()) {
         return {
             accumulated_path: page.path,
-            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
             available: false,
             reason: t('not_published')
         }
@@ -56,7 +56,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
     if (user && user?.is_superuser) {
         return {
             accumulated_path: page.path,
-            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
             available: true,
         }
     }
@@ -64,7 +64,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
     if (!page?.permissions) {
         return {
             accumulated_path: page.path,
-            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
             available: true,
         }
     }
@@ -72,7 +72,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
     if (page.permissions?.auth && !user) {
         return {
             accumulated_path: page.path,
-            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
             available: false,
             reason: t('authentication_required')
         }
@@ -81,7 +81,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
     if (page.permissions?.gate && (!user || !can(gates, page.permissions.gate as GateKey))) {
         return {
             accumulated_path: page.path,
-            page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+            page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
             available: false,
             reason: t('missing_permissions')
         }
@@ -89,7 +89,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
 
     return {
         accumulated_path: page.path,
-        page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,
+        page_title: t(t_key('', page.slug, '.page_title')) ?? `${page.slug}.page_title`,
         available: true
     }
 })
@@ -114,7 +114,7 @@ const generated_breadcrumbs = segments.map((_, index) => {
         .filter(page => page.accumulated_path === accumulated_path)
         .map(page => page.page_title)
 
-    let page_title:string = candidates.map(candidate => t(candidate as any)).find(translation => translation) ?? t(page_candidate[0] as any) ?? page_candidate[0] ?? humanize_segment(segments[index])
+    let page_title:string = candidates.map(candidate => t(dynamic_key(candidate))).find(translation => translation) ?? t(dynamic_key(page_candidate[0])) ?? page_candidate[0] ?? humanize_segment(segments[index])
 
     if (breadcrumb_page_title && index === segments.length - 1)
         page_title = breadcrumb_page_title

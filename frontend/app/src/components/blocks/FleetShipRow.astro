@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -38,7 +38,7 @@ import { BURST_KINDS, bursts_summary } from '@helpers/fleet_roles'
 import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
 
 const burst_labels = Object.fromEntries(
-    BURST_KINDS.map(kind => [kind, t(`burst_kind_${kind}` as any)])
+    BURST_KINDS.map(kind => [kind, t(t_key('burst_kind_', kind))])
 ) as Record<BurstKind, string>
 
 const FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteer_item_component/')

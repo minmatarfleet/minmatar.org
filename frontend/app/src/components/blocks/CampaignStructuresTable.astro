@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignStructure } from '@dtypes/api.minmatar.org'
@@ -114,18 +114,18 @@ import Tag from '@components/blocks/Tag.astro'
                         </FlexInline>
                     </span>
                     <span role="cell">{structure.system_name}</span>
-                    <span role="cell">{t(structure.structure_type as any) ?? structure.structure_type}</span>
+                    <span role="cell">{t(dynamic_key(structure.structure_type)) ?? structure.structure_type}</span>
                     <span role="cell">{structure.corporation_name || '—'}</span>
                     <span role="cell">{structure.related_alliance_name || structure.alliance_name || '—'}</span>
                     <span role="cell">
                         <Tag
-                            text={t(`campaigns.structures.affiliation.${affiliation}` as any)}
+                            text={t(t_key('campaigns.structures.affiliation.', affiliation))}
                             color={affiliation_color(affiliation)}
                         />
                     </span>
                     <span role="cell">
                         <Tag
-                            text={t(`campaigns.structures.status.${structure.status}` as any)}
+                            text={t(t_key('campaigns.structures.status.', structure.status))}
                             color={status_color(structure.status)}
                         />
                     </span>

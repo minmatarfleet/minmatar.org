@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CharacterTag } from '@dtypes/api.minmatar.org'
@@ -87,8 +87,8 @@ import Badge from '@components/blocks/Badge.astro';
                 x-on:change="is_dirty = true"
             >
                 <Flexblock gap='var(--space-3xs)'>
-                    <h3>{t(`${tag.description}_tag` as any) ?? tag.description}</h3>
-                    <small>{t(`${tag.description}_tag_description` as any) ?? tag.description}</small>
+                    <h3>{t(t_key('', tag.description, '_tag')) ?? tag.description}</h3>
+                    <small>{t(t_key('', tag.description, '_tag_description')) ?? tag.description}</small>
                 </Flexblock>
             </SelectableCard>    
         )}

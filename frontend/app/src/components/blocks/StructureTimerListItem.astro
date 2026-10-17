@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
@@ -63,7 +63,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     <Tag color='green' text={t('verified')} />
                 }
             </FlexInline>
-            <small>{t('structure_timer_template').replace('{state}', t(structure_timer.state as any) ?? structure_timer.state)}</small>
+            <small>{t('structure_timer_template').replace('{state}', t(dynamic_key(structure_timer.state)) ?? structure_timer.state)}</small>
         </Flexblock>
     </Tile>
 
@@ -84,7 +84,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         class="[ copy-button ]"
                         iconed={false}
                     >
-                        {`${structure_timer.timer}: ${t(structure_timer.structure_type as any) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
+                        {`${structure_timer.timer}: ${t(dynamic_key(structure_timer.structure_type)) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
                     </ClipboardButton>
 
                     {can_verify_timer && !structure_timer.verified &&
