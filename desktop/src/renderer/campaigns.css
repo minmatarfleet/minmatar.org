@@ -5,7 +5,7 @@
 .campaign-heading { display: flex; justify-content: space-between; gap: 8px; padding: 2px 8px; background: var(--eve-group); color: var(--eve-text); font-size: 12px; }
 
 .system {
-    display: grid; grid-template-columns: 16px 124px minmax(0, 1fr) 56px; column-gap: 10px; align-items: center;
+    display: grid; grid-template-columns: 16px 124px minmax(0, 1fr) 64px; column-gap: 10px; align-items: center;
     height: 40px; padding: 0 8px; border-bottom: 1px solid var(--eve-line); cursor: default;
 }
 .system:hover { background: var(--eve-hover); }
@@ -25,6 +25,7 @@
 .change { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--eve-text-dim); }
 .change svg { width: 8px; height: 8px; fill: currentColor; stroke: currentColor; stroke-width: 0; }
 .change--steady svg { fill: none; stroke-width: 2; }
+.change__period { margin-left: -2px; font-size: 10px; color: var(--eve-text-dim); }
 .change--up { color: var(--eve-live); }
 .change--down { color: var(--eve-danger); }
 
@@ -53,6 +54,7 @@
     .system { grid-template-columns: 14px 76px minmax(0, 1fr) 52px; column-gap: 8px; height: 28px; padding: 0 6px; }
     .system__holder { width: 14px; height: 14px; }
     .system__objective { display: none; }
+    .change__period { display: none; }
     .pilots { flex-wrap: nowrap; gap: 0; padding: 8px 6px 0; }
     .pilot, .pilot img, .pilots__more { width: 26px; height: 26px; }
     .pilot { border: 1px solid #0a0a0a; }

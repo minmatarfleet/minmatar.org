@@ -210,7 +210,12 @@ async function load_campaign(api, web_url) {
             holder: ['minmatar', 'amarr'].includes(system.holder) ? system.holder : null,
             objective: system.objective_label,
             progress: system.progress_percent,
-            change: system.change_24h,
+            // The rows are the week's objectives, so the move is the week's. A backend
+            // from before change_week only has the day's, and says so.
+            change: 'change_week' in system ? system.change_week : system.change_24h,
+            change_period: 'change_week' in system ? 'week' : '24h',
+            change_24h: system.change_24h,
+            flipped: ['captured', 'lost'].includes(system.flipped) ? system.flipped : null,
             detail: system.detail || '',
         })),
         active_window_minutes: campaign.active_window_minutes,

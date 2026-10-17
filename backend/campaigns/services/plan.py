@@ -42,6 +42,7 @@ from campaigns.models import (
 )
 from campaigns.services import advantage
 from campaigns.services import fleets as fleet_service
+from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +188,25 @@ def week_position(campaign: Campaign, week_start: date | None = None) -> dict:
     }
 
 
+def flip_outcome(occupier_start, occupier_now) -> str | None:
+    """Captured or lost, when the system changed hands since the start.
+
+    A flip resets the contest, so the change across it means nothing; the
+    flip itself is the news.
+    """
+    if (
+        not occupier_start
+        or not occupier_now
+        or occupier_start == occupier_now
+    ):
+        return None
+    if occupier_now == FACTION_MINMATAR:
+        return "captured"
+    if occupier_now == FACTION_AMARR:
+        return "lost"
+    return None
+
+
 def week_system_progress(
     campaign: Campaign, week_start: date | None = None
 ) -> list[dict]:
@@ -195,7 +215,7 @@ def week_system_progress(
     Start is the last contested/VP snapshot before the week opened (Thursday
     11:00 UTC). With no reading from before the week, start is the first
     snapshot inside it — the same fallback victory-point progress uses. Now
-    is the latest snapshot.
+    is the latest snapshot. ``flipped`` says whether it changed hands since.
     """
     week_start = week_start or campaign_week_start()
     window_start = week_bounds(week_start)[0]
@@ -270,6 +290,14 @@ def week_system_progress(
                 "advantage_our_now": (
                     round(latest_advantage.our_pct, 2)
                     if latest_advantage
+                    else None
+                ),
+                "flipped": (
+                    flip_outcome(
+                        opening.occupier_faction_id,
+                        latest.occupier_faction_id,
+                    )
+                    if opening and latest
                     else None
                 ),
             }

@@ -98,8 +98,8 @@ const OVERLAY = {
         week_index: 3,
         week_count: 6,
         systems: [
-            { system_id: 1, name: 'Kamela', solar_system_id: 30003069, priority: 'high', holder: 'amarr', objective: 'capture_complexes', objective_label: 'Capture complexes', progress_percent: 62, change_24h: 8, detail: '1,860 of 3,000 victory points' },
-            { system_id: 2, name: 'Auga', solar_system_id: 30002075, priority: 'low', holder: 'caldari', objective: 'hold_advantage', objective_label: 'Hold advantage', progress_percent: null, change_24h: null, detail: '' },
+            { system_id: 1, name: 'Kamela', solar_system_id: 30003069, priority: 'high', holder: 'amarr', objective: 'capture_complexes', objective_label: 'Capture complexes', progress_percent: 62, change_week: 22, change_24h: 8, flipped: null, detail: '1,860 of 3,000 victory points' },
+            { system_id: 2, name: 'Auga', solar_system_id: 30002075, priority: 'low', holder: 'caldari', objective: 'hold_advantage', objective_label: 'Hold advantage', progress_percent: null, change_week: null, change_24h: null, flipped: 'lost', detail: '' },
         ],
         active_window_minutes: 60,
         active_pilots: [
@@ -114,14 +114,21 @@ test('campaign overlay -> window model, with a link we build ourselves', async (
     const campaign = await load_campaign(api, 'https://web.example')
     assert.equal(calls[0].auth, 'Bearer jwt')
     assert.equal(campaign.url, 'https://web.example/campaigns/bleak-lands-push')
-    assert.deepEqual(campaign.systems.map(s => [s.name, s.objective, s.progress, s.change]), [
-        ['Kamela', 'Capture complexes', 62, 8],
-        ['Auga', 'Hold advantage', null, null],
+    assert.deepEqual(campaign.systems.map(s => [s.name, s.objective, s.progress, s.change, s.change_period, s.change_24h, s.flipped]), [
+        ['Kamela', 'Capture complexes', 62, 22, 'week', 8, null],
+        ['Auga', 'Hold advantage', null, null, 'week', null, 'lost'],
     ])
     assert.equal(campaign.systems[0].holder, 'amarr')
     assert.equal(campaign.systems[1].holder, null)   // only the two militias have a logo
     assert.equal(campaign.pilots[0].name, 'Pilot Main')
     assert.equal(campaign.pilots[0].in_fleet, true)
+})
+
+test('a backend from before the weekly move still draws the day\'s', async () => {
+    const old = { campaign: { ...OVERLAY.campaign, systems: [{ system_id: 1, name: 'Kamela', solar_system_id: 30003069, holder: 'amarr', objective: 'capture_complexes', objective_label: 'Capture complexes', progress_percent: 62, change_24h: 8, detail: '' }] } }
+    const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/campaigns/overlay': old }) })
+    const [system] = (await load_campaign(api, 'https://web.example')).systems
+    assert.deepEqual([system.change, system.change_period, system.flipped], [8, '24h', null])
 })
 
 test('no live campaign -> null; no access -> 403 for the window to explain', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CampaignSystemSummary, CampaignWeek, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
+import type { CampaignSystemSummary, CampaignWeek, CampaignWeekProgress, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
 import { campaign_objective_rows, contest_bar_percent, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
 
 describe('week_contest_move', () => {
@@ -107,6 +107,59 @@ describe('week_contest_move', () => {
         expect(rows[0]?.meter_percent).toBe(100)
     })
 
+    it('measures complex rows from where the week opened, keeping the day for the hover', () => {
+        const rows = campaign_objective_rows(week_with([
+            target({ id: 8, system: 'Kamela', goal: 'take', metric: 'victory_points' }),
+            target({ id: 9, system: 'Huola', goal: 'hold', metric: 'days_under_line' }),
+        ], [
+            week_progress({ system: 'Kamela', contested_start: 30, contested_now: 42.5 }),
+            week_progress({ system: 'Huola', contested_start: 4, contested_now: 12 }),
+        ]), [
+            system({ name: 'Kamela', goal: 'take', contested_percent: 42.5, contested_change_24h: -2 }),
+            system({ name: 'Huola', goal: 'hold', contested_percent: 12, contested_change_24h: 1 }),
+        ], objective_t)
+
+        const kamela = rows.find(row => row.system_name === 'Kamela')
+        const huola = rows.find(row => row.system_name === 'Huola')
+
+        expect(kamela?.change_label).toBe('week')
+        expect(kamela?.change_text).toBe('+13%')
+        expect(kamela?.change_direction).toBe('up')
+        expect(kamela?.delta_from_percent).toBeCloseTo(30)
+        expect(kamela?.change_24h_text).toBe('-2%')
+        expect(huola?.change_label).toBe('week')
+        expect(huola?.change_text).toBe('-8%')
+        expect(huola?.change_direction).toBe('down')
+        expect(huola?.change_24h_text).toBe('-1%')
+    })
+
+    it('shows a flip instead of a move when the system changed hands this week', () => {
+        const rows = campaign_objective_rows(week_with([
+            target({ id: 10, system: 'Kamela', goal: 'take', metric: 'victory_points' }),
+        ], [
+            week_progress({ system: 'Kamela', contested_start: 90, contested_now: 5, flipped: 'captured' }),
+        ]), [
+            system({ name: 'Kamela', goal: 'take', contested_percent: 5, contested_change_24h: -85 }),
+        ], objective_t)
+
+        expect(rows[0]?.flipped).toBe('captured')
+        expect(rows[0]?.change_text).toBe('')
+        expect(rows[0]?.delta_from_percent).toBeNull()
+    })
+
+    it('falls back to the day when the week has no reading for the system', () => {
+        const rows = campaign_objective_rows(week_with([], [
+            week_progress({ system: 'Other', contested_start: 10, contested_now: 20 }),
+        ]), [
+            system({ name: 'Kamela', goal: 'take', contested_percent: 20, contested_change_24h: 3 }),
+        ], objective_t)
+
+        expect(rows[0]?.change_label).toBe('24h')
+        expect(rows[0]?.change_text).toBe('+3%')
+        expect(rows[0]?.change_24h_text).toBe('')
+        expect(rows[0]?.flipped).toBeNull()
+    })
+
     it('counts our advantage rising as good only while we are pushing', () => {
         expect(week_contest_move('take', 30, 30, 20, 35)).toBe('ahead')
         expect(week_contest_move('pressure', 30, 30, 40, 25)).toBe('slipping')
@@ -170,13 +223,24 @@ const system = (overrides:Partial<CampaignSystemSummary> & Pick<CampaignSystemSu
     ...overrides,
 })
 
-const week_with = (targets:CampaignWeekTarget[]):CampaignWeek => ({
+const week_progress = (overrides:Partial<CampaignWeekProgress> & Pick<CampaignWeekProgress, 'system'>):CampaignWeekProgress => ({
+    system_id: overrides.system.length,
+    contested_start: null,
+    contested_now: null,
+    victory_points_start: null,
+    victory_points_now: null,
+    flipped: null,
+    ...overrides,
+})
+
+const week_with = (targets:CampaignWeekTarget[], progress:CampaignWeekProgress[] = []):CampaignWeek => ({
     week_start: '2026-10-13',
     week_end: '2026-10-20',
     week_index: 1,
     week_count: 4,
     day_index: 1,
     targets,
+    progress,
     commander_order_text: '',
     summary: {},
 })

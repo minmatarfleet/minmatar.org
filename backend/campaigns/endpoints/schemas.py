@@ -210,6 +210,8 @@ class WeekSystemProgressOut(Schema):
     # Our advantage at week open and now, so a push can show whether ours rose.
     advantage_our_start: float | None = None
     advantage_our_now: float | None = None
+    # "captured" or "lost" when the system changed hands this week.
+    flipped: Literal["captured", "lost"] | None = None
 
 
 class WeekPlan(Schema):
@@ -525,7 +527,12 @@ class CampaignOverlaySystem(Schema):
     objective: str
     objective_label: str
     progress_percent: float | None = None
+    # The bar's move since the week opened, and over the last day. A complex
+    # row that changed hands this week has no week move: ``flipped`` says
+    # "captured" or "lost" instead.
+    change_week: float | None = None
     change_24h: float | None = None
+    flipped: Literal["captured", "lost"] | None = None
     detail: str = ""
 
 

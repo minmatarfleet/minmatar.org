@@ -12,7 +12,7 @@ from django.utils import timezone
 import factory
 
 from campaigns.endpoints import overlay
-from campaigns.helpers import campaign_week_start
+from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
     Campaign,
     CampaignAdvantageReading,
@@ -78,6 +78,11 @@ class CampaignOverlayTests(TestCase):
             owner_faction_id=occupier,
         )
 
+    def _before_the_week(self, hours=1):
+        """Hours ago that falls ``hours`` before this campaign week opened."""
+        week_open = week_bounds(campaign_week_start())[0]
+        return (self.now - week_open).total_seconds() / 3600 + hours
+
     def _get(self, user=None):
         response = self.client.get(URL, **auth_headers(user or self.user))
         self.assertEqual(response.status_code, 200)
@@ -139,10 +144,46 @@ class CampaignOverlayTests(TestCase):
         self.assertEqual(defend["change_24h"], -3.0)
         self.assertNotIn("contested_percent", defend)
 
+    def test_complex_rows_move_from_where_the_week_opened(self):
+        self._snapshot(self.kamela, self._before_the_week(2), 900, AMARR)
+        self._snapshot(self.kamela, self._before_the_week(), 1200, AMARR)
+        self._snapshot(self.kamela, 0, 1860, AMARR)
+        self._snapshot(self.kourmonen, self._before_the_week(), 600, MINMATAR)
+        self._snapshot(self.kourmonen, 0, 390, MINMATAR)
+
+        rows = {row["name"]: row for row in self._get()["systems"]}
+
+        # The last reading before the week opened is the start: 40% to 62%.
+        self.assertEqual(rows["Kamela"]["change_week"], 22.0)
+        self.assertIsNone(rows["Kamela"]["flipped"])
+        # Defending, their 20% falling to 13% is seven points of safety won.
+        self.assertEqual(rows["Kourmonen"]["change_week"], 7.0)
+
+    def test_with_nothing_before_the_week_it_opens_on_its_first_reading(self):
+        self._snapshot(self.kamela, 0.5, 1500, AMARR)
+        self._snapshot(self.kamela, 0, 1860, AMARR)
+        row = next(r for r in self._get()["systems"] if r["name"] == "Kamela")
+        self.assertEqual(row["change_week"], 12.0)
+
+    def test_a_system_that_changed_hands_says_so_instead_of_a_move(self):
+        self._snapshot(self.kamela, self._before_the_week(), 2700, AMARR)
+        self._snapshot(self.kamela, 0, 300, MINMATAR)
+        self._snapshot(self.kourmonen, self._before_the_week(), 2400, MINMATAR)
+        self._snapshot(self.kourmonen, 0, 150, AMARR)
+
+        rows = {row["name"]: row for row in self._get()["systems"]}
+
+        self.assertEqual(rows["Kamela"]["flipped"], "captured")
+        self.assertIsNone(rows["Kamela"]["change_week"])
+        self.assertEqual(rows["Kourmonen"]["flipped"], "lost")
+        self.assertIsNone(rows["Kourmonen"]["change_week"])
+
     def test_a_system_with_no_readings_has_no_progress_yet(self):
         row = next(r for r in self._get()["systems"] if r["name"] == "Kamela")
         self.assertIsNone(row["progress_percent"])
+        self.assertIsNone(row["change_week"])
         self.assertIsNone(row["change_24h"])
+        self.assertIsNone(row["flipped"])
         self.assertIsNone(row["holder"])
 
     def test_this_weeks_targets_set_the_objectives(self):
@@ -319,13 +360,21 @@ class CampaignOverlayTests(TestCase):
         self.assertEqual(pilot["system"], "Kamela")
 
     def _advantage(
-        self, system, metric, our, enemy, our_day_ago, enemy_day_ago
+        self,
+        system,
+        metric,
+        our,
+        enemy,
+        our_day_ago,
+        enemy_day_ago,
+        baseline=0,
     ):
         CampaignWeekTarget.objects.create(
             campaign_system=system,
             week_start=campaign_week_start(),
             metric=metric,
             target=75,
+            baseline=baseline,
         )
         CampaignAdvantageState.objects.create(
             campaign_system=system,
@@ -378,6 +427,32 @@ class CampaignOverlayTests(TestCase):
         self.assertEqual(destroy["objective"], "destroy_advantage")
         self.assertEqual(destroy["progress_percent"], 65.0)
         self.assertEqual(destroy["change_24h"], 15.0)
+
+    def test_advantage_rows_move_from_the_targets_baseline(self):
+        self._advantage(
+            self.kamela,
+            CampaignWeekTarget.Metric.ADVANTAGE_GAIN,
+            our=41,
+            enemy=30,
+            our_day_ago=47,
+            enemy_day_ago=30,
+            baseline=30,
+        )
+        self._advantage(
+            self.kourmonen,
+            CampaignWeekTarget.Metric.ADVANTAGE_DESTROY,
+            our=20,
+            enemy=35,
+            our_day_ago=20,
+            enemy_day_ago=50,
+            baseline=60,
+        )
+        rows = {row["name"]: row for row in self._get()["systems"]}
+
+        # Down six today, but up eleven on the week.
+        self.assertEqual(rows["Kamela"]["change_week"], 11.0)
+        # Theirs from 60 at week open to 35 is 25 gained.
+        self.assertEqual(rows["Kourmonen"]["change_week"], 25.0)
 
     def test_a_fresh_copy_is_served_without_touching_the_database(self):
         overlay.overlay(self.campaign)

@@ -2870,6 +2870,8 @@ export interface CampaignWeekProgress {
     victory_points_now:     number | null;
     advantage_our_start?:   number | null;
     advantage_our_now?:     number | null;
+    /** Changed hands since the week opened: ours now, or theirs. */
+    flipped?:               'captured' | 'lost' | null;
 }
 
 export interface CampaignWeekSummary {
