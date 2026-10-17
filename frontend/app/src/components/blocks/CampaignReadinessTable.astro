@@ -171,7 +171,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         narrow={true}
                     />
                     {show_inclusion && (campaign_slug ?
-                        <span role="cell" class="[ campaign-cell ]">
+                        <span role="cell" class="[ campaign-cell ]" data-label={t('campaigns.readiness.in_campaign')}>
                             <Button
                                 size='sm'
                                 color={character.included ? 'transparent' : 'green'}
@@ -184,7 +184,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             </Button>
                         </span>
                         :
-                        <span role="cell" class="[ campaign-table-muted ]">{character.included ? t('campaigns.readiness.included') : '—'}</span>
+                        <span role="cell" class="[ campaign-table-muted ]" data-label={t('campaigns.readiness.in_campaign')}>{character.included ? t('campaigns.readiness.included') : '—'}</span>
                     )}
                     {mode === 'campaign' ? (
                         character.action_url ?
@@ -236,5 +236,72 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         white-space: nowrap;
         padding-block: var(--space-3xs);
         font-size: var(--step--1);
+    }
+
+    /* Phones: one card per character instead of a sideways-scrolling row. */
+    @media (max-width: 48rem) {
+        :global(.campaign-readiness .campaign-table) {
+            min-width: 0 !important;
+        }
+
+        :global(.campaign-readiness .campaign-table-head) {
+            display: none;
+        }
+
+        .campaign-table-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: var(--space-2xs) var(--space-s);
+            padding-inline: 0;
+            padding-block: var(--space-xs);
+        }
+
+        .campaign-table-row > :nth-child(2) {
+            justify-self: end;
+        }
+
+        /* Status and the in-campaign toggle share the second line. */
+        .campaign-table-row > :nth-child(3) {
+            grid-row: 2;
+            grid-column: 1;
+            justify-self: start;
+        }
+
+        .campaign-table-row > [data-label] {
+            grid-row: 2;
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-self: end;
+            gap: var(--space-2xs);
+        }
+
+        .campaign-table-row > [data-label]::before {
+            content: attr(data-label);
+            font-family: var(--heading-font);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--faded);
+            white-space: nowrap;
+        }
+
+        .campaign-table-row > :last-child {
+            grid-column: 1 / -1;
+        }
+
+        /* Without the in-campaign column a plain status note fits beside the tag. */
+        .campaign-table-row > small:last-child:nth-child(4) {
+            grid-row: 2;
+            justify-self: end;
+        }
+
+        .campaign-table-row > .campaign-cell:last-child :global(.button) {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 44px;
+        }
     }
 </style>

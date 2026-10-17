@@ -57,11 +57,24 @@ const page = Astro.url.pathname
     x-bind:class="open ? 'opened' : ''"
     x-data={`{
         open: false,
+        toggle_hidden: false,
+        last_scroll_y: 0,
+        on_scroll() {
+            const y = window.scrollY
+            if (this.open || y < 64)
+                this.toggle_hidden = false
+            else if (Math.abs(y - this.last_scroll_y) > 8)
+                this.toggle_hidden = y > this.last_scroll_y
+            this.last_scroll_y = y
+        },
     }`}
+    x-on:scroll.window.throttle.100ms="on_scroll()"
 >
     <FlexInline gap='0' class="[ h-full items-start! ]">
+        {/* Below 890px the toggle floats over the page, so it steps aside while scrolling down. */}
         <StylessButton
             class="[ neocom-toggle ]"
+            x-bind:class="{ 'toggle-hidden': toggle_hidden && !open }"
             x-on:click="open = !open"
             @click.outside="open = false"
         >
@@ -258,6 +271,19 @@ const page = Astro.url.pathname
             .neocom-toggle,
             .loader-wrapper-mobile {
                 display: flex;
+            }
+
+            .neocom-toggle {
+                transition: translate var(--fast-transition);
+            }
+
+            /* Sit above the fixed page-actions bar instead of on top of its first control. */
+            .loader-wrapper-mobile {
+                bottom: var(--subheader-bar-height, 0px);
+            }
+
+            .neocom-toggle.toggle-hidden {
+                translate: 0 -100%;
             }
         }
     }

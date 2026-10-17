@@ -79,7 +79,7 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
     role="row"
     id={`order-${order.id}`}
 >
-    <div class="[ buyback-purchase-order-item__id ]" role="cell">
+    <div class="[ buyback-purchase-order-item__id ]" role="cell" data-label={t("buyback.purchase.orders.col.id")}>
         <span class="[ text-highlight ]">#{order.id}</span>
     </div>
 
@@ -99,6 +99,7 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
     <div
         class="[ buyback-purchase-order-item__quantity ]"
         role="cell"
+        data-label={t("buyback.purchase.orders.col.items")}
         tabindex="0"
         aria-label={line_count_label}
         x-init={`tippy($el, {
@@ -111,7 +112,7 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
         <span>{number_thousand_separator(quantity)}</span>
     </div>
 
-    <div class="[ buyback-purchase-order-item__total ]" role="cell">
+    <div class="[ buyback-purchase-order-item__total ]" role="cell" data-label={t("buyback.purchase.orders.col.total")}>
         <span>{format_isk(order.contract_total)}</span> <span>ISK</span>
     </div>
 
@@ -127,6 +128,7 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
     <div
         class="[ buyback-purchase-order-item__created ]"
         role="cell"
+        data-label={t("date_created")}
         data-tippy-content={t('date_issued').replace('{date}', created_datetime)}
         x-init="tippy($el, tippy_options)"
     >
@@ -323,6 +325,62 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
                 outline: 2px solid var(--highlight);
                 outline-offset: -2px;
             }
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .buyback-purchase-order-item {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "pilot status"
+                "id created"
+                "quantity total"
+                "actions actions";
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            min-width: 0;
+            padding-block: var(--space-s);
+            padding-inline: 0;
+        }
+
+        .buyback-purchase-order-item--highlight {
+            padding-inline: var(--space-2xs);
+        }
+
+        .buyback-purchase-order-item__pilot { grid-area: pilot; min-width: 0; }
+        .buyback-purchase-order-item__status { grid-area: status; justify-self: end; }
+        .buyback-purchase-order-item__id { grid-area: id; }
+        .buyback-purchase-order-item__created { grid-area: created; }
+        .buyback-purchase-order-item__quantity { grid-area: quantity; }
+        .buyback-purchase-order-item__total { grid-area: total; }
+        .buyback-purchase-order-item__actions { grid-area: actions; }
+
+        .buyback-purchase-order-item__actions:empty {
+            display: none;
+        }
+
+        .buyback-purchase-order-item__actions :global(.buyback-purchase-order-actions-menu) {
+            display: block;
+        }
+
+        .buyback-purchase-order-item__actions :global(.buyback-purchase-order-actions-menu > button) {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 44px;
+        }
+
+        .buyback-purchase-order-item__actions :global(.buyback-purchase-order-actions-menu > button > *) {
+            justify-content: center;
+        }
+
+        .buyback-purchase-order-item [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            color: var(--faded);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
     }
 </style>

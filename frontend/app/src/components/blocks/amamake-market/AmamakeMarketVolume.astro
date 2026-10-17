@@ -747,4 +747,71 @@ const hx_body = {
     .mk-delta--down {
         color: var(--fleet-red);
     }
+
+    /* Phones: stack each row as a card — name, bar, then the numbers with their column labels. */
+    @media (max-width: 48rem) {
+        .mk-table--volume {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--mk-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                background: none;
+                white-space: normal !important;
+                text-align: left !important;
+                min-width: 0;
+                width: auto;
+            }
+
+            td:nth-child(1),
+            td:nth-child(2) {
+                grid-column: 1 / -1;
+            }
+
+            td.mk-table__bar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0 var(--space-xs);
+                width: auto;
+                min-width: 0;
+
+                &::before {
+                    flex-basis: 100%;
+                }
+
+                > .mk-bar {
+                    flex: 1;
+                }
+
+                > b {
+                    margin-top: 0;
+                }
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
+    }
 </style>

@@ -419,5 +419,43 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             justify-content: center;
             box-sizing: border-box;
         }
+
+        // Phones: compact media-object tile. The decorative cover shrinks to a
+        // thumbnail beside the name; tag, chief, member count and Browse stay.
+        @media (max-width: 48rem) {
+            --tribes-tile-thumb: 72px;
+
+            min-height: 0;
+            aspect-ratio: auto;
+            padding: var(--space-s);
+
+            &::after {
+                display: none;
+            }
+
+            > img {
+                top: var(--space-s);
+                left: var(--space-s);
+                width: var(--tribes-tile-thumb);
+                height: var(--tribes-tile-thumb);
+            }
+
+            .tile__body {
+                min-height: var(--tribes-tile-thumb) !important;
+                padding-inline-start: calc(var(--tribes-tile-thumb) + var(--space-s));
+                gap: var(--space-xs) !important;
+            }
+
+            .tile__body > .block-list {
+                --block-list--gap: var(--space-xs);
+            }
+
+            h2 {
+                max-width: none;
+                min-height: 0;
+                font-size: var(--step-1);
+                text-shadow: none;
+            }
+        }
     }
 </style>

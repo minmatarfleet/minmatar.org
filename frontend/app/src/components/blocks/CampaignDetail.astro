@@ -429,4 +429,19 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
             margin-block-end: 0;
         }
     }
+
+    /* Phones: six tabs (with Structures) are wider than the screen; scroll the
+       tab row instead of widening the whole page. */
+    @media (max-width: 48rem) {
+        .campaign-tabs-list {
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-width: none;
+        }
+
+        .campaign-tab {
+            flex: 1 0 auto;
+            margin-block-end: 0;
+        }
+    }
 </style>

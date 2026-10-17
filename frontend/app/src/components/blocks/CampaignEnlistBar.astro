@@ -194,4 +194,11 @@ import Button from '@components/blocks/Button.astro'
             display: none;
         }
     }
+
+    /* Phones: sit directly on top of the bottom action bar (PageHeader publishes its height). */
+    @media (max-width: 48rem) {
+        .campaign-enlist-bar-dock {
+            inset-block-end: var(--subheader-bar-height, 0px);
+        }
+    }
 </style>

@@ -39,4 +39,16 @@ const Wrapper = responsive ? XFadeScroll : 'div';
     .table {
         width: var(--table_width);
     }
+
+    /* Rows are wrapping flex lines, so on phones let them stack instead of scrolling sideways. */
+    @media (max-width: 48rem) {
+        .table {
+            width: 100%;
+        }
+
+        .table > :global(* + *) {
+            padding-top: var(--space-s);
+            border-top: solid 1px var(--border-color);
+        }
+    }
 </style>

@@ -47,7 +47,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
 <Flexblock
     id={ITEM_ID}
-    class="[ card component border light-transparency ]"
+    class="[ structure-timer-list-item ][ card component border light-transparency ]"
     gap='0'
 >
     <Tile
@@ -180,6 +180,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 </Flexblock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .timer-status-text {
         font-family: var(--heading-font);
         font-size: var(--step-0);
@@ -191,5 +193,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+    }
+
+    // Phones: compact media-object card. See _phone_media_card.scss.
+    .structure-timer-list-item {
+        @include phone_tile_list_item;
     }
 </style>

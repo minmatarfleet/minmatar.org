@@ -59,7 +59,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 ---
 
 <Flexblock
-    class="[ card component border light-transparency relative ]"
+    class="[ fleet-list-item ][ card component border light-transparency relative ]"
     gap='0'
 >
     <div
@@ -241,6 +241,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 </Flexblock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .wrap-break-word {
         max-width: 100%;
         overflow-wrap: break-word;
@@ -266,5 +268,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         &.cancelled {
             color: var(--fleet-red);
         }
+    }
+
+    // Phones: compact media-object card (FC portrait as a thumbnail beside the name,
+    // date/status beside "View details"). See _phone_media_card.scss.
+    .fleet-list-item {
+        @include phone_tile_list_item;
     }
 </style>

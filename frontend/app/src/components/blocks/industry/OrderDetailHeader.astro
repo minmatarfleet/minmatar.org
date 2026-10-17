@@ -234,4 +234,25 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
         align-items: flex-end;
         text-align: right;
     }
+
+    /* Phones: location / needed-by read left-aligned with the admin cog beside them. */
+    @media (max-width: 48rem) {
+        .order-detail-meta__aside {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            column-gap: var(--space-s);
+            width: 100%;
+            text-align: left;
+
+            > :global(:first-child) {
+                grid-column: 2;
+                grid-row: 1 / span 2;
+            }
+
+            > :global(small) {
+                grid-column: 1;
+            }
+        }
+    }
 </style>

@@ -84,6 +84,21 @@ import Button from '@components/blocks/Button.astro';
         letter-spacing: 0.02em;
     }
 
+    @media (max-width: 48rem) {
+        .freight-contracts-table__scroll {
+            overflow-x: visible;
+            mask-image: none;
+        }
+
+        .freight-contracts-table__grid {
+            min-width: 0;
+        }
+
+        .freight-contracts-table__header {
+            display: none;
+        }
+    }
+
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
     }

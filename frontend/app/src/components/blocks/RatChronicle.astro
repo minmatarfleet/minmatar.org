@@ -324,4 +324,21 @@ const next_chapter = chapters[active_index + 1]
         line-height: 1.25;
         color: var(--highlight);
     }
+
+    /* Phones: the reading column gets the full card width, and chapter tabs are
+       narrower so the neighbours either side of the centred tab stay in view. */
+    @media (max-width: 48rem) {
+        .rat-chronicle {
+            padding: var(--space-l) var(--space-xs);
+        }
+
+        .rat-chronicle__tab {
+            width: 9rem;
+            padding-inline: var(--space-s);
+        }
+
+        .rat-chronicle__pager-link {
+            padding: var(--space-s);
+        }
+    }
 </style>

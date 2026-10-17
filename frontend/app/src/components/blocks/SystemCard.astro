@@ -68,6 +68,8 @@ import Progress from '@components/blocks/Progress.astro';
 </ComponentBlock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .system-card {
         position: relative;
 
@@ -98,5 +100,20 @@ import Progress from '@components/blocks/Progress.astro';
 
     small {
         color:  var(--fleet-yellow);
+    }
+
+    // Phones: thumbnail + caption row instead of a full-width star render.
+    .system-card {
+        @include phone_media_card('.system-card-body');
+
+        @media (max-width: 48rem) {
+            // Distance moves to the bottom-right, next to the short "N moons" line.
+            .system-card-head {
+                top: auto;
+                bottom: var(--space-xs);
+                left: auto;
+                right: var(--space-l);
+            }
+        }
     }
 </style>

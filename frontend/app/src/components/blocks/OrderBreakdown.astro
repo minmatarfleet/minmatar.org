@@ -331,4 +331,31 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
             box-sizing: border-box;
         }
     }
+
+    /* Phones: claimers get a full-width row (icon + portraits side by side),
+       progress / % / Actions sit on the row below. */
+    @media (max-width: 48rem) {
+        :global(.production-drilldown-item) > :global(.flex-inline:last-child) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: var(--space-2xs) var(--space-s);
+        }
+
+        :global(.production-drilldown-item) > :global(.flex-inline:last-child) > :global(:first-child) {
+            grid-column: 1 / -1;
+        }
+
+        :global(.production-drilldown-item) > :global(.flex-inline:last-child) > :global(:last-child) {
+            margin-inline-start: 0;
+        }
+
+        :global(.production-drilldown-item) + :global(.production-drilldown-item) {
+            padding-block-start: var(--space-s);
+            border-block-start: 1px solid var(--border-color);
+        }
+
+        :global(.production-drilldown-item) :global(.tag) {
+            white-space: nowrap;
+        }
+    }
 </style>

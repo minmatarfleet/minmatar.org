@@ -73,6 +73,62 @@ const optional_attributes = {
         display: flex;
         align-items: center;
     }
+
+    // Phones: the full-width render becomes a thumbnail beside the caption, the
+    // details sit in two columns and the actions share one row.
+    @media (max-width: 48rem) {
+        .thumb-card {
+            --thumb_card_thumb: 72px;
+
+            :global(.fullbody-card) {
+                display: flex;
+                align-items: center;
+                gap: var(--space-s);
+                padding: var(--space-s) var(--space-s) 0;
+                overflow: visible;
+            }
+
+            :global(.fullbody-card > img) {
+                flex: 0 0 var(--thumb_card_thumb);
+                inline-size: var(--thumb_card_thumb);
+                block-size: var(--thumb_card_thumb);
+                -webkit-mask-image: none;
+                mask-image: none;
+            }
+
+            :global(.fullbody-card > figcaption) {
+                position: static;
+                padding: 0;
+                min-inline-size: 0;
+            }
+
+            .wrapper {
+                padding: var(--space-s);
+            }
+
+            :global(.grid) {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                row-gap: var(--space-xs);
+            }
+
+            :global(.button-stack) {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                gap: var(--space-xs);
+                inline-size: 100%;
+
+                > :global(*) {
+                    margin-block-start: 0;
+                }
+
+                > :global(.button) {
+                    inline-size: auto;
+                    padding-inline: var(--space-s);
+                }
+            }
+        }
+    }
 </style>
 
 <style is:global lang="scss">

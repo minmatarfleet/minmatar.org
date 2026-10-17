@@ -99,4 +99,19 @@ function reason_label(reason: string): string {
         text-transform: uppercase;
         letter-spacing: 0.02em;
     }
+
+    @media (max-width: 48rem) {
+        .buyback-stockpile-sales__scroll {
+            overflow-x: visible;
+            mask-image: none;
+        }
+
+        .buyback-stockpile-sales__grid {
+            min-width: 0;
+        }
+
+        .buyback-stockpile-sales__header {
+            display: none;
+        }
+    }
 </style>

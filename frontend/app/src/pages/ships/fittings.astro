@@ -360,4 +360,16 @@ const structured_data = buildFittingsListJsonLd(
         left: 0;
         top: 0;
     }
+
+    // Phones: let the compact card row (FittingsDialog trigger) span the column.
+    @media (max-width: 48rem) {
+        .fitting-card-container > :global(div) {
+            flex: 1 1 auto;
+            min-inline-size: 0;
+        }
+
+        .fitting-card-container > :global(div > button) {
+            inline-size: 100%;
+        }
+    }
 </style>
