@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { login_url } from '@helpers/http_responses'
 const { t, translatePath } = i18n(Astro.url)
 
 import type {
@@ -62,7 +63,7 @@ const members_href = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/mem
 const status_partial = translatePath(
     `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}&ui=actions`,
 )
-const auth_redirect = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+const auth_redirect = login_url(Astro)
 const can_manage = tribe_group_can_manage({
     group,
     is_leader,

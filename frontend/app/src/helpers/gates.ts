@@ -1,8 +1,7 @@
-import * as jose from 'jose'
-
 import type { User } from '@dtypes/jwt'
 import type { GateSource, UserGates } from '@dtypes/api.minmatar.org'
 import { get_user_gates } from '@helpers/api.minmatar.org/gates'
+import { get_request_user } from '@helpers/request_user'
 import feature_gates from '@json/feature_gates.json'
 
 /**
@@ -80,15 +79,8 @@ export function get_gates(astro: AstroLike): Promise<GateContext> {
 }
 
 async function load_gates(astro: AstroLike): Promise<GateContext> {
-    const auth_token = astro.cookies.has('auth_token') ? astro.cookies.get('auth_token')?.value : undefined
-    if (!auth_token) return ANONYMOUS_GATES
-
-    let user: User | false = false
-    try {
-        user = jose.decodeJwt(auth_token) as User
-    } catch (error) {
-        return ANONYMOUS_GATES
-    }
+    const { auth_token, user } = get_request_user(astro)
+    if (!auth_token || !user) return ANONYMOUS_GATES
 
     let gates: UserGates | null = null
     try {

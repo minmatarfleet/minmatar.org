@@ -3,10 +3,9 @@ import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 import { get_gates, can } from '@helpers/gates'
 import type {
@@ -49,12 +48,10 @@ import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
 import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 const user_is_staff = Boolean(user && user.is_staff)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
 const gates = await get_gates(Astro)
 

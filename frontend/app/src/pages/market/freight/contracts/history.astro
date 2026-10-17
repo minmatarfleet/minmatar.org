@@ -26,8 +26,7 @@ import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleto
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 import { freight_contracts_history_csv_url } from '@helpers/api.minmatar.org/freights'
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 const page_title = t('freight_contracts.history.page_title');
 const breadcrumbs = [
@@ -37,10 +36,7 @@ const breadcrumbs = [
 ]
 const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0')
 const csv_url = freight_contracts_history_csv_url()
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
-const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 const can_download_csv = Boolean(auth_token && user)
 ---
 

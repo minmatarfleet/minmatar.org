@@ -5,6 +5,7 @@ import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
 import { status_page_rewrite } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
@@ -30,19 +31,19 @@ export const onRequest = async ({ locals, cookies, request, rewrite }, next) => 
         request.headers.get("remote-addr") ||
         ''
 
-    const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
+    const { auth_token } = get_request_user({ cookies, locals })
 
     const url = new URL(request.url)
 
     if (url.pathname == translatePath('/redirects/add_primary_character'))
         return next()
 
-    if (cookies.has('auth_token') && !cookies.has('primary_pilot')) {
+    if (auth_token && !cookies.has('primary_pilot')) {
         let primary_pilot:Character
         let get_primary_characters_error = false;
 
         try {
-            primary_pilot = await get_primary_characters(auth_token as string);
+            primary_pilot = await get_primary_characters(auth_token);
 
             if (primary_pilot?.character_id) {
                 const in_1_day = new Date(new Date().getTime()+(ONE_DAY_IN_MS))

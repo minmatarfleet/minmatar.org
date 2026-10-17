@@ -2,8 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 import type { SkillsetMissingSkillUI, Skillset, CharacterBasic } from '@dtypes/layout_components'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -12,10 +11,7 @@ import { get_skillsets, get_characters_summary_sorted } from '@helpers/fetching/
 import SkillsetMissingSkills from '@components/blocks/SkillsetMissingSkills.astro'
 import Tag from '@components/blocks/Tag.astro'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
-const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 let skillset_missing_skills: SkillsetMissingSkillUI | null = null
 let characters: SummaryCharacter[] = []

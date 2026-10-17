@@ -1,3 +1,4 @@
+import { get_request_user } from '@helpers/request_user'
 import type { APIRoute } from 'astro'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
@@ -10,8 +11,8 @@ import {
 
 // The roster table's CSV: same filters, sort and (optionally) picked rows.
 // The API decides who may read the roster; this route only reformats it.
-export const GET: APIRoute = async ({ cookies, url }) => {
-    const auth_token = cookies.has('auth_token') ? cookies.get('auth_token')?.value : null
+export const GET: APIRoute = async ({ cookies, url, locals }) => {
+    const { auth_token } = get_request_user({ cookies, locals })
     if (!auth_token)
         return HTTP_403_Forbidden()
 

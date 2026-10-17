@@ -1,12 +1,11 @@
+import { get_request_user } from '@helpers/request_user'
 import type { APIContext } from 'astro'
 import { get_internal_api_url } from '@helpers/env'
 
 const API_URL = get_internal_api_url()
 
-export async function POST({ params, request, cookies }: APIContext) {
-    const auth_token = cookies.has('auth_token')
-        ? cookies.get('auth_token')?.value
-        : null
+export async function POST({ params, request, cookies, locals }: APIContext) {
+    const { auth_token } = get_request_user({ cookies, locals })
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -31,10 +30,8 @@ export async function POST({ params, request, cookies }: APIContext) {
     })
 }
 
-export async function DELETE({ params, cookies }: APIContext) {
-    const auth_token = cookies.has('auth_token')
-        ? cookies.get('auth_token')?.value
-        : null
+export async function DELETE({ params, cookies, locals }: APIContext) {
+    const { auth_token } = get_request_user({ cookies, locals })
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
