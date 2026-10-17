@@ -1,12 +1,12 @@
 import logging
 from typing import Any, Optional
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from ninja.errors import HttpError
 from ninja.security import HttpBearer
+
+from users.jwt_auth import decode_user_jwt, encode_jwt
 
 logger = logging.getLogger("authentication")
 
@@ -16,9 +16,7 @@ class AuthBearer(HttpBearer):
 
     def authenticate(self, request, token):
         try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=["HS256"]
-            )
+            payload = decode_user_jwt(token)
             user = User.objects.get(id=payload["user_id"])
             request.user = user
             return user
@@ -77,9 +75,7 @@ def make_test_user(uid: int, user_name: str, is_super: bool):
         "username": user_name,
         "is_superuser": is_super,
     }
-    encoded_jwt_token = jwt.encode(
-        payload, settings.SECRET_KEY, algorithm="HS256"
-    )
+    encoded_jwt_token = encode_jwt(payload)
 
     print(
         f"User '{user_name}' (ID {uid}) created with token {encoded_jwt_token}"
