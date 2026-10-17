@@ -34,6 +34,7 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 - Scoped `<style lang="scss">` by default; `is:global` only for shared classes. Pass props into CSS via `define:vars`.
 - Tailwind = utilities only; reference tokens with arbitrary values (`top-[var(--space-2xs)]`). No component-level `@apply` blobs.
 - User-visible strings via `@helpers/i18n` (`t`, `translatePath`); shared UI types via `@dtypes/layout_components`.
+- Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility
 

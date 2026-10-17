@@ -13,13 +13,13 @@ flowchart LR
     Eval --> Endpoint[Backend endpoints]
 ```
 
-Backend endpoints already call `can_use_feature` / `require_feature`. Frontend page gating still reads Django permission strings from `/api/users/me`.
+Backend endpoints already call `can_use_feature` / `require_feature`. Frontend gating goes through gates that can act on either source; see [frontend-feature-gating.md](frontend-feature-gating.md).
 
 ## Steps
 
 1. **Confirm admin wiring** — for each feature, affiliations / tribe groups / auth groups match the intended audience.
 2. **Verify parity** — compare legacy grants against scope-only grants (`allow_legacy=False`) for representative user archetypes before stripping anything.
-3. **Expose features to the frontend** — until `/api/users/me` (or equivalent) returns feature codes and Astro checks them, stripping Alliance group permissions will break frontend nav gating even if the backend is correct.
+3. **Expose features to the frontend** — `GET /api/users/me/gates` returns feature codes and every frontend gate maps to one ([frontend-feature-gating.md](frontend-feature-gating.md)). Until `FRONTEND_GATE_SOURCE=features` is live in production, stripping Alliance group permissions will still break frontend gating.
 4. **Strip auth-group permissions** — remove the Django model permissions from groups that no longer need them.
 5. **Clear `legacy_permission`** — remove it from registry entries one feature at a time, re-run `sync_pilot_features`, and verify.
 6. **Clean up** — drop unused permission assignments and any remaining `user_has_legacy_perm` call sites that are obsolete.
