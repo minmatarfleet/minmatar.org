@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import re
 
-
+from eveonline.constants import (
+    MINMATAR_FLEET_ALLIANCE_ID,
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+)
+from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations.safe_cache import cache_get, cache_set
 from eveonline.models import EveCorporation
-
-FL33T_ID = 99011978
-BUILD_ID = 99012009
 
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
 _SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -55,9 +56,7 @@ def _find_by_slug(slug: str) -> EveCorporation | None:
     # small set; only fall back to scanning every corporation name.
     allied = [
         corporation
-        for corporation in EveCorporation.objects.filter(
-            alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
-        ).select_related("alliance")
+        for corporation in member_corporations().select_related("alliance")
         if corporation_slug(corporation.name) == slug
     ]
     if allied:
@@ -84,5 +83,8 @@ def _preference(corporation: EveCorporation):
     alliance_id = (
         corporation.alliance.alliance_id if corporation.alliance else None
     )
-    rank = {FL33T_ID: 0, BUILD_ID: 1}.get(alliance_id, 2)
+    rank = {
+        MINMATAR_FLEET_ALLIANCE_ID: 0,
+        MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID: 1,
+    }.get(alliance_id, 2)
     return (rank, corporation.corporation_id)

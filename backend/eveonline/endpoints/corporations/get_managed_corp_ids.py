@@ -5,13 +5,11 @@ from typing import List
 from ninja import Router
 
 from authentication import AuthBearer
+from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCorporation
 
 router = Router(tags=["Corporations"])
-
-FL33T_ID = 99011978
-BUILD_ID = 99012009
 
 
 @router.get(
@@ -23,9 +21,7 @@ BUILD_ID = 99012009
 def get_managed_corp_ids(request) -> List[int]:
     user = request.user
     corporations = (
-        EveCorporation.objects.filter(
-            alliance__alliance_id__in=(FL33T_ID, BUILD_ID)
-        )
+        member_corporations()
         .select_related("ceo", "ceo__token")
         .prefetch_related("directors")
     )
