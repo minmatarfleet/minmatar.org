@@ -16,7 +16,7 @@ from creators.clients.reddit import (
     normalize_reddit_username,
 )
 from creators.clients.twitch import TwitchClient
-from creators.clients.youtube import YouTubeClient
+from creators.clients.youtube import YouTubeClient, is_public_playlist_item
 from creators.models import (
     CreatorAccount,
     CreatorItem,
@@ -352,6 +352,11 @@ def sync_youtube_videos(account: CreatorAccount) -> int:
         snippet = item.get("snippet") or {}
         video_id = content.get("videoId") or ""
         if not video_id:
+            continue
+        if not is_public_playlist_item(item):
+            CreatorItem.objects.filter(
+                provider=CreatorProvider.YOUTUBE, external_id=video_id
+            ).delete()
             continue
         thumbs = snippet.get("thumbnails") or {}
         thumb = (
