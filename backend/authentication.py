@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 import jwt
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.cache import cache
 from django.http import HttpRequest
 from ninja.errors import HttpError
 from ninja.security import HttpBearer
@@ -10,6 +11,13 @@ from ninja.security import HttpBearer
 from users.jwt_auth import decode_user_jwt, encode_jwt
 
 logger = logging.getLogger("authentication")
+
+SERVICE_ACCOUNT_APP_LABEL = "users"
+SERVICE_ACCOUNT_CODENAME = "service_account"
+SERVICE_ACCOUNT_PERMISSION = (
+    f"{SERVICE_ACCOUNT_APP_LABEL}.{SERVICE_ACCOUNT_CODENAME}"
+)
+STAFF_FALLBACK_LOG_SECONDS = 3600
 
 
 class AuthBearer(HttpBearer):
@@ -44,16 +52,57 @@ class AuthBearer(HttpBearer):
         return user
 
 
+def has_service_account_permission(user) -> bool:
+    """True when the permission is granted to this user directly.
+
+    Deliberately not ``user.has_perm``: that is always True for a
+    superuser, and the point is to tell the bot apart from staff.
+    """
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    return user.user_permissions.filter(
+        content_type__app_label=SERVICE_ACCOUNT_APP_LABEL,
+        codename=SERVICE_ACCOUNT_CODENAME,
+    ).exists()
+
+
+def _log_staff_fallback(user) -> None:
+    """Shadow mode: note a staff user passing as the bot, once an hour."""
+    key = f"service_account:staff_fallback:{user.pk}"
+    try:
+        first_this_hour = cache.add(key, 1, STAFF_FALLBACK_LOG_SECONDS)
+    except Exception:  # pylint: disable=broad-except
+        first_this_hour = True  # cache down: log rather than stay silent
+    if first_this_hour:
+        logger.warning(
+            "Service-account check passed by staff fallback "
+            "(user_id=%s, is_staff=%s, is_superuser=%s); grant %s to the "
+            "bot's user before the fallback is removed",
+            user.pk,
+            user.is_staff,
+            user.is_superuser,
+            SERVICE_ACCOUNT_PERMISSION,
+        )
+
+
 def is_service_account(user) -> bool:
     """
-    The Discord bot calls the API with a staff/superuser token.
+    True when the caller is the Discord bot's API user.
 
-    Same rule the notification and buyback acks already use for the bot.
+    The bot is the user holding the ``users.service_account`` permission.
+    Shadow mode: any staff or superuser still passes, as before, and is
+    logged so the fallback can be dropped once only the bot shows up.
     """
-    return bool(
-        getattr(user, "is_staff", False)
-        or getattr(user, "is_superuser", False)
-    )
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if has_service_account_permission(user):
+        return True
+    if getattr(user, "is_staff", False) or getattr(
+        user, "is_superuser", False
+    ):
+        _log_staff_fallback(user)
+        return True
+    return False
 
 
 def require_service_account(request) -> None:

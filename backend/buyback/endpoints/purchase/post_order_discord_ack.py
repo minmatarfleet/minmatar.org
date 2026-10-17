@@ -1,7 +1,7 @@
 """POST /stock/orders/{order_id}/discord-ack — Discord button settlement."""
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
+from authentication import AuthBearer, is_service_account
 from buyback.endpoints.purchase.serialization import order_response
 from buyback.endpoints.schemas import (
     BuybackPurchaseDiscordAckRequest,
@@ -70,9 +70,7 @@ def post_order_discord_ack(
         return 403, ErrorResponse(detail="Not authorized for this ack.")
 
     requester = request.user
-    if requester.pk != actor.pk and not (
-        requester.is_staff or requester.is_superuser
-    ):
+    if requester.pk != actor.pk and not is_service_account(requester):
         return 403, ErrorResponse(detail="Not authorized for this ack.")
 
     try:

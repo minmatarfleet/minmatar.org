@@ -24,3 +24,20 @@ class UserDesktopSettings(models.Model):
 
     def __str__(self):
         return f"{self.user.username} · desktop settings"
+
+
+class ServiceAccount(User):
+    """Holds the permission that marks the Discord bot's API user.
+
+    A proxy with no table: it only gives ``users.service_account`` a home.
+    The permission is granted to one user directly (not through an
+    auth.Group, which would create and sync a Discord role). Grant it with
+    ``manage.py service_account --grant <user_id>``.
+    """
+
+    class Meta:
+        proxy = True
+        default_permissions = ()
+        permissions = [
+            ("service_account", "Can call bot-only API endpoints"),
+        ]
