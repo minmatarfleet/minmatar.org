@@ -97,9 +97,9 @@ const SELL_ORDERS_PARTIAL = translatePath(
         if (!slot)
             return
 
+        // htmx already processed the swapped content. Processing the slot again
+        // re-fires its hx-trigger="load" and fetches the partial a second time.
         slot.setAttribute('aria-busy', 'false')
-        if (typeof htmx !== 'undefined')
-            htmx.process(slot)
         if (typeof Alpine !== 'undefined') {
             Alpine.destroyTree(slot)
             Alpine.initTree(slot)

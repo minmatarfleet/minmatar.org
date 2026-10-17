@@ -123,7 +123,7 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
                     hx-get={COORDINATORS_PARTIAL}
                     hx-trigger="intersect once"
                     hx-swap="innerHTML"
-                    hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
+                    hx-on="htmx:afterSwap: if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
                 >
                     <Flexblock
                         gap="var(--space-s)"
