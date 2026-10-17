@@ -1,5 +1,10 @@
+import factory
 from django.contrib.auth.models import User
+from django.db.models import signals
 from django.test import TestCase
+from django.utils import timezone
+
+from fleets.models import EveFleet
 
 from surveys.constants import ACTIVITY_INACTIVE, COHORT_NEW
 from surveys.helpers.autofill import build_member_context, build_segmentation
@@ -29,3 +34,18 @@ class AutofillTests(TestCase):
             "role_flags",
         ):
             self.assertIn(key, seg)
+
+    def test_only_a_led_fleet_makes_an_fc(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            fleet = EveFleet.objects.create(
+                type="strategic",
+                status="cancelled",
+                start_time=timezone.now(),
+                created_by=self.user,
+            )
+            self.assertNotIn(
+                "fc", build_member_context(self.user)["role_flags"]
+            )
+            fleet.status = "complete"
+            fleet.save()
+        self.assertIn("fc", build_member_context(self.user)["role_flags"])

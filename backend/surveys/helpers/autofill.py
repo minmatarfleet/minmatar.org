@@ -12,7 +12,8 @@ from eveonline.helpers.characters import (
     user_primary_character,
 )
 from eveonline.models import EveCorporation
-from fleets.models import EveFleet, EveFleetInstanceMember
+from fleets.helpers.metrics import led_fleets
+from fleets.models import EveFleetInstanceMember
 from groups.helpers.feature_access import user_community_status
 from learning.helpers import completed_learning_ids
 from learning.models import UserLearningPreference
@@ -138,7 +139,7 @@ def _activity_tier(fleet_count: int) -> str:
 def _role_flags(user) -> list[str]:
     flags = []
     try:
-        if EveFleet.objects.filter(created_by=user).exists():
+        if led_fleets().filter(created_by=user).exists():
             flags.append("fc")
     except Exception:  # pragma: no cover - defensive
         pass
