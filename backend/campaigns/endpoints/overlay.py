@@ -89,7 +89,12 @@ def pick_campaign(user) -> Campaign | None:
 
 
 def overlay(campaign: Campaign) -> dict:
-    """Nothing in here depends on who asks, so one copy serves every window."""
+    """Nothing in here depends on who asks, so one copy serves every window.
+
+    Stale-while-revalidate, unlike app.cache.CachedRollup: the build is
+    cheap enough to run in a request, so one request rebuilds under a short
+    lock while the others get the stale copy.
+    """
     key = CACHE_KEY.format(campaign_id=campaign.id)
     lock = LOCK_KEY.format(campaign_id=campaign.id)
     cached = cache_get(key)

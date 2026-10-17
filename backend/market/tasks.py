@@ -511,6 +511,8 @@ def fetch_eve_market_contracts():
     )
     scheduled = 0
     for i, contract_id in enumerate(outstanding_without_items):
+        # A schedule marker, not a lock: never released, it lapses so each
+        # contract is queued at most once per TTL (see app.locks).
         cache_key = f"market:contract_items_scheduled:{contract_id}"
         if not cache.add(
             cache_key, "1", timeout=CONTRACT_ITEMS_SCHEDULE_CACHE_TTL
