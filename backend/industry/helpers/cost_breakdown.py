@@ -10,13 +10,17 @@ as a thin legacy adapter for tests and gradual migration.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from eveuniverse.models import EveType
 
 from industry.helpers.build_planner import BuildPlan
 from industry.helpers.compressed_ore import CompressedOrePlan
-from market.helpers.pricing import baseline_book, get_prices_by_type_id
+from market.helpers.pricing import (
+    baseline_book,
+    get_history_averages_by_type_id,
+)
 
 
 @dataclass(frozen=True)
@@ -77,28 +81,41 @@ class PlanCostBreakdown:
         }
 
 
-def jita_sell_prices_by_type_id(type_ids: Sequence[int]) -> Dict[int, int]:
+def jita_sell_unit_prices_by_type_id(
+    type_ids: Sequence[int],
+) -> Dict[int, Decimal]:
     """
-    Industry “Jita sell”: lowest sell at price_baseline LocationPrice when
-    present, else regional guide via get_prices_by_type_id.
-
-    Prefer get_prices_by_type_id alone when you need the Forge history
-    guide (buyback, LP store), not this hybrid.
+    Industry “Jita sell” per unit, unrounded: lowest sell at the
+    price_baseline LocationPrice when present, else the regional guide
+    (history, then EveMarketPrice) via get_history_averages_by_type_id.
     """
     unique = list({int(tid) for tid in type_ids if tid})
     if not unique:
         return {}
-
-    prices: Dict[int, int] = {
-        tid: int(row.sell)
+    prices: Dict[int, Decimal] = {
+        tid: row.sell
         for tid, row in baseline_book(unique).items()
         if row.sell is not None
     }
-
     missing = [tid for tid in unique if tid not in prices]
     if missing:
-        prices.update(get_prices_by_type_id(missing))
+        prices.update(get_history_averages_by_type_id(missing))
     return prices
+
+
+def jita_sell_prices_by_type_id(type_ids: Sequence[int]) -> Dict[int, int]:
+    """
+    Industry “Jita sell”: lowest sell at price_baseline LocationPrice when
+    present, else regional guide via get_prices_by_type_id. Whole ISK
+    (truncated) per unit; see jita_sell_unit_prices_by_type_id.
+
+    Prefer get_prices_by_type_id alone when you need the Forge history
+    guide (buyback, LP store), not this hybrid.
+    """
+    return {
+        tid: int(price)
+        for tid, price in jita_sell_unit_prices_by_type_id(type_ids).items()
+    }
 
 
 def _prices_by_name(names: Iterable[str]) -> Dict[str, int]:

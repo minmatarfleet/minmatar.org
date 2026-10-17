@@ -79,6 +79,17 @@ Only need a coarse average / “has any price”?
   → EveMarketPrice is acceptable; prefer history helpers when building ISK values users see
 ```
 
+### Which helper each member-facing value uses
+
+| Value | Helper |
+|-------|--------|
+| Product page Build tab (base blueprint numbers: materials, sells for, margin) | `jita_sell_unit_prices_by_type_id`, the unrounded form of the planner's Jita sell |
+| Planner / order profit (ME, jobs, taxes, freight) | `plan_costing.plan_item_cost` / `cost_build_plan` |
+| Product insights hull value ("ISK lost"), producers "ISK delivered", tribe mining ISK | `get_history_averages_by_type_id` (Jita guide, unrounded) |
+| Moon revenue (Metenox) | `get_history_averages_by_type_id`, with `enqueue_history_for_types` keeping moon products fresh |
+
+`EveMarketPrice` is read directly only for EIV (`build_planner`), market-availability filters (`compressed_ore`) and as the fallback inside the history helpers.
+
 ## Correct examples in-repo
 
 - **LP store conversion:** `industry.helpers.plan_costing.plan_lp_offer_conversion` (via `lp_store_economics`) — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Net ISK/LP** = `(revenue − 3.37% sales tax − input − Red Frog input freight − Red Frog output freight) / LP`, where input = store ISK + required items + Amamake manufacturing (materials, jobs, facility/SCC/reprocessing taxes; **no** alliance route freight; navy BPC LP/ISK stay via `lp_cost` / `isk_cost`). Red Frog freight defaults to **45M ISK per 1.5B** cargo on **Jita ↔ Amo** (3% of required+materials inbound, 3% of revenue outbound). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not build). Interactive planner / profit / guide use the same `plan_item_cost` API with **alliance hub→facility** freight instead.
