@@ -106,8 +106,10 @@ import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
+import LoyaltyDeskActivity from '@components/blocks/LoyaltyDeskActivity.astro'
 import Button from '@components/blocks/Button.astro'
 
 const page_title = t('industry.loyalty.desk.page_title')
@@ -237,58 +239,55 @@ const rates_label = currency
 
                 {stats && (
                     <section class="[ loyalty-desk__team ]" aria-labelledby="loyalty-desk-team">
-                        <FlexInline justification="space-between" class="[ w-full ]">
-                            <h2 id="loyalty-desk-team">
-                                {t('industry.loyalty.desk.team.title').replace('{days}', String(stats.days))}
-                            </h2>
-                            <small>
-                                {t('industry.loyalty.desk.team.summary')
-                                    .replace('{orders}', String(stats.completed))
-                                    .replace('{lp}', format_number(stats.lp_completed ?? 0))
-                                    .replace('{isk}', format_number(stats.isk_completed ?? 0))}
-                            </small>
-                        </FlexInline>
-                        {(stats.converters ?? []).length === 0 ? (
-                            <p>{t('industry.loyalty.desk.team.empty')}</p>
-                        ) : (
-                            <div class="[ loyalty-desk__table-wrap ]">
-                                <table class="[ tabular-nums ]">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">{t('industry.loyalty.desk.team.col.converter')}</th>
-                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.orders')}</th>
-                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.lp')}</th>
-                                            <th scope="col">{t('industry.loyalty.desk.team.col.share')}</th>
-                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.isk')}</th>
-                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.settle')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {(stats.converters ?? []).map((member) => (
-                                            <tr>
-                                                <th scope="row">
-                                                    <span class="[ loyalty-desk__member ]">
-                                                        {member.character_id && (
-                                                            <img src={get_player_icon(member.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
-                                                        )}
-                                                        {member.name}
-                                                    </span>
-                                                </th>
-                                                <td class="[ is-end ]">{member.orders}</td>
-                                                <td class="[ is-end ]">{format_number(member.lp)}</td>
-                                                <td>
-                                                    <span class="[ loyalty-desk__share ]" aria-hidden="true">
-                                                        <span style={`width: ${Math.max(1, Math.round((member.lp / team_lp) * 100))}%`}></span>
-                                                    </span>
-                                                </td>
-                                                <td class="[ is-end loyalty-desk__isk ]">{format_number(member.isk)}</td>
-                                                <td class="[ is-end ]">{format_close_time(member.median_settle_seconds)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        <h2 id="loyalty-desk-team">
+                            {t('industry.loyalty.desk.team.title').replace('{days}', String(stats.days))}
+                        </h2>
+                        <FluidFixed width="24rem" gap="var(--space-m)" class="[ loyalty-desk__team-layout ]">
+                            <div>
+                                {(stats.converters ?? []).length === 0 ? (
+                                    <p>{t('industry.loyalty.desk.team.empty')}</p>
+                                ) : (
+                                    <div class="[ loyalty-desk__table-wrap ]">
+                                        <table class="[ tabular-nums ]">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">{t('industry.loyalty.desk.team.col.converter')}</th>
+                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.orders')}</th>
+                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.lp')}</th>
+                                                    <th scope="col">{t('industry.loyalty.desk.team.col.share')}</th>
+                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.isk')}</th>
+                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.settle')}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(stats.converters ?? []).map((member) => (
+                                                    <tr>
+                                                        <th scope="row">
+                                                            <span class="[ loyalty-desk__member ]">
+                                                                {member.character_id && (
+                                                                    <img src={get_player_icon(member.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                                                )}
+                                                                {member.name}
+                                                            </span>
+                                                        </th>
+                                                        <td class="[ is-end ]">{member.orders}</td>
+                                                        <td class="[ is-end ]">{format_number(member.lp)}</td>
+                                                        <td>
+                                                            <span class="[ loyalty-desk__share ]" aria-hidden="true">
+                                                                <span style={`width: ${Math.max(1, Math.round((member.lp / team_lp) * 100))}%`}></span>
+                                                            </span>
+                                                        </td>
+                                                        <td class="[ is-end loyalty-desk__isk ]">{format_number(member.isk)}</td>
+                                                        <td class="[ is-end ]">{format_close_time(member.median_settle_seconds)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                            <LoyaltyDeskActivity stats={stats} week_stats={week_stats} />
+                        </FluidFixed>
                     </section>
                 )}
             </Flexblock>
@@ -384,11 +383,14 @@ const rates_label = currency
         flex-direction: column;
         gap: var(--space-s);
 
-        small,
         p {
             margin: 0;
             color: var(--faded);
         }
+    }
+
+    :global(.loyalty-desk__team-layout) {
+        align-items: start;
     }
 
     .loyalty-desk__table-wrap {
