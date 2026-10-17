@@ -19,6 +19,7 @@ from industry.helpers.lp_market_orders import (
     TERMINAL_STATUSES,
     claimed_quantity,
     currency_short_name,
+    express_due_at,
     format_lp_quantity,
     remaining_quantity,
 )
@@ -132,7 +133,10 @@ def order_thread_title(order: IndustryLoyaltyPointMarketOrder) -> str:
     side = "WTS" if order.side == order.Side.SELL else "WTB"
     qty = format_lp_quantity(order.quantity)
     short = currency_short_name(order.loyalty_point.name)
-    return f"{side} {qty} {short} @{order.isk_per_lp}"
+    title = f"{side} {qty} {short} @{order.isk_per_lp}"
+    if order.tier == order.Tier.EXPRESS:
+        title += " Express"
+    return title
 
 
 def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -145,6 +149,12 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
         f"Pilot: {_display_name(order.created_by)}",
         f"Status: {order.get_status_display()}",
     ]
+    due_at = express_due_at(order)
+    if due_at is not None:
+        parts.append(
+            f":zap: **Express** — settle by <t:{int(due_at.timestamp())}:f> "
+            f"(<t:{int(due_at.timestamp())}:R>)"
+        )
     if (
         order.side == order.Side.BUY
         and (order.destination_character_name or "").strip()

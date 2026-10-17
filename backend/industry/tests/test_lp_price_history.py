@@ -45,7 +45,28 @@ class LpPriceHistorySaveTestCase(TestCase):
         self.assertEqual(row.loyalty_point_id, self.currency.pk)
         self.assertEqual(row.old_isk_per_lp, 800)
         self.assertEqual(row.new_isk_per_lp, 900)
+        self.assertEqual(row.tier, "standard")
         self.assertEqual(row.changed_by_id, self.user.pk)
+
+    def test_express_price_change_writes_tiered_history(self):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        self.currency.express_isk_per_lp = 740
+        self.currency.default_isk_per_lp = 820
+        self.currency.save()
+
+        rows = {
+            (row.tier, row.old_isk_per_lp, row.new_isk_per_lp)
+            for row in IndustryLoyaltyPointPriceHistory.objects.all()
+        }
+        self.assertEqual(
+            rows,
+            {
+                ("express", None, 760),
+                ("express", 760, 740),
+                ("standard", 800, 820),
+            },
+        )
 
     def test_currency_unchanged_price_skips_history(self):
         self.currency.name = "TLIB renamed"

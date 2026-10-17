@@ -2,6 +2,7 @@ import type {
     LoyaltyCurrency,
     LoyaltyMarketOrdersList,
     LoyaltyOffersList,
+    LoyaltyOrderStats,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
@@ -131,4 +132,22 @@ export async function get_loyalty_orders(params?: LoyaltyOrdersQuery) {
         })
     }
     return await response.json() as LoyaltyMarketOrdersList
+}
+
+export async function get_loyalty_stats(loyalty_point_id?: number, days?: number) {
+    const query: Record<string, string> = {}
+    if (loyalty_point_id != null) query.loyalty_point_id = String(loyalty_point_id)
+    if (days != null) query.days = String(days)
+    const qs = query_string(query)
+    const ENDPOINT = `${API_ENDPOINT}/stats${qs ? `?${qs}` : ''}`
+    console.log(`Requesting: ${ENDPOINT}`)
+    const response = await fetch(ENDPOINT, {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+            cause: response.status,
+        })
+    }
+    return await response.json() as LoyaltyOrderStats
 }

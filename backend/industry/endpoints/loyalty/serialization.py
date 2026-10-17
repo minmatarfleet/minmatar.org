@@ -10,6 +10,7 @@ from industry.endpoints.loyalty.schemas import (
 )
 from industry.helpers.lp_market_orders import (
     claimed_quantity,
+    express_due_at,
     remaining_quantity,
 )
 from industry.models import (
@@ -43,6 +44,7 @@ def currency_response(
         name=currency.name,
         corporation_id=int(currency.corporation_id),
         default_isk_per_lp=currency.default_isk_per_lp,
+        express_isk_per_lp=currency.express_isk_per_lp,
         is_active=currency.is_active,
         allow_buy=currency.allow_buy,
         allow_sell=currency.allow_sell,
@@ -88,6 +90,8 @@ def market_order_response(
         quantity_claimed=qty_claimed,
         quantity_remaining=remaining_quantity(order),
         isk_per_lp=order.isk_per_lp,
+        tier=order.tier,
+        express_due_at=express_due_at(order),
         status=order.status,
         created_by_user_id=created_by.pk if created_by else None,
         created_by_name=(

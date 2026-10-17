@@ -3,53 +3,58 @@ import { i18n } from '@helpers/i18n'
 import type { LoyaltyCurrency } from '@dtypes/api.minmatar.org'
 import { get_corporation_logo } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
+import { EXPRESS_SLA_HOURS } from '@helpers/loyalty_order_stats'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Grid from '@components/compositions/Grid.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Tag from '@components/blocks/Tag.astro'
 
 const { t } = i18n(Astro.url)
 
 interface Props {
-    currencies: LoyaltyCurrency[]
+    /** The Tribal Liberation Force currency; null when not configured. */
+    currency: LoyaltyCurrency | null
 }
 
-const { currencies } = Astro.props
+const { currency } = Astro.props
 
-const FACTION_ORDER: readonly number[] = [
-    1000182, // TLIB
-    1000179, // 24th
-    1000180, // State
-    1000181, // FDU
-]
-
-const sorted = [...currencies].sort((a, b) => {
-    const ai = FACTION_ORDER.indexOf(a.corporation_id)
-    const bi = FACTION_ORDER.indexOf(b.corporation_id)
-    const ao = ai === -1 ? FACTION_ORDER.length : ai
-    const bo = bi === -1 ? FACTION_ORDER.length : bi
-    if (ao !== bo) return ao - bo
-    return a.name.localeCompare(b.name)
-})
+const paused = currency ? !currency.allow_buy && !currency.allow_sell : false
+const tiers = currency ? [
+    {
+        key: 'standard',
+        label: t('industry.loyalty.tier.standard'),
+        price: currency.default_isk_per_lp,
+        description: t('industry.loyalty.tier.standard_description'),
+    },
+    {
+        key: 'express',
+        label: t('industry.loyalty.tier.express'),
+        price: currency.express_isk_per_lp,
+        description: t('industry.loyalty.tier.express_description')
+            .replace('{hours}', String(EXPRESS_SLA_HOURS)),
+    },
+] : []
 ---
 
 <section class="[ loyalty-rate-cards ]">
     <Flexblock gap="var(--space-xs)">
         <h2>{t('industry.loyalty.rates.title')}</h2>
 
-        {sorted.length === 0 ? (
+        {!currency ? (
             <p class="[ loyalty-rate-cards__empty ]">{t('industry.loyalty.rates.empty')}</p>
         ) : (
             <Grid
                 class="[ loyalty-rate-cards__grid w-full ]"
                 row_gap="var(--space-3xs)"
                 column_gap="var(--space-3xs)"
-                min_item_width="14rem"
+                min_item_width="16rem"
             >
-                {sorted.map((currency) => (
+                {tiers.map((tier) => (
                     <ComponentBlock
-                        class="[ loyalty-rate-cards__card ]"
+                        class:list={[
+                            'loyalty-rate-cards__card',
+                            `loyalty-rate-cards__card--${tier.key}`,
+                        ]}
                         padding_block="var(--space-s)"
                         padding_inline="var(--space-m)"
                     >
@@ -63,34 +68,11 @@ const sorted = [...currencies].sort((a, b) => {
                                     height="40"
                                     alt={`${currency.name} ${t('corporation_logo')}`}
                                 />
-                                <h3 class="[ loyalty-rate-cards__name ]">{currency.name}</h3>
-                            </div>
-                            <p class="[ loyalty-rate-cards__price ]">
-                                <span class="[ loyalty-rate-cards__price-value ]">
-                                    {number_thousand_separator(currency.default_isk_per_lp)}
-                                </span>
-                                <span class="[ loyalty-rate-cards__price-unit ]">
-                                    {t('industry.loyalty.rates.isk_per_lp')}
-                                </span>
-                            </p>
-                            <FlexInline gap="var(--space-3xs)" class="[ loyalty-rate-cards__sides ]">
-                                {currency.allow_buy && (
-                                    <Tag
-                                        text={t('industry.loyalty.rates.allow_buy')}
-                                        color="alliance-blue"
-                                        narrow={true}
-                                        title={t('industry.loyalty.rates.allow_buy_tip')}
-                                    />
-                                )}
-                                {currency.allow_sell && (
-                                    <Tag
-                                        text={t('industry.loyalty.rates.allow_sell')}
-                                        color="fleet-yellow"
-                                        narrow={true}
-                                        title={t('industry.loyalty.rates.allow_sell_tip')}
-                                    />
-                                )}
-                                {!currency.allow_buy && !currency.allow_sell && (
+                                <div class="[ loyalty-rate-cards__heading ]">
+                                    <h3 class="[ loyalty-rate-cards__name ]">{tier.label}</h3>
+                                    <small class="[ loyalty-rate-cards__currency ]">{currency.name}</small>
+                                </div>
+                                {paused && (
                                     <Tag
                                         text={t('industry.loyalty.rates.paused')}
                                         color="fleet-red"
@@ -98,7 +80,24 @@ const sorted = [...currencies].sort((a, b) => {
                                         title={t('industry.loyalty.rates.paused_tip')}
                                     />
                                 )}
-                            </FlexInline>
+                            </div>
+                            <p class="[ loyalty-rate-cards__description ]">{tier.description}</p>
+                            <p class="[ loyalty-rate-cards__price ]">
+                                {tier.price ? (
+                                    <>
+                                        <span class="[ loyalty-rate-cards__price-value ]">
+                                            {number_thousand_separator(tier.price)}
+                                        </span>
+                                        <span class="[ loyalty-rate-cards__price-unit ]">
+                                            {t('industry.loyalty.rates.isk_per_lp')}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span class="[ loyalty-rate-cards__unavailable ]">
+                                        {t('industry.loyalty.tier.express_unavailable')}
+                                    </span>
+                                )}
+                            </p>
                         </div>
                     </ComponentBlock>
                 ))}
@@ -120,6 +119,10 @@ const sorted = [...currencies].sort((a, b) => {
         flex-direction: column;
     }
 
+    .loyalty-rate-cards :global(.loyalty-rate-cards__card--express) {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    }
+
     .loyalty-rate-cards__body {
         display: flex;
         flex-direction: column;
@@ -136,12 +139,26 @@ const sorted = [...currencies].sort((a, b) => {
         min-width: 0;
     }
 
+    .loyalty-rate-cards__heading {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
     .loyalty-rate-cards__name {
         margin: 0;
         min-width: 0;
-        font-size: var(--step--1);
-        line-height: 1.25;
+        font-size: var(--step-0);
+        line-height: 1.15;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
         color: var(--highlight);
+    }
+
+    .loyalty-rate-cards__currency {
+        font-size: var(--step--2);
+        color: var(--faded);
     }
 
     .loyalty-rate-cards__logo {
@@ -150,6 +167,12 @@ const sorted = [...currencies].sort((a, b) => {
         height: 40px;
         border-radius: var(--border-radius);
         background-color: var(--background);
+    }
+
+    .loyalty-rate-cards__description {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
     }
 
     .loyalty-rate-cards__price {
@@ -171,6 +194,11 @@ const sorted = [...currencies].sort((a, b) => {
     .loyalty-rate-cards__price-unit {
         font-size: var(--step--1);
         color: var(--foreground);
+    }
+
+    .loyalty-rate-cards__unavailable {
+        font-size: var(--step--1);
+        color: var(--faded);
     }
 
     .loyalty-rate-cards__empty {

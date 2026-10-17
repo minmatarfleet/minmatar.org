@@ -1908,10 +1908,14 @@ export interface LoyaltyCurrency {
     name:               string;
     corporation_id:     number;
     default_isk_per_lp: number;
+    /** Express (<24h) rate; null when express is switched off. */
+    express_isk_per_lp: number | null;
     is_active:          boolean;
     allow_buy:          boolean;
     allow_sell:         boolean;
 }
+
+export type LoyaltyOrderTier = 'standard' | 'express'
 
 export interface LoyaltyMarketOrderClaim {
     id:                              number;
@@ -1934,6 +1938,9 @@ export interface LoyaltyMarketOrder {
     quantity_claimed:           number;
     quantity_remaining:         number;
     isk_per_lp:                 number;
+    tier:                       LoyaltyOrderTier;
+    /** Express SLA deadline; null for standard or cancelled orders. */
+    express_due_at:             Date | string | null;
     status:                     string;
     created_by_user_id:         number | null;
     created_by_name:            string | null;
@@ -1948,6 +1955,22 @@ export interface LoyaltyMarketOrder {
     created_at:                 Date | string;
     updated_at:                 Date | string;
     completed_at:               Date | string | null;
+}
+
+export interface LoyaltyOrderStatsTier {
+    /** Non-cancelled orders posted in the window. */
+    orders:             number;
+    /** Orders completed in the window (close time / price sample). */
+    completed:          number;
+    avg_close_seconds:  number | null;
+    /** LP-weighted over completed orders. */
+    avg_isk_per_lp:     number | null;
+}
+
+export interface LoyaltyOrderStats extends LoyaltyOrderStatsTier {
+    days:       number;
+    standard:   LoyaltyOrderStatsTier;
+    express:    LoyaltyOrderStatsTier;
 }
 
 export interface LoyaltyMarketOrdersList {
