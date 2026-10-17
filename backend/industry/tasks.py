@@ -213,6 +213,15 @@ def notify_lp_buyback_order_cancelled_task(
 
 
 @app.task()
+def resolve_lp_corporation_ids_task(names: list[str]) -> dict:
+    """Cache ESI ids for LP destination corporations (their logos)."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_corporation_ids import resolve_from_esi
+
+    return resolve_from_esi(names)
+
+
+@app.task()
 def sweep_lp_buyback_orders_task() -> dict:
     """Hourly: mirror threads to orders, remind stalled pilots, auto-cancel."""
     # pylint: disable=import-outside-toplevel

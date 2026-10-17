@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest'
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import {
     clamp_sell_amount,
+    initially_expanded,
+    is_partly_claimed,
+    order_claimers,
+    sort_my_orders,
     desk_lanes,
     order_converter,
     order_destination,
@@ -123,6 +127,43 @@ describe('loyalty desk helpers', () => {
         expect(lanes.claim.map((o) => o.id)).toEqual([3, 2])
         expect(lanes.send_lp.map((o) => o.id)).toEqual([1])
         expect(lanes.pay_isk).toEqual([])
+    })
+
+    it('puts express orders at the top of a lane, soonest due first', () => {
+        const old_standard = order({ id: 1, created_at: '2026-09-01T00:00:00Z' })
+        const later_express = order({ id: 2, tier: 'express', express_due_at: '2026-10-18T12:00:00Z' })
+        const sooner_express = order({ id: 3, tier: 'express', express_due_at: '2026-10-18T02:00:00Z' })
+        const lanes = desk_lanes([old_standard, later_express, sooner_express])
+        expect(lanes.claim.map((o) => o.id)).toEqual([3, 2, 1])
+    })
+
+    it('pays the whole order and lists every claimer once', () => {
+        const partial = order({
+            quantity: 200_000,
+            quantity_claimed: 100_000,
+            quantity_remaining: 100_000,
+            claims: [claimed.claims[0], { ...claimed.claims[0], id: 2, claimed_by_user_id: 30, claimed_by_name: 'Second' }, { ...claimed.claims[0], id: 3 }],
+        })
+        expect(order_payout(partial)).toBe(140_000_000)
+        expect(is_partly_claimed(partial)).toBe(true)
+        expect(is_partly_claimed(claimed)).toBe(false)
+        expect(order_claimers(partial).map((c) => c.name)).toEqual(['Kayra Nathuul', 'Second'])
+        expect(order_claimers(order({}))).toEqual([])
+    })
+
+    it('expands a capped list only when it must', () => {
+        const ids = [1, 2, 3, 4, 5]
+        expect(initially_expanded(ids, 10)).toBe(true)
+        expect(initially_expanded(ids, 3)).toBe(false)
+        expect(initially_expanded(ids, 3, (id) => id === 5)).toBe(true)
+        expect(initially_expanded(ids, 3, (id) => id === 2)).toBe(false)
+    })
+
+    it('puts orders waiting on the viewer first, newest next', () => {
+        const waiting = order({ id: 7, status: 'open', created_at: '2026-10-17T10:00:00Z' })
+        const older_move = { ...claimed, id: 8, created_at: '2026-10-01T00:00:00Z' }
+        const newer_move = { ...claimed, id: 9, created_at: '2026-10-16T00:00:00Z' }
+        expect(sort_my_orders([waiting, older_move, newer_move], SELLER).map((o) => o.id)).toEqual([9, 8, 7])
     })
 
     it('clamps sell amounts to 100K steps within the order limits', () => {
