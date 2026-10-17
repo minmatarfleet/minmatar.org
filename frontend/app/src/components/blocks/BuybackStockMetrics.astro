@@ -13,10 +13,7 @@ interface Props {
 
 const { stats } = Astro.props
 
-function isk_display(value: number | null | undefined): string {
-    if (value == null) return '—'
-    return `${format_isk(value)} ISK`
-}
+const isk_display = (value: number | null | undefined) => format_isk(value, { suffix: ' ISK' })
 
 function isk_tip(value: number | null | undefined): string | undefined {
     if (value == null) return undefined

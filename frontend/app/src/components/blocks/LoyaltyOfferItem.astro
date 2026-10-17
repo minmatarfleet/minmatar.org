@@ -24,6 +24,7 @@ import {
 } from '@helpers/loyalty_offers_rows'
 import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
+import { escape_html } from '@helpers/string'
 
 import Tag from '@components/blocks/Tag.astro'
 
@@ -54,13 +55,6 @@ const {
 const figures = Astro.props.figures
     ?? offer_row_figures(offer, side, include_freight, include_sales_tax)
 
-function escape_html(value: string): string {
-    return value
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-}
 
 const is_blueprint = offer.kind === 'blueprint'
 const recipe = offer_recipe(offer)

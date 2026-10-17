@@ -19,7 +19,7 @@ delete attributes.class
 import { format_isk, number_thousand_separator } from '@helpers/numbers'
 
 const n = (value: number) => number_thousand_separator(value)
-const isk = (value: number | null) => value === null ? '—' : format_isk(value)
+const isk = (value: number | null) => format_isk(value)
 // Minerals cost a few ISK each; keep the cents so they don't all round to 4.
 const unit_price = (value: number | null) => value === null ? '—' : value < 1000 ? value.toFixed(2) : format_isk(value)
 

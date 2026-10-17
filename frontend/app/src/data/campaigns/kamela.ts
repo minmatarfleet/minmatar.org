@@ -61,9 +61,4 @@ export const SHIPS_DESTROYED_HULLS: readonly ShipCount[] = [
     { typeId: 24_698, name: 'Drake', count: 8 },
 ]
 
-export function formatIsk(isk: number): string {
-    if (isk >= 1_000_000_000_000) return `${(isk / 1_000_000_000_000).toFixed(2)}T`
-    if (isk >= 1_000_000_000) return `${(isk / 1_000_000_000).toFixed(1)}B`
-    if (isk >= 1_000_000) return `${(isk / 1_000_000).toFixed(0)}M`
-    return `${(isk / 1_000).toFixed(0)}K`
-}
+export { formatIsk } from '@/data/campaigns/format'

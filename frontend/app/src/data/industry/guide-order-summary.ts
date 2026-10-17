@@ -7,6 +7,8 @@
  * As-of: 22 Jul 2026
  */
 
+import { ISK_COMPACT_PRECISE, format_compact, format_isk_full } from '@helpers/numbers'
+
 export const AS_OF_DATE = '22 Jul 2026'
 export const ORDER_QTY = 100
 export const MIN_ORDER_PROFIT_ISK = 25_000_000
@@ -269,22 +271,11 @@ export const ASSUMPTIONS_TEXT =
     `Qty ${ORDER_QTY} per hull. Navy BPCs ME0/TE0 from FW LP store (Minmatar ${LP_RATES.Minmatar}, Caldari ${LP_RATES.Caldari}, Amarr ${LP_RATES.Amarr}, Gallente ${LP_RATES.Gallente} ISK/LP). T1 assumes researched ME10/TE20 BPO (no LP). Amamake Sotiyo + Tatara compressed-ore shopping, Jita to Amamake freight, revenue = Jita sell x ${ORDER_QTY} (no broker/sales tax). Talwar FI uses the same navy destroyer BOM.`
 
 export function formatIskCompact(isk: number): string {
-    const abs = Math.abs(isk)
-    const sign = isk < 0 ? '-' : ''
-    if (abs >= 1_000_000_000) {
-        return `${sign}${(abs / 1_000_000_000).toFixed(2)}B`
-    }
-    if (abs >= 1_000_000) {
-        return `${sign}${(abs / 1_000_000).toFixed(2)}M`
-    }
-    if (abs >= 1_000) {
-        return `${sign}${(abs / 1_000).toFixed(0)}k`
-    }
-    return `${sign}${abs.toFixed(0)}`
+    return format_compact(isk, ISK_COMPACT_PRECISE)
 }
 
 export function formatIskFull(isk: number): string {
-    return Math.round(isk).toLocaleString('en-US')
+    return format_isk_full(isk)
 }
 
 export function rowTone(orderProfit: number): GuideOrderTableTone {
