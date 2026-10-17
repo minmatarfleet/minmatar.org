@@ -92,6 +92,7 @@ export function add_fleet_info(
         type: fleet.type,
         tracking: fleet.tracking,
         status: fleet.status,
+        aar_link: fleet.aar_link ?? null,
     } as FleetItem
 }
 

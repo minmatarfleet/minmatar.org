@@ -12,6 +12,12 @@ from fleets.endpoints.fleet.delete_fleet_role_volunteer import (
     delete_fleet_role_volunteer,
     METHOD as delete_fleet_role_volunteer_method,
 )
+from fleets.endpoints.fleet.get_fleet_my_srp import (
+    PATH as get_fleet_my_srp_path,
+    ROUTE_SPEC as get_fleet_my_srp_spec,
+    get_fleet_my_srp,
+    METHOD as get_fleet_my_srp_method,
+)
 from fleets.endpoints.fleet.get_fleet import (
     PATH as get_fleet_path,
     ROUTE_SPEC as get_fleet_spec,
@@ -291,6 +297,12 @@ _ROUTES = (
         delete_fleet_fitting_path,
         delete_fleet_fitting_spec,
         delete_fleet_fitting,
+    ),
+    (
+        get_fleet_my_srp_method,
+        get_fleet_my_srp_path,
+        get_fleet_my_srp_spec,
+        get_fleet_my_srp,
     ),
     (get_fleet_method, get_fleet_path, get_fleet_spec, get_fleet),
     (patch_fleet_method, patch_fleet_path, patch_fleet_spec, update_fleet),

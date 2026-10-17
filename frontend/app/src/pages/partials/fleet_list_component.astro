@@ -22,51 +22,29 @@ const can_view_fleets = can(gates, 'fleets.view')
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
-import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import { fetch_fleets_auth } from '@helpers/fetching/fleets'
-import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
-import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import {
+    fetch_fleet_schedule,
+    fetch_fleet_history,
+    type FleetSchedule as FleetScheduleData,
+    type FleetHistory,
+} from '@helpers/fetching/fleet_schedule'
 
 let fetch_fleets_error: Error | false = false
-let fleets:FleetItem[] = []
-let active_fleets:FleetItem[] = []
-let active_doctrines:(DoctrineType | null)[] = []
-let fc_metrics:FleetCommanderMetrics[] = []
+let schedule: FleetScheduleData | null = null
+let history: FleetHistory | null = null
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
-    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
-    fleets = await fetch_fleets_auth(auth_token as string, upcoming, false, fc_metrics)
-    fleets.sort(function(a, b) {
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-    });
-
-    if (upcoming) {
-        active_fleets = fleets.filter(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-        if (active_fleets && active_fleets.length > 0)
-            active_doctrines = await Promise.all(active_fleets.map(fleet => fleet.doctrine_id ? fetch_doctrine_by_id(fleet.doctrine_id) : null))
-    }
+    if (upcoming)
+        schedule = await fetch_fleet_schedule(auth_token as string)
+    else
+        history = await fetch_fleet_history(auth_token as string)
 } catch (error) {
     fetch_fleets_error = error
 }
 
-import { get_market_contracts } from '@helpers/api.minmatar.org/market'
-import { get_locations } from '@helpers/api.minmatar.org/locations'
-import type { Contract } from '@dtypes/api.minmatar.org'
-let supply_contracts: Contract[][] = []
-
-if (active_fleets && active_fleets.length > 0) {
-    try {
-        const locations = await get_locations()
-        const fleet_locations = active_fleets.map(fleet => locations.find(location => location.location_name === fleet?.location))
-
-        supply_contracts = await Promise.all(fleet_locations.map(location => location?.location_id ? get_market_contracts(location.location_id) : []))
-    } catch (error) {
-        console.error('Error fetching supply contracts:', error)
-    }
-}
+const fleets = (upcoming ? schedule?.fleets : history?.tracked) ?? []
 
 let count_text = ''
 if (upcoming)
@@ -80,7 +58,8 @@ const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upc
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-import FleetList from '@components/blocks/FleetList.astro';
+import FleetSchedule from '@components/blocks/FleetSchedule.astro';
+import FleetHistoryList from '@components/blocks/FleetHistoryList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
@@ -97,13 +76,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         {count_text}
     </small>
 
-    <FleetList
-        fleets={fleets}
-        active_fleets={upcoming ? active_fleets : undefined}
-        active_doctrines={upcoming ? active_doctrines : undefined}
-        supply_contracts={upcoming ? supply_contracts : undefined}
-        history={!upcoming}
-        fc_metrics={fc_metrics}
-        init_tooltips={true}
-    />
+    <>{upcoming ?
+        <FleetSchedule schedule={schedule as FleetScheduleData} init_tooltips={true} /> :
+        <FleetHistoryList history={history as FleetHistory} init_tooltips={true} />
+    }</>
 }

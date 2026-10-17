@@ -43,7 +43,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
-import Countdown from '@components/blocks/Countdown.astro';
 import CompletedStatus from '@components/blocks/CompletedStatus.astro';
 ---
 
@@ -62,20 +61,7 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
     hx-indicator={!fleet_tracking?.end_time ? '.loader' : undefined}
 >
     <Flexblock>
-        {fleet_tracking === null && fleet_status !== 'cancelled' &&
-            <Countdown
-                date={start_time}
-                id={fleet_id}
-                tag='countdown-fleet'
-                x-data={`{
-                    init() {
-                        window.addEventListener('countdown', event => {
-                            is_fleet_time = true
-                        })
-                    }
-                }`}
-            />
-        }
+        {/* The countdown sits in the fleet facts above. */}
 
         {fleet_status === 'cancelled' &&
             <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>

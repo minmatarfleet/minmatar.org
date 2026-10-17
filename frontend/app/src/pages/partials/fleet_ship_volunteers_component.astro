@@ -164,6 +164,7 @@ const FLEET_SHIPS_PARTIAL_URL = translatePath(`/partials/fleet_ship_volunteers_c
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
+import FleetMyPilots from '@components/blocks/FleetMyPilots.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
@@ -203,5 +204,16 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
         fleet_id={fleet_id}
         readonly={readonly}
         is_fleet_commander={can_manage}
+    />
+}
+
+{!fetch_error && !history && refresh_roles &&
+    <FleetMyPilots
+        hx-swap-oob="true"
+        fleet_id={fleet_id}
+        pilots={pilots}
+        volunteers={volunteers}
+        readonly={readonly}
+        can_manage={can_manage}
     />
 }

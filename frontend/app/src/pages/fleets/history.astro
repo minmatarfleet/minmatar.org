@@ -22,21 +22,18 @@ const can_view_fleets = can(gates, 'fleets.view')
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem } from '@dtypes/layout_components'
-import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import { fetch_fleets_auth } from '@helpers/fetching/fleets'
-import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
+import { fetch_fleet_history, type FleetHistory } from '@helpers/fetching/fleet_schedule'
 
 let fetch_fleets_error: Error | false = false
-let fleets:FleetItem[] = []
-let fc_metrics:FleetCommanderMetrics[] = []
+let history: FleetHistory | null = null
 
 try {
-    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
-    fleets = await fetch_fleets_auth(auth_token as string, false, false, fc_metrics)
+    history = await fetch_fleet_history(auth_token as string)
 } catch (error) {
     fetch_fleets_error = error
 }
+
+const fleets = history?.tracked ?? []
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}`)
 
@@ -61,7 +58,7 @@ import PageActions from '@components/page/PageActions.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FleetList from '@components/blocks/FleetList.astro';
+import FleetHistoryList from '@components/blocks/FleetHistoryList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
@@ -127,10 +124,8 @@ const page_description = t('page_finder.fleets.history.description');
                     }}
                 />
                 :
-                <FleetList
-                    fleets={fleets}
-                    history={true}
-                    fc_metrics={fc_metrics}
+                <FleetHistoryList
+                    history={history as FleetHistory}
                     init_tooltips={false}
                 />
             }

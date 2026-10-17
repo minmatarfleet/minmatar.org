@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetTypes } from '@dtypes/api.minmatar.org'
+
+/** The fleet-type corner flag (strategic, non-strategic, training, NPSI) with its tooltip. */
+interface Props {
+    type?:          FleetTypes;
+    /** Edge length in px; the icons are drawn at 57. */
+    size?:          number;
+    init_tooltips?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    type,
+    size = 57,
+    init_tooltips = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const label =
+    type === 'strategic' ? t('strategic_fleet') :
+    type === 'training' ? t('training_fleet') :
+    type === 'npsi' ? t('npsi_fleet') :
+    t('non_strategic_fleet')
+
+import StratopIcon from '@components/icons/StratopIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
+import NpsiIcon from '@components/icons/NpsiIcon.astro';
+---
+
+{type &&
+    <span
+        class:list={['[ fleet-type-flag ]', Astro.props.class]}
+        role="img"
+        aria-label={label}
+        data-tippy-content={label}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        style={`--flag-size: ${size}px`}
+        {...attributes}
+    >
+        {type === 'strategic' ?
+            <StratopIcon /> :
+            type === 'training' ?
+            <TrainingIcon /> :
+            type === 'npsi' ?
+            <NpsiIcon /> :
+            <NonStrategicIcon />
+        }
+    </span>
+}
+
+<style lang="scss">
+    .fleet-type-flag {
+        display: block;
+        width: var(--flag-size);
+        height: var(--flag-size);
+        line-height: 0;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+</style>
