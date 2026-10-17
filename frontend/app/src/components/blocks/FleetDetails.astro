@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply, FleetKills as FleetKillsData, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
     fleet:                      FleetUI;
@@ -27,6 +27,9 @@ interface Props {
     refits?:                    FleetRefit[];
     composition?:               FleetCompositionEntry[];
     supply?:                    FleetSupply;
+    /** A completed fleet's killmails, fetched by the page; null loads them through the partial. */
+    fleet_kills?:               FleetKillsData | null;
+    srp_losses?:                FleetSrpLoss[] | null;
 }
 
 const {
@@ -47,6 +50,8 @@ const {
     refits = [],
     composition = [],
     supply,
+    fleet_kills = null,
+    srp_losses = null,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -77,6 +82,7 @@ import Markdown from '@components/blocks/Markdown.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
+import FleetKills from '@components/blocks/FleetKills.astro';
 
 // Pilots pick ships from the doctrine; a cancelled fleet takes no more picks.
 const fleet_tabs = [
@@ -163,14 +169,18 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
             padding_inline='0'
             max_width='var(--max-col-width)'
         >
-            <div
-                id="fleet-kills"
-                hx-get={FLEET_KILLS_PARTIAL_URL}
-                hx-trigger="load"
-                hx-swap="outerHTML transition:true"
-            >
-                <p class="[ loading ]">{t('fleets.kills.loading')}</p>
-            </div>
+            {fleet_kills ?
+                <FleetKills fleet_kills={fleet_kills} fleet_id={fleet.id} srp_losses={srp_losses} />
+                :
+                <div
+                    id="fleet-kills"
+                    hx-get={FLEET_KILLS_PARTIAL_URL}
+                    hx-trigger="load"
+                    hx-swap="outerHTML transition:true"
+                >
+                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
+                </div>
+            }
         </Wrapper>
     }
     
