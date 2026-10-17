@@ -190,7 +190,7 @@ pipenv run python manage.py load_reference_fixtures
 
 Use `--clear` to remove existing reference rows before loading. Use `--skip-eve-type-check` only if you know referenced types exist locally.
 
-**Regenerate (maintainers with `production_readonly` access):**
+**Regenerate (maintainers with `production_readonly` access; set `DB_READONLY_*` in `.env`, see `backend/.env.example`):**
 
 ```bash
 pipenv run python manage.py export_reference_fixtures
