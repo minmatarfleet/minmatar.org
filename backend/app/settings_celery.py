@@ -311,6 +311,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Alliance] Prune health snapshots",
+        {
+            "task": "alliance.tasks.prune_alliance_health_snapshots",
+            "schedule": crontab(minute=40, hour=4),
+        },
+    ),
+    (
         "[Corporations] Refresh public profile stats",
         {
             "task": "eveonline.tasks.corporations.refresh_corporation_profile_stats",
