@@ -46,7 +46,7 @@ export const ui = {
         '500.cover_alt': 'An aerial view of the undocking section of a green Fortizar station.',
 
         'alliance.page_title': 'Alliance',
-        'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions. Breaking into nullsec sovereignty content in Etherium Reach.',
+        'alliance.leading_text': 'Several corporations fighting over two combined braincells for the Minmatar Republic. Actively policing the Metropolis, Heimatar, Sinq Laison, Bleak Lands, Devoid regions.',
         'alliance.meta_description': 'Learn more about Minmatar Fleet Alliance by browsing information on our corporations, teams, internal groups and recent events.',
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
