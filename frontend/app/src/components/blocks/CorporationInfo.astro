@@ -49,7 +49,7 @@ import GallenteLogo from '@components/logos/GallenteLogo.astro'
 
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 
-const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezones[0].split('\n') : null
+const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezones?.[0].split('\n') : null
 ---
 
 <Wrapper
@@ -139,24 +139,17 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
                     </SectionH4>
                 </ComponentBlock>
             }
-            {(corporation?.timezones.length ?? 0) > 0 &&
+            {(corporation?.timezones?.length ?? 0) > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('timezones')}>
                         <Markdown markdown={`- ${timezones?.join('- ')}` as string} />
                     </SectionH4>
                 </ComponentBlock>
             }
-            {(corporation?.requirements.length ?? 0) > 0 &&
+            {(corporation?.requirements?.length ?? 0) > 0 &&
                 <ComponentBlock>
                     <SectionH4 heading_text={t('requirements')}>
-                        <Markdown markdown={corporation?.requirements.join('') as string} />
-                    </SectionH4>
-                </ComponentBlock>
-            }
-            {corporation?.executor_notes &&
-                <ComponentBlock>
-                    <SectionH4 heading_text={t('executor_notes')}>
-                        <Markdown markdown={corporation?.executor_notes as string} />
+                        <Markdown markdown={corporation?.requirements?.join('') as string} />
                     </SectionH4>
                 </ComponentBlock>
             }

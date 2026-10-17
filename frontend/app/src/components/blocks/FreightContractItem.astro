@@ -67,8 +67,8 @@ import Tag from '@components/blocks/Tag.astro';
 
     <div class="[ freight-contract-item__creator ]" role="cell" data-label={t('creator')}>
         <PilotBadge
-            character_id={contract.issuer_id}
-            character_name={contract.issuer_character_name}
+            character_id={contract.issuer_id ?? 0}
+            character_name={contract.issuer_character_name ?? ''}
             size={32}
             icon_quality={64}
         />

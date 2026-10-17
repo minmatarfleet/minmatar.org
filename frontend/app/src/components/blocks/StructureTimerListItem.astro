@@ -51,7 +51,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     gap='0'
 >
     <Tile
-        title={structure_timer.corporation_name}
+        title={structure_timer.corporation_name ?? ''}
         cover={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
         transparent={true}
         soft={false}

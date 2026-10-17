@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Generated from the backend API (npm run gen:api); collapsed in review diffs.
+src/types/generated/* linguist-generated=true

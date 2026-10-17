@@ -12,7 +12,6 @@ export async function fetch_posts(post_request:PostRequest) {
 
     const chunk = posts.map(post => {
         const tags = post.tag_ids.map(tag_id => posts_tags.find(posts_tag => posts_tag.tag_id === tag_id)?.tag)
-        const image = post.image
 
         return {
             post_id: post.post_id,
@@ -26,7 +25,6 @@ export async function fetch_posts(post_request:PostRequest) {
                 character_id: post.author_character_id ?? 0,
                 character_name: post.author_character_name ?? t('index.page_title'),
             },
-            ...(image && { image }),
         } as PostListUI
     })
     

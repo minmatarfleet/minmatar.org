@@ -79,9 +79,9 @@ import Tag from '@components/blocks/Tag.astro';
                 
                 <Flexblock gap='var(--space-2xs)'>
                     <h4>{t('requested_groups')}</h4>
-                    {character.requested_groups.length > 0 ?
+                    {(character.requested_groups ?? []).length > 0 ?
                         <FlexInline gap='var(--space-3xs)'>
-                            {character.requested_groups.map(group =>
+                            {(character.requested_groups ?? []).map(group =>
                                 <Tag text={group} />
                             )}
                         </FlexInline> :

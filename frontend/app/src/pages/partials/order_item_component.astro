@@ -170,7 +170,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         order={order as IndustryOrderUI }
         init_tooltips={true}
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
-        location_name={order?.location.location_name}
+        location_name={order?.location?.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
         claim_disabled_reason={fetch_breakdown ? claim_disabled_reason : undefined}
         alert={alert}

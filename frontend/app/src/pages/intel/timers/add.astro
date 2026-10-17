@@ -87,7 +87,7 @@ if (Astro.request.method === "POST") {
                         auth_token as string,
                         new_timer.id, {
                             alliance_name: new_timer.alliance_name,
-                            corporation_name: new_timer.corporation_name,
+                            corporation_name: new_timer.corporation_name ?? '',
                         }
                     )
                 }

@@ -51,7 +51,7 @@ if (Astro.request.method === "POST") {
             ...(campaign_id !== undefined && { campaign_id: campaign_id }),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
-            start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`),
+            start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`).toJSON(),
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
             location_id: parseInt(data.get('location_id') as string),

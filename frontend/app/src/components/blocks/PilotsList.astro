@@ -176,18 +176,20 @@ delete attributes.class
                                 }
                             </small>
                             <Flexblock x-show="show_details" gap='var(--space-3xs)' style="display: none">
-                                <CorporationBadge
-                                    corporation={{
-                                        id: pilot.corp_id,
-                                        name: pilot.corp_name,
-                                        size: 'xs',
-                                    }}
-                                />
+                                {pilot.corp_id !== null &&
+                                    <CorporationBadge
+                                        corporation={{
+                                            id: pilot.corp_id,
+                                            name: pilot.corp_name ?? undefined,
+                                            size: 'xs',
+                                        }}
+                                    />
+                                }
                                 {pilot.alliance_id &&
                                     <AllianceBadge
                                         alliance={{
                                             id: pilot.alliance_id,
-                                            name: pilot.alliance_name,
+                                            name: pilot.alliance_name ?? undefined,
                                             size: 'xs',
                                         }}
                                     />

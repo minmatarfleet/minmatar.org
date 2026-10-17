@@ -27,8 +27,8 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
     <h2>{place}</h2>
     <PilotBadge
         class="[ items-center! ]"
-        character_id={trucker.primary_character_id}
-        character_name={trucker.primary_character_name}
+        character_id={trucker.primary_character_id ?? 0}
+        character_name={trucker.primary_character_name ?? t('unknown_character')}
         size={32}
     >
         <small>{t(trucker.completed_contracts_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(trucker.completed_contracts_count))}</small>

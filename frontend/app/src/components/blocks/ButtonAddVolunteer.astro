@@ -113,14 +113,16 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                     >
                                         <Flexblock gap='var(--space-3xs)'>
                                             <h3>{pilot.character_name}</h3>
-                                            <CorporationBadge
-                                                corporation={{
-                                                    id: pilot.corp_id,
-                                                    name: pilot.corp_name,
-                                                    size: 'xs',
-                                                }}
-                                                highlight={false}
-                                            />
+                                            {pilot.corp_id !== null &&
+                                                <CorporationBadge
+                                                    corporation={{
+                                                        id: pilot.corp_id,
+                                                        name: pilot.corp_name ?? undefined,
+                                                        size: 'xs',
+                                                    }}
+                                                    highlight={false}
+                                                />
+                                            }
                                         </Flexblock>
                                     </CharacterCard>
                                 </StylessButton>

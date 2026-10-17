@@ -1,6 +1,6 @@
 import { useTranslations } from '@i18n/utils';
 
-import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile, SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile, SummaryCharacter, CharacterErrors } from '@dtypes/api.minmatar.org'
 import type { CharacterTagSummary, CharacterErrorUI } from '@dtypes/layout_components'
 import type {
     SkillsetsUI,
@@ -217,7 +217,8 @@ export function get_character_error_ui(characters:SummaryCharacter[]) {
             character.flags.forEach(flag => {
                 character_errors.push({
                     character: character,
-                    error: flag,
+                    // The backend's flag codes (eveonline character summary).
+                    error: flag as CharacterErrors,
                 })
             })
         }

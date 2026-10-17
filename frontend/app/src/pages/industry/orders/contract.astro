@@ -39,7 +39,7 @@ try {
         throw new Error(t('invalid_assignment_id'), { cause: 400 })
 
     order = await get_order_by_id(order_id)
-    location_name = order.location.location_name
+    location_name = order.location?.location_name ?? ''
     item = order.items.find(item => item.id === item_id)
     assignment = item?.assignments.find(assignment => assignment.id === assignment_id)
 } catch (error) {

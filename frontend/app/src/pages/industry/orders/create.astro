@@ -78,7 +78,7 @@ try {
     delivery_corporations = [...new Set(
         characters
             .map((character) => character.corp_name)
-            .filter((name) => Boolean(name))
+            .filter((name): name is string => Boolean(name))
     )].sort((a, b) => a.localeCompare(b))
     campaigns = campaign_options
 } catch (error) {

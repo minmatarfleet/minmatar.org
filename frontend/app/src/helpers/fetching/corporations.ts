@@ -28,13 +28,15 @@ export const append_extraction_corporation = async (api_corporations:Corporation
     try {
         const extraction_info = await get_corporation_info(MINMATAR_EXTRACTION_COMPANY_ID)
 
+        // The public info endpoint carries the profile, not the roster,
+        // leadership or stats the list rows have, so those stay empty.
         api_corporations.push({
             active: extraction_info.active,
             trial: extraction_info.trial,
             alliance_id: extraction_info.alliance_id,
             alliance_name: extraction_info.alliance_name,
             biography: extraction_info.biography,
-            executor_notes: extraction_info.executor_notes,
+            executor_notes: null,
             corporation_id: extraction_info.corporation_id,
             corporation_name: extraction_info.corporation_name,
             faction_id: extraction_info.faction_id,
@@ -44,6 +46,20 @@ export const append_extraction_corporation = async (api_corporations:Corporation
             timezones: extraction_info.timezones,
             type: extraction_info.type,
             members: [],
+            activity_summary: null,
+            ceo: null,
+            directors: [],
+            recruiters: [],
+            stewards: [],
+            leadership: [],
+            discord_invite_url: null,
+            highlights: null,
+            human_count: null,
+            member_count: null,
+            media: [],
+            ticker: null,
+            timezone_distribution: [],
+            weekday_distribution: [],
         })
     } catch (error) {
         console.log(`Error fetching Minmatar Extraction Company info: ${error.message}`)
@@ -204,7 +220,8 @@ export async function get_all_corporation_members(access_token:string, corporati
     }
 
     corporation_members.members = api_corporation.members.map(api_member => {
-        const is_alt = (api_member.primary_character_id !== null)
+        const primary_character_id = api_member.primary_character_id ?? null
+        const is_alt = primary_character_id !== null
 
         let member:CharacterKind = {
             character_id: api_member.character_id,
@@ -214,10 +231,10 @@ export async function get_all_corporation_members(access_token:string, corporati
             is_main: !is_alt
         }
         
-        if (is_alt) {
+        if (primary_character_id !== null) {
             member.main_character = {
-                character_id: api_member.primary_character_id,
-                character_name: api_member.primary_character_name,
+                character_id: primary_character_id,
+                character_name: api_member.primary_character_name ?? '',
             }
         }
 
