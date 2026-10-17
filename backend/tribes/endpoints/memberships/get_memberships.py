@@ -3,6 +3,9 @@
 from typing import List, Optional
 
 from authentication import AuthBearer
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from tribes.endpoints.memberships.schemas import MembershipSchema
 from tribes.endpoints.memberships.serializers import serialize_membership
 from tribes.helpers import user_can_manage_group
@@ -54,7 +57,6 @@ def get_memberships(
 
     qs = qs.select_related(
         "tribe_group__tribe",
-        "user__eveplayer__primary_character",
         "rank",
     ).prefetch_related(
         "characters__character__token",
@@ -62,11 +64,14 @@ def get_memberships(
         "tribe_group__requirements__qualifying_skills__eve_type",
     )
 
+    memberships = list(qs)
+    mains = primary_characters_for_users(m.user_id for m in memberships)
     return 200, [
         serialize_membership(
             m,
             include_requirement_status=check_requirements,
             include_characters=include_characters,
+            primary=mains.get(m.user_id),
         )
-        for m in qs
+        for m in memberships
     ]
