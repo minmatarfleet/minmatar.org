@@ -64,7 +64,7 @@
         "src/components/blocks/FullBodyCard.astro": 2,
         "src/components/blocks/GuideCard.astro": 2,
         "src/components/blocks/GuidePostCard.astro": 4,
-        "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro": 2,
+        "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro": 1,
         "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryOrders.astro": 1,
         "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummarySkeleton.astro": 1,
         "src/components/blocks/industry/OrderDetailSectionSkeleton.astro": 1,

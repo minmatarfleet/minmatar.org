@@ -137,6 +137,13 @@ describe('convention rule matchers', () => {
         expect(count('alpha_literal', { path: 'src/styles/properties/_colors.scss', text: ':root { --hairline: rgba(255, 255, 255, 0.06); }' })).toBe(0)
     })
 
+    it('skeleton_keyframes: per-component skeleton keyframes, not the shared ones', () => {
+        expect(count('skeleton_keyframes', astro(`<style>@keyframes market-contracts-skel { 0% { opacity: 1 } }</style>`))).toBe(1)
+        expect(count('skeleton_keyframes', astro(`<style>@keyframes shimmer { 0% { opacity: 1 } }</style>`))).toBe(1)
+        expect(count('skeleton_keyframes', astro(`<style>@keyframes rotation { 0% { opacity: 1 } } .s { animation: skeleton-shimmer 1s }</style>`))).toBe(0)
+        expect(count('skeleton_keyframes', { path: 'src/styles/_animations.scss', text: '@keyframes skeleton-shimmer { 0% { opacity: 1 } }' })).toBe(0)
+    })
+
     it('tailwind_apply: any @apply in styles', () => {
         expect(count('tailwind_apply', astro(`<style>.card { @apply p-4 bg-black; }</style>`))).toBe(1)
         expect(count('tailwind_apply', astro(`<p>Click apply to @apply</p>`))).toBe(0)

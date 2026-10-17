@@ -217,6 +217,7 @@ Conventions:
   - `@media (hover: hover)`: hover/focus scale effects (e.g. buttons `transform: scale(1.05)`).
   - `@media (hover: none)`: tactile press states (`scale(0.95)` on active).
 - Dialogs/modals: focus-trap with `x-trap`, `aria-hidden` while closed, `inert` binding, Escape to close.
+- Motion: looping animations stop under `@media (prefers-reduced-motion: reduce)`. Loading skeletons keep their layout in the component and take fill and motion from `@include skeleton.shimmer` / `skeleton.pulse` (`@use '<relative path>/styles/mixins/skeleton'`), which already do this; don't add per-component skeleton keyframes (the `skeleton_keyframes` ratchet fails on them).
 
 ## 7. Verification
 

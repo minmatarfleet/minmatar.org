@@ -99,6 +99,15 @@ export const RULES: ConventionRule[] = [
         },
     },
     {
+        id: 'skeleton_keyframes',
+        kind: 'absolute',
+        why: 'Loading skeletons use @include skeleton.shimmer / skeleton.pulse from src/styles/mixins/_skeleton.scss: one set of keyframes (styles/_animations.scss) that stops under prefers-reduced-motion. Do not define per-component skeleton keyframes.',
+        find: (file) => {
+            if (file.path === 'src/styles/_animations.scss') return []
+            return hits_in(file, css_regions(file), /@keyframes\s+[\w-]*(?:skel|shimmer)[\w-]*/g)
+        },
+    },
+    {
         id: 'tailwind_apply',
         kind: 'absolute',
         why: 'Rule 3/5: Tailwind is for utilities in markup; no @apply blobs in component styles.',

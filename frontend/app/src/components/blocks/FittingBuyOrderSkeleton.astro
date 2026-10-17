@@ -54,16 +54,11 @@ const {
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .fitting-buy-order-skeleton .skel {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            var(--hairline) 0%,
-            var(--hairline-strong) 50%,
-            var(--hairline) 100%
-        );
-        background-size: 200% 100%;
-        animation: fitting-buy-order-skel 1.1s ease-in-out infinite;
+        @include skeleton.shimmer;
     }
 
     .fitting-buy-order-skeleton__fit {
@@ -102,10 +97,5 @@ const {
     .skel-textarea {
         width: 100%;
         height: 6rem;
-    }
-
-    @keyframes fitting-buy-order-skel {
-        0% { background-position: 100% 0; }
-        100% { background-position: -100% 0; }
     }
 </style>

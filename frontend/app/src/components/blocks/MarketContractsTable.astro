@@ -624,6 +624,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .ops-contracts-list__heading {
         flex-wrap: wrap;
         gap: var(--space-s);
@@ -795,14 +797,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         width: 2.5rem;
         height: calc(var(--step--2) * 1.15);
         border-radius: 2px;
-        background: color-mix(in srgb, var(--foreground) 12%, transparent);
-        animation: market-contracts-metrics-pulse 1.1s ease-in-out infinite;
         vertical-align: baseline;
-    }
-
-    @keyframes market-contracts-metrics-pulse {
-        0%, 100% { opacity: 0.45; }
-        50% { opacity: 0.9; }
+        @include skeleton.pulse(color-mix(in srgb, var(--foreground) 12%, transparent), $duration: 1.1s);
     }
 
     :global(.market-contracts-card__metric) {
