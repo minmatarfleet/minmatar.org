@@ -59,4 +59,5 @@ esi_provider = ESIClientProvider(
 - **`results()`** = “give me everything” (all pages). Use when you need the full list.
 - **`result()`** = one page (or the single response for non-paginated ops).
 - Prefer `EsiClient` / `_operation_results` so callers keep receiving plain dicts.
+- Routes the OpenAPI client does not cover go through `eveonline.esi_http.esi_request` (or `EsiClient._raw_get`), never bare `requests`: it sends django-esi's User-Agent, reports every status to the app-wide error budget in `eveonline.esi_budget`, and follows `X-Pages` with `paged=True`. Tests fake it with `eveonline.tests.fake_esi_http.FakeEsi`.
 - Tags with spaces in the ESI spec (e.g. `"Faction Warfare"`) are passed to `ESIClientProvider(tags=...)` with the space, and accessed on the client as `Faction_Warfare`.
