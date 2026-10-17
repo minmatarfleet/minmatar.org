@@ -154,6 +154,13 @@ class CampaignApiTests(TestCase):
         self.assertEqual(row["state"], "ready")
         self.assertEqual(row["action_url"], "")
 
+        # The detail page counts the same character as tracked. That used to
+        # read a stat column nothing wrote, so it was always 0.
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.user)
+        )
+        self.assertEqual(response.json()["characters_tracked"], 1)
+
     def test_a_basic_token_without_notifications_still_needs_an_update(self):
         token = Token.objects.create(
             user=self.user,

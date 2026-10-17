@@ -19,7 +19,6 @@ from campaigns.models import (
     CampaignAward,
     CampaignEvent,
     CampaignKillmail,
-    CampaignParticipantStat,
     CampaignSiteCompletion,
     CampaignStatus,
     CampaignStructure,
@@ -158,13 +157,6 @@ def get_campaign(request, slug: str):
         else None
     )
 
-    my_stat = (
-        CampaignParticipantStat.objects.filter(
-            campaign=campaign, user=user
-        ).first()
-        if user
-        else None
-    )
     enlistment = (
         campaign.enlistments.filter(user=user, status="active").first()
         if user
@@ -203,7 +195,11 @@ def get_campaign(request, slug: str):
             if enlistment
             else 0
         ),
-        "characters_tracked": my_stat.characters_tracked if my_stat else 0,
+        "characters_tracked": (
+            serializers.tracked_character_counts([user.id]).get(user.id, 0)
+            if enlistment
+            else 0
+        ),
         "standing_fleet_up": False,
         "standing_fleet_members": 0,
         "standing_fleet_boss": None,
