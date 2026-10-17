@@ -10,7 +10,7 @@ import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
 if (!can(gates, 'site.debug_pages'))
-  return Astro.redirect(HTTP_404_Not_Found())
+  return HTTP_404_Not_Found()
 
 import fs from 'node:fs';
 import path from 'node:path';

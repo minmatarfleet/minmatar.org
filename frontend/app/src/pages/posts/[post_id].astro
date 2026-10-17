@@ -30,7 +30,7 @@ const param = Astro.params.post_id
 const post_id = param === 'new' ? 0 : parseInt(param ?? '')
 
 if (isNaN(post_id))
-    return Astro.redirect(translatePath('/alliance/post/new'))
+    return Astro.redirect(translatePath('/posts/new'))
 
 let post:Post | null = null
 let submitted_post_data:PostParams = {}
@@ -183,7 +183,6 @@ const page_title = post?.title ?? t('new_post')
                 slot="header"
                 justification='space-between'
                 class="[ w-full ]"
-                x-bind:class="{ '!items-start': !sticky }"
             >
                 <TextBox>
                     <PageTitle>
