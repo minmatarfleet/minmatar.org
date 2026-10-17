@@ -6,13 +6,11 @@ import type { FreightContract } from '@dtypes/api.minmatar.org'
 
 interface Props {
     contracts:      FreightContract[];
-    init_tooltips:  boolean;
     is_history?:    boolean;
 }
 
 const {
     contracts,
-    init_tooltips,
     is_history = false,
 } = Astro.props
 
@@ -39,7 +37,7 @@ import Button from '@components/blocks/Button.astro';
 
             {contracts.map(contract =>
                 <div x-show="show_item($el)">
-                    <FreightContractItem contract={contract} init_tooltips={init_tooltips} />
+                    <FreightContractItem contract={contract} />
                 </div>
             )}
 

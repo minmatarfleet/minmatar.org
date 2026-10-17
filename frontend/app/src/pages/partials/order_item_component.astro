@@ -161,14 +161,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         claim_disabled_reason={claim_disabled_reason}
         order_breakdown={order_breakdown}
         location_name={undefined}
-        init_tooltips={true}
         swap_target_id={`order-breakdown-${order_id}-inner`}
         claim_render="breakdown"
         alert={alert}
     /> :
     <OrderItem
         order={order as IndustryOrderUI }
-        init_tooltips={true}
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
         location_name={order?.location.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}

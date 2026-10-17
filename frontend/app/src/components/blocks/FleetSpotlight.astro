@@ -18,7 +18,6 @@ interface Props {
     doctrine?:      FleetScheduleDoctrine | null;
     /** The viewer's characters signed up for this fleet. */
     signups?:       number;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
@@ -27,7 +26,6 @@ const {
     live = false,
     doctrine = null,
     signups = 0,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -55,7 +53,6 @@ import Button from '@components/blocks/Button.astro'
         character_name={fleet.fleet_commander_name}
         type={fleet.type}
         size={112}
-        init_tooltips={init_tooltips}
     />
 
     <div class="[ fleet-spotlight__time ]">

@@ -9,7 +9,6 @@ interface Props {
     type?:          FleetTypes;
     /** Edge length in px. */
     size?:          number;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
@@ -18,7 +17,6 @@ const {
     character_name,
     type,
     size = 112,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -45,7 +43,6 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro';
         class="[ fleet-portrait__flag ]"
         type={type}
         size={flag_size}
-        init_tooltips={init_tooltips}
     />
 </span>
 

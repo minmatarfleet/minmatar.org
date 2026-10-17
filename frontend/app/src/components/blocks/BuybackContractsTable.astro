@@ -6,13 +6,11 @@ import type { BuybackContract } from '@dtypes/api.minmatar.org'
 
 interface Props {
     contracts:      BuybackContract[];
-    init_tooltips:  boolean;
     is_history?:    boolean;
 }
 
 const {
     contracts,
-    init_tooltips,
     is_history = false,
 } = Astro.props
 
@@ -37,7 +35,7 @@ import Button from '@components/blocks/Button.astro';
             </div>
 
             {contracts.map(contract =>
-                <BuybackContractItem contract={contract} init_tooltips={init_tooltips} />
+                <BuybackContractItem contract={contract} />
             )}
         </div>
     </div>

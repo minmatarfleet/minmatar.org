@@ -22,7 +22,6 @@ interface Props {
     update_cover:               boolean;
     fleet_metrics:              FleetMetrics | undefined;
     fleet_commander_metrics:    FleetCommanderMetrics | undefined;
-    init_tooltips:              boolean;
     ship_volunteers?:           FleetShipVolunteer[];
     refits?:                    FleetRefit[];
     composition?:               FleetCompositionEntry[];
@@ -45,7 +44,6 @@ const {
     update_cover,
     fleet_metrics,
     fleet_commander_metrics,
-    init_tooltips,
     ship_volunteers = [],
     refits = [],
     composition = [],
@@ -117,7 +115,6 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
             corporation_name={fleet_commander_metrics?.corporation_name ?? ''}
             fleet_count={fleet_commander_metrics?.fleet_count}
             members_count={fleet_metrics?.members}
-            init_tooltips={init_tooltips}
         />
 
         {history && fleet.description &&
@@ -137,7 +134,6 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
                 fleet_status={fleet.status}
                 is_fleet_commander={is_fleet_commander}
                 fleet_tracking_texts={fleet_tracking_texts}
-                init_tooltips={init_tooltips}
                 disable_motd={fleet.disable_motd}
             />
         </div>

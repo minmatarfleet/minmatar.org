@@ -14,12 +14,10 @@ import { eve_day } from '@helpers/fetching/fleet_schedule'
  */
 interface Props {
     schedule:       FleetSchedule;
-    init_tooltips?: boolean;
 }
 
 const {
     schedule,
-    init_tooltips = true,
 } = Astro.props
 
 const { fleets, live, next, rest, doctrines, next_signups } = schedule
@@ -69,7 +67,6 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
             fleet={fleet}
             live={true}
             doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
-            init_tooltips={init_tooltips}
         />
     )}
 
@@ -78,7 +75,6 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
             fleet={next}
             doctrine={next.doctrine_id ? doctrines[next.doctrine_id] : null}
             signups={next_signups}
-            init_tooltips={init_tooltips}
         />
     }
 
@@ -99,7 +95,7 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
                     x-bind:aria-pressed={`fleet_type === '${type}'`}
                     x-on:click={`fleet_type = '${type}'`}
                 >
-                    <FleetTypeFlag type={type} size={22} init_tooltips={false} aria-hidden="true" />
+                    <FleetTypeFlag type={type} size={22} aria-hidden="true" />
                     {type_label(type)} {count}
                 </button>
             )}
@@ -118,7 +114,6 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
                         role="listitem"
                         fleet={fleet}
                         doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
-                        init_tooltips={init_tooltips}
                         x-show={`fleet_type === 'all' || fleet_type === '${fleet.type}'`}
                     />
                 )}

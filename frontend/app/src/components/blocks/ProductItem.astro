@@ -6,12 +6,10 @@ import type { Product } from '@dtypes/api.minmatar.org'
 
 interface Props {
     product:            Product;
-    init_tooltips:      boolean;
 }
 
 const {
     product,
-    init_tooltips,
 } = Astro.props
 
 // Keep the row scannable: a few parent icons, the rest on the detail page.
@@ -62,7 +60,6 @@ import Picture from '@components/blocks/Picture.astro';
                     {used_in.map(parent =>
                         <span
                             data-tippy-content={parent.name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
                             <ItemPicture
                                 item_id={parent.type_id}

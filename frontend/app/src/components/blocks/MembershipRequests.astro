@@ -6,13 +6,11 @@ import type { TribeMembership } from '@dtypes/api.minmatar.org'
 
 interface Props {
     requests:               TribeMembership[];
-    init_tooltips:          boolean;
     required_token_type?:   string | null;
 }
 
 const {
     requests,
-    init_tooltips,
     required_token_type = null,
 } = Astro.props
 
@@ -31,7 +29,6 @@ import Table from '@components/blocks/Table.astro';
                 <div x-show="show_item($el)">
                     <MembershipRequestItem
                         request={request}
-                        init_tooltips={init_tooltips}
                         required_token_type={required_token_type}
                     />
                 </div>

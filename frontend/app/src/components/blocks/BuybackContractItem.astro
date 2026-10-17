@@ -9,12 +9,10 @@ import { format_date_short, format_date_time, humanize_date_diff_single } from '
 
 interface Props {
     contract:       BuybackContract;
-    init_tooltips:  boolean;
 }
 
 const {
     contract,
-    init_tooltips,
 } = Astro.props
 
 const STATUS_COLORS: Record<BuybackContractStatus, TagColors> = {
@@ -58,7 +56,6 @@ import Tag from '@components/blocks/Tag.astro';
         role="cell"
         data-label={t('date_created')}
         data-tippy-content={t('date_issued').replace('{date}', issued_datetime)}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <span class="[ whitespace-nowrap ]">{issued_date}</span>
     </div>
@@ -81,7 +78,6 @@ import Tag from '@components/blocks/Tag.astro';
         role="cell"
         data-label={t('status')}
         data-tippy-content={processing_tooltip}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <Tag
             text={t(`contract_${contract.status}` as any) ?? contract.status}
@@ -94,14 +90,12 @@ import Tag from '@components/blocks/Tag.astro';
     <div class="[ buyback-contract-item__size ]" role="cell" data-label={t('size_m3')}>
         <span
             data-tippy-content={number_name(contract.volume, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
     </div>
 
     <div class="[ buyback-contract-item__price ]" role="cell" data-label={t('buyback.contract.price')}>
         <span
             data-tippy-content={number_name(contract.price, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.price.toLocaleString()}</span> <span>ISK</span>
     </div>
 
@@ -125,7 +119,6 @@ import Tag from '@components/blocks/Tag.astro';
                 gap='var(--space-3xs)'
                 class="[ items-center ]"
                 data-tippy-content={contract.acceptor_character_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
                 {contract.acceptor_id &&
                     <CharacterPicture
