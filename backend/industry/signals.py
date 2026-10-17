@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from django.db import transaction
 from django.db.models.signals import m2m_changed, post_save, pre_delete
 from django.dispatch import receiver
 
@@ -77,14 +78,28 @@ def close_lp_buyback_thread_on_order_delete(sender, instance, **kwargs):
     sender=IndustryLoyaltyPointMarketOrder,
     dispatch_uid="lp_buyback_order_post_save_close_thread",
 )
-def close_lp_buyback_thread_on_order_cancel(
-    sender, instance, created, **kwargs
-):
-    if created:
+def announce_lp_buyback_cancel_in_thread(sender, instance, created, **kwargs):
+    """Post who cancelled (and why) in the thread, then archive it.
+
+    Covers the site, admin, and the stalled-order sweep. Only fires on the
+    save that moves the order into cancelled, so re-saving a cancelled order
+    never reopens its archived thread.
+    """
+    if created or not instance.status_just_changed:
         return
     if instance.status != IndustryLoyaltyPointMarketOrder.Status.CANCELLED:
         return
-    update_fields = kwargs.get("update_fields")
-    if update_fields is not None and "status" not in update_fields:
+    if not instance.discord_thread_id:
         return
-    _close_market_order_discord_thread(instance.discord_thread_id)
+    order_id = instance.pk
+    cancelled_by_id, reason = instance.cancel_notice
+    # Deferred import: industry.tasks → helpers → … → signals.
+    from industry.tasks import (  # pylint: disable=import-outside-toplevel
+        notify_lp_buyback_order_cancelled_task,
+    )
+
+    transaction.on_commit(
+        lambda: notify_lp_buyback_order_cancelled_task.delay(
+            order_id, cancelled_by_id, reason
+        )
+    )

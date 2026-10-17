@@ -403,6 +403,12 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
+    def get_active_threads(self):
+        """List active (unarchived) threads across the guild"""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/threads/active",
+        )
+
     def get_roles(self):
         """Get all roles from a discord server"""
         return self.get(

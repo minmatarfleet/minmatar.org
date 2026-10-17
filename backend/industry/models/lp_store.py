@@ -491,6 +491,10 @@ class IndustryLpStoreOfferRequiredItem(models.Model):
         return f"offer {self.offer_id}: type={self.type_id} x{self.quantity}"
 
 
+# Sentinel: the order's status was not loaded (deferred), so it is unknown.
+_STATUS_UNKNOWN = object()
+
+
 class IndustryLoyaltyPointMarketOrder(models.Model):
     """Buy or sell offer for a loyalty-point currency (site LP buyback book)."""
 
@@ -540,6 +544,17 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When status last changed; drives stalled-order reminders.",
+    )
+    stalled_reminder_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last stalled-order reminder; cleared on status change.",
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -551,6 +566,67 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
                 name="industry_lp_mkt_status_side",
             ),
         ]
+
+    @property
+    def status_just_changed(self) -> bool:
+        """True right after a save() that changed status (or created)."""
+        return getattr(self, "_status_just_changed", False)
+
+    def set_cancel_notice(self, *, cancelled_by_id=None, reason: str = ""):
+        """Who/why for the Discord cancel post sent after the next save."""
+        self._cancel_notice = (cancelled_by_id, reason)
+
+    @property
+    def cancel_notice(self) -> tuple[int | None, str]:
+        return getattr(self, "_cancel_notice", (None, ""))
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # Deferred status stays unknown; save() then reads it from the DB.
+        # pylint: disable-next=protected-access
+        instance._loaded_status = instance.__dict__.get(
+            "status", _STATUS_UNKNOWN
+        )
+        return instance
+
+    def refresh_from_db(self, using=None, fields=None, from_queryset=None):
+        super().refresh_from_db(
+            using=using, fields=fields, from_queryset=from_queryset
+        )
+        # Django copies fresh values onto self without calling our from_db.
+        if fields is None or "status" in fields:
+            self._loaded_status = self.status
+
+    def _status_changed_since_load(self) -> bool:
+        if self._state.adding:
+            return True
+        loaded = getattr(self, "_loaded_status", _STATUS_UNKNOWN)
+        if loaded is _STATUS_UNKNOWN:
+            loaded = (
+                type(self)
+                .objects.filter(pk=self.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+        return loaded != self.status
+
+    def save(self, *args, **kwargs):
+        status_changed = self._status_changed_since_load()
+        # Read by the post_save Discord signal (cancel notice).
+        self._status_just_changed = status_changed
+        if status_changed:
+            self.status_changed_at = timezone.now()
+            self.stalled_reminder_at = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {
+                    *update_fields,
+                    "status_changed_at",
+                    "stalled_reminder_at",
+                }
+        super().save(*args, **kwargs)
+        self._loaded_status = self.status
 
     def __str__(self) -> str:
         return (

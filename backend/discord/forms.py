@@ -7,6 +7,7 @@ from discord.channels import (
     BUYBACK_CHANNEL_TYPES,
     CAPITAL_PING_CHANNEL_TYPES,
     LP_BUYBACK_CHANNEL_TYPES,
+    LP_CONVERSION_ALERT_CHANNEL_TYPES,
     VOICE_TRACKING_CHANNEL_TYPES,
     fetch_active_guild_channels,
     get_guild_channel,
@@ -30,6 +31,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
             "receive_amarr_fleet_pings",
             "receive_lp_buyback",
             "receive_buyback",
+            "receive_lp_conversion_alerts",
         )
 
     def __init__(self, *args, **kwargs):
@@ -91,6 +93,9 @@ class DiscordChannelAdminForm(forms.ModelForm):
         )
         receive_lp_buyback = cleaned_data.get("receive_lp_buyback", False)
         receive_buyback = cleaned_data.get("receive_buyback", False)
+        receive_lp_conversion_alerts = cleaned_data.get(
+            "receive_lp_conversion_alerts", False
+        )
 
         if self.instance.pk:
             channel_type = self.instance.channel_type
@@ -183,6 +188,18 @@ class DiscordChannelAdminForm(forms.ModelForm):
                     "receive_buyback": (
                         "Hangar buyback purchase-order threads require a "
                         "forum channel."
+                    )
+                }
+            )
+
+        if (
+            receive_lp_conversion_alerts
+            and channel_type not in LP_CONVERSION_ALERT_CHANNEL_TYPES
+        ):
+            raise ValidationError(
+                {
+                    "receive_lp_conversion_alerts": (
+                        "Conversion Team alerts require a text channel."
                     )
                 }
             )
