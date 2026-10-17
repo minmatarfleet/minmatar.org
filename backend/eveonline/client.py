@@ -1046,10 +1046,12 @@ class EsiClient:
         )
 
     def get_character_mining_ledger(self) -> EsiResponse:
-        """Returns the personal mining ledger for the character (last 30 days)."""
+        """Returns the personal mining ledger for the character (last 30
+        days). Paginated; fetches all pages."""
         return self._raw_get(
             f"/characters/{self.character_id}/mining/",
             ["esi-industry.read_character_mining.v1"],
+            paged=True,
         )
 
     def get_character_notifications(self) -> EsiResponse:

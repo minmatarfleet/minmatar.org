@@ -276,11 +276,25 @@ class SingleRouteParityTest(_Base):
             f"/characters/{CHAR}/implants/",
         )
 
-    def test_mining_ledger_single_page(self):
-        self._simple_200_or_status(
-            EsiClient(CHAR).get_character_mining_ledger,
+    def test_mining_ledger_reads_every_page(self):
+        """Was page 1 only; ESI pages the ledger at 1000 rows."""
+        expected = self.paged(
             f"/characters/{CHAR}/mining/",
+            [[{"quantity": 1}], [{"quantity": 2}]],
         )
+        response = EsiClient(CHAR).get_character_mining_ledger()
+        self.assertEqual(response.response_code, SUCCESS)
+        self.assertEqual(response.data, [{"quantity": 1}, {"quantity": 2}])
+        self.assertEqual(self.fake.requested(), expected)
+
+    def test_mining_ledger_error(self):
+        self.fake.add(
+            "GET",
+            f"/characters/{CHAR}/mining/",
+            make_response(403, {"error": "scope"}),
+        )
+        response = EsiClient(CHAR).get_character_mining_ledger()
+        self.assertEqual(response.response_code, 403)
 
     @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     def test_search_category(self):
