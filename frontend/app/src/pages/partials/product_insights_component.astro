@@ -7,9 +7,12 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const product_id = parseInt(Astro.url.searchParams.get('product_id') ?? '0')
 const attempt = parseInt(Astro.url.searchParams.get('attempt') ?? '0')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+// The product page's Overview and Build tabs read the same cached insights.
+const view = Astro.url.searchParams.get('view') === 'build' ? 'build' : 'overview'
 
 import type { ProductInsights } from '@dtypes/api.minmatar.org'
 import { get_product_insights } from '@helpers/api.minmatar.org/industry'
+import { query_string } from '@helpers/string'
 
 // The rollup runs in the background on a cold cache; poll a few times.
 const MAX_ATTEMPTS = 12
@@ -28,11 +31,20 @@ try {
     fetch_error = error
 }
 
-const PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?product_id=${product_id}`
+// Only products with a blueprint have a Build tab to link to.
+const has_build = Astro.url.searchParams.get('build') === '1'
+
+const PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?${query_string({
+    product_id,
+    view,
+    ...(has_build ? { build: 1 } : {}),
+})}`
+const BUILD_PATH = has_build ? translatePath(`/industry/products/${product_id}/build/`) : null
 const POLL_URL = `${PARTIAL_URL}&attempt=${attempt + 1}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import ProductBuildQueue from '@components/blocks/ProductBuildQueue.astro'
 import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
 ---
 
@@ -49,7 +61,10 @@ import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
         }}
     />
     : insights && insights.ready ?
-    <ProductInsightsPanel insights={insights} />
+        view === 'build' ?
+        <ProductBuildQueue insights={insights} />
+        :
+        <ProductInsightsPanel insights={insights} build_path={BUILD_PATH} />
     : attempt < MAX_ATTEMPTS ?
     <FlexInline
         hx-get={POLL_URL}

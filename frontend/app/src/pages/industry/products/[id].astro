@@ -36,11 +36,15 @@ if (product && auth_token) {
     }
 }
 
-import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
-import { format_volume_m3 } from '@helpers/numbers'
 
-const INSIGHTS_PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?product_id=${product_id}`
+const has_build = !!product?.blueprint_or_reaction_type_id
+const BUILD_PATH = has_build ? translatePath(`/industry/products/${product_id}/build/`) : null
+const INSIGHTS_PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?${query_string({
+    product_id,
+    view: 'overview',
+    ...(has_build ? { build: 1 } : {}),
+})}`
 const strategy_path = (strategy: string) => strategy === 'produced'
     ? '/industry/products/'
     : `/industry/products?strategy=${strategy}`
@@ -58,21 +62,17 @@ const breadcrumbs = [
 import Viewport from '@layouts/Viewport.astro'
 
 import PageWide from '@components/page/PageWide.astro'
-import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
-import Button from '@components/blocks/Button.astro'
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import ProductHeader from '@components/blocks/ProductHeader.astro'
 import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
-import Picture from '@components/blocks/Picture.astro'
-import Tag from '@components/blocks/Tag.astro'
-
-import IndustryIcon from '@components/icons/IndustryIcon.astro'
 ---
 
 <Viewport
@@ -88,58 +88,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
         }}
         breadcrumbs={breadcrumbs}
     >
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <FlexInline gap="var(--space-s)" class="[ items-center ]">
-                {product &&
-                    <img
-                        class="[ product-icon ]"
-                        src={get_item_icon(product.type_id, 128)}
-                        width="64"
-                        height="64"
-                        alt=""
-                    />
-                }
-                <Flexblock gap="var(--space-3xs)">
-                    <PageTitle>{page_title}</PageTitle>
-                    {product &&
-                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
-                            <Tag
-                                color={product.strategy === 'imported' ? 'fleet-red' : product.strategy === 'harvested' ? 'fleet-yellow' : 'alliance-blue'}
-                                text={t(`industry.product.strategy_${product.strategy}` as any) ?? product.strategy}
-                            />
-                            {product.blueprint_or_reaction_type_id &&
-                                <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
-                                    <Picture
-                                        src={get_bpc_icon(product.blueprint_or_reaction_type_id, false, 32)}
-                                        alt=""
-                                        size={16}
-                                    />
-                                    <small>{t('industry.product.has_blueprint')}</small>
-                                </FlexInline>
-                            }
-                            {product.volume &&
-                                <small>{format_volume_m3(product.volume)} m³</small>
-                            }
-                        </FlexInline>
-                    }
-                </Flexblock>
-            </FlexInline>
-
-            {product?.blueprint_or_reaction_type_id &&
-                <PageActions>
-                    <Button
-                        size='sm'
-                        color='fleet-red'
-                        href={translatePath(`/industry/orders/planner?${query_string({
-                            type_id: product.type_id,
-                        })}`)}
-                    >
-                        <IndustryIcon slot="icon" size={24} />
-                        {t('planner')}
-                    </Button>
-                </PageActions>
-            }
-        </FlexInline>
+        {product ?
+            <ProductHeader slot="header" product={product} view="overview" />
+            :
+            <PageTitle slot="header">{page_title}</PageTitle>
+        }
 
         {fetching_error !== false || !product ?
             <ErrorRefetch
@@ -152,7 +105,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
             :
             <Flexblock gap="var(--space-xl)">
                 {auth_token && insights?.ready ?
-                    <ProductInsightsPanel insights={insights} />
+                    <ProductInsightsPanel insights={insights} build_path={BUILD_PATH} />
                     : auth_token ?
                     <div
                         hx-get={INSIGHTS_PARTIAL_URL}
@@ -169,9 +122,14 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
                 }
 
                 {(product.supplies.length > 0 || product.supplied_for.length > 0) &&
-                    <section class="[ relations ]" aria-labelledby="supply-chain-heading">
-                        <h3 id="supply-chain-heading">{t('industry.product.supply_chain_title')}</h3>
-                        <div class="[ relation-groups ]">
+                    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+                        <section class="[ relations ]" aria-labelledby="supply-chain-heading">
+                            <header class="[ relations-header ]">
+                                <h3 id="supply-chain-heading">{t('industry.product.supply_chain_title')}</h3>
+                                {has_build && BUILD_PATH &&
+                                    <a href={BUILD_PATH}>{t('industry.product.see_quantities')}</a>
+                                }
+                            </header>
                             {product.supplies.length > 0 &&
                                 <Flexblock gap="var(--space-2xs)">
                                     <small class="[ subheading ]">{t('industry.product.made_from')}</small>
@@ -179,7 +137,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
                                         {product.supplies.map(component =>
                                             <li>
                                                 <a class="[ chip ]" href={translatePath(`/industry/products/${component.id}/`)}>
-                                                    <ItemPicture item_id={component.type_id} size={24} icon_quality={32} />
+                                                    <ItemPicture item_id={component.type_id} size={32} icon_quality={64} />
                                                     <span>{component.name}</span>
                                                 </a>
                                             </li>
@@ -194,7 +152,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
                                         {product.supplied_for.map(parent =>
                                             <li>
                                                 <a class="[ chip ]" href={translatePath(`/industry/products/${parent.id}/`)}>
-                                                    <ItemPicture item_id={parent.type_id} size={24} icon_quality={32} />
+                                                    <ItemPicture item_id={parent.type_id} size={32} icon_quality={64} />
                                                     <span>{parent.name}</span>
                                                 </a>
                                             </li>
@@ -202,8 +160,8 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
                                     </ul>
                                 </Flexblock>
                             }
-                        </div>
-                    </section>
+                        </section>
+                    </ComponentBlock>
                 }
             </Flexblock>
         }
@@ -211,12 +169,6 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
 </Viewport>
 
 <style lang="scss">
-    .product-icon {
-        width: var(--space-2xl);
-        height: var(--space-2xl);
-        flex-shrink: 0;
-    }
-
     .muted {
         color: var(--foreground);
     }
@@ -224,40 +176,46 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
     .relations {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
+        gap: var(--space-m);
 
         h3 {
             font-size: var(--step-1);
         }
     }
 
-    .relation-groups {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
-        gap: var(--space-l);
+    .relations-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+        font-size: var(--step--1);
     }
 
     .subheading {
         color: var(--fleet-yellow);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
+        font-weight: 600;
         font-size: var(--step--2);
     }
 
     .chips {
         list-style: none;
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
         gap: var(--space-2xs);
         padding: 0;
         margin: 0;
     }
 
     .chip {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: var(--space-2xs);
-        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
+        gap: var(--space-xs);
+        height: 100%;
+        min-height: var(--space-xl);
+        padding: var(--space-2xs) var(--space-xs);
         border: solid 1px var(--border-color);
         background-color: var(--background);
         color: var(--highlight);

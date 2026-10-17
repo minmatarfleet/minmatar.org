@@ -219,6 +219,11 @@ def _get_recipe(product_type_id: int) -> Optional[Recipe]:
     )
 
 
+def get_recipe(product_type_id: int) -> Optional[Recipe]:
+    """The blueprint or reaction recipe that makes this type, if any."""
+    return _get_recipe(product_type_id)
+
+
 def _classify_job_class(recipe: Recipe, root_type_id: int) -> JobClass:
     if recipe.activity_id == ACTIVITY_REACTION:
         return JobClass.REACTION

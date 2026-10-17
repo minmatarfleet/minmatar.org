@@ -1,0 +1,191 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ProductBuild } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    build:              ProductBuild;
+    [propName: string]: any;
+}
+
+const {
+    build,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+
+const n = (value: number) => number_thousand_separator(value)
+const isk = (value: number | null) => value === null ? '—' : format_isk(value)
+// Minerals cost a few ISK each; keep the cents so they don't all round to 4.
+const unit_price = (value: number | null) => value === null ? '—' : value < 1000 ? value.toFixed(2) : format_isk(value)
+
+const tracked = build.materials.filter(material => material.strategy).length
+const strategy_color = (strategy: string) =>
+    strategy === 'imported' ? 'fleet-red' : strategy === 'harvested' ? 'fleet-yellow' : 'alliance-blue'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<div class:list={['[ build-materials ]', Astro.props.class]} {...attributes}>
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <header class="[ panel-header ]">
+                <h3>{t('industry.product.bill_of_materials')}</h3>
+                <small>
+                    {t('industry.product.bom_hint')
+                        .replace('{n}', n(build.materials.length))
+                        .replace('{tracked}', n(tracked))}
+                </small>
+            </header>
+
+            {build.materials.length === 0 ?
+                <p class="[ empty ]">{t('industry.product.no_materials')}</p>
+                :
+                <div class="[ table-scroll ]">
+                <table class="[ bom ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('industry.product.material')}</th>
+                            <th scope="col" class="[ num ]">{t('industry.product.per_run')}</th>
+                            <th scope="col" class="[ num hide-narrow ]">{t('industry.product.unit_price_col')}</th>
+                            <th scope="col" class="[ num ]">{t('industry.product.line_cost')}</th>
+                            <th scope="col" class="[ hide-narrow ]">{t('industry.product.source')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {build.materials.map(material =>
+                            <tr>
+                                <th scope="row">
+                                    <span class="[ material ]">
+                                        <ItemPicture item_id={material.type_id} size={32} icon_quality={64} />
+                                        {material.industry_product_id ?
+                                            <a href={translatePath(`/industry/products/${material.industry_product_id}/`)}>{material.name}</a>
+                                            :
+                                            <span>{material.name}</span>
+                                        }
+                                    </span>
+                                </th>
+                                <td class="[ num ]">{n(material.quantity)}</td>
+                                <td class="[ num hide-narrow ]">{unit_price(material.unit_price)}</td>
+                                <td class="[ num ]">{isk(material.line_cost)}</td>
+                                <td class="[ hide-narrow ]">
+                                    {material.strategy ?
+                                        <Tag
+                                            color={strategy_color(material.strategy)}
+                                            text={t(`industry.product.strategy_${material.strategy}` as any) ?? material.strategy}
+                                        />
+                                        :
+                                        <small class="[ muted ]">{t('industry.product.not_tracked')}</small>
+                                    }
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row">{t('industry.product.total_per_run')}</th>
+                            <td class="[ num ]"></td>
+                            <td class="[ num hide-narrow ]"></td>
+                            <td class="[ num ]">{isk(build.material_cost)}</td>
+                            <td class="[ hide-narrow ]"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                </div>
+            }
+        </Flexblock>
+    </ComponentBlock>
+</div>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .panel-header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    .muted,
+    .empty {
+        color: var(--foreground);
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+    }
+
+    .bom {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-xs);
+            text-align: start;
+            border-bottom: solid 1px var(--border-color);
+            font-weight: normal;
+            background: none;
+        }
+
+        thead th {
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--foreground);
+        }
+
+        tfoot th,
+        tfoot td {
+            font-weight: 600;
+            color: var(--highlight);
+            border-bottom: none;
+        }
+
+        .num {
+            text-align: end;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            color: var(--highlight);
+        }
+    }
+
+    .material {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+
+        > :global(:first-child) {
+            flex-shrink: 0;
+        }
+
+        a,
+        span {
+            color: var(--highlight);
+        }
+    }
+
+    // On phones keep name, quantity and cost; price and source fit on desktop.
+    @media (max-width: 48rem) {
+        .bom .hide-narrow {
+            display: none;
+        }
+    }
+</style>

@@ -139,10 +139,33 @@ class ProductLoss(BaseModel):
     solar_system_id: Optional[int] = None
 
 
+class ProductFight(BaseModel):
+    """Losses in one system close together in time (see FIGHT_GAP)."""
+
+    solar_system_id: int
+    solar_system_name: str = ""
+    started_at: datetime
+    ended_at: datetime
+    units: int
+    killmail_id: int
+
+
 class ProductLosses(BaseModel):
     units_30d: int = 0
     units_90d: int = 0
     recent: List[ProductLoss] = []
+    # Biggest fights in the window; the rest are summed below.
+    fights: List[ProductFight] = []
+    small_fight_units: int = 0
+    small_fight_systems: int = 0
+
+
+class ProductRunningJob(BaseModel):
+    character_id: int
+    character_name: str = ""
+    corporation_name: str = ""
+    units: int
+    ends_at: datetime
 
 
 class ProductWeek(BaseModel):
@@ -164,6 +187,7 @@ class ProductInsights(BaseModel):
     built: ProductBuilt = ProductBuilt()
     builders: List[ProductBuilder] = []
     corporations: List[ProductBuilderCorporation] = []
+    running: List[ProductRunningJob] = []
     orders: ProductOrders = ProductOrders()
     sales: ProductSales = ProductSales()
     # None when we don't track it (only ships are synced from hangars and
@@ -171,3 +195,35 @@ class ProductInsights(BaseModel):
     hangars: Optional[ProductHangars] = None
     losses: Optional[ProductLosses] = None
     weekly: List[ProductWeek] = []
+
+
+class ProductBuildMaterial(BaseModel):
+    type_id: int
+    name: str
+    quantity: int  # per run, before material efficiency
+    unit_price: Optional[float] = None
+    line_cost: Optional[float] = None
+    # Our sourcing strategy when the material is a tracked product.
+    strategy: Optional[str] = None
+    industry_product_id: Optional[int] = None
+
+
+class ProductBuild(BaseModel):
+    """One run of the product's blueprint or reaction at average prices.
+
+    Base SDE quantities and time: no ME/TE, facility bonuses or job cost.
+    The planner covers those.
+    """
+
+    product_id: int
+    type_id: int
+    blueprint_type_id: int
+    activity: str
+    products_per_run: int = 1
+    time_seconds: int = 0
+    sell_price: Optional[float] = None
+    material_cost: Optional[float] = None
+    # Run value minus materials; None unless every material has a price.
+    margin: Optional[float] = None
+    prices_complete: bool = False
+    materials: List[ProductBuildMaterial] = []

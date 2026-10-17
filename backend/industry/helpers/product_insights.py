@@ -31,7 +31,11 @@ from eveonline.models import (
     EveCorporationIndustryJob,
     EvePlayer,
 )
-from eveuniverse.models import EveIndustryActivityProduct, EveMarketPrice
+from eveuniverse.models import (
+    EveIndustryActivityProduct,
+    EveMarketPrice,
+    EveSolarSystem,
+)
 from industry.models import IndustryOrderItem, IndustryProduct
 from market.models import (
     EveMarketContractItem,
@@ -43,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 INSIGHTS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_INSIGHTS_KEY = "industry_product_insights:v1:{product_id}"
+_INSIGHTS_KEY = "industry_product_insights:v2:{product_id}"
 _LOCK_KEY = "industry_product_insights:refreshing"
 
 WINDOW_DAYS = 90
@@ -53,6 +57,11 @@ TOP_BUILDERS = 12
 TOP_LOCATIONS = 6
 RECENT_ORDERS = 8
 RECENT_LOSSES = 8
+RUNNING_JOBS = 6
+# Losses in one system no more than FIGHT_GAP apart count as one fight.
+FIGHT_GAP = timedelta(hours=3)
+FIGHT_MIN_UNITS = 3
+TOP_FIGHTS = 4
 
 PRODUCTION_ACTIVITIES = (1, 11)  # manufacturing, reactions
 FINISHED_JOB_STATUSES = ("delivered", "ready")
@@ -102,6 +111,7 @@ def _empty_insights(product: IndustryProduct, weeks: _Weeks) -> dict:
         },
         "builders": [],
         "corporations": [],
+        "running": [],
         "orders": {
             "open_orders": 0,
             "open_units": 0,
@@ -124,7 +134,16 @@ def _empty_insights(product: IndustryProduct, weeks: _Weeks) -> dict:
             {"units": 0, "pilots": 0, "locations": []} if is_ship else None
         ),
         "losses": (
-            {"units_30d": 0, "units_90d": 0, "recent": []} if is_ship else None
+            {
+                "units_30d": 0,
+                "units_90d": 0,
+                "recent": [],
+                "fights": [],
+                "small_fight_units": 0,
+                "small_fight_systems": 0,
+            }
+            if is_ship
+            else None
         ),
         "weekly": [
             {"week_start": start, "built": 0, "sold": 0, "lost": 0}
@@ -241,6 +260,7 @@ def _fill_builders(insights, type_ids, now, weeks):
 
     builders = defaultdict(dict)  # type_id -> primary id -> row
     corporations = defaultdict(Counter)  # type_id -> corp id -> units
+    running_jobs = defaultdict(list)  # type_id -> running job rows
     for bid, aid, runs, status, end_date, installer, corp_id, _ in jobs:
         running = status in RUNNING_JOB_STATUSES and end_date > now
         finished = status in FINISHED_JOB_STATUSES or (
@@ -251,6 +271,16 @@ def _fill_builders(insights, type_ids, now, weeks):
             if running:
                 built["running_units"] += runs * qty
                 built["running_jobs"] += 1
+                pid, pname = primaries.get(installer, (installer, ""))
+                running_jobs[tid].append(
+                    {
+                        "character_id": pid,
+                        "character_name": pname,
+                        "corporation_name": corp_names.get(corp_id) or "",
+                        "units": runs * qty,
+                        "ends_at": end_date,
+                    }
+                )
             elif finished and end_date >= since:
                 _add_finished_build(
                     insights[tid],
@@ -267,6 +297,9 @@ def _fill_builders(insights, type_ids, now, weeks):
         ranked = sorted(rows.values(), key=lambda r: r["units"], reverse=True)
         insights[tid]["built"]["builders_90d"] = len(ranked)
         insights[tid]["builders"] = ranked[:TOP_BUILDERS]
+    for tid, rows in running_jobs.items():
+        rows.sort(key=lambda r: r["ends_at"])
+        insights[tid]["running"] = rows[:RUNNING_JOBS]
     for tid, counts in corporations.items():
         insights[tid]["corporations"] = [
             {
@@ -444,6 +477,7 @@ def _fill_losses(insights, ship_type_ids, now, weeks):
         )
     )
     victims = []
+    window_losses = defaultdict(list)  # type_id -> [(time, system, kill id)]
     for killmail_id, moment, tid, victim_id, system_id in rows:
         if killmail_id in seen:
             continue
@@ -451,6 +485,7 @@ def _fill_losses(insights, ship_type_ids, now, weeks):
         losses = insights[tid]["losses"]
         if moment >= now - timedelta(days=WINDOW_DAYS):
             losses["units_90d"] += 1
+            window_losses[tid].append((moment, system_id, killmail_id))
         if moment >= recent_since:
             losses["units_30d"] += 1
         week = weeks.index(moment)
@@ -474,6 +509,63 @@ def _fill_losses(insights, ship_type_ids, now, weeks):
     )
     for victim in victims:
         victim["character_name"] = names.get(victim["character_id"], "")
+    _fill_fights(insights, window_losses)
+
+
+def _cluster_fights(losses) -> list[dict]:
+    """Group (time, system, killmail id) losses into per-system fights."""
+    fights = []
+    open_fights = {}  # system -> the fight still within FIGHT_GAP
+    for moment, system_id, killmail_id in sorted(losses):
+        fight = open_fights.get(system_id)
+        if fight and moment - fight["ended_at"] <= FIGHT_GAP:
+            fight["units"] += 1
+            fight["ended_at"] = moment
+            continue
+        fight = {
+            "solar_system_id": system_id,
+            "solar_system_name": "",
+            "started_at": moment,
+            "ended_at": moment,
+            "units": 1,
+            "killmail_id": killmail_id,
+        }
+        open_fights[system_id] = fight
+        fights.append(fight)
+    return fights
+
+
+def _fill_fights(insights, window_losses):
+    """Biggest fights per ship, so pages can say where the hulls went."""
+    top = {}
+    for tid, losses in window_losses.items():
+        fights = _cluster_fights(losses)
+        big = sorted(
+            (f for f in fights if f["units"] >= FIGHT_MIN_UNITS),
+            key=lambda f: (f["units"], f["started_at"]),
+            reverse=True,
+        )
+        small = [f for f in fights if f["units"] < FIGHT_MIN_UNITS]
+        data = insights[tid]["losses"]
+        data["small_fight_units"] = sum(f["units"] for f in small) + sum(
+            f["units"] for f in big[TOP_FIGHTS:]
+        )
+        data["small_fight_systems"] = len(
+            {f["solar_system_id"] for f in small + big[TOP_FIGHTS:]}
+        )
+        top[tid] = big[:TOP_FIGHTS]
+    system_ids = {f["solar_system_id"] for rows in top.values() for f in rows}
+    names = dict(
+        EveSolarSystem.objects.filter(id__in=system_ids).values_list(
+            "id", "name"
+        )
+    )
+    for tid, rows in top.items():
+        for fight in rows:
+            fight["solar_system_name"] = names.get(
+                fight["solar_system_id"], ""
+            )
+        insights[tid]["losses"]["fights"] = rows
 
 
 def compute_product_insights(now: datetime | None = None) -> dict[int, dict]:
