@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="intel.css">
 <title>Intel</title>
 </head>
-<body class="is-hidden">
+<body class="is-hidden is-locked">
 <section class="eve-window">
     <header class="eve-window__header" data-interactive>
         <img class="eve-window__icon" src="../assets/icon.png" alt="">
@@ -18,7 +18,7 @@
             <button class="eve-icon-button" id="alerts" aria-label="Ping notifications" aria-pressed="false" title="Ping notifications">
                 <svg viewBox="0 0 12 12"><path d="M3 8.5V5.5a3 3 0 0 1 6 0v3l1 1H2zM5 10.5h2"/></svg>
             </button>
-            <button class="eve-icon-button" id="overlay" data-command="overlay:toggle" aria-label="Overlay over EVE" aria-pressed="false" title="Overlay over EVE">
+            <button class="eve-icon-button" id="lock" data-command="lock:toggle" aria-label="Pin in place" aria-pressed="true" title="Pinned in place. Click to move and resize">
                 <svg viewBox="0 0 12 12"><path d="M4.5 1.5h3l-.5 3 2 1.5H3l2-1.5zM6 6v4.5"/></svg>
             </button>
             <button class="eve-icon-button" data-command="settings:open" aria-label="Settings" title="Settings">

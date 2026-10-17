@@ -275,7 +275,6 @@ on_state(next => {
     state = next
     window.eve_window.apply(state)
     const intel = state.intel || { items: [], range: 5, alerts: true }
-    $('overlay').setAttribute('aria-pressed', String(state.overlay))
     $('alerts').setAttribute('aria-pressed', String(!!(state.settings && state.settings.intel_alerts)))
     $('range').textContent = intel.range == null ? 'Any distance' : `Within ${intel.range} jumps`
     $('range').hidden = !intel.map_ready

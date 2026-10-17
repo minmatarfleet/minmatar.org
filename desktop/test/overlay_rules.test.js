@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const { overlay_should_show, client_on_screen, hide_instantly } = require('../src/main/overlay_rules')
 
 const client = { hwnd: '7', title: 'EVE - Kaleb Snowden', min: false }
-const base = { helper_ready: true, eve_running: true, own_pids: new Set([42]), stay_with_eve: true, active_client: client }
+const base = { helper_ready: true, eve_running: true, own_pids: new Set([42]), active_client: client }
 const fg = (extra) => ({ hwnd: '100', pid: 7, proc: 'chrome', cls: 'Chrome_WidgetWin_1', client: false, ...extra })
 
 test('shows over an EVE client or this app', () => {
@@ -42,10 +42,13 @@ test('mid-switch (no foreground window) keeps the current state', () => {
     assert.equal(overlay_should_show({ ...base, foreground: fg({ hwnd: '0' }) }), null)
 })
 
-test('always visible when "Stay with EVE" is off, EVE is not running, or the helper is unavailable', () => {
-    assert.equal(overlay_should_show({ ...base, stay_with_eve: false, active_client: null, foreground: fg() }), true)
-    assert.equal(overlay_should_show({ ...base, eve_running: false, foreground: fg() }), true)
-    assert.equal(overlay_should_show({ ...base, helper_ready: false, foreground: fg() }), true)
+test('hidden while no EVE client is running, even with this app in front', () => {
+    assert.equal(overlay_should_show({ ...base, eve_running: false, active_client: null, foreground: fg() }), false)
+    assert.equal(overlay_should_show({ ...base, eve_running: false, active_client: null, foreground: fg({ pid: 42 }) }), false)
+})
+
+test('always visible without the helper (no way to tell where EVE is)', () => {
+    assert.equal(overlay_should_show({ ...base, helper_ready: false, eve_running: false, foreground: fg() }), true)
 })
 
 test('a client still at character select does not get the overlay', () => {

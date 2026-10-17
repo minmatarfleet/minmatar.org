@@ -53,7 +53,6 @@ function render_list(state) {
 
 on_state(state => {
     window.eve_window.apply(state)
-    $('overlay').setAttribute('aria-pressed', String(state.overlay))
     $('refresh').classList.toggle('is-loading', state.loading)
     list_title = `Upcoming Fleets (${state.fleets.length})`
     if (!fleet_shown()) $('title').textContent = list_title

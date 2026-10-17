@@ -4,7 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 const COMMANDS = [
     'login:start', 'login:cancel', 'auth:sign-out',
-    'fleets:refresh', 'fleets:open', 'campaigns:open', 'overlay:toggle',
+    'fleets:refresh', 'fleets:open', 'campaigns:open', 'lock:toggle',
     'window:minimize', 'window:close', 'mouse:interactive',
     'resize:start', 'resize:move', 'resize:end',
     'update:install', 'update:download', 'update:check',
