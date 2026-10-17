@@ -302,6 +302,7 @@ class UserRouterTestCase(TestCase):
         esi_token = Token.objects.create(
             character_id=634915984,
             character_name="BearThatCares",
+            character_owner_hash="owner-a",
             user=self.user,
         )
         character = EveCharacter.objects.create(
