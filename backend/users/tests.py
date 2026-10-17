@@ -23,6 +23,7 @@ from users.helpers import (
     offboard_user,
 )
 from users.models import UserDesktopSettings
+from users.redirects import is_allowed_login_redirect
 from users.router import callback
 
 # Create your tests here.
@@ -223,12 +224,13 @@ class UserRouterTestCase(TestCase):
         del settings.FAKE_LOGIN_USER_ID
 
         response = self.client.get(
-            "/api/users/login?redirect_url=abc123",
+            "/api/users/login?redirect_url=https://my.minmatar.org/auth/login",
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("scope=identify%20guilds.join", response.url)
         self.assertEqual(
-            "abc123", self.client.session["authentication_redirect_url"]
+            "https://my.minmatar.org/auth/login",
+            self.client.session["authentication_redirect_url"],
         )
 
         settings.FAKE_LOGIN_USER_ID = fake_user
@@ -251,11 +253,12 @@ class UserRouterTestCase(TestCase):
         del settings.FAKE_LOGIN_USER_ID
 
         response = self.client.get(
-            "/api/users/login?redirect_url=abc123",
+            "/api/users/login?redirect_url=https://my.minmatar.org/auth/login",
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(
-            "abc123", self.client.session["authentication_redirect_url"]
+            "https://my.minmatar.org/auth/login",
+            self.client.session["authentication_redirect_url"],
         )
 
         settings.FAKE_LOGIN_USER_ID = fake_user
@@ -603,3 +606,133 @@ class DiscordLoginIdentityTestCase(TestCase):
         self.assertEqual(again.id, mover.id)
         self.assertEqual(again.username, "carol")
         self.assertEqual(User.objects.get(id=stale.id).username, "bob")
+
+
+class LoginRedirectAllowlistTestCase(TestCase):
+    """Logins append ?token=<JWT>, so they may only redirect to our own apps."""
+
+    def setUp(self):
+        super().setUp()
+        self.fake_user = settings.FAKE_LOGIN_USER_ID
+        del settings.FAKE_LOGIN_USER_ID
+
+    def tearDown(self):
+        settings.FAKE_LOGIN_USER_ID = self.fake_user
+        super().tearDown()
+
+    def _discord_login(self, redirect_url):
+        self.client.get("/api/users/login", {"redirect_url": redirect_url})
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.complete_oauth_login.return_value = {
+                "id": 1000077,
+                "username": "redirect_user",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+            return self.client.get("/api/users/callback?code=20077")
+
+    def test_offsite_redirect_never_receives_the_token(self):
+        response = self._discord_login("https://evil.example/steal")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("evil.example", response.url)
+        self.assertTrue(
+            response.url.startswith(
+                f"{settings.WEB_LINK_URL.rstrip('/')}/auth/login?token="
+            )
+        )
+
+    def test_tampered_session_redirect_falls_back_at_callback(self):
+        self.client.get(
+            "/api/users/login",
+            {"redirect_url": "https://my.minmatar.org/auth/login"},
+        )
+        session = self.client.session
+        session["authentication_redirect_url"] = "https://evil.example/"
+        session.save()
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.complete_oauth_login.return_value = {
+                "id": 1000078,
+                "username": "tamper_user",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+            response = self.client.get("/api/users/callback?code=20078")
+
+        self.assertNotIn("evil.example", response.url)
+
+    def test_website_redirect_is_kept(self):
+        response = self._discord_login("https://my.minmatar.org/friend/login")
+
+        self.assertTrue(
+            response.url.startswith(
+                "https://my.minmatar.org/friend/login?token="
+            )
+        )
+
+    def test_eve_login_refuses_offsite_redirect(self):
+        self.client.get(
+            "/api/users/login/eve",
+            {"redirect_url": "https://evil.example/cb"},
+        )
+        self.assertEqual(
+            self.client.session.get("authentication_redirect_url"),
+            "mobile://auth/callback",
+        )
+
+    def test_eve_completion_ignores_offsite_session_redirect(self):
+        esi_token = Token.objects.create(
+            character_id=91077, character_name="Redirect Pilot"
+        )
+        session = self.client.session
+        session["authentication_redirect_url"] = "https://evil.example/"
+        session.save()
+        CallbackRedirect.objects.create(
+            session_key=session.session_key,
+            state="redirect-state",
+            url="/api/users/eve/complete/",
+            token=esi_token,
+        )
+
+        response = self.client.get("/api/users/eve/complete/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("evil.example", response.url)
+        self.assertTrue(response.url.startswith("mobile://auth/callback?"))
+
+
+class IsAllowedLoginRedirectTestCase(TestCase):
+    def test_allowed(self):
+        for url in [
+            "https://my.minmatar.org/auth/login",
+            "https://my.minmatar.org/friend/login",
+            "http://localhost:4321/auth/login",
+            "http://127.0.0.1:53123/callback/0123456789abcdef",
+            "http://[::1]:5000/callback/x",
+            "mobile://auth/callback",
+            "minmatar://auth/callback",
+            "exp://192.168.1.20:8081/--/auth/callback",
+        ]:
+            self.assertTrue(is_allowed_login_redirect(url), url)
+
+    def test_refused(self):
+        for url in [
+            "",
+            None,
+            "abc123",
+            "/auth/login",
+            "//evil.example/x",
+            "https://evil.example/x",
+            "https://my.minmatar.org.evil.example/x",
+            "https://evil.example#@my.minmatar.org",
+            "https://my.minmatar.org@evil.example/x",
+            "https://user:pw@my.minmatar.org/x",
+            "http://my.minmatar.org/auth/login",
+            "https://localhost.evil.example/x",
+            "https://127.0.0.1/x",
+            "javascript:alert(1)",
+            "data:text/html,hi",
+            "exp://evil.example:8081/--/auth/callback",
+            "exp://8.8.8.8:8081/--/auth/callback",
+        ]:
+            self.assertFalse(is_allowed_login_redirect(url), url)

@@ -3,13 +3,16 @@
 from esi.decorators import token_required
 
 from users.eve_sso import eve_login_error_redirect, issue_mobile_jwt
-from users.redirects import oauth_redirect
+from users.redirects import oauth_redirect, safe_login_redirect_url
+
+MOBILE_LOGIN_REDIRECT = "mobile://auth/callback"
 
 
 @token_required(scopes="publicData", new=True)
 def eve_mobile_sso_complete(request, token):
-    redirect_url = request.session.get(
-        "authentication_redirect_url", "mobile://auth/callback"
+    redirect_url = safe_login_redirect_url(
+        request.session.get("authentication_redirect_url"),
+        MOBILE_LOGIN_REDIRECT,
     )
 
     try:
