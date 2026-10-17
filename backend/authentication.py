@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Optional
 
+import jwt
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from ninja.errors import HttpError
@@ -15,14 +16,32 @@ class AuthBearer(HttpBearer):
     """Authentication class for Ninja API methods"""
 
     def authenticate(self, request, token):
+        """The user a bearer token names, or None for a 401.
+
+        Only a bad token or a missing user is a 401. Anything else, such
+        as the database being down, raises and becomes a 500, so clients
+        don't treat an outage as being signed out.
+        """
         try:
             payload = decode_user_jwt(token)
-            user = User.objects.get(id=payload["user_id"])
-            request.user = user
-            return user
-        except Exception as e:
-            print(e)
+        except jwt.InvalidTokenError as e:
+            logger.debug("Bearer token rejected: %s", e)
             return None
+
+        user_id = payload.get("user_id")
+        if user_id is None:
+            # e.g. a mobile EVE SSO token for a character with no account
+            logger.debug("Bearer token has no user_id")
+            return None
+
+        try:
+            user = User.objects.get(id=user_id)
+        except (User.DoesNotExist, ValueError, TypeError):
+            logger.debug("Bearer token for unknown user %s", user_id)
+            return None
+
+        request.user = user
+        return user
 
 
 def is_service_account(user) -> bool:
