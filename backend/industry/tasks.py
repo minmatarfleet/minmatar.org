@@ -174,6 +174,54 @@ def notify_lp_buyback_order_claims_released_task(
 
 
 @app.task()
+def notify_lp_buyback_order_cancelled_task(
+    order_id: int,
+    cancelled_by_user_id: int | None = None,
+    reason: str = "",
+) -> None:
+    """Post the cancel notice in the order thread, then archive it."""
+    # pylint: disable=import-outside-toplevel
+    from django.contrib.auth import get_user_model
+
+    from industry.helpers.lp_buyback_discord import notify_order_cancelled
+
+    order = (
+        IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by", "claimed_by"
+        )
+        .prefetch_related("claims__claimed_by")
+        .filter(pk=order_id)
+        .first()
+    )
+    if order is None:
+        logger.warning(
+            "LP buyback order %s not found for Discord cancel notify", order_id
+        )
+        return
+    cancelled_by = None
+    if cancelled_by_user_id is not None:
+        cancelled_by = (
+            get_user_model().objects.filter(pk=cancelled_by_user_id).first()
+        )
+    try:
+        notify_order_cancelled(order, cancelled_by=cancelled_by, reason=reason)
+    except Exception:
+        logger.exception(
+            "Failed Discord cancel notify for LP buyback order %s", order_id
+        )
+        raise
+
+
+@app.task()
+def sweep_lp_buyback_orders_task() -> dict:
+    """Hourly: mirror threads to orders, remind stalled pilots, auto-cancel."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_sweep import sweep_lp_buyback_orders
+
+    return sweep_lp_buyback_orders()
+
+
+@app.task()
 def compute_order_profit_breakdown_task(order_id: int) -> bool:
     """
     Compute and store the order profit/price snapshot off the request thread.

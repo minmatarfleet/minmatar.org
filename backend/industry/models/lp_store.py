@@ -540,6 +540,17 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When status last changed; drives stalled-order reminders.",
+    )
+    stalled_reminder_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last stalled-order reminder; cleared on status change.",
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -551,6 +562,46 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
                 name="industry_lp_mkt_status_side",
             ),
         ]
+
+    @property
+    def status_just_changed(self) -> bool:
+        """True right after a save() that changed status (or created)."""
+        return getattr(self, "_status_just_changed", False)
+
+    def set_cancel_notice(self, *, cancelled_by_id=None, reason: str = ""):
+        """Who/why for the Discord cancel post sent after the next save."""
+        self._cancel_notice = (cancelled_by_id, reason)
+
+    @property
+    def cancel_notice(self) -> tuple[int | None, str]:
+        return getattr(self, "_cancel_notice", (None, ""))
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # pylint: disable-next=protected-access
+        instance._loaded_status = instance.__dict__.get("status")
+        return instance
+
+    def save(self, *args, **kwargs):
+        loaded = getattr(self, "_loaded_status", None)
+        status_changed = self._state.adding or (
+            loaded is not None and loaded != self.status
+        )
+        # Read by the post_save Discord signal (cancel notice).
+        self._status_just_changed = status_changed
+        if status_changed:
+            self.status_changed_at = timezone.now()
+            self.stalled_reminder_at = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {
+                    *update_fields,
+                    "status_changed_at",
+                    "stalled_reminder_at",
+                }
+        super().save(*args, **kwargs)
+        self._loaded_status = self.status
 
     def __str__(self) -> str:
         return (

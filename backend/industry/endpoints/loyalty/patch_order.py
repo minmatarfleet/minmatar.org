@@ -69,6 +69,7 @@ def patch_order(
                 order,
                 new_status,
                 destination_character_name=payload.destination_character_name,
+                actor=request.user,
             )
         except LpMarketOrderError as exc:
             return 400, ErrorResponse(detail=str(exc))

@@ -79,16 +79,46 @@ def isk_payer(order: IndustryLoyaltyPointMarketOrder):
     return order.created_by
 
 
-def lp_buyback_channel_id() -> int | None:
-    channel_id = (
+def _lp_buyback_channel_row() -> tuple[int, int] | None:
+    row = (
         DiscordChannel.objects.filter(
             receive_lp_buyback=True,
             guild__is_active=True,
         )
-        .values_list("channel_id", flat=True)
+        .values_list("channel_id", "guild__guild_id")
         .first()
     )
-    return int(channel_id) if channel_id else None
+    if not row or not row[0]:
+        return None
+    return int(row[0]), int(row[1])
+
+
+def lp_buyback_channel_id() -> int | None:
+    row = _lp_buyback_channel_row()
+    return row[0] if row else None
+
+
+def active_lp_buyback_thread_ids() -> set[int] | None:
+    """Unarchived thread ids in the buyback forum (None if unknown)."""
+    row = _lp_buyback_channel_row()
+    if not row:
+        return None
+    channel_id, guild_id = row
+    try:
+        threads = (
+            DiscordClient(guild_id=guild_id)
+            .get_active_threads()
+            .json()
+            .get("threads", [])
+        )
+    except Exception as exc:
+        logger.warning("Could not list active LP buyback threads: %s", exc)
+        return None
+    return {
+        int(thread["id"])
+        for thread in threads
+        if str(thread.get("parent_id")) == str(channel_id)
+    }
 
 
 def order_thread_title(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -455,3 +485,140 @@ def notify_order_status_changed(
         # Post first, wait, then archive — never post after close (Discord
         # unarchives). Caller must invoke after DB commit (see transition_order).
         _post_completed_then_archive(order)
+
+
+def _order_participants(order: IndustryLoyaltyPointMarketOrder) -> list:
+    """Creator plus every claimer, deduplicated, creator first."""
+    users = [order.created_by, order.claimed_by]
+    users.extend(claim.claimed_by for claim in order.claims.all())
+    seen: set[int] = set()
+    unique = []
+    for user in users:
+        if user is None or user.pk in seen:
+            continue
+        seen.add(user.pk)
+        unique.append(user)
+    return unique
+
+
+def _cancelled_message(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    cancelled_by=None,
+    reason: str = "",
+) -> str:
+    mentions = " ".join(
+        mention
+        for mention in (_user_mention(u) for u in _order_participants(order))
+        if mention
+    )
+    lines: list[str] = []
+    if mentions:
+        lines.extend([mentions, ""])
+    if cancelled_by is not None:
+        lines.append(
+            f":x: Order cancelled by **{_display_name(cancelled_by)}**"
+        )
+    else:
+        lines.append(":x: Order cancelled")
+    if reason:
+        lines.append(reason)
+    lines.append(order_site_url(order))
+    return "\n".join(lines)
+
+
+def notify_order_cancelled(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    cancelled_by=None,
+    reason: str = "",
+) -> None:
+    """Post the cancellation, wait, then archive (avoids reopen race)."""
+    if not order.discord_thread_id:
+        return
+    post_order_status_update(
+        order,
+        message=_cancelled_message(
+            order, cancelled_by=cancelled_by, reason=reason
+        ),
+    )
+    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
+    close_order_thread(order)
+
+
+def waiting_on(order: IndustryLoyaltyPointMarketOrder):
+    """The user whose action the order is waiting on, if any."""
+    if order.status == order.Status.AWAITING_LP:
+        return lp_sender(order)
+    if order.status == order.Status.AWAITING_ISK:
+        return isk_payer(order)
+    if order.status == order.Status.CLAIMED:
+        return order.claimed_by
+    return None
+
+
+def waiting_on_action(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Short description of the pending action (e.g. for cancel reasons)."""
+    if order.status == order.Status.AWAITING_LP:
+        return f"send LP to **{_destination_label(order)}**"
+    if order.status == order.Status.AWAITING_ISK:
+        return (
+            f"pay **{_isk_due(order):,} ISK** to "
+            f"**{_isk_payout_label(order)}**"
+        )
+    return "confirm where the LP should go"
+
+
+def stalled_cancel_reason(order: IndustryLoyaltyPointMarketOrder) -> str:
+    return (
+        "No progress for 48 hours while waiting on "
+        f"**{_display_name(waiting_on(order))}** to "
+        f"{waiting_on_action(order)}. Post a new order when you're ready."
+    )
+
+
+def _stalled_reminder_message(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    waited_hours: int,
+    cancel_at=None,
+) -> str:
+    mention = _user_mention(waiting_on(order))
+    lines: list[str] = []
+    if mention:
+        lines.extend([mention, ""])
+    lines.append(
+        f":alarm_clock: Reminder — this order has been waiting on you to "
+        f"{waiting_on_action(order)} for {waited_hours} hours."
+    )
+    if order.status == order.Status.AWAITING_LP:
+        lines.append("Once it's sent, press **LP sent** below.")
+    elif order.status == order.Status.AWAITING_ISK:
+        lines.append("Once it's paid, press **ISK sent** below.")
+    if cancel_at is not None:
+        lines.append(
+            "If nothing moves, this order is cancelled automatically "
+            f"<t:{int(cancel_at.timestamp())}:R>."
+        )
+    lines.append(order_site_url(order))
+    return "\n".join(lines)
+
+
+def post_stalled_reminder(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    waited_hours: int,
+    cancel_at=None,
+) -> None:
+    components = None
+    if order.status == order.Status.AWAITING_LP:
+        components = lp_sent_components(order.pk)
+    elif order.status == order.Status.AWAITING_ISK:
+        components = isk_sent_components(order.pk)
+    post_order_status_update(
+        order,
+        message=_stalled_reminder_message(
+            order, waited_hours=waited_hours, cancel_at=cancel_at
+        ),
+        components=components,
+    )

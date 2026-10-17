@@ -24,6 +24,11 @@ COMPLETED = IndustryLoyaltyPointMarketOrder.Status.COMPLETED
 CANCELLED = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
 
 ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
+# Statuses where one named pilot owes the next step (reminders apply).
+STALLABLE_STATUSES = (CLAIMED, AWAITING_LP, AWAITING_ISK)
+# Before LP moves, a stalled order can be cancelled safely. After LP is
+# sent (awaiting_isk) cancelling would strand the seller, so only remind.
+AUTO_CANCEL_STATUSES = (CLAIMED, AWAITING_LP)
 
 # Maximum LP quantity for sell orders; buy orders have no quantity cap.
 MAX_SELL_LP = 2_500_000
@@ -310,6 +315,8 @@ def transition_order(
     new_status: str,
     *,
     destination_character_name: str | None = None,
+    actor=None,
+    reason: str = "",
 ) -> IndustryLoyaltyPointMarketOrder:
     with transaction.atomic():
         locked = (
@@ -344,6 +351,11 @@ def transition_order(
 
         previous = locked.status
         locked.status = new_status
+        if new_status == CANCELLED:
+            locked.set_cancel_notice(
+                cancelled_by_id=actor.pk if actor is not None else None,
+                reason=reason,
+            )
         if new_status == COMPLETED:
             locked.completed_at = timezone.now()
             if locked.side == IndustryLoyaltyPointMarketOrder.Side.SELL:
@@ -362,6 +374,35 @@ def transition_order(
 
         notify_lp_buyback_order_status_changed_task.delay(locked.pk)
     return locked
+
+
+def auto_cancel_stalled_order(
+    order_id: int,
+    *,
+    stalled_before,
+    reason: str,
+) -> bool:
+    """Cancel an order still parked in the same pre-LP status.
+
+    Re-checks under lock so a pilot pressing **LP sent** while the sweep runs
+    is never cancelled after LP has moved.
+    """
+    with transaction.atomic():
+        locked = (
+            IndustryLoyaltyPointMarketOrder.objects.select_for_update()
+            .filter(
+                pk=order_id,
+                status__in=AUTO_CANCEL_STATUSES,
+                status_changed_at__lte=stalled_before,
+            )
+            .first()
+        )
+        if locked is None:
+            return False
+        locked.status = CANCELLED
+        locked.set_cancel_notice(reason=reason)
+        locked.save()
+    return True
 
 
 def update_order_notes(
