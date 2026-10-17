@@ -113,6 +113,28 @@ class EveMoonYieldTestCase(TestCase):
         self.assertEqual(422, int(yields["Hydrocarbons"]))
         self.assertEqual(201, int(yields["Evaporite Deposits"]))
 
+    def test_products_shared_by_several_ores_add_up(self):
+        bitumens = EveMoonDistribution(
+            moon=None, ore="Bitumens", yield_percent=Decimal("0.5413627028")
+        )
+        sylvite = EveMoonDistribution(
+            moon=None, ore="Sylvite", yield_percent=Decimal("0.2586372793")
+        )
+
+        both = calc_metanox_yield([bitumens, sylvite])
+        alone_b = calc_metanox_yield([bitumens])
+        alone_s = calc_metanox_yield([sylvite])
+
+        for product in ("Pyerite", "Mexallon"):
+            self.assertEqual(
+                both[product], alone_b[product] + alone_s[product]
+            )
+        # Products only one ore makes are unchanged.
+        self.assertEqual(both["Hydrocarbons"], alone_b["Hydrocarbons"])
+        self.assertEqual(
+            both["Evaporite Deposits"], alone_s["Evaporite Deposits"]
+        )
+
     @patch("moons.tasks.get_prices")
     def test_moon_revenue(self, mock_get_prices):
         mock_get_prices.return_value = {
