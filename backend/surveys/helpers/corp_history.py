@@ -6,12 +6,11 @@ import logging
 
 from django.utils import timezone
 
+from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation
 
 logger = logging.getLogger(__name__)
-
-FL33T_ALLIANCE_ID = 99011978
 
 
 def _is_academy(name: str, ticker: str) -> bool:
@@ -59,7 +58,9 @@ def alliance_join_date(user):
         pc = user_primary_character(user)
         if not pc:
             return None
-        alliance_id = getattr(pc, "alliance_id", None) or FL33T_ALLIANCE_ID
+        alliance_id = (
+            getattr(pc, "alliance_id", None) or MINMATAR_FLEET_ALLIANCE_ID
+        )
 
         history = list(
             pc.corporation_history.order_by("start_date", "record_id")
@@ -90,7 +91,9 @@ def alliance_corp_history(user) -> dict:
         pc = user_primary_character(user)
         if not pc:
             return empty
-        alliance_id = getattr(pc, "alliance_id", None) or FL33T_ALLIANCE_ID
+        alliance_id = (
+            getattr(pc, "alliance_id", None) or MINMATAR_FLEET_ALLIANCE_ID
+        )
 
         history = list(
             pc.corporation_history.order_by("start_date", "record_id")

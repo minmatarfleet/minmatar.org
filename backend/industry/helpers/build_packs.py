@@ -13,9 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from eveonline.constants import (
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID as BUILD_ALLIANCE_ID,
+)
 from eveonline.models import EveCorporationContract, EveLocation
-
-BUILD_ALLIANCE_ID = 99012009
 
 MATERIAL_PACK_MARKERS = ("material pack", "mineral pack")
 
