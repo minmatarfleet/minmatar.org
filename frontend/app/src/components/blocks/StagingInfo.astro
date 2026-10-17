@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { StagingType } from '@dtypes/layout_components'
+import { STAGINGS, known_staging } from '@/data/stagings'
+
+interface Props {
+    slug:           StagingType | string;
+    /** The visitor has no staging cookie, so no switcher entry is marked as current. */
+    is_random?:     boolean;
+}
+
+const {
+    slug,
+    is_random = false,
+} = Astro.props
+
+const station_slug = known_staging(slug)
+const station = STAGINGS[station_slug]
+
+import Dropdown from '@components/blocks/Dropdown.astro';
+import StationInfo from '@components/blocks/StationInfo.astro';
+import StationsSelector from '@components/blocks/StationsSelector.astro';
+---
+
+{station.switcher ?
+    <Dropdown>
+        <StationInfo
+            system={station.system}
+            security={station.security}
+            constellation={station.constellation}
+            region={station.region}
+            station_name={station.station_name}
+            station_description={t(station.description_key)}
+            slot="button"
+        />
+
+        <StationsSelector selected={!is_random ? station_slug : undefined} />
+    </Dropdown>
+    :
+    <StationInfo
+        system={station.system}
+        security={station.security}
+        constellation={station.constellation}
+        region={station.region}
+        station_name={station.station_name}
+        station_description={t(station.description_key)}
+    />
+}

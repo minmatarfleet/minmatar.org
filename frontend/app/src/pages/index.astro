@@ -136,9 +136,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 
-import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
-import AmarrInfo from '@components/blocks/AmarrInfo.astro';
-import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
+import StagingInfo from '@components/blocks/StagingInfo.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
@@ -197,10 +195,7 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
-					staging === 'amarr' ? <AmarrInfo /> :
-					<WatermellonInfo is_random={is_random_staging} />
-				}
+				<StagingInfo slug={staging} is_random={is_random_staging} />
 				<FlexInline gap='var(--space-3xs)'>
 					{/*(user && staging !== 'watermellon' && STAGINGS_STATIONS[staging]) &&
 						<StationAssets
