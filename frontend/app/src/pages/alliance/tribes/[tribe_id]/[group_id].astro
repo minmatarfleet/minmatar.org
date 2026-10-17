@@ -133,9 +133,7 @@ const TRIBE_GROUP_PARTIAL_URL = translatePath(
     `/alliance/tribes/${tribe_id}/${group_id}/`,
 )
 const tribes_url = translatePath('/alliance/tribes/')
-const tribe_filter_url = translatePath(
-    `/alliance/tribes/?tribe=${encodeURIComponent(tribe?.slug ?? '')}`,
-)
+const tribe_url = translatePath(`/alliance/tribes/${tribe_id}/`)
 const cover = tribe_group_cover(group_id)
 const page_title = tribe_group?.name ?? ''
 const page_description = tribe_group?.description ?? ''
@@ -153,7 +151,7 @@ const breadcrumbs = [
     { page_title: t('alliance.page_title'), accumulated_path: translatePath('/alliance/') },
     { page_title: t('tribes.page_title'), accumulated_path: tribes_url },
     ...(tribe
-        ? [{ page_title: tribe.name, accumulated_path: tribe_filter_url }]
+        ? [{ page_title: tribe.name, accumulated_path: tribe_url }]
         : []),
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]

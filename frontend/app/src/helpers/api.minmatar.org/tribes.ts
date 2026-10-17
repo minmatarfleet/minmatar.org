@@ -1,4 +1,5 @@
 import type {
+    TribeAbout,
     Tribe,
     TribeGroup,
     TribeMembership,
@@ -43,6 +44,30 @@ export async function get_tribe(id: number): Promise<Tribe> {
         return await response.json() as Tribe
     } catch (error) {
         throw new Error(`Error fetching tribe: ${error.message}`, { cause: error.cause })
+    }
+}
+
+export async function get_tribe_about(
+    tribe_id: number,
+    access_token?: string | false | null,
+): Promise<TribeAbout> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/about`
+    console.log(`Requesting: ${ENDPOINT}`)
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        }
+        if (access_token)
+            headers['Authorization'] = `Bearer ${access_token}`
+
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
+        return await response.json() as TribeAbout
+    } catch (error) {
+        throw new Error(`Error fetching tribe about: ${error.message}`, { cause: error.cause })
     }
 }
 

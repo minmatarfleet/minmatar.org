@@ -115,6 +115,17 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             </div>
         </div>
 
+        {tribes.map((tribe) => (
+            <a
+                class="[ tribes-groups-catalog__about ]"
+                href={translatePath(`/alliance/tribes/${tribe.id}/`)}
+                x-show={`tribe === ${JSON.stringify(tribe.slug)}`}
+                x-cloak
+            >
+                {t('tribes.about.catalog_link').replace('{tribe}', tribe.name)}
+            </a>
+        ))}
+
         <Wrapper
             class="[ intel-reel ]"
             padding_block="0"
@@ -265,6 +276,16 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             flex: 1 1 100%;
             width: 100%;
             margin-inline-start: 0;
+        }
+    }
+
+    .tribes-groups-catalog__about {
+        align-self: flex-start;
+        color: var(--fleet-yellow);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
         }
     }
 

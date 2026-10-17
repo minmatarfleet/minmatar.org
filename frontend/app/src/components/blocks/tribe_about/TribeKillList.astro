@@ -1,0 +1,108 @@
+---
+import { get_item_icon } from '@helpers/eve_image_server'
+
+interface Kill {
+    killmail_id: number
+    ship_type_id: number
+    ship_name: string
+    meta: string
+    /** Supers and titans get the trophy border. */
+    trophy?: boolean
+}
+
+interface Props {
+    kills: Kill[]
+    /** Columns on wide screens; pick one that divides the list evenly. */
+    columns?: number
+    [propName: string]: any
+}
+
+const {
+    kills,
+    columns = 3,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<ul class:list={['[ kill-list ]', Astro.props.class]} style={`--columns: ${columns}`} {...attributes}>
+    {kills.map((kill) => (
+        <li>
+            <a
+                class:list={[{ 'is-trophy': kill.trophy }]}
+                href={`https://zkillboard.com/kill/${kill.killmail_id}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img src={get_item_icon(kill.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                <span class="[ kill-list__text ]">
+                    <span class="[ kill-list__name ]">{kill.ship_name}</span>
+                    <span class="[ kill-list__meta ]">{kill.meta}</span>
+                </span>
+            </a>
+        </li>
+    ))}
+</ul>
+
+<style lang="scss">
+    .kill-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(max(min(14rem, 100%), calc((100% - (var(--columns) - 1) * var(--space-xs)) / var(--columns))), 1fr)
+        );
+        gap: var(--space-xs);
+
+        a {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            block-size: 100%;
+            padding: var(--space-2xs);
+            box-shadow: inset 0 0 0 1px var(--border-color-hover);
+            color: var(--foreground);
+            text-decoration: none;
+            transition: box-shadow var(--fast-transition);
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+
+        a.is-trophy {
+            box-shadow: inset 0 0 0 1px var(--fleet-yellow);
+        }
+
+        img {
+            flex: none;
+            inline-size: var(--space-xl);
+            block-size: var(--space-xl);
+        }
+    }
+
+    @media (hover: hover) {
+        .kill-list a:hover {
+            box-shadow: inset 0 0 0 1px var(--highlight);
+        }
+    }
+
+    .kill-list__text {
+        display: flex;
+        flex-direction: column;
+        min-inline-size: 0;
+    }
+
+    .kill-list__name {
+        color: var(--highlight);
+    }
+
+    .kill-list__meta {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

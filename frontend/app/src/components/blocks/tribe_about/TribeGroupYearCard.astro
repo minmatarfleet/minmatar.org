@@ -1,0 +1,149 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeAboutGroup } from '@dtypes/api.minmatar.org'
+import { group_has_year, type TribeAboutStage } from '@helpers/tribe_about'
+import { fill_template } from '@helpers/tribe_activity'
+
+interface Props {
+    group: TribeAboutGroup
+    tribe_id: number
+    stage?: TribeAboutStage
+    /** Overrides the stage's headline, e.g. hulls on roster for Capitals. */
+    value?: string
+    [propName: string]: any
+}
+
+const {
+    group,
+    tribe_id,
+    stage,
+    value,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const has_year = group_has_year(group)
+const headline = value ?? (stage && has_year ? stage.value(group.totals) : '')
+const detail = stage?.detail && has_year ? stage.detail(t, group.totals) : ''
+const coming_soon = !headline && group.manual
+
+import TribeAboutPilots from '@components/blocks/tribe_about/TribeAboutPilots.astro'
+---
+
+<article class:list={['[ tribe-about-card ][ group-year ]', { 'group-year--soon': coming_soon }, Astro.props.class]} {...attributes}>
+    <header class="[ group-year__head ]">
+        {stage && <p class="[ tribe-about-eyebrow ]">{t(stage.verb)}</p>}
+        <h3>
+            <a href={translatePath(`/alliance/tribes/${tribe_id}/${group.id}/`)}>{group.name}</a>
+        </h3>
+        <p class="[ group-year__members ]">
+            {fill_template(t(group.member_count === 1 ? 'tribes.about.members_one' : 'tribes.about.members'), {
+                n: String(group.member_count),
+            })}
+        </p>
+    </header>
+
+    {coming_soon ?
+        <p class="[ group-year__soon ]">{t('tribes.activity.coming_soon')}</p>
+        : headline ?
+            <p class="[ group-year__value ]">
+                {headline}
+                {stage && <span class="[ group-year__unit ]">{t(stage.unit)}</span>}
+            </p>
+            :
+            <p class="[ group-year__quiet ]">{t('tribes.about.quiet_year')}</p>
+    }
+    {detail && <p class="[ group-year__detail ]">{detail}</p>}
+
+    <slot />
+
+    {stage &&
+        <TribeAboutPilots
+            class="[ group-year__pilots ]"
+            title={fill_template(t('tribes.about.top_by'), { metric: t(stage.pilot_metric) })}
+            pilots={group.top_pilots}
+            format={stage.pilot_value}
+        />
+    }
+</article>
+
+<style lang="scss">
+    .group-year {
+        gap: var(--space-xs);
+    }
+
+    .group-year--soon {
+        background: none;
+        box-shadow: inset 0 0 0 1px var(--border-color-hover);
+    }
+
+    .group-year__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    @media (hover: hover) {
+        .group-year__head a:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .group-year__members {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .group-year__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .group-year__unit {
+        margin-inline-start: var(--space-3xs);
+        font-size: var(--step-0);
+        color: var(--foreground);
+    }
+
+    .group-year__soon,
+    .group-year__quiet {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--faded);
+    }
+
+    .group-year__detail {
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    .group-year__pilots {
+        margin-block-start: auto;
+        padding-block-start: var(--space-xs);
+        border-block-start: 1px solid var(--border-color-hover);
+    }
+</style>
