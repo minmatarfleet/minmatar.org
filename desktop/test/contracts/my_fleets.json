@@ -1,0 +1,50 @@
+{
+  "fleets": [
+    {
+      "aar_link": null,
+      "ended_at": "2026-01-17T17:55:00Z",
+      "fleet_id": 501,
+      "isk_destroyed": 0,
+      "isk_lost": 0,
+      "kills": 0,
+      "live": false,
+      "losses": 2,
+      "my_losses": [
+        {
+          "isk_value": 250000000,
+          "killmail_id": 77,
+          "killmail_time": "2026-01-17T17:45:00Z",
+          "ship_name": "Guardian",
+          "ship_type_id": 11987,
+          "solar_system_name": "Amamake",
+          "srp_amount": 0,
+          "srp_status": "none"
+        },
+        {
+          "isk_value": 250000000,
+          "killmail_id": 79,
+          "killmail_time": "2026-01-17T17:50:00Z",
+          "ship_name": "Guardian",
+          "ship_type_id": 11987,
+          "solar_system_name": "Amamake",
+          "srp_amount": 42000000,
+          "srp_status": "approved"
+        }
+      ],
+      "started_at": "2026-01-17T17:35:00Z",
+      "title": "Armor Damnations",
+      "type_label": "Non-Strategic",
+      "was_fc": false
+    }
+  ],
+  "signups": [
+    {
+      "character_id": 1001,
+      "character_name": "Pilot One",
+      "fit_name": "[FL33T] Guardian",
+      "fleet_id": 501,
+      "ship_type_id": 11987
+    }
+  ],
+  "srp_owed": 1
+}

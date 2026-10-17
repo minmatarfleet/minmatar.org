@@ -13,6 +13,7 @@ test('website routes use the configured base', () => {
     assert.equal(routes.intel_scan(base, 'r/1'), 'http://localhost:4321/intel/scans/r%2F1')
 })
 
+// backend/app/tests/test_web_links.py checks the website still serves each of these pages.
 test('only web_routes.js builds website paths in the main process', () => {
     const dir = path.join(__dirname, '../src/main')
     const offenders = []
@@ -22,11 +23,4 @@ test('only web_routes.js builds website paths in the main process', () => {
         if (/['"`]https:\/\/my\.minmatar\.org\//.test(source)) offenders.push(file)
     }
     assert.deepEqual(offenders, [])
-})
-
-test('the website still has a page for every route the desktop opens', () => {
-    const pages = path.join(__dirname, '../../frontend/app/src/pages')
-    if (!fs.existsSync(pages)) return   // desktop CI checks out desktop/ only
-    for (const page of ['fleets/upcoming/[fleet_id].astro', 'fleets/history/[fleet_id].astro', 'ships/srp/killmails.astro', 'campaigns/[slug]/index.astro', 'intel/scans/[report_id].astro'])
-        assert.ok(fs.existsSync(path.join(pages, page)), page)
 })

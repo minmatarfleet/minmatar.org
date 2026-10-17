@@ -19,6 +19,26 @@ ALLOWED_FILES = {
 }
 
 
+PAGES = BACKEND.parent / "frontend" / "app" / "src" / "pages"
+# Website pages other surfaces link to, and the Astro page that serves each.
+# Released desktop versions keep opening theirs (desktop/src/main/
+# web_routes.js), so a page that moves must leave a redirect behind.
+LINKED_PAGES = {
+    # Desktop
+    "/fleets/upcoming/<id>": "fleets/upcoming/[fleet_id].astro",
+    "/fleets/history/<id>": "fleets/history/[fleet_id].astro",
+    "/ships/srp/killmails/": "ships/srp/killmails.astro",
+    "/campaigns/<slug>": "campaigns/[slug]/index.astro",
+    "/intel/scans/<id>": "intel/scans/[report_id].astro",
+    # Backend (app/web_links.py)
+    "/fleets/upcoming/": "fleets/upcoming.astro",
+    "/fleets/upcoming/edit/<id>": "fleets/upcoming/edit/[fleet_id].astro",
+    "/ships/fittings/<id>": "ships/fittings/[fitting_id].astro",
+    "/ships/doctrines/list/<id>": "ships/doctrines/list/[doctrine_id].astro",
+    "/learning/guides/<name>/": "learning/guides/[name].astro",
+}
+
+
 class WebLinksTest(SimpleTestCase):
     @override_settings(WEB_LINK_URL="https://staging.example/")
     def test_links_follow_the_setting(self):
@@ -59,6 +79,16 @@ class WebLinksTest(SimpleTestCase):
         ]
         self.assertIn("https://staging.example/fleets/history/5", urls)
         self.assertNotIn(PROD_HOST, str(message))
+
+    def test_linked_pages_exist(self):
+        if not PAGES.exists():  # a backend-only checkout
+            self.skipTest("frontend not checked out")
+        missing = [
+            route
+            for route, page in LINKED_PAGES.items()
+            if not (PAGES / page).exists()
+        ]
+        self.assertEqual(missing, [], "keep or redirect these routes")
 
     def test_no_hard_coded_site_links(self):
         """Links to the website go through app.web_links, so dev and staging

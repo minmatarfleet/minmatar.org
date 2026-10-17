@@ -43,6 +43,8 @@ npm run dist              # dist/MinmatarFleet-<version>-x64.exe (installer) + -
 npx electron-builder --win portable --publish never "-c.extraMetadata.version=0.4.0-dev.1"   # local test build, labelled as dev
 ```
 
+`test/contracts/*.json` are API payloads the backend's tests write from its real endpoints; `test/contracts.test.js` renders them through the app. Don't edit them by hand: regenerate them from `backend/` with `UPDATE_CONTRACTS=1`.
+
 Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`), `--diag=<file>` for a JSON-lines event log, `--client-procs=exefile,powershell` to treat a stand-in window titled `EVE - <Name>` as a client while testing without the game.
 
 | Path | |
