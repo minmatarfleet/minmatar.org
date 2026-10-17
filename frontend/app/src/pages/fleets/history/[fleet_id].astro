@@ -33,9 +33,12 @@ import type { EveCharacterProfile, FleetMetrics, FleetCommanderMetrics } from '@
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
+import type { FleetKills, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
 import {
     get_fleets_metrics,
     get_fleet_commander_metrics,
+    get_fleet_kills,
+    get_fleet_my_srp,
 } from '@helpers/api.minmatar.org/fleets'
 
 let fetch_fleets_error: Error | false = false
@@ -64,6 +67,28 @@ try {
     saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
 } catch (error) {
     console.log(error)
+}
+
+// Render the kills here: their styles only reach the page if the page renders
+// FleetKills, since htmx drops the <link> a partial leads with.
+let fleet_kills:FleetKills | null = null
+let srp_losses:FleetSrpLoss[] | null = null
+
+if (fleet?.tracking) {
+    try {
+        fleet_kills = await get_fleet_kills(auth_token as string, fleet_id)
+    } catch (error) {
+        // FleetDetails falls back to the partial, which retries and shows the error.
+        console.log(error)
+    }
+
+    if (fleet_kills && can(gates, 'srp.resolve')) {
+        try {
+            srp_losses = await get_fleet_my_srp(auth_token as string, fleet_id)
+        } catch (error) {
+            console.log(`Skipping SRP losses: ${error.message}`)
+        }
+    }
 }
 
 const can_remove_fleet = can(gates, 'fleets.delete') ||
@@ -158,6 +183,8 @@ const breadcrumbs = [
                 fleet_metrics={fleet_metrics}
                 fleet_commander_metrics={fleet_commander_metrics}  
                 init_tooltips={false} 
+                fleet_kills={fleet_kills}
+                srp_losses={srp_losses}
             />
         }
     </PageWide>
