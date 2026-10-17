@@ -22,9 +22,13 @@ interface Props {
     /** Must match the enclosing LoyaltyOrderList variant (column layout). */
     variant?: 'book' | 'history'
     highlighted?: boolean
+    /** Hidden until the enclosing book's ``show_all_rows`` (Alpine) is on. */
+    collapsed?: boolean
+    /** Start hidden (no flash) when the book starts collapsed. */
+    cloaked?: boolean
 }
 
-const { order, variant = 'book', highlighted = false } = Astro.props
+const { order, variant = 'book', highlighted = false, collapsed = false, cloaked = false } = Astro.props
 
 const STATUS_LABELS: Record<string, string> = {
     open: t('industry.loyalty.status.open'),
@@ -159,6 +163,8 @@ const card_class = [
     padding_block="var(--space-2xs)"
     padding_inline="var(--space-s)"
     id={`order-${order.id}`}
+    x-show={collapsed ? 'show_all_rows' : undefined}
+    style={collapsed && cloaked ? 'display: none' : undefined}
 >
     <div class="[ loyalty-order-card__grid ]">
         <FlexInline gap="var(--space-xs)" class="[ loyalty-order-card__identity ]">

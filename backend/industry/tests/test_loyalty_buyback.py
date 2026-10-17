@@ -6,8 +6,11 @@ from unittest.mock import MagicMock, patch
 
 import jwt
 from django.conf import settings
+from django.core.cache import cache
 from django.contrib.auth.models import Group, User
+from django.db import connection
 from django.db.models import signals
+from django.test.utils import CaptureQueriesContext
 from django.test import Client
 from django.utils.dateparse import parse_datetime
 
@@ -46,6 +49,7 @@ from industry.models import (
     IndustryLoyaltyPointMarketOrder,
     IndustryLoyaltyPointMarketOrderClaim,
 )
+from industry.tasks import resolve_lp_corporation_ids_task
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 TLIB_CORP_ID = 1000182
@@ -922,6 +926,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(again.status_code, 403)
 
     def test_get_one_order_with_destination_logo_id(self):
+        cache.clear()
         EveCorporation.objects.create(
             corporation_id=98780683, name="Tungsten Corporation"
         )
@@ -947,6 +952,45 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
 
         missing = self.client.get("/api/industry/loyalty/orders/999999")
         self.assertEqual(missing.status_code, 404)
+
+    def test_order_list_queries_do_not_grow_with_orders(self):
+        def count_queries():
+            with CaptureQueriesContext(connection) as ctx:
+                response = self.client.get("/api/industry/loyalty/orders")
+            self.assertEqual(response.status_code, 200)
+            return len(ctx.captured_queries), len(response.json()["items"])
+
+        self._awaiting_lp_sell_order()
+        few, few_items = count_queries()
+        for _ in range(5):
+            self._awaiting_lp_sell_order()
+        many, many_items = count_queries()
+        self.assertEqual((few_items, many_items), (1, 6))
+        self.assertEqual(few, many)
+
+    def test_unknown_destination_logo_resolves_off_the_request(self):
+        cache.clear()
+        with patch(
+            "industry.tasks.resolve_lp_corporation_ids_task.delay"
+        ) as queued:
+            order_id = self._awaiting_lp_sell_order()
+            first = self.client.get(f"/api/industry/loyalty/orders/{order_id}")
+            # A second page view doesn't queue the same lookup again.
+            self.client.get(f"/api/industry/loyalty/orders/{order_id}")
+        self.assertIsNone(first.json()["destination_corporation_id"])
+        queued.assert_called_once_with(["tungsten corporation"])
+
+        esi = MagicMock()
+        esi.return_value.resolve_universe_ids.return_value.success.return_value = (
+            True
+        )
+        esi.return_value.resolve_universe_ids.return_value.results.return_value = {
+            "corporations": [{"id": 98780683, "name": "Tungsten Corporation"}]
+        }
+        with patch("industry.helpers.lp_corporation_ids.EsiClient", esi):
+            resolve_lp_corporation_ids_task(["tungsten corporation"])
+        again = self.client.get(f"/api/industry/loyalty/orders/{order_id}")
+        self.assertEqual(again.json()["destination_corporation_id"], 98780683)
 
     def test_get_orders_defaults_to_active(self):
         open_order = IndustryLoyaltyPointMarketOrder.objects.create(

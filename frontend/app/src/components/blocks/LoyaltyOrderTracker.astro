@@ -6,9 +6,11 @@ import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server
 import { format_close_time } from '@helpers/loyalty_order_stats'
 import {
     SEND_LP_HOURS,
+    is_partly_claimed,
     isk_payer_id,
     last_claim_at,
     lp_sender_id,
+    order_claimers,
     order_converter,
     order_destination,
     order_payout,
@@ -48,6 +50,10 @@ const tier_label = order.tier === 'express' ? t('industry.loyalty.tier.express')
 const side_label = order.side === 'buy' ? t('industry.loyalty.side.buy') : t('industry.loyalty.side.sell')
 const destination = order_destination(order)
 const converter = order_converter(order)
+const claimers = order_claimers(order)
+const claimer_names = claimers.map((c) => c.name).join(', ')
+const partly_claimed = is_partly_claimed(order)
+const claimed_lp = number_thousand_separator(order.quantity_claimed ?? 0)
 const stage = order_stage_index(order)
 const step = owed_step(order)
 const claimed_at = last_claim_at(order)
@@ -67,8 +73,9 @@ if (order.status === 'completed') state_text = t('industry.loyalty.tracker.state
 else if (order.status === 'cancelled') state_text = t('industry.loyalty.tracker.state.cancelled')
 else if (owes_send) state_text = t('industry.loyalty.tracker.state.your_send')
 else if (owes_pay) state_text = t('industry.loyalty.tracker.state.your_pay')
-else if (step === 'send_lp') state_text = t('industry.loyalty.tracker.state.send_lp').replace('{name}', order.side === 'buy' ? (converter?.name ?? '') : seller_name)
-else if (step === 'pay_isk') state_text = t('industry.loyalty.tracker.state.pay_isk').replace('{name}', order.side === 'buy' ? seller_name : (converter?.name ?? ''))
+else if (step === 'send_lp') state_text = t('industry.loyalty.tracker.state.send_lp').replace('{name}', order.side === 'buy' ? claimer_names : seller_name)
+else if (step === 'pay_isk') state_text = t('industry.loyalty.tracker.state.pay_isk').replace('{name}', order.side === 'buy' ? seller_name : claimer_names)
+else if (partly_claimed) state_text = t('industry.loyalty.tracker.state.partial').replace('{claimed}', claimed_lp).replace('{total}', lp)
 else state_text = t('industry.loyalty.tracker.state.claim')
 
 const deadline_percent = claimed_at && deadline
@@ -87,13 +94,16 @@ const timeline: TimelineEntry[] = [
         state: 'done',
         face: order.created_by_character_id,
     },
-    stage >= 1
+    stage >= 1 || claimers.length > 0
         ? {
-            title: t('industry.loyalty.tracker.tl.claimed').replace('{name}', converter?.name ?? ''),
-            text: destination ? t('industry.loyalty.tracker.tl.claimed_text').replace('{corporation}', destination.name) : undefined,
+            title: t('industry.loyalty.tracker.tl.claimed').replace('{name}', claimer_names),
+            text: [
+                destination ? t('industry.loyalty.tracker.tl.claimed_text').replace('{corporation}', destination.name) : '',
+                partly_claimed ? t('industry.loyalty.tracker.tl.partial_text').replace('{claimed}', claimed_lp).replace('{total}', lp) : '',
+            ].filter(Boolean).join(' ') || undefined,
             time: eve_time(claimed_at),
-            state: 'done',
-            face: converter?.character_id,
+            state: stage >= 1 ? 'done' : 'now',
+            face: claimers[0]?.character_id,
         }
         : { title: t('industry.loyalty.tracker.tl.claim_pending'), state: order.status === 'open' ? 'now' : 'todo' },
     stage >= 2
@@ -106,7 +116,7 @@ const timeline: TimelineEntry[] = [
             time: eve_time(order.completed_at),
             state: 'done',
         }
-        : { title: t('industry.loyalty.tracker.tl.paid'), state: stage === 2 && order.status !== 'cancelled' ? 'now' : 'todo' },
+        : { title: t('industry.loyalty.tracker.tl.paid_pending'), state: stage === 2 && order.status !== 'cancelled' ? 'now' : 'todo' },
 ]
 if (order.status === 'cancelled')
     timeline.push({ title: t('industry.loyalty.tracker.tl.cancelled'), time: eve_time(order.updated_at), state: 'done' })
@@ -301,18 +311,20 @@ if (order.status === 'cancelled')
                 </section>
             )}
 
-            {converter && (
+            {claimers.length > 0 && (
                 <section class="[ loyalty-tracker__panel ]">
-                    <h2>{t('industry.loyalty.tracker.converter')}</h2>
-                    <div class="[ loyalty-tracker__person ]">
-                        {converter.character_id && (
-                            <img src={get_player_icon(converter.character_id, 128)} alt="" width="56" height="56" />
-                        )}
-                        <span>
-                            <strong>{converter.name}</strong>
-                            <small>{t('industry.loyalty.steps.team')}</small>
-                        </span>
-                    </div>
+                    <h2>{claimers.length > 1 ? t('industry.loyalty.tracker.converters') : t('industry.loyalty.tracker.converter')}</h2>
+                    {claimers.map((person) => (
+                        <div class="[ loyalty-tracker__person ]">
+                            {person.character_id && (
+                                <img src={get_player_icon(person.character_id, 128)} alt="" width="56" height="56" />
+                            )}
+                            <span>
+                                <strong>{person.name}</strong>
+                                <small>{t('industry.loyalty.steps.team')}</small>
+                            </span>
+                        </div>
+                    ))}
                     <p>{t('industry.loyalty.tracker.converter_note')}</p>
                 </section>
             )}

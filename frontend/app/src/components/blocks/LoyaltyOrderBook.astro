@@ -13,7 +13,7 @@ import LoyaltyOrderList from '@components/blocks/LoyaltyOrderList.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
-import { SEND_LP_HOURS } from '@helpers/loyalty_desk'
+import { SEND_LP_HOURS, initially_expanded } from '@helpers/loyalty_desk'
 
 const { t, translatePath } = i18n(Astro.url)
 
@@ -71,6 +71,11 @@ const default_isk_destination = default_claim_character
 const CLAIM_DESTINATION_OTHER = '__other__'
 const claim_character_names = claim_characters.map((c) => c.character_name)
 
+// Long books show the first rows; the rest are a click away (or open
+// straight away when the linked ?order= row is further down).
+const VISIBLE_ROWS = 20
+const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String(order.id) === highlight_order_id)
+
 ---
 
 <section
@@ -79,6 +84,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
     x-on:loyalty-open-buy.window="open_buy()"
     x-data={`{
         busy: false,
+        show_all_rows: ${rows_expanded},
         post_dialog_open: false,
         claim_dialog_open: false,
         await_lp_dialog_open: false,
@@ -493,10 +499,12 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                 <p class="[ loyalty-orders__empty ]">{t('industry.loyalty.orders.empty')}</p>
             ) : (
                 <LoyaltyOrderList variant="book">
-                    {orders.map((order) => (
+                    {orders.map((order, index) => (
                         <LoyaltyOrderCard
                             order={order}
                             highlighted={highlight_order_id === String(order.id)}
+                            collapsed={index >= VISIBLE_ROWS}
+                            cloaked={!rows_expanded}
                         >
                             <LoyaltyOrderActions
                                 slot="actions"
@@ -509,6 +517,16 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                         </LoyaltyOrderCard>
                     ))}
                 </LoyaltyOrderList>
+            )}
+            {orders.length > VISIBLE_ROWS && (
+                <button
+                    type="button"
+                    class="[ loyalty-orders__more ]"
+                    x-show="!show_all_rows"
+                    x-on:click="show_all_rows = true"
+                >
+                    {t('industry.loyalty.book.show_all').replace('{count}', String(orders.length))}
+                </button>
             )}
         </Flexblock>
     )}
@@ -915,6 +933,25 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
     h3 {
         font-size: var(--step-1);
         margin: 0;
+    }
+
+    .loyalty-orders__more {
+        align-self: flex-start;
+        min-height: var(--space-l);
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
     }
 
     .loyalty-orders__empty {

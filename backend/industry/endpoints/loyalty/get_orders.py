@@ -8,7 +8,7 @@ from ninja import Query
 from industry.endpoints.loyalty.schemas import LoyaltyMarketOrdersListResponse
 from industry.endpoints.loyalty.serialization import (
     market_order_response,
-    orders_corporation_ids,
+    order_context,
 )
 from industry.helpers.lp_market_orders import ACTIVE_STATUSES
 from industry.models import IndustryLoyaltyPointMarketOrder
@@ -80,9 +80,9 @@ def get_orders(
     else:
         rows = qs
     rows = list(rows)
-    ids = orders_corporation_ids(rows)
+    context = order_context(rows)
     return LoyaltyMarketOrdersListResponse(
-        items=[market_order_response(o, ids) for o in rows],
+        items=[market_order_response(o, context) for o in rows],
         total=total,
         limit=limit,
         offset=offset,

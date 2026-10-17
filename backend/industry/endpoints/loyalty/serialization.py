@@ -1,6 +1,9 @@
 """Serialize LP buyback domain objects to API schemas."""
 
+from dataclasses import dataclass, field
+
 from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCharacter, EvePlayer
 from industry.endpoints.loyalty.schemas import (
     LoyaltyCurrencyResponse,
     LoyaltyLedgerEntryResponse,
@@ -30,13 +33,6 @@ def _user_display_name(user) -> str:
     return user.username
 
 
-def _user_character_id(user) -> int | None:
-    primary = user_primary_character(user)
-    if primary:
-        return int(primary.character_id)
-    return None
-
-
 def currency_response(
     currency: IndustryLoyaltyPoint,
 ) -> LoyaltyCurrencyResponse:
@@ -52,6 +48,35 @@ def currency_response(
     )
 
 
+@dataclass
+class OrderContext:
+    """Lookups shared by every order in a response, each done once.
+
+    ``primaries`` maps user id -> primary character (or None), so names
+    and portraits cost one query per response instead of four per pilot
+    per order. ``corporation_ids`` maps lower-cased destination name ->
+    corporation id for logos.
+    """
+
+    primaries: dict[int, EveCharacter | None] = field(default_factory=dict)
+    corporation_ids: dict[str, int] = field(default_factory=dict)
+
+    def name(self, user) -> str | None:
+        if user is None:
+            return None
+        primary = self.primaries.get(user.pk)
+        return primary.character_name if primary else user.username
+
+    def character_id(self, user) -> int | None:
+        if user is None:
+            return None
+        primary = self.primaries.get(user.pk)
+        return int(primary.character_id) if primary else None
+
+    def corporation_id(self, name: str) -> int | None:
+        return self.corporation_ids.get((name or "").strip().lower())
+
+
 def order_destination_names(
     order: IndustryLoyaltyPointMarketOrder,
 ) -> list[str]:
@@ -61,58 +86,63 @@ def order_destination_names(
     return [n for n in names if n]
 
 
-def orders_corporation_ids(orders) -> dict[str, int]:
-    """One lookup for every destination named across ``orders``."""
-    names = []
+def order_context(orders) -> OrderContext:
+    """Batch the pilot and corporation lookups for ``orders``.
+
+    Orders should come with ``claims__claimed_by`` prefetched.
+    """
+    user_ids: set[int] = set()
+    names: list[str] = []
     for order in orders:
+        user_ids.update(
+            pk for pk in (order.created_by_id, order.claimed_by_id) if pk
+        )
+        user_ids.update(
+            c.claimed_by_id for c in order.claims.all() if c.claimed_by_id
+        )
         names += order_destination_names(order)
-    return corporation_ids(names)
-
-
-def _corporation_id(name: str, ids: dict[str, int]) -> int | None:
-    return ids.get((name or "").strip().lower())
+    primaries: dict[int, EveCharacter | None] = dict.fromkeys(user_ids)
+    for player in EvePlayer.objects.filter(
+        user_id__in=user_ids
+    ).select_related("primary_character"):
+        primaries[player.user_id] = player.primary_character
+    return OrderContext(
+        primaries=primaries, corporation_ids=corporation_ids(names)
+    )
 
 
 def market_order_claim_response(
     claim: IndustryLoyaltyPointMarketOrderClaim,
-    corporation_id_map: dict[str, int] | None = None,
+    context: OrderContext,
 ) -> LoyaltyMarketOrderClaimResponse:
     claimed_by = claim.claimed_by
-    ids = corporation_id_map or {}
     return LoyaltyMarketOrderClaimResponse(
         id=claim.pk,
         amount=int(claim.amount),
         destination_character_name=claim.destination_character_name or "",
         destination_corporation_name=claim.destination_corporation_name or "",
-        destination_corporation_id=_corporation_id(
-            claim.destination_corporation_name, ids
+        destination_corporation_id=context.corporation_id(
+            claim.destination_corporation_name
         ),
         claimed_by_user_id=claimed_by.pk if claimed_by else None,
-        claimed_by_name=(
-            _user_display_name(claimed_by) if claimed_by else None
-        ),
-        claimed_by_character_id=(
-            _user_character_id(claimed_by) if claimed_by else None
-        ),
+        claimed_by_name=context.name(claimed_by),
+        claimed_by_character_id=context.character_id(claimed_by),
         created_at=claim.created_at,
     )
 
 
 def market_order_response(
     order: IndustryLoyaltyPointMarketOrder,
-    corporation_id_map: dict[str, int] | None = None,
+    context: OrderContext | None = None,
 ) -> LoyaltyMarketOrderResponse:
-    """Serialize an order; pass ``corporation_id_map`` when listing many."""
+    """Serialize an order; pass ``order_context(orders)`` when listing."""
+    if context is None:
+        context = order_context([order])
     claimed_by = order.claimed_by
     created_by = order.created_by
-    qty_claimed = claimed_quantity(order)
-    ids = (
-        corporation_id_map
-        if corporation_id_map is not None
-        else corporation_ids(order_destination_names(order))
-    )
     claims = [
-        market_order_claim_response(claim, ids) for claim in order.claims.all()
+        market_order_claim_response(claim, context)
+        for claim in order.claims.all()
     ]
     return LoyaltyMarketOrderResponse(
         id=order.pk,
@@ -121,29 +151,21 @@ def market_order_response(
         corporation_id=int(order.loyalty_point.corporation_id),
         side=order.side,
         quantity=order.quantity,
-        quantity_claimed=qty_claimed,
+        quantity_claimed=claimed_quantity(order),
         quantity_remaining=remaining_quantity(order),
         isk_per_lp=order.isk_per_lp,
         tier=order.tier,
         express_due_at=express_due_at(order),
         status=order.status,
         created_by_user_id=created_by.pk if created_by else None,
-        created_by_name=(
-            _user_display_name(created_by) if created_by else None
-        ),
-        created_by_character_id=(
-            _user_character_id(created_by) if created_by else None
-        ),
+        created_by_name=context.name(created_by),
+        created_by_character_id=context.character_id(created_by),
         claimed_by_user_id=claimed_by.pk if claimed_by else None,
-        claimed_by_name=(
-            _user_display_name(claimed_by) if claimed_by else None
-        ),
-        claimed_by_character_id=(
-            _user_character_id(claimed_by) if claimed_by else None
-        ),
+        claimed_by_name=context.name(claimed_by),
+        claimed_by_character_id=context.character_id(claimed_by),
         destination_character_name=order.destination_character_name or "",
-        destination_corporation_id=_corporation_id(
-            order.destination_character_name, ids
+        destination_corporation_id=context.corporation_id(
+            order.destination_character_name
         ),
         discord_thread_id=order.discord_thread_id,
         notes=order.notes or "",

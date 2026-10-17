@@ -4,11 +4,14 @@ import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
 import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
 import {
+    initially_expanded,
     order_converter,
     order_destination,
     order_payout,
+    sort_my_orders,
     user_owes_step,
 } from '@helpers/loyalty_desk'
+import { express_hours_left, format_close_time } from '@helpers/loyalty_order_stats'
 import LoyaltyOrderProgress from '@components/blocks/LoyaltyOrderProgress.astro'
 import Button from '@components/blocks/Button.astro'
 
@@ -21,9 +24,21 @@ interface Props {
     [propName: string]: any
 }
 
-const { orders, current_user_id, ...attributes } = Astro.props
+const { orders: unsorted, current_user_id, ...attributes } = Astro.props
 
 delete attributes.class
+
+// A pilot can have many open orders; show the first few, the rest on demand.
+const VISIBLE = 3
+const orders = sort_my_orders(unsorted, current_user_id)
+const expanded = initially_expanded(orders, VISIBLE)
+const express_due = (order: LoyaltyMarketOrder) => {
+    if (!order.express_due_at) return null
+    const hours = express_hours_left(order.express_due_at)
+    return hours >= 0
+        ? t('industry.loyalty.sla.due_in').replace('{time}', format_close_time(hours * 3600))
+        : t('industry.loyalty.sla.overdue').replace('{time}', format_close_time(-hours * 3600))
+}
 
 const TIER_LABELS = {
     standard: t('industry.loyalty.tier.standard'),
@@ -32,15 +47,26 @@ const TIER_LABELS = {
 ---
 
 {orders.length > 0 && (
-    <section class:list={['[ loyalty-mine ]', Astro.props.class]} aria-labelledby="loyalty-mine-title" {...attributes}>
+    <section
+        class:list={['[ loyalty-mine ]', Astro.props.class]}
+        aria-labelledby="loyalty-mine-title"
+        x-data={`{ show_all: ${expanded} }`}
+        {...attributes}
+    >
         <h2 id="loyalty-mine-title">{t('industry.loyalty.mine.title')}</h2>
         <ul class="[ loyalty-mine__list ]">
-            {orders.map((order) => {
+            {orders.map((order, index) => {
                 const destination = order_destination(order)
                 const converter = order_converter(order)
                 const your_move = user_owes_step(order, current_user_id)
+                const due = express_due(order)
+                const extra = index >= VISIBLE
                 return (
-                    <li class:list={['loyalty-mine__card', { 'is-your-move': your_move }]}>
+                    <li
+                        class:list={['loyalty-mine__card', { 'is-your-move': your_move }]}
+                        x-show={extra ? 'show_all' : undefined}
+                        x-cloak={extra && !expanded ? '' : undefined}
+                    >
                         <div class="[ loyalty-mine__who ]">
                             {destination?.corporation_id ? (
                                 <img
@@ -75,10 +101,11 @@ const TIER_LABELS = {
                         </div>
                         <div class="[ loyalty-mine__text ]">
                             <span class="[ loyalty-mine__meta ]">
-                                #{order.id} · {TIER_LABELS[order.tier] ?? order.tier}
+                                <span>#{order.id} · {TIER_LABELS[order.tier] ?? order.tier}</span>
+                                {due && <span class="[ loyalty-mine__due ]">{due}</span>}
                                 {your_move
                                     ? <span class="[ loyalty-mine__badge ]">{t('industry.loyalty.mine.your_move')}</span>
-                                    : <span>· {t('industry.loyalty.mine.waiting')}</span>}
+                                    : <span>{t('industry.loyalty.mine.waiting')}</span>}
                             </span>
                             <strong class="[ tabular-nums ]">
                                 {number_thousand_separator(order.quantity)} LP → {number_thousand_separator(order_payout(order))} ISK
@@ -95,6 +122,12 @@ const TIER_LABELS = {
                 )
             })}
         </ul>
+        {orders.length > VISIBLE && (
+            <button type="button" class="[ loyalty-mine__more ]" x-on:click="show_all = !show_all">
+                <span x-show="!show_all">{t('industry.loyalty.mine.show_all').replace('{count}', String(orders.length))}</span>
+                <span x-show="show_all" x-cloak>{t('industry.loyalty.mine.show_fewer')}</span>
+            </button>
+        )}
     </section>
 )}
 
@@ -163,7 +196,7 @@ const TIER_LABELS = {
         gap: var(--space-3xs);
 
         strong {
-            font-size: var(--step-1);
+            font-size: var(--step-0);
             color: var(--highlight);
         }
 
@@ -193,5 +226,33 @@ const TIER_LABELS = {
 
     .loyalty-mine__progress {
         flex: 1 1 18rem;
+    }
+
+    .loyalty-mine__due {
+        font-weight: 600;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-mine__more {
+        align-self: flex-start;
+        min-height: var(--space-l);
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 </style>

@@ -134,10 +134,53 @@ export function order_converter(order: LoyaltyMarketOrder): LoyaltyConverter | n
         : null
 }
 
-/** ISK the order pays out (claimed LP once claimed, else the full order). */
-export function order_payout(order: LoyaltyMarketOrder): number {
-    const lp = (order.quantity_claimed ?? 0) > 0 ? order.quantity_claimed : order.quantity
-    return lp * order.isk_per_lp
+/** ISK the whole order pays out (partial claims don't change the total). */
+export function order_payout(order: Pick<LoyaltyMarketOrder, 'quantity' | 'isk_per_lp'>): number {
+    return order.quantity * order.isk_per_lp
+}
+
+/** Everyone who claimed part of a sell order, in claim order, once each. */
+export function order_claimers(order: LoyaltyMarketOrder): LoyaltyConverter[] {
+    const seen = new Map<number, LoyaltyConverter>()
+    for (const claim of order.claims ?? []) {
+        if (!claim.claimed_by_user_id || seen.has(claim.claimed_by_user_id)) continue
+        seen.set(claim.claimed_by_user_id, {
+            user_id: claim.claimed_by_user_id,
+            name: claim.claimed_by_name ?? '',
+            character_id: claim.claimed_by_character_id,
+        })
+    }
+    if (seen.size === 0) {
+        const converter = order_converter(order)
+        return converter ? [converter] : []
+    }
+    return [...seen.values()]
+}
+
+/** True while some, but not all, of an open order has been claimed. */
+export function is_partly_claimed(order: LoyaltyMarketOrder): boolean {
+    return order.status === 'open'
+        && (order.quantity_claimed ?? 0) > 0
+        && (order.quantity_remaining ?? 0) > 0
+}
+
+/**
+ * Show the first ``visible`` items, but every item when the one we must
+ * show (e.g. a highlighted order) sits further down.
+ */
+export function initially_expanded<T>(items: T[], visible: number, must_show?: (item: T) => boolean): boolean {
+    if (items.length <= visible) return true
+    return must_show ? items.slice(visible).some(must_show) : false
+}
+
+/** The viewer's own active orders: the ones waiting on them first. */
+export function sort_my_orders(orders: LoyaltyMarketOrder[], user_id: number): LoyaltyMarketOrder[] {
+    return [...orders].sort((a, b) => {
+        const a_move = user_owes_step(a, user_id) ? 0 : 1
+        const b_move = user_owes_step(b, user_id) ? 0 : 1
+        if (a_move !== b_move) return a_move - b_move
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 }
 
 export interface LoyaltyWeekBar {
@@ -171,9 +214,17 @@ export function desk_lanes(orders: LoyaltyMarketOrder[]): Record<LoyaltyLaneKey,
         const step = owed_step(order)
         if (step) lanes[step].push(order)
     }
-    // Oldest first: the one waiting longest is the next to pick up.
+    // Express orders first, soonest deadline first (they carry a 24h
+    // promise); then the rest oldest first, the longest wait on top.
+    const rank = (order: LoyaltyMarketOrder) => order.express_due_at
+        ? [0, new Date(order.express_due_at).getTime()]
+        : [1, new Date(order.created_at).getTime()]
     for (const lane of Object.values(lanes))
-        lane.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        lane.sort((a, b) => {
+            const [a_group, a_time] = rank(a)
+            const [b_group, b_time] = rank(b)
+            return a_group - b_group || a_time - b_time
+        })
     return lanes
 }
 
