@@ -8,6 +8,7 @@ from django.db import models
 from esi.models import Token
 
 from eveonline.client import EsiClient
+from eveonline.helpers.characters.tokens import first_character_with_scopes
 from eveonline.helpers.db_sync import replace_with_bulk_create
 from eveonline.helpers.esi import parse_esi_date
 from eveonline.models import (
@@ -32,48 +33,6 @@ SCOPE_CORPORATION_INDUSTRY_JOBS = ["esi-industry.read_corporation_jobs.v1"]
 SCOPE_CORPORATION_BLUEPRINTS = ["esi-corporations.read_blueprints.v1"]
 SCOPE_CORPORATION_WALLET = ["esi-wallet.read_corporation_wallets.v1"]
 CONTRACT_FETCH_SPREAD_SECONDS = 4 * 3600  # 4 hours
-
-
-def alliance_corporation_ids():
-    """Corporation IDs for all corporations in tracked alliances."""
-    return set(
-        EveCorporation.objects.filter(
-            alliance__in=EveAlliance.objects.all()
-        ).values_list("corporation_id", flat=True)
-    )
-
-
-def get_character_with_contract_scope_for_corporation(
-    corporation_id: int,
-) -> int | None:
-    """
-    Return a character_id in this corporation with a valid token that has
-    corporation contract scope, or None if none found.
-    """
-    for character in (
-        EveCharacter.objects.filter(corporation_id=corporation_id)
-        .exclude(token__isnull=True)
-        .exclude(esi_suspended=True)
-    ):
-        if Token.get_token(
-            character.character_id, SCOPE_CORPORATION_CONTRACTS
-        ):
-            return character.character_id
-    return None
-
-
-def known_contract_issuer_ids():
-    """Set of issuer IDs we consider 'known' (alliance characters + alliance corps)."""
-    alliance_ids = set(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
-    character_ids = set(
-        EveCharacter.objects.filter(alliance_id__in=alliance_ids).values_list(
-            "character_id", flat=True
-        )
-    )
-    corp_ids = alliance_corporation_ids()
-    return character_ids | corp_ids
 
 
 def get_director_with_scope(corporation, scope_list):
@@ -122,13 +81,14 @@ def resolve_directors_by_scope(corporation, scope_lists):
                 character_id,
                 corporation.corporation_id,
             )
+    members = [cid for cid in candidate_ids if cid in characters_by_id]
+    for scope_list in scope_lists:
+        key = tuple(scope_list)
+        if results[key] is not None:
             continue
-        for scope_list in scope_lists:
-            key = tuple(scope_list)
-            if results[key] is not None:
-                continue
-            if Token.get_token(character_id, scope_list):
-                results[key] = characters_by_id[character_id]
+        holder = first_character_with_scopes(members, scope_list)
+        if holder is not None:
+            results[key] = characters_by_id[holder]
     return results
 
 
