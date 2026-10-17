@@ -11,7 +11,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from campaigns.endpoints.base import router
 from campaigns.endpoints import overlay, schemas, serializers
-from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.helpers import campaign_day, campaign_week_start, week_bounds
 from campaigns.models import (
     ADVANTAGE_SITE_KINDS,
     Campaign,
@@ -28,6 +28,7 @@ from campaigns.models import (
     SiteKind,
 )
 from campaigns.services import entities as entity_service
+from campaigns.services import fleets as fleet_service
 from campaigns.services import plan, stats
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
@@ -731,7 +732,10 @@ def get_roster(request, slug: str):
     return {
         "pilots": rows,
         "corporations": serializers.roster_corporations(
-            rows, timezone.now().date()
+            rows,
+            campaign_day(),
+            mails_by_user=stats.kill_mails_by_user(campaign),
+            fleets_by_user=fleet_service.fleet_ids_by_user(campaign),
         ),
         "coverage": serializers.coverage_by_hour(campaign),
         "by_prime_time": by_prime_time,

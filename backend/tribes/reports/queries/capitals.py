@@ -77,19 +77,25 @@ def run_capitals_report(
         )
 
     rows = _build_rows(
-        all_user_ids, kills_by_user, losses_by_user, fleets_by_user
+        all_user_ids,
+        {uid: len(mails) for uid, mails in kills_by_user.items()},
+        losses_by_user,
+        {uid: len(fleets) for uid, fleets in fleets_by_user.items()},
     )
+    # A mail or fleet shared by several pilots counts once in the totals.
     totals = {
-        "total_kills": sum(kills_by_user.values()),
+        "total_kills": len(set().union(set(), *kills_by_user.values())),
         "total_losses": sum(losses_by_user.values()),
-        "total_fleets": sum(fleets_by_user.values()),
+        "total_fleets": len(set().union(set(), *fleets_by_user.values())),
     }
     return rows, totals, COLUMNS
 
 
 def _kill_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
-    """Attacker kills while flying a qualifying ship (excludes victim-side rows)."""
-    kills_by_user: dict[int, int] = defaultdict(int)
+    """Killmail ids per user where one of their characters attacked in a
+    qualifying ship (victim-side rows excluded). Multiboxed dreads on one
+    mail are one kill for that pilot."""
+    kills_by_user: dict[int, set[int]] = defaultdict(set)
 
     attacker_qs = (
         EveCharacterKillmailAttacker.objects.filter(
@@ -116,7 +122,7 @@ def _kill_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
             continue
         user_id = char_to_user.get(att.character_id)
         if user_id:
-            kills_by_user[user_id] += 1
+            kills_by_user[user_id].add(att.killmail_id)
 
     return kills_by_user
 
@@ -146,7 +152,9 @@ def _loss_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
 
 
 def _fleet_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
-    fleets_by_user: dict[int, int] = defaultdict(int)
+    """Fleet instance ids per user flown in a qualifying ship; alts in the
+    same fleet count it once."""
+    fleets_by_user: dict[int, set[int]] = defaultdict(set)
 
     qs = EveFleetInstanceMember.objects.filter(
         ship_type_id__in=ship_type_ids,
@@ -162,7 +170,7 @@ def _fleet_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
     for member in qs.iterator():
         user_id = char_to_user.get(member.character_id)
         if user_id:
-            fleets_by_user[user_id] += 1
+            fleets_by_user[user_id].add(member.eve_fleet_instance_id)
 
     return fleets_by_user
 

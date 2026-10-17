@@ -506,14 +506,30 @@ def roster_rows(campaign: Campaign) -> list[dict]:
     )
 
 
-def roster_corporations(rows: list[dict], today: date) -> list[dict]:
+# Pooled per corporation from the mails and fleets themselves rather than
+# summed, so thirty members on one kill or in one fleet count it once.
+ROSTER_POOLED_COUNTS = ("kills", "isk_destroyed", "fleets_attended")
+
+
+def roster_corporations(
+    rows: list[dict],
+    today: date,
+    *,
+    mails_by_user: dict[int, dict[int, int]],
+    fleets_by_user: dict[int, set[int]],
+) -> list[dict]:
     """Roll the roster up by each pilot's primary character's corporation.
 
     Pilots with no primary character land in one row with no corporation,
-    last. The biggest corporations come first.
+    last. The biggest corporations come first. ``today`` is the campaign
+    day. Kills and ISK are distinct mails (``stats.kill_mails_by_user``)
+    and fleets are distinct campaign fleets (``fleets.fleet_ids_by_user``),
+    so a corporation's fleets are not its pilots' fleet-days summed.
     """
     active_since = today - timedelta(days=ROSTER_ACTIVE_DAYS)
     corporations: dict[int | None, dict] = {}
+    pooled_mails: dict[int | None, dict[int, int]] = {}
+    pooled_fleets: dict[int | None, set[int]] = {}
     for row in rows:
         corporation = corporations.setdefault(
             row["corporation_id"],
@@ -530,7 +546,14 @@ def roster_corporations(rows: list[dict], today: date) -> list[dict]:
         corporation["pilots"] += 1
         corporation["characters_included"] += row["characters_included"]
         for field in ROSTER_COUNTS:
-            corporation[field] += row[field]
+            if field not in ROSTER_POOLED_COUNTS:
+                corporation[field] += row[field]
+        pooled_mails.setdefault(row["corporation_id"], {}).update(
+            mails_by_user.get(row["user_id"], {})
+        )
+        pooled_fleets.setdefault(row["corporation_id"], set()).update(
+            fleets_by_user.get(row["user_id"], ())
+        )
 
         last_active = row["last_active_day"]
         if last_active is None:
@@ -542,6 +565,12 @@ def roster_corporations(rows: list[dict], today: date) -> list[dict]:
             or last_active > corporation["last_active_day"]
         ):
             corporation["last_active_day"] = last_active
+
+    for corporation_id, corporation in corporations.items():
+        mails = pooled_mails[corporation_id]
+        corporation["kills"] = len(mails)
+        corporation["isk_destroyed"] = sum(mails.values())
+        corporation["fleets_attended"] = len(pooled_fleets[corporation_id])
 
     return sorted(
         corporations.values(),

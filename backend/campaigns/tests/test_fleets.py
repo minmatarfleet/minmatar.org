@@ -27,6 +27,7 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
+from eveonline.models import EvePlayer
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -284,6 +285,48 @@ class FleetAttendanceTests(TestCase):
         )
         self.assertEqual(row.fleets_attended, 1)
         self.assertTrue(row.standing_fleet_day)
+
+    def test_fleet_ids_by_user_names_each_fleet_once_per_pilot(self):
+        mate, _ = enlist(self.campaign, "mate", 6002)
+        fleet = self._fleet(fleet_type="strategic")
+        instance = self._instance(fleet)
+        for character_id in (6001, 6002):
+            self._member(
+                instance, character_id, self.start + timedelta(minutes=5)
+            )
+
+        self.assertEqual(
+            fleets.fleet_ids_by_user(self.campaign),
+            {self.user.id: {fleet.id}, mate.id: {fleet.id}},
+        )
+
+    def test_the_corporation_fleets_board_counts_a_shared_fleet_once(self):
+        mate, mate_character = enlist(self.campaign, "mate", 6002)
+        for user, character in (
+            (self.user, self.character),
+            (mate, mate_character),
+        ):
+            character.corporation_id = 1
+            character.save()
+            EvePlayer.objects.create(
+                user=user, nickname=user.username, primary_character=character
+            )
+        instance = self._instance(self._fleet(fleet_type="strategic"))
+        for character_id in (6001, 6002):
+            self._member(
+                instance, character_id, self.start + timedelta(minutes=5)
+            )
+
+        board = stats.corporation_leaderboard(
+            self.campaign, metric="fleets", period="all"
+        )
+        self.assertEqual(
+            [
+                (row["corporation_id"], row["pilots"], row["value"])
+                for row in board
+            ],
+            [(1, 2, 1.0)],
+        )
 
     def test_a_fleet_in_a_primary_system_is_recognised(self):
         fleet = self._fleet()
