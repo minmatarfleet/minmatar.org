@@ -200,15 +200,13 @@ class FleetAdminRemovalTestCase(TestCase):
         self.assertFalse(EveFleet.objects.filter(id=fleet.id).exists())
 
 
-def bootstrap_local_unaligned_post(**kwargs):
+def npsi_local():
     # Imported late: importing npsi_local before fleets.endpoints is a
     # pre-existing import cycle (npsi_actions -> endpoints -> npsi.auth).
     # pylint: disable=import-outside-toplevel
-    from fleets.helpers.npsi_local import (
-        bootstrap_local_unaligned_post as bootstrap,
-    )
+    from fleets.helpers import npsi_local as module
 
-    return bootstrap(**kwargs)
+    return module
 
 
 class NpsiForceRepostTestCase(TestCase):
@@ -222,10 +220,10 @@ class NpsiForceRepostTestCase(TestCase):
 
     @patch("fleets.helpers.npsi_ingest.DiscordClient", MagicMock())
     def test_force_repost_cancels_a_fleet_that_ran(self):
-        _, old = bootstrap_local_unaligned_post(summary="Roam")
+        event, old = npsi_local().bootstrap_local_unaligned_post()
         EveFleetInstance.objects.create(id=9001, eve_fleet=old)
 
-        _, new = bootstrap_local_unaligned_post(summary="Roam", force=True)
+        new = npsi_local().post_local_unaligned_event(event, force=True)
 
         self.assertNotEqual(new.id, old.id)
         old.refresh_from_db()
@@ -234,8 +232,9 @@ class NpsiForceRepostTestCase(TestCase):
 
     @patch("fleets.helpers.npsi_ingest.DiscordClient", MagicMock())
     def test_force_repost_still_deletes_a_fleet_that_never_ran(self):
-        _, old = bootstrap_local_unaligned_post(summary="Roam")
+        event, old = npsi_local().bootstrap_local_unaligned_post()
 
-        bootstrap_local_unaligned_post(summary="Roam", force=True)
+        new = npsi_local().post_local_unaligned_event(event, force=True)
 
+        self.assertNotEqual(new.id, old.id)
         self.assertFalse(EveFleet.objects.filter(id=old.id).exists())
