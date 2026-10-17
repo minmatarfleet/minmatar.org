@@ -1,0 +1,172 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationLeadershipMember } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { prime_codes } from '@helpers/corporations/leadership'
+
+interface Props {
+    leadership: CorporationLeadershipMember[]
+    // Where "Full list" points; the Leadership tab.
+    full_list_href?: string
+    [propName: string]: any
+}
+
+const { leadership, full_list_href = '#leadership' } = Astro.props
+
+const ceo = leadership.find((member) => member.role === 'ceo')
+const directors = leadership.filter((member) => member.role === 'director')
+---
+
+{(ceo || directors.length > 0) &&
+    <section class="leaders">
+        <header class="section-head">
+            <h2>{t('corporations.detail.leadership')}</h2>
+            <a href={full_list_href}>{t('corporations.about.leadership_link')}</a>
+        </header>
+        <div class="row">
+            {ceo &&
+                <article class="card ceo">
+                    <img src={get_player_icon(ceo.character_id, 128)} alt="" width="96" height="96" loading="lazy" />
+                    <div class="ceo-copy">
+                        <h3 class="eyebrow">{t('corporations.about.ceo')}</h3>
+                        <span class="ceo-name">{ceo.character_name}</span>
+                        {prime_codes(ceo).length > 0 &&
+                            <span class="zones">
+                                {prime_codes(ceo).map((code) => <span class="zone">{code}</span>)}
+                            </span>
+                        }
+                    </div>
+                </article>
+            }
+            {directors.length > 0 &&
+                <article class="card directors">
+                    <h3 class="eyebrow">{t('corporations.about.directors').replace('~COUNT', String(directors.length))}</h3>
+                    <ul>
+                        {directors.map((director) => (
+                            <li>
+                                <img src={get_player_icon(director.character_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                                <span>{director.character_name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </article>
+            }
+        </div>
+    </section>
+}
+
+<style lang="scss">
+    .leaders {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs) var(--space-m);
+
+        h2 {
+            margin: 0;
+        }
+
+        a {
+            font-size: var(--step--1);
+        }
+    }
+
+    .row {
+        display: grid;
+        grid-template-columns: minmax(min(18rem, 100%), 1fr) minmax(0, 2fr);
+        gap: var(--space-s);
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .card {
+        padding: var(--space-m);
+        background: var(--component-background);
+        min-width: 0;
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        color: var(--faded);
+    }
+
+    .ceo {
+        display: flex;
+        align-items: center;
+        gap: var(--space-m);
+
+        img {
+            width: var(--space-3xl);
+            height: var(--space-3xl);
+            flex: none;
+        }
+    }
+
+    .ceo-copy {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .ceo-name {
+        font-size: var(--step-0);
+        font-weight: 700;
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
+
+    .zones {
+        display: flex;
+        gap: var(--space-3xs);
+    }
+
+    .zone {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        padding: 0 var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .directors {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+            gap: var(--space-s);
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            min-width: 0;
+            font-size: var(--step--1);
+        }
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            flex: none;
+        }
+    }
+</style>

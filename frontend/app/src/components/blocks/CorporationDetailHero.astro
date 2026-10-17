@@ -1,93 +1,89 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, lang } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import { get_corporation_logo } from '@helpers/eve_image_server'
+import { month_year } from '@helpers/corporations/about'
 
 interface Props {
     corporation: CorporationInfo
+    // Link to the Apply tab, or null when the viewer can't apply (already a member).
+    apply_href?: string | null
+    [propName: string]: any
 }
 
-const { corporation } = Astro.props
+const {
+    corporation,
+    apply_href = null,
+} = Astro.props
 
-import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Button from '@components/blocks/Button.astro'
 
 const alliance_name = corporation.alliance_name || corporation.faction_name
-const character_count = corporation.member_count != null
-    ? t('corporations.detail.characters_count').replace('COUNT', String(corporation.member_count))
-    : ''
-const human_count = corporation.human_count != null
-    ? t('corporations.detail.humans_count').replace('COUNT', String(corporation.human_count))
-    : ''
-const population = [character_count, human_count].filter(Boolean).join(' · ')
+const founded = month_year(corporation.about?.founded, lang)
+const home = corporation.about?.home_system?.name
+const meta = [
+    alliance_name,
+    founded && t('corporations.detail.founded').replace('~DATE', founded),
+    home && t('corporations.detail.home').replace('~SYSTEM', home),
+].filter(Boolean)
 ---
 
 <div class="corp-masthead">
-    <Flexblock class="masthead-copy" gap="var(--space-s)">
-        <Flexblock class="title-stack" gap="var(--space-3xs)">
-            <FlexInline class="name-row items-center" gap="var(--space-s)">
-                <img
-                    class="corp-logo"
-                    src={get_corporation_logo(corporation.corporation_id, 128)}
-                    width="128"
-                    height="128"
-                    alt=""
-                />
-                <PageTitle is_landing={true}>{corporation.corporation_name}</PageTitle>
-            </FlexInline>
-            <FlexInline class="items-center" gap="var(--space-2xs)">
-                {corporation.ticker &&
-                    <Tag color="alliance-blue" text={corporation.ticker} />
-                }
-                <small>
-                    {alliance_name}
-                    {population && ` · ${population}`}
-                </small>
-            </FlexInline>
-        </Flexblock>
-        {corporation.introduction &&
-            <p class="intro">{corporation.introduction}</p>
-        }
-        {corporation.discord_invite_url &&
-            <FlexInline class="items-center" gap="var(--space-s)">
+    <img
+        class="corp-logo"
+        src={get_corporation_logo(corporation.corporation_id, 128)}
+        width="128"
+        height="128"
+        alt=""
+    />
+    <div class="masthead-copy">
+        <PageTitle is_landing={true}>{corporation.corporation_name}</PageTitle>
+        <FlexInline class="meta" gap="var(--space-2xs)">
+            {corporation.ticker &&
+                <Tag color="alliance-blue" text={corporation.ticker} />
+            }
+            {meta.map((item, index) => (
+                <>
+                    {index > 0 && <span class="dot" aria-hidden="true">·</span>}
+                    <small>{item}</small>
+                </>
+            ))}
+        </FlexInline>
+    </div>
+    {(corporation.discord_invite_url || apply_href) &&
+        <FlexInline class="actions" gap="var(--space-xs)">
+            {corporation.discord_invite_url &&
                 <Button
                     href={corporation.discord_invite_url}
                     external={true}
                     new_tab={true}
                     size="sm"
+                    color="transparent"
                 >
-                    {t('corporations.detail.join_discord')}
+                    {t('corporations.detail.discord')}
                 </Button>
-            </FlexInline>
-        }
-    </Flexblock>
+            }
+            {apply_href &&
+                <Button href={apply_href} size="sm">
+                    {t('corporations.detail.apply')}
+                </Button>
+            }
+        </FlexInline>
+    }
 </div>
 
 <style lang="scss">
     .corp-masthead {
         display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: var(--space-xl);
-        width: 100%;
-    }
-
-    .masthead-copy {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .title-stack :global(.page-title h1.is-landing) {
-        line-height: 1;
-    }
-
-    .name-row {
+        flex-wrap: wrap;
         align-items: center;
+        gap: var(--space-s) var(--space-m);
+        width: 100%;
     }
 
     .corp-logo {
@@ -97,15 +93,33 @@ const population = [character_count, human_count].filter(Boolean).join(' · ')
         flex: 0 0 auto;
     }
 
-    .intro {
-        max-width: var(--max-text-width);
-        margin: 0;
+    .masthead-copy {
+        flex: 1 1 24rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .masthead-copy :global(.page-title h1.is-landing) {
+        line-height: 1;
+    }
+
+    .meta {
+        align-items: center;
+    }
+
+    .dot {
+        color: var(--faded);
+    }
+
+    .actions {
+        flex: 0 0 auto;
     }
 
     @media (max-width: 48rem) {
-        .corp-masthead {
-            flex-direction: column;
-            align-items: flex-start;
+        .actions {
+            width: 100%;
         }
     }
 </style>

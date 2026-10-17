@@ -1,73 +1,93 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
 import {
-    MEMBER_ACCOUNT_FILTERS,
+    MEMBER_ATTENTION_VIEWS,
     MEMBER_PAGE_SIZE,
     MEMBER_STATUS_FILTERS,
     MEMBER_TIMEZONE_FILTERS,
+    MEMBER_VIEWS,
+    build_member_roster,
+    corporation_member_attention,
     corporation_member_characters,
-    corporation_member_page,
     corporation_member_primary,
     corporation_member_timezones,
+    days_since,
     filter_corporation_member_rows,
     group_corporation_members,
-    member_filter_value,
     paginate_corporation_member_rows,
+    parse_member_params,
 } from '@helpers/corporations/detail'
-import type { MemberFilters } from '@helpers/corporations/detail'
+import type {
+    CorporationMemberRow,
+    MemberAttention,
+    MemberRosterParams,
+    MemberView,
+} from '@helpers/corporations/detail'
+import { month_year, short_date } from '@helpers/corporations/about'
 import { query_string } from '@helpers/string'
 
-import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
+import Button from '@components/blocks/Button.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
 const BODY_ID = 'corporation-members-body'
-const VISIBLE_ALTS = 6
 const SEARCH_ID = 'corporation-member-search'
 const FORM_ID = 'corporation-member-filters'
+const VISIBLE_ALT_NAMES = 6
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
 if (!auth_token) return HTTP_403_Forbidden()
 
-const params = Astro.url.searchParams
-const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
 if (!corporation_id) return HTTP_403_Forbidden()
 
-const q = (params.get('q') ?? '').trim().slice(0, 80)
-const timezone = member_filter_value(params.get('tz'), MEMBER_TIMEZONE_FILTERS)
-const status = member_filter_value(params.get('status'), MEMBER_STATUS_FILTERS)
-const account = member_filter_value(params.get('account'), MEMBER_ACCOUNT_FILTERS) ?? 'linked'
-const requested_page = corporation_member_page(params.get('page'))
-
+const params = parse_member_params(Astro.url.searchParams)
 const members_result = await get_corporation_members(auth_token, corporation_id)
 if (!members_result) return HTTP_403_Forbidden()
 
 const grouped = group_corporation_members(members_result)
-const filters: MemberFilters = { query: q, timezone, status, account }
-const roster = filter_corporation_member_rows(grouped, filters).sort((a, b) =>
-    corporation_member_primary(a).character_name.localeCompare(
-        corporation_member_primary(b).character_name,
-        undefined,
-        { sensitivity: 'base' },
-    ))
-const pagination = paginate_corporation_member_rows(roster, requested_page, MEMBER_PAGE_SIZE)
+const roster = build_member_roster(grouped, { ...params, ids: [] })
+const pagination = paginate_corporation_member_rows(roster, params.page, MEMBER_PAGE_SIZE)
+const now = new Date()
 
-// Option counts respect the search and the other filters, so each shows what picking it yields.
-function count_with(overrides: Partial<MemberFilters>) {
-    return filter_corporation_member_rows(grouped, { ...filters, ...overrides }).length
+// Counts respect the search and dropdowns, so each shows what picking it yields.
+function count_with(overrides: Partial<MemberRosterParams>) {
+    return filter_corporation_member_rows(grouped, { ...params, ...overrides }).length
 }
 
-function partial_url(page: number) {
+function partial_url(overrides: Record<string, string> = {}) {
     return translatePath(`/partials/corporation_members_table_component/?${query_string({
         corporation_id: String(corporation_id),
-        page: String(page),
+        ...overrides,
     })}`)
+}
+
+const export_url = translatePath(`/api/corporations/members.csv?${query_string({
+    corporation_id: String(corporation_id),
+    q: params.query,
+    tz: params.timezone ?? '',
+    status: params.status ?? '',
+    view: params.view,
+    sort: params.sort,
+})}`)
+
+function view_label(view: MemberView): string {
+    switch (view) {
+        case 'all': return t('corporations.members.view_all')
+        case 'flying': return t('corporations.members.view_flying')
+        case 'quiet': return t('corporations.members.view_quiet')
+        case 'new': return t('corporations.members.view_new')
+        case 'ready': return t('corporations.members.view_ready')
+        case 'unlinked': return t('corporations.members.view_unlinked')
+        case 'esi': return t('corporations.members.view_esi')
+        default: return view
+    }
 }
 
 function prime_label(code: string): string {
@@ -82,271 +102,505 @@ function prime_label(code: string): string {
     }
 }
 
-function status_label(code: string): string {
+function status_label(code: string | null): string {
     switch (code) {
         case 'active': return t('corporations.detail.status_active')
         case 'trial': return t('corporations.detail.status_trial')
         case 'on_leave': return t('corporations.detail.status_on_leave')
-        case 'none': return t('corporations.detail.status_none')
-        default: return code
+        default: return t('corporations.detail.status_none')
     }
 }
 
-function option_label(label: string, count: number) {
-    return `${label} (${count})`
+function attention_label(attention: MemberAttention): string {
+    switch (attention) {
+        case 'esi_suspended': return t('corporations.members.attention_esi_suspended')
+        case 'no_account': return t('corporations.members.attention_no_account')
+        case 'token_missing': return t('corporations.members.attention_token_missing')
+        case 'trial_ready': return t('corporations.members.attention_trial_ready')
+        default: return attention
+    }
 }
 
-const account_options = MEMBER_ACCOUNT_FILTERS.map((code) => ({
-    value: code,
-    label: option_label(
-        t(`corporations.detail.account_${code}` as 'corporations.detail.account_linked'),
-        count_with({ account: code }),
-    ),
-}))
+function tenure_label(iso: string | null): string {
+    const days = days_since(iso, now)
+    if (days === null)
+        return '—'
+    const months = Math.max(1, Math.floor(days / 30.44))
+    if (months < 12)
+        return t('corporations.members.tenure_months').replace('~N', String(months))
+    return t('corporations.members.tenure_years')
+        .replace('~Y', String(Math.floor(months / 12)))
+        .replace('~M', String(months % 12))
+}
+
+function last_fleet_label(iso: string | null): string {
+    const days = days_since(iso, now)
+    if (days === null || days > 90)
+        return t('corporations.members.not_in_90')
+    if (days === 0)
+        return t('corporations.members.today')
+    if (days === 1)
+        return t('corporations.members.yesterday')
+    return t('corporations.members.days_ago').replace('~COUNT', String(days))
+}
+
+function alts_label(row: CorporationMemberRow): string {
+    const count = row.hidden_character_count > 0
+        ? row.hidden_character_count
+        : corporation_member_characters(row).length
+    if (count === 0)
+        return ''
+    return count === 1
+        ? t('corporations.members.alts_one')
+        : t('corporations.members.alts').replace('~COUNT', String(count))
+}
+
+function bars(weeks: number[]) {
+    const peak = Math.max(1, ...weeks)
+    return weeks.map((week) => ({ week, height: week > 0 ? Math.max(12, Math.round((week / peak) * 100)) : 0 }))
+}
+
+function sort_label(sort: MemberRosterParams['sort']): string {
+    switch (sort) {
+        case 'kills': return t('corporations.members.sort_kills')
+        case 'name': return t('corporations.members.sort_name')
+        case 'joined': return t('corporations.members.sort_joined')
+        case 'last': return t('corporations.members.sort_last')
+        default: return t('corporations.members.sort_fleets')
+    }
+}
+
 const timezone_options = [
-    { value: '', label: option_label(t('corporations.detail.all_timezones'), count_with({ timezone: null })) },
-    ...MEMBER_TIMEZONE_FILTERS.map((code) => ({
-        value: code,
-        label: option_label(prime_label(code), count_with({ timezone: code })),
-    })),
+    { value: '', label: t('corporations.detail.all_timezones') },
+    ...MEMBER_TIMEZONE_FILTERS.map((code) => ({ value: code, label: prime_label(code) })),
 ]
 const status_options = [
-    { value: '', label: option_label(t('corporations.detail.all_statuses'), count_with({ status: null })) },
-    ...MEMBER_STATUS_FILTERS.map((code) => ({
-        value: code,
-        label: option_label(status_label(code), count_with({ status: code })),
-    })),
+    { value: '', label: t('corporations.detail.all_statuses') },
+    ...MEMBER_STATUS_FILTERS.map((code) => ({ value: code, label: status_label(code === 'none' ? null : code) })),
 ]
 
-// Every request swaps only the table body plus the three dropdowns (to refresh
-// their counts), so the search box is never replaced and keeps focus. The form
-// listens for bubbled `change` because the dropdowns are new elements after a swap.
+// Every request swaps the body plus the controls whose counts or values change;
+// the search box is never replaced, so it keeps focus while typing.
 const hx_swap = {
     'hx-target': `#${BODY_ID}`,
     'hx-select': `#${BODY_ID}`,
-    'hx-select-oob': '#cm-account,#cm-tz,#cm-status',
+    'hx-select-oob': '#cm-views,#cm-attention,#cm-sort',
     'hx-swap': 'outerHTML',
 }
+
+interface SortHeader {
+    key: MemberRosterParams['sort']
+    label: string
+    css: string
+}
+
+const pilot_header: SortHeader = { key: 'name', label: t('corporations.members.pilot'), css: 'col-pilot' }
+const sort_headers: SortHeader[] = [
+    { key: 'joined', label: t('corporations.members.in_corp'), css: 'col-joined' },
+    { key: 'fleets', label: t('corporations.members.fleets_weeks'), css: 'col-fleets' },
+    { key: 'last', label: t('corporations.members.last_fleet'), css: 'col-last' },
+    { key: 'kills', label: t('corporations.members.kills'), css: 'col-kills is-numeric' },
+]
+
+const names_by_id = Object.fromEntries(pagination.rows.map((row) => [row.character_id, corporation_member_primary(row).character_name]))
+const page_ids = pagination.rows.map((row) => row.character_id)
 const can_prev = pagination.page > 1
 const can_next = pagination.page < pagination.total_pages
-const page_status = t('corporations.detail.page_status')
-    .replace('~PAGE', String(pagination.page))
-    .replace('~PAGES', String(pagination.total_pages))
-const members_count = t(pagination.total === 1 ? 'corporations.detail.members_count_one' : 'corporations.detail.members_count')
-    .replace('~COUNT', String(pagination.total))
+const range_start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.page_size + 1
+const range_end = Math.min(pagination.total, pagination.page * pagination.page_size)
+const selected_template = t('corporations.members.selected')
 ---
 
 <div class="cm">
     <form
         id={FORM_ID}
-        class="cm-toolbar"
+        class="cm-controls"
         role="search"
-        hx-get={partial_url(1)}
+        hx-get={partial_url()}
         hx-trigger={`keyup changed delay:300ms from:#${SEARCH_ID}, search from:#${SEARCH_ID}, change, submit`}
         hx-sync="this:replace"
         {...hx_swap}
     >
-        <label class="cm-search">
-            <span class="visually-hidden">{t('corporations.detail.search_members')}</span>
-            <Input
-                type="search"
-                name="q"
-                id={SEARCH_ID}
-                value={q}
-                placeholder={t('corporations.detail.search_members_placeholder')}
-                size="sm"
-                width="100%"
-                autocomplete="off"
-            >
-                <MagnifierIcon slot="icon" />
-            </Input>
-        </label>
-        <label class="cm-select">
-            <span class="visually-hidden">{t('corporations.detail.account')}</span>
-            <Select size="sm" width="100%" name="account" id="cm-account">
-                {account_options.map((option) => (
-                    <option value={option.value} selected={option.value === account}>{option.label}</option>
+        <input type="hidden" id="cm-sort" name="sort" value={params.sort} />
+        <div class="cm-filter-row">
+            <fieldset id="cm-views" class="cm-views">
+                <legend class="visually-hidden">{t('corporations.members.views')}</legend>
+                {MEMBER_VIEWS.map((view) => (
+                    <label class:list={['cm-view', { 'is-on': params.view === view }]}>
+                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
+                        <span>{view_label(view)}</span>
+                        <span class="cm-count">{count_with({ view })}</span>
+                    </label>
                 ))}
-            </Select>
-        </label>
-        <label class="cm-select">
-            <span class="visually-hidden">{t('corporations.detail.timezone')}</span>
-            <Select size="sm" width="100%" name="tz" id="cm-tz">
-                {timezone_options.map((option) => (
-                    <option value={option.value} selected={option.value === (timezone ?? '')}>{option.label}</option>
+            </fieldset>
+            <fieldset id="cm-attention" class="cm-attention">
+                <legend class="cm-eyebrow">{t('corporations.members.needs_attention')}</legend>
+                {MEMBER_ATTENTION_VIEWS.map((view) => (
+                    <label class:list={['cm-chip', view === 'ready' ? 'is-good' : 'is-warn', { 'is-on': params.view === view }]}>
+                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
+                        <span>{view_label(view)}</span>
+                        <span class="cm-count">{count_with({ view })}</span>
+                    </label>
                 ))}
-            </Select>
-        </label>
-        <label class="cm-select">
-            <span class="visually-hidden">{t('corporations.detail.community_status')}</span>
-            <Select size="sm" width="100%" name="status" id="cm-status">
-                {status_options.map((option) => (
-                    <option value={option.value} selected={option.value === (status ?? '')}>{option.label}</option>
-                ))}
-            </Select>
-        </label>
+            </fieldset>
+        </div>
+        <div class="cm-toolbar">
+            <label class="cm-search">
+                <span class="visually-hidden">{t('corporations.detail.search_members')}</span>
+                <Input
+                    type="search"
+                    name="q"
+                    id={SEARCH_ID}
+                    value={params.query}
+                    placeholder={t('corporations.detail.search_members_placeholder')}
+                    size="sm"
+                    width="100%"
+                    autocomplete="off"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </label>
+            <label class="cm-select">
+                <span class="visually-hidden">{t('corporations.detail.timezone')}</span>
+                <Select size="sm" width="100%" name="tz">
+                    {timezone_options.map((option) => (
+                        <option value={option.value} selected={option.value === (params.timezone ?? '')}>{option.label}</option>
+                    ))}
+                </Select>
+            </label>
+            <label class="cm-select">
+                <span class="visually-hidden">{t('corporations.detail.community_status')}</span>
+                <Select size="sm" width="100%" name="status">
+                    {status_options.map((option) => (
+                        <option value={option.value} selected={option.value === (params.status ?? '')}>{option.label}</option>
+                    ))}
+                </Select>
+            </label>
+        </div>
     </form>
 
-<div id={BODY_ID} class="cm-body" aria-live="polite">
+<div
+    id={BODY_ID}
+    class="cm-body"
+    aria-live="polite"
+    x-data={`{
+        picked: [],
+        page_ids: ${JSON.stringify(page_ids)},
+        names: ${JSON.stringify(names_by_id)},
+        copied: false,
+        get all_picked() { return this.page_ids.length > 0 && this.picked.length === this.page_ids.length },
+        toggle_all(on) { this.picked = on ? [...this.page_ids] : [] },
+        copy_names() {
+            navigator.clipboard.writeText(this.picked.map((id) => this.names[id]).join('\\n'))
+            this.copied = true
+            setTimeout(() => this.copied = false, 1500)
+        },
+    }`}
+>
     {pagination.rows.length === 0
         ? <p class="cm-empty">{t('corporations.detail.no_members')}</p>
         : (
-            <div class="cm-table-wrap" tabindex="0" role="region" aria-label={t('corporations.detail.members')}>
+            <div class="cm-table-wrap">
                 <table class="cm-table">
-                    <colgroup>
-                        <col class="cm-col-primary" />
-                        <col class="cm-col-alts" />
-                        <col class="cm-col-tz" />
-                    </colgroup>
                     <thead>
-                        <tr>
-                            <th scope="col">{t('corporations.detail.primary_character')}</th>
-                            <th scope="col">{t('characters')}</th>
-                            <th scope="col" class="cm-col-tz">{t('corporations.detail.timezone')}</th>
+                        <tr x-show="picked.length === 0">
+                            <th scope="col" class="col-check">
+                                <input
+                                    type="checkbox"
+                                    class="cm-check"
+                                    aria-label={t('corporations.members.select_all')}
+                                    x-bind:checked="all_picked"
+                                    x-on:change="toggle_all($event.target.checked)"
+                                />
+                            </th>
+                            <th scope="col" class={pilot_header.css} aria-sort={params.sort === pilot_header.key ? 'ascending' : undefined}>
+                                <button
+                                    type="button"
+                                    class="cm-sort"
+                                    hx-get={partial_url()}
+                                    hx-include={`#${FORM_ID}`}
+                                    hx-vals={JSON.stringify({ sort: pilot_header.key, page: '1' })}
+                                    {...hx_swap}
+                                >
+                                    {pilot_header.label}
+                                    {params.sort === pilot_header.key && <span aria-hidden="true">▾</span>}
+                                </button>
+                            </th>
+                            <th scope="col" class="col-status">{t('corporations.members.status')}</th>
+                            {sort_headers.map((header) => (
+                                <th scope="col" class={header.css} aria-sort={params.sort === header.key ? 'descending' : undefined}>
+                                    <button
+                                        type="button"
+                                        class="cm-sort"
+                                        hx-get={partial_url()}
+                                        hx-include={`#${FORM_ID}`}
+                                        hx-vals={JSON.stringify({ sort: header.key, page: '1' })}
+                                        {...hx_swap}
+                                    >
+                                        {header.key === 'fleets'
+                                            ? <><span class="cm-label-full">{header.label}</span><span class="cm-label-short">{t('corporations.detail.fleets')}</span></>
+                                            : header.label}
+                                        {params.sort === header.key && <span aria-hidden="true">▾</span>}
+                                    </button>
+                                </th>
+                            ))}
+                            <th scope="col" class="col-voice is-numeric">{t('corporations.members.voice')}</th>
+                            <th scope="col" class="col-prime">{t('corporations.members.prime_time')}</th>
+                            <th scope="col" class="col-chevron"></th>
+                        </tr>
+                        <tr class="cm-bulk" x-show="picked.length > 0" x-cloak>
+                            <th scope="col" class="col-check">
+                                <input
+                                    type="checkbox"
+                                    class="cm-check"
+                                    aria-label={t('corporations.members.select_all')}
+                                    x-bind:checked="all_picked"
+                                    x-on:change="toggle_all($event.target.checked)"
+                                />
+                            </th>
+                            <th scope="col" colspan="9">
+                                <span class="cm-bulk-row">
+                                    <span x-text={`${JSON.stringify(selected_template)}.replace('~COUNT', picked.length)`}></span>
+                                    <span class="cm-bulk-actions">
+                                        <Button type="button" size="sm" color="transparent" x-on:click="copy_names()">
+                                            <span x-show="!copied">{t('corporations.members.copy_names')}</span>
+                                            <span x-show="copied" x-cloak>{t('corporations.members.copied')}</span>
+                                        </Button>
+                                        <Button size="sm" color="transparent" href={export_url} x-bind:href={`${JSON.stringify(export_url)} + '&ids=' + picked.join(',')`}>
+                                            {t('corporations.members.export_selected')}
+                                        </Button>
+                                        <Button type="button" size="sm" color="transparent" x-on:click="picked = []">
+                                            {t('corporations.members.clear')}
+                                        </Button>
+                                    </span>
+                                </span>
+                            </th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {pagination.rows.map((member) => {
-                            const primary = corporation_member_primary(member)
-                            const characters = corporation_member_characters(member)
-                            const zones = corporation_member_timezones(member)
-                            return (
-                                <tr>
-                                    <td>
-                                        <span class="cm-pilot">
-                                            <img
-                                                class="cm-portrait"
-                                                src={get_player_icon(primary.character_id, 64)}
-                                                alt=""
-                                                width="32"
-                                                height="32"
-                                                loading="lazy"
-                                            />
+                    {pagination.rows.map((member) => {
+                        const primary = corporation_member_primary(member)
+                        const characters = corporation_member_characters(member)
+                        const zones = corporation_member_timezones(member)
+                        const attention = corporation_member_attention(member)
+                        const weeks = bars(member.weekly_fleets)
+                        const alts = alts_label(member)
+                        const last = last_fleet_label(member.last_fleet_at)
+                        const last_stale = (days_since(member.last_fleet_at, now) ?? 999) > 14
+                        const details_label = t('corporations.members.details').replace('~NAME', primary.character_name)
+                        const character_count = 1 + (member.hidden_character_count || characters.length)
+                        return (
+                            <tbody x-data="{ open: false }" x-bind:class="{ 'is-open': open }">
+                                <tr class="cm-row">
+                                    <td class="col-check">
+                                        <input
+                                            type="checkbox"
+                                            class="cm-check"
+                                            value={member.character_id}
+                                            x-model.number="picked"
+                                            aria-label={t('corporations.members.select').replace('~NAME', primary.character_name)}
+                                        />
+                                    </td>
+                                    <td class="col-pilot">
+                                        <button type="button" class="cm-pilot" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                            <img class="cm-portrait" src={get_player_icon(primary.character_id, 64)} alt="" width="36" height="36" loading="lazy" />
                                             <span class="cm-pilot__text">
                                                 <span class="cm-pilot__name">{primary.character_name}</span>
-                                                {zones.codes.length > 0 &&
-                                                    <span class="cm-zones cm-zones--inline">
-                                                        {zones.codes.map((code) => (
-                                                            <span class:list={['cm-tz', { 'cm-tz--declared': zones.declared }]}>{prime_label(code)}</span>
-                                                        ))}
-                                                    </span>
-                                                }
+                                                <span class="cm-pilot__sub">
+                                                    {alts && <span class="cm-muted">{alts}</span>}
+                                                    {attention &&
+                                                        <span class:list={['cm-attention-text', attention === 'trial_ready' ? 'is-good' : 'is-warn']}>● {attention_label(attention)}</span>
+                                                    }
+                                                    {!attention &&
+                                                        <span class="cm-mobile-meta cm-muted">{tenure_label(member.corp_joined_at)} · {last}</span>
+                                                    }
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </td>
+                                    <td class="col-status">
+                                        <span class="cm-pill" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
+                                    </td>
+                                    <td class="col-joined">
+                                        <span class="cm-stack">
+                                            <span class="cm-strong">{tenure_label(member.corp_joined_at)}</span>
+                                            <span class="cm-muted">{month_year(member.corp_joined_at, lang)}</span>
+                                        </span>
+                                    </td>
+                                    <td class="col-fleets">
+                                        <span class="cm-fleets">
+                                            <span class="cm-number">{member.fleets_90d}</span>
+                                            <span class="cm-spark" aria-hidden="true">
+                                                {weeks.map((bar) => <span style={`height: ${bar.height}%`}></span>)}
                                             </span>
                                         </span>
                                     </td>
-                                    <td>
-                                        {member.hidden_character_count > 0
-                                            ? (
-                                                <span
-                                                    class="cm-hidden"
-                                                    data-tippy-content={t('corporations.detail.characters_hidden')}
-                                                    x-init="tippy($el, tippy_options)"
-                                                    tabindex="0"
-                                                    aria-label={`${member.hidden_character_count} ${t('characters')}. ${t('corporations.detail.characters_hidden')}`}
-                                                >
-                                                    <span class="cm-alts" aria-hidden="true">
-                                                        {Array.from({ length: Math.min(member.hidden_character_count, VISIBLE_ALTS) }).map(() => (
-                                                            <span class="cm-portrait cm-portrait--alt cm-portrait--hidden" />
-                                                        ))}
-                                                    </span>
-                                                    <span class="cm-hidden__count">{member.hidden_character_count}</span>
-                                                </span>
-                                            )
-                                            : characters.length > 0
-                                            ? (
-                                                <ul class="cm-alts" aria-label={t('characters')}>
-                                                    {characters.slice(0, VISIBLE_ALTS).map((alt) => (
-                                                        <li>
-                                                            <img
-                                                                class="cm-portrait cm-portrait--alt"
-                                                                src={get_player_icon(alt.character_id, 64)}
-                                                                alt={alt.character_name}
-                                                                data-tippy-content={alt.character_name}
-                                                                x-init="tippy($el, tippy_options)"
-                                                                width="28"
-                                                                height="28"
-                                                                loading="lazy"
-                                                            />
-                                                        </li>
-                                                    ))}
-                                                    {characters.length > VISIBLE_ALTS &&
-                                                        <li>
-                                                            <span
-                                                                class="cm-alts__more"
-                                                                data-tippy-content={characters.slice(VISIBLE_ALTS).map((alt) => alt.character_name).join(', ')}
-                                                                x-init="tippy($el, tippy_options)"
-                                                                tabindex="0"
-                                                            >
-                                                                +{characters.length - VISIBLE_ALTS}
-                                                            </span>
-                                                        </li>
-                                                    }
-                                                </ul>
-                                            )
-                                            : <span class="cm-none">—</span>
+                                    <td class:list={['col-last', { 'is-stale': last_stale }]}>{last}</td>
+                                    <td class="col-kills is-numeric"><span class="cm-number">{member.kills_90d}</span></td>
+                                    <td class="col-voice is-numeric">{member.linked ? `${member.voice_hours_90d}h` : '—'}</td>
+                                    <td class="col-prime">
+                                        {zones.codes.length > 0
+                                            ? <span class="cm-zones">
+                                                {zones.codes.map((code) => (
+                                                    <span class:list={['cm-tz', { 'is-declared': zones.declared }]}>{prime_label(code)}</span>
+                                                ))}
+                                            </span>
+                                            : <span class="cm-muted">—</span>
                                         }
                                     </td>
-                                    <td class="cm-col-tz">
-                                        {zones.codes.length > 0
-                                            ? (
-                                                <span
-                                                    class="cm-zones"
-                                                    data-tippy-content={zones.declared ? t('corporations.detail.timezone_declared') : undefined}
-                                                    x-init={zones.declared ? 'tippy($el, tippy_options)' : undefined}
-                                                >
-                                                    {zones.codes.map((code) => (
-                                                        <span class:list={['cm-tz', { 'cm-tz--declared': zones.declared }]}>{prime_label(code)}</span>
-                                                    ))}
-                                                </span>
-                                            )
-                                            : <span class="cm-none">—</span>
-                                        }
+                                    <td class="col-chevron">
+                                        <button type="button" class="cm-chevron" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                                        </button>
                                     </td>
                                 </tr>
-                            )
-                        })}
-                    </tbody>
+                                <tr class="cm-detail" x-show="open" x-cloak>
+                                    <td colspan="10">
+                                        <div class="cm-detail__body">
+                                            {member.trial_ready &&
+                                                <p class="cm-callout">
+                                                    {member.trial_reason
+                                                        ? t('corporations.members.trial_review').replace('~REASON', member.trial_reason)
+                                                        : attention_label('trial_ready')}
+                                                </p>
+                                            }
+                                            <div class="cm-detail__grid">
+                                                <div class="cm-block">
+                                                    <h4 class="cm-eyebrow">{t('corporations.members.activity')}</h4>
+                                                    <dl class="cm-facts">
+                                                        <div><dt>{t('corporations.members.fleets')}</dt><dd>{member.fleets_90d}</dd></div>
+                                                        <div><dt>{t('corporations.members.kills_lower')}</dt><dd>{member.kills_90d}</dd></div>
+                                                        <div><dt>{t('corporations.members.on_voice')}</dt><dd>{member.linked ? `${member.voice_hours_90d}h` : '—'}</dd></div>
+                                                        <div>
+                                                            <dt>{t('corporations.members.most_flown')}</dt>
+                                                            <dd class="cm-hull">
+                                                                {member.top_hull_id
+                                                                    ? <><img src={get_item_icon(member.top_hull_id, 32)} alt="" width="20" height="20" loading="lazy" />{member.top_hull_name}</>
+                                                                    : '—'}
+                                                            </dd>
+                                                        </div>
+                                                    </dl>
+                                                </div>
+                                                <div class="cm-block">
+                                                    <h4 class="cm-eyebrow">{t('corporations.members.fleets_per_week')}</h4>
+                                                    <span class="cm-spark cm-spark--big" aria-hidden="true">
+                                                        {weeks.map((bar) => <span style={`height: ${bar.height}%`}></span>)}
+                                                    </span>
+                                                </div>
+                                                <div class="cm-block">
+                                                    <h4 class="cm-eyebrow">{t('corporations.members.characters').replace('~COUNT', String(character_count))}</h4>
+                                                    <ul class="cm-characters">
+                                                        <li>
+                                                            <span class="cm-strong">{primary.character_name}</span>
+                                                            <span class="cm-muted">{t('corporations.members.main')}</span>
+                                                            <span class:list={['cm-token', { 'is-warn': member.linked && !member.main_registered }]}>
+                                                                {!member.linked
+                                                                    ? t('corporations.members.not_linked')
+                                                                    : member.main_registered ? member.token_level || '—' : t('corporations.members.no_token')}
+                                                            </span>
+                                                        </li>
+                                                        {member.hidden_character_count > 0
+                                                            ? <li class="cm-muted">{t('corporations.detail.characters_hidden')}</li>
+                                                            : characters.slice(0, VISIBLE_ALT_NAMES).map((alt) => (
+                                                                <li>
+                                                                    <span class="cm-strong">{alt.character_name}</span>
+                                                                    <span class="cm-muted">{t('corporations.members.alt')}</span>
+                                                                    <span class:list={['cm-token', { 'is-warn': alt.registered === false || alt.esi_suspended }]}>
+                                                                        {alt.esi_suspended
+                                                                            ? t('corporations.members.attention_esi_suspended')
+                                                                            : alt.registered === false ? t('corporations.members.no_token') : alt.token_level || '—'}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
+                                                        {member.hidden_character_count === 0 && characters.length > VISIBLE_ALT_NAMES &&
+                                                            <li class="cm-muted">{t('corporations.members.alts').replace('~COUNT', String(characters.length - VISIBLE_ALT_NAMES))}</li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                                <div class="cm-block">
+                                                    <h4 class="cm-eyebrow">{t('corporations.members.history')}</h4>
+                                                    <ul class="cm-history">
+                                                        {member.corp_joined_at &&
+                                                            <li>
+                                                                <span class="cm-muted">{short_date(member.corp_joined_at, lang)}</span>
+                                                                <span>{t('corporations.members.joined_corp')}</span>
+                                                            </li>
+                                                        }
+                                                        {member.status_history.map((change) => (
+                                                            <li>
+                                                                <span class="cm-muted">{short_date(change.changed_at, lang)}</span>
+                                                                <span>{t('corporations.members.became').replace('~STATUS', status_label(change.to_status))}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    <h4 class="cm-eyebrow">{t('corporations.members.tribes')}</h4>
+                                                    <p class="cm-tribes">{member.tribe_groups.length > 0 ? member.tribe_groups.join(', ') : t('corporations.members.none_yet')}</p>
+                                                </div>
+                                            </div>
+                                            <div class="cm-detail__actions">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    color="transparent"
+                                                    x-on:click={`navigator.clipboard.writeText(${JSON.stringify(primary.character_name)})`}
+                                                >
+                                                    {t('corporations.members.copy_name')}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="transparent"
+                                                    href={`https://zkillboard.com/character/${primary.character_id}/`}
+                                                    external={true}
+                                                    new_tab={true}
+                                                >
+                                                    {t('corporations.members.zkillboard')}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        )
+                    })}
                 </table>
             </div>
         )
     }
 
     <div class="cm-pager">
-        <div class="cm-results">
-            <span class="cm-results__count">{members_count}</span>
-            {(q || timezone || status || account !== 'linked') &&
-                <span class="cm-results__scope">{t('corporations.detail.filtered')}</span>
-            }
+        <span class="cm-muted">
+            {range_start}–{range_end} / {pagination.total} · {t('corporations.members.sorted_by').replace('~SORT', sort_label(params.sort))}
+        </span>
+        <span class="cm-pager__buttons">
+            <Button size="sm" color="transparent" href={export_url}>
+                {t('corporations.members.export_csv')}
+            </Button>
             {pagination.total_pages > 1 &&
-                <small class="cm-meta">{page_status}</small>
+                <>
+                    <Button
+                        size="sm"
+                        color="transparent"
+                        type="button"
+                        disabled={!can_prev}
+                        hx-get={partial_url({ page: String(pagination.page - 1) })}
+                        hx-include={`#${FORM_ID}`}
+                        {...hx_swap}
+                    >
+                        {t('corporations.detail.previous')}
+                    </Button>
+                    <Button
+                        size="sm"
+                        color="transparent"
+                        type="button"
+                        disabled={!can_next}
+                        hx-get={partial_url({ page: String(pagination.page + 1) })}
+                        hx-include={`#${FORM_ID}`}
+                        {...hx_swap}
+                    >
+                        {t('corporations.detail.next')}
+                    </Button>
+                </>
             }
-        </div>
-        {pagination.total_pages > 1 &&
-            <div class="cm-pager__buttons">
-                <Button
-                    size="sm"
-                    color="transparent"
-                    type="button"
-                    disabled={!can_prev}
-                    hx-get={partial_url(pagination.page - 1)}
-                    hx-include={`#${FORM_ID}`}
-                    {...hx_swap}
-                >
-                    {t('corporations.detail.previous')}
-                </Button>
-                <Button
-                    size="sm"
-                    color="transparent"
-                    type="button"
-                    disabled={!can_next}
-                    hx-get={partial_url(pagination.page + 1)}
-                    hx-include={`#${FORM_ID}`}
-                    {...hx_swap}
-                >
-                    {t('corporations.detail.next')}
-                </Button>
-            </div>
-        }
+        </span>
     </div>
 </div>
 </div>
@@ -355,32 +609,120 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
     .cm {
         display: flex;
         flex-direction: column;
-        gap: var(--space-m);
+        gap: var(--space-s);
         min-width: 0;
+    }
+
+    .cm-controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .cm-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+    }
+
+    .cm-views {
+        display: flex;
+        flex-wrap: wrap;
+        background: var(--component-background);
+        border: 1px solid var(--border-color-hover);
+    }
+
+    .cm-view {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: 44px;
+        padding-inline: var(--space-s);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: var(--step--1);
+
+        &.is-on {
+            background: color-mix(in srgb, var(--highlight) 10%, transparent);
+            color: var(--highlight);
+            box-shadow: inset 0 -2px 0 var(--fleet-red);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+            outline-offset: -2px;
+        }
+    }
+
+    .cm-count {
+        font-family: var(--heading-font);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cm-attention {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        legend {
+            float: left;
+            margin-inline-end: var(--space-2xs);
+        }
+    }
+
+    .cm-eyebrow {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        font-weight: normal;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .cm-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: 36px;
+        padding-inline: var(--space-xs);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: var(--step--1);
+        border: 1px solid currentColor;
+
+        &.is-good { color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
+        &.is-warn { color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
+        &.is-on { background: color-mix(in srgb, var(--highlight) 10%, transparent); }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
     }
 
     .cm-toolbar {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 15rem));
+        grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 13rem));
         gap: var(--space-xs);
-        align-items: center;
 
-        @media screen and (max-width: 1100px) {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+        @media (max-width: 48rem) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
 
             .cm-search {
                 grid-column: 1 / -1;
             }
         }
-
-        @media screen and (max-width: 720px) {
-            grid-template-columns: minmax(0, 1fr);
-        }
-    }
-
-    .cm-toolbar:global(.htmx-request) .cm-search :global(.input-group input) {
-        border-color: var(--highlight);
-        box-shadow: 0 0 0 1px var(--highlight);
     }
 
     .cm-search,
@@ -401,43 +743,27 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
         }
     }
 
-    .cm-results {
-        display: flex;
-        align-items: baseline;
-        gap: var(--space-xs);
-    }
-
-    .cm-results__count {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--highlight);
-    }
-
-    .cm-results__scope {
-        font-size: var(--step--2);
+    .cm-empty {
+        margin: 0;
         color: var(--faded);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
     }
 
     .cm-table-wrap {
         overflow-x: auto;
-        min-width: 0;
-        width: 100%;
-        border: solid 1px var(--border-color-hover);
+        background: var(--component-background);
+        border: 1px solid var(--border-color-hover);
     }
 
     .cm-table {
         width: 100%;
+        min-width: 52rem;
         border-collapse: collapse;
-        table-layout: fixed;
         font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
 
         th,
         td {
-            padding: var(--space-2xs) var(--space-s);
+            padding: var(--space-2xs) var(--space-3xs);
             text-align: left;
             vertical-align: middle;
             background: transparent;
@@ -445,63 +771,105 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
         }
 
         th {
-            padding-block: var(--space-xs);
             font-family: var(--heading-font);
-            font-size: var(--step--1);
             font-weight: normal;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--fleet-yellow);
             white-space: nowrap;
-            border-bottom: solid 1px var(--border-color-hover);
-            background-color: var(--light-transparency-background-mobile);
-
-            @media screen and (min-width: 980px) {
-                background-color: var(--light-transparency-background);
-            }
+            border-bottom: 1px solid var(--border-color-hover);
         }
 
-        tbody tr + tr td {
-            border-top: solid 1px var(--border-color-hover);
+        .is-numeric {
+            text-align: end;
         }
 
-        tbody tr:nth-child(even) td {
-            background: color-mix(in srgb, var(--highlight) 2%, transparent);
-        }
-
-        td:first-child {
-            box-shadow: inset 2px 0 0 transparent;
-            transition: box-shadow var(--fast-transition), background-color var(--fast-transition);
-        }
-
-        @media screen and (max-width: 720px) {
-            th,
-            td {
-                padding-inline: var(--space-2xs);
-            }
+        tbody + tbody .cm-row td {
+            border-top: 1px solid var(--border-color-hover);
         }
     }
 
-    .cm-col-primary {
-        width: 40%;
+    .col-check { width: var(--space-l); }
+    .col-chevron { width: var(--space-xl); }
+    .col-status { width: 6rem; }
+    .col-joined { width: 6.5rem; }
+    .col-fleets { width: 8.5rem; }
+    .col-last { width: 6.5rem; }
+    .col-kills,
+    .col-voice { width: 3.5rem; }
+    .cm-table .col-prime {
+        width: 8.5rem;
+        padding-inline-start: var(--space-m);
     }
 
-    .cm-col-alts {
-        width: 32%;
+    // Short cells never wrap; the pilot column takes what is left.
+    .col-status,
+    .col-joined,
+    .col-last,
+    .col-voice,
+    .col-prime {
+        white-space: nowrap;
     }
 
-    .cm-col-tz {
-        width: 28%;
+
+    .cm-bulk th {
+        background: color-mix(in srgb, var(--alliance-blue) 45%, var(--component-background));
+        color: var(--highlight);
+        text-transform: none;
+        letter-spacing: 0;
+        font-family: var(--default-font);
+    }
+
+    .cm-bulk-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .cm-bulk-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .cm-sort {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-height: 44px;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: inherit;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+    }
+
+    .cm-check {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin: 0;
+        accent-color: var(--fleet-red);
+        cursor: pointer;
+    }
+
+    .cm-row {
+        transition: background-color var(--fast-transition);
     }
 
     @media (hover: hover) {
-        .cm-table tbody tr:hover td {
-            background: color-mix(in srgb, var(--highlight) 5%, transparent);
+        .cm-row:hover {
+            background: color-mix(in srgb, var(--highlight) 4%, transparent);
         }
+    }
 
-        .cm-table tbody tr:hover td:first-child {
-            box-shadow: inset 2px 0 0 var(--fleet-red);
-        }
+    tbody.is-open .cm-row {
+        background: color-mix(in srgb, var(--fleet-red) 10%, transparent);
+        box-shadow: inset 3px 0 0 var(--fleet-red);
     }
 
     .cm-pilot {
@@ -509,6 +877,22 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
         align-items: center;
         gap: var(--space-xs);
         min-width: 0;
+        min-height: 44px;
+        width: 100%;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .cm-portrait {
+        display: block;
+        flex: 0 0 auto;
+        width: var(--space-l);
+        height: var(--space-l);
     }
 
     .cm-pilot__text {
@@ -523,134 +907,268 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: var(--step-0);
-        font-weight: 500;
+        font-weight: 600;
         color: var(--highlight);
     }
 
-    .cm-portrait {
-        display: block;
-        flex: 0 0 auto;
-        width: var(--space-l);
-        height: var(--space-l);
-        border: solid 1px var(--border-color);
+    .cm-pilot__sub {
+        display: flex;
+        gap: var(--space-2xs);
+        flex-wrap: wrap;
     }
 
-    .cm-portrait--alt {
-        width: var(--space-m);
-        height: var(--space-m);
-        border-color: var(--background);
-        box-shadow: 0 0 0 1px var(--border-color);
-        transition: transform var(--fast-transition);
+    .cm-mobile-meta {
+        display: none;
     }
 
-    .cm-alts {
+    .cm-muted {
+        color: var(--faded);
+    }
+
+    .cm-strong {
+        color: var(--highlight);
+    }
+
+    .cm-stack {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cm-pill {
+        display: inline-block;
+        padding: 2px var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        white-space: nowrap;
+
+        &[data-status='active'] {
+            background: color-mix(in srgb, var(--green) 25%, transparent);
+            color: color-mix(in srgb, var(--green) 55%, var(--highlight));
+        }
+
+        &[data-status='trial'] {
+            background: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+            color: color-mix(in srgb, var(--alliance-blue) 35%, var(--highlight));
+        }
+
+        &[data-status='on_leave'] {
+            background: color-mix(in srgb, var(--highlight) 10%, transparent);
+        }
+
+        &[data-status='none'] {
+            border: 1px dashed var(--faded);
+            color: var(--faded);
+        }
+    }
+
+    .cm-fleets {
         display: flex;
         align-items: center;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-
-        li + li {
-            margin-inline-start: calc(var(--space-3xs) * -1);
-        }
-
-        @media (hover: hover) {
-            li:hover .cm-portrait--alt {
-                position: relative;
-                transform: translateY(-2px);
-            }
-        }
+        gap: var(--space-xs);
     }
 
-    .cm-hidden {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        cursor: help;
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        .cm-alts > * + * {
-            margin-inline-start: calc(var(--space-3xs) * -1);
-        }
+    .cm-number {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
     }
 
-    /* A blurred stand-in: no portrait URL is ever sent for hidden characters. */
-    .cm-portrait--hidden {
-        background: linear-gradient(
-            135deg,
-            color-mix(in srgb, var(--fleet-yellow) 35%, var(--component-background)),
-            color-mix(in srgb, var(--fleet-red) 30%, var(--component-background))
-        );
-        filter: blur(2px);
+    .cm-fleets .cm-number {
+        width: var(--space-m);
+        text-align: end;
     }
 
-    .cm-hidden__count {
-        color: var(--faded);
-        font-size: var(--step--1);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .cm-alts__more {
-        display: grid;
-        place-items: center;
-        min-width: var(--space-m);
+    .cm-spark {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        flex: 1;
         height: var(--space-m);
-        padding-inline: var(--space-3xs);
-        margin-inline-start: var(--space-3xs);
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        cursor: default;
+        border-bottom: 1px solid var(--border-color-hover);
+
+        span {
+            flex: 1;
+            background: var(--fleet-red);
+        }
+    }
+
+    .cm-spark--big {
+        flex: none;
+        height: var(--space-2xl);
+    }
+
+    .col-last.is-stale {
+        color: var(--faded);
     }
 
     .cm-zones {
-        display: flex;
+        display: inline-flex;
         flex-wrap: nowrap;
         gap: var(--space-3xs);
     }
 
     .cm-tz {
-        padding: 0.1em var(--space-3xs);
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
-        background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
-        color: var(--fleet-yellow);
-        font-family: var(--default-font);
+        padding: 0 var(--space-3xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
         font-size: var(--step--2);
+        font-weight: 700;
+
+        &.is-declared {
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .cm-attention-text {
+        font-size: var(--step--1);
         font-weight: 600;
-        letter-spacing: 0.03em;
-        line-height: 1.4;
+        white-space: nowrap;
+
+        &.is-good { color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
+        &.is-warn { color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
+    }
+
+    .cm-chevron {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        cursor: pointer;
+
+        svg {
+            transition: transform var(--fast-transition);
+        }
+    }
+
+    tbody.is-open .cm-chevron svg {
+        transform: rotate(180deg);
+    }
+
+    .cm-detail td {
+        padding: 0;
+    }
+
+    .cm-detail__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-m) var(--space-m) var(--space-2xl);
+        background: color-mix(in srgb, var(--background) 60%, transparent);
+        box-shadow: inset 3px 0 0 var(--fleet-red);
+    }
+
+    .cm-callout {
+        margin: 0;
+        padding: var(--space-xs) var(--space-s);
+        background: color-mix(in srgb, var(--green) 15%, transparent);
+        border: 1px solid color-mix(in srgb, var(--green) 50%, transparent);
+        color: var(--highlight);
+    }
+
+    .cm-detail__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+        gap: var(--space-l);
+    }
+
+    .cm-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .cm-facts {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-xs) var(--space-s);
+
+        div {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        dt {
+            color: var(--faded);
+            font-size: var(--step--2);
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+    }
+
+    .cm-facts .cm-hull {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+    }
+
+    .cm-characters,
+    .cm-history {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        li {
+            display: flex;
+            gap: var(--space-xs);
+            align-items: baseline;
+        }
+    }
+
+    .cm-characters li > :first-child {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .cm-history li {
+        flex-wrap: wrap;
+        column-gap: var(--space-xs);
+    }
+
+    .cm-history li > :first-child {
+        flex: none;
         white-space: nowrap;
     }
 
-    .cm-tz--declared {
-        border-style: dashed;
-        opacity: 0.6;
-    }
-
-    .cm-zones--inline {
+    .cm-label-short {
         display: none;
     }
 
-    .cm-none {
+    .cm-token {
+        font-size: var(--step--2);
+        font-weight: 600;
         color: var(--faded);
-        opacity: 0.5;
+
+        &.is-warn {
+            color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+        }
     }
 
-    .cm-empty,
-    .cm-meta {
+    .cm-tribes {
         margin: 0;
-        color: var(--faded);
+        font-size: var(--step--1);
     }
 
-    .cm-meta {
-        font-size: var(--step--1);
+    .cm-detail__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
     }
 
     .cm-pager {
@@ -658,26 +1176,59 @@ const members_count = t(pagination.total === 1 ? 'corporations.detail.members_co
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        gap: var(--space-s);
+        gap: var(--space-xs);
+        font-size: var(--step--1);
     }
 
     .cm-pager__buttons {
         display: flex;
-        gap: var(--space-xs);
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
     }
 
-    @media screen and (max-width: 720px) {
-        .cm-table colgroup,
-        .cm-col-tz {
+    // Phones: one compact row per person; the rest lives in the details.
+    @media (max-width: 48rem) {
+        .cm-table {
+            min-width: 0;
+            table-layout: fixed;
+        }
+
+        .col-pilot {
+            overflow: hidden;
+        }
+
+        .col-status,
+        .col-joined,
+        .col-last,
+        .col-kills,
+        .col-voice,
+        .col-prime {
             display: none;
         }
 
-        .cm-table {
-            table-layout: auto;
+        .col-fleets {
+            width: 4.5rem;
         }
 
-        .cm-zones--inline {
-            display: flex;
+        .col-fleets .cm-spark,
+        .cm-label-full {
+            display: none;
+        }
+
+        .cm-label-short {
+            display: inline;
+        }
+
+        .cm-mobile-meta {
+            display: inline;
+        }
+
+        .cm-detail__body {
+            padding-inline: var(--space-s);
+        }
+
+        .cm-detail__grid {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 </style>

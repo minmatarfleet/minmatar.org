@@ -443,6 +443,49 @@ export interface CorporationPublicSummary {
     };
 }
 
+export interface CorporationPrimeWindow {
+    zone:       'AU' | 'EU' | 'US';
+    start_hour: number;
+    end_hour:   number;
+    pilots:     number;
+}
+
+export interface CorporationTenureBand {
+    key:    'two_years' | 'one_year' | 'three_months' | 'new';
+    count:  number;
+}
+
+export interface CorporationLeaderRow {
+    character_id:   number;
+    character_name: string;
+    value:          number;
+}
+
+export interface CorporationAbout {
+    founded?:       string | null;
+    home_system?:   { name: string; share: number } | null;
+    /** 7 rows (Monday first) x 24 EVE-time hours of people on fleets. */
+    heatmap?:       number[][];
+    prime_windows?: CorporationPrimeWindow[];
+    tenure?: {
+        mains:          number;
+        average_days:   number | null;
+        bands:          CorporationTenureBand[];
+    } | null;
+    founders?:      number;
+    hulls?:         { type_id: number; name: string; pilots: number }[];
+    records?: {
+        biggest_turnout?:   { pilots: number; date: string | null; title: string } | null;
+        busiest_month?:     { month: string; fleets: number } | null;
+    } | null;
+    leaderboards?: {
+        fleets:     CorporationLeaderRow[];
+        kills:      CorporationLeaderRow[];
+        fleets_led: CorporationLeaderRow[];
+    } | null;
+    tribe_groups?:  { name: string; members: number }[];
+}
+
 export interface Corporation {
     corporation_id:     number;
     corporation_name:   string;
@@ -500,6 +543,7 @@ export interface CorporationInfo {
     discord_invite_url?: string | null;
     public_summary?:    CorporationPublicSummary | null;
     application_process?: CorporationApplicationProcess | null;
+    about?:             CorporationAbout | null;
 }
 
 export interface CorporationMemberDetails {
@@ -519,6 +563,19 @@ export interface CorporationMemberDetails {
     prime_time?:            string | null;
     observed_prime_times?:  string[];
     community_status?:      string | null;
+    corp_joined_at?:        string | null;
+    last_fleet_at?:         string | null;
+    /** Distinct fleets for the person (alts folded), repeated on each of their characters. */
+    person_fleets_90d?:     number | null;
+    /** The person's distinct fleets per week, oldest first, ending this week. */
+    weekly_fleets?:         number[];
+    top_hull_id?:           number | null;
+    top_hull_name?:         string | null;
+    tribe_groups?:          string[];
+    status_history?:        { to_status: string; changed_at: string }[];
+    /** The latest alliance health trial review would approve them. */
+    trial_ready?:           boolean;
+    trial_reason?:          string | null;
     characters_hidden?:     boolean;
     hidden_character_count?: number;
 }

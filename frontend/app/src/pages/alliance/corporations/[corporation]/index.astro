@@ -18,9 +18,13 @@ import TextBox from '@components/layout/TextBox.astro'
 import Markdown from '@components/blocks/Markdown.astro'
 import CorporationDetailHero from '@components/blocks/CorporationDetailHero.astro'
 import CorporationLeadership from '@components/blocks/CorporationLeadership.astro'
-import CorporationTimezoneDistribution from '@components/blocks/CorporationTimezoneDistribution.astro'
 import CorporationMediaGallery from '@components/blocks/CorporationMediaGallery.astro'
-import CorporationAboutStats from '@components/blocks/CorporationAboutStats.astro'
+import CorporationAboutIntro from '@components/blocks/CorporationAboutIntro.astro'
+import CorporationFlyHeatmap from '@components/blocks/CorporationFlyHeatmap.astro'
+import CorporationByTheNumbers from '@components/blocks/CorporationByTheNumbers.astro'
+import CorporationHallOfTribe from '@components/blocks/CorporationHallOfTribe.astro'
+import CorporationLeadershipSummary from '@components/blocks/CorporationLeadershipSummary.astro'
+import CorporationFlyWithUs from '@components/blocks/CorporationFlyWithUs.astro'
 import CorporationApplicationProcess from '@components/blocks/CorporationApplicationProcess.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
@@ -53,13 +57,14 @@ const biography = corporation.biography && corporation.biography !== corporation
     ? corporation.biography
     : ''
 const requirements = corporation.requirements ?? []
-const has_timezone_chart = (corporation.timezone_distribution ?? []).some((row) => row.observed > 0)
-    || (corporation.weekday_distribution ?? []).some((row) => row.members > 0 || (row.kills ?? 0) > 0)
+const has_heatmap = (corporation.about?.heatmap ?? []).some((row) => row.some((people) => people > 0))
 const open_applications = auth_token
     ? await get_corporation_open_applications(auth_token, corporation_id)
     : null
 const user_corporation_id = user ? await get_user_corporation_id(user.user_id) : null
 const is_user_corporation = user_corporation_id === corporation.corporation_id
+// Members don't get an Apply call to action; everyone else does.
+const apply_href = is_user_corporation ? null : '#apply'
 
 let apply_corporation: CorporationObject = {
     corporation_id: corporation.corporation_id,
@@ -91,11 +96,13 @@ type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'project
 
 const has_activity = Boolean(corporation.activity_summary)
 const has_about = Boolean(biography)
-    || has_timezone_chart
+    || Boolean(corporation.introduction)
+    || has_heatmap
     || Boolean(corporation.highlights)
     || (corporation.media?.length ?? 0) > 0
     || Boolean(corporation.discord_invite_url)
     || corporation.public_summary != null
+    || corporation.about != null
 const has_leadership = (corporation.leadership ?? []).length > 0
 // Roster access is decided by the API; it also hides alts from viewers who
 // may not see which characters belong to whom.
@@ -186,7 +193,7 @@ const breadcrumbs = [
     <Flexblock gap="var(--space-2xl)">
         <Flexblock gap="var(--space-m)">
             <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
-            <CorporationDetailHero corporation={corporation} />
+            <CorporationDetailHero corporation={corporation} apply_href={apply_href} />
         </Flexblock>
 
         {tabs.length > 0 &&
@@ -198,19 +205,7 @@ const breadcrumbs = [
                 {has_about &&
                     <SectionTabPanel id="about" id_prefix="corporation" is_default={default_tab === 'about'}>
                         <Flexblock gap="var(--space-2xl)">
-                            {biography &&
-                                <TextBox max_width="100%">
-                                    <Markdown markdown={biography} />
-                                </TextBox>
-                            }
-                            {corporation.public_summary &&
-                                <CorporationAboutStats summary={corporation.public_summary} />
-                            }
-                            <CorporationTimezoneDistribution
-                                distribution={corporation.timezone_distribution ?? []}
-                                weekdays={corporation.weekday_distribution ?? []}
-                                window_days={corporation.public_summary?.window_days}
-                            />
+                            <CorporationAboutIntro corporation={corporation} biography={biography} />
                             {corporation.highlights &&
                                 <Flexblock gap="var(--space-s)">
                                     <h2>{t('corporations.detail.notable')}</h2>
@@ -219,7 +214,14 @@ const breadcrumbs = [
                                     </TextBox>
                                 </Flexblock>
                             }
+                            {has_heatmap && <CorporationFlyHeatmap corporation={corporation} />}
+                            <CorporationByTheNumbers corporation={corporation} />
+                            <CorporationHallOfTribe corporation={corporation} />
+                            {has_leadership &&
+                                <CorporationLeadershipSummary leadership={corporation.leadership ?? []} />
+                            }
                             <CorporationMediaGallery media={corporation.media ?? []} />
+                            <CorporationFlyWithUs corporation={corporation} apply_href={apply_href} />
                         </Flexblock>
                     </SectionTabPanel>
                 }
