@@ -344,6 +344,12 @@ test('resolveL3arnApplicationTimezone derives bucket from region and period', ()
             activity_region: 'US',
             activity_period: 'morning',
         }),
+    ).toBe('AP_EU');
+    expect(
+        resolveL3arnApplicationTimezone({
+            activity_region: 'US',
+            activity_period: 'early_morning',
+        }),
     ).toBe('US_AP');
     expect(
         resolveL3arnApplicationTimezone({
