@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MissingSignups } from '@helpers/api.minmatar.org/fleets'
+
+/**
+ * FC card on a live fleet: pilots who signed up but are not in fleet, and a
+ * button that DMs them the fleet link (one DM per player, once per 15 min).
+ * Rendered empty by the fleet page, then filled and refreshed by its partial.
+ */
+interface Props {
+    fleet_id:       number;
+    data?:          MissingSignups | null;
+    queued?:        number;
+    nudge_error?:   string | false;
+}
+
+const {
+    fleet_id,
+    data = null,
+    queued = 0,
+    nudge_error = false,
+} = Astro.props
+
+const pilots = data?.pilots ?? []
+const cynos = pilots.filter(pilot => pilot.cyno).length
+const last = data?.last_nudge ?? null
+const cooling_down = Boolean(data?.next_nudge_at && new Date(data.next_nudge_at) > new Date())
+const minutes_left = cooling_down ? Math.ceil((new Date(data!.next_nudge_at!).getTime() - Date.now()) / 60000) : 0
+
+const summary = t(cynos > 0 ? 'fleets.missing.summary_cynos' : 'fleets.missing.summary')
+    .replace('{count}', pilots.length.toString())
+    .replace('{cynos}', cynos.toString())
+
+const last_text = last ?
+    t(last.failed > 0 ? 'fleets.missing.last_with_failed' : 'fleets.missing.last')
+        .replace('{delivered}', last.delivered.toString())
+        .replace('{failed}', last.failed.toString()) :
+    ''
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_missing_signups_component')}?fleet_id=${fleet_id}`
+---
+
+
+<div
+    id="fleet-missing-signups"
+    hx-get={PARTIAL_URL}
+    hx-trigger={data ? "every 60s" : "load, every 60s"}
+    hx-swap="outerHTML"
+>
+    {pilots.length > 0 &&
+        <section class="[ fleet-missing ]" aria-live="polite">
+            <span class="[ fleet-missing__text ]">
+                <span set:html={summary} />
+                {queued > 0 && <small>{t('fleets.missing.queued').replace('{count}', queued.toString())}</small>}
+                {!queued && last && <small>{last_text}</small>}
+                {nudge_error && <small class="[ fleet-missing__error ]">{nudge_error}</small>}
+            </span>
+            {cooling_down || queued > 0 ?
+                <small class="[ fleet-missing__wait ]">
+                    {t('fleets.missing.wait').replace('{minutes}', Math.max(minutes_left, 1).toString())}
+                </small>
+                :
+                <button
+                    type="button"
+                    class="[ fleet-missing__button ]"
+                    hx-post={PARTIAL_URL}
+                    hx-target="#fleet-missing-signups"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                >
+                    {t('fleets.missing.nudge')}
+                </button>
+            }
+        </section>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-missing {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-s);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+
+        :global(b) {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-missing__text {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fleet-missing__error {
+        color: var(--fleet-red);
+    }
+
+    .fleet-missing__wait {
+        padding: 0 var(--space-xs);
+        opacity: 0.8;
+    }
+
+    .fleet-missing__button {
+        min-height: 2.5rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: progress;
+        }
+    }
+</style>

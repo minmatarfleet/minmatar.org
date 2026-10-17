@@ -947,3 +947,85 @@ export async function get_fleet_kills(access_token: string, fleet_id: number): P
         throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
     return await response.json() as FleetKills
 }
+
+export interface FleetResult {
+    fleet_id:           number;
+    isk_destroyed:      number;
+    isk_lost:           number;
+    ships_destroyed:    number;
+    pods_destroyed:     number;
+    ships_lost:         number;
+    pods_lost:          number;
+}
+
+// Stored kill totals for finished fleets. Fleets without a stored card are left out.
+export async function get_fleet_results(access_token: string, fleet_ids: number[]): Promise<FleetResult[]> {
+    if (fleet_ids.length === 0)
+        return []
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/results?fleet_ids=${fleet_ids.join(',')}`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as FleetResult[]
+}
+
+export interface FleetSrpLoss {
+    killmail_id:        number;
+    killmail_time:      string;
+    character_id:       number;
+    character_name:     string;
+    ship_type_id:       number;
+    ship_name:          string;
+    amount:             number;
+    filed:              boolean;
+}
+
+// The caller's ship losses in a fleet on hulls SRP covers.
+export async function get_fleet_my_srp(access_token: string, fleet_id: number): Promise<FleetSrpLoss[]> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/my-srp`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as FleetSrpLoss[]
+}
+
+export interface MissingSignups {
+    pilots: { character_id: number; character_name: string; ship_name: string; cyno: boolean }[];
+    last_nudge: { sent_at: string; players: number; delivered: number; failed: number } | null;
+    next_nudge_at: string | null;
+}
+
+// FC and managers: signed-up pilots not in the live fleet, and the last DM nudge.
+export async function get_fleet_missing_signups(access_token: string, fleet_id: number): Promise<MissingSignups> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as MissingSignups
+}
+
+// Queue one DM per player who signed up but is not in fleet. 429 while cooling down.
+export async function nudge_fleet_missing_signups(access_token: string, fleet_id: number): Promise<{ pilots: number }> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups/nudge`
+    const response = await fetch(ENDPOINT, { method: 'POST', headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
+    return await response.json() as { pilots: number }
+}

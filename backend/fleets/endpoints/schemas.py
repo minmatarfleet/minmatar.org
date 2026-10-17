@@ -30,6 +30,8 @@ class EveFleetTrackingResponse(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     is_registered: bool
+    is_free_move: bool = False
+    has_motd: bool = False
 
     class Config:
         from_attributes = True
@@ -574,3 +576,28 @@ class MyFleetsResponse(BaseModel):
 
 class CurrentFleetWindowResponse(BaseModel):
     window: Optional[FleetWindowResponse] = None
+
+
+class EveFleetResultResponse(BaseModel):
+    """Stored kill totals for one fleet; pods count towards ISK, not ships."""
+
+    fleet_id: int
+    isk_destroyed: int
+    isk_lost: int
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+
+
+class EveFleetSrpLossResponse(BaseModel):
+    """A ship the caller lost in a fleet, on a hull SRP covers."""
+
+    killmail_id: int
+    killmail_time: datetime
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_name: str
+    amount: int
+    filed: bool

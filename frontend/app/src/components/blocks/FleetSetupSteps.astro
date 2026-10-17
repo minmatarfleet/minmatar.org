@@ -1,0 +1,143 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { Tracking } from '@dtypes/layout_components'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+
+/**
+ * The FC's setup checklist for a live fleet, in the order it happens.
+ * Done steps are ticked; the first open one says how to fix it. Once every
+ * step is done the row is not rendered at all.
+ */
+interface Props {
+    start_time:     Date;
+    tracking:       Tracking;
+    disable_motd?:  boolean;
+}
+
+const {
+    start_time,
+    tracking,
+    disable_motd = false,
+} = Astro.props
+
+const steps = [
+    {
+        label: t('fleets.setup.scheduled'),
+        done: true,
+        detail: t('fleets.eve_clock').replace('{time}', eve_clock(start_time)),
+    },
+    {
+        label: t('fleets.setup.pinged'),
+        done: Boolean(tracking.start_time),
+        detail: t('fleets.setup.since').replace('{time}', eve_clock(tracking.start_time)),
+    },
+    {
+        label: t('fleets.setup.advert'),
+        done: tracking.is_registered,
+        detail: tracking.is_registered ? t('fleets.setup.advert_done') : t('fleets.setup.advert_fix'),
+    },
+    {
+        label: t('fleets.setup.free_move'),
+        done: Boolean(tracking.is_free_move),
+        detail: tracking.is_free_move ? t('fleets.setup.free_move_done') : t('fleets.setup.free_move_fix'),
+    },
+    {
+        label: t('fleets.setup.motd'),
+        done: disable_motd || Boolean(tracking.has_motd),
+        detail: disable_motd ? t('fleets.setup.motd_off') :
+            tracking.has_motd ? t('fleets.setup.motd_done') : t('fleets.setup.motd_fix'),
+    },
+]
+const done = steps.filter(step => step.done).length
+---
+
+{done < steps.length &&
+    <section class="[ fleet-setup ]" aria-labelledby="fleet-setup-title">
+        <h2 id="fleet-setup-title">
+            {t('fleets.setup.title').replace('{done}', done.toString()).replace('{total}', steps.length.toString())}
+        </h2>
+        <ol>
+            {steps.map((step, index) =>
+                <li class:list={[{ 'fleet-setup__open': !step.done }]}>
+                    <span class="[ fleet-setup__mark ]" aria-hidden="true">{step.done ? '✓' : '!'}</span>
+                    <span class="[ fleet-setup__text ]">
+                        <b>{index + 1}. {step.label}</b>
+                        <small>
+                            <span class="[ visually-hidden ]">{step.done ? t('fleets.setup.done') : t('fleets.setup.todo')}: </span>
+                            {step.detail}
+                        </small>
+                    </span>
+                </li>
+            )}
+        </ol>
+    </section>
+}
+
+<style lang="scss">
+    .fleet-setup {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        h2 {
+            font-family: var(--default-font);
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.75;
+        }
+
+        ol {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            background-color: var(--component-background);
+            border: 1px solid var(--border-color);
+        }
+
+        li {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-s);
+            border-left: 1px solid var(--border-color);
+            box-shadow: inset 0 3px 0 var(--green);
+
+            &.fleet-setup__open {
+                background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+                box-shadow: inset 0 3px 0 var(--fleet-red);
+            }
+        }
+    }
+
+    .fleet-setup__mark {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        background-color: var(--green);
+        color: var(--highlight);
+        font-weight: 700;
+
+        .fleet-setup__open & {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .fleet-setup__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+    }
+</style>

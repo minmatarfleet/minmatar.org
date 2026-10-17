@@ -93,7 +93,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-const page_title = `${t('fleet')} ${fleet_id}`;
+const page_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`;
+const breadcrumbs = [
+    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: t('fleets.history.page_title'), accumulated_path: '/fleets/history/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
 ---
 
 <Viewport
@@ -114,6 +119,7 @@ const page_title = `${t('fleet')} ${fleet_id}`;
             overlay: true,
             align: get_location_video_cover(fleet?.location ?? '') ? 'right' : 'left',
         }}
+        breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>

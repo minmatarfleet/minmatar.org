@@ -37,40 +37,74 @@ const fleet_kills = (overrides:Partial<FleetKillsData> = {}):FleetKillsData => (
     ...overrides,
 })
 
-test('FleetKills shows totals and only the kills', async () => {
+test('FleetKills shows the result, the biggest kill, and kills and losses by hull', async () => {
     const container = await AstroContainer.create()
     const result = await container.renderToString(FleetKills, {
-        props: { fleet_kills: fleet_kills() },
+        props: { fleet_kills: fleet_kills(), fleet_id: 2393 },
     })
 
-    expect(result).toContain('ISK destroyed')
     expect(result).toContain('2.2B')
-    expect(result).toContain('Ships destroyed')
-    expect(result).toContain('+1 pods')
-    expect(result).toContain('ISK lost')
+    expect(result).toContain('destroyed · 1 ships')
+    expect(result).toContain('lost · 1 ships')
+    expect(result).toContain('97%')
+    expect(result).toContain('Biggest kill')
+    expect(result).toContain('Kills 2')
+    expect(result).toContain('Losses 1')
     expect(result).toContain('Vargur')
-    expect(result).toContain('flown by PuwPuw')
+    expect(result).toContain('Omen Navy Issue')
     expect(result).toContain('https://zkillboard.com/kill/139189498/')
     expect(result).toContain('Klogori')
-    expect(result).not.toContain('Omen Navy Issue')
+})
+
+test('FleetKills lists only SRP losses it is given, and marks filed ones', async () => {
+    const container = await AstroContainer.create()
+    const srp_loss = {
+        killmail_id: 3,
+        killmail_time: '2026-10-16T00:20:00+00:00',
+        character_id: 1,
+        character_name: 'BearThatCares',
+        ship_type_id: 17709,
+        ship_name: 'Omen Navy Issue',
+        amount: 60_000_000,
+        filed: false,
+    }
+
+    const none = await container.renderToString(FleetKills, {
+        props: { fleet_kills: fleet_kills(), fleet_id: 2393, srp_losses: [] },
+    })
+    expect(none).not.toContain('SRP you can file')
+
+    const open = await container.renderToString(FleetKills, {
+        props: { fleet_kills: fleet_kills(), fleet_id: 2393, srp_losses: [srp_loss] },
+    })
+    expect(open).toContain('SRP you can file')
+    expect(open).toContain('Omen Navy Issue · pays 60M')
+    expect(open).toContain('File SRP')
+    expect(open).toContain('https://zkillboard.com/kill/3/')
+
+    const filed = await container.renderToString(FleetKills, {
+        props: { fleet_kills: fleet_kills(), fleet_id: 2393, srp_losses: [{ ...srp_loss, filed: true }] },
+    })
+    expect(filed).toContain('Filed')
+    expect(filed).not.toContain('File SRP')
 })
 
 test('FleetKills says so when nothing died', async () => {
     const container = await AstroContainer.create()
     const result = await container.renderToString(FleetKills, {
-        props: { fleet_kills: fleet_kills({ killmails: [], isk_destroyed: 0, ships_destroyed: 0, pods_destroyed: 0 }) },
+        props: { fleet_kills: fleet_kills({ killmails: [], isk_destroyed: 0, ships_destroyed: 0, pods_destroyed: 0 }), fleet_id: 2393 },
     })
 
     expect(result).toContain('No kills recorded for this fleet.')
-    expect(result).not.toContain('role="table"')
+    expect(result).not.toContain('Biggest kill')
 })
 
 test('FleetKills explains an untracked fleet', async () => {
     const container = await AstroContainer.create()
     const result = await container.renderToString(FleetKills, {
-        props: { fleet_kills: fleet_kills({ tracked: false, killmails: [] }) },
+        props: { fleet_kills: fleet_kills({ tracked: false, killmails: [] }), fleet_id: 2393 },
     })
 
     expect(result).toContain('This fleet was not tracked')
-    expect(result).not.toContain('ISK destroyed')
+    expect(result).not.toContain('Biggest kill')
 })

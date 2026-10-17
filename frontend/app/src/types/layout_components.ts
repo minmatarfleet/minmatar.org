@@ -694,6 +694,7 @@ export interface FleetItem {
     status?:                        TrackingStatus;
     campaign_slug?:                 string | null;
     campaign_name?:                 string | null;
+    aar_link?:                      string | null;
 }
 
 import type { TrackingStatus } from '@dtypes/api.minmatar.org'
@@ -725,6 +726,8 @@ export interface Tracking {
     start_time:     Date;
     end_time:       Date | null;
     is_registered:  boolean;
+    is_free_move?:  boolean;
+    has_motd?:      boolean;
 }
 
 export interface FleetCompositionUI {

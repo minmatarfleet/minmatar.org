@@ -15,6 +15,7 @@ interface Props {
     start_tracking?:            boolean;
     fleet_tracking_texts?:      FleetTrackingTexts | false;
     init_tooltips:              boolean;
+    disable_motd?:              boolean;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
     start_tracking = false,
     fleet_tracking_texts = false,
     init_tooltips,
+    disable_motd = false,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
@@ -37,14 +39,13 @@ const is_fleet_time = minutes_to_fleet < 30
 
 const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_component')}?id=${fleet_id}`
 
-import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
-import Countdown from '@components/blocks/Countdown.astro';
 import CompletedStatus from '@components/blocks/CompletedStatus.astro';
+import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
 ---
 
 <div
@@ -62,20 +63,7 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
     hx-indicator={!fleet_tracking?.end_time ? '.loader' : undefined}
 >
     <Flexblock>
-        {fleet_tracking === null && fleet_status !== 'cancelled' &&
-            <Countdown
-                date={start_time}
-                id={fleet_id}
-                tag='countdown-fleet'
-                x-data={`{
-                    init() {
-                        window.addEventListener('countdown', event => {
-                            is_fleet_time = true
-                        })
-                    }
-                }`}
-            />
-        }
+        {/* The countdown sits in the fleet facts above. */}
 
         {fleet_status === 'cancelled' &&
             <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
@@ -130,13 +118,12 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
             </template>
         }
 
-        {fleet_tracking && !fleet_tracking?.is_registered && !fleet_tracking?.end_time &&
-            <TextBox max_width='40rem'>
-                <Flexblock gap='var(--space-xs)' class="[ component text-left ]">
-                    <p>{t('missing_advert')}</p>
-                    <small>{t('missing_advert_subtext')}</small>
-                </Flexblock>
-            </TextBox>
+        {is_fleet_commander && fleet_tracking && !fleet_tracking?.end_time && fleet_status !== 'cancelled' &&
+            <FleetSetupSteps
+                start_time={start_time}
+                tracking={fleet_tracking}
+                disable_motd={disable_motd}
+            />
         }
     </Flexblock>
 </ComponentBlock>
