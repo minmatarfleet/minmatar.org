@@ -7,7 +7,13 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
+    default_settings = "app.settings"
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        # Tests default to SQLite with the network guard, never to the
+        # MySQL settings and whatever Discord/ESI tokens .env holds.
+        # An explicit --settings still wins.
+        default_settings = "app.settings_test"
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", default_settings)
     try:
         import dotenv  # noqa
     except ImportError:
