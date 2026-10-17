@@ -1,6 +1,6 @@
 // Minmatar Fleet desktop app: Discord sign-in, EVE-styled overlay windows (see windows.js) pinned as glass
 // over the EVE client, a Sneak mascot on EVE's notification badge that opens Settings, and the tray.
-const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard, Notification } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
@@ -537,9 +537,10 @@ function update_polling() {
     if (wanted && list_wanted() && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
 }
 
-// The upcoming list is only fetched while it's on screen; the fleet view has its own poll.
+// The schedule feeds every tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed), so it
+// is fetched whenever the window is up; the fleet views have their own poll.
 function list_wanted() {
-    return polling_wanted() && (!fleet_snapshot || fleet_snapshot.view === 'list')
+    return polling_wanted()
 }
 
 function fetch_error(err, what) {
@@ -585,6 +586,7 @@ function refresh_fleets({ force = false } = {}) {
         state.fleets = fleets
         state.error = null
         state.updated_at = new Date().toISOString()
+        if (fleet_window) fleet_window.set_list(fleets)
     })
 }
 
@@ -602,6 +604,8 @@ const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
 // Data for the windows the pilot has enabled; a disabled window costs no requests.
 function refresh({ force = false } = {}) {
     for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader({ force })
+    // "Remind me" toasts fire whether or not the Fleets window is up.
+    if (fleet_window && state.user) fleet_window.check_reminders()
 }
 
 function start_refresh() {
@@ -644,11 +648,12 @@ async function verify_session() {
     const me = await api.me()
     const character = me.eve_character_profile
     state.user = {
+        id: me.user_id,
         name: character ? character.character_name : me.username,
         character_id: character ? character.character_id : null,
         avatar: me.discord_user_profile ? me.discord_user_profile.avatar : null,
     }
-    if (fleet_window) fleet_window.set_primary_character(state.user.character_id)
+    if (fleet_window) fleet_window.set_user(me.user_id, state.user.character_id)
     diag({ t: 'signed-in', user_id: me.user_id })
 }
 
@@ -808,21 +813,24 @@ ipcMain.on('fleets:refresh', () => {
     refresh({ force: true })
     if (fleet_window && state.user) fleet_window.poll()
 })
-ipcMain.on('fleets:open', (event, fleet_id) => {
-    // Opens the fleet in the window. Only fleets from the list, never an id the renderer made up.
-    const fleet = state.fleets.find(f => f.id === fleet_id)
-    if (fleet && fleet_window) fleet_window.open(fleet.id)
-})
-// Fleet view actions. Each is one click; keys are checked against the fleet's own ships in fleet_window.js.
+// Fleet window clicks. Each is one click; fleet_window.js only acts on fleets, ships, killmails and
+// systems it is showing, never on ids the renderer made up.
 const fleet_key = value => (typeof value === 'string' && /^[fm]:\d+$/.test(value) ? value : null)
-ipcMain.on('fleet:back', () => fleet_window && fleet_window.back())
-ipcMain.on('fleet:open-site', () => fleet_window && fleet_window.open_site())
-ipcMain.on('fleet:refresh-motd', () => fleet_window && fleet_window.refresh_motd())
-ipcMain.on('fleet:copy-fit', (event, key) => fleet_window && fleet_key(key) && fleet_window.copy_fit(key))
-ipcMain.on('fleet:sign-up', (event, key) => fleet_window && fleet_key(key) && fleet_window.sign_up(key))
-ipcMain.on('fleet:srp', () => fleet_window && fleet_window.file_srp())
-ipcMain.on('fleet:dismiss-loss', () => fleet_window && fleet_window.dismiss_loss())
-ipcMain.on('fleet:done', () => fleet_window && fleet_window.done())
+const id_of = value => (Number.isSafeInteger(value) && value > 0 ? value : null)
+const on_fleet = (command, act) => ipcMain.on(command, (event, value) => { if (fleet_window && state.user) act(value) })
+on_fleet('fleets:open', value => id_of(value) && fleet_window.open(value))
+on_fleet('fleet:close', () => fleet_window.close())
+on_fleet('fleet:open-site', value => id_of(value) && fleet_window.open_site(value))
+on_fleet('fleet:refresh-motd', () => fleet_window.refresh_motd())
+on_fleet('fleet:copy-fit', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.copy_fit(value.fleet_id, value.key))
+on_fleet('fleet:sign-up', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.sign_up(value.fleet_id, value.key))
+on_fleet('fleet:srp', value => id_of(value) && fleet_window.file_srp(value))
+on_fleet('fleet:dismiss-loss', value => id_of(value) && fleet_window.dismiss_loss(value))
+on_fleet('fleet:done', () => fleet_window.done())
+on_fleet('fleet:destination', value => id_of(value) && fleet_window.set_destination(value))
+on_fleet('fleet:preping', value => id_of(value) && fleet_window.preping(value))
+on_fleet('fleet:start', value => id_of(value) && fleet_window.start(value))
+on_fleet('fleet:remind', value => id_of(value) && fleet_window.toggle_reminder(value))
 ipcMain.on('campaigns:open', () => {
     // Same rule as fleets: only a URL we built.
     if (state.campaign) shell.openExternal(state.campaign.url)
@@ -930,12 +938,13 @@ app.whenReady().then(async () => {
         web_url: config.web_url,
         clipboard,
         open_external: url => shell.openExternal(url),
+        notify: (title, body) => {
+            if (Notification.isSupported()) new Notification({ title, body, icon: path.join(ASSETS, 'icon.png') }).show()
+        },
+        // Reminders follow the account, like window positions (settings.js).
+        store: { get: key => settings && settings.get(key), set: (key, value) => settings && settings.set(key, value) },
     })
-    fleet_window.on('change', snapshot => {
-        const back_to_list = snapshot.view === 'list' && fleet_snapshot && fleet_snapshot.view !== 'list'
-        set_fleet_snapshot(snapshot)
-        if (back_to_list && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
-    })
+    fleet_window.on('change', set_fleet_snapshot)
     fleet_window.on('unauthorized', () => sign_out('Your session has expired. Sign in again.'))
     intel = new IntelController({
         api,

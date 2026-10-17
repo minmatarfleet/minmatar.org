@@ -1,91 +1,19 @@
+// The Fleets window: three tabs in the title bar (Fleet, Upcoming, Recent) that never go away, a return
+// strip back to your live fleet on the other two, and a status bar. The views are fleet_view.js; this file
+// keeps the tab, routes clicks to the main process and ticks the clocks.
 const $ = id => document.getElementById(id)
 const { send, on_state, on_visibility, on_fleet } = window.minmatar
 window.eve_window.follow_visibility(on_visibility)
-const { eve_time, countdown, group_by_day } = window.fleet_format
-const { render: render_fleet_view, elapsed, until } = window.fleet_view
-const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const view = window.fleet_view
+const fmt = window.fleet_format
 
-let rendered = null   // signature of what the list currently shows
-let list_title = 'Upcoming Fleets'
-const SKELETON_ROWS = 4
-
-function render_fleet(fleet) {
-    const portrait = fleet.fc_character_id
-        ? `<img class="fleet__portrait" src="https://images.evetech.net/characters/${encodeURIComponent(fleet.fc_character_id)}/portrait?size=64" alt="">`
-        : '<span class="fleet__portrait"></span>'
-    const status = fleet.live ? '<span class="fleet-live">Live</span>'
-        : fleet.status === 'cancelled' ? '<span class="eve-danger">Cancelled</span>' : ''
-    return `<div class="fleet${fleet.status === 'cancelled' ? ' fleet--cancelled' : ''}" role="button" tabindex="0" data-interactive data-fleet="${fleet.id}" title="Open fleet on my.minmatar.org">
-        ${portrait}
-        <div class="fleet__headline">
-            <span class="fleet-type fleet-type--${esc(fleet.type)}">${esc(fleet.type_label)}</span>
-            <span class="fleet__doctrine">${esc(fleet.doctrine || fleet.audience || 'Fleet')}</span>
-            ${status}
-        </div>
-        <span class="fleet__when">${eve_time(fleet.start_time)}</span>
-        <div class="fleet__meta"><span class="fleet__fc">${esc(fleet.fc_name)}</span>${fleet.location ? ` · ${esc(fleet.location)}` : ''}${fleet.audience && fleet.doctrine ? ` · ${esc(fleet.audience)}` : ''}</div>
-        <span class="fleet__countdown" data-start="${esc(fleet.start_time)}">${countdown(fleet.start_time)}</span>
-        ${fleet.description ? `<div class="fleet__description">${esc(fleet.description)}</div>` : ''}
-    </div>`
-}
-
-function render_skeleton() {
-    return '<div class="fleet-group"><span class="skeleton skeleton--short"></span></div>' +
-        Array.from({ length: SKELETON_ROWS }, () =>
-            `<div class="fleet fleet--skeleton" aria-hidden="true">
-                <span class="fleet__portrait skeleton"></span>
-                <span class="skeleton"></span><span class="skeleton skeleton--short"></span>
-                <span class="skeleton skeleton--wide"></span>
-            </div>`).join('')
-}
-
-function render_list(state) {
-    if (!state.fleets.length) {
-        // First load (nothing to show yet): placeholder rows instead of a blank window.
-        if (state.loading || !state.updated_at && !state.error) return render_skeleton()
-        return '<div class="eve-empty">No fleets scheduled.</div>'
-    }
-    return group_by_day(state.fleets).map(group =>
-        `<div class="fleet-group${group.label === 'Live now' ? ' fleet-group--live' : ''}"><span>${esc(group.label)}</span><span class="eve-dim">${group.fleets.length}</span></div>` +
-        group.fleets.map(render_fleet).join('')
-    ).join('')
-}
-
-on_state(state => {
-    window.eve_window.apply(state)
-    $('refresh').classList.toggle('is-loading', state.loading)
-    list_title = `Upcoming Fleets (${state.fleets.length})`
-    if (!fleet_shown()) $('title').textContent = list_title
-    const who = state.location ? `${state.location.character} · ${state.location.system}` : (state.user ? state.user.name : '')
-    $('status').textContent = `${who}${state.updated_at ? ` · updated ${eve_time(state.updated_at)} EVE` : ''}`
-
-    $('version').textContent = `v${state.version}`
-    const update = state.update || {}
-    $('update').hidden = !['ready', 'available'].includes(update.status)
-    $('update').textContent = update.status === 'ready' ? `Restart to update (v${update.version})` : `v${update.version} available`
-    $('update').dataset.action = update.status === 'ready' ? 'update:install' : 'update:download'
-
-    // State is pushed on every focus change; only rebuild the list when its content changed,
-    // so rows (and portraits) don't flicker while you switch windows.
-    const skeleton = !state.fleets.length && (state.loading || !state.updated_at && !state.error)
-    const signature = JSON.stringify([state.fleets, state.error, skeleton])
-    if (signature === rendered) return
-    const first_data = rendered !== null && rendered.endsWith('true]') && !skeleton
-    rendered = signature
-    $('list').innerHTML = (state.error ? `<p class="eve-error">${esc(state.error)}</p>` : '') + render_list(state)
-    if (first_data) $('list').classList.add('is-arriving')
-})
-$('list').addEventListener('animationend', () => $('list').classList.remove('is-arriving'))
-
-// ---------------------------------------------------------------- fleet view (src/renderer/fleet_view.js)
-
-let fleet = null                                      // latest snapshot from the main process
-const fleet_ui = { tab: 'summary', compact: false }   // local only: which FC tab, window at min size
 const COMPACT_HEIGHT = 360
+const TABS = ['fleet', 'upcoming', 'recent']
 
-function fleet_shown() {
-    return !!fleet && fleet.view !== 'list'
-}
+let state = null                 // app state (the schedule, update status, pin)
+let fleet = null                 // fleet_window.js snapshot
+const ui = { tab: 'fleet', fc_view: 'overview', compact: window.innerHeight < COMPACT_HEIGHT }
+let shown = null                 // what the body showed last: scroll resets when it changes
 
 // Rewrite a part only when its HTML changed: a poll with nothing new leaves the DOM (and its images) alone.
 function patch(el, html) {
@@ -96,77 +24,125 @@ function patch(el, html) {
     return true
 }
 
-let last_view = null
-function render_fleet() {
-    const shown = fleet_shown()
-    $('list').hidden = shown
-    $('list-footer').hidden = shown
-    $('fleet').hidden = !shown
-    $('back').hidden = !shown
-    if (!shown) {
-        $('title').textContent = list_title
-        last_view = null
-        return
+function render() {
+    if (!state || !fleet) return
+    const list = state.fleets || []
+    const tabs = view.tabs(fleet, list)
+    for (const tab of TABS) {
+        const on = ui.tab === tab
+        const el = $(`tab-${tab}`)
+        el.setAttribute('aria-selected', String(on))
+        el.tabIndex = on ? 0 : -1
     }
-    const parts = render_fleet_view(fleet, fleet_ui)
-    $('title').textContent = parts.title
-    patch($('fleet-top'), parts.top)
-    $('fleet-top').hidden = !parts.top
-    if (patch($('fleet-main'), parts.main) && fleet.view !== last_view) $('fleet-main').scrollTop = 0
-    patch($('fleet-foot'), parts.foot)
-    last_view = fleet.view
+    $('tab-fleet-dot').hidden = !tabs.live
+    $('tab-upcoming-count').textContent = tabs.upcoming ? String(tabs.upcoming) : ''
+    $('tab-recent-dot').hidden = !tabs.owed
+
+    const parts = ui.tab === 'upcoming' ? view.upcoming_tab(fleet, list)
+        : ui.tab === 'recent' ? view.recent_tab(fleet)
+        : view.fleet_tab(fleet, ui)
+    patch($('strip'), ui.tab === 'fleet' ? '' : view.strip(fleet))
+    const where = `${ui.tab}:${fleet.opened ? fleet.opened.id : ''}:${fleet.focus ? fleet.focus.kind : ''}:${ui.fc_view}`
+    if (patch($('view'), parts.main) && where !== shown) $('view').scrollTop = 0
+    shown = where
+
+    patch($('actions'), parts.actions || '')
+    $('foot').classList.toggle('has-actions', !!parts.actions)
+    const update = state.update && state.update.status === 'ready'
+        ? `<button class="fw-update" data-app-command="update:install">Restart to update</button>` : ''
+    patch($('status'), view.status(fleet, { update }))
+    $('site').hidden = !parts.site_id
+    if (parts.site_id) $('site').dataset.id = String(parts.site_id)
+    document.body.classList.toggle('is-compact', !!parts.compact)
 }
 
-on_fleet(snapshot => {
-    fleet = snapshot
-    render_fleet()
+function set_tab(tab) {
+    if (!TABS.includes(tab)) return
+    // Clicking Upcoming while a fleet is open goes back to the list.
+    if (tab === 'upcoming' && ui.tab === 'upcoming' && fleet && fleet.opened) send('fleet:close')
+    ui.tab = tab
+    render()
+}
+
+on_state(next => {
+    state = next
+    window.eve_window.apply(state)
+    $('refresh').classList.toggle('is-loading', !!state.loading)
+    render()
 })
 
-$('fleet').addEventListener('click', event => {
-    const tab = event.target.closest('[data-tab]')
-    if (tab) {
-        fleet_ui.tab = tab.dataset.tab
-        return render_fleet()
+on_fleet(snapshot => {
+    const before = fleet
+    fleet = snapshot || { loaded: false, focus: { kind: 'none' }, signups: {}, reminders: [] }
+    // The window comes to the Fleet tab when you join a fleet or your sign-up forms, unless you are reading
+    // a fleet you opened. It never moves you otherwise.
+    const joined = fleet.live && !(before && before.live && before.live.id === fleet.live.id)
+    const formed = fleet.focus && fleet.focus.kind === 'formup' && !(before && before.focus && before.focus.kind === 'formup')
+    if ((joined || formed) && !(ui.tab === 'upcoming' && fleet.opened)) ui.tab = 'fleet'
+    // Opening the fleet you are in shows it where it lives.
+    if (fleet.opened && fleet.opened.is_current) {
+        ui.tab = 'fleet'
+        send('fleet:close')
     }
-    const action = event.target.closest('[data-fleet-command]')
-    if (action && !action.disabled) send(action.dataset.fleetCommand, action.dataset.key || null)
+    render()
 })
-$('back').addEventListener('click', () => send('fleet:back'))
+
+// One click handler for everything the views draw.
+document.addEventListener('click', event => {
+    const target = event.target.closest('[data-tab], [data-view], [data-open], [data-close], [data-fleet-command], [data-app-command]')
+    if (!target || target.disabled) return
+    if (target.dataset.tab) return set_tab(target.dataset.tab)
+    if (target.dataset.view) {
+        ui.fc_view = target.dataset.view
+        return render()
+    }
+    if (target.dataset.open) {
+        const id = Number(target.dataset.open)
+        if (fleet && fleet.live && fleet.live.id === id) return set_tab('fleet')
+        ui.tab = 'upcoming'
+        render()
+        return send('fleets:open', id)
+    }
+    if ('close' in target.dataset) return send('fleet:close')
+    if (target.dataset.appCommand) return send(target.dataset.appCommand)
+    const command = target.dataset.fleetCommand
+    const id = target.dataset.id ? Number(target.dataset.id) : undefined
+    send(command, target.dataset.key ? { fleet_id: id, key: target.dataset.key } : id)
+})
+
+// Arrow keys move between the title-bar tabs (one tab stop, as a tablist should be).
+$('tab-fleet').parentElement.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const i = TABS.indexOf(ui.tab)
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1
+        : (i + (event.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length
+    set_tab(TABS[next])
+    $(`tab-${TABS[next]}`).focus()
+})
 
 // The window at its minimum size switches the FC to the glance strip. Only re-render when that flips.
 let resize_timer = null
-fleet_ui.compact = window.innerHeight < COMPACT_HEIGHT
 window.addEventListener('resize', () => {
     clearTimeout(resize_timer)
     resize_timer = setTimeout(() => {
         const compact = window.innerHeight < COMPACT_HEIGHT
-        if (compact === fleet_ui.compact) return
-        fleet_ui.compact = compact
-        render_fleet()
+        if (compact === ui.compact) return
+        ui.compact = compact
+        render()
     }, 120)
 })
 
-// Countdowns and fleet clocks tick locally (text only); the data refreshes from the API. Nothing
-// ticks while the window is hidden (EVE not in front, or closed to the tray).
+// Clocks tick locally (text only); the data refreshes from the API. Nothing ticks while the window is
+// hidden (EVE not in front, or closed to the tray).
 setInterval(() => {
     if (document.hidden || document.body.classList.contains('is-hidden')) return
-    document.querySelectorAll('.fleet__countdown').forEach(el => { el.textContent = countdown(el.dataset.start) })
-    document.querySelectorAll('#fleet [data-since]').forEach(el => { el.textContent = elapsed(el.dataset.since) })
-    document.querySelectorAll('#fleet [data-start]').forEach(el => { el.textContent = until(el.dataset.start) })
+    document.querySelectorAll('[data-since]').forEach(el => { el.textContent = view.elapsed(el.dataset.since) })
+    document.querySelectorAll('[data-clock]').forEach(el => {
+        const c = fmt.clock(el.dataset.clock)
+        el.textContent = c.text
+        el.classList.toggle('is-started', c.started)
+    })
 }, 1000)
 
 window.eve_window.wire_overlay(send)
-$('sign-out').addEventListener('click', () => send('auth:sign-out'))
-$('update').addEventListener('click', () => send($('update').dataset.action))
-
-$('list').addEventListener('click', event => {
-    const row = event.target.closest('[data-fleet]')
-    if (row) send('fleets:open', Number(row.dataset.fleet))
-})
-$('list').addEventListener('keydown', event => {
-    const row = event.target.closest('[data-fleet]')
-    if (row && (event.key === 'Enter' || event.key === ' ')) {
-        event.preventDefault()
-        send('fleets:open', Number(row.dataset.fleet))
-    }
-})
