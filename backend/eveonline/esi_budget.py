@@ -4,6 +4,9 @@ ESI enforces two independent limits: an app-wide error limit of 100 non-2xx
 responses a minute, and a token bucket per group x application x character
 over a 15-minute window. Campaign polls and the structure notification
 poller share this cache ledger and refuse to spend the last of a budget.
+Every raw ESI call (``eveonline.esi_http``) reports its errors here too, so
+the app-wide error budget sees the whole application.
+
 Moved from ``campaigns.services.esi_gate``, which remains an alias. The cache
 keys keep their ``campaigns:esi:`` prefix so a deploy does not reset them.
 """
@@ -279,6 +282,10 @@ def record_error() -> None:
         cache.decr(ERROR_BUDGET_KEY, 1)
     except ValueError:
         _cache_set(ERROR_BUDGET_KEY, 99, 120)
+        # Open the window too, or the next read would see no reset time,
+        # refill the budget to 100 and forget this error.
+        if _cache_get(ERROR_BUDGET_RESET_KEY) is None:
+            _cache_set(ERROR_BUDGET_RESET_KEY, time.time() + 60, 120)
     except Exception:  # pragma: no cover
         logger.warning("ESI budget cache unavailable on error", exc_info=True)
 

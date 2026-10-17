@@ -326,7 +326,7 @@ class EsiClientTest(SimpleTestCase):
         self.assertEqual(response.results()["name"], "Gankproof Dex")
         self.assertIsInstance(response.results(), dict)
 
-    @patch("eveonline.client.requests.get")
+    @patch("eveonline.esi_http.requests.request")
     @patch("eveonline.client.Token.get_token")
     def test_notifications_send_cached_etag_and_keep_304(
         self, get_token_mock, get_mock

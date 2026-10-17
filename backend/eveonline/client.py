@@ -1,5 +1,4 @@
 import logging
-import requests
 from typing import Any, List
 
 from django.conf import settings
@@ -8,6 +7,13 @@ from esi.exceptions import ESIErrorLimitException, HTTPClientError
 from esi.models import Token
 from esi.openapi_clients import ESIClientProvider
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
+from eveonline import esi_budget
+from eveonline.esi_http import (  # noqa: F401 - re-exported constants
+    ESI_BASE_URL,
+    ESI_COMPATIBILITY_DATE,
+    EsiHttpResult,
+    esi_request,
+)
 from eveuniverse.models import (
     EveType,
     EveGroup,
@@ -28,8 +34,6 @@ NO_VALID_ACCESS_TOKEN = 904
 NO_VALID_ESI_TOKEN = 905
 ERROR_CALLING_ESI = 906
 
-ESI_BASE_URL = "https://esi.evetech.net/latest"
-ESI_COMPATIBILITY_DATE = "2026-06-09"
 SCOPE_CORPORATION_PROJECTS = ["esi-corporations.read_projects.v1"]
 # Cursor routes return at most 100 rows a page; stop a runaway walk.
 MAX_CURSOR_PAGES = 50
@@ -212,6 +216,56 @@ class EsiClient:
     @staticmethod
     def _bearer_headers(token: Token) -> dict:
         return {"Authorization": f"Bearer {token.valid_access_token()}"}
+
+    @staticmethod
+    def _http_response(
+        result: EsiHttpResult, *, keep_error_text: bool = False
+    ) -> EsiResponse:
+        """The usual mapping for a raw call: SUCCESS with data, the HTTP
+        status on a 4xx/5xx, ERROR_CALLING_ESI when the request raised."""
+        if result.status is None or (
+            result.error is not None and result.status < 400
+        ):
+            return EsiResponse(
+                response_code=ERROR_CALLING_ESI, response=result.error
+            )
+        if result.status >= 400:
+            return EsiResponse(
+                response_code=result.status,
+                response=result.text if keep_error_text else None,
+            )
+        return EsiResponse(response_code=SUCCESS, data=result.data)
+
+    def _raw_get(
+        self,
+        path: str,
+        required_scopes: List[str] | None = None,
+        *,
+        params: dict | None = None,
+        paged: bool = False,
+        empty=None,
+    ) -> EsiResponse:
+        """GET a route the OpenAPI client does not cover.
+
+        With ``required_scopes`` the character's token is sent; without, the
+        route is public. ``paged=True`` follows X-Pages.
+        """
+        access_token = None
+        if required_scopes:
+            token, status = self._valid_token(required_scopes)
+            if status > 0:
+                return EsiResponse(status)
+            access_token = token.valid_access_token()
+        return self._http_response(
+            esi_request(
+                "GET",
+                path,
+                access_token=access_token,
+                params=params,
+                paged=paged,
+                empty=empty,
+            )
+        )
 
     def _operation_results(self, operation, **kwargs) -> EsiResponse:
         # django-esi raises HTTPNotModified on 304 instead of returning the
@@ -410,45 +464,11 @@ class EsiClient:
         Returns all blueprints for the character. Paginated; fetches all pages.
         Requires esi-characters.read_blueprints.v1.
         """
-        token, status = self._valid_token(
-            ["esi-characters.read_blueprints.v1"]
+        return self._raw_get(
+            f"/characters/{self.character_id}/blueprints/",
+            ["esi-characters.read_blueprints.v1"],
+            paged=True,
         )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/characters/{self.character_id}/blueprints/"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(
-                url,
-                params={"page": 1},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        all_blueprints = resp.json() if resp.content else []
-        total_pages = int(resp.headers.get("X-Pages", 1))
-
-        for page in range(2, total_pages + 1):
-            try:
-                page_resp = requests.get(
-                    url,
-                    params={"page": page},
-                    headers=headers,
-                    timeout=30,
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if page_resp.status_code >= 400:
-                return EsiResponse(response_code=page_resp.status_code)
-            page_data = page_resp.json() if page_resp.content else []
-            all_blueprints.extend(page_data)
-
-        return EsiResponse(response_code=SUCCESS, data=all_blueprints)
 
     def get_character_industry_jobs(
         self, include_completed: bool = True
@@ -545,45 +565,11 @@ class EsiClient:
         Returns all blueprints for the corporation. Paginated; fetches all pages.
         Requires esi-corporations.read_blueprints.v1 (Director).
         """
-        token, status = self._valid_token(
-            ["esi-corporations.read_blueprints.v1"]
+        return self._raw_get(
+            f"/corporations/{corporation_id}/blueprints/",
+            ["esi-corporations.read_blueprints.v1"],
+            paged=True,
         )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/blueprints/"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(
-                url,
-                params={"page": 1},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        all_blueprints = resp.json() if resp.content else []
-        total_pages = int(resp.headers.get("X-Pages", 1))
-
-        for page in range(2, total_pages + 1):
-            try:
-                page_resp = requests.get(
-                    url,
-                    params={"page": page},
-                    headers=headers,
-                    timeout=30,
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if page_resp.status_code >= 400:
-                return EsiResponse(response_code=page_resp.status_code)
-            page_data = page_resp.json() if page_resp.content else []
-            all_blueprints.extend(page_data)
-
-        return EsiResponse(response_code=SUCCESS, data=all_blueprints)
 
     def get_corporation_industry_jobs(
         self, corporation_id: int, include_completed: bool = True
@@ -592,47 +578,12 @@ class EsiClient:
         Returns industry jobs for the corporation. Paginated; fetches all pages.
         Requires esi-industry.read_corporation_jobs.v1 (e.g. Factory_Manager).
         """
-        token, status = self._valid_token(
-            ["esi-industry.read_corporation_jobs.v1"]
+        return self._raw_get(
+            f"/corporations/{corporation_id}/industry/jobs/",
+            ["esi-industry.read_corporation_jobs.v1"],
+            params={"include_completed": include_completed},
+            paged=True,
         )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/industry/jobs/"
-        params = {"include_completed": include_completed}
-        headers = self._bearer_headers(token)
-
-        try:
-            resp = requests.get(
-                url,
-                params={**params, "page": 1},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        all_jobs = resp.json() if resp.content else []
-        total_pages = int(resp.headers.get("X-Pages", 1))
-
-        for page in range(2, total_pages + 1):
-            try:
-                page_resp = requests.get(
-                    url,
-                    params={**params, "page": page},
-                    headers=headers,
-                    timeout=30,
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if page_resp.status_code >= 400:
-                return EsiResponse(response_code=page_resp.status_code)
-            page_jobs = page_resp.json() if page_resp.content else []
-            all_jobs.extend(page_jobs)
-
-        return EsiResponse(response_code=SUCCESS, data=all_jobs)
 
     def get_corporation_wallet_journal_all_divisions(
         self, corporation_id: int
@@ -640,41 +591,21 @@ class EsiClient:
         """
         Fetches all wallet journal entries for all divisions (1-7), all pages.
         Requires esi-wallet.read_corporation_wallets.v1.
-        Returns EsiResponse with data = list of (division, entries) or flat list.
+        Returns EsiResponse with data = flat list, each entry tagged with
+        its ``division``.
         """
-        token, status = self._valid_token(
-            ["esi-wallet.read_corporation_wallets.v1"]
-        )
-        if status > 0:
-            return EsiResponse(status)
-
         all_entries = []
         for division in range(1, 8):
-            page = 1
-            while True:
-                url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
-                headers = self._bearer_headers(token)
-                try:
-                    resp = requests.get(
-                        url,
-                        params={"page": page},
-                        headers=headers,
-                        timeout=30,
-                    )
-                except Exception as e:
-                    return EsiResponse(
-                        response_code=ERROR_CALLING_ESI, response=e
-                    )
-                if resp.status_code >= 400:
-                    return EsiResponse(response_code=resp.status_code)
-                entries = resp.json() if resp.content else []
-                for e in entries:
-                    e["division"] = division
-                all_entries.extend(entries)
-                total_pages = int(resp.headers.get("X-Pages", 1))
-                if page >= total_pages:
-                    break
-                page += 1
+            response = self._raw_get(
+                f"/corporations/{corporation_id}/wallets/{division}/journal/",
+                ["esi-wallet.read_corporation_wallets.v1"],
+                paged=True,
+            )
+            if not response.success():
+                return response
+            for entry in response.data:
+                entry["division"] = division
+            all_entries.extend(response.data)
 
         return EsiResponse(response_code=SUCCESS, data=all_entries)
 
@@ -703,23 +634,11 @@ class EsiClient:
         Requires esi-wallet.read_corporation_wallets.v1
         (Accountant / Junior_Accountant).
         """
-        token, status = self._valid_token(
-            ["esi-wallet.read_corporation_wallets.v1"]
+        return self._raw_get(
+            f"/corporations/{corporation_id}/wallets/",
+            ["esi-wallet.read_corporation_wallets.v1"],
+            empty=[],
         )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(url, headers=headers, timeout=30)
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        data = resp.json() if resp.content else []
-        return EsiResponse(response_code=SUCCESS, data=data)
 
     def get_corporation_wallet_transactions(
         self, corporation_id: int
@@ -728,27 +647,17 @@ class EsiClient:
         Market wallet transactions for divisions 1–7.
         Requires esi-wallet.read_corporation_wallets.v1.
         """
-        token, status = self._valid_token(
-            ["esi-wallet.read_corporation_wallets.v1"]
-        )
-        if status > 0:
-            return EsiResponse(status)
-
         all_entries: list = []
         for division in range(1, 8):
-            url = (
-                f"{ESI_BASE_URL}/corporations/{corporation_id}/"
-                f"wallets/{division}/transactions/"
+            response = self._raw_get(
+                f"/corporations/{corporation_id}/"
+                f"wallets/{division}/transactions/",
+                ["esi-wallet.read_corporation_wallets.v1"],
+                empty=[],
             )
-            headers = self._bearer_headers(token)
-            try:
-                resp = requests.get(url, headers=headers, timeout=30)
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if resp.status_code >= 400:
-                return EsiResponse(response_code=resp.status_code)
-            entries = resp.json() if resp.content else []
-            for entry in entries:
+            if not response.success():
+                return response
+            for entry in response.data:
                 entry["division"] = division
                 all_entries.append(entry)
 
@@ -807,25 +716,19 @@ class EsiClient:
         Fetch daily market history for a type in a region (public endpoint).
         Returns list of dicts with date, average, highest, lowest, order_count, volume.
         """
-        url = f"{ESI_BASE_URL}/markets/{region_id}/history/"
-        try:
-            resp = requests.get(
-                url,
-                params={"type_id": type_id},
-                timeout=30,
-            )
-        except Exception as e:
-            logger.exception(
+        response = self._raw_get(
+            f"/markets/{region_id}/history/",
+            params={"type_id": type_id},
+            empty=[],
+        )
+        if response.response_code == ERROR_CALLING_ESI:
+            logger.warning(
                 "ESI request failed for region %s type %s: %s",
                 region_id,
                 type_id,
-                e,
+                response.response,
             )
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-        data = resp.json() if resp.content else []
-        return EsiResponse(response_code=SUCCESS, data=data)
+        return response
 
     def get_structure_market_orders_page(
         self, structure_id: int, page: int
@@ -881,19 +784,23 @@ class EsiClient:
             yield all_orders
 
     def get_active_fleet(self) -> EsiResponse:
+        """The fleet the character is in. ``data`` keeps ESI's error body
+        on a 4xx (e.g. "Character is not in a fleet")."""
         token, status = self._valid_token(["esi-fleets.read_fleet.v1"])
         if status > 0:
             return EsiResponse(status)
 
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/fleet/",
+        result = esi_request(
+            "GET",
+            f"/characters/{self.character_id}/fleet/",
+            access_token=token.valid_access_token(),
             timeout=10,
-            headers=self._bearer_headers(token),
         )
-
-        return EsiResponse(
-            response_code=response.status_code, data=response.json()
-        )
+        if result.status is None:
+            return EsiResponse(
+                response_code=ERROR_CALLING_ESI, response=result.error
+            )
+        return EsiResponse(response_code=result.status, data=result.data)
 
     def get_fleet_members(self, fleet_id: int) -> EsiResponse:
         token, status = self._valid_token(["esi-fleets.read_fleet.v1"])
@@ -948,53 +855,21 @@ class EsiClient:
         Returns roles of all corporation members. Paginated; fetches all pages.
         Requires Personnel_Manager or grantable role (esi-corporations.read_corporation_membership.v1).
         """
-        required_scopes = ["esi-corporations.read_corporation_membership.v1"]
-        token, status = self._valid_token(required_scopes)
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/roles/"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(
-                url,
-                params={"page": 1},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        all_roles = resp.json() if resp.content else []
-        total_pages = int(resp.headers.get("X-Pages", 1))
-
-        for page in range(2, total_pages + 1):
-            try:
-                page_resp = requests.get(
-                    url,
-                    params={"page": page},
-                    headers=headers,
-                    timeout=30,
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if page_resp.status_code >= 400:
-                return EsiResponse(response_code=page_resp.status_code)
-            page_data = page_resp.json() if page_resp.content else []
-            all_roles.extend(page_data)
-
-        return EsiResponse(response_code=SUCCESS, data=all_roles)
+        return self._raw_get(
+            f"/corporations/{corporation_id}/roles/",
+            ["esi-corporations.read_corporation_membership.v1"],
+            paged=True,
+        )
 
     def get_corporation_titles(self, corporation_id: int) -> EsiResponse:
         """
         Returns corporation title definitions (roles granted by each title).
         Requires esi-corporations.read_titles.v1.
         """
-        return self._paginated_corporation_get(
+        return self._raw_get(
             f"/corporations/{corporation_id}/titles/",
             ["esi-corporations.read_titles.v1"],
+            paged=True,
         )
 
     def get_corporation_member_titles(
@@ -1004,51 +879,11 @@ class EsiClient:
         Returns title ids held by each corporation member.
         Requires esi-corporations.read_titles.v1.
         """
-        return self._paginated_corporation_get(
+        return self._raw_get(
             f"/corporations/{corporation_id}/members/titles/",
             ["esi-corporations.read_titles.v1"],
+            paged=True,
         )
-
-    def _paginated_corporation_get(
-        self, path: str, required_scopes: List[str]
-    ) -> EsiResponse:
-        token, status = self._valid_token(required_scopes)
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}{path}"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(
-                url,
-                params={"page": 1},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        all_rows = resp.json() if resp.content else []
-        total_pages = int(resp.headers.get("X-Pages", 1))
-
-        for page in range(2, total_pages + 1):
-            try:
-                page_resp = requests.get(
-                    url,
-                    params={"page": page},
-                    headers=headers,
-                    timeout=30,
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if page_resp.status_code >= 400:
-                return EsiResponse(response_code=page_resp.status_code)
-            page_data = page_resp.json() if page_resp.content else []
-            all_rows.extend(page_data)
-
-        return EsiResponse(response_code=SUCCESS, data=all_rows)
 
     def send_evemail(self, mail_details) -> EsiResponse:
         required_scopes = ["esi-mail.send_mail.v1"]
@@ -1076,23 +911,23 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/search/",
+        result = esi_request(
+            "GET",
+            f"/characters/{self.character_id}/search/",
+            access_token=token.valid_access_token(),
             params={
                 "categories": category,
                 "search": search,
                 "strict": "false",
             },
             timeout=10,
-            headers=self._bearer_headers(token),
         )
-        try:
-            data = response.json() if response.content else {}
-        except ValueError:
-            data = {}
-        if not isinstance(data, dict):
-            data = {}
-        return EsiResponse(response_code=response.status_code, data=data)
+        if result.status is None:
+            return EsiResponse(
+                response_code=ERROR_CALLING_ESI, response=result.error, data={}
+            )
+        data = result.data if isinstance(result.data, dict) else {}
+        return EsiResponse(response_code=result.status, data=data)
 
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
         if not live_esi_allowed():
@@ -1153,8 +988,10 @@ class EsiClient:
             return EsiResponse(status)
 
         assert_esi_http_allowed()
-        response = requests.post(
-            url=f"{ESI_BASE_URL}/ui/autopilot/waypoint/",
+        result = esi_request(
+            "POST",
+            "/ui/autopilot/waypoint/",
+            access_token=token.valid_access_token(),
             params={
                 "add_to_beginning": "false",
                 "clear_other_waypoints": (
@@ -1163,41 +1000,28 @@ class EsiClient:
                 "destination_id": int(destination_id),
             },
             timeout=15,
-            headers=self._bearer_headers(token),
         )
-        if response.status_code == 204:
+        if result.status is None:
+            return EsiResponse(
+                response_code=ERROR_CALLING_ESI, response=result.error
+            )
+        if result.status == 204:
             return EsiResponse(response_code=SUCCESS)
-        return EsiResponse(response_code=response.status_code)
+        return EsiResponse(response_code=result.status)
 
     def get_character_planets(self) -> EsiResponse:
         """Returns the list of planetary colonies for the character."""
-        token, status = self._valid_token(["esi-planets.manage_planets.v1"])
-        if status > 0:
-            return EsiResponse(status)
-
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/",
-            timeout=30,
-            headers=self._bearer_headers(token),
+        return self._raw_get(
+            f"/characters/{self.character_id}/planets/",
+            ["esi-planets.manage_planets.v1"],
         )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
 
     def get_character_planet_details(self, planet_id: int) -> EsiResponse:
         """Returns the full layout (pins, routes, links) for a character's planet colony."""
-        token, status = self._valid_token(["esi-planets.manage_planets.v1"])
-        if status > 0:
-            return EsiResponse(status)
-
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/{planet_id}/",
-            timeout=30,
-            headers=self._bearer_headers(token),
+        return self._raw_get(
+            f"/characters/{self.character_id}/planets/{planet_id}/",
+            ["esi-planets.manage_planets.v1"],
         )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
 
     def get_universe_schematic(self, schematic_id: int) -> EsiResponse:
         """
@@ -1205,60 +1029,28 @@ class EsiClient:
 
         Public endpoint; no auth required. Cached by ESI for up to 3600 seconds.
         """
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/universe/schematics/{schematic_id}/",
-            timeout=30,
-        )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
+        return self._raw_get(f"/universe/schematics/{schematic_id}/")
 
     def get_character_clones(self) -> EsiResponse:
         """Returns jump clones and medical clone location for the character."""
-        token, status = self._valid_token(["esi-clones.read_clones.v1"])
-        if status > 0:
-            return EsiResponse(status)
-
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/clones/",
-            timeout=30,
-            headers=self._bearer_headers(token),
+        return self._raw_get(
+            f"/characters/{self.character_id}/clones/",
+            ["esi-clones.read_clones.v1"],
         )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
 
     def get_character_implants(self) -> EsiResponse:
         """Returns active implant type IDs for the character."""
-        token, status = self._valid_token(["esi-clones.read_implants.v1"])
-        if status > 0:
-            return EsiResponse(status)
-
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/implants/",
-            timeout=30,
-            headers=self._bearer_headers(token),
+        return self._raw_get(
+            f"/characters/{self.character_id}/implants/",
+            ["esi-clones.read_implants.v1"],
         )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
 
     def get_character_mining_ledger(self) -> EsiResponse:
         """Returns the personal mining ledger for the character (last 30 days)."""
-        token, status = self._valid_token(
-            ["esi-industry.read_character_mining.v1"]
+        return self._raw_get(
+            f"/characters/{self.character_id}/mining/",
+            ["esi-industry.read_character_mining.v1"],
         )
-        if status > 0:
-            return EsiResponse(status)
-
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/mining/",
-            timeout=30,
-            headers=self._bearer_headers(token),
-        )
-        if response.status_code == 200:
-            return EsiResponse(response_code=SUCCESS, data=response.json())
-        return EsiResponse(response_code=response.status_code)
 
     def get_character_notifications(self) -> EsiResponse:
         """Returns recent notifications for the character"""
@@ -1271,33 +1063,35 @@ class EsiClient:
 
         # Use direct call as Swagger validation fails. The requests response
         # stays attached so callers can read ESI budget headers, including
-        # on a 200. A 304 has no body.
-        headers = self._bearer_headers(token)
-        # campaigns owns the shared ETag ledger. Importing it here, not at
-        # module level, avoids a cycle through campaigns.tasks -> EsiClient.
-        # pylint: disable=import-outside-toplevel
-        from campaigns.services.esi_gate import notification_etag
-
-        etag = notification_etag(self.character_id)
+        # on a 200. A 304 has no body. Callers account the call against the
+        # char-notification bucket themselves, so the transport does not.
+        headers = {}
+        etag = esi_budget.notification_etag(self.character_id)
         if etag:
             headers["If-None-Match"] = etag
 
-        response = requests.get(
-            url=f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/",
-            timeout=10,
+        result = esi_request(
+            "GET",
+            f"/characters/{self.character_id}/notifications/",
+            access_token=token.valid_access_token(),
             headers=headers,
+            timeout=10,
+            account=False,
         )
-
-        if response.status_code == 304:
-            return EsiResponse(response_code=304, response=response)
-        if response.status_code == 200:
+        if result.status is None:
             return EsiResponse(
-                response_code=200, data=response.json(), response=response
+                response_code=ERROR_CALLING_ESI, response=result.error
+            )
+        if result.status == 304:
+            return EsiResponse(response_code=304, response=result.response)
+        if result.status == 200 and result.error is None:
+            return EsiResponse(
+                response_code=200, data=result.data, response=result.response
             )
         return EsiResponse(
-            response_code=response.status_code,
-            data=response.text,
-            response=response,
+            response_code=result.status,
+            data=result.text,
+            response=result.response,
         )
 
     def get_character_affiliations(self, character_ids) -> EsiResponse:
@@ -1339,23 +1133,15 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        headers = {
-            **self._bearer_headers(token),
-            "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
-        }
-        try:
-            resp = requests.request(
-                method, url, headers=headers, json=json_body, timeout=30
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(
-                response_code=resp.status_code, response=resp.text
-            )
-        return EsiResponse(
-            response_code=SUCCESS,
-            data=resp.json() if resp.content else None,
+        return self._http_response(
+            esi_request(
+                method,
+                url,
+                access_token=token.valid_access_token(),
+                json_body=json_body,
+                compat=True,
+            ),
+            keep_error_text=True,
         )
 
     # --- character fittings (no OpenAPI tag in django-esi) -------------------
@@ -1393,27 +1179,24 @@ class EsiClient:
         token, status = self._valid_token(required_scopes)
         if status > 0:
             return EsiResponse(status)
-        headers = {
-            **self._bearer_headers(token),
-            "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
-        }
+        access_token = token.valid_access_token()
         rows = []
         before = None
         for _ in range(MAX_CURSOR_PAGES):
             query = {**(params or {}), "limit": 100}
             if before:
                 query["before"] = before
-            try:
-                resp = requests.get(
-                    url, params=query, headers=headers, timeout=30
-                )
-            except Exception as e:
-                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-            if resp.status_code >= 400:
-                return EsiResponse(
-                    response_code=resp.status_code, response=resp.text
-                )
-            body = resp.json() if resp.content else {}
+            result = esi_request(
+                "GET",
+                url,
+                access_token=access_token,
+                params=query,
+                compat=True,
+                empty={},
+            )
+            if not result.ok:
+                return self._http_response(result, keep_error_text=True)
+            body = result.data or {}
             page = body.get(key) or []
             rows.extend(page)
             next_before = (body.get("cursor") or {}).get("before")
@@ -1568,28 +1351,28 @@ def get_region_market_orders_pages(region_id: int, type_id: int | None = None):
             region_id,
             page,
         )
-        url = f"{ESI_BASE_URL}/markets/{region_id}/orders/"
-        try:
-            resp = requests.get(url, params=params, timeout=30)
-        except Exception as e:
-            logger.exception(
+        result = esi_request(
+            "GET", f"/markets/{region_id}/orders/", params=params, empty=[]
+        )
+        if result.status is None:
+            logger.warning(
                 "ESI request failed for region %s page %s: %s",
                 region_id,
                 page,
-                e,
+                result.error,
             )
             yield None
             return
-        if resp.status_code >= 400:
+        if not result.ok:
             logger.warning(
                 "get_region_market_orders_pages: region_id=%s page=%s — status %s",
                 region_id,
                 page,
-                resp.status_code,
+                result.status,
             )
             yield None
             return
-        page_data = resp.json() if resp.content else []
+        page_data = result.data or []
         logger.info(
             "get_region_market_orders_pages: region_id=%s — page %s received, orders_count=%s",
             region_id,
