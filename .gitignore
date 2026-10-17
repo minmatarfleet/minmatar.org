@@ -188,3 +188,8 @@ mcps/.reddit-mcp/
 sde/*.zip
 
 *:Zone.Identifier
+
+# Research notes that may carry security detail. Unfixed security findings
+# go to private GitHub security advisories, never the repo (docs/research/README.md).
+docs/research/*bug-crawl*
+docs/research/*security*
