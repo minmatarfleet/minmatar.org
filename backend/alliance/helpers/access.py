@@ -4,11 +4,11 @@ from django.contrib.auth.models import User
 
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation
-from groups.helpers import PEOPLE_TEAM, user_in_group_named
 from groups.helpers.feature_access import can_use_feature
 
 ALLIANCE_ID = 99011978
 MH0LD_TICKER = "MH0LD"
+EXECUTOR_FEATURE = "alliance.health.executor"
 
 
 def mfa_corporation_qs():
@@ -41,10 +41,14 @@ def officer_corp_ids(user: User) -> set[int]:
 
 
 def is_alliance_executor(user: User) -> bool:
-    """People Team (and superuser) act alliance-wide."""
+    """People Team (and superusers) act alliance-wide.
+
+    Through the feature evaluator, so a member who is on leave or whose
+    account is deactivated does not.
+    """
     if not user or not user.is_authenticated:
         return False
-    return bool(user.is_superuser) or user_in_group_named(user, PEOPLE_TEAM)
+    return can_use_feature(user, EXECUTOR_FEATURE, allow_legacy=False)
 
 
 def can_view_health(user: User) -> bool:

@@ -897,6 +897,9 @@ class AllianceHealthEndpointTestCase(TestCase):
         Group.objects.get_or_create(name="On Leave")
         people = User.objects.create_user(username="people_exec")
         people.groups.add(Group.objects.get(name="People Team"))
+        # Wire alliance.health.executor to the group now that it exists.
+        SyncFeatures().handle()
+        clear_feature_cache()
         token = jwt.encode(
             {"user_id": people.id},
             settings.SECRET_KEY,
