@@ -712,6 +712,19 @@ class HangarAssetsUnavailableTestCase(TestCase):
         self.assertEqual(self.item.stockpile_quantity, 1000)
         self.assertEqual(remaining_sale_quantities().get(self.p2.id), 1000)
 
+    def test_failed_read_is_attempted_once_per_refresh(self):
+        with patch(
+            "buyback.helpers.hangar.fetch_corporation_assets",
+            return_value=None,
+        ) as fetch:
+            refresh_buyback_ledger(
+                sync_contracts=False,
+                sync_sell_orders=False,
+                seed_allowlist=False,
+            )
+
+        self.assertEqual(fetch.call_count, 1)
+
     def test_empty_hangar_read_is_still_recorded(self):
         with patch(
             "buyback.helpers.hangar.fetch_corporation_assets",

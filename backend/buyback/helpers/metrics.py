@@ -101,6 +101,7 @@ def refresh_accepted_item_metrics(
     lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS,
     stockpile_quantities: dict[int, int] | None = None,
     seed: bool = True,
+    fetch_stockpile: bool = True,
 ) -> dict[str, int]:
     """Seed allowlist (optional), then write demand + stockpile onto accepted items."""
     seed_result = {"created": 0, "updated": 0, "seeded": 0}
@@ -110,11 +111,10 @@ def refresh_accepted_item_metrics(
     leaf_quantities = demand_quantities_from_recent_orders(
         lookback_days=lookback_days
     )
-    hangar_qty = (
-        stockpile_quantities
-        if stockpile_quantities is not None
-        else fetch_stockpile_quantities()
-    )
+    # fetch_stockpile=False: the caller already tried and the read failed.
+    hangar_qty = stockpile_quantities
+    if hangar_qty is None and fetch_stockpile:
+        hangar_qty = fetch_stockpile_quantities()
 
     active_items = list(
         BuybackAcceptedItem.objects.filter(active=True).select_related(

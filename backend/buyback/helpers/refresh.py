@@ -75,6 +75,8 @@ def refresh_buyback_ledger(
         result["metrics"] = refresh_accepted_item_metrics(
             stockpile_quantities=stockpile_qty,
             seed=seed_allowlist,
+            # Already read above; a failed read is not retried here.
+            fetch_stockpile=False,
         )
         logger.info("Buyback metrics: %s", result["metrics"])
 
