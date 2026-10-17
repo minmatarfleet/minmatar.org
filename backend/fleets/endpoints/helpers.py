@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from discord.client import DiscordClient
 from eveonline.helpers.characters import user_characters
+from eveonline.helpers.prime_time import prime_bucket
 from fittings.models import EveDoctrine
 from groups.helpers.feature_access import can_use_feature
 
@@ -72,19 +73,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
 
 
 def time_region(time: datetime) -> str:
-    match time.hour:
-        case 22 | 23 | 0 | 1 | 2 | 3 | 4:
-            return "US"
-        case 5 | 6 | 7 | 8 | 9:
-            return "US_AP"
-        case 10 | 11 | 12 | 13 | 14:
-            return "AP"
-        case 15 | 16 | 17 | 18 | 19:
-            return "EU"
-        case 20 | 21:
-            return "EU_US"
-        case _:
-            return "??"
+    return prime_bucket(time.hour)
 
 
 def _fleet_authorized(request, fleet: EveFleet) -> bool:
