@@ -13,6 +13,7 @@ from django.db.models import Q
 
 from campaigns.helpers import CampaignRoster, day_bounds
 from campaigns.models import Campaign, CampaignKillmail
+from fleets.helpers.presence import member_window, was_present
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 
 logger = logging.getLogger(__name__)
@@ -50,13 +51,18 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     formed or joined. A pilot counts once per fleet,
     however many times they rejoined it.
 
-    ESI reports when a pilot joined a fleet but never when they left. The
-    fleet poller rewrites a member row every pass while that pilot is still
-    in the fleet, so ``updated_at`` is the last moment we actually saw them
-    and ``[join_time, updated_at]`` is the window they were present for. A
-    standing fleet stays open for days, so bounding by the fleet's lifetime
-    instead would credit someone who joined once and logged off for every
-    day after.
+    ESI reports when a pilot joined a fleet but never when they left, so
+    presence is the member's window from fleets.helpers.presence: first
+    seen to last seen. A standing fleet stays open for days, so bounding by
+    the fleet's lifetime instead would credit someone who joined once and
+    logged off for every day after.
+
+    Units: ``attended`` counts distinct scheduled fleets (EveFleet) for the
+    day, so a multi-day standing fleet is one fleet per day the pilot was in
+    it. That is on purpose: each day in it earns the day's fleet points.
+    ``led`` counts fleets the pilot created that had an ESI instance up that
+    day, standing fleets excluded and gangs counted apart, which is why it
+    differs from fleets.helpers.metrics.led_fleets.
     """
     start, end = day_bounds(day)
     roster = CampaignRoster(campaign)
@@ -92,11 +98,15 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     if not instances:
         return {}
 
-    # Anyone who had joined by the end of the day was in the fleet during it;
-    # the instance filter already limits this to fleets that were up.
-    members = EveFleetInstanceMember.objects.filter(
-        eve_fleet_instance__in=instances, join_time__lt=end
-    ).select_related("eve_fleet_instance__eve_fleet")
+    # Anyone first seen by the end of the day may have been in the fleet
+    # during it; _presence_window drops those who were gone before it. ESI
+    # moves join_time forward on a rejoin, so it alone would lose the days
+    # before the rejoin.
+    members = (
+        EveFleetInstanceMember.objects.filter(eve_fleet_instance__in=instances)
+        .filter(Q(join_time__lt=end) | Q(created_at__lt=end))
+        .select_related("eve_fleet_instance__eve_fleet")
+    )
 
     for member in members:
         fleet = member.eve_fleet_instance.eve_fleet
@@ -140,13 +150,14 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
 def _presence_window(member, start, end):
     """When this pilot was in the fleet, clipped to the campaign day.
 
-    The poller rewrites the row on every pass, so ``updated_at`` is the last
-    time we actually saw them. Returns None when that window does not reach
-    into the day at all. A pilot seen by a single poll gets the attendance
-    but no minutes, which is exactly what we know.
+    Returns None when the member's window does not reach into the day at
+    all. A pilot seen by a single poll gets the attendance but no minutes,
+    which is exactly what we know. A pilot who dropped and rejoined is
+    counted for the gap too: the poller cannot see it.
     """
-    joined_at = member.join_time
-    last_seen = member.updated_at or joined_at
+    joined_at, last_seen = member_window(
+        member.join_time, member.created_at, member.updated_at
+    )
     instance = member.eve_fleet_instance
     if instance.end_time:
         last_seen = min(last_seen, instance.end_time)
@@ -179,7 +190,12 @@ def link_killmails_to_fleets(campaign: Campaign, day) -> int:
         eve_fleet_instance__in=instances
     ).select_related("eve_fleet_instance"):
         membership.setdefault(member.character_id, []).append(
-            member.eve_fleet_instance
+            (
+                member.eve_fleet_instance,
+                member_window(
+                    member.join_time, member.created_at, member.updated_at
+                ),
+            )
         )
 
     if not membership:
@@ -203,11 +219,19 @@ def link_killmails_to_fleets(campaign: Campaign, day) -> int:
 
 
 def _fleet_for_mail(mail: CampaignKillmail, membership: dict):
+    """The fleet a pilot on the mail was in when it happened, if any.
+
+    The pilot's own window decides, as on the fleet page's kill card: a
+    standing fleet stays open for days, so being in it once is not being in
+    it for every kill after.
+    """
     for participant in mail.participants.all():
-        for instance in membership.get(participant.character_id, []):
+        for instance, window in membership.get(participant.character_id, []):
             if instance.start_time > mail.killmail_time:
                 continue
             if instance.end_time and instance.end_time < mail.killmail_time:
+                continue
+            if not was_present(window, mail.killmail_time):
                 continue
             return instance.eve_fleet_id
     return None
