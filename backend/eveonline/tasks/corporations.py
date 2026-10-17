@@ -16,7 +16,7 @@ from eveonline.helpers.corporations import (
     update_corporation_populate as refresh_corporation_populate,
     update_corporation_wallet_journal as refresh_corporation_wallet_journal,
 )
-from eveonline.constants import ALLIED_ALLIANCE_NAMES
+from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations import projects
 from eveonline.models import EveCharacter, EveCorporation
 
@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 @app.task
 def update_corporations():
     """Queue update_corporation for each allied corporation."""
-    for corporation in EveCorporation.objects.filter(
-        alliance__name__in=ALLIED_ALLIANCE_NAMES
-    ):
+    for corporation in member_corporations():
         update_corporation.apply_async(
             args=[corporation.corporation_id], queue="eveonline"
         )
@@ -37,9 +35,9 @@ def update_corporations():
 @app.task
 def sync_corporations_projects():
     """Queue a projects sync for each allied corporation."""
-    for corporation_id in EveCorporation.objects.filter(
-        alliance__name__in=ALLIED_ALLIANCE_NAMES
-    ).values_list("corporation_id", flat=True):
+    for corporation_id in member_corporations().values_list(
+        "corporation_id", flat=True
+    ):
         sync_corporation_projects.apply_async(
             args=[corporation_id], queue="eveonline"
         )
@@ -133,9 +131,7 @@ def refresh_corporation_profile_stats(corporation_id=None):
     if corporation_id is not None:
         corporations = corporations.filter(corporation_id=corporation_id)
     else:
-        corporations = corporations.filter(
-            alliance__name__in=ALLIED_ALLIANCE_NAMES
-        )
+        corporations = member_corporations()
     corporations = list(corporations)
     # One pass over recent killmails for every character involved, instead
     # of one per corporation.
