@@ -45,7 +45,11 @@ def unit_prices_for_types(
     *,
     settings: EveBuybackSettings | None = None,
 ) -> dict[int, Decimal]:
-    """Unit sell prices: configured Jita basis, then Forge history."""
+    """
+    Unit sell prices: configured Jita basis (with split as its fallback),
+    then Forge history for every basis. Types with no price at all are
+    omitted; callers must not sell those at 0 ISK.
+    """
     if not type_ids:
         return {}
     unique_ids = list({int(tid) for tid in type_ids})
@@ -63,8 +67,11 @@ def unit_prices_for_types(
         )
         if unit is not None:
             prices[type_id] = unit
+    # Same rule as the appraisal side (get_baseline_buy_prices): a type with
+    # no usable live value at the baseline falls back to Forge history
+    # (then EveMarketPrice), whatever the basis.
     missing = [tid for tid in unique_ids if tid not in prices]
-    if missing and basis == SellPriceBasis.JITA_SPLIT:
+    if missing:
         prices.update(get_history_averages_by_type_id(missing))
     if markup:
         factor = Decimal("1") + markup
