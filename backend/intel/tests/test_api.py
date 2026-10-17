@@ -7,9 +7,14 @@ from django.contrib.auth.models import Permission, User
 from django.core.cache import cache
 from django.test import TestCase
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from eveonline.models import EveCharacter
-from feed.models import FeedAmarrFleetAlert, FeedCapitalAlert
+from feed.models import (
+    FeedAmarrFleetAlert,
+    FeedCapitalAlert,
+    FeedCharacterAffiliation,
+)
 from intel.models import IntelReport
 from intel.services import local as local_service
 from intel.services.local import FRIENDLY, HOSTILE, NEUTRAL
@@ -125,18 +130,11 @@ class IntelApiTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(IntelReport.objects.count(), 0)
 
-    def test_preview_saves_nothing_and_skips_esi(self):
-        patches, calls = fake_esi()
-        for p in patches:
-            p.start()
-            self.addCleanup(p.stop)
-        response = self.post(
-            "/reports/preview", {"text": "Ardo Kesh\nNyra Holdt"}
-        )
+    def test_preview_saves_nothing(self):
+        response = self.post("/reports/preview", {"text": DSCAN_PASTE})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["kind"], "local")
-        self.assertEqual(response.json()["summary"]["pilots"], 2)
-        self.assertEqual(calls, [])
+        self.assertEqual(response.json()["kind"], "dscan")
+        self.assertEqual(response.json()["summary"]["ships"], 5)
         self.assertEqual(IntelReport.objects.count(), 0)
 
     def test_permissions(self):
@@ -253,6 +251,98 @@ class LocalReportTests(TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(second["previous"]["hostile_delta"], 0)
 
+    def preview_local(self, names):
+        return self.client.post(
+            "/api/intel/reports/preview",
+            {"text": "\n".join(names)},
+            content_type="application/json",
+            **self.headers,
+        )
+
+    def start(self, patches):
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_preview_resolves_and_share_reuses_it(self):
+        patches, calls = fake_esi(
+            ids={"amarr one": 1},
+            affiliations={
+                1: {
+                    "corporation_id": 10,
+                    "alliance_id": 500,
+                    "faction_id": 500003,
+                }
+            },
+            names={500: "Hostile Alliance"},
+        )
+        self.start(patches)
+        preview = self.preview_local(["Amarr One"]).json()
+        self.assertTrue(preview["summary"]["resolved"])
+        self.assertEqual(preview["summary"]["standings"][HOSTILE], 1)
+        self.assertEqual(
+            preview["summary"]["alliances"][0]["name"], "Hostile Alliance"
+        )
+        self.assertEqual(IntelReport.objects.count(), 0)
+
+        calls.clear()
+        shared = self.share_local(["Amarr One"]).json()
+        self.assertEqual(calls, [])
+        self.assertEqual(shared["summary"], preview["summary"])
+
+    def test_feed_affiliations_cover_an_esi_outage_uncached(self):
+        FeedCharacterAffiliation.objects.create(
+            character_id=1,
+            faction_id=500003,
+            alliance_id=500,
+            esi_checked_at=timezone.now() - timedelta(days=2),
+        )
+        # Seen on a killmail but never confirmed with ESI: not trusted.
+        FeedCharacterAffiliation.objects.create(
+            character_id=2, faction_id=500002
+        )
+        patches, calls = fake_esi(
+            ids={"amarr one": 1, "unchecked": 2},
+            names={500: "Hostile Alliance"},
+        )
+        self.start(patches)
+        with patch.object(
+            local_service, "_esi_affiliations", return_value=None
+        ):
+            summary = self.preview_local(["Amarr One", "Unchecked"]).json()[
+                "summary"
+            ]
+        self.assertTrue(summary["resolved"])
+        self.assertEqual(summary["standings"][HOSTILE], 1)
+        self.assertEqual(summary["unknown"], 1)
+
+        # ESI is back: the feed's answer wasn't cached, so ESI is asked.
+        calls.clear()
+        self.preview_local(["Amarr One"])
+        self.assertEqual(calls, [("aff", [1])])
+
+    def test_no_esi_near_the_error_limit(self):
+        patches, calls = fake_esi(ids={"amarr one": 1})
+        self.start(patches)
+        with patch.object(
+            local_service.esi_gate, "error_budget", return_value=5
+        ):
+            summary = self.preview_local(["Amarr One"]).json()["summary"]
+        self.assertEqual(calls, [])
+        self.assertFalse(summary["resolved"])
+        self.assertEqual(summary["pilots"], 1)
+
+    def test_preview_rate_limit_skips_esi_but_still_parses(self):
+        patches, calls = fake_esi(ids={"amarr one": 1})
+        self.start(patches)
+        with patch("intel.router.PREVIEWS_PER_WINDOW", 1):
+            self.preview_local(["Amarr One"])
+            calls.clear()
+            response = self.preview_local(["Someone New"])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["summary"]["pilots"], 1)
+        self.assertEqual(calls, [])
+
     def test_esi_down_still_saves(self):
         with patch.object(local_service, "_esi_ids", return_value=None):
             data = self.share_local(["Amarr One", "Rando"]).json()
@@ -308,7 +398,8 @@ class RecentTests(TestCase):
             pilots=22,
             ship_counts={"24696": 2, "2006": 6, "670": 3},
             cluster_key="fleet_active:x",
-            last_activity_at=now - timedelta(minutes=12),
+            last_activity_at=now - timedelta(minutes=2),
+            fight_at=now - timedelta(minutes=12),
         )
         FeedAmarrFleetAlert.objects.create(
             solar_system_id=30003072,
@@ -347,6 +438,12 @@ class RecentTests(TestCase):
         self.assertEqual(
             [(s["name"], s["count"]) for s in fleet["ships"]],
             [("Harbinger", 2), ("Omen", 6)],
+        )
+        # When the fight happened, not the last Discord edit.
+        self.assertAlmostEqual(
+            parse_datetime(fleet["occurred_at"]),
+            now - timedelta(minutes=12),
+            delta=timedelta(seconds=1),
         )
 
     def test_cached_until_a_report_is_shared(self):

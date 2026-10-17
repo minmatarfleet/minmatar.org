@@ -41,11 +41,13 @@ function strip(item, index) {
     return `<span class="intel-strip">${hulls}${pop}</span>`
 }
 
+// Pings name no source (they all come from the feed), and a fleet ping's summary already starts "Amarr fleet".
 function source_line(item) {
-    const kind = `<span class="intel-kind${item.is_ping ? ' intel-kind--ping' : ''}">${esc(KIND_LABELS[item.kind] || item.kind)}</span>`
-    const ships = item.ships && item.ships.length ? ` · ${esc(item.summary)}` : ''
-    const note = item.note ? ` · “${esc(item.note)}”` : ''
-    return `<span class="intel-row__source">${kind} · ${esc(item.source)}${note}${ships}</span>`
+    const kind = item.kind === 'fleet' ? '' : `<span class="intel-kind${item.is_ping ? ' intel-kind--ping' : ''}">${esc(KIND_LABELS[item.kind] || item.kind)}</span>`
+    const source = item.is_ping ? '' : `${esc(item.source)}${item.note ? ` · “${esc(item.note)}”` : ''}`
+    const ships = item.ships && item.ships.length ? esc(item.summary) : ''
+    const parts = [kind, source, ships].filter(Boolean)
+    return parts.length ? `<span class="intel-row__source">${parts.join(' · ')}</span>` : ''
 }
 
 function row(item, index, { compact = false } = {}) {
@@ -116,7 +118,9 @@ function draft_preview(draft) {
     if (draft.status === 'loading') return '<div class="eve-empty">Reading the paste…</div>'
     if (!draft.summary) return ''
     if (draft.kind === 'local') {
-        return `<div class="intel-note">${esc(plural(draft.summary.pilots, 'pilot'))}. Militia, alliances and standings are looked up when you share.</div>`
+        // The preview resolves Local like a shared report; without ESI or the cache it can't, and Share tries again.
+        if (draft.summary.resolved) return local_summary(draft.summary)
+        return `<div class="intel-note">${esc(plural(draft.summary.pilots, 'pilot'))}. Standings couldn't be looked up right now; they're tried again when you share.</div>`
     }
     const s = draft.summary
     const classes = (s.classes || []).slice(0, 3).map(c => `<span><b>${esc(c.count)}</b> ${esc(c.name.toLowerCase())}${c.count === 1 ? '' : 's'}</span>`).join('')
@@ -198,10 +202,15 @@ function dscan_detail(r) {
 function local_detail(r) {
     const s = r.summary
     if (!s.resolved) return `<div class="intel-note">${esc(plural(s.pilots, 'pilot'))}. Standings couldn't be looked up when this was shared.</div>`
-    const st = s.standings
     const delta = r.previous && r.previous.hostile_delta
         ? `<span class="intel-up">${r.previous.hostile_delta > 0 ? '+' : ''}${esc(r.previous.hostile_delta)} hostile</span><span class="intel-meta">since ${esc(new Date(r.previous.created_at).toISOString().slice(11, 16))}</span>`
         : ''
+    return local_summary(s, delta)
+}
+
+// A resolved Local: standings bar, militia counts and alliances. Shared by the report view and the draft preview.
+function local_summary(s, delta = '') {
+    const st = s.standings
     const logo = id => `<img src="${esc(image_url({ kind: 'faction', id }, 64))}" alt="">`
     const alliances = (s.alliances || []).map(a => {
         const img = a.id ? `<img class="intel-logo" src="${esc(image_url({ kind: 'alliance', id: a.id }, 64))}" alt="">` : '<span class="intel-logo intel-logo--blank">—</span>'
@@ -261,6 +270,7 @@ function render() {
     const focused = document.activeElement && document.activeElement.id
     rendered = signature
     $('view').innerHTML = html()
+    capture_wheel()
     // The page's CSP allows no inline styles; sizes that come from data are set through the CSSOM.
     document.querySelectorAll('[data-flex]').forEach(el => { el.style.flex = el.dataset.flex })
     if (intel.draft && $('system')) {
@@ -271,11 +281,18 @@ function render() {
     }
 }
 
+// Click-through hands the mouse wheel to EVE as well, so a report or a list that scrolls takes the whole view.
+function capture_wheel() {
+    const intel = state && state.intel
+    const view = $('view')
+    view.toggleAttribute('data-interactive', !!(intel && (intel.draft || intel.detail)) || view.scrollHeight > view.clientHeight)
+}
+new ResizeObserver(capture_wheel).observe($('view'))
+
 on_state(next => {
     state = next
     window.eve_window.apply(state)
-    const intel = state.intel || { items: [], range: 5, alerts: true }
-    $('alerts').setAttribute('aria-pressed', String(!!(state.settings && state.settings.intel_alerts)))
+    const intel = state.intel || { items: [], range: 5 }
     $('range').textContent = intel.range == null ? 'Any distance' : `Within ${intel.range} jumps`
     $('range').hidden = !intel.map_ready
     $('status').textContent = intel.error ? 'Offline' : intel.updated_at ? 'Live' : 'Connecting…'
@@ -334,7 +351,6 @@ document.addEventListener('paste', event => {
     if (text) { event.preventDefault(); send('intel:paste-text', text) }
 })
 
-$('alerts').addEventListener('click', () => send('settings:set', { key: 'intel_alerts', value: !(state && state.settings && state.settings.intel_alerts) }))
 $('range').addEventListener('click', () => {
     const current = state && state.intel ? state.intel.range : 5
     send('intel:range', RANGES[(RANGES.indexOf(current) + 1) % RANGES.length])
@@ -353,15 +369,4 @@ document.addEventListener('mouseleave', () => {
     if (interactive) { interactive = false; send('mouse:interactive', false) }
 })
 
-// Bottom-right grip resizes the window (transparent windows have no native resize border).
-$('resize').addEventListener('pointerdown', event => {
-    $('resize').setPointerCapture(event.pointerId)
-    send('resize:start', { x: event.screenX, y: event.screenY })
-})
-$('resize').addEventListener('pointermove', event => {
-    if ($('resize').hasPointerCapture(event.pointerId)) send('resize:move', { x: event.screenX, y: event.screenY })
-})
-$('resize').addEventListener('pointerup', event => {
-    $('resize').releasePointerCapture(event.pointerId)
-    send('resize:end')
-})
+window.eve_window.wire_drag(send)

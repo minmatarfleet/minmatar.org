@@ -80,47 +80,36 @@ function fake_api(overrides = {}) {
 function controller(api, extra = {}) {
     let now = Date.parse('2026-10-16T20:00:00Z')
     const views = []
-    const notified = []
     const c = new IntelController({
         api,
         web_url: 'https://web.example',
         on_change: view => views.push(view),
-        notify: item => notified.push(item.id),
         now: () => now,
         ...extra,
     })
-    return { c, views, notified, tick: ms => { now += ms } }
+    return { c, views, tick: ms => { now += ms } }
 }
 
 const ping = (id, system_id) => ({ id, kind: 'caps', is_ping: true, system_id, system_name: 'X', occurred_at: '2026-10-16T19:59:00Z', ships: [] })
 
-test('annotates jumps from the client in front and only notifies new pings in range', async () => {
+test('annotates jumps from the client in front and marks rows new after the first load', async () => {
     const api = fake_api()
-    const { c, notified, tick } = controller(api)
+    const { c, tick } = controller(api)
     c.set_origin({ character: 'Ardo Kesh', system: 'Amamake' })
     api.set_recent([ping('c:1', 2)])
     await c.refresh()
-    assert.deepEqual(notified, [])                      // the first load is history, not news
     assert.equal(c.items[0].jumps, 1)
-    assert.equal(c.items[0].is_new, false)
+    assert.equal(c.items[0].is_new, false)              // the first load is history, not news
 
     tick(30_000)
-    api.set_recent([ping('c:3', 3), ping('c:2', 99), ping('c:1', 2)])
-    c.set_options({ range: 1 })
+    api.set_recent([ping('c:3', 3), ping('c:1', 2)])
     await c.refresh()
-    // c:3 is 2 jumps out (outside range 1); c:2 is off the map, so its distance is unknown and it counts.
-    assert.deepEqual(notified, ['c:2'])
     assert.equal(c.items.find(i => i.id === 'c:3').is_new, true)
 
     tick(NEW_FOR_MS + 1)
     c.annotate()
     assert.equal(c.items.find(i => i.id === 'c:3').is_new, false)
     assert.equal(api.calls.filter(call => call === 'map').length, 1)
-
-    c.set_options({ alerts: false })
-    api.set_recent([ping('c:4', 1)])
-    await c.refresh()
-    assert.deepEqual(notified, ['c:2'])
 })
 
 test('moving to another system re-counts jumps without a refetch', async () => {
@@ -144,14 +133,18 @@ test('paste -> preview -> share keeps the paste out of the pushed state', async 
     assert.equal(c.draft.system, 'Amamake')
     assert.ok(views.every(v => !JSON.stringify(v).includes('Punisher\t')))
 
-    c.edit_draft({ note: 'on the gate', system: 'Siseide' })
+    c.edit_draft({ system: 'Amamake' })                        // Share sends the field back unchanged
+    c.set_origin({ character: 'Ardo Kesh', system: 'Siseide' })
+    assert.equal(c.draft.system, 'Siseide')                     // so it still follows the client
+
+    c.edit_draft({ note: 'on the gate', system: 'Siseide ' })
     c.set_origin({ character: 'Ardo Kesh', system: 'Vard' })   // an edited system sticks
-    assert.equal(c.draft.system, 'Siseide')
+    assert.equal(c.draft.system, 'Siseide ')
 
     const url = await c.share()
     assert.equal(url, 'https://web.example/intel/scans/abc123')
     const [, body] = api.calls.find(call => call[0] === 'share')
-    assert.deepEqual(body, { text: '597\tA\tPunisher\t1 km', kind: 'dscan', system: 'Siseide', note: 'on the gate', character_name: 'Ardo Kesh' })
+    assert.deepEqual(body, { text: '597\tA\tPunisher\t1 km', kind: 'dscan', system: 'Siseide ', note: 'on the gate', character_name: 'Ardo Kesh' })
     assert.equal(c.draft.status, 'shared')
     assert.equal(c.url_for('abc123'), url)
     assert.equal(c.url_for('someone-elses'), null)

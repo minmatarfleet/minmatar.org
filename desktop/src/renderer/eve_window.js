@@ -38,7 +38,7 @@
         on_visibility(visible => document.body.classList.toggle('is-hidden', !visible))
     }
 
-    // Shared overlay-window behaviour: header buttons, click-through, and the resize grip.
+    // Shared overlay-window behaviour: header buttons, click-through, and moving/resizing.
     function wire_overlay(send) {
         document.querySelectorAll('[data-command]').forEach(button => {
             button.addEventListener('click', () => send(button.dataset.command))
@@ -57,22 +57,36 @@
             if (interactive) { interactive = false; send('mouse:interactive', false) }
         })
 
-        // Bottom-right grip resizes the window (transparent windows have no native resize border).
-        const grip = document.getElementById('resize')
-        grip.addEventListener('pointerdown', event => {
-            grip.setPointerCapture(event.pointerId)
-            send('resize:start', { x: event.screenX, y: event.screenY })
-        })
-        grip.addEventListener('pointermove', event => {
-            if (grip.hasPointerCapture(event.pointerId)) send('resize:move', { x: event.screenX, y: event.screenY })
-        })
-        grip.addEventListener('pointerup', event => {
-            grip.releasePointerCapture(event.pointerId)
-            send('resize:end')
-        })
+        wire_drag(send)
     }
 
-    const api = { background_alpha, apply, follow_visibility, wire_overlay }
+    // Unpinned windows move by the header and resize from the bottom-right grip, both driven from here with
+    // pointer capture. The header can't be a native drag region (-webkit-app-region): Chromium treats it as
+    // window frame, so the page sees the cursor leave as it reaches the header, main turns click-through back
+    // on, and the press lands on EVE. Transparent windows have no native resize border either.
+    function wire_drag(send) {
+        const handle = (el, kind, accepts) => {
+            el.addEventListener('pointerdown', event => {
+                if (event.button !== 0 || document.body.classList.contains('is-locked') || !accepts(event)) return
+                el.setPointerCapture(event.pointerId)
+                send('drag:start', { kind, point: { x: event.screenX, y: event.screenY } })
+            })
+            el.addEventListener('pointermove', event => {
+                if (el.hasPointerCapture(event.pointerId)) send('drag:move', { x: event.screenX, y: event.screenY })
+            })
+            const end = event => {
+                if (!el.hasPointerCapture(event.pointerId)) return
+                el.releasePointerCapture(event.pointerId)
+                send('drag:end')
+            }
+            el.addEventListener('pointerup', end)
+            el.addEventListener('pointercancel', end)
+        }
+        handle(document.querySelector('.eve-window__header'), 'move', event => !event.target.closest('button'))
+        handle(document.getElementById('resize'), 'resize', () => true)
+    }
+
+    const api = { background_alpha, apply, follow_visibility, wire_overlay, wire_drag }
     if (typeof module !== 'undefined' && module.exports) module.exports = api
     else root.eve_window = api
 })(this)
