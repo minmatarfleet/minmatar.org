@@ -1112,6 +1112,10 @@ class CampaignEnlistmentAdmin(admin.ModelAdmin):
             "Notifications",
             {
                 "classes": ("collapse",),
+                "description": (
+                    "Stored preferences only: no campaign notification "
+                    "reads these yet."
+                ),
                 "fields": (
                     "notify_gang_forming",
                     "notify_standing_fleet",

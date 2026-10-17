@@ -192,9 +192,6 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
         defaults={
             "status": "active",
             "source": payload.source,
-            "notify_gang_forming": payload.notify_gang_forming,
-            "notify_standing_fleet": payload.notify_standing_fleet,
-            "notify_activity_nearby": payload.notify_activity_nearby,
             "digest_hour": payload.digest_hour,
         },
     )

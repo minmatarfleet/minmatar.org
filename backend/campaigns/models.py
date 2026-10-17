@@ -787,6 +787,10 @@ class CampaignEnlistment(models.Model):
         max_length=16, choices=Source.choices, default=Source.WEB
     )
 
+    # Not read by any sender yet, and no longer settable through the API.
+    # Kept so choices members already stored survive until campaign
+    # notification types exist (docs/campaigns/fw-campaigns-plan.md); move
+    # them to notifications.NotificationPreference then.
     notify_gang_forming = models.BooleanField(default=True)
     notify_standing_fleet = models.BooleanField(default=True)
     notify_activity_nearby = models.BooleanField(default=False)

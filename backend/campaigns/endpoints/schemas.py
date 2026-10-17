@@ -395,10 +395,9 @@ class ReadinessOut(Schema):
 
 
 class EnlistRequest(Schema):
+    # The notify_* flags this used to accept are ignored: no campaign
+    # notification reads them yet. Stored values stay on the enlistment.
     source: Literal["fleet_prompt", "gang_ping", "web", "admin"] = "web"
-    notify_gang_forming: bool = True
-    notify_standing_fleet: bool = True
-    notify_activity_nearby: bool = False
     digest_hour: int = Field(default=18, ge=0, le=23)
 
 
