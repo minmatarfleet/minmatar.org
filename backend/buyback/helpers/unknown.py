@@ -41,12 +41,15 @@ def take_hangar_snapshot(
     settings: EveBuybackSettings | None = None,
     taken_at: datetime | None = None,
     quantities: dict[int, int] | None = None,
-) -> BuybackHangarSnapshot:
+) -> BuybackHangarSnapshot | None:
+    """Save a hangar snapshot; None (nothing saved) when ESI assets failed."""
     qty = (
         quantities
         if quantities is not None
         else fetch_stockpile_quantities(settings=settings)
     )
+    if qty is None:
+        return None
     return BuybackHangarSnapshot.objects.create(
         taken_at=taken_at or timezone.now(),
         quantities=_quantities_for_json(qty),

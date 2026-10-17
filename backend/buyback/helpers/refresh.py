@@ -51,9 +51,14 @@ def refresh_buyback_ledger(
     if snapshot_hangar or refresh_metrics:
         stockpile_qty = fetch_stockpile_quantities()
 
-    if snapshot_hangar:
+    if snapshot_hangar and stockpile_qty is None:
+        # A failed asset read is not an empty hangar. Saving it would turn
+        # the whole stockpile into unknown outs and empty /stock.
+        result["hangar"] = {"skipped": "assets_unavailable"}
+        logger.warning("Buyback hangar snapshot skipped: assets unavailable")
+    elif snapshot_hangar:
         previous = BuybackHangarSnapshot.objects.order_by("-taken_at").first()
-        current = take_hangar_snapshot(quantities=stockpile_qty or {})
+        current = take_hangar_snapshot(quantities=stockpile_qty)
         hangar_result = {
             "snapshot_id": current.pk,
             "types": len(current.quantities or {}),

@@ -145,16 +145,17 @@ def refresh_accepted_item_metrics(
         item.demand_status = status_by_pk.get(
             item.pk, BuybackAcceptedItem.DemandStatus.SURPLUS
         )
-        item.stockpile_quantity = int(hangar_qty.get(item.eve_type_id, 0))
+        update_fields = [
+            "demand_quantity",
+            "demand_status",
+            "metrics_updated_at",
+        ]
+        # Unreadable assets keep the last known stockpile instead of zero.
+        if hangar_qty is not None:
+            item.stockpile_quantity = int(hangar_qty.get(item.eve_type_id, 0))
+            update_fields.append("stockpile_quantity")
         item.metrics_updated_at = now
-        item.save(
-            update_fields=[
-                "demand_quantity",
-                "demand_status",
-                "stockpile_quantity",
-                "metrics_updated_at",
-            ]
-        )
+        item.save(update_fields=update_fields)
         updated += 1
 
     return {
