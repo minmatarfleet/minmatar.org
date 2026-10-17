@@ -56,12 +56,19 @@ try {
 }
 
 if (is_logged_in && auth_token) {
-    try {
-        const [summary, capabilities] = await Promise.all([
-            get_characters_summary(auth_token),
-            get_loyalty_capabilities(auth_token),
-        ])
-        can_manage_buyback = Boolean(capabilities.can_manage)
+    // Settled separately: a failed character summary must not hide the
+    // manager actions that capabilities grant (and vice versa).
+    const [summary_result, capabilities_result] = await Promise.allSettled([
+        get_characters_summary(auth_token),
+        get_loyalty_capabilities(auth_token),
+    ])
+    if (capabilities_result.status === 'fulfilled') {
+        can_manage_buyback = Boolean(capabilities_result.value.can_manage)
+    } else {
+        console.log(capabilities_result.reason)
+    }
+    if (summary_result.status === 'fulfilled') {
+        const summary = summary_result.value
         claim_characters = (summary.characters ?? [])
             .map((character) => ({
                 character_name: character.character_name,
@@ -82,8 +89,8 @@ if (is_logged_in && auth_token) {
         default_claim_corporation = primary?.corp_name
             || claim_corporations[0]
             || ''
-    } catch (error) {
-        console.log(error)
+    } else {
+        console.log(summary_result.reason)
     }
 }
 
