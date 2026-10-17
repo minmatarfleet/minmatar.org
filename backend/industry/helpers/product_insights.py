@@ -16,6 +16,10 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from django.db.models import Q
 from django.utils import timezone
 
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_refs_for_users,
+)
 from eveonline.helpers.corporations.safe_cache import (
     cache_add,
     cache_delete,
@@ -29,7 +33,6 @@ from eveonline.models import (
     EveCharacterIndustryJob,
     EveCharacterKillmail,
     EveCorporationIndustryJob,
-    EvePlayer,
 )
 from eveuniverse.models import (
     EveIndustryActivityProduct,
@@ -154,26 +157,17 @@ def _empty_insights(product: IndustryProduct, weeks: _Weeks) -> dict:
 
 def _primary_by_character(character_ids) -> dict[int, tuple[int, str]]:
     """character_id -> (primary character_id, primary name), for known pilots."""
-    rows = list(
+    names = dict(
         EveCharacter.objects.filter(
             character_id__in=character_ids
-        ).values_list("character_id", "character_name", "user_id")
+        ).values_list("character_id", "character_name")
     )
-    primaries = {
-        user_id: (cid, name or "")
-        for user_id, cid, name in EvePlayer.objects.filter(
-            user_id__in={r[2] for r in rows if r[2]},
-            primary_character__isnull=False,
-        ).values_list(
-            "user_id",
-            "primary_character__character_id",
-            "primary_character__character_name",
-        )
+    owners = owner_user_ids(names)
+    primaries = primary_refs_for_users(owners.values())
+    return {
+        cid: primaries.get(owners.get(cid)) or (cid, name or "")
+        for cid, name in names.items()
     }
-    out = {}
-    for cid, name, user_id in rows:
-        out[cid] = primaries.get(user_id) or (cid, name or "")
-    return out
 
 
 def _blueprints_by_product(type_ids) -> dict[tuple[int, int], list]:

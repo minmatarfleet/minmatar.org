@@ -36,13 +36,17 @@ from campaigns.models import (
     SystemGoal,
 )
 from campaigns.services import advantage, plan
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_refs_for_users,
+)
 from eveonline.helpers.corporations.safe_cache import (
     cache_add,
     cache_delete,
     cache_get,
     cache_set,
 )
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.models import EveCharacter
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 from fleets.models import EveFleetInstanceMember
 
@@ -482,11 +486,7 @@ def _note_fleet_members(campaign, since, by_solar_system, note) -> None:
             "character_id", "character_name", "updated_at", "solar_system_id"
         )
     )
-    owners = dict(
-        EveCharacter.objects.filter(
-            character_id__in={member[0] for member in members}
-        ).values_list("character_id", "user_id")
-    )
+    owners = owner_user_ids(member[0] for member in members)
     for character_id, character_name, at, system_id in members:
         user_id = owners.get(character_id)
         if user_id in enlisted:
@@ -503,16 +503,7 @@ def _note_fleet_members(campaign, since, by_solar_system, note) -> None:
 def _as_rows(pilots: dict[int, _Activity]) -> list[dict]:
     """Each pilot as their primary character; without one, the character
     that did the thing stands in."""
-    primaries = {
-        user_id: (character_id, name)
-        for user_id, character_id, name in EvePlayer.objects.filter(
-            user_id__in=pilots.keys(), primary_character__isnull=False
-        ).values_list(
-            "user_id",
-            "primary_character__character_id",
-            "primary_character__character_name",
-        )
-    }
+    primaries = primary_refs_for_users(pilots.keys())
     fallback_names = dict(
         EveCharacter.objects.filter(
             character_id__in=[
