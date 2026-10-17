@@ -6,6 +6,7 @@ from ninja import Router
 from pydantic import BaseModel
 from django.shortcuts import redirect
 
+from app.client_ip import client_ip as client_ip_of
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
@@ -54,15 +55,6 @@ links = [
 ]
 
 
-def get_client_ip(request):
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
-
-
 @router.get("", description="Redirect referral link to final destination")
 def referral_redirect(request, page: str, code: str):
 
@@ -73,7 +65,7 @@ def referral_redirect(request, page: str, code: str):
     suffix = int(code[1:])
     user_id = (suffix - 7) / 83
 
-    client_ip = get_client_ip(request)
+    client_ip = client_ip_of(request)
     client_id = hash_client_ip(client_ip)
 
     log.info(

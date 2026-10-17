@@ -230,3 +230,8 @@ JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
 # "shadow" (legacy, but report where pilot features disagree), or "features".
 # Read by GET /api/users/me/gates; change it and restart the app to flip.
 FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")
+
+# Reverse proxies in front of the app that each append the address they saw
+# to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
+# if the app is reached directly, or add one per extra hop (e.g. a CDN).
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
