@@ -144,6 +144,18 @@ describe('convention rule matchers', () => {
         expect(count('skeleton_keyframes', { path: 'src/styles/_animations.scss', text: '@keyframes skeleton-shimmer { 0% { opacity: 1 } }' })).toBe(0)
     })
 
+    it('hover_motion_ungated: hover transforms outside @media (hover: hover)', () => {
+        expect(count('hover_motion_ungated', astro(`<style>.a:hover { transform: scale(1.05); }</style>`))).toBe(1)
+        expect(count('hover_motion_ungated', astro(`<style lang="scss">.a { &:hover, &:focus-visible { color: red; transform: translateX(2px) } }</style>`))).toBe(1)
+        expect(count('hover_motion_ungated', astro(`<style lang="scss">.card:hover { picture img { scale: 1.1 } }</style>`))).toBe(1)
+        expect(count('hover_motion_ungated', { path: 'src/styles/_global.scss', text: '.c { &:hover { img { transform: scale(1.1) } } }' })).toBe(1)
+        // gated (directly or by an ancestor), focus-only, non-hover, none and the centring idiom are fine
+        expect(count('hover_motion_ungated', astro(`<style lang="scss">@media (hover: hover) { .a:hover { transform: scale(1.05) } } .b { @media (hover: hover) { &:hover { transform: scale(1.05) } } }</style>`))).toBe(0)
+        expect(count('hover_motion_ungated', astro(`<style>.a:focus-visible { transform: scale(1.05) } .b { transform: rotate(180deg) } .c:disabled:hover { transform: none }</style>`))).toBe(0)
+        expect(count('hover_motion_ungated', astro(`<style lang="scss">.a:hover { &::before { left: 50%; transform: translateX(-50%) } } /* .x:hover { transform: scale(2) } */</style>`))).toBe(0)
+        expect(count('hover_motion_ungated', astro(`<style>@media (hover: none) { .a:active { transform: scale(0.95) } }</style>`))).toBe(0)
+    })
+
     it('tailwind_apply: any @apply in styles', () => {
         expect(count('tailwind_apply', astro(`<style>.card { @apply p-4 bg-black; }</style>`))).toBe(1)
         expect(count('tailwind_apply', astro(`<p>Click apply to @apply</p>`))).toBe(0)

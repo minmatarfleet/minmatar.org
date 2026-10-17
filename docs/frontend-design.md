@@ -214,7 +214,7 @@ Conventions:
 - `SkipToContent` exists; main content is `id="content"`.
 - `.visually-hidden` for screen-reader-only text.
 - Interaction media queries:
-  - `@media (hover: hover)`: hover/focus scale effects (e.g. buttons `transform: scale(1.05)`).
+  - `@media (hover: hover)`: hover/focus scale effects (e.g. buttons `transform: scale(1.05)`). Any `:hover` rule that sets `transform`/`scale`/`translate`/`rotate` goes inside it, or a tap on a touch screen leaves the element stuck mid-effect. Keep a `:focus-visible` variant outside the query so keyboard users still get it (the `hover_motion_ungated` conventions rule enforces this).
   - `@media (hover: none)`: tactile press states (`scale(0.95)` on active).
 - Dialogs/modals: focus-trap with `x-trap`, `aria-hidden` while closed, `inert` binding, Escape to close.
 - Motion: looping animations stop under `@media (prefers-reduced-motion: reduce)`. Loading skeletons keep their layout in the component and take fill and motion from `@include skeleton.shimmer` / `skeleton.pulse` (`@use '<relative path>/styles/mixins/skeleton'`), which already do this; don't add per-component skeleton keyframes (the `skeleton_keyframes` ratchet fails on them).

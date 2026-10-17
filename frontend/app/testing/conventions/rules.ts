@@ -7,7 +7,7 @@
 //
 // Keep every rule narrow enough that a hit is always a real violation.
 
-import { astro_template, css_regions, hits_in, type Hit, type SourceFile } from './scan'
+import { astro_template, css_regions, hits_in, line_at, type Hit, type Region, type SourceFile } from './scan'
 
 export interface ConventionRule {
     id: string
@@ -38,6 +38,39 @@ const value_has_hex = (value: string) => [...value.replace(URL_FUNCTION, '').rep
 const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/]\s*[\d.]+%?\s*\)/g
 /** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
 const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
+
+/**
+ * `transform`/`scale`/`translate`/`rotate` declarations that apply on :hover
+ * without an enclosing `@media (hover: hover)`. Walks the nested (SCSS) block
+ * structure, so `&:hover` inside a rule and gating on any ancestor both count.
+ */
+// `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
+const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
+const HOVER_GATE = /@media[^{]*\(\s*hover\s*:\s*hover\s*\)/
+function ungated_hover_motion(file: SourceFile, region: Region): Hit[] {
+    // Blank out comments, keeping offsets (// only at line start or after whitespace, so url(https://...) survives).
+    const text = region.text.replace(/\/\*[\s\S]*?\*\/|(^|[\s;{}])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' '))
+    const hits: Hit[] = []
+    const stack: string[] = []
+    let start = 0
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i]
+        if (c !== '{' && c !== '}' && c !== ';') continue
+        const chunk = text.slice(start, i).trim()
+        if (c === '{') stack.push(chunk)
+        else {
+            const hovered = stack.some((s) => /:hover\b/.test(s) && !s.startsWith('@'))
+            const gated = stack.some((s) => HOVER_GATE.test(s))
+            if (hovered && !gated && MOTION_DECLARATION.test(chunk)) {
+                const index = region.offset + start + (text.slice(start, i).length - text.slice(start, i).trimStart().length)
+                hits.push({ line: line_at(file.text, index), snippet: `${stack.filter((s) => !s.startsWith('@')).at(-1)} { ${chunk} }`.replace(/\s+/g, ' ').slice(0, 80) })
+            }
+            if (c === '}') stack.pop()
+        }
+        start = i + 1
+    }
+    return hits
+}
 
 /** Numeric z-index at or above this competes with page chrome and must come from _z-index.scss. */
 export const Z_INDEX_LAYER_THRESHOLD = 100
@@ -106,6 +139,12 @@ export const RULES: ConventionRule[] = [
             if (file.path === 'src/styles/_animations.scss') return []
             return hits_in(file, css_regions(file), /@keyframes\s+[\w-]*(?:skel|shimmer)[\w-]*/g)
         },
+    },
+    {
+        id: 'hover_motion_ungated',
+        kind: 'absolute',
+        why: 'Rule 6: hover transforms (scale/translate/rotate) go inside @media (hover: hover), or touch screens keep the element stuck mid-effect after a tap. Keep a :focus-visible variant outside the query; touch press states go in @media (hover: none) on :active.',
+        find: (file) => css_regions(file).flatMap((region) => ungated_hover_motion(file, region)),
     },
     {
         id: 'tailwind_apply',

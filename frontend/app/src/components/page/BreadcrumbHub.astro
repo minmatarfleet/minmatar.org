@@ -94,9 +94,24 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
     .hub-button:focus-visible,
     .hub-button:hover {
         outline: none;
+    }
 
-        small {
+    /* Keyboard focus scales everywhere; hover and click focus only where the pointer can hover. */
+    .hub-button:focus-visible small,
+    .hub-button:has(:focus-visible) small {
+        transform: scale(1.07);
+    }
+
+    @media (hover: hover) {
+        .hub-button:focus-within small,
+        .hub-button:hover small {
             transform: scale(1.07);
+        }
+    }
+
+    @media (hover: none) {
+        .hub-button:active small {
+            transform: scale(0.95);
         }
     }
 
