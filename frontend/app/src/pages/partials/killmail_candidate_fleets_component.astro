@@ -1,4 +1,5 @@
 ---
+import { partial_redirect } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -23,16 +24,7 @@ if (
     (await should_redirect_to_srp_onboarding(auth_token, has_explicit_srp_change))
 ) {
     const onboarding_path = translatePath('/ships/srp/onboarding/')
-    if (Astro.request.headers.get('HX-Request') === 'true') {
-        return new Response('', {
-            status: 200,
-            headers: {
-                'Content-Type': 'text/html',
-                'HX-Redirect': onboarding_path,
-            },
-        })
-    }
-    return Astro.redirect(onboarding_path)
+    return partial_redirect(Astro.request, onboarding_path)
 }
 
 import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
