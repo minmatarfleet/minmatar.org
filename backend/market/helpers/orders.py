@@ -7,29 +7,12 @@ from django.db import transaction
 from django.db.models import Q
 
 from eveonline.client import EsiClient
+from eveonline.helpers.universe import ensure_eve_types
 from eveonline.models import EveLocation
-from eveuniverse.models import EveType
 
 from market.models import EveMarketItemOrder
 
 logger = logging.getLogger(__name__)
-
-
-def _ensure_eve_types(type_ids, types_cache):
-    """
-    Ensure EveType exists for each type_id; update types_cache in place.
-    Returns the cache (for convenience).
-    """
-    missing = [tid for tid in type_ids if tid not in types_cache]
-    if not missing:
-        return types_cache
-    existing = {t.id: t for t in EveType.objects.filter(id__in=missing)}
-    types_cache.update(existing)
-    for type_id in missing:
-        if type_id not in types_cache:
-            eve_type, _ = EveType.objects.get_or_create_esi(id=type_id)
-            types_cache[type_id] = eve_type
-    return types_cache
 
 
 def clear_structure_sell_orders_for_location(
@@ -82,8 +65,7 @@ def process_structure_sell_orders_page(
         return 0, 0
 
     type_ids_page = {o["type_id"] for o in page_data}
-    types_cache = {}
-    _ensure_eve_types(type_ids_page, types_cache)
+    types_cache = ensure_eve_types(type_ids_page, raise_on_error=True)
 
     to_create = []
     for o in page_data:

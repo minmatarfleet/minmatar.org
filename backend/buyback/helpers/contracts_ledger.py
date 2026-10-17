@@ -9,7 +9,6 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from eveuniverse.models import EveType
 
 from buyback.helpers.counterparty import resolve_counterparties
 from buyback.models import (
@@ -22,6 +21,7 @@ from eveonline.helpers.corporations import (
     SCOPE_CORPORATION_CONTRACTS,
     get_director_with_scope,
 )
+from eveonline.helpers.universe import ensure_eve_types
 from eveonline.models import EveCorporation, EveCorporationContract
 
 logger = logging.getLogger(__name__)
@@ -72,18 +72,6 @@ def _in_or_out_q() -> Q:
         Q(issuer_corporation_id=BUYBACK_CORPORATION_ID)
         & ~Q(assignee_id=BUYBACK_CORPORATION_ID)
     )
-
-
-def _ensure_types(type_ids: set[int]) -> dict[int, EveType]:
-    existing = {t.id: t for t in EveType.objects.filter(id__in=type_ids)}
-    missing = type_ids - set(existing)
-    for type_id in missing:
-        try:
-            eve_type, _ = EveType.objects.get_or_create_esi(id=type_id)
-            existing[eve_type.id] = eve_type
-        except Exception:
-            logger.warning("Could not resolve EveType %s for ledger", type_id)
-    return existing
 
 
 def fetch_contract_items(contract_id: int) -> list[dict]:
@@ -141,7 +129,7 @@ def upsert_ledger_from_contract_items(
     type_ids = {
         int(item["type_id"]) for item in included if item.get("type_id")
     }
-    types_by_id = _ensure_types(type_ids)
+    types_by_id = ensure_eve_types(type_ids)
     created = 0
     for item in included:
         type_id = int(item["type_id"])
