@@ -45,6 +45,14 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         opacity: 0;
     }
 
+    /* Outside the reel the arrows push past a phone's edge and scroll the page sideways. */
+    @media (max-width: 1023px) {
+        .swiper-button-prev,
+        .swiper-button-next {
+            --swiper-navigation-sides-offset: 0px;
+        }
+    }
+
     .swiper-initialized ~ .swiper-button-prev,
     .swiper-initialized ~ .swiper-button-next {
         opacity: 1;

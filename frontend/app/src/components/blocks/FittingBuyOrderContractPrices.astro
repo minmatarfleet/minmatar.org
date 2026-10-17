@@ -478,6 +478,7 @@ const settings_disabled = !is_owner
     .contract-segments {
         display: inline-flex;
         flex-wrap: wrap;
+        max-width: 100%;
         border: 1px solid var(--border-color-hover);
         background: color-mix(in srgb, var(--background) 45%, transparent);
     }
@@ -542,6 +543,13 @@ const settings_disabled = !is_owner
         font-size: var(--step--2);
         line-height: 1.2;
         white-space: nowrap;
+    }
+
+    /* The public fee line is wider than a phone's card; let it wrap there. */
+    @media (max-width: 767px) {
+        .contract-segment__sub {
+            white-space: normal;
+        }
     }
 
     .contract-segment:has(input[type='radio']:checked) .contract-segment__sub {
