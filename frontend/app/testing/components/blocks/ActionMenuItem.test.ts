@@ -34,6 +34,8 @@ test("confirm item only runs the action from the armed button", async () => {
   expect(buttons[1]).toContain("set_status(7, 'cancelled'); close()");
   expect(buttons[1]).toContain("is-confirm");
   expect(result).toContain("Cancel this order?");
-  // Re-arms when the surrounding Dropdown closes.
-  expect(result).toContain('x-effect="expanded || (confirming = false)"');
+  // Disarms when the surrounding Dropdown closes, and works outside one.
+  expect(result).toContain("typeof expanded === 'undefined' || expanded");
+  expect(result).toContain('x-on:click.outside="confirming = false"');
+  expect(result).toContain('x-on:keydown.escape="confirming = false"');
 });

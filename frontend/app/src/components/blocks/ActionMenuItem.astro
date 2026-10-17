@@ -5,8 +5,8 @@ interface Props {
      * Two-step confirm: the first click swaps the item for this label, and
      * only the second click runs the action (attributes go on that button).
      * Arming moves focus to the confirm button (Enter twice confirms, Escape
-     * still closes) and the armed state resets when the menu closes. Use
-     * inside ActionMenu.
+     * still closes). It disarms on Escape, an outside click, or - inside a
+     * Dropdown/ActionMenu - whenever the menu closes.
      */
     confirm_label?:     string;
     [propName: string]: any;
@@ -31,7 +31,9 @@ const item_class = [
     <div
         class="[ action-menu-item__confirm ]"
         x-data="{ confirming: false }"
-        x-effect="expanded || (confirming = false)"
+        x-effect="typeof expanded === 'undefined' || expanded || (confirming = false)"
+        x-on:keydown.escape="confirming = false"
+        x-on:click.outside="confirming = false"
     >
         <button
             type="button"

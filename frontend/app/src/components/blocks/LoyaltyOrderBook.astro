@@ -502,8 +502,10 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                     const can_claim = can_manage_buyback
                         && order.status === 'open'
                         && quantity_remaining > 0
-                    const can_cancel = order.status === 'open'
-                        && (can_manage_buyback || is_creator)
+                    // Mirrors PATCH /orders/{id}: managers cancel at any
+                    // active status, the poster only while it is open.
+                    const can_cancel = can_manage_buyback
+                        || (order.status === 'open' && is_creator)
                     const can_release = (
                         order.status === 'claimed'
                         || order.status === 'awaiting_lp'
@@ -533,7 +535,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                                                 {t('industry.loyalty.action.claim')}
                                             </ActionMenuItem>
                                         )}
-                                        {order.status === 'claimed' && (
+                                        {show_manager_settle && order.status === 'claimed' && (
                                             <ActionMenuItem
                                                 variant="primary"
                                                 x-bind:disabled="busy"
@@ -542,7 +544,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                                                 {t('industry.loyalty.action.awaiting_lp')}
                                             </ActionMenuItem>
                                         )}
-                                        {order.status === 'awaiting_lp' && (
+                                        {show_manager_settle && order.status === 'awaiting_lp' && (
                                             <ActionMenuItem
                                                 variant="primary"
                                                 x-bind:disabled="busy"
@@ -551,7 +553,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                                                 {t('industry.loyalty.action.lp_received')}
                                             </ActionMenuItem>
                                         )}
-                                        {order.status === 'awaiting_isk' && (
+                                        {show_manager_settle && order.status === 'awaiting_isk' && (
                                             <ActionMenuItem
                                                 variant="primary"
                                                 x-bind:disabled="busy"
@@ -560,14 +562,25 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                                                 {t('industry.loyalty.action.isk_sent')}
                                             </ActionMenuItem>
                                         )}
-                                        <ActionMenuItem
-                                            variant="danger"
-                                            confirm_label={t('industry.loyalty.action.confirm_cancel')}
-                                            x-bind:disabled="busy"
-                                            x-on:click={`set_status(${order.id}, 'cancelled'); close()`}
-                                        >
-                                            {t('industry.loyalty.action.cancel_order')}
-                                        </ActionMenuItem>
+                                        {can_release && (
+                                            <ActionMenuItem
+                                                confirm_label={t('industry.loyalty.action.confirm_release')}
+                                                x-bind:disabled="busy"
+                                                x-on:click={`release_claim(${order.id}); close()`}
+                                            >
+                                                {t('industry.loyalty.action.release_claim')}
+                                            </ActionMenuItem>
+                                        )}
+                                        {can_cancel && (
+                                            <ActionMenuItem
+                                                variant="danger"
+                                                confirm_label={t('industry.loyalty.action.confirm_cancel')}
+                                                x-bind:disabled="busy"
+                                                x-on:click={`set_status(${order.id}, 'cancelled'); close()`}
+                                            >
+                                                {t('industry.loyalty.action.cancel_order')}
+                                            </ActionMenuItem>
+                                        )}
                                     </ActionMenu>
                                 )}
                         </LoyaltyOrderCard>
