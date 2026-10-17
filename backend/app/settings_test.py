@@ -1,19 +1,20 @@
 """
 Django settings for test suite.
 This file is used specifically for running tests.
+
+Env-driven settings shared with production live in app/settings_env.py;
+this file overrides secrets, URLs, the database and the cache.
 """
 
 import os
-from pathlib import Path
 
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from app.settings_celery import *  # noqa # pylint: disable=wildcard-import
 from app.settings_common import *  # noqa # pylint: disable=wildcard-import
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+from app.settings_env import *  # noqa # pylint: disable=wildcard-import
+from app.settings_env import BASE_DIR, ENV, WEB_LINK_URL
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -22,26 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "testing")
 SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False") == "True"
-
-ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "*")]
-SITE_URL = os.environ.get("CSRF_TRUSTED_ORIGIN", "http://localhost:8000")
-CSRF_TRUSTED_ORIGINS = [
-    "https://localhost:8000",
-    "http://localhost:8000",
-    "https://api.minmatar.org",
-    "https://minmatar.org",
-]
-BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 TESTING = True
-CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 # Run Celery tasks inline in tests — no Redis broker or worker required.
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
-
-WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
 CORS_ALLOWED_ORIGINS = [
     WEB_LINK_URL.rstrip("/"),
@@ -67,46 +53,10 @@ DISCORD_GUILD_ID = 1
 ALLOW_LIVE_DISCORD_IN_TESTS = False
 # Never hit esi.evetech.net from the unit suite unless a test opts in.
 ALLOW_LIVE_ESI_IN_TESTS = False
-DISCORD_PEOPLE_TEAM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870)
-)
-DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID", 1174095095537078312)
-)
-DISCORD_APPLICATION_CHANNEL_ID = int(
-    os.environ.get("DISCORD_APPLICATION_CHANNEL_ID", 1097522187952467989)
-)
-DISCORD_FLEET_SCHEDULE_CHANNEL_ID = int(
-    os.environ.get("DISCORD_FLEET_SCHEDULE_CHANNEL_ID", 1174169403873558658)
-)
-DISCORD_FLEET_SCHEDULE_MESSAGE_ID = int(
-    os.environ.get("DISCORD_FLEET_SCHEDULE_MESSAGE_ID", 1244656126302224466)
-)
-DISCORD_STRUCTURE_PINGS_CHANNEL_ID = int(
-    os.environ.get("DISCORD_STRUCTURE_PINGS_CHANNEL_ID", 1270780039272595549)
-)
-DISCORD_INDUSTRY_CHANNEL_ID = int(
-    os.environ.get("DISCORD_INDUSTRY_CHANNEL_ID", 1062178037875081226)
-)
-DISCORD_AARS_FORUM_CHANNEL_ID = int(
-    os.environ.get("DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256)
-)
-
-# Roam Report — empty in tests so unit tests never POST.
-ROAM_REPORT_API_KEY = os.environ.get("ROAM_REPORT_API_KEY", "")
-ROAM_REPORT_API_URL = os.environ.get(
-    "ROAM_REPORT_API_URL", "https://www.roamreport.com/api/fleets"
-)
 
 # ESI
-ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
-ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")
-ESI_SSO_CALLBACK_URL = os.environ.get("ESI_SSO_CALLBACK_URL", "")
 ESI_CONNECTION_ERROR_MAX_RETRIES = 0  # 0 means no retries
 ESI_SERVER_ERROR_MAX_RETRIES = 0  # 0 means no retries
-ESI_USER_CONTACT_EMAIL = os.environ.get(
-    "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
-)
 
 CACHES = {
     "default": {
@@ -126,23 +76,7 @@ DATABASES = {
     }
 }
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-]
-
-LOGIN_URL = "/oauth2/login/"
-LOGOUT_REDIRECT_URL = "/oauth2/login/"
-
-STATIC_ROOT = os.path.join(
-    BASE_DIR,
-    "static",
-)
-
 # Monitoring
-ENV = "production"  # pylint: disable=invalid-name
-if DEBUG:
-    ENV = "development"  # pylint: disable=invalid-name
-
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),
     integrations=[DjangoIntegration()],
@@ -157,24 +91,6 @@ sentry_sdk.init(
     _experiments={"enable_logs": True},
 )
 
-# If this is set, Discord login will be bypassed and the user will be logged in with this ID
-FAKE_LOGIN_USER_ID = os.environ.get("FAKE_LOGIN_USER_ID ", None)
-
-# Local settings only, not for production
-if FAKE_LOGIN_USER_ID:
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_ENGINE = "django.contrib.sessions.backends.db"
-
-
-MOCK_ESI = os.environ.get("MOCK_ESI ", False)
-SETUP_TEST_DATA = os.environ.get("SETUP_TEST_DATA", False)
-
-REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
-REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
-REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
-REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
 REDDIT_REDIRECT_URL = os.environ.get(
     "REDDIT_REDIRECT_URL", "http://testserver/api/reddit/callback"
 )
@@ -193,20 +109,6 @@ YOUTUBE_CLIENT_SECRET = os.environ.get(
 YOUTUBE_REDIRECT_URL = os.environ.get(
     "YOUTUBE_REDIRECT_URL", "http://testserver/api/creators/youtube/callback"
 )
-
-# Notifications (web push / Discord DM / Eve mail)
-NOTIFICATIONS_EVE_MAIL_CHARACTER_ID = int(
-    os.environ.get("NOTIFICATIONS_EVE_MAIL_CHARACTER_ID", "634915984")
-)
-NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND = float(
-    os.environ.get("NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND", "2")
-)
-NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND = float(
-    os.environ.get("NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND", "0.5")
-)
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
-VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-VAPID_CONTACT = os.environ.get("VAPID_CONTACT", "")
 
 # Unit tests must never touch the network — see app/test_network_guard.py.
 if os.environ.get("ALLOW_NETWORK_IN_TESTS", "") != "True":
