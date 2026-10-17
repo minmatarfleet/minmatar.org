@@ -16,8 +16,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from eveonline.client import EsiClient, get_region_market_orders_pages
+from eveonline.helpers.universe import ensure_eve_types
 from eveonline.models import EveLocation
-from eveuniverse.models import EveType
 
 from market.models import EveMarketItemLocationPrice
 
@@ -25,18 +25,6 @@ logger = logging.getLogger(__name__)
 
 # Only station-range buy orders count for buy_price (exclude region-wide lowballs)
 BUY_RANGE_OK = frozenset({"", "station"})
-
-
-def _ensure_eve_types(type_ids, types_cache):
-    missing = [tid for tid in type_ids if tid not in types_cache]
-    if not missing:
-        return
-    existing = {t.id: t for t in EveType.objects.filter(id__in=missing)}
-    types_cache.update(existing)
-    for type_id in missing:
-        if type_id not in types_cache:
-            eve_type, _ = EveType.objects.get_or_create_esi(id=type_id)
-            types_cache[type_id] = eve_type
 
 
 def _aggregate_orders_into_prices(page_orders, location_id: int | None):
@@ -189,8 +177,7 @@ def _persist_location_prices(
             ).delete()
         return 0
 
-    types_cache: dict[int, EveType] = {}
-    _ensure_eve_types(type_ids, types_cache)
+    types_cache = ensure_eve_types(type_ids, raise_on_error=True)
 
     now = timezone.now()
     to_create = []
