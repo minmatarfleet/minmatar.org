@@ -1326,11 +1326,6 @@ def _build_industry_supply_index_links(request) -> list[dict]:
     return links
 
 
-def _build_industry_orders_index_link(request) -> dict:
-    """Back-compat helper for tests that expect a single orders link."""
-    return _build_industry_supply_index_links(request)[0]
-
-
 def _rename_industry_experimental_models(models: list[dict]) -> list[dict]:
     renamed = []
     for model in models:

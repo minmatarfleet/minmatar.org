@@ -2,7 +2,6 @@
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.utils import timezone
 
 
@@ -26,7 +25,3 @@ def issue_discord_user_jwt(
 
 def decode_user_jwt(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-
-
-def user_from_jwt_payload(payload: dict) -> User:
-    return User.objects.get(id=payload["user_id"])

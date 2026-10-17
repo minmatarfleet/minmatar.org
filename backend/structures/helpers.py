@@ -1,12 +1,10 @@
 import re
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Tuple
+from typing import Tuple
 
 from pydantic import BaseModel
-from django.db.models import Count, Q
 
-from eveonline.scopes import DIRECTOR_SCOPES
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 
@@ -93,25 +91,6 @@ def get_structure_details(selected_item_window: str):
 
 
 NOTIFICATION_SCOPE = "esi-characters.read_notifications.v1"
-
-
-def get_notification_characters(corporation_id: int) -> List[EveCharacter]:
-    """Characters with all director scopes (for manual flows)."""
-    return (
-        EveCharacter.objects.annotate(
-            matching_scopes=Count(
-                "token__scopes",
-                filter=Q(token__scopes__name__in=DIRECTOR_SCOPES),
-            )
-        )
-        .filter(
-            matching_scopes=len(DIRECTOR_SCOPES),
-        )
-        .distinct()
-        .filter(
-            corporation_id=corporation_id,
-        )
-    )
 
 
 def get_characters_with_notification_scope_for_structure_corps():

@@ -128,38 +128,10 @@ export interface SubmitResult {
     detail: string
 }
 
-export interface GivebackCard {
-    personal: {
-        fleets_flown: number
-        doctrines_ready: number
-        guides_completed: number
-        srp_count: number
-        srp_isk: number
-        tribe: string
-    }
-    community: {
-        active_pilots: number | null
-    }
-}
-
 export interface ChangelogEntry {
     heading: string
     body_markdown: string
     sort_order: number
-}
-
-export interface SurveyAggregate {
-    question_key: string
-    segment_key: string
-    n: number
-    mean: number | null
-    distribution: Record<string, number>
-}
-
-export interface SurveyResults {
-    campaign_id: number
-    segment_key: string
-    aggregates: SurveyAggregate[]
 }
 
 export interface CorpReportQuestion {

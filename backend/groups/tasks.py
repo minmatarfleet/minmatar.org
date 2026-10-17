@@ -351,36 +351,6 @@ def _target_user_ids_for_corporation_group(
     return set()
 
 
-def _user_qualifies_cached(
-    user_id,
-    corporation_group,
-    user_corp_ids,
-    recruiter_user_ids,
-    director_user_ids,
-    steward_user_ids,
-):
-    """
-    Same logic as _user_qualifies_for_corporation_group but using
-    pre-fetched data (no DB queries).
-    """
-    corp = corporation_group.corporation
-    group_type = (
-        corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
-    )
-
-    if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
-        return corp.corporation_id in user_corp_ids.get(user_id, ())
-
-    if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
-        return user_id in recruiter_user_ids
-    if group_type == EveCorporationGroup.GROUP_TYPE_DIRECTOR:
-        return user_id in director_user_ids
-    if group_type == EveCorporationGroup.GROUP_TYPE_GUNNER:
-        return user_id in steward_user_ids
-
-    return False
-
-
 @app.task
 def sync_eve_corporation_groups():
     """

@@ -15,13 +15,6 @@ logger = logging.getLogger(__name__)
 EVE_LOGIN_SCOPES = "publicData"
 
 
-class EveSsoError(Exception):
-    def __init__(self, code: str, message: str = ""):
-        self.code = code
-        self.message = message
-        super().__init__(code)
-
-
 def issue_mobile_jwt(request, esi_token: Token) -> str:
     """Issue a JWT from an ESI token. Includes user_id when the character is linked."""
     character = (

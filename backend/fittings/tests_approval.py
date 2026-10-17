@@ -34,7 +34,6 @@ from fittings.helpers.permissions import (
     can_approve_fitting_request,
     effective_protection_tier,
     protection_tier_for_doctrine,
-    users_who_can_approve_fitting_request,
 )
 from fittings.models import (
     ChangeRequestStatus,
@@ -988,36 +987,6 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertIsNotNone(result)
         fitting.refresh_from_db()
         self.assertEqual("before", fitting.description)
-
-
-class ApproverRecipientTestCase(TestCase):
-    """Who receives change-request review eligibility."""
-
-    def _create_user(self, username, *, is_staff=False):
-        return User.objects.create(username=username, is_staff=is_staff)
-
-    def test_users_who_can_approve_fitting_non_strategic(self):
-        skirmish = self._create_user("skirmish", is_staff=True)
-        skirmish.user_permissions.add(
-            _perm("approve_doctrine_fitting_non_strategic")
-        )
-        recipients = users_who_can_approve_fitting_request("non_strategic")
-        self.assertIn(skirmish, recipients)
-
-    def test_notify_recipients_exclude_non_staff(self):
-        staff_approver = self._create_user("staff_approver")
-        staff_approver.is_staff = True
-        staff_approver.save(update_fields=["is_staff"])
-        staff_approver.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        non_staff = self._create_user("non_staff_approver")
-        non_staff.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        recipients = users_who_can_approve_fitting_request("strategic")
-        self.assertIn(staff_approver, recipients)
-        self.assertNotIn(non_staff, recipients)
 
 
 class ChangeRequestDisplayTestCase(TestCase):

@@ -9,7 +9,6 @@ export {
     hasSeenOpenNewTabTip,
     importPendingToServer,
     isExternalLearningUrl,
-    isLearningComplete,
     loadStore,
     markLearningCompleteLocal,
     markOpenNewTabTipSeen,

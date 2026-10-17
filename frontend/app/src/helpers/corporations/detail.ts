@@ -1,18 +1,5 @@
 import type { CorporationMemberDetails } from '@dtypes/api.minmatar.org'
 
-export const CORPORATION_SLIDE_ART: Record<string, string> = {
-    'Rattini Tribe': '/images/corporations/rattini/ceo.webp',
-    'Soltech Armada': '/images/corporations/soltecharmada/ceo.webp',
-    'Minmatar Fleet Academy': '/images/corporations/l34rn/ceo.webp',
-    'Straylight Systems': '/images/corporations/straylight/ceo.webp',
-    'The Dark Tribe': '/images/corporations/darktribe/ceo.webp',
-    'The Ministry Of Ungentlemanly Warfare inc.': '/images/corporations/ministry/ceo.webp',
-    'Every Little Helps.': '/images/corporations/littlehelp/ceo.webp',
-    'Banshee Squadron': '/images/corporations/banshee/ceo.webp',
-    'Solaris Expeditionary Corps': '/images/corporations/solaris/ceo.webp',
-    'Minmatar Extraction Company': '/images/corporations/extraction/ceo.webp',
-}
-
 // Keep in step with corporation_slug in backend/eveonline/helpers/corporations/slugs.py.
 export function corporation_slug(name: string | null | undefined): string {
     return (name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -23,19 +10,7 @@ export function corporation_path(corporation_id: number, name?: string | null): 
     return `/alliance/corporations/${corporation_slug(name) || corporation_id}/`
 }
 
-export function corporation_hero_image(corporation_name: string): string | null {
-    return CORPORATION_SLIDE_ART[corporation_name] ?? null
-}
-
-export const MEMBER_SORT_METRICS = ['fleets', 'kills', 'voice', 'timezone'] as const
-export type MemberSortMetric = typeof MEMBER_SORT_METRICS[number]
-
-export function member_sort_metric(value: string | null): MemberSortMetric {
-    if (value && (MEMBER_SORT_METRICS as readonly string[]).includes(value)) {
-        return value as MemberSortMetric
-    }
-    return 'fleets'
-}
+export type MemberSortMetric = 'fleets' | 'kills' | 'voice' | 'timezone'
 
 export const MEMBER_PAGE_SIZE = 25
 

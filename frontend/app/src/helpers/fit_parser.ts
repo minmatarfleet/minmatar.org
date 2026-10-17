@@ -3,7 +3,6 @@ import { get_item_id, get_item_category } from '@helpers/sde/items'
 
 import type { Module, ShipFitting, CargoItem } from '@dtypes/layout_components';
 import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
-// import { cachePromise } from '@helpers/cache'
 
 export async function parse_eft(fitting_eft: string) {
     type EFTSection = 'name' | 'low' | 'med' | 'high' | 'rigs' | 'subsystem' | 'skip-drones' | 'drones' | 'cargo'

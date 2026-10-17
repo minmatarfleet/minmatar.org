@@ -10,7 +10,7 @@ from eveonline.models import EveCharacter
 from users.helpers import offboard_user
 
 from .core import make_nickname
-from .models import DiscordRole, DiscordUser
+from .models import DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -148,28 +148,6 @@ def get_discord_user(user: User, notify=False):
             return None
 
     return external_discord_user
-
-
-def add_user_to_expected_discord_roles(user: User):
-    """
-    Adds the expected roles to a user
-    NOTE: This should not occur, any added roles are a warning / bug
-    """
-    discord_user = DiscordUser.objects.get(user_id=user.id)
-    expected_discord_roles = DiscordRole.objects.filter(
-        group__in=user.groups.all()
-    )
-    for expected_discord_role in expected_discord_roles:
-        if discord_user in expected_discord_role.members.all():
-            logger.info("User has expected role, skipping")
-            continue
-        logger.warning(
-            "User does not have expected role, adding user %s to external role %s",
-            user.username,
-            expected_discord_role.name,
-        )
-        discord.add_user_role(discord_user.id, expected_discord_role.role_id)
-        expected_discord_role.members.add(discord_user)
 
 
 def notify_technology_team(location: str):

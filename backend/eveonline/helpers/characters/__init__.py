@@ -15,7 +15,6 @@ from eveonline.helpers.characters.characters import (
     market_scope_character_ids,
     merge_scope_groups,
     orphan_character,
-    player_characters,
     related_characters,
     scope_groups_for_token_add,
     scope_groups_granted,

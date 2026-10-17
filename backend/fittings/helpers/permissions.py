@@ -105,19 +105,3 @@ def protection_tier_for_doctrine_type(doctrine_type: str) -> str | None:
     if doctrine_type == DOCTRINE_TYPE_STRATEGIC:
         return PROTECTION_TIER_STRATEGIC
     return None
-
-
-def users_who_can_approve_doctrine_request(tier: str):
-    recipients = []
-    for user in user_model.objects.filter(is_active=True, is_staff=True):
-        if can_approve_doctrine_request(user, tier):
-            recipients.append(user)
-    return recipients
-
-
-def users_who_can_approve_fitting_request(tier: str):
-    recipients = []
-    for user in user_model.objects.filter(is_active=True, is_staff=True):
-        if can_approve_fitting_request(user, tier):
-            recipients.append(user)
-    return recipients

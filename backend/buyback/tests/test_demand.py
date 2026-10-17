@@ -11,7 +11,6 @@ from eveuniverse.models import (
     EveIndustryActivityProduct,
 )
 
-from buyback.helpers.demand import demand_type_ids_from_recent_orders
 from buyback.models import BuybackAcceptedItem, EveBuybackSettings
 from buyback.tests.helpers import BASE_URL, ensure_type
 from eveonline.models import EveCharacter, EveLocation
@@ -24,69 +23,6 @@ def _ensure_type(**kwargs):
 
 
 class DemandBuybackRateTestCase(TestCase):
-    @patch("eveonline.signals.update_character_public_data")
-    def test_demand_from_order_blueprint_imports(self, unused_mock):
-        p2 = _ensure_type(
-            type_id=9832,
-            name="Coolant",
-            group_id=1034,
-            group_name="Refined Commodities - Tier 2",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        unused_p2 = _ensure_type(
-            type_id=3689,
-            name="Mechanical Parts",
-            group_id=1034,
-            group_name="Refined Commodities - Tier 2",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        hull = _ensure_type(
-            type_id=999010,
-            name="Demand Hull",
-            group_id=25,
-            group_name="Frigate",
-            category_id=6,
-            category_name="Ship",
-        )
-        hull_bp = _ensure_type(
-            type_id=999011,
-            name="Demand Hull Blueprint",
-            group_id=105,
-            group_name="Blueprint",
-            category_id=9,
-            category_name="Blueprint",
-        )
-        EveIndustryActivityProduct.objects.create(
-            eve_type=hull_bp,
-            activity_id=1,
-            product_eve_type=hull,
-            quantity=1,
-        )
-        EveIndustryActivityMaterial.objects.create(
-            eve_type=hull_bp,
-            activity_id=1,
-            material_eve_type=p2,
-            quantity=5,
-        )
-        IndustryProduct.objects.create(eve_type=hull, strategy="imported")
-        character = EveCharacter.objects.create(
-            character_id=9101,
-            character_name="Demand Tester",
-        )
-        order = IndustryOrder.objects.create(
-            character=character,
-            needed_by=timezone.now().date(),
-            public_short_code="DEM",
-        )
-        IndustryOrderItem.objects.create(
-            order=order, eve_type=hull, quantity=1
-        )
-
-        demand_ids = demand_type_ids_from_recent_orders()
-        self.assertIn(p2.id, demand_ids)
-        self.assertNotIn(unused_p2.id, demand_ids)
 
     @patch("eveonline.signals.update_character_public_data")
     def test_appraise_pays_demand_rate_for_import_leaf(self, unused_mock):

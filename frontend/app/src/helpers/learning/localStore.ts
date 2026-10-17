@@ -77,10 +77,6 @@ export function getCompletedSlugs(): string[] {
     return [...loadStore().completed]
 }
 
-export function isLearningComplete(slug: string): boolean {
-    return loadStore().completed.includes(slug)
-}
-
 export function markLearningCompleteLocal(slug: string): void {
     const store = loadStore()
     if (!store.completed.includes(slug)) {

@@ -198,64 +198,6 @@ import type { sde_system } from '@helpers/sde/map'
 import { get_systems_coordinates } from '@helpers/sde/map'
 import type { SystemCardInfo } from '@dtypes/layout_components'
 
-export const get_systems_at_range = async (origin_system_name:string, years_light:number) => {
-    const systems_at_range:SystemCardInfo[] = []
-
-    const sde_systems = await get_systems_coordinates()
-
-    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
-
-    if (origin_system === undefined)
-        throw new Error('Origin system invalid')
-    
-    sde_systems.forEach((sde_system) => {
-        const distance_yl = get_distance_among_systems(origin_system, sde_system)
-
-        if (distance_yl > years_light) return true
-
-        systems_at_range.push({
-            system_name: sde_system.solarSystemName,
-            system_id: sde_system.sunTypeId,
-            sun_type_id: sde_system.sunTypeId,
-            distance_yl: distance_yl,
-            region_name: sde_system.regionName,
-            constellation_name: sde_system.constellationName,
-            security: sde_system.security,
-        })
-    })
-
-    return systems_at_range.sort((a, b) => a.distance_yl - b.distance_yl)
-}
-
-export const get_constellation_systems = async (constellation_name:string, origin_system_name:string) => {
-    const constellation_systems:SystemCardInfo[] = []
-
-    const sde_systems = await get_systems_coordinates()
-
-    const origin_system = sde_systems.find((sde_system) => sde_system.solarSystemName === origin_system_name)
-
-    if (origin_system === undefined)
-        throw new Error('Origin system invalid')
-    
-    sde_systems.forEach((sde_system) => {
-        if (sde_system.constellationName !== constellation_name) return true
-
-        const distance_yl = get_distance_among_systems(origin_system, sde_system)
-
-        constellation_systems.push({
-            system_name: sde_system.solarSystemName,
-            system_id: sde_system.sunTypeId,
-            sun_type_id: sde_system.sunTypeId,
-            distance_yl: distance_yl,
-            region_name: sde_system.regionName,
-            constellation_name: sde_system.constellationName,
-            security: sde_system.security,
-        })
-    })
-
-    return constellation_systems.sort((a, b) => a.distance_yl - b.distance_yl)
-}
-
 export const get_moon_systems = async (origin_system_name:string, distance:number, same_region:boolean) => {
     const constellation_systems:SystemCardInfo[] = []
 
@@ -330,23 +272,6 @@ export const parse_damage_from_logs = async (enemies:CombatLogItem[]) => {
     return damage
 }
 
-import { get_parenthesis_content } from '@helpers/string'
-
-export const parse_customs_office_selected_item_text =  (selected_item_text:string, timer:Date) => {
-    // Customs Office (Sosala I) [Black Omega Security]
-    // 99 km
-
-    // into
-
-    // Sosala - code minmatar at markeedragon
-    // 48 km
-    // Reinforced until 2024.06.30 00:04:16
-
-    const system = get_parenthesis_content(selected_item_text)
-
-    return `${system} - Customs Office\n0 km\nReinforced until ${format_selected_item_date(timer)}`
-}
-
 import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en')
@@ -416,15 +341,4 @@ export const SHIP_WEIGHT = {
     'Freighter': 500,
     'Jump Freighters': 500,
     'Industrialcommand': 700,
-}
-
-export const PLANET_TYPES = {
-    'strom': 2017,
-    'temperate': 11,
-    'gas': 13,
-    'ice': 12,
-    'barren': 2016,
-    'lava': 2015,
-    'plasma': 2063,
-    'oceanic': 2014,
 }

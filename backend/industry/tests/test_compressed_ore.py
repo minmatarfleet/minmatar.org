@@ -10,10 +10,10 @@ from industry.helpers.compressed_ore import (
     PRIMARY_BELT_ORE_FOR_MINERAL,
     MaterialBuckets,
     base_ore_name,
-    belt_ore_compressed_volume_m3,
     best_belt_ore_for_mineral,
     build_compressed_ore_plan,
     compression_covered_materials,
+    compressed_volume_m3,
     compute_practical_belt_blend,
     conservative_refine_rate,
     mineral_density,
@@ -23,6 +23,14 @@ from industry.helpers.compressed_ore import (
 )
 from industry.helpers.facility_profiles import get_facility_refine_rate
 from industry.helpers.reprocessing_skills import resolve_refine_rate
+
+
+def _belt_m3(belt_ore_units: dict) -> float:
+    """Total compressed m³ for a belt ore unit map."""
+    return sum(
+        max(0.0, float(units)) * compressed_volume_m3(ore)
+        for ore, units in belt_ore_units.items()
+    )
 
 
 def _standard_yields(refine: float = 0.84) -> dict:
@@ -203,10 +211,10 @@ class OptimalOreSelectionTestCase(TestCase):
         yields = _standard_yields(refine)
         needs = {"Pyerite": 100_000_000}
         belt, _ = compute_practical_belt_blend(needs, {}, yields)
-        zeolite_m3 = belt_ore_compressed_volume_m3(belt)
+        zeolite_m3 = _belt_m3(belt)
 
         scord_units = needs["Pyerite"] / yields["Scordite"]["Pyerite"]
-        scord_m3 = belt_ore_compressed_volume_m3({"Scordite": scord_units})
+        scord_m3 = _belt_m3({"Scordite": scord_units})
         trit_overage = scord_units * yields["Scordite"]["Tritanium"]
 
         self.assertLess(zeolite_m3, scord_m3)
@@ -218,10 +226,10 @@ class OptimalOreSelectionTestCase(TestCase):
         yields = _standard_yields(refine)
         needs = {"Mexallon": 100_000_000}
         belt, _ = compute_practical_belt_blend(needs, {}, yields)
-        plag_m3 = belt_ore_compressed_volume_m3(belt)
+        plag_m3 = _belt_m3(belt)
 
         kern_units = needs["Mexallon"] / yields["Kernite"]["Mexallon"]
-        kern_m3 = belt_ore_compressed_volume_m3({"Kernite": kern_units})
+        kern_m3 = _belt_m3({"Kernite": kern_units})
         iso_overage = kern_units * yields["Kernite"]["Isogen"]
 
         self.assertLess(plag_m3, kern_m3)
