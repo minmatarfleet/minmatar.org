@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import date, timedelta
 
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from campaigns.constants import (
@@ -743,6 +743,18 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
     if not orders:
         return 0
 
+    # One grouped query for the weekly order instead of one per pilot.
+    active_days_by_user = {}
+    if any(o.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE for o in orders):
+        active_days_by_user = dict(
+            CampaignParticipantDay.objects.filter(
+                campaign=campaign, day__gte=week_start, active=True
+            )
+            .values("user_id")
+            .annotate(days=Count("id"))
+            .values_list("user_id", "days")
+        )
+
     gangs_by_user = {}
     if any(o.kind == CampaignDailyOrder.Kind.GANG for o in orders):
         gangs_by_user = {
@@ -774,7 +786,9 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
             if order.scope == "user" and order.user_id != row.user_id:
                 continue
 
-            achieved = _order_progress(order, row, gangs_by_user)
+            achieved = _order_progress(
+                order, row, gangs_by_user, active_days_by_user
+            )
             required = float(order.params.get("count", 1) or 1)
             progress_row = existing.get((order.id, row.user_id))
 
@@ -804,8 +818,16 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
 
 
 def _order_progress(
-    order: CampaignDailyOrder, row, gangs_by_user: dict | None = None
+    order: CampaignDailyOrder,
+    row,
+    gangs_by_user: dict | None = None,
+    active_days_by_user: dict | None = None,
 ) -> float:
+    if (
+        order.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE
+        and active_days_by_user is not None
+    ):
+        return float(active_days_by_user.get(row.user_id, 0))
     if order.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE:
         # Measured across the week, not the day it was issued on.
         return float(

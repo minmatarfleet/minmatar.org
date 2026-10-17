@@ -2,7 +2,9 @@
 
 from datetime import date, timedelta
 
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from campaigns.constants import DEFAULT_STRUCTURES_REPORTED_TARGET
@@ -437,3 +439,33 @@ class WeeklyActiveOrderTests(TestCase):
 
         # Weekly + one of two daily orders: no full-set bonus.
         self.assertEqual(rows[self.user.id]["points"], 130)
+
+    def test_weekly_progress_is_one_query_not_one_per_pilot(self):
+        for n in range(5):
+            user, _ = enlist(self.campaign, f"pilot{n}", 6200 + n)
+            for offset in range(3):
+                CampaignParticipantDay.objects.create(
+                    campaign=self.campaign,
+                    user=user,
+                    day=self.WEEK_START + timedelta(days=offset),
+                    active=True,
+                )
+        day = self.WEEK_START + timedelta(days=2)
+        plan.evaluate_orders(self.campaign, day)  # warm caches
+
+        with CaptureQueriesContext(connection) as ctx:
+            plan.evaluate_orders(self.campaign, day)
+
+        counts = [
+            q["sql"]
+            for q in ctx.captured_queries
+            if "COUNT" in q["sql"].upper()
+            and "campaigns_campaignparticipantday" in q["sql"]
+        ]
+        self.assertEqual(len(counts), 1, counts)
+        self.assertTrue(
+            all(
+                p.progress == 3
+                for p in CampaignOrderProgress.objects.filter(order=self.order)
+            )
+        )
