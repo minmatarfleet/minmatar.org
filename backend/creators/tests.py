@@ -399,6 +399,7 @@ class CreatorAccountsTestCase(TestCase):
                         "high": {"url": "https://i.ytimg.com/vi/ytVid1/hq.jpg"}
                     },
                 },
+                "status": {"privacyStatus": "public"},
             }
         ]
         count = sync_youtube_videos(account)
@@ -408,6 +409,48 @@ class CreatorAccountsTestCase(TestCase):
         )
         self.assertEqual(item.kind, CreatorItemKind.VIDEO)
         self.assertEqual(item.url, "https://www.youtube.com/watch?v=ytVid1")
+
+    @patch("creators.service.ensure_valid_access_token", return_value="yt-tok")
+    @patch("creators.service.YouTubeClient")
+    def test_sync_youtube_videos_drops_unlisted(
+        self, client_cls, ensure_token
+    ):
+        del ensure_token
+        account = CreatorAccount.objects.create(
+            user=self.user,
+            provider=CreatorProvider.YOUTUBE,
+            platform_user_id="UC123",
+            platform_username="FL33T Vids",
+            extra={"uploads_playlist_id": "UU123"},
+            access_token="yt-tok",
+            token_expires_at=timezone.now() + timedelta(hours=1),
+        )
+        CreatorItem.objects.create(
+            account=account,
+            provider=CreatorProvider.YOUTUBE,
+            kind=CreatorItemKind.VIDEO,
+            external_id="townHall01",
+            title="Town Hall",
+            url="https://www.youtube.com/watch?v=townHall01",
+        )
+        client_cls.return_value.list_playlist_items.return_value = [
+            {
+                "contentDetails": {"videoId": "townHall01"},
+                "snippet": {"title": "Town Hall"},
+                "status": {"privacyStatus": "unlisted"},
+            },
+            {
+                "contentDetails": {"videoId": "private001"},
+                "snippet": {"title": "Draft cut"},
+                "status": {"privacyStatus": "private"},
+            },
+        ]
+        self.assertEqual(sync_youtube_videos(account), 0)
+        self.assertFalse(
+            CreatorItem.objects.filter(
+                provider=CreatorProvider.YOUTUBE
+            ).exists()
+        )
 
     def test_connect_redirects_for_thinkspeak_member(self):
         self._grant_thinkspeak()
