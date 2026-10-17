@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import logging
-import time
 
 from django.conf import settings
 
 from discord.client import DiscordClient
-from discord.models import DiscordChannel
+from discord.forum_threads import ForumThreadMirror, flagged_channel_row
 from eveonline.helpers.characters import user_primary_character
 from industry.helpers.lp_buyback_discord_buttons import (
     isk_sent_components,
@@ -28,9 +27,23 @@ from industry.models import IndustryLoyaltyPointMarketOrder
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
-# Match help tickets / bot ISK-sent: settle message traffic before archive so
-# Discord does not reopen the thread when a post lands after close.
-THREAD_ARCHIVE_DELAY_SECONDS = 5
+
+def _close_task():
+    # pylint: disable=import-outside-toplevel
+    from industry.tasks import close_lp_buyback_discord_thread_task
+
+    return close_lp_buyback_discord_thread_task
+
+
+MIRROR = ForumThreadMirror(
+    label="LP buyback",
+    channel_flag="receive_lp_buyback",
+    preferred_tags=frozenset(
+        {"open", "buyback", "order", "new", "wts", "wtb"}
+    ),
+    client=lambda: discord,
+    close_task=_close_task,
+)
 
 # Deleted orders 122/123 and cancelled order 130 (thread created after cancel).
 ORPHAN_LP_BUYBACK_THREAD_IDS = (
@@ -80,20 +93,8 @@ def isk_payer(order: IndustryLoyaltyPointMarketOrder):
     return order.created_by
 
 
-def _flagged_channel_row(flag: str) -> tuple[int, int] | None:
-    """(channel_id, guild_id) of the active channel with this receive_* flag."""
-    row = (
-        DiscordChannel.objects.filter(**{flag: True}, guild__is_active=True)
-        .values_list("channel_id", "guild__guild_id")
-        .first()
-    )
-    if not row or not row[0]:
-        return None
-    return int(row[0]), int(row[1])
-
-
 def _lp_buyback_channel_row() -> tuple[int, int] | None:
-    return _flagged_channel_row("receive_lp_buyback")
+    return MIRROR.channel_row()
 
 
 def lp_buyback_thread_url(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -109,7 +110,7 @@ def lp_buyback_thread_url(order: IndustryLoyaltyPointMarketOrder) -> str:
 
 
 def lp_conversion_alert_channel_id() -> int | None:
-    row = _flagged_channel_row("receive_lp_conversion_alerts")
+    row = flagged_channel_row("receive_lp_conversion_alerts")
     return row[0] if row else None
 
 
@@ -180,65 +181,15 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     return "\n".join(parts)
 
 
-def _default_forum_tag_ids(channel_id: int) -> list[str]:
-    try:
-        channel = discord.get_channel(channel_id).json()
-    except Exception as exc:
-        logger.warning(
-            "Could not fetch LP buyback forum channel %s for tags: %s",
-            channel_id,
-            exc,
-        )
-        return []
-
-    tags = channel.get("available_tags") or []
-    if not tags:
-        return []
-
-    preferred_names = {"open", "buyback", "order", "new", "wts", "wtb"}
-    for tag in tags:
-        name = str(tag.get("name") or "").strip().lower()
-        if name in preferred_names:
-            return [str(tag["id"])]
-    return [str(tags[0]["id"])]
-
-
 def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
-    channel_id = lp_buyback_channel_id()
-    if not channel_id:
-        logger.warning(
-            "No DiscordChannel with receive_lp_buyback; skip thread"
-        )
-        return None
-    try:
-        response = discord.create_forum_thread(
-            channel_id=channel_id,
-            title=order_thread_title(order)[:100],
-            message=order_starter_message(order),
-            applied_tags=_default_forum_tag_ids(channel_id),
-        )
-        return int(response.json()["id"])
-    except Exception as exc:
-        logger.error(
-            "Failed creating LP buyback Discord thread (channel=%s): %s",
-            channel_id,
-            exc,
-        )
-        return None
+    return MIRROR.create_thread(
+        order_thread_title(order), order_starter_message(order)
+    )
 
 
 def close_lp_buyback_thread_id(thread_id: int | None) -> bool:
     """Archive/lock a buyback forum thread by Discord channel id."""
-    if not thread_id:
-        return False
-    try:
-        discord.close_thread(channel_id=int(thread_id))
-        return True
-    except Exception as exc:
-        logger.error(
-            "Failed closing LP buyback Discord thread %s: %s", thread_id, exc
-        )
-        return False
+    return MIRROR.close(thread_id)
 
 
 def close_order_thread(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -253,19 +204,7 @@ def post_order_status_update(
     components: list[dict] | None = None,
 ) -> bool:
     """Post in the order thread; False when there is no thread or it failed."""
-    if not order.discord_thread_id:
-        return False
-    payload = {"content": message}
-    if components:
-        payload["components"] = components
-    try:
-        discord.create_message(
-            channel_id=order.discord_thread_id, payload=payload
-        )
-    except Exception as exc:
-        logger.error("Failed posting LP buyback Discord update: %s", exc)
-        return False
-    return True
+    return MIRROR.post(order.discord_thread_id, message, components)
 
 
 def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -497,10 +436,8 @@ def _completed_message(order: IndustryLoyaltyPointMarketOrder) -> str:
 def _post_completed_then_archive(
     order: IndustryLoyaltyPointMarketOrder,
 ) -> None:
-    """Post completion, wait, then archive (avoids Discord reopen race)."""
-    post_order_status_update(order, message=_completed_message(order))
-    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
-    close_order_thread(order)
+    """Post completion, then archive shortly after (avoids reopen race)."""
+    MIRROR.post_then_close(order.discord_thread_id, _completed_message(order))
 
 
 def notify_order_status_changed(
@@ -571,17 +508,13 @@ def notify_order_cancelled(
     cancelled_by=None,
     reason: str = "",
 ) -> None:
-    """Post the cancellation, wait, then archive (avoids reopen race)."""
+    """Post the cancellation, then archive shortly after (avoids reopen race)."""
     if not order.discord_thread_id:
         return
-    post_order_status_update(
-        order,
-        message=_cancelled_message(
-            order, cancelled_by=cancelled_by, reason=reason
-        ),
+    MIRROR.post_then_close(
+        order.discord_thread_id,
+        _cancelled_message(order, cancelled_by=cancelled_by, reason=reason),
     )
-    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
-    close_order_thread(order)
 
 
 def waiting_on(order: IndustryLoyaltyPointMarketOrder):
