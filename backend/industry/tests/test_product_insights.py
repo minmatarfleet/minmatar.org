@@ -1,11 +1,12 @@
 """Tests for supply chain product insights (rollup, cache and endpoint)."""
 
+import importlib
 from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.test import Client
+from django.test import Client, override_settings
 from django.utils import timezone
 
 from eveonline.models import (
@@ -337,3 +338,31 @@ class ProductInsightsTestCase(AppTestCase):
             ).status_code,
             404,
         )
+
+
+class QueueProductInsightsMigrationTestCase(AppTestCase):
+    def _queue_refresh(self):
+        module = importlib.import_module(
+            "industry.migrations.0053_queue_product_insights"
+        )
+        return module.queue_refresh
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    def test_queues_refresh_on_the_default_queue(self):
+        with patch("app.celery.app.send_task") as send_task:
+            self._queue_refresh()(None, None)
+        send_task.assert_called_once_with(
+            "industry.tasks.refresh_product_insights_task", queue="celery"
+        )
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    def test_broker_failure_does_not_block_migrate(self):
+        with patch(
+            "app.celery.app.send_task", side_effect=ConnectionError("down")
+        ):
+            self._queue_refresh()(None, None)
+
+    def test_skipped_when_celery_runs_inline(self):
+        with patch("app.celery.app.send_task") as send_task:
+            self._queue_refresh()(None, None)
+        send_task.assert_not_called()
