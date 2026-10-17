@@ -87,7 +87,7 @@ The file name carries the **character ID** and the header carries the **name**. 
 
 ### C. ESI (enrichment, not the real-time path)
 
-`/characters/{id}/location`, `/ship` and `/online` are cached for seconds to a minute. Use ESI for ship type, fleet, skills and wallet, via the same SSO the site already uses. The site's FactionWarfare scope group already includes location. Don't use it for "where am I right now"; the logs are faster.
+`/characters/{id}/location`, `/ship` and `/online` are cached for seconds to a minute. Use ESI for ship type, fleet, skills and wallet, via the same SSO the site already uses. Location, ship type, online status, jump fatigue and the two UI writes (set waypoint, open window) come from the optional Desktop scope group, on by default when a character is added. Don't use location for "where am I right now" when the pilot's own log has it; the logs are faster.
 
 ### Off the table (CCP rules / ban risk)
 

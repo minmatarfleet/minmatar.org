@@ -59,6 +59,16 @@ export const FLEET_COMMANDER_SCOPES = [
     'esi-fittings.write_fittings.v1',
 ] as const
 
+/** Mirrors backend DESKTOP_SCOPES. Optional, on by default for new characters. */
+export const DESKTOP_SCOPES = [
+    'esi-ui.write_waypoint.v1',
+    'esi-ui.open_window.v1',
+    'esi-location.read_location.v1',
+    'esi-location.read_ship_type.v1',
+    'esi-location.read_online.v1',
+    'esi-characters.read_fatigue.v1',
+] as const
+
 const EXECUTOR_SCOPES = [
     'esi-mail.send_mail.v1',
 ] as const
@@ -82,6 +92,7 @@ const TOKEN_SCOPES: Record<string, readonly string[]> = {
     ],
     FleetCommander: [...BASIC_SCOPES, ...FLEET_COMMANDER_SCOPES],
     FactionWarfare: [...BASIC_SCOPES, ...FACTION_WARFARE_SCOPES],
+    Desktop: [...BASIC_SCOPES, ...DESKTOP_SCOPES],
     Campaign: [...BASIC_SCOPES, ...FACTION_WARFARE_SCOPES],
     Public: ['publicData'],
 }
