@@ -3267,7 +3267,6 @@ export interface CampaignFleet {
 export interface CampaignLeaderboardRow {
     rank:           number;
     user_id:        number;
-    username:       string;
     character_id:   number | null;
     character_name: string;
     value:          number;
@@ -3310,7 +3309,6 @@ export interface CampaignSite {
     site_kind:      string;
     amount_lp:      number;
     system:         string;
-    username:       string | null;
     character_id:   number | null;
     character_name: string;
     plex_class:     string;
@@ -3332,7 +3330,6 @@ export interface CampaignTimelineEvent {
 
 export interface CampaignRosterPilot {
     user_id:                number;
-    username:               string;
     primary_character:      string;
     character_id:           number | null;
     corporation_id:         number | null;

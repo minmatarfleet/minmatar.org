@@ -35,7 +35,8 @@ const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:Campaign
 
 const format_value = (value:number) => value.toFixed(0)
 
-const haystack = (row:CampaignLeaderboardRow) => `${row.character_name} ${row.username}`.toLowerCase()
+const pilot_name = (row:CampaignLeaderboardRow) => row.character_name || t('unknown_pilot')
+const haystack = (row:CampaignLeaderboardRow) => pilot_name(row).toLowerCase()
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -136,7 +137,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                                 alt=''
                             />
                         }
-                        <span>{row.character_name || row.username}</span>
+                        <span>{pilot_name(row)}</span>
                     </div>
                     <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
                 </div>

@@ -413,9 +413,9 @@ ROSTER_ACTIVE_DAYS = 7
 def roster_rows(campaign: Campaign) -> list[dict]:
     """The roster, in a handful of queries rather than three per pilot."""
     enlistments = list(
-        CampaignEnlistment.objects.filter(campaign=campaign, status="active")
-        .select_related("user")
-        .annotate(
+        CampaignEnlistment.objects.filter(
+            campaign=campaign, status="active"
+        ).annotate(
             included=Count(
                 "characters", filter=Q(characters__included_until__isnull=True)
             )
@@ -465,7 +465,6 @@ def roster_rows(campaign: Campaign) -> list[dict]:
         rows.append(
             {
                 "user_id": enlistment.user_id,
-                "username": enlistment.user.username,
                 "primary_character": (
                     primary.character_name if primary else ""
                 ),
@@ -501,7 +500,8 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 if row["last_active_day"] is None
                 else -row["last_active_day"].toordinal()
             ),
-            row["username"].lower(),
+            row["primary_character"].lower(),
+            row["user_id"],
         ),
     )
 

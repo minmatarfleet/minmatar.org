@@ -41,6 +41,9 @@ from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
 
+# Shown where a pilot has no primary character. Never the web login.
+UNKNOWN_PILOT = "Unknown pilot"
+
 BOARD_METRICS = {
     "kills": "kills",
     "isk": "isk_destroyed",
@@ -531,9 +534,7 @@ def leaderboard(
     if first_day:
         queryset = queryset.filter(day__gte=first_day)
 
-    rows = queryset.values("user_id", "user__username").annotate(
-        value=Sum(field)
-    )
+    rows = queryset.values("user_id").annotate(value=Sum(field))
     if metric == "fcs":
         # Most pilots never lead; the FC board lists only those who did.
         rows = rows.filter(value__gt=0)
@@ -544,7 +545,6 @@ def leaderboard(
         {
             "rank": index,
             "user_id": row["user_id"],
-            "username": row["user__username"],
             "character_id": primaries.get(row["user_id"], (None, ""))[0],
             "character_name": primaries.get(row["user_id"], (None, ""))[1],
             "value": float(row["value"] or 0),
@@ -682,9 +682,10 @@ def _kills_in_period(campaign, first_day: date | None):
 def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
     """``{user_id: (character_id, character_name)}`` for each pilot's main.
 
-    A board shows the pilot's face and in-game name, not their web login.
-    A pilot without a primary character falls back to the username in the
-    caller, so they are simply absent here.
+    A board shows the pilot's face and in-game name, never their web login:
+    ``User.username`` is the member's Discord handle, and public campaign
+    boards must not link it to an EVE main. A pilot without a primary
+    character is simply absent here; callers show ``UNKNOWN_PILOT``.
     """
     return {
         player.user_id: (
@@ -695,6 +696,12 @@ def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
             user_id__in=list(user_ids), primary_character__isnull=False
         ).select_related("primary_character")
     }
+
+
+def pilot_name(user_id: int | None) -> str:
+    """The in-game name a title or label shows for one pilot."""
+    names = primary_characters([user_id]) if user_id else {}
+    return names.get(user_id, (None, UNKNOWN_PILOT))[1]
 
 
 def campaign_totals(campaign: Campaign) -> dict:

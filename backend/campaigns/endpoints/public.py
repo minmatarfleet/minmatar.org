@@ -249,11 +249,14 @@ def get_right_now(request, slug: str):
             is_active=True,
             occurred_at__gte=forming_since,
         )
-        .select_related("campaign_system", "user")
+        .select_related("campaign_system")
         .order_by("-occurred_at")[:5]
     )
 
     orders = plan.orders_for(campaign, user) if user else []
+    starters = stats.primary_characters(
+        [event.user_id for event in forming if event.user_id]
+    )
 
     ticker = [
         {
@@ -291,7 +294,11 @@ def get_right_now(request, slug: str):
                     if event.campaign_system
                     else None
                 ),
-                "started_by": (event.user.username if event.user else ""),
+                "started_by": (
+                    starters.get(event.user_id, (None, stats.UNKNOWN_PILOT))[1]
+                    if event.user_id
+                    else ""
+                ),
                 "occurred_at": event.occurred_at.isoformat(),
             }
             for event in forming
@@ -484,7 +491,9 @@ def _commander_name(fleet) -> str | None:
     character = fleet.fleet_commander
     if character:
         return character.character_name
-    return fleet.created_by.username if fleet.created_by else None
+    if fleet.created_by_id:
+        return stats.pilot_name(fleet.created_by_id)
+    return None
 
 
 @router.get(
@@ -612,7 +621,7 @@ def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
     rows = list(
         CampaignSiteCompletion.objects.filter(
             campaign=campaign
-        ).select_related("campaign_system", "user", "complex")[
+        ).select_related("campaign_system", "complex")[
             start : start + _clamp(limit)
         ]
     )
@@ -630,7 +639,6 @@ def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
             "site_kind": row.site_kind,
             "amount_lp": row.amount_lp,
             "system": row.campaign_system.name,
-            "username": row.user.username if row.user else None,
             "character_id": row.character_id,
             "character_name": names.get(row.character_id, ""),
             "plex_class": (
@@ -691,9 +699,10 @@ def get_awards(request, slug: str, limit: int = 50):
     if denied:
         return denied
 
-    rows = CampaignAward.objects.filter(campaign=campaign).select_related(
-        "user"
-    )[: _clamp(limit)]
+    rows = list(
+        CampaignAward.objects.filter(campaign=campaign)[: _clamp(limit)]
+    )
+    winners = stats.primary_characters([award.user_id for award in rows])
     return [
         {
             "code": award.code,
@@ -701,7 +710,8 @@ def get_awards(request, slug: str, limit: int = 50):
             "scope": award.scope,
             "week_start": award.week_start,
             "awarded_at": award.awarded_at,
-            "username": award.user.username,
+            "character_id": winners.get(award.user_id, (None, ""))[0],
+            "character_name": winners.get(award.user_id, (None, ""))[1],
             "value": (award.payload or {}).get("value"),
             "metric": (award.payload or {}).get("metric", ""),
         }
