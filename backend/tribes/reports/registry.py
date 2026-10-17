@@ -53,7 +53,7 @@ def _production_binding(code: str) -> ReportBinding:
             ReportView.MEMBER.value: spec,
         },
         presentation={
-            "town_hall": {"top_n": 5, "sort": "delivered_margin"},
+            "town_hall": {"top_n": 5, "sort": "delivered_profit"},
         },
     )
 

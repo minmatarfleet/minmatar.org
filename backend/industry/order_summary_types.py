@@ -11,7 +11,7 @@ class ActiveOrderSummaryLine:
     public_short_code: str
     location_label: str
     group_names_csv: str
-    profit_isk: Decimal
+    profit_isk: Decimal | None
 
 
 @dataclass(frozen=True)
@@ -20,10 +20,10 @@ class UnassignedOrderItemLine:
     location_label: str
     eve_type_name: str
     unassigned_quantity: int
-    profit_isk: Decimal
+    profit_isk: Decimal | None
 
 
 @dataclass(frozen=True)
 class SummaryTotals:
     total_order_amount_isk: Decimal
-    total_available_margin_isk: Decimal
+    total_estimated_profit_isk: Decimal

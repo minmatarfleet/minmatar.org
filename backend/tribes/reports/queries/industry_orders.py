@@ -9,6 +9,9 @@ from django.utils import timezone
 
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EvePlayer
+from industry.helpers.order_profit_breakdown import (
+    stored_profit_per_unit_by_type,
+)
 from industry.helpers.orders_character_statistics import (
     assignment_delivery_at,
     assignment_unit_price,
@@ -23,8 +26,8 @@ COLUMNS = [
     "delivered_units",
     "committed_estimate",
     "delivered_estimate",
-    "committed_margin",
-    "delivered_margin",
+    "committed_profit",
+    "delivered_profit",
 ]
 
 
@@ -50,6 +53,7 @@ def run_industry_orders_report(
 
     committed: dict[int, dict] = defaultdict(_metric_dict)
     delivered: dict[int, dict] = defaultdict(_metric_dict)
+    profit_by_order: dict[int, dict[int, int] | None] = {}
 
     for a in assignments:
         uid = a.character.user_id if a.character else None
@@ -57,19 +61,19 @@ def run_industry_orders_report(
             continue
         order = a.order_item.order
         unit_price = assignment_unit_price(a)
-        unit_margin = _dec(
-            a.target_estimated_margin
-            or a.order_item.target_estimated_margin
-            or 0
+        if order.pk not in profit_by_order:
+            profit_by_order[order.pk] = stored_profit_per_unit_by_type(order)
+        unit_profit = _dec(
+            (profit_by_order[order.pk] or {}).get(a.order_item.eve_type_id)
         )
         qty = Decimal(a.quantity)
 
         if order.fulfilled_at is None:
-            _add(committed[uid], qty, unit_price, unit_margin)
+            _add(committed[uid], qty, unit_price, unit_profit)
 
         fulfilled_at = assignment_delivery_at(a)
         if fulfilled_at and period_start_dt <= fulfilled_at <= period_end_dt:
-            _add(delivered[uid], qty, unit_price, unit_margin)
+            _add(delivered[uid], qty, unit_price, unit_profit)
 
     rows = []
     for uid in user_ids:
@@ -82,29 +86,29 @@ def run_industry_orders_report(
                 "delivered_units": int(d["units"]),
                 "committed_estimate": float(c["estimate"]),
                 "delivered_estimate": float(d["estimate"]),
-                "committed_margin": float(c["margin"]),
-                "delivered_margin": float(d["margin"]),
+                "committed_profit": float(c["profit"]),
+                "delivered_profit": float(d["profit"]),
             }
         )
-    rows.sort(key=lambda r: r["delivered_margin"], reverse=True)
+    rows.sort(key=lambda r: r["delivered_profit"], reverse=True)
 
     totals = {
         "committed_units": sum(r["committed_units"] for r in rows),
         "delivered_units": sum(r["delivered_units"] for r in rows),
-        "delivered_margin": sum(r["delivered_margin"] for r in rows),
+        "delivered_profit": sum(r["delivered_profit"] for r in rows),
         "delivered_estimate": sum(r["delivered_estimate"] for r in rows),
     }
     return rows, totals, COLUMNS
 
 
 def _metric_dict():
-    return {"units": Decimal(0), "estimate": Decimal(0), "margin": Decimal(0)}
+    return {"units": Decimal(0), "estimate": Decimal(0), "profit": Decimal(0)}
 
 
-def _add(bucket, qty, unit_price, unit_margin):
+def _add(bucket, qty, unit_price, unit_profit):
     bucket["units"] += qty
     bucket["estimate"] += qty * unit_price
-    bucket["margin"] += qty * unit_margin
+    bucket["profit"] += qty * unit_profit
 
 
 def _dec(val):
@@ -115,7 +119,7 @@ def _empty_totals():
     return {
         "committed_units": 0,
         "delivered_units": 0,
-        "delivered_margin": 0.0,
+        "delivered_profit": 0.0,
         "delivered_estimate": 0.0,
     }
 

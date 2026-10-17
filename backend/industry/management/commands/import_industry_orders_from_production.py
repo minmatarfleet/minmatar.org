@@ -234,7 +234,6 @@ class Command(BaseCommand):
                 quantity=item.quantity,
                 self_assign_maximum=item.self_assign_maximum,
                 target_unit_price=item.target_unit_price,
-                target_estimated_margin=item.target_estimated_margin,
             )
             for asn in item.assignments.all():
                 IndustryOrderItemAssignment.objects.using(local).create(
@@ -242,7 +241,6 @@ class Command(BaseCommand):
                     character_id=prod_char_pk_to_local_pk[asn.character_id],
                     quantity=asn.quantity,
                     target_unit_price=asn.target_unit_price,
-                    target_estimated_margin=asn.target_estimated_margin,
                     delivered_quantity=getattr(asn, "delivered_quantity", 0)
                     or (asn.quantity if asn.delivered_at is not None else 0),
                     delivered_at=asn.delivered_at,

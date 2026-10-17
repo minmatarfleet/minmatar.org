@@ -725,7 +725,6 @@ class IndustryOrderItemInline(admin.TabularInline):
         "quantity",
         "self_assign_maximum",
         "target_unit_price",
-        "target_estimated_margin",
         "assignments_link",
     )
     readonly_fields = ("assignments_link",)
@@ -1039,7 +1038,6 @@ class IndustryOrderItemAssignmentInline(admin.TabularInline):
         "character",
         "quantity",
         "target_unit_price",
-        "target_estimated_margin",
         "has_blueprints",
         "delivered_quantity",
         "delivered_at",
@@ -1055,7 +1053,6 @@ class IndustryOrderItemAdmin(admin.ModelAdmin):
         "eve_type",
         "quantity",
         "target_unit_price",
-        "target_estimated_margin",
     )
     list_filter = ("order",)
     raw_id_fields = ("eve_type",)
@@ -1094,7 +1091,6 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         "quantity",
         "delivered_quantity",
         "target_unit_price",
-        "target_estimated_margin",
         "has_blueprints",
         "delivered_at",
     )

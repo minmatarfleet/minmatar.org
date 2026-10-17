@@ -1383,7 +1383,7 @@ export interface RootItem {
     eve_type_name:              string;
     quantity:                   number;
     target_unit_price?:         string | null;
-    target_estimated_margin?:   string | null;
+    estimated_profit_per_unit?: number | null;
 }
 
 export interface IndustryOrder {
@@ -1991,7 +1991,6 @@ export interface OrderAssignment {
     character_name:             string;
     quantity:                   number;
     target_unit_price:          number | null;
-    target_estimated_margin:    number | null;
     delivered_quantity:         number;
     delivered_at:               Date | null;
     has_blueprints:             boolean;
@@ -2006,7 +2005,7 @@ export interface RootSingleItem {
     self_assign_maximum:            number | null;
     self_assign_window_ends_at:     Date;
     target_unit_price:              string | null,
-    target_estimated_margin:        string | null,
+    estimated_profit_per_unit:      number | null,
     assignments:                    OrderAssignment[];
 }
 
