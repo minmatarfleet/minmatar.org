@@ -997,3 +997,35 @@ export async function get_fleet_my_srp(access_token: string, fleet_id: number): 
         throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
     return await response.json() as FleetSrpLoss[]
 }
+
+export interface MissingSignups {
+    pilots: { character_id: number; character_name: string; ship_name: string; cyno: boolean }[];
+    last_nudge: { sent_at: string; players: number; delivered: number; failed: number } | null;
+    next_nudge_at: string | null;
+}
+
+// FC and managers: signed-up pilots not in the live fleet, and the last DM nudge.
+export async function get_fleet_missing_signups(access_token: string, fleet_id: number): Promise<MissingSignups> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
+    return await response.json() as MissingSignups
+}
+
+// Queue one DM per player who signed up but is not in fleet. 429 while cooling down.
+export async function nudge_fleet_missing_signups(access_token: string, fleet_id: number): Promise<{ pilots: number }> {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+    }
+    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups/nudge`
+    const response = await fetch(ENDPOINT, { method: 'POST', headers })
+    if (!response.ok)
+        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
+    return await response.json() as { pilots: number }
+}

@@ -824,6 +824,8 @@ export interface Tracking {
     start_time:     Date;
     end_time:       Date | null;
     is_registered:  boolean;
+    is_free_move?:  boolean;
+    has_motd?:      boolean;
 }
 
 export interface FleetRequest {

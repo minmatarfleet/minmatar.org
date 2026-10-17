@@ -70,6 +70,7 @@ import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astr
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import FleetFacts from '@components/blocks/FleetFacts.astro';
 import FleetMyPilots from '@components/blocks/FleetMyPilots.astro';
+import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
@@ -117,8 +118,13 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
                 is_fleet_commander={is_fleet_commander}
                 fleet_tracking_texts={fleet_tracking_texts}
                 init_tooltips={init_tooltips}
+                disable_motd={fleet.disable_motd}
             />
         </div>
+    }
+
+    {!history && can_manage && fleet.tracking && !fleet.tracking.end_time &&
+        <FleetMissingSignups fleet_id={fleet.id} />
     }
 
     {history &&
@@ -193,27 +199,7 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
 
     {!history &&
         <>
-        {!history && (composition.length > 0 || can_manage) &&
-            <Wrapper
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            >
-                <FleetShips
-                    fleet_id={fleet.id}
-                    composition={composition}
-                    volunteers={ship_volunteers}
-                    refits={refits}
-                    pilots={pilots}
-                    supply={supply}
-                    readonly={fleet.status === 'cancelled'}
-                    can_manage={can_manage}
-                    doctrine_name={fleet?.doctrine?.name ?? null}
-                />
-            </Wrapper>
-        }
-
+        {/* Live, the FC watches who is in fleet before the ships list. */}
         {is_fleet_commander &&
             <Wrapper
                 padding_block='0'
@@ -253,6 +239,28 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
                 }
             </Wrapper>
         }
+
+        {!history && (composition.length > 0 || can_manage) &&
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            >
+                <FleetShips
+                    fleet_id={fleet.id}
+                    composition={composition}
+                    volunteers={ship_volunteers}
+                    refits={refits}
+                    pilots={pilots}
+                    supply={supply}
+                    readonly={fleet.status === 'cancelled'}
+                    can_manage={can_manage}
+                    doctrine_name={fleet?.doctrine?.name ?? null}
+                />
+            </Wrapper>
+        }
+
         </>
     }
 </BlockList>

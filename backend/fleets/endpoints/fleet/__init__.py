@@ -12,6 +12,18 @@ from fleets.endpoints.fleet.delete_fleet_role_volunteer import (
     delete_fleet_role_volunteer,
     METHOD as delete_fleet_role_volunteer_method,
 )
+from fleets.endpoints.fleet.get_fleet_missing_signups import (
+    PATH as get_fleet_missing_signups_path,
+    ROUTE_SPEC as get_fleet_missing_signups_spec,
+    get_fleet_missing_signups,
+    METHOD as get_fleet_missing_signups_method,
+)
+from fleets.endpoints.fleet.post_fleet_missing_signups_nudge import (
+    PATH as post_fleet_missing_signups_nudge_path,
+    ROUTE_SPEC as post_fleet_missing_signups_nudge_spec,
+    nudge_fleet_missing_signups,
+    METHOD as post_fleet_missing_signups_nudge_method,
+)
 from fleets.endpoints.fleet.get_fleet_my_srp import (
     PATH as get_fleet_my_srp_path,
     ROUTE_SPEC as get_fleet_my_srp_spec,
@@ -297,6 +309,18 @@ _ROUTES = (
         delete_fleet_fitting_path,
         delete_fleet_fitting_spec,
         delete_fleet_fitting,
+    ),
+    (
+        get_fleet_missing_signups_method,
+        get_fleet_missing_signups_path,
+        get_fleet_missing_signups_spec,
+        get_fleet_missing_signups,
+    ),
+    (
+        post_fleet_missing_signups_nudge_method,
+        post_fleet_missing_signups_nudge_path,
+        post_fleet_missing_signups_nudge_spec,
+        nudge_fleet_missing_signups,
     ),
     (
         get_fleet_my_srp_method,

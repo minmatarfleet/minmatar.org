@@ -169,3 +169,14 @@ def poll_npsi_events():
     stats = poll_npsi_sources()
     logger.info("NPSI poll %s", stats)
     return stats
+
+
+@app.task()
+def nudge_missing_signups(fleet_id: int):
+    """DM signed-up pilots who are not in the live fleet yet."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.missing_signups import send_missing_signup_nudges
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if fleet:
+        send_missing_signup_nudges(fleet)

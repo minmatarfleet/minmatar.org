@@ -252,6 +252,11 @@ class EveFleetInstance(models.Model):
     def active(self):
         return self.end_time is None
 
+    @property
+    def has_motd(self) -> bool:
+        """True once a MOTD has been pushed to the in-game fleet."""
+        return bool(self.motd)
+
     def update_eve_fleet(self, disable_motd: bool):
         """Update fleet freemove and MOTD"""
 

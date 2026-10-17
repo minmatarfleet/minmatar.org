@@ -30,6 +30,8 @@ class EveFleetTrackingResponse(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     is_registered: bool
+    is_free_move: bool = False
+    has_motd: bool = False
 
     class Config:
         from_attributes = True
