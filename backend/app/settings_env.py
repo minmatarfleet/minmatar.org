@@ -29,6 +29,54 @@ def env_int(name, default):
     return int(value) if value else default
 
 
+def env_str(name, default=""):
+    """Read a string from the environment; blank counts as unset."""
+    value = os.environ.get(name, "").strip()
+    return value if value else default
+
+
+_TRUE_VALUES = {"1", "true", "yes", "on"}
+
+
+def env_bool(name, default=False):
+    """Read a boolean from the environment.
+
+    Only 1/true/yes/on (any case) are true, so "False" or "0" stay false.
+    Blank counts as unset.
+    """
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value in _TRUE_VALUES
+
+
+def readonly_database_from_env():
+    """The production_readonly alias, or None when it is not configured.
+
+    Used by the *_from_production import commands and for read-only
+    debugging. It is only defined when DB_READONLY_USER and
+    DB_READONLY_HOST are set, so credentials live in .env, never in code.
+    The session is also put in read-only mode, so a write fails even if
+    the account has write grants.
+    """
+    user = env_str("DB_READONLY_USER")
+    host = env_str("DB_READONLY_HOST")
+    if not user or not host:
+        return None
+    return {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env_str("DB_READONLY_NAME", "minmatar"),
+        "USER": user,
+        "PASSWORD": env_str("DB_READONLY_PASSWORD"),
+        "HOST": host,
+        "PORT": env_str("DB_READONLY_PORT", "3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET SESSION TRANSACTION READ ONLY",
+        },
+    }
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
@@ -102,8 +150,12 @@ ENV = "production"  # pylint: disable=invalid-name
 if DEBUG:
     ENV = "development"  # pylint: disable=invalid-name
 
-# If this is set, Discord login will be bypassed and the user will be logged in with this ID
-FAKE_LOGIN_USER_ID = os.environ.get("FAKE_LOGIN_USER_ID ", None)
+# Developer-only switches. Each one is forced off unless DEBUG is on, so a
+# stray value in a production .env can never enable it. The views check
+# DEBUG again at request time (app/dev_switches.py).
+#
+# FAKE_LOGIN_USER_ID: bypass Discord login and log in as this user ID.
+FAKE_LOGIN_USER_ID = (env_str("FAKE_LOGIN_USER_ID") or None) if DEBUG else None
 
 # Local settings only, not for production
 if FAKE_LOGIN_USER_ID:
@@ -112,9 +164,10 @@ if FAKE_LOGIN_USER_ID:
     CSRF_COOKIE_SECURE = True
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-
-MOCK_ESI = os.environ.get("MOCK_ESI ", False)
-SETUP_TEST_DATA = os.environ.get("SETUP_TEST_DATA", False)
+# MOCK_ESI: serve character ESI calls from eveonline/mock_esi.
+MOCK_ESI = DEBUG and env_bool("MOCK_ESI")
+# SETUP_TEST_DATA: seed local test users and data on startup (app/urls.py).
+SETUP_TEST_DATA = DEBUG and env_bool("SETUP_TEST_DATA")
 
 REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
 REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")

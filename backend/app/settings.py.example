@@ -85,6 +85,13 @@ DATABASES = {
         'OPTIONS': {'charset': 'utf8mb4'},
     },
 }
+# Read-only production alias for the *_from_production import commands and
+# for debugging. Defined only when DB_READONLY_USER and DB_READONLY_HOST are
+# set in .env (see backend/.env.example). Never set them on the production
+# host itself.
+_readonly_database = readonly_database_from_env()
+if _readonly_database:
+    DATABASES["production_readonly"] = _readonly_database
 
 # Monitoring
 sentry_sdk.init(

@@ -8,6 +8,8 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.shortcuts import redirect
 
+from app.dev_switches import fake_login_user_id
+
 from .client import DiscordClient, DiscordError, discord_authorize_url
 from users.helpers import make_user_objects
 from users.redirects import (
@@ -37,12 +39,9 @@ def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     1) Admin page access
     2) Authentication during the ESI SSO process for getting/refreshing tokens
     """
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
-        return fake_login(request, settings.FAKE_LOGIN_USER_ID)
+    fake_user_id = fake_login_user_id()
+    if fake_user_id:
+        return fake_login(request, int(fake_user_id))
 
     # get next and store in session
     logger.debug("Adding redirect URL to session: %s", request.GET.get("next"))

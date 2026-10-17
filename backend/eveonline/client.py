@@ -3,6 +3,8 @@ import requests
 from typing import Any, List
 
 from django.conf import settings
+
+from app.dev_switches import mock_esi_enabled
 from esi.errors import TokenInvalidError
 from esi.exceptions import ESIErrorLimitException, HTTPClientError
 from esi.models import Token
@@ -1613,7 +1615,7 @@ def esi_for(character) -> EsiClient:
 
     The client might be a mock if configured for mocking in settings.py
     """
-    if hasattr(settings, "MOCK_ESI") and settings.MOCK_ESI:
+    if mock_esi_enabled():
         # pylint: disable=import-outside-toplevel
         # Import locally to avoid circular dependency
         from eveonline.mock_esi.esi_mock import (

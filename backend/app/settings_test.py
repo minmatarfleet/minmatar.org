@@ -25,6 +25,17 @@ SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
 
 TESTING = True
 
+# Developer switches are always off in tests, whatever .env says. A truthy
+# SETUP_TEST_DATA would seed rows at URLconf import and collide with fixtures.
+FAKE_LOGIN_USER_ID = None
+MOCK_ESI = False
+SETUP_TEST_DATA = False
+# Django's defaults, in case settings_env switched them for a fake login.
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = False
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
 # Run Celery tasks inline in tests — no Redis broker or worker required.
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
