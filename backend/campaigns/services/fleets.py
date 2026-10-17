@@ -147,6 +147,39 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     }
 
 
+def fleet_ids_by_user(campaign: Campaign, since=None) -> dict[int, set[int]]:
+    """Every campaign fleet each pilot was in, optionally since a moment.
+
+    For pooling pilots (a corporation's row), where thirty members in one
+    fleet is one fleet. A pilot counts for the fleet if one of their
+    characters counted for them at either end of its window.
+    """
+    roster = CampaignRoster(campaign)
+    if not roster:
+        return {}
+    members = EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance__eve_fleet__campaign=campaign
+    )
+    if since is not None:
+        members = members.filter(updated_at__gte=since)
+    fleets: dict[int, set[int]] = {}
+    for row in members.values_list(
+        "character_id",
+        "eve_fleet_instance__eve_fleet_id",
+        "join_time",
+        "created_at",
+        "updated_at",
+    ):
+        character_id, fleet_id = row[0], row[1]
+        first_seen, last_seen = member_window(*row[2:])
+        user = roster.user_for(character_id, first_seen) or roster.user_for(
+            character_id, last_seen
+        )
+        if user is not None:
+            fleets.setdefault(user.id, set()).add(fleet_id)
+    return fleets
+
+
 def _presence_window(member, start, end):
     """When this pilot was in the fleet, clipped to the campaign day.
 
