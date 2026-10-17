@@ -6,18 +6,13 @@ import type { User } from '@dtypes/jwt'
 import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
-const is_superuser = (user ? user?.is_superuser : false)
 
-import { is_thinkspeak_member } from '@helpers/thinkspeak'
-import { get_gates, can_custom } from '@helpers/gates'
+import { can_manage_content } from '@helpers/thinkspeak'
+import { get_gates } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
-const can_manage_content = Boolean(
-    user && await can_custom(gates, 'content.manage', async () =>
-        is_superuser || Boolean(auth_token && await is_thinkspeak_member(auth_token))
-    )
-)
-const post_editor = can_manage_content ? (user as User).user_id : false
+const user_can_manage_content = await can_manage_content(gates, auth_token)
+const post_editor = user_can_manage_content ? (user as User).user_id : false
 
 import type { Alert, PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_grouped_by_tags, fetch_posts } from '@helpers/fetching/posts'
@@ -150,7 +145,7 @@ const page_title = t('content.page_title')
                         </Wrapper>
                         <NewsReel
                             posts={news_reel_posts}
-                            show_manage_content={can_manage_content}
+                            show_manage_content={user_can_manage_content}
                         />
                     </Flexblock>
                 </div>

@@ -8,7 +8,6 @@ import { get_auth_url } from '@helpers/env'
 import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
-const is_superuser = (user ? user?.is_superuser : false)
 
 if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
@@ -151,7 +150,6 @@ try {
     const can_manage = tribe_group_can_manage({
         group: tribe_group,
         is_leader: is_chief,
-        is_superuser,
     })
     
     if (!can_manage)

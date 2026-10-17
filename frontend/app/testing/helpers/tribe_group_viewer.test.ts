@@ -69,7 +69,6 @@ describe('tribe_group_can_manage', () => {
         expect(tribe_group_can_manage({
             group: group({ can_manage: true, chief: { character_id: 1, character_name: 'Other' } }),
             is_leader: false,
-            is_superuser: false,
         })).toBe(true)
     })
 
@@ -77,7 +76,13 @@ describe('tribe_group_can_manage', () => {
         expect(tribe_group_can_manage({
             group: group({ can_manage: false }),
             is_leader: false,
-            is_superuser: false,
         })).toBe(false)
+    })
+
+    it('is true for the group chief even if the API flag is missing', () => {
+        expect(tribe_group_can_manage({
+            group: group({ can_manage: false }),
+            is_leader: true,
+        })).toBe(true)
     })
 })

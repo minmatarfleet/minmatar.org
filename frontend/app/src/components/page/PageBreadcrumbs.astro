@@ -8,7 +8,7 @@ import { is_prod_mode } from '@helpers/env'
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 
 import { get_gates, can, type GateKey } from '@helpers/gates'
 const gates = await get_gates(Astro)
@@ -51,7 +51,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
         }
     }
 
-    if (user && user?.is_superuser) {
+    if (can(gates, 'site.all_pages')) {
         return {
             accumulated_path: page.path,
             page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,

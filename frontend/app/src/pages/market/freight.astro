@@ -5,12 +5,6 @@ const { t, translatePath } = i18n(Astro.url)
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import { get_request_user } from '@helpers/request_user'
-
-const { auth_token, user } = get_request_user(Astro)
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
 if (is_prod_mode())
     return HTTP_404_Not_Found()
 

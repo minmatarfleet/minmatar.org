@@ -24,14 +24,13 @@ import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const { auth_token, user } = get_request_user(Astro)
-const user_is_staff = Boolean(user && user.is_staff)
 
 if (!user) return login_redirect(Astro)
 
 const gates = await get_gates(Astro)
 
 const can_view_campaigns = can(gates, 'campaigns.view')
-const can_edit_in_admin = user_is_staff || can(gates, 'campaigns.manage')
+const can_edit_in_admin = can(gates, 'campaigns.manage')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()

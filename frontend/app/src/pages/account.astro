@@ -13,7 +13,6 @@ import { semantic_list } from '@helpers/array';
 
 let roles:string[] = []
 if (user.is_superuser) roles.push(t('administrator'))
-if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'

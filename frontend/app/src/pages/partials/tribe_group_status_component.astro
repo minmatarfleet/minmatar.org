@@ -118,7 +118,6 @@ let is_member = false
 let is_pending = false
 let fetch_group_error: Error | false = false
 let is_leader = false
-let is_superuser = Boolean(user?.is_superuser)
 let user_on_trial = false
 
 try {
@@ -212,7 +211,6 @@ import DebugTag from '@components/blocks/DebugTag.astro'
                     group_id={tribe_group.id}
                     is_auth={!!user}
                     is_leader={is_leader}
-                    is_superuser={is_superuser}
                     user_on_trial={user_on_trial}
                     user_characters={user_characters}
                     available_characters={available_characters}

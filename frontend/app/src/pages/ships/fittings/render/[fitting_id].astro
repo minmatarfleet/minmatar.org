@@ -2,12 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { get_request_user } from '@helpers/request_user'
-
-const { auth_token, user } = get_request_user(Astro)
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
 const { fitting_id } = Astro.params;
 
 import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'

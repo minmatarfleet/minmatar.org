@@ -28,7 +28,7 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (!page.publish && is_prod_mode())
         return false
 
-    if (user && user?.is_superuser)
+    if (can(gates, 'site.all_pages'))
         return true
 
     if (!page?.permissions)
