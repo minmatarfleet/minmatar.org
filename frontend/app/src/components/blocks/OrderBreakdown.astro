@@ -76,8 +76,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
         hx-target={`#${id}`}
         hx-swap="outerHTML transition:true"
         hx-indicator=".loader"
-        hx-on--before-request="this.setAttribute('disabled','');"
-        hx-on--after-request="this.removeAttribute('disabled')"
+        hx-disabled-elt="this"
     >
         <FlexInline
             gap='var(--space-2xs)'
