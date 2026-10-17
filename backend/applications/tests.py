@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.apps import apps
 from django.contrib.auth.models import Permission, User
 from django.db.models import signals
-from django.test import Client
+from django.test import Client, override_settings
 from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase
@@ -484,6 +484,7 @@ class L3arnCorporationApplicationValidationTest(TestCase):
 class EveCorporationApplicationSignalTest(TestCase):
     """Test case for the application signal handlers."""
 
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_application_post_save_signal(self):
         signals.post_save.connect(
             eve_corporation_application_post_save,

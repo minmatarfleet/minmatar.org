@@ -4,6 +4,7 @@ import logging
 
 from django.conf import settings
 
+from app.links import site_url
 from discord.client import DiscordClient
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation
@@ -41,8 +42,8 @@ def _recruiter_role_mention(corporation) -> str:
 
 
 def application_url(application) -> str:
-    return (
-        "https://my.minmatar.org/alliance/corporations/application/"
+    return site_url(
+        "/alliance/corporations/application/"
         f"{application.corporation_id}/{application.id}"
     )
 
@@ -107,9 +108,9 @@ def create_application_thread(application) -> int:
 def application_accepted_message() -> str:
     return (
         ":tada: Your application has been accepted!\n"
-        "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
+        f"- Read our [alliance values]({site_url('/alliance/values/')})\n"
         "- Apply in-game\n"
-        "- Start with the [Learning Center](https://my.minmatar.org/learning/) "
+        f"- Start with the [Learning Center]({site_url('/learning/')}) "
         "for guides and certificates\n"
         "- [We are Minmatar (FL33T Alliance)]"
         "(https://www.youtube.com/watch?v=JMddiOzaDsA)"

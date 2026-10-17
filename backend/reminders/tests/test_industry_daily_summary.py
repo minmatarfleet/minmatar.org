@@ -3,6 +3,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.test import override_settings
 from django.utils import timezone
 
 from app.test import TestCase as AppTestCase
@@ -60,6 +61,7 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             short_name="TST",
         )
 
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_empty_summary(self):
         text = build_industry_daily_summary_message()
         self.assertIn("# Industry order summary", text)

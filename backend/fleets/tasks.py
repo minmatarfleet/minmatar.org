@@ -5,6 +5,7 @@ from django.conf import settings
 
 from celery_once import QueueOnce
 
+from app.links import site_url
 from app.celery import app
 from discord.client import DiscordClient
 from fleets.helpers.active_clones import (
@@ -100,14 +101,16 @@ def update_fleet_schedule():
                     {
                         "style": 5,
                         "label": "View Fleet Board",
-                        "url": "https://my.minmatar.org/fleets/upcoming/",
+                        "url": site_url("/fleets/upcoming/"),
                         "disabled": False,
                         "type": 2,
                     },
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": "https://my.minmatar.org/learning/guides/new-player-fleet-guide/",
+                        "url": site_url(
+                            "/learning/guides/new-player-fleet-guide/"
+                        ),
                         "disabled": False,
                         "type": 2,
                     },

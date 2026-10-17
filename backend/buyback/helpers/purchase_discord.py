@@ -7,6 +7,7 @@ import time
 
 from django.conf import settings
 
+from app.links import site_url
 from buyback.helpers.purchase_discord_buttons import order_action_components
 from buyback.models import BuybackPurchaseOrder
 from discord.client import DiscordClient
@@ -22,9 +23,7 @@ STARTER_CONTENT_LIMIT = 1800
 
 
 def order_site_url(order: BuybackPurchaseOrder) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     return f"{base}/market/buyback/orders/?order={int(order.pk)}"
 
 

@@ -7,8 +7,7 @@ public API; the cyno pilot learns about it through a direct message.
 
 import logging
 
-from django.conf import settings
-
+from app.links import site_url
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter
@@ -31,8 +30,7 @@ def _discord_id_for_character(character_id: int) -> str | None:
 
 
 def _fleet_url(fleet) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/{fleet.id}"
+    return site_url(f"/fleets/upcoming/{fleet.id}")
 
 
 def build_cyno_assignment_message(fleet, volunteer) -> str:

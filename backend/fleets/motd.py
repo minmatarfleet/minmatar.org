@@ -1,6 +1,8 @@
 # Section templates; compose in get_motd(). Each section is self-contained (all <font> closed).
 # role_volunteers: list of (role_label, [(character_id, character_name), ...]) for critical roles.
 
+from app.links import site_url
+
 SECTION_HEADER = """<font size="13" color="#ffffffff">Fleet Overview</font>"""
 
 SECTION_FC = """<font size="13" color="#ffffffff">FC: <a href="showinfo:1380//{{fc_character_id}}">{{fc_character_name}}</a></font>"""
@@ -17,15 +19,13 @@ SECTION_DOCTRINE = """<font size="13" color="#bfffffff">Doctrine: </font><font s
 SECTION_DOCTRINE_MISSING = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{fleet_edit_url}}">Set the doctrine</a></loc></font>"""
 
 # Resources section: header + guide / bookmarks / broadcast / channels (white font)
-NEW_PLAYER_FLEET_GUIDE_URL = (
-    "https://my.minmatar.org/learning/guides/new-player-fleet-guide/"
-)
+NEW_PLAYER_FLEET_GUIDE_PATH = "/learning/guides/new-player-fleet-guide/"
 SECTION_RESOURCES_HEADER = (
     """<font size="13" color="#ffffffff">Resources</font>"""
 )
 SECTION_RESOURCES_GUIDE = (
     """<font size="13" color="#ffffffff">Guide: """
-    f"""<loc><a href="{NEW_PLAYER_FLEET_GUIDE_URL}">New Player Fleet Guide</a></loc></font>"""
+    """<loc><a href="{{guide_url}}">New Player Fleet Guide</a></loc></font>"""
 )
 SECTION_RESOURCES_BOOKMARKS = """<font size="13" color="#ffffffff">Bookmarks: <a href="bookmarkFolder:11785719">Minmil</a></font>"""
 SECTION_RESOURCES_BROADCAST = """<font size="13" color="#ffffffff">Broadcast: <a href="sharedSetting:b6254caf7710e789c99b506ea2ccdc63dc800d91//1//3">DPS</a>, <a href="sharedSetting:ef2be973427c71f5e3785105ce3751882d14acc8//1//3">Logi</a>, <a href="sharedSetting:d2928f2f783f75d0c9815a843ecf0626500dae1d//1//3">Dual</a></font>"""
@@ -155,7 +155,9 @@ def get_motd(
         [
             "",  # blank line so Resources reads as its own section
             SECTION_RESOURCES_HEADER,
-            SECTION_RESOURCES_GUIDE,
+            SECTION_RESOURCES_GUIDE.replace(
+                "{{guide_url}}", site_url(NEW_PLAYER_FLEET_GUIDE_PATH)
+            ),
             SECTION_RESOURCES_BOOKMARKS,
             SECTION_RESOURCES_BROADCAST,
             SECTION_RESOURCES_CHANNELS,

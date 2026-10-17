@@ -10,6 +10,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.shortcuts import redirect
 from ninja import Router
 
+from app.links import site_url
 from app.errors import create_error_id
 from authentication import AuthBearer, AuthOptional
 from creators.models import (
@@ -309,7 +310,7 @@ def _handle_callback(
     error: Optional[str],
 ):
     redirect_url = request.session.pop(
-        SESSION_REDIRECT_KEY, "https://my.minmatar.org/alliance/content/"
+        SESSION_REDIRECT_KEY, site_url("/alliance/content/")
     )
     expected_state = request.session.pop(SESSION_STATE_KEY, None)
     session_provider = request.session.pop(SESSION_PROVIDER_KEY, None)
