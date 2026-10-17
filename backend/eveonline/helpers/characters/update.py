@@ -6,6 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytz
+from django.db import transaction
 from django.utils import timezone
 
 from eveonline.client import EsiClient
@@ -97,8 +98,16 @@ def update_character_skills(eve_character_id: int) -> None:
         create_eve_character_skillset(eve_character_id, skillset)
 
 
+def _optional(row: dict, key: str):
+    return row.get(key) if isinstance(row, dict) else None
+
+
 def update_character_killmails(eve_character_id: int) -> None:
-    """Fetch recent killmails from ESI and create missing records."""
+    """Fetch recent killmails from ESI and create missing records.
+
+    Killmails already stored are skipped before their detail is fetched, so
+    a sync only spends ESI calls on mails it has not seen.
+    """
     character = EveCharacter.objects.get(character_id=eve_character_id)
     logger.info("Updating killmails for character %s", eve_character_id)
     esi = EsiClient(eve_character_id)
@@ -112,8 +121,16 @@ def update_character_killmails(eve_character_id: int) -> None:
         )
         return
 
-    for killmail in response.results():
+    recent = response.results() or []
+    stored = set(
+        EveCharacterKillmail.objects.filter(
+            id__in=[killmail["killmail_id"] for killmail in recent]
+        ).values_list("id", flat=True)
+    )
+    for killmail in recent:
         killmail_id = killmail["killmail_id"]
+        if killmail_id in stored:
+            continue
         response = esi.get_character_killmail(
             killmail_id, killmail["killmail_hash"]
         )
@@ -125,69 +142,50 @@ def update_character_killmails(eve_character_id: int) -> None:
                 response.error_text(),
             )
             continue
-        details = response.results()
-        if not EveCharacterKillmail.objects.filter(id=killmail_id).exists():
-            killmail_obj = EveCharacterKillmail.objects.create(
-                id=killmail_id,
-                killmail_id=killmail_id,
-                killmail_hash=killmail["killmail_hash"],
-                solar_system_id=details["solar_system_id"],
-                ship_type_id=details["victim"]["ship_type_id"],
-                killmail_time=details["killmail_time"],
-                victim_character_id=(
-                    details["victim"]["character_id"]
-                    if "character_id" in details["victim"]
-                    else None
-                ),
-                victim_corporation_id=(
-                    details["victim"]["corporation_id"]
-                    if "corporation_id" in details["victim"]
-                    else None
-                ),
-                victim_alliance_id=(
-                    details["victim"]["alliance_id"]
-                    if "alliance_id" in details["victim"]
-                    else None
-                ),
-                victim_faction_id=(
-                    details["victim"]["faction_id"]
-                    if "faction_id" in details["victim"]
-                    else None
-                ),
-                attackers=details["attackers"],
-                items=details["victim"]["items"],
-                character=character,
-            )
+        _store_character_killmail(
+            character,
+            killmail_id,
+            killmail["killmail_hash"],
+            response.results(),
+        )
+        stored.add(killmail_id)
 
-            for attacker in details["attackers"]:
-                EveCharacterKillmailAttacker.objects.create(
+
+def _store_character_killmail(
+    character: EveCharacter, killmail_id: int, killmail_hash: str, details
+) -> None:
+    """One killmail and its attacker rows, written together."""
+    victim = details["victim"]
+    attackers = details["attackers"]
+    with transaction.atomic():
+        killmail_obj = EveCharacterKillmail.objects.create(
+            id=killmail_id,
+            killmail_id=killmail_id,
+            killmail_hash=killmail_hash,
+            solar_system_id=details["solar_system_id"],
+            ship_type_id=victim["ship_type_id"],
+            killmail_time=details["killmail_time"],
+            victim_character_id=victim.get("character_id"),
+            victim_corporation_id=victim.get("corporation_id"),
+            victim_alliance_id=victim.get("alliance_id"),
+            victim_faction_id=victim.get("faction_id"),
+            attackers=attackers,
+            items=victim["items"],
+            character=character,
+        )
+        EveCharacterKillmailAttacker.objects.bulk_create(
+            [
+                EveCharacterKillmailAttacker(
                     killmail=killmail_obj,
-                    character_id=(
-                        attacker["character_id"]
-                        if "character_id" in attacker
-                        else None
-                    ),
-                    corporation_id=(
-                        attacker["corporation_id"]
-                        if "corporation_id" in attacker
-                        else None
-                    ),
-                    alliance_id=(
-                        attacker["alliance_id"]
-                        if "alliance_id" in attacker
-                        else None
-                    ),
-                    faction_id=(
-                        attacker["faction_id"]
-                        if "faction_id" in attacker
-                        else None
-                    ),
-                    ship_type_id=(
-                        attacker["ship_type_id"]
-                        if "ship_type_id" in attacker
-                        else None
-                    ),
+                    character_id=_optional(attacker, "character_id"),
+                    corporation_id=_optional(attacker, "corporation_id"),
+                    alliance_id=_optional(attacker, "alliance_id"),
+                    faction_id=_optional(attacker, "faction_id"),
+                    ship_type_id=_optional(attacker, "ship_type_id"),
                 )
+                for attacker in attackers or []
+            ]
+        )
 
 
 def update_character_contracts(eve_character_id: int) -> int:
