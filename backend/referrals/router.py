@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from django.shortcuts import redirect
 
 from app.errors import ErrorResponse
+from app.web_links import web_link
 from authentication import AuthBearer
 
 from .models import ReferralClick
@@ -37,19 +38,19 @@ class ReferralRecord(BaseModel):
 links = [
     LinkInfo(
         name="Corps",
-        target="https://my.minmatar.org/alliance/corporations/list/",
+        target=web_link("/alliance/corporations/list/"),
     ),
     LinkInfo(
         name="Freight",
-        target="https://my.minmatar.org/market/freight/standard/",
+        target=web_link("/market/freight/standard/"),
     ),
     LinkInfo(
         name="Plexing",
-        target="https://my.minmatar.org/learning/guides/faction-warfare-plexing/",
+        target=web_link("/learning/guides/faction-warfare-plexing/"),
     ),
     LinkInfo(
         name="Advantage",
-        target="https://my.minmatar.org/learning/guides/faction-warfare-advantage/",
+        target=web_link("/learning/guides/faction-warfare-advantage/"),
     ),
 ]
 
@@ -91,7 +92,7 @@ def referral_redirect(request, page: str, code: str):
 
     if target == "":
         log.info("Could not find target for %s", page)
-        return redirect("https://my.minmatar.org/badreferral")
+        return redirect(web_link("/badreferral"))
     else:
         ReferralClick.objects.get_or_create(
             page=page, user_id=user_id, identifier=client_id

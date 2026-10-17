@@ -8,6 +8,8 @@ import re
 
 import discord
 
+from app.settings import settings
+
 from .service import (
     NpsiDiscordActionError,
     post_to_schedule,
@@ -44,7 +46,7 @@ def _posted_view(event_id: int, fleet_id: int | None) -> discord.ui.View:
             discord.ui.Button(
                 label="Open schedule",
                 style=discord.ButtonStyle.link,
-                url="https://my.minmatar.org/fleets/upcoming/",
+                url=f"{settings.WEB_URL.rstrip('/')}/fleets/upcoming/",
             )
         )
     return view

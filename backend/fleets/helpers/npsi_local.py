@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import timedelta
 
 import requests
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.utils import timezone
 
@@ -25,6 +24,7 @@ from fleets.models import (
     NpsiExternalEvent,
 )
 from groups.helpers.feature_access import can_use_feature
+from app.web_links import fleet_url
 
 UNALIGNED_FEED_URL = (
     "https://unaligned-event-api-984689261396.europe-west1.run.app/events"
@@ -308,7 +308,4 @@ def post_local_unaligned_event(
 
 
 def local_fleet_schedule_url(fleet_id: int) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
-    return f"{base}/fleets/upcoming/{fleet_id}"
+    return fleet_url(fleet_id)

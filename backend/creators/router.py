@@ -11,6 +11,7 @@ from django.shortcuts import redirect
 from ninja import Router
 
 from app.errors import create_error_id
+from app.web_links import web_link
 from authentication import AuthBearer, AuthOptional
 from creators.models import (
     CreatorAccount,
@@ -309,7 +310,7 @@ def _handle_callback(
     error: Optional[str],
 ):
     redirect_url = request.session.pop(
-        SESSION_REDIRECT_KEY, "https://my.minmatar.org/alliance/content/"
+        SESSION_REDIRECT_KEY, web_link("/alliance/content/")
     )
     expected_state = request.session.pop(SESSION_STATE_KEY, None)
     session_provider = request.session.pop(SESSION_PROVIDER_KEY, None)

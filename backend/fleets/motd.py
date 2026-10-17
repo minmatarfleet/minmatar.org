@@ -1,3 +1,5 @@
+from app.web_links import new_player_fleet_guide_url
+
 # Section templates; compose in get_motd(). Each section is self-contained (all <font> closed).
 # role_volunteers: list of (role_label, [(character_id, character_name), ...]) for critical roles.
 
@@ -17,9 +19,7 @@ SECTION_DOCTRINE = """<font size="13" color="#bfffffff">Doctrine: </font><font s
 SECTION_DOCTRINE_MISSING = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{fleet_edit_url}}">Set the doctrine</a></loc></font>"""
 
 # Resources section: header + guide / bookmarks / broadcast / channels (white font)
-NEW_PLAYER_FLEET_GUIDE_URL = (
-    "https://my.minmatar.org/learning/guides/new-player-fleet-guide/"
-)
+NEW_PLAYER_FLEET_GUIDE_URL = new_player_fleet_guide_url()
 SECTION_RESOURCES_HEADER = (
     """<font size="13" color="#ffffffff">Resources</font>"""
 )

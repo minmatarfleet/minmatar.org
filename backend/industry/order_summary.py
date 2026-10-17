@@ -26,6 +26,7 @@ from industry.order_summary_types import (
     SummaryTotals,
     UnassignedOrderItemLine,
 )
+from app.web_links import web_link
 
 
 def get_active_order_display_items() -> list[ActiveOrderSummaryLine]:
@@ -197,6 +198,6 @@ def get_order_summary_message(
             f"**Total order amount:** {format_isk_billions_trimmed(totals.total_order_amount_isk)}",
             f"**Total estimated profit:** {format_isk_billions_trimmed(totals.total_estimated_profit_isk)}",
             "",
-            "[View Order page](https://my.minmatar.org/industry/orders/)",
+            f"[View Order page]({web_link('/industry/orders/')})",
         ]
     )

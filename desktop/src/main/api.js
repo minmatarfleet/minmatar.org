@@ -1,3 +1,5 @@
+const web_routes = require('./web_routes')
+
 // Minmatar Fleet API client. Runs in the main process only: the renderer never sees the token,
 // it receives the finished view model.
 class ApiError extends Error {
@@ -224,7 +226,7 @@ async function load_upcoming_fleets(api, web_url) {
                 doctrine: doctrine_names[i],
                 fc_character_id: character ? character.character_id : null,
                 fc_name: character ? character.character_name : (profile ? profile.username : 'Unknown FC'),
-                url: `${web_url}/fleets/upcoming/${fleet.id}`,
+                url: web_routes.fleet(web_url, fleet.id),
             }
         })
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
@@ -239,7 +241,7 @@ async function load_campaign(api, web_url) {
         name: campaign.name,
         week_index: campaign.week_index,
         week_count: campaign.week_count,
-        url: `${web_url}/campaigns/${encodeURIComponent(campaign.slug)}`,
+        url: web_routes.campaign(web_url, campaign.slug),
         systems: campaign.systems.map(system => ({
             id: system.system_id,
             name: system.name,

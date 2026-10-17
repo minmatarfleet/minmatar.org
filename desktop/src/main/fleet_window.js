@@ -10,6 +10,7 @@
 // two minutes. Polling (poller.js) stops while the window is closed or EVE isn't running, and backs off
 // when the API is down.
 const { EventEmitter } = require('events')
+const web_routes = require('./web_routes')
 const { ApiError, is_unauthorized } = require('./api')
 const { Poller, MAX_BACKOFF_MS } = require('./poller')
 const { REMINDERS_KEY, read_reminders } = require('./settings_schema')
@@ -378,14 +379,14 @@ class FleetWindow extends EventEmitter {
     open_site(fleet_id) {
         if (!Number.isInteger(fleet_id) || !this.known_fleet_id(fleet_id)) return
         const ended = ((this.mine && this.mine.fleets) || []).find(f => f.fleet_id === fleet_id && !f.live)
-        this.open_external(`${this.web_url}/fleets/${ended ? 'history' : 'upcoming'}/${fleet_id}`)
+        this.open_external(web_routes.fleet(this.web_url, fleet_id, { ended: !!ended }))
     }
 
     // The killmail link goes on the clipboard and the SRP page opens: paste it into the request.
     file_srp(killmail_id) {
         if (!Number.isInteger(killmail_id) || !this.known_loss(killmail_id)) return
         this.clipboard.writeText(`https://zkillboard.com/kill/${killmail_id}/`)
-        this.open_external(`${this.web_url}/ships/srp/killmails/`)
+        this.open_external(web_routes.srp_killmails(this.web_url))
         this.mine_at = -Infinity
         this.flash('Killmail link copied')
     }

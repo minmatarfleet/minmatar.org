@@ -10,6 +10,7 @@ from eveonline.models import EveCorporation
 from groups.models import EveCorporationGroup
 
 from .l3arn import application_discord_description
+from app.web_links import web_link
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -41,8 +42,8 @@ def _recruiter_role_mention(corporation) -> str:
 
 
 def application_url(application) -> str:
-    return (
-        "https://my.minmatar.org/alliance/corporations/application/"
+    return web_link(
+        "/alliance/corporations/application/"
         f"{application.corporation_id}/{application.id}"
     )
 
@@ -107,9 +108,9 @@ def create_application_thread(application) -> int:
 def application_accepted_message() -> str:
     return (
         ":tada: Your application has been accepted!\n"
-        "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
+        f"- Read our [alliance values]({web_link('/alliance/values/')})\n"
         "- Apply in-game\n"
-        "- Start with the [Learning Center](https://my.minmatar.org/learning/) "
+        f"- Start with the [Learning Center]({web_link('/learning/')}) "
         "for guides and certificates\n"
         "- [We are Minmatar (FL33T Alliance)]"
         "(https://www.youtube.com/watch?v=JMddiOzaDsA)"

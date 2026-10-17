@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from app.models import MinmatarSoftDeleteModel
+from app.web_links import doctrine_url
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 from fittings.known_fitting import KnownFitting
@@ -593,7 +594,7 @@ class EveDoctrine(models.Model):
 
     @property
     def doctrine_link(self):
-        return f"https://my.minmatar.org/ships/doctrines/list/{self.id}"
+        return doctrine_url(self.id)
 
     def __str__(self):
         return str(self.name)
