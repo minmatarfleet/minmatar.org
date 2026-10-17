@@ -5,15 +5,11 @@ const { translatePath } = i18n(Astro.url)
 import { can, type GateContext } from '@helpers/gates'
 
 interface Props {
-    user_is_officer:    boolean;
-    user_is_director:   boolean;
     authenticated:      boolean;
     gates:              GateContext;
 }
 
 const {
-    user_is_officer,
-    user_is_director,
     authenticated,
     gates,
 } = Astro.props
@@ -98,12 +94,7 @@ const page = Astro.url.pathname
                     <NeocomButton
                         active={page.startsWith(translatePath('/alliance'))}
                         title='neocom.alliance'
-                        description={
-                            user_is_director && user_is_officer ? 'alliance.description.directors_officers' :
-                            user_is_director ? 'alliance.description.directors' :
-                            user_is_officer ? 'alliance.description.officers' :
-                            'alliance.description'
-                        }
+                        description='alliance.description'
                         href={translatePath('/alliance/')}
                     >
                         <AllianceEvEIcon />

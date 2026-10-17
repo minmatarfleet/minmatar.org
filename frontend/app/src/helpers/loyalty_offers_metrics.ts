@@ -191,13 +191,6 @@ export function offer_lp_for_volume(
     return Math.ceil(volume / qty) * offer.lp_cost
 }
 
-/** Weekly LP volume below this is treated as thin / dangerous liquidity. */
-export const LOW_WEEKLY_LP_VOLUME_THRESHOLD = 1_000_000
-
-export function offer_is_low_weekly_lp_volume(offer: LoyaltyOffer): boolean {
-    return offer_lp_for_volume(offer, offer.volume_7d) < LOW_WEEKLY_LP_VOLUME_THRESHOLD
-}
-
 export function compute_loyalty_offers_metrics(
     offers: LoyaltyOffer[],
     side: LoyaltyOffersSide,

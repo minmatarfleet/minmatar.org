@@ -352,24 +352,6 @@ export interface TribeExternalGuildJoin {
     status: TribeExternalGuildSeatStatus;
 }
 
-export interface SigRequest {
-    id:             number;
-    user:           number;
-    sig_id:         number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
-}
-
-export interface TeamRequest {
-    id:             number;
-    user:           number;
-    team_id:        number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
-}
-
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export type CorporationLeadershipRole = 'ceo' | 'director' | 'recruiter' | 'steward'
@@ -958,11 +940,6 @@ export interface Fleet {
     campaign_slug?:     string | null;
 }
 
-export interface FleetBasic {
-    id:                 number;
-    audience:           string;
-}
-
 export interface Tracking {
     id:             number;
     start_time:     Date;
@@ -1338,29 +1315,6 @@ export interface History {
     quantity:   number;
 }
 
-export interface MarketCorporation {
-    corporation_id:     number;
-    corporation_name:   string;
-}
-
-export interface MarketExpectation {
-    expectation_id:     number;
-    fitting_id:         number;
-    fitting_name:       string;
-    location_id:        number;
-    location_name:      string;
-    quantity:           number;
-}
-
-export interface MarketLocation {
-    id:             number;
-    name:           string;
-    system_name:    string;
-    contracts:      number;
-    expectations:   number;
-    structure_id:   number;
-}
-
 export interface DoctrineFitting {
     fitting_id:         number;
     fitting_name:       string;
@@ -1371,14 +1325,6 @@ export interface MarketDoctrine {
     doctrine_id:        number;
     doctrine_name:      string;
     fittings:           DoctrineFitting[];
-}
-
-export interface MarketLocationDoctrine {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    doctrines:          MarketDoctrine[];
 }
 
 export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const
@@ -2093,27 +2039,6 @@ export interface Blueprint {
     owner:                  BlueprintOwner;
     in_job:                 boolean;
     activity_id:            number | null;
-}
-
-export interface ContractHealthProblem {
-    location_id:        number;
-    location_name:      string;
-    short_name:         string;
-    fitting_id:         number;
-    fitting_name:       string;
-    ship_id:            number;
-    current_quantity:   number;
-    viable_quantity:    number;
-    expected_quantity:  number;
-    shortfall:          number;
-    readiness:          string;
-    expectation_id:     number;
-    units_1d:           number;
-    units_3d:           number;
-    weekly_units:       number;
-    units_30d:          number;
-    units_90d:          number;
-    days_of_stock:      number | null;
 }
 
 export interface SellOrderHealthGap {
@@ -2997,11 +2922,6 @@ export interface AllianceHealthCohortRow {
     fleet_first_week_pct:   number;
     fleet_1_30d_pct:        number;
     fleet_3_30d_pct:        number;
-}
-
-export interface AllianceHealthCohorts {
-    computed_at:    string;
-    cohorts:        AllianceHealthCohortRow[];
 }
 
 export interface CreatorAccount {
