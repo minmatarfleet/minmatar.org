@@ -29,6 +29,7 @@ from creators.schemas import (
 from creators.service import (
     disconnect_account,
     link_reddit_username,
+    RedditUsernameTaken,
     upsert_account_from_oauth,
 )
 from groups.helpers.feature_access import (
@@ -200,6 +201,7 @@ def list_feed(
         400: ErrorDetail,
         401: ErrorDetail,
         403: ErrorDetail,
+        409: ErrorDetail,
     },
     auth=AuthBearer(),
     summary="Link a Reddit username for public-post polling",
@@ -210,6 +212,11 @@ def put_reddit_username(request, payload: RedditUsernameRequest):
         return denied
     try:
         account = link_reddit_username(request.user, payload.username)
+    except RedditUsernameTaken:
+        return 409, {
+            "detail": "That Reddit username is already linked to another "
+            "member."
+        }
     except ValueError:
         return 400, {"detail": "username_required"}
     return _account_schema(account)
