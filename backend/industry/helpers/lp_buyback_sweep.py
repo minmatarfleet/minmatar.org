@@ -1,4 +1,9 @@
-"""Hourly LP buyback housekeeping: thread mirror, reminders, auto-cancel."""
+"""Hourly LP buyback housekeeping: thread mirror, reminders, auto-cancel.
+
+- Open 7+ days with no taker: weekly digest to the Conversion Team channel.
+- Poster owes the next pre-LP step: one reminder at 24h, cancel at 48h.
+- Claimer owes a step, or ISK is owed: pinged every 24h, never cancelled.
+"""
 
 from __future__ import annotations
 
@@ -11,13 +16,17 @@ from industry.helpers.lp_buyback_discord import (
     active_lp_buyback_thread_ids,
     close_lp_buyback_thread_id,
     lp_buyback_channel_id,
+    lp_conversion_alert_channel_id,
     notify_order_created,
+    post_stale_open_orders_digest,
     post_stalled_reminder,
+    poster_is_stalling,
     stalled_cancel_reason,
 )
 from industry.helpers.lp_market_orders import (
     ACTIVE_STATUSES,
-    AUTO_CANCEL_STATUSES,
+    OPEN,
+    PRE_LP_STATUSES,
     STALLABLE_STATUSES,
     auto_cancel_stalled_order,
 )
@@ -30,6 +39,7 @@ AUTO_CANCEL_AFTER = timedelta(hours=48)
 # Pilots always get a full day's warning, even for orders already stalled
 # past 48h when this sweep first ran.
 MIN_WARNING_BEFORE_CANCEL = AUTO_CANCEL_AFTER - REMIND_AFTER
+STALE_OPEN_AFTER = timedelta(days=7)
 # Leave the create task time to run before treating a thread as missing.
 MISSING_THREAD_GRACE = timedelta(minutes=10)
 
@@ -81,14 +91,16 @@ def close_stray_threads() -> int:
 
 
 def auto_cancel_stalled_orders(now) -> int:
-    """Cancel pre-LP orders stuck 48h+ whose pilot was warned a day ago."""
+    """Cancel orders whose poster stalled 48h+ and was warned a day ago."""
     cancelled = 0
     stalled = _orders().filter(
-        status__in=AUTO_CANCEL_STATUSES,
+        status__in=PRE_LP_STATUSES,
         status_changed_at__lte=now - AUTO_CANCEL_AFTER,
         stalled_reminder_at__lte=now - MIN_WARNING_BEFORE_CANCEL,
     )
     for order in stalled:
+        if not poster_is_stalling(order):
+            continue
         if auto_cancel_stalled_order(
             order.pk,
             stalled_before=now - AUTO_CANCEL_AFTER,
@@ -99,11 +111,23 @@ def auto_cancel_stalled_orders(now) -> int:
     return cancelled
 
 
+def _claim_reminder_slot(order, now) -> bool:
+    """Stamp the reminder before posting so overlapping sweeps never double
+    ping; the status match drops orders that moved since the query."""
+    return bool(
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=order.pk,
+            status=order.status,
+            stalled_reminder_at=order.stalled_reminder_at,
+        ).update(stalled_reminder_at=now)
+    )
+
+
 def remind_stalled_orders(now) -> int:
     """Ping whoever owes the next step once the order has waited 24h.
 
-    Pre-LP orders get one reminder before auto-cancel. Awaiting-ISK orders
-    are never auto-cancelled (LP already moved), so they are re-pinged daily.
+    A stalling poster gets one reminder before auto-cancel. Claimers and ISK
+    payers are never the reason for a cancel, so they are re-pinged daily.
     """
     reminded = 0
     stalled = _orders().filter(
@@ -111,18 +135,11 @@ def remind_stalled_orders(now) -> int:
         status_changed_at__lte=now - REMIND_AFTER,
     )
     for order in stalled:
-        auto_cancels = order.status in AUTO_CANCEL_STATUSES
+        auto_cancels = poster_is_stalling(order)
         last = order.stalled_reminder_at
         if last is not None and (auto_cancels or last > now - REMIND_AFTER):
             continue
-        # Claim the reminder slot first so overlapping sweeps never double
-        # ping; the status match drops orders that moved since the query.
-        claimed = IndustryLoyaltyPointMarketOrder.objects.filter(
-            pk=order.pk,
-            status=order.status,
-            stalled_reminder_at=last,
-        ).update(stalled_reminder_at=now)
-        if not claimed:
+        if not _claim_reminder_slot(order, now):
             continue
         cancel_at = None
         if auto_cancels:
@@ -140,6 +157,30 @@ def remind_stalled_orders(now) -> int:
     return reminded
 
 
+def flag_stale_open_orders(now) -> int:
+    """Weekly digest to the Conversion Team of orders nobody has taken."""
+    stale = _orders().filter(
+        status=OPEN,
+        status_changed_at__lte=now - STALE_OPEN_AFTER,
+    )
+    due = [
+        order
+        for order in stale.order_by("status_changed_at", "id")
+        if order.stalled_reminder_at is None
+        or order.stalled_reminder_at <= now - STALE_OPEN_AFTER
+    ]
+    due = [order for order in due if _claim_reminder_slot(order, now)]
+    if not due:
+        return 0
+    if not post_stale_open_orders_digest(due, now=now):
+        # Release the slots so the next sweep tries again.
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk__in=[order.pk for order in due], stalled_reminder_at=now
+        ).update(stalled_reminder_at=None)
+        return 0
+    return len(due)
+
+
 def sweep_lp_buyback_orders(now=None) -> dict:
     now = now or timezone.now()
     stats = {
@@ -147,6 +188,7 @@ def sweep_lp_buyback_orders(now=None) -> dict:
         "threads_closed": 0,
         "cancelled": 0,
         "reminded": 0,
+        "stale_open_flagged": 0,
     }
     if lp_buyback_channel_id():
         stats["threads_created"] = create_missing_threads(now)
@@ -154,5 +196,7 @@ def sweep_lp_buyback_orders(now=None) -> dict:
     # Cancel before reminding so one sweep never warns and cancels at once.
     stats["cancelled"] = auto_cancel_stalled_orders(now)
     stats["reminded"] = remind_stalled_orders(now)
+    if lp_conversion_alert_channel_id():
+        stats["stale_open_flagged"] = flag_stale_open_orders(now)
     logger.info("LP buyback sweep: %s", stats)
     return stats

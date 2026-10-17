@@ -21,6 +21,7 @@ from industry.models import (
 
 TLIB_CORP_ID = 1000182
 CHANNEL_ID = 1189194652511911976
+CONVERSION_CHANNEL_ID = 1174103016161427556
 Status = IndustryLoyaltyPointMarketOrder.Status
 
 
@@ -85,15 +86,29 @@ class LpBuybackSweepTestCase(AppTestCase):
         )
         self.now = timezone.now()
 
-    def _order(self, status, *, waited_hours, thread_id=777, reminded=None):
+    def _order(
+        self,
+        status,
+        *,
+        waited_hours,
+        thread_id=777,
+        reminded=None,
+        side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+    ):
+        # WTS: a pilot posts, the Conversion Team claims. WTB: the
+        # Conversion Team posts, a pilot claims and sends the LP.
+        is_sell = side == IndustryLoyaltyPointMarketOrder.Side.SELL
+        poster, claimer = (
+            (self.seller, self.buyer) if is_sell else (self.buyer, self.seller)
+        )
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
-            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            side=side,
             quantity=100_000,
             isk_per_lp=700,
             status=status,
-            created_by=self.seller,
-            claimed_by=None if status == Status.OPEN else self.buyer,
+            created_by=poster,
+            claimed_by=None if status == Status.OPEN else claimer,
             destination_character_name="Alliance Buyer",
             discord_thread_id=thread_id,
         )
@@ -102,7 +117,7 @@ class LpBuybackSweepTestCase(AppTestCase):
                 order=order,
                 amount=100_000,
                 destination_character_name="Alliance Buyer",
-                claimed_by=self.buyer,
+                claimed_by=claimer,
             )
         IndustryLoyaltyPointMarketOrder.objects.filter(pk=order.pk).update(
             created_at=self.now - timedelta(hours=waited_hours),
@@ -294,3 +309,103 @@ class LpBuybackSweepTestCase(AppTestCase):
         )
         order.refresh_from_db()
         self.assertEqual(order.status, Status.AWAITING_ISK)
+
+    def test_claimer_stalling_lp_is_pestered_daily_never_cancelled(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        # WTB awaiting LP: the claiming pilot owes the LP, not the poster.
+        order = self._order(
+            Status.AWAITING_LP,
+            waited_hours=25,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+        )
+        stats = self._sweep(discord_mock, client_cls)
+        self.assertEqual(stats["reminded"], 1)
+        content = self._posted(discord_mock)[0]
+        self.assertTrue(content.startswith("<@2001>"))
+        self.assertNotIn("cancelled automatically", content)
+
+        for _ in range(3):
+            self.now += timedelta(hours=24)
+            stats = self._sweep(discord_mock, client_cls)
+            self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 1))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Status.AWAITING_LP)
+
+    def test_claimed_waiting_on_claimer_is_never_cancelled(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        order = self._order(
+            Status.CLAIMED,
+            waited_hours=24 * 5,
+            reminded=self.now - timedelta(hours=30),
+        )
+        stats = self._sweep(discord_mock, client_cls)
+        self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 1))
+        self.assertTrue(self._posted(discord_mock)[0].startswith("<@2002>"))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Status.CLAIMED)
+
+    def _enable_conversion_alerts(self):
+        DiscordChannel.objects.update_or_create(
+            channel_id=CONVERSION_CHANNEL_ID,
+            defaults={
+                "guild": DiscordGuild.objects.get(guild_id=555444333),
+                "name": "conversion",
+                "channel_type": DiscordChannel.TEXT,
+                "receive_lp_conversion_alerts": True,
+            },
+        )
+
+    def _digests(self, discord_mock) -> list[str]:
+        return [
+            c.kwargs["payload"]["content"]
+            for c in discord_mock.create_message.call_args_list
+            if c.kwargs["channel_id"] == CONVERSION_CHANNEL_ID
+        ]
+
+    def test_week_old_open_orders_flagged_weekly(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        self._enable_conversion_alerts()
+        self._order(Status.OPEN, waited_hours=24 * 8, thread_id=901)
+        self._order(Status.OPEN, waited_hours=24 * 6, thread_id=902)
+        stats = self._sweep(discord_mock, client_cls)
+        self.assertEqual(stats["stale_open_flagged"], 1)
+        digests = self._digests(discord_mock)
+        self.assertEqual(len(digests), 1)
+        self.assertIn("**1 LP buyback order** open for a week", digests[0])
+        self.assertIn(
+            "**WTS 100K TLIB @700** by Slow Seller — 8d, 100,000 LP "
+            "unclaimed · <#901>",
+            digests[0],
+        )
+        self.assertNotIn("<#902>", digests[0])
+
+        self.now += timedelta(days=1)
+        stats = self._sweep(discord_mock, client_cls)
+        # The 6-day order has now crossed a week; the 8-day one waits a week.
+        self.assertEqual(stats["stale_open_flagged"], 1)
+        self.assertIn("<#902>", self._digests(discord_mock)[-1])
+        self.assertNotIn("<#901>", self._digests(discord_mock)[-1])
+
+        self.now += timedelta(days=6)
+        stats = self._sweep(discord_mock, client_cls)
+        self.assertEqual(stats["stale_open_flagged"], 1)
+        self.assertIn("<#901>", self._digests(discord_mock)[-1])
+
+    def test_failed_digest_retries_next_sweep(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        self._enable_conversion_alerts()
+        order = self._order(Status.OPEN, waited_hours=24 * 8)
+        discord_mock.create_message.side_effect = RuntimeError("discord down")
+        self.assertEqual(
+            self._sweep(discord_mock, client_cls)["stale_open_flagged"], 0
+        )
+        order.refresh_from_db()
+        self.assertIsNone(order.stalled_reminder_at)
+        discord_mock.create_message.side_effect = None
+        self.assertEqual(
+            self._sweep(discord_mock, client_cls)["stale_open_flagged"], 1
+        )

@@ -15,6 +15,7 @@ from industry.helpers.lp_buyback_discord_buttons import (
     lp_sent_components,
 )
 from industry.helpers.lp_market_orders import (
+    PRE_LP_STATUSES,
     claimed_quantity,
     currency_short_name,
     format_lp_quantity,
@@ -35,6 +36,9 @@ ORPHAN_LP_BUYBACK_THREAD_IDS = (
     1541754700171452416,
     1542512504742346832,
 )
+
+# Keeps the Conversion Team digest under Discord's 2,000-character cap.
+STALE_DIGEST_MAX_LINES = 15
 
 _TERMINAL_STATUSES = (
     IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
@@ -91,6 +95,18 @@ def _lp_buyback_channel_row() -> tuple[int, int] | None:
     if not row or not row[0]:
         return None
     return int(row[0]), int(row[1])
+
+
+def lp_conversion_alert_channel_id() -> int | None:
+    channel_id = (
+        DiscordChannel.objects.filter(
+            receive_lp_conversion_alerts=True,
+            guild__is_active=True,
+        )
+        .values_list("channel_id", flat=True)
+        .first()
+    )
+    return int(channel_id) if channel_id else None
 
 
 def lp_buyback_channel_id() -> int | None:
@@ -557,6 +573,19 @@ def waiting_on(order: IndustryLoyaltyPointMarketOrder):
     return None
 
 
+def poster_is_stalling(order: IndustryLoyaltyPointMarketOrder) -> bool:
+    """True when the order's own poster owes the next pre-LP step.
+
+    Only then may a stalled order be auto-cancelled. When a claimer (the
+    Conversion Team) is the one holding things up they are pestered daily
+    instead, so a slow claimer never costs the poster their order.
+    """
+    if order.status not in PRE_LP_STATUSES:
+        return False
+    waiting = waiting_on(order)
+    return waiting is not None and waiting.pk == order.created_by_id
+
+
 def waiting_on_action(order: IndustryLoyaltyPointMarketOrder) -> str:
     """Short description of the pending action (e.g. for cancel reasons)."""
     if order.status == order.Status.AWAITING_LP:
@@ -622,3 +651,40 @@ def post_stalled_reminder(
         ),
         components=components,
     )
+
+
+def post_stale_open_orders_digest(orders, *, now) -> bool:
+    """Tell the Conversion Team about orders nobody has taken for a week."""
+    channel_id = lp_conversion_alert_channel_id()
+    if not channel_id or not orders:
+        return False
+    count = len(orders)
+    lines = [
+        f":hourglass: **{count} LP buyback "
+        f"order{'s' if count != 1 else ''}** "
+        f"open for a week or more with no taker:",
+    ]
+    for order in orders[:STALE_DIGEST_MAX_LINES]:
+        days = int((now - order.status_changed_at).total_seconds() // 86400)
+        thread = (
+            f"<#{order.discord_thread_id}>"
+            if order.discord_thread_id
+            else order_site_url(order)
+        )
+        lines.append(
+            f"- **{order_thread_title(order)}** by "
+            f"{_display_name(order.created_by)} — {days}d, "
+            f"{remaining_quantity(order):,} LP unclaimed · {thread}"
+        )
+    if count > STALE_DIGEST_MAX_LINES:
+        lines.append(
+            f"…and {count - STALE_DIGEST_MAX_LINES} more on the site."
+        )
+    try:
+        discord.create_message(
+            channel_id=channel_id, payload={"content": "\n".join(lines)}
+        )
+    except Exception as exc:
+        logger.error("Failed posting stale LP order digest: %s", exc)
+        return False
+    return True

@@ -28,7 +28,7 @@ ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
 STALLABLE_STATUSES = (CLAIMED, AWAITING_LP, AWAITING_ISK)
 # Before LP moves, a stalled order can be cancelled safely. After LP is
 # sent (awaiting_isk) cancelling would strand the seller, so only remind.
-AUTO_CANCEL_STATUSES = (CLAIMED, AWAITING_LP)
+PRE_LP_STATUSES = (CLAIMED, AWAITING_LP)
 
 # Maximum LP quantity for sell orders; buy orders have no quantity cap.
 MAX_SELL_LP = 2_500_000
@@ -382,22 +382,26 @@ def auto_cancel_stalled_order(
     stalled_before,
     reason: str,
 ) -> bool:
-    """Cancel an order still parked in the same pre-LP status.
+    """Cancel an order its own poster has left stalled before LP moved.
 
     Re-checks under lock so a pilot pressing **LP sent** while the sweep runs
     is never cancelled after LP has moved.
     """
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import poster_is_stalling
+
     with transaction.atomic():
         locked = (
             IndustryLoyaltyPointMarketOrder.objects.select_for_update()
+            .select_related("created_by", "claimed_by")
             .filter(
                 pk=order_id,
-                status__in=AUTO_CANCEL_STATUSES,
+                status__in=PRE_LP_STATUSES,
                 status_changed_at__lte=stalled_before,
             )
             .first()
         )
-        if locked is None:
+        if locked is None or not poster_is_stalling(locked):
             return False
         locked.status = CANCELLED
         locked.set_cancel_notice(reason=reason)

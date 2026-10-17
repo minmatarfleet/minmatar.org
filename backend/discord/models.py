@@ -183,6 +183,14 @@ class DiscordChannel(models.Model):
             "in this forum. Only one channel should have this enabled."
         ),
     )
+    receive_lp_conversion_alerts = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, the Conversion Team is told here about LP buyback "
+            "orders left open for a week. Only one channel should have this "
+            "enabled."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -199,6 +207,10 @@ class DiscordChannel(models.Model):
             type(self).objects.filter(receive_buyback=True).exclude(
                 pk=self.pk
             ).update(receive_buyback=False)
+        if self.receive_lp_conversion_alerts:
+            type(self).objects.filter(
+                receive_lp_conversion_alerts=True
+            ).exclude(pk=self.pk).update(receive_lp_conversion_alerts=False)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_channel_type_display()})"
