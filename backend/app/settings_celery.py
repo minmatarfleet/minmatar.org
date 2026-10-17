@@ -284,6 +284,13 @@ CELERYBEAT_TRIBES = [
             "schedule": crontab(minute="12,42", hour="*"),
         },
     ),
+    (
+        "[Tribes] Warm tribe About pages",
+        {
+            "task": "tribes.tasks.warm_tribe_about_pages",
+            "schedule": crontab(minute=27, hour="*/3"),
+        },
+    ),
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
