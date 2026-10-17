@@ -46,7 +46,11 @@ from tribes.reports.queries.fleet_commanders import run_fleet_commanders_report
 from tribes.reports.queries.industry_orders import run_industry_orders_report
 from tribes.reports.queries.freight import run_freight_report
 from tribes.reports.queries.mining import run_mining_report
-from tribes.reports.registry import REPORT_BINDINGS, get_binding
+from tribes.reports.registry import (
+    QUERY_RUNNERS,
+    REPORT_BINDINGS,
+    get_binding,
+)
 from tribes.reports.runner import ReportError, run_group_report
 from tribes.reports.types import ReportScope, ReportView
 
@@ -133,13 +137,9 @@ class ReportRegistryTestCase(TestCase):
             )
 
     def test_manual_pulse_groups(self):
-        for code in (
-            "pulse.technology",
-            "pulse.readiness",
-            "supply.market",
-        ):
-            binding = get_binding(code)
-            self.assertTrue(binding.manual)
+        self.assertTrue(get_binding("pulse.tournaments").manual)
+        for code in ("pulse.technology", "pulse.readiness", "supply.market"):
+            self.assertFalse(get_binding(code).manual)
 
     def test_automated_bindings_have_runners(self):
         for code, binding in REPORT_BINDINGS.items():
@@ -148,14 +148,7 @@ class ReportRegistryTestCase(TestCase):
             for view, spec in binding.views.items():
                 self.assertIn(
                     spec.query_key,
-                    (
-                        "mining_by_user",
-                        "pi_by_user",
-                        "industry_orders_by_user",
-                        "freight_program",
-                        "fleet_commanders",
-                        "capitals_activity",
-                    ),
+                    QUERY_RUNNERS,
                     f"{code} view {view} unknown query {spec.query_key}",
                 )
 
@@ -513,8 +506,8 @@ class ReportRunnerTestCase(TestCase):
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
-            name="Readiness",
-            code="pulse.readiness",
+            name="Tournaments",
+            code="pulse.tournaments",
         )
 
     def test_manual_binding(self):

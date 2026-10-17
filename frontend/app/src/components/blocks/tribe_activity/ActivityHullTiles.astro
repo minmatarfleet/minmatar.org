@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeShowcaseHull } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    hulls: TribeShowcaseHull[]
+}
+
+const { hulls } = Astro.props
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import Grid from '@components/compositions/Grid.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.market.hulls_title')}
+    caption={t('tribes.activity.market.hulls_caption')}
+>
+    {hulls.length === 0 ?
+        <p class="[ activity-empty ]">{t('tribes.activity.market.hulls_empty')}</p>
+        :
+        <Grid min_item_width="14rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
+            {hulls.map((hull) =>
+                <div class="[ hull-tile ]">
+                    <img
+                        class="[ hull-tile__render ]"
+                        src={get_item_icon(hull.type_id, 128)}
+                        alt=""
+                        loading="lazy"
+                        width="52"
+                        height="52"
+                    />
+                    <span class="[ hull-tile__text ]">
+                        <span class="[ hull-tile__name ]">{hull.name}</span>
+                        <span class="[ hull-tile__count ]">×{number_thousand_separator(hull.count)}</span>
+                    </span>
+                </div>
+            )}
+        </Grid>
+    }
+</ActivityBlock>
+
+<style lang="scss">
+    .activity-empty {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .hull-tile {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hull-tile__render {
+        flex: none;
+        inline-size: var(--space-2xl);
+        block-size: var(--space-2xl);
+        background: var(--component-background);
+    }
+
+    .hull-tile__text {
+        display: flex;
+        flex-direction: column;
+        min-inline-size: 0;
+    }
+
+    .hull-tile__name {
+        color: var(--highlight);
+        line-height: 1.2;
+    }
+
+    .hull-tile__count {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--fleet-yellow);
+    }
+</style>

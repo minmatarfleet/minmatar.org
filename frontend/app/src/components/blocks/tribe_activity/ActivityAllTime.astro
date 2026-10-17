@@ -1,0 +1,84 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeActivityAllTime } from '@helpers/tribe_activity'
+
+interface Props {
+    all_time: TribeActivityAllTime
+    [propName: string]: any
+}
+
+const {
+    all_time,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const progress = all_time.progress === undefined
+    ? null
+    : Math.max(0, Math.min(1, all_time.progress))
+---
+
+<div class:list={['[ activity-all-time ]', Astro.props.class]} {...attributes}>
+    <p class="[ activity-all-time__label ]">{t('tribes.activity.all_time_label')}</p>
+    <p class="[ activity-all-time__headline ]">{all_time.headline}</p>
+    {progress !== null &&
+        <div
+            class="[ activity-all-time__progress ]"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-label={all_time.detail}
+        >
+            <span style={`inline-size: ${progress * 100}%`}></span>
+        </div>
+    }
+    {all_time.detail && <p class="[ activity-all-time__detail ]">{all_time.detail}</p>}
+</div>
+
+<style lang="scss">
+    .activity-all-time {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+    }
+
+    .activity-all-time__label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .activity-all-time__headline {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .activity-all-time__progress {
+        block-size: var(--space-3xs);
+        background: rgba(255, 255, 255, 0.08);
+
+        span {
+            display: block;
+            block-size: 100%;
+            background: var(--fleet-yellow);
+        }
+    }
+
+    .activity-all-time__detail {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

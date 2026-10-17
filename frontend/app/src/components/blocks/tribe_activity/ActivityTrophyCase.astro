@@ -1,0 +1,15 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import ActivityComingSoon from '@components/blocks/tribe_activity/ActivityComingSoon.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.tournaments.trophy_title')}
+    caption={t('tribes.activity.tournaments.trophy_caption')}
+    muted
+>
+    <ActivityComingSoon message={t('tribes.activity.tournaments.trophy_soon')} />
+</ActivityBlock>

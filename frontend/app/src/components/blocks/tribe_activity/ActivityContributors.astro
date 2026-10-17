@@ -1,0 +1,131 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeGroupShowcaseContributor } from '@dtypes/api.minmatar.org'
+import type { TribeActivityContributors } from '@helpers/tribe_activity'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    spec: TribeActivityContributors
+    contributors: TribeGroupShowcaseContributor[]
+    can_see_names: boolean
+    [propName: string]: any
+}
+
+const {
+    spec,
+    contributors,
+    can_see_names,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+---
+
+<ActivityBlock
+    class:list={['[ activity-contributors ]', Astro.props.class]}
+    title={t('tribes.showcase.contributors')}
+    caption={spec.metric_label}
+    {...attributes}
+>
+    {!can_see_names ?
+        <p class="[ activity-contributors__note ]">{t('tribes.showcase.contributors_hidden')}</p>
+        : contributors.length === 0 ?
+            <p class="[ activity-contributors__note ]">{t('tribes.showcase.contributors_empty')}</p>
+            :
+            <ol class="[ activity-contributors__list ]">
+                {contributors.map((contributor, index) =>
+                    <li class="[ activity-contributors__row ]">
+                        <span class="[ activity-contributors__rank ]">{index + 1}</span>
+                        {contributor.character_id ?
+                            <img
+                                class="[ activity-contributors__portrait ]"
+                                src={get_player_icon(contributor.character_id, 64)}
+                                alt=""
+                                loading="lazy"
+                                width="36"
+                                height="36"
+                            />
+                            :
+                            <span class="[ activity-contributors__portrait ]" aria-hidden="true"></span>
+                        }
+                        <span class="[ activity-contributors__who ]">
+                            <span class="[ activity-contributors__name ]">{contributor.character_name}</span>
+                            {spec.detail &&
+                                <span class="[ activity-contributors__detail ]">{spec.detail(contributor.values ?? {})}</span>
+                            }
+                        </span>
+                        <span class="[ activity-contributors__value ]">{spec.value(contributor.values ?? {})}</span>
+                    </li>
+                )}
+            </ol>
+    }
+</ActivityBlock>
+
+<style lang="scss">
+    .activity-contributors__note {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .activity-contributors__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .activity-contributors__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-s);
+
+        & + & {
+            border-block-start: 1px solid rgba(255, 255, 255, 0.07);
+        }
+    }
+
+    .activity-contributors__rank {
+        min-inline-size: 2ch;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .activity-contributors__portrait {
+        flex: none;
+        inline-size: var(--space-l);
+        block-size: var(--space-l);
+        background: var(--component-background);
+    }
+
+    .activity-contributors__who {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-inline-size: 0;
+    }
+
+    .activity-contributors__name {
+        overflow: hidden;
+        color: var(--highlight);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .activity-contributors__detail {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .activity-contributors__value {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+</style>

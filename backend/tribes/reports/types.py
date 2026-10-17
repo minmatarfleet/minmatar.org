@@ -38,6 +38,8 @@ class ReportBinding:
     manual_message: str = ""
     views: dict[str, QuerySpec] = field(default_factory=dict)
     presentation: dict = field(default_factory=dict)
+    # Key into HIGHLIGHT_RUNNERS: records and lists for the group page only.
+    highlights: str = ""
 
 
 @dataclass

@@ -111,6 +111,71 @@ export interface TribeGroupShowcaseContributor {
     character_name:     string;
     metric_key:         string;
     metric_value:       number | string;
+    values:             Record<string, number>;
+}
+
+export interface TribeShowcaseBestMonth {
+    month:              string;
+    value:              number;
+}
+
+export interface TribeShowcaseHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+}
+
+export interface TribeShowcaseWeek {
+    week_start:         string;
+    lp:                 number;
+}
+
+export interface TribeShowcaseWelcomed {
+    character_id:       number;
+    character_name:     string;
+    promoted_at:        string;
+}
+
+export interface TribeShowcaseFixedTicket {
+    pilot_character_id: number | null;
+    pilot_name:         string;
+    category:           string;
+    closed_by:          string;
+    hours:              number;
+}
+
+export interface TribeShowcaseWork {
+    kind:               'post' | 'video' | 'vod' | 'stream';
+    title:              string;
+    post_id:            number | null;
+    url:                string;
+    thumbnail_url:      string;
+    published_at:       string;
+    author:             string;
+}
+
+export interface TribeShowcaseCatch {
+    killmail_id:            number;
+    ship_type_id:           number;
+    ship_name:              string;
+    ship_class:             string;
+    victim_corporation_id:  number | null;
+    killed_at:              string;
+    hunters:                number;
+}
+
+/** Group-page extras; which keys exist depends on the group. */
+export interface TribeShowcaseHighlights {
+    best_month?:        TribeShowcaseBestMonth | null;
+    best_quarter?:      number;
+    record_week_lp?:    number;
+    all_time?:          Record<string, number | null>;
+    hulls?:             TribeShowcaseHull[];
+    weekly?:            TribeShowcaseWeek[];
+    welcomed?:          TribeShowcaseWelcomed[];
+    fixed?:             TribeShowcaseFixedTicket[];
+    latest_work?:       TribeShowcaseWork[];
+    catches?:           TribeShowcaseCatch[];
 }
 
 export interface TribeGroupShowcase {
@@ -125,6 +190,7 @@ export interface TribeGroupShowcase {
     totals:             Record<string, number | string>;
     columns:            string[];
     contributors:       TribeGroupShowcaseContributor[];
+    highlights:         TribeShowcaseHighlights;
 }
 
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
