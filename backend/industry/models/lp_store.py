@@ -491,6 +491,10 @@ class IndustryLpStoreOfferRequiredItem(models.Model):
         return f"offer {self.offer_id}: type={self.type_id} x{self.quantity}"
 
 
+# Sentinel: the order's status was not loaded (deferred), so it is unknown.
+_STATUS_UNKNOWN = object()
+
+
 class IndustryLoyaltyPointMarketOrder(models.Model):
     """Buy or sell offer for a loyalty-point currency (site LP buyback book)."""
 
@@ -579,15 +583,36 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     @classmethod
     def from_db(cls, db, field_names, values):
         instance = super().from_db(db, field_names, values)
+        # Deferred status stays unknown; save() then reads it from the DB.
         # pylint: disable-next=protected-access
-        instance._loaded_status = instance.__dict__.get("status")
+        instance._loaded_status = instance.__dict__.get(
+            "status", _STATUS_UNKNOWN
+        )
         return instance
 
-    def save(self, *args, **kwargs):
-        loaded = getattr(self, "_loaded_status", None)
-        status_changed = self._state.adding or (
-            loaded is not None and loaded != self.status
+    def refresh_from_db(self, using=None, fields=None, from_queryset=None):
+        super().refresh_from_db(
+            using=using, fields=fields, from_queryset=from_queryset
         )
+        # Django copies fresh values onto self without calling our from_db.
+        if fields is None or "status" in fields:
+            self._loaded_status = self.status
+
+    def _status_changed_since_load(self) -> bool:
+        if self._state.adding:
+            return True
+        loaded = getattr(self, "_loaded_status", _STATUS_UNKNOWN)
+        if loaded is _STATUS_UNKNOWN:
+            loaded = (
+                type(self)
+                .objects.filter(pk=self.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+        return loaded != self.status
+
+    def save(self, *args, **kwargs):
+        status_changed = self._status_changed_since_load()
         # Read by the post_save Discord signal (cancel notice).
         self._status_just_changed = status_changed
         if status_changed:

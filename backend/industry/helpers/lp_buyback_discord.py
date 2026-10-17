@@ -16,6 +16,7 @@ from industry.helpers.lp_buyback_discord_buttons import (
 )
 from industry.helpers.lp_market_orders import (
     PRE_LP_STATUSES,
+    TERMINAL_STATUSES,
     claimed_quantity,
     currency_short_name,
     format_lp_quantity,
@@ -39,11 +40,6 @@ ORPHAN_LP_BUYBACK_THREAD_IDS = (
 
 # Keeps the Conversion Team digest under Discord's 2,000-character cap.
 STALE_DIGEST_MAX_LINES = 15
-
-_TERMINAL_STATUSES = (
-    IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
-    IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
-)
 
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -83,12 +79,10 @@ def isk_payer(order: IndustryLoyaltyPointMarketOrder):
     return order.created_by
 
 
-def _lp_buyback_channel_row() -> tuple[int, int] | None:
+def _flagged_channel_row(flag: str) -> tuple[int, int] | None:
+    """(channel_id, guild_id) of the active channel with this receive_* flag."""
     row = (
-        DiscordChannel.objects.filter(
-            receive_lp_buyback=True,
-            guild__is_active=True,
-        )
+        DiscordChannel.objects.filter(**{flag: True}, guild__is_active=True)
         .values_list("channel_id", "guild__guild_id")
         .first()
     )
@@ -97,16 +91,13 @@ def _lp_buyback_channel_row() -> tuple[int, int] | None:
     return int(row[0]), int(row[1])
 
 
+def _lp_buyback_channel_row() -> tuple[int, int] | None:
+    return _flagged_channel_row("receive_lp_buyback")
+
+
 def lp_conversion_alert_channel_id() -> int | None:
-    channel_id = (
-        DiscordChannel.objects.filter(
-            receive_lp_conversion_alerts=True,
-            guild__is_active=True,
-        )
-        .values_list("channel_id", flat=True)
-        .first()
-    )
-    return int(channel_id) if channel_id else None
+    row = _flagged_channel_row("receive_lp_conversion_alerts")
+    return row[0] if row else None
 
 
 def lp_buyback_channel_id() -> int | None:
@@ -238,9 +229,10 @@ def post_order_status_update(
     *,
     message: str,
     components: list[dict] | None = None,
-) -> None:
+) -> bool:
+    """Post in the order thread; False when there is no thread or it failed."""
     if not order.discord_thread_id:
-        return
+        return False
     payload = {"content": message}
     if components:
         payload["components"] = components
@@ -250,6 +242,8 @@ def post_order_status_update(
         )
     except Exception as exc:
         logger.error("Failed posting LP buyback Discord update: %s", exc)
+        return False
+    return True
 
 
 def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -259,8 +253,12 @@ def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
         ).get(pk=order.pk)
     except IndustryLoyaltyPointMarketOrder.DoesNotExist:
         return
-    if current.status in _TERMINAL_STATUSES:
+    if current.status in TERMINAL_STATUSES:
         close_order_thread(current)
+        return
+    # The create task and the hourly sweep's retry can both get here; only
+    # the first thread is kept.
+    if current.discord_thread_id:
         return
 
     thread_id = create_order_thread(current)
@@ -268,8 +266,10 @@ def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
         return
 
     attached = (
-        IndustryLoyaltyPointMarketOrder.objects.filter(pk=current.pk)
-        .exclude(status__in=_TERMINAL_STATUSES)
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=current.pk, discord_thread_id__isnull=True
+        )
+        .exclude(status__in=TERMINAL_STATUSES)
         .update(discord_thread_id=thread_id)
     )
     if not attached:
@@ -638,13 +638,13 @@ def post_stalled_reminder(
     *,
     waited_hours: int,
     cancel_at=None,
-) -> None:
+) -> bool:
     components = None
     if order.status == order.Status.AWAITING_LP:
         components = lp_sent_components(order.pk)
     elif order.status == order.Status.AWAITING_ISK:
         components = isk_sent_components(order.pk)
-    post_order_status_update(
+    return post_order_status_update(
         order,
         message=_stalled_reminder_message(
             order, waited_hours=waited_hours, cancel_at=cancel_at

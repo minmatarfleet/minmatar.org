@@ -24,6 +24,7 @@ COMPLETED = IndustryLoyaltyPointMarketOrder.Status.COMPLETED
 CANCELLED = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
 
 ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
+TERMINAL_STATUSES = (COMPLETED, CANCELLED)
 # Statuses where one named pilot owes the next step (reminders apply).
 STALLABLE_STATUSES = (CLAIMED, AWAITING_LP, AWAITING_ISK)
 # Before LP moves, a stalled order can be cancelled safely. After LP is
@@ -391,9 +392,9 @@ def auto_cancel_stalled_order(
     from industry.helpers.lp_buyback_discord import poster_is_stalling
 
     with transaction.atomic():
+        # Lock only the order row; poster_is_stalling() loads the users.
         locked = (
             IndustryLoyaltyPointMarketOrder.objects.select_for_update()
-            .select_related("created_by", "claimed_by")
             .filter(
                 pk=order_id,
                 status__in=PRE_LP_STATUSES,

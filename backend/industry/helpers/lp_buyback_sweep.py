@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
+from django.db.models import Q
 from django.utils import timezone
 
 from industry.helpers.lp_buyback_discord import (
@@ -28,6 +29,7 @@ from industry.helpers.lp_market_orders import (
     OPEN,
     PRE_LP_STATUSES,
     STALLABLE_STATUSES,
+    TERMINAL_STATUSES,
     auto_cancel_stalled_order,
 )
 from industry.models import IndustryLoyaltyPointMarketOrder
@@ -43,10 +45,11 @@ STALE_OPEN_AFTER = timedelta(days=7)
 # Leave the create task time to run before treating a thread as missing.
 MISSING_THREAD_GRACE = timedelta(minutes=10)
 
-_TERMINAL_STATUSES = (
-    IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
-    IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
-)
+
+def _not_reminded_since(cutoff) -> Q:
+    return Q(stalled_reminder_at__isnull=True) | Q(
+        stalled_reminder_at__lte=cutoff
+    )
 
 
 def _orders():
@@ -81,7 +84,7 @@ def close_stray_threads() -> int:
         return 0
     stray_ids = IndustryLoyaltyPointMarketOrder.objects.filter(
         discord_thread_id__in=active_ids,
-        status__in=_TERMINAL_STATUSES,
+        status__in=TERMINAL_STATUSES,
     ).values_list("discord_thread_id", flat=True)
     closed = 0
     for thread_id in stray_ids:
@@ -123,21 +126,33 @@ def _claim_reminder_slot(order, now) -> bool:
     )
 
 
+def _release_reminder_slot(order, now) -> None:
+    """Undo a stamp whose message never reached Discord.
+
+    Auto-cancel keys off the stamp, so an undelivered warning must not count.
+    """
+    IndustryLoyaltyPointMarketOrder.objects.filter(
+        pk=order.pk, stalled_reminder_at=now
+    ).update(stalled_reminder_at=order.stalled_reminder_at)
+
+
 def remind_stalled_orders(now) -> int:
     """Ping whoever owes the next step once the order has waited 24h.
 
     A stalling poster gets one reminder before auto-cancel. Claimers and ISK
     payers are never the reason for a cancel, so they are re-pinged daily.
+    Orders without a thread wait for create_missing_threads.
     """
     reminded = 0
     stalled = _orders().filter(
+        _not_reminded_since(now - REMIND_AFTER),
         status__in=STALLABLE_STATUSES,
         status_changed_at__lte=now - REMIND_AFTER,
+        discord_thread_id__isnull=False,
     )
     for order in stalled:
         auto_cancels = poster_is_stalling(order)
-        last = order.stalled_reminder_at
-        if last is not None and (auto_cancels or last > now - REMIND_AFTER):
+        if auto_cancels and order.stalled_reminder_at is not None:
             continue
         if not _claim_reminder_slot(order, now):
             continue
@@ -148,28 +163,36 @@ def remind_stalled_orders(now) -> int:
                 now + MIN_WARNING_BEFORE_CANCEL,
             )
         waited = now - order.status_changed_at
-        post_stalled_reminder(
+        delivered = post_stalled_reminder(
             order,
             waited_hours=int(waited.total_seconds() // 3600),
             cancel_at=cancel_at,
         )
+        if not delivered:
+            _release_reminder_slot(order, now)
+            continue
         reminded += 1
     return reminded
 
 
 def flag_stale_open_orders(now) -> int:
     """Weekly digest to the Conversion Team of orders nobody has taken."""
-    stale = _orders().filter(
+    stale = IndustryLoyaltyPointMarketOrder.objects.filter(
+        _not_reminded_since(now - STALE_OPEN_AFTER),
         status=OPEN,
         status_changed_at__lte=now - STALE_OPEN_AFTER,
     )
-    due = [
-        order
-        for order in stale.order_by("status_changed_at", "id")
-        if order.stalled_reminder_at is None
-        or order.stalled_reminder_at <= now - STALE_OPEN_AFTER
-    ]
-    due = [order for order in due if _claim_reminder_slot(order, now)]
+    candidate_ids = list(stale.values_list("pk", flat=True))
+    if not candidate_ids:
+        return 0
+    # One stamp for the batch; the re-applied filter skips any order an
+    # overlapping sweep stamped in between.
+    stale.filter(pk__in=candidate_ids).update(stalled_reminder_at=now)
+    due = list(
+        _orders()
+        .filter(pk__in=candidate_ids, status=OPEN, stalled_reminder_at=now)
+        .order_by("status_changed_at", "id")
+    )
     if not due:
         return 0
     if not post_stale_open_orders_digest(due, now=now):

@@ -1025,6 +1025,33 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         self.assertEqual(order_thread_title(self.order), "WTS 2.5M TLIB @800")
 
     @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_skips_order_with_thread(self, discord_mock):
+        # The hourly retry and a late create task must not both post.
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=self.order.pk
+        ).update(discord_thread_id=111)
+        notify_order_created(self.order)
+        discord_mock.create_forum_thread.assert_not_called()
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_closes_thread_that_lost_the_race(
+        self, discord_mock
+    ):
+        def create_and_lose(**_kwargs):
+            IndustryLoyaltyPointMarketOrder.objects.filter(
+                pk=self.order.pk
+            ).update(discord_thread_id=111)
+            response = MagicMock()
+            response.json.return_value = {"id": "222"}
+            return response
+
+        discord_mock.create_forum_thread.side_effect = create_and_lose
+        notify_order_created(self.order)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discord_thread_id, 111)
+        discord_mock.close_thread.assert_called_once_with(channel_id=222)
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
     def test_notify_order_created_stores_thread_id(self, discord_mock):
         response = MagicMock()
         response.json.return_value = {"id": "555666777"}
@@ -1465,6 +1492,36 @@ class LpBuybackThreadCloseSignalTestCase(AppTestCase):
         with self.captureOnCommitCallbacks(execute=True):
             order.save()
         enqueue_mock.assert_not_called()
+
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_refresh_from_db_keeps_status_tracking_in_step(self, enqueue_mock):
+        order = self._open_order()
+        other = IndustryLoyaltyPointMarketOrder.objects.get(pk=order.pk)
+        other.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        other.save()
+        cancelled_at = other.status_changed_at
+
+        order.refresh_from_db()
+        order.notes = "after refresh"
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
+        enqueue_mock.assert_not_called()
+        order.refresh_from_db()
+        self.assertEqual(order.status_changed_at, cancelled_at)
+
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_deferred_status_change_is_still_tracked(self, enqueue_mock):
+        order = self._open_order()
+        before = order.status_changed_at
+        deferred = IndustryLoyaltyPointMarketOrder.objects.only(
+            "id", "discord_thread_id"
+        ).get(pk=order.pk)
+        deferred.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        with self.captureOnCommitCallbacks(execute=True):
+            deferred.save()
+        enqueue_mock.assert_called_once_with(order.pk, None, "")
+        order.refresh_from_db()
+        self.assertGreater(order.status_changed_at, before)
 
     def test_status_changed_at_tracks_status_only(self):
         order = self._open_order()

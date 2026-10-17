@@ -409,3 +409,36 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(
             self._sweep(discord_mock, client_cls)["stale_open_flagged"], 1
         )
+
+    def test_undelivered_reminder_does_not_arm_auto_cancel(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        order = self._order(Status.AWAITING_LP, waited_hours=30)
+        discord_mock.create_message.side_effect = RuntimeError("discord 503")
+        self.assertEqual(self._sweep(discord_mock, client_cls)["reminded"], 0)
+        order.refresh_from_db()
+        self.assertIsNone(order.stalled_reminder_at)
+
+        # Discord recovers a day later: the seller is warned now, and the
+        # cancel is still a full day out.
+        discord_mock.create_message.side_effect = None
+        self.now += timedelta(hours=24)
+        stats = self._sweep(discord_mock, client_cls)
+        self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 1))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Status.AWAITING_LP)
+
+    def test_order_without_thread_is_not_reminded_or_cancelled(
+        self, discord_mock, client_cls, unused_sleep
+    ):
+        discord_mock.create_forum_thread.side_effect = RuntimeError("down")
+        order = self._order(
+            Status.AWAITING_LP, waited_hours=24 * 5, thread_id=None
+        )
+        for _ in range(3):
+            stats = self._sweep(discord_mock, client_cls)
+            self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 0))
+            self.now += timedelta(hours=24)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Status.AWAITING_LP)
+        self.assertIsNone(order.stalled_reminder_at)
