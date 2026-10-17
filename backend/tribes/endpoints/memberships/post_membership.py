@@ -3,9 +3,10 @@
 import logging
 
 from authentication import AuthBearer
-from discord.outbox import queue_dm
 from eveonline.models import EveCharacter
 from groups.helpers.feature_access import require_feature
+from notifications.service import notify_user
+from notifications.types.tribes import TRIBE_MEMBERSHIP_REQUESTED_KEY
 from tribes.endpoints.memberships.schemas import (
     ApplyToGroupRequest,
     MembershipSchema,
@@ -29,26 +30,34 @@ from tribes.models import (
 logger = logging.getLogger(__name__)
 
 
-def _send_new_request_dm_to_chief(membership):
-    """DM the tribe group chief that a new membership application was submitted."""
+def _notify_chief_of_new_request(membership):
+    """Tell the tribe group chief a new membership application came in.
+
+    Goes through the notifications service: chiefs can mute it, and the
+    Discord DM is sent by a worker, never inside this request.
+    """
     tg = membership.tribe_group
     chief = tg.chief
     if not chief:
         return
     try:
-        discord_user_id = str(chief.discord_user.id)
-    except Exception:  # noqa: S110 (chief has no linked Discord)
-        return
-    applicant = membership.user.username
-    message = (
-        f"**New tribe membership application** for **{tg.name}** ({tg.tribe.name}): "
-        f"{applicant} has applied. Please review in the admin panel."
-    )
-    queue_dm(
-        discord_user_id,
-        message=message,
-        context=f"tribe request DM to chief of group {tg.pk}",
-    )
+        notify_user(
+            chief,
+            TRIBE_MEMBERSHIP_REQUESTED_KEY,
+            {
+                "group_name": tg.name,
+                "tribe_name": tg.tribe.name,
+                "applicant": membership.user.username,
+            },
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Failed to queue tribe request notification to chief %s for "
+            "group %s",
+            chief,
+            tg,
+            exc_info=True,
+        )
 
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships"
@@ -153,7 +162,7 @@ def post_membership(
                 by=request.user,
             )
 
-    _send_new_request_dm_to_chief(membership)
+    _notify_chief_of_new_request(membership)
     can_manage = user_can_manage_group(request.user, tg)
     return 200, serialize_membership(
         membership,
