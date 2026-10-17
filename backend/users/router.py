@@ -24,6 +24,7 @@ from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
 from groups.tasks import sync_user_corporation_groups, update_affiliation
+from users.endpoints import router as endpoints_router
 from users.eve_sso import EVE_LOGIN_SCOPES
 from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
 from users.redirects import oauth_redirect
@@ -46,6 +47,7 @@ auth_url_discord = discord_authorize_url(
     settings.DISCORD_CLIENT_ID, settings.DISCORD_REDIRECT_URL
 )
 router = Router(tags=["Authentication"])
+router.add_router("", endpoints_router)
 discord = DiscordClient()
 
 

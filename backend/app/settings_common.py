@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -224,3 +225,8 @@ ESI_ALWAYS_CREATE_TOKEN = True
 # Janice (https://janice.e-351.com) - optional; get key from kukki#3914 on Discord
 JANICE_API_KEY = ""
 JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
+
+# Which answer the site gates pages on: "legacy" (Django permission strings),
+# "shadow" (legacy, but report where pilot features disagree), or "features".
+# Read by GET /api/users/me/gates; change it and restart the app to flip.
+FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")

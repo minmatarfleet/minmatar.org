@@ -208,7 +208,7 @@ def is_strategic_fc(user) -> bool:
     """True if this user may manage any fleet and see hidden volunteer rosters."""
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    return user.has_perm("fleets.manage_any_fleet")
+    return can_use_feature(user, "fleets.manage_any")
 
 
 def limit_volunteers_to_viewer(request, fleet, volunteers):

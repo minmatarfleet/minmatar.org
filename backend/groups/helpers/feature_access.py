@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import time
+from contextvars import ContextVar
 from dataclasses import dataclass
+from django.db.models import Q
 
 from django.contrib.auth.models import AnonymousUser
 
@@ -30,6 +32,22 @@ class _FeatureSnapshot:
 
 _feature_cache: dict[str, _FeatureSnapshot] | None = None
 _feature_cache_at: float | None = None
+
+# Per-user lookups shared across one get_user_feature_codes() call. Outside
+# that call every lookup hits the database, as before, so long-lived user
+# objects never see stale affiliation or membership data.
+_batch_memo: ContextVar[dict | None] = ContextVar(
+    "feature_batch_memo", default=None
+)
+
+
+def _memoized(user, key: str, compute):
+    memo = _batch_memo.get()
+    if memo is None or memo.get("user_pk") != user.pk:
+        return compute()
+    if key not in memo:
+        memo[key] = compute()
+    return memo[key]
 
 
 def clear_feature_cache() -> None:
@@ -118,21 +136,29 @@ def tribe_group_effective_affiliation_ids(
 def user_affiliation(user):
     if user is None or isinstance(user, AnonymousUser):
         return None
-    row = (
-        UserAffiliation.objects.filter(user=user)
-        .select_related("affiliation")
-        .first()
-    )
-    return row.affiliation if row else None
+
+    def compute():
+        row = (
+            UserAffiliation.objects.filter(user=user)
+            .select_related("affiliation")
+            .first()
+        )
+        return row.affiliation if row else None
+
+    return _memoized(user, "affiliation", compute)
 
 
 def user_community_status(user) -> str | None:
     if user is None or isinstance(user, AnonymousUser):
         return None
-    try:
-        return user.community_status.status
-    except UserCommunityStatus.DoesNotExist:
-        return None
+
+    def compute():
+        try:
+            return user.community_status.status
+        except UserCommunityStatus.DoesNotExist:
+            return None
+
+    return _memoized(user, "community_status", compute)
 
 
 def _has_legacy_permission(user, permission: str) -> bool:
@@ -160,6 +186,8 @@ def _evaluate_tribe_membership(
 ) -> bool:
     if not feature.tribe_group_ids:
         return False
+    if tribe_group is None and _batch_memo.get() is not None:
+        return bool(_active_tribe_group_ids(user) & feature.tribe_group_ids)
     qs = TribeGroupMembership.objects.filter(
         user=user,
         status=TribeGroupMembership.STATUS_ACTIVE,
@@ -168,6 +196,32 @@ def _evaluate_tribe_membership(
     if tribe_group is not None:
         qs = qs.filter(tribe_group_id=tribe_group.pk)
     return qs.exists()
+
+
+def _active_tribe_group_ids(user) -> frozenset[int]:
+    return _memoized(
+        user,
+        "active_tribe_group_ids",
+        lambda: frozenset(
+            TribeGroupMembership.objects.filter(
+                user=user,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            ).values_list("tribe_group_id", flat=True)
+        ),
+    )
+
+
+def _chief_tribe_group_ids(user) -> frozenset[int]:
+    """Tribe groups the user leads, directly or as chief of the tribe."""
+    return _memoized(
+        user,
+        "chief_tribe_group_ids",
+        lambda: frozenset(
+            TribeGroup.objects.filter(
+                Q(chief_id=user.pk) | Q(tribe__chief_id=user.pk)
+            ).values_list("pk", flat=True)
+        ),
+    )
 
 
 def _evaluate_tribe_group_target(
@@ -204,6 +258,8 @@ def _evaluate_tribe_chief(
         return tribe.chief_id == user.pk
     if not feature.tribe_group_ids:
         return False
+    if _batch_memo.get() is not None:
+        return bool(_chief_tribe_group_ids(user) & feature.tribe_group_ids)
     groups = TribeGroup.objects.filter(
         pk__in=feature.tribe_group_ids
     ).select_related("tribe")
@@ -216,7 +272,12 @@ def _evaluate_tribe_chief(
 
 
 def _user_auth_group_ids(user) -> set[int]:
-    return set(user.groups.values_list("pk", flat=True))
+    ids = _memoized(
+        user,
+        "auth_group_ids",
+        lambda: frozenset(user.groups.values_list("pk", flat=True)),
+    )
+    return set(ids)
 
 
 def _evaluate_resource_match(feature: _FeatureSnapshot, user, fleet) -> bool:
@@ -352,6 +413,30 @@ def require_feature(
 def check_feature(request, code: str, **context):
     """Ninja helper: return error response tuple or None."""
     return require_feature(request.user, code, **context)
+
+
+def get_user_feature_codes(user) -> list[str]:
+    """Every registry feature code the user may use, with no resource context.
+
+    The result matches calling ``can_use_feature(user, code)`` for each code;
+    per-user lookups are just loaded once instead of once per feature. With
+    no resource, ``resource_match`` falls back to affiliation,
+    ``tribe_chief`` means chief of any wired group, and
+    ``tribe_group_target`` never passes.
+    """
+    if user is None or isinstance(user, AnonymousUser):
+        return []
+    if not user.is_active:
+        return []
+    token = _batch_memo.set({"user_pk": user.pk})
+    try:
+        return [
+            code
+            for code in sorted(FEATURE_DEFINITIONS)
+            if can_use_feature(user, code)
+        ]
+    finally:
+        _batch_memo.reset(token)
 
 
 def legacy_permissions_for_profile(user) -> set[str]:

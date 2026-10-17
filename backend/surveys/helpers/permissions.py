@@ -21,7 +21,11 @@ def require_manage(request):
 
 
 def require_superuser(request):
-    """Results viewing is restricted to superusers only."""
-    if getattr(request.user, "is_superuser", False):
+    """Results viewing is restricted to superusers only.
+
+    ``surveys.results.view`` is unwired, so only superusers pass it; wiring
+    it in the admin opens results to that audience on the API and the site.
+    """
+    if can_use_feature(request.user, "surveys.results.view"):
         return None
     return 403, {"detail": "Only superusers may view survey results."}
