@@ -16,9 +16,14 @@ from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
 from eveonline.helpers.corporations.timezones import (
     observed_prime_buckets_for_users,
 )
+from eveonline.killmail_classes import (
+    CAPSULE_TYPE_IDS,
+    SMALL_GANG_MAX_ATTACKERS,
+    SOLO_MAX_ATTACKERS,
+)
 from eveonline.models import EveCharacter
 from feed.constants import CAPITAL_SHIP_GROUPS
-from feed.helpers.eve_names import CAPSULE_GROUP_NAME, KNOWN_CAPSULE_TYPE_IDS
+from feed.helpers.eve_names import CAPSULE_GROUP_NAME
 from fleets.models import (
     EveFleetInstanceMember,
     EveFleetInstanceMemberShipSnapshot,
@@ -33,9 +38,8 @@ TIER_CORE = "core"  # 10+
 LAPSING_MAX_FLEETS = 2
 REGULAR_MAX_FLEETS = 9
 
-# alliance.helpers.health attacker buckets. The 11+ signal is "kill" there.
-SOLO_ATTACKERS = 1
-SMALL_GANG_MAX_ATTACKERS = 10
+# Attacker buckets from eveonline.killmail_classes, shared with alliance
+# health. The 11+ signal is "kill" there.
 KILL_SOLO = "solo"
 KILL_SMALL_GANG = "small_gang"
 KILL_FLEET = "fleet"
@@ -206,7 +210,7 @@ def fleet_tier(fleet_count: int) -> str:
 
 
 def kill_bucket(attacker_count: int) -> str:
-    if attacker_count <= SOLO_ATTACKERS:
+    if attacker_count <= SOLO_MAX_ATTACKERS:
         return KILL_SOLO
     if attacker_count <= SMALL_GANG_MAX_ATTACKERS:
         return KILL_SMALL_GANG
@@ -332,11 +336,11 @@ def _attendance_ships(member_ship, snapshot_ids: set[int] | None) -> list[int]:
     flown = [
         ship_id
         for ship_id in (snapshot_ids or set())
-        if ship_id and ship_id not in KNOWN_CAPSULE_TYPE_IDS
+        if ship_id and ship_id not in CAPSULE_TYPE_IDS
     ]
     if flown:
         return flown
-    if member_ship and int(member_ship) not in KNOWN_CAPSULE_TYPE_IDS:
+    if member_ship and int(member_ship) not in CAPSULE_TYPE_IDS:
         return [int(member_ship)]
     return []
 

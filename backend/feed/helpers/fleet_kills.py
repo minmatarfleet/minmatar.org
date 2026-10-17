@@ -24,10 +24,10 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 from eveonline.helpers.corporations.safe_cache import cache_get, cache_set
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from eveuniverse.models import EveSolarSystem
 
 from feed.helpers.eve_names import (
-    KNOWN_CAPSULE_TYPE_IDS,
     resolve_character_names,
     resolve_type_names,
 )
@@ -49,9 +49,6 @@ HEADLINE_LIMIT = 5
 # old fleet does not ask ESI for victim names on every view.
 LIVE_CACHE_OPEN_SECONDS = 60
 LIVE_CACHE_ENDED_SECONDS = 60 * 60
-
-# Capsule and Capsule - Genolution.
-CAPSULE_TYPE_IDS = KNOWN_CAPSULE_TYPE_IDS | {33328}
 
 
 @dataclass

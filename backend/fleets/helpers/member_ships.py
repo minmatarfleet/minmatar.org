@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS, is_capsule
+
 if TYPE_CHECKING:
     from fleets.models import (
         EveFleetInstance,
         EveFleetInstanceMember,
         EveFleetInstanceMemberShipSnapshot,
     )
-
-CAPSULE_TYPE_ID = 670
 
 
 def _fleet_models():
@@ -135,7 +135,7 @@ def last_non_capsule_ship_snapshot(
     _, ship_snapshot_model = _fleet_models()
     return (
         ship_snapshot_model.objects.filter(member=member)
-        .exclude(ship_type_id=CAPSULE_TYPE_ID)
+        .exclude(ship_type_id__in=CAPSULE_TYPE_IDS)
         .order_by("-created_at")
         .first()
     )
@@ -150,7 +150,7 @@ def effective_fleet_ship(
     Returns the member's current ship unless they are in a capsule, in which
     case the most recent non-capsule snapshot is used when available.
     """
-    if member.ship_type_id != CAPSULE_TYPE_ID:
+    if not is_capsule(member.ship_type_id):
         return member.ship_type_id, member.ship_name
 
     prior = last_non_capsule_ship_snapshot(member)
