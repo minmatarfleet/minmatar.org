@@ -4048,7 +4048,7 @@ export const ui = {
         'claim_count_plural': 'Claimed {count} / {total}',
         'claim_count_singular': '1 claimed / {total}',
         'target_unit_price': 'Target unit price:',
-        'target_estimated_margin': 'Target estimated margin:',
+        'estimated_profit_per_unit': 'Estimated profit per unit:',
         'total_earnings': 'Total earnings:',
         'mark_delivered': 'Mark delivered',
         'invalid_item_id': 'The order item id is not valid.',

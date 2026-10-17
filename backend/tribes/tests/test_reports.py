@@ -30,6 +30,7 @@ from industry.models import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from industry.test_utils import set_stored_profit_breakdown
 from tribes.helpers.group_code import make_tribe_group_code
 from tribes.models import (
     Tribe,
@@ -363,16 +364,15 @@ class IndustryOrdersReportTestCase(TestCase):
             order=order,
             eve_type=product,
             quantity=10,
-            target_estimated_margin=100,
         )
         delivered_at = timezone.now() - timedelta(days=2)
         IndustryOrderItemAssignment.objects.create(
             order_item=item,
             character=self.character,
             quantity=5,
-            target_estimated_margin=100,
             delivered_at=delivered_at,
         )
+        set_stored_profit_breakdown(order, {product.id: 100})
 
     def test_delivered_units_in_period(self):
         period = parse_period("30d")
@@ -383,6 +383,8 @@ class IndustryOrdersReportTestCase(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["delivered_units"], 5)
         self.assertEqual(totals["delivered_units"], 5)
+        self.assertEqual(rows[0]["delivered_profit"], 500.0)
+        self.assertEqual(totals["delivered_profit"], 500.0)
 
 
 class CapitalsReportTestCase(TestCase):

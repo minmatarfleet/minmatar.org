@@ -55,7 +55,6 @@ class AssignmentBreakdownResponse(BaseModel):
     character_name: str
     quantity: int
     target_unit_price: Decimal | None = None
-    target_estimated_margin: Decimal | None = None
     delivered_quantity: int = 0
     delivered_at: datetime | None = None
     breakdown: NestedBreakdownNode

@@ -21,7 +21,7 @@ class OrderItemQuantityResponse(BaseModel):
     eve_type_name: str
     quantity: int
     target_unit_price: Decimal | None = None
-    target_estimated_margin: Decimal | None = None
+    estimated_profit_per_unit: int | None = None
 
 
 class OrderAssigneeResponse(BaseModel):
@@ -55,7 +55,6 @@ class AssignmentResponse(BaseModel):
     character_name: str
     quantity: int
     target_unit_price: Decimal | None = None
-    target_estimated_margin: Decimal | None = None
     delivered_quantity: int = 0
     delivered_at: datetime | None = None
     has_blueprints: bool = False
@@ -72,7 +71,7 @@ class OrderItemResponse(BaseModel):
     self_assign_maximum: int | None = None
     self_assign_window_ends_at: datetime
     target_unit_price: Decimal | None = None
-    target_estimated_margin: Decimal | None = None
+    estimated_profit_per_unit: int | None = None
     assignments: List[AssignmentResponse]
 
 

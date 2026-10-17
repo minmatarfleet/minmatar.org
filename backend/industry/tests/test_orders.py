@@ -28,7 +28,10 @@ from industry.models import (
     IndustryProduct,
     Strategy,
 )
-from industry.test_utils import create_industry_order
+from industry.test_utils import (
+    create_industry_order,
+    set_stored_profit_breakdown,
+)
 from onboarding.models import (
     OnboardingProgram,
     OnboardingProgramType,
@@ -219,8 +222,8 @@ class OrdersEndpointTestCase(AppTestCase):
             character=assignee,
             quantity=3,
             target_unit_price=Decimal("1234567.50"),
-            target_estimated_margin=Decimal("89000"),
         )
+        set_stored_profit_breakdown(order, {self.eve_type.id: 89000})
         response = self.client.get("/api/industry/orders")
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -228,7 +231,7 @@ class OrdersEndpointTestCase(AppTestCase):
         row = data[0]["items"][0]
         self.assertEqual(row["eve_type_id"], self.eve_type.id)
         self.assertEqual(row["target_unit_price"], "1234567.50")
-        self.assertEqual(row["target_estimated_margin"], "89000.00")
+        self.assertEqual(row["estimated_profit_per_unit"], 89000)
 
     def test_get_orders_items_use_line_targets_when_set(self):
         order = create_industry_order(
@@ -241,13 +244,12 @@ class OrdersEndpointTestCase(AppTestCase):
             eve_type=self.eve_type,
             quantity=2,
             target_unit_price=Decimal("500000.00"),
-            target_estimated_margin=Decimal("10000.00"),
         )
         response = self.client.get("/api/industry/orders")
         self.assertEqual(response.status_code, 200)
         row = response.json()[0]["items"][0]
         self.assertEqual(row["target_unit_price"], "500000.00")
-        self.assertEqual(row["target_estimated_margin"], "10000.00")
+        self.assertIsNone(row["estimated_profit_per_unit"])
 
     def test_get_order_returns_detail_with_items_and_assignments(self):
         order = create_industry_order(
@@ -260,8 +262,8 @@ class OrdersEndpointTestCase(AppTestCase):
             eve_type=self.eve_type,
             quantity=5,
             target_unit_price=Decimal("99.50"),
-            target_estimated_margin=Decimal("1.25"),
         )
+        set_stored_profit_breakdown(order, {self.eve_type.id: -12})
         assignee = EveCharacter.objects.create(
             character_id=999004,
             character_name="Assignee Char",
@@ -283,7 +285,7 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(data["items"][0]["eve_type_name"], self.eve_type.name)
         self.assertEqual(data["items"][0]["quantity"], 5)
         self.assertEqual(data["items"][0]["target_unit_price"], "99.50")
-        self.assertEqual(data["items"][0]["target_estimated_margin"], "1.25")
+        self.assertEqual(data["items"][0]["estimated_profit_per_unit"], -12)
         self.assertEqual(len(data["items"][0]["assignments"]), 1)
         self.assertEqual(
             data["items"][0]["assignments"][0]["character_name"],

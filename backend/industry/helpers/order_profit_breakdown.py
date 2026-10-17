@@ -110,6 +110,27 @@ def get_order_profit_breakdown(
     return None
 
 
+def stored_profit_per_unit_by_type(
+    order: IndustryOrder,
+) -> Optional[Dict[int, int]]:
+    """Per-unit profit (ISK) by eve type id from the stored snapshot, or None."""
+    payload = get_order_profit_breakdown(order)
+    if payload is None:
+        return None
+    return {
+        int(row["type_id"]): int(row.get("profit_per") or 0)
+        for row in payload.get("rows") or []
+    }
+
+
+def stored_order_total_profit(order: IndustryOrder) -> Optional[int]:
+    """Whole-order profit (ISK) from the stored snapshot, or None."""
+    payload = get_order_profit_breakdown(order)
+    if payload is None:
+        return None
+    return int((payload.get("totals") or {}).get("total_profit") or 0)
+
+
 def ensure_order_profit_breakdown(order: IndustryOrder) -> Dict[str, Any]:
     """Return stored breakdown, computing and storing it if missing."""
     existing = get_order_profit_breakdown(order)

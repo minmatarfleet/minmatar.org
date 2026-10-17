@@ -15,6 +15,7 @@ from industry.endpoints.orders.serialization import (
 )
 from industry.helpers.order_profit_breakdown import (
     can_refresh_order_profit_breakdown,
+    stored_profit_per_unit_by_type,
 )
 from industry.models import IndustryOrder
 
@@ -48,6 +49,7 @@ def get_order(request, order_id: int):
         )
     except IndustryOrder.DoesNotExist:
         return 404, ErrorResponse(detail=f"Order {order_id} not found.")
+    profit_by_type = stored_profit_per_unit_by_type(order)
     # Mineral/PI BOM options are expensive (plan_build per line). Load them
     # via GET /orders/{id}/material-options when the coordinators UI needs them.
     return 200, OrderDetailResponse(
@@ -73,7 +75,8 @@ def get_order(request, order_id: int):
             else None
         ),
         items=[
-            order_item_to_response(order, item) for item in order.items.all()
+            order_item_to_response(order, item, profit_by_type)
+            for item in order.items.all()
         ],
         lp_stockpiles=order_lp_stockpiles_response(order),
         blueprint_coordinators=order_blueprint_coordinators_response(order),
