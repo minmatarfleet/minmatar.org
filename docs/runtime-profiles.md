@@ -2,7 +2,7 @@
 
 ## Local development (default)
 
-**One terminal:** from the repo root, run `./dev.sh` or `make dev`. This starts MariaDB/Redis, Django, Celery (all queues), Beat, frontend, and mobile.
+**One terminal:** from the repo root, run `./dev.sh` or `make dev`. This starts MariaDB/Redis, Django, Celery (all queues), Beat and frontend. Add `--mobile` (or `make dev MOBILE=1`) to also start the dormant mobile proof of concept.
 
 | Component | How it runs |
 | --- | --- |

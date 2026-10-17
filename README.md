@@ -28,7 +28,7 @@ Or:
 make dev
 ```
 
-This starts MariaDB and Redis (`docker compose up -d`), then runs the Django API, Celery worker (all queues), Celery Beat, frontend, and mobile dev server in one terminal. Logs are prefixed (`[api]`, `[celery]`, etc.). Press **Ctrl+C** to stop everything.
+This starts MariaDB and Redis (`docker compose up -d`), then runs the Django API, Celery worker (all queues), Celery Beat and frontend in one terminal. The mobile app is a dormant proof of concept and is not started unless you ask for it: `./dev.sh --mobile` or `make dev MOBILE=1`. Logs are prefixed (`[api]`, `[celery]`, etc.). Press **Ctrl+C** to stop everything.
 
 The Discord bot is not included — run it separately when you need it (see below).
 
@@ -47,7 +47,7 @@ Use these when you only need part of the stack, or when debugging a single proce
 | Celery Beat | `backend/` | `pipenv run celery -A app beat -l info` |
 | Discord bot | `bot/` | `pipenv run python main.py` |
 | Frontend | `frontend/app/` | `npm run dev` |
-| Mobile | `mobile/` | `npm run start:tunnel` (use `start:lan` if not on WSL) |
+| Mobile (dormant PoC) | `mobile/` | `npm run start:tunnel` (use `start:lan` if not on WSL) |
 
 Celery workers and Beat are only needed when you are testing background jobs or scheduled tasks.
 
@@ -144,7 +144,7 @@ From the repo root:
 1. `pipenv install --dev`
 1. `pipenv run python manage.py migrate`
 
-## Mobile (optional)
+## Mobile (optional, dormant proof of concept)
 1. `cd mobile`
 1. `npm i`
 1. `cp .env.example .env`
@@ -170,6 +170,6 @@ Symptoms seen when a quickstart step was skipped:
 | `ImportError: Couldn't import Django` | Backend dependencies were never installed into the pipenv virtualenv | `cd backend && pipenv install --dev` (or `pipenv sync --dev` to install exactly what `Pipfile.lock` pins) |
 | `ModuleNotFoundError: No module named 'app.settings'` | `backend/app/settings.py` is gitignored and was never created | `cp backend/app/settings.py.example backend/app/settings.py` |
 | `npm i` fails building `better-sqlite3` with `node-gyp` / `make` errors | Node is newer than 22; no prebuilt binary exists | Switch to Node 22 — see [Toolchain versions](#toolchain-versions) |
-| `[mobile] Port 8081 is being used by another process` | Something else holds Expo's port | Free port 8081, or ignore it — mobile is optional and the rest of the stack still runs |
+| `[mobile] Port 8081 is being used by another process` | Something else holds Expo's port | Free port 8081, or ignore it — mobile is optional (only started with `--mobile`) and the rest of the stack still runs |
 
 To see which ports the stack wants: `8000` (Django), `4321` (frontend), `8081` (Expo), `3306` (MariaDB), `6379` (Redis).

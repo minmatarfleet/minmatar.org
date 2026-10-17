@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 # Run local dev services in one terminal. Ctrl+C stops everything.
+# Usage: ./dev.sh [--mobile]   (or: make dev MOBILE=1)
+#   --mobile  also start the dormant Expo proof of concept in mobile/
 set -euo pipefail
+
+WITH_MOBILE="${WITH_MOBILE:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --mobile) WITH_MOBILE=1 ;;
+    -h|--help)
+      sed -n '2,4p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg (try --help)" >&2
+      exit 2
+      ;;
+  esac
+done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
@@ -89,6 +106,8 @@ run api backend pipenv run python manage.py runserver
 run celery backend pipenv run celery -A app worker -l info -Q celery,eveonline,market
 run beat backend pipenv run celery -A app beat -l info
 run frontend frontend/app npm run dev
-run mobile mobile npm run start:tunnel
+if [[ "$WITH_MOBILE" == "1" ]]; then
+  run mobile mobile npm run start:tunnel
+fi
 
 wait
