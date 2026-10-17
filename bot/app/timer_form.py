@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 
 import discord
@@ -92,13 +93,16 @@ class TimerForm(discord.ui.Modal, title="Timer"):
             await interaction.response.send_message("Invalid type provided")
             return
 
-        submit_timer(
+        # submit_timer is a blocking HTTP call; run it off the event loop so
+        # the bot keeps answering everyone else while the API responds.
+        await asyncio.to_thread(
+            submit_timer,
             EveStructureTimerRequest(
                 selected_item_window=self.timer.value,
                 corporation_name=self.corporation_name.value,
                 state=structure_state,
                 type=structure_type,
-            )
+            ),
         )
         await interaction.response.send_message("Timer submitted!")
 
