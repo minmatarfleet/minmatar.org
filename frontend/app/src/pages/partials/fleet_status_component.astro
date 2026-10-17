@@ -70,7 +70,7 @@ try {
     user_character = await get_user_character(user.user_id)
     fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+    if (error?.cause === 403)
     return HTTP_403_Forbidden()
     
     fetch_fleets_error = error

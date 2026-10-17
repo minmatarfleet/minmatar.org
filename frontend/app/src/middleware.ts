@@ -4,6 +4,7 @@ import { is_auth_init_redirect, is_noindex_path } from '@helpers/seo'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
+import { status_page_rewrite } from '@helpers/http_responses'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
@@ -72,6 +73,10 @@ export const onRequest = async ({ locals, cookies, request, rewrite }, next) => 
         const rewrite_url = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(url.href)}`
         return rewrite(rewrite_url)
     }
+
+    const status_page = status_page_rewrite(request, response)
+    if (status_page)
+        return rewrite(translatePath(status_page))
 
     if (is_noindex_path(url.pathname)) {
         response.headers.set('X-Robots-Tag', 'noindex, nofollow')

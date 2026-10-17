@@ -57,7 +57,7 @@ try {
     const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
     fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+    if (error?.cause === 403)
         return HTTP_403_Forbidden()
     
     fetch_fleets_error = error

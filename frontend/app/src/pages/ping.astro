@@ -2,7 +2,7 @@
 import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_502_Server_Error } from '@helpers/http_responses'
 import { ping } from '@helpers/api.minmatar.org/tech'
 
-if (Astro.request.method !== "GET") HTTP_404_Not_Found()
+if (Astro.request.method !== "GET") return HTTP_404_Not_Found()
 
 try {
     await ping()

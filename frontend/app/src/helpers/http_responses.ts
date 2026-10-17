@@ -5,54 +5,36 @@ export const HTTP_404_Not_Found = (body:BodyInit | null = null):Response => {
     });
 }
 
-export const HTTP_403_Forbidden = () => {
-    return new Response(
-        `<!doctype html>
-            <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>403 Unauthorized</title>
-                    <meta name="description" content="Docking request denied!">
-                    <link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png">
+/** Marks a bare status response that middleware swaps for the matching status page. */
+export const STATUS_PAGE_HEADER = 'X-Status-Page'
 
-                    <style>
-                        body {
-                            background-color: #121212;
-                        }
-                    </style>
-                    
-                    <script>
-                        async function fetchAndReplace(url) {
-                            try {
-                                // Fetch the new page content
-                                const response = await fetch(url);
-                    
-                                if (!response.ok) {
-                                    throw new Error(\`Error fetching the page: \${response.status} \${response.statusText}\`);
-                                }
-                    
-                                // Get the response as text
-                                const newHTML = await response.text();
-                    
-                                // Replace the entire page's HTML
-                                document.open(); // Clear the current document
-                                document.write(newHTML); // Write the new content
-                                document.close(); // Close the document to finalize changes
-                            } catch (error) {
-                                console.error("Error replacing page content:", error);
-                            }
-                        }
-                    
-                        fetchAndReplace("/403");
-                    </script>
-                </head>
-                <body></body>
-            </html>`, {
-            status: 403,
-            headers: { 'Content-type': 'text/html' },
-            statusText: 'Forbidden',
-        }
-    ) as Response;
+/**
+ * 403 for pages and partials. Middleware renders the /403 page in its place
+ * (keeping the 403 status) for page requests; htmx partials and /api routes
+ * get the bare status.
+ */
+export const HTTP_403_Forbidden = ():Response => {
+    return new Response(null, {
+        status: 403,
+        statusText: 'Forbidden',
+        headers: { [STATUS_PAGE_HEADER]: '403' },
+    });
+}
+
+/** The status page to render in place of `response`, or null to send it as is. */
+export const status_page_rewrite = (request:Request, response:Response):string | null => {
+    const status_page = response.headers.get(STATUS_PAGE_HEADER)
+    if (!status_page || String(response.status) !== status_page)
+        return null
+
+    if (request.headers.get('HX-Request'))
+        return null
+
+    const pathname = new URL(request.url).pathname
+    if (pathname.startsWith('/partials/') || pathname.startsWith('/api/'))
+        return null
+
+    return `/${status_page}`
 }
 
 export const HTTP_200_Success = (body:BodyInit | null = null):Response => {

@@ -45,7 +45,7 @@ try {
     fleet_composition = await group_members_by_ship(members)
     fleet_radar = await group_members_by_location(members, staging_solar_system_id)
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+    if (error?.cause === 403)
         return HTTP_403_Forbidden()
     
     fetch_fleets_error = error
