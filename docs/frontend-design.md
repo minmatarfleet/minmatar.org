@@ -26,6 +26,7 @@ This is the reason this spec exists. Recent changes introduced Alpine `fetch()` 
   - `hx-get` / `hx-post` / `hx-put` / `hx-patch` / `hx-delete` on the element that triggers the exchange
   - `hx-swap` (`innerHTML`, `outerHTML`, `transition:true`) and `hx-swap-oob="true"` for out-of-band updates to `id`-targeted nodes
   - Server-rendered partials live under `src/pages/partials/*_component.astro` and are requested via `PARTIAL_URL` constants
+- Partials redirect with `partial_redirect(Astro.request, url)` and send visitors without a session to login with `login_redirect(Astro)` (`@helpers/http_responses`). For htmx requests they answer `HX-Redirect`, so htmx navigates the window instead of swapping the redirect target into the fragment, and login returns to the page (`HX-Current-URL`), not the partial. Never `Astro.redirect()` from a partial.
 - The server renders the resulting HTML; the client never reconstructs DOM from JSON.
 - When htmx injects a partial that contains Alpine or htmx markup, re-initialize it: `htmx.process(element)` (and `Alpine.initTree(element)` if Alpine was added). Existing example: `src/components/partials/AlpineScripts.astro`.
 
