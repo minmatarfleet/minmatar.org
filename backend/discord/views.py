@@ -10,6 +10,10 @@ from django.shortcuts import redirect
 
 from .client import DiscordClient, DiscordError, discord_authorize_url
 from users.helpers import make_user_objects
+from users.redirects import (
+    default_login_redirect_url,
+    safe_login_redirect_url,
+)
 
 discord = DiscordClient()
 
@@ -93,10 +97,10 @@ def discord_login_redirect(request: HttpRequest):
 
 def redirect_to_error_page(request, error_code, error_id=None):
     """Redirects to a frontend authentication error page"""
-    try:
-        redirect_url = request.session["authentication_redirect_url"]
-    except KeyError:
-        redirect_url = "https://my.minmatar.org/auth/login"
+    redirect_url = safe_login_redirect_url(
+        request.session.get("authentication_redirect_url"),
+        default_login_redirect_url(),
+    )
 
     redirect_url = redirect_url + "?error=" + error_code
     if error_id:

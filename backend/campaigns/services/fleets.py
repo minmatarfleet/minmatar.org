@@ -28,11 +28,26 @@ def _instances_overlapping(campaign: Campaign, start, end):
     ).filter(Q(end_time__isnull=True) | Q(end_time__gt=start))
 
 
+def _credit_fleet_leaders(instances, row_for) -> None:
+    """The pilot who created a fleet led it; a gang they formed counts too."""
+    for instance in instances:
+        fleet = instance.eve_fleet
+        if not fleet.created_by_id:
+            continue
+        row = row_for(fleet.created_by_id)
+        if fleet.type == GANG_FLEET_TYPE:
+            row["gangs_led"].add(fleet.id)
+            row["gangs"].add(fleet.id)
+        elif fleet.type != STANDING_FLEET_TYPE:
+            row["led"].add(fleet.id)
+
+
 def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
     """Per-pilot fleet activity for one campaign day.
 
-    Returns ``{user_id: {attended, attended_primary, led, gangs_led,
-    standing_minutes, standing_day}}``. A pilot counts once per fleet,
+    Returns ``{user_id: {attended, attended_primary, led, gangs_led, gangs,
+    standing_minutes, standing_day}}``. ``gangs`` is the gang fleets a pilot
+    formed or joined. A pilot counts once per fleet,
     however many times they rejoined it.
 
     ESI reports when a pilot joined a fleet but never when they left. The
@@ -63,6 +78,7 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
                 "attended_primary": set(),
                 "led": set(),
                 "gangs_led": set(),
+                "gangs": set(),
                 "standing_minutes": 0,
                 "standing_day": False,
             },
@@ -97,21 +113,15 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
         row["attended"].add(fleet.id)
         if member.solar_system_id in primary_system_ids:
             row["attended_primary"].add(fleet.id)
+        if fleet.type == GANG_FLEET_TYPE:
+            row["gangs"].add(fleet.id)
         if fleet.type == STANDING_FLEET_TYPE:
             row["standing_day"] = True
             row["standing_minutes"] += int(
                 (present_to - present_from).total_seconds() // 60
             )
 
-    for instance in instances:
-        fleet = instance.eve_fleet
-        if not fleet.created_by_id:
-            continue
-        row = row_for(fleet.created_by_id)
-        if fleet.type == GANG_FLEET_TYPE:
-            row["gangs_led"].add(fleet.id)
-        elif fleet.type != STANDING_FLEET_TYPE:
-            row["led"].add(fleet.id)
+    _credit_fleet_leaders(instances, row_for)
 
     return {
         user_id: {
@@ -119,6 +129,7 @@ def attendance_for_day(campaign: Campaign, day) -> dict[int, dict]:
             "attended_primary": len(values["attended_primary"]),
             "led": len(values["led"]),
             "gangs_led": len(values["gangs_led"]),
+            "gangs": len(values["gangs"]),
             "standing_minutes": values["standing_minutes"],
             "standing_day": values["standing_day"],
         }

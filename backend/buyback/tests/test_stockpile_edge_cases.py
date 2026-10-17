@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import Client
 from django.utils import timezone
@@ -18,10 +19,12 @@ from buyback.helpers.remaining import (
     available_stock_quantities,
     remaining_sale_quantities,
 )
+from buyback.helpers.refresh import refresh_buyback_ledger
 from buyback.helpers.unknown import emit_unknown_from_snapshots
 from buyback.models import (
     BUYBACK_CONTRACT_TYPE,
     BUYBACK_CORPORATION_ID,
+    BuybackAcceptedItem,
     BuybackHangarSnapshot,
     BuybackLedgerEntry,
     BuybackPurchaseOrder,
@@ -656,3 +659,84 @@ class LedgerAppendOnlyEdgeCaseTestCase(TestCase):
             source_id="mkt:1",
         )
         self.assertEqual(remaining_sale_quantities()[self.ore.id], 100)
+
+
+class HangarAssetsUnavailableTestCase(TestCase):
+    """A failed ESI asset read must not be recorded as an empty hangar."""
+
+    def setUp(self):
+        super().setUp()
+        # No M-EXC EveCorporation row: the asset read fails, as it does on an
+        # ESI error or without a director token.
+        self.assertFalse(
+            EveCorporation.objects.filter(
+                corporation_id=BUYBACK_CORPORATION_ID
+            ).exists()
+        )
+        self.p2 = ensure_type(
+            type_id=2312,
+            name="Supertensile Plastics",
+            group_id=1034,
+            group_name="Refined Commodities - Tier 2",
+            category_id=43,
+            category_name="Planetary Commodities",
+        )
+        self.previous = BuybackHangarSnapshot.objects.create(
+            taken_at=timezone.now() - timedelta(hours=1),
+            quantities={str(self.p2.id): 1000},
+        )
+        self.item = BuybackAcceptedItem.objects.create(
+            eve_type=self.p2,
+            category=BuybackAcceptedItem.Category.P2,
+            stockpile_quantity=1000,
+        )
+
+    def test_refresh_keeps_last_snapshot_and_stockpile(self):
+        result = refresh_buyback_ledger(
+            sync_contracts=False,
+            sync_sell_orders=False,
+            seed_allowlist=False,
+        )
+
+        self.assertEqual(result["hangar"], {"skipped": "assets_unavailable"})
+        self.assertEqual(
+            list(BuybackHangarSnapshot.objects.values_list("id", flat=True)),
+            [self.previous.id],
+        )
+        self.assertFalse(
+            BuybackLedgerEntry.objects.filter(
+                reason=BuybackLedgerEntry.Reason.UNKNOWN
+            ).exists()
+        )
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.stockpile_quantity, 1000)
+        self.assertEqual(remaining_sale_quantities().get(self.p2.id), 1000)
+
+    def test_failed_read_is_attempted_once_per_refresh(self):
+        with patch(
+            "buyback.helpers.hangar.fetch_corporation_assets",
+            return_value=None,
+        ) as fetch:
+            refresh_buyback_ledger(
+                sync_contracts=False,
+                sync_sell_orders=False,
+                seed_allowlist=False,
+            )
+
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_empty_hangar_read_is_still_recorded(self):
+        with patch(
+            "buyback.helpers.hangar.fetch_corporation_assets",
+            return_value=[],
+        ):
+            result = refresh_buyback_ledger(
+                sync_contracts=False,
+                sync_sell_orders=False,
+                seed_allowlist=False,
+            )
+
+        self.assertEqual(result["hangar"]["types"], 0)
+        self.assertEqual(BuybackHangarSnapshot.objects.count(), 2)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.stockpile_quantity, 0)

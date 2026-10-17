@@ -10,7 +10,8 @@ def calc_metanox_yield(distributions):
     for distr in distributions:
         yield_map = ore_yield_map[distr.ore]
         for product in yield_map:
-            yields[product] = (
+            # Several ores can make the same product (Pyerite, Mexallon...).
+            yields[product] = yields.get(product, 0) + (
                 distr.yield_percent * yield_factor * yield_map[product]
             )
 

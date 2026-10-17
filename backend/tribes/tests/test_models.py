@@ -17,7 +17,7 @@ from tribes.models import (
 
 
 def setUpModule():
-    """Disconnect the Discord group-change signal that requires a linked DiscordUser."""
+    """Disconnect the Discord signals that call the Discord API on save."""
     # pylint: disable-next=import-outside-toplevel
     from discord.signals import user_group_changed  # noqa: PLC0415
 
@@ -25,6 +25,10 @@ def setUpModule():
         user_group_changed,
         sender=User.groups.through,
         dispatch_uid="user_group_changed",
+    )
+    django_signals.post_save.disconnect(
+        sender=Group,
+        dispatch_uid="group_post_save",
     )
 
 

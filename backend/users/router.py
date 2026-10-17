@@ -27,7 +27,11 @@ from groups.tasks import sync_user_corporation_groups, update_affiliation
 from users.endpoints import router as endpoints_router
 from users.eve_sso import EVE_LOGIN_SCOPES
 from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
-from users.redirects import oauth_redirect
+from users.redirects import (
+    default_login_redirect_url,
+    oauth_redirect,
+    safe_login_redirect_url,
+)
 
 from .helpers import (
     get_user_profile,
@@ -50,6 +54,8 @@ router = Router(tags=["Authentication"])
 router.add_router("", endpoints_router)
 discord = DiscordClient()
 
+MOBILE_LOGIN_REDIRECT = "mobile://auth/callback"
+
 
 class ErrorResponse(BaseModel):
     detail: str
@@ -68,9 +74,10 @@ def login(request, redirect_url: str):
     ):
         return fake_login(request, redirect_url)
 
+    redirect_url = safe_login_redirect_url(
+        redirect_url, default_login_redirect_url()
+    )
     logger.debug(f"Adding redirect URL to session: {redirect_url}")
-    if not redirect_url:
-        redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
     logger.debug(f"Current session: {request.session}")
     return redirect(auth_url_discord)
@@ -157,8 +164,7 @@ def login_eve(request, redirect_url: str):
     ):
         return fake_login(request, redirect_url)
 
-    if not redirect_url:
-        redirect_url = "mobile://auth/callback"
+    redirect_url = safe_login_redirect_url(redirect_url, MOBILE_LOGIN_REDIRECT)
     if not settings.ESI_SSO_CLIENT_ID or not settings.ESI_SSO_CALLBACK_URL:
         error_id = create_error_id()
         logger.error("EVE login not configured (%s)", error_id)
@@ -277,12 +283,11 @@ def patch_desktop_settings(request, payload: DesktopSettingsPatchSchema):
 
 
 def redirect_url_from_session(request):
-    redirect_url = "https://my.minmatar.org/auth/login"
-    try:
-        redirect_url = request.session["authentication_redirect_url"]
-    except KeyError:
+    default = default_login_redirect_url()
+    redirect_url = request.session.get("authentication_redirect_url")
+    if not redirect_url:
         logger.warning("No redirect URL found in session")
-    return redirect_url
+    return safe_login_redirect_url(redirect_url, default)
 
 
 @router.get(
@@ -422,6 +427,9 @@ def fake_login(request, redirect_url):
     )
     logger.debug("Signed JWT Token: %s", encoded_jwt_token)
 
+    redirect_url = safe_login_redirect_url(
+        redirect_url, default_login_redirect_url()
+    )
     logger.info("Redirecting to authentication URL... %s", redirect_url)
     redirect_url = redirect_url + "?token=" + encoded_jwt_token
     return redirect(redirect_url)

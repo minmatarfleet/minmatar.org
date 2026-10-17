@@ -18,7 +18,6 @@ from market.models import EveMarketInferredSale
 
 GAP_MAX_AGE = timedelta(minutes=30)
 BASELINE_PRICE_MULTIPLIER = 10
-PRUNE_RETENTION = timedelta(days=90)
 REASON_PARTIAL_FILL = EveMarketInferredSale.REASON_PARTIAL_FILL
 REASON_SELLOUT = EveMarketInferredSale.REASON_SELLOUT
 
@@ -285,19 +284,6 @@ def velocity_stats(
         "short_mean_daily_units": short_mean,
         "total_units": sum(units),
     }
-
-
-def prune_inferred_sales(
-    *,
-    older_than: timedelta = PRUNE_RETENTION,
-    now: datetime | None = None,
-) -> int:
-    """Delete inferred sales older than retention window. Returns count deleted."""
-    cutoff = (now or timezone.now()) - older_than
-    deleted, _ = EveMarketInferredSale.objects.filter(
-        inferred_at__lt=cutoff
-    ).delete()
-    return deleted
 
 
 def top_movers(

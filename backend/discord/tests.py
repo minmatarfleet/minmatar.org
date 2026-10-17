@@ -635,6 +635,9 @@ class VoiceTrackingRouterTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         super().setUp()
+        # The Discord bot's service account.
+        self.user.is_staff = True
+        self.user.save()
         self.guild, _ = DiscordGuild.objects.get_or_create(
             guild_id=1041384161505722368,
             defaults={
@@ -747,6 +750,9 @@ class DiscordGuildSyncTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         super().setUp()
+        # The Discord bot's service account.
+        self.user.is_staff = True
+        self.user.save()
 
     @patch("discord.guilds.discord.get_bot_guilds")
     def test_sync_discord_guilds_from_api(self, mock_get_bot_guilds):
@@ -787,6 +793,88 @@ class DiscordGuildSyncTestCase(TestCase):
         guild = DiscordGuild.objects.get(guild_id=1041384161505722368)
         self.assertEqual("Minmatar", guild.name)
         self.assertTrue(guild.is_active)
+
+
+class DiscordBotOnlyEndpointsTestCase(TestCase):
+    """Guild sync and activity ingestion are for the bot, not members."""
+
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+        self.guild = DiscordGuild.objects.create(
+            guild_id=1041384161505722368,
+            name="Minmatar",
+            is_primary=True,
+            is_active=True,
+        )
+        self.channel = DiscordChannel.objects.create(
+            guild=self.guild,
+            channel_id=1306515072650313728,
+            name="Fleet 1",
+            channel_type=DiscordChannel.VOICE,
+            track_voice_activity=True,
+        )
+
+    def _post(self, path, data):
+        return self.client.post(
+            path,
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def test_member_cannot_deactivate_guilds(self):
+        response = self._post("/api/discord/guilds/sync", {"guilds": []})
+
+        self.assertEqual(403, response.status_code)
+        self.assertTrue(
+            DiscordGuild.objects.get(guild_id=self.guild.guild_id).is_active
+        )
+
+    def test_member_cannot_record_voice_minutes(self):
+        response = self._post(
+            "/api/discord/voicetracking/records",
+            {
+                "minutes": 600,
+                "channel_id": self.channel.channel_id,
+                "channel_name": "Fleet 1",
+                "usernames": ["someone_on_trial"],
+            },
+        )
+
+        self.assertEqual(403, response.status_code)
+        self.assertFalse(DiscordChannelActivityRecord.objects.exists())
+
+    def test_member_cannot_record_activity(self):
+        response = self._post(
+            "/api/discord/activity/records",
+            {
+                "activity_type": DiscordChannelActivityRecord.VOICE_MINUTE,
+                "quantity": 600,
+                "channel_id": self.channel.channel_id,
+                "channel_name": "Fleet 1",
+                "usernames": ["someone_on_trial"],
+            },
+        )
+
+        self.assertEqual(403, response.status_code)
+        self.assertFalse(DiscordChannelActivityRecord.objects.exists())
+
+    def test_superuser_bot_token_still_records(self):
+        self.make_superuser()
+
+        response = self._post(
+            "/api/discord/voicetracking/records",
+            {
+                "minutes": 5,
+                "channel_id": self.channel.channel_id,
+                "channel_name": "Fleet 1",
+                "usernames": ["pilot"],
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, DiscordChannelActivityRecord.objects.count())
 
 
 class DiscordChannelAdminFormTestCase(TestCase):

@@ -16,7 +16,6 @@ from market.helpers.inferred_sales import (
     infer_sales_from_snapshots,
     orders_from_db_rows,
     parse_esi_order,
-    prune_inferred_sales,
 )
 from market.helpers.orders import _ensure_eve_types
 from market.helpers.pricing import get_prices_by_type_id
@@ -163,7 +162,9 @@ def sync_structure_order_book_for_location(
     character_id: int, location_id: int
 ) -> tuple[int, int] | None:
     """
-    Lock, fetch, apply snapshot, and prune old inferred sales for one location.
+    Lock, fetch and apply an order-book snapshot for one location.
+
+    Inferred sales are kept forever: the monthly market report reads them.
 
     Returns (sales_created, orders_written), or None if lock/fetch skipped.
     """
@@ -190,7 +191,6 @@ def sync_structure_order_book_for_location(
             return None
 
         sales, orders = apply_order_book_snapshot(location, order_dicts)
-        prune_inferred_sales()
         return sales, orders
     finally:
         cache.delete(lock_key)

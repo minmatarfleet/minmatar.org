@@ -17,7 +17,7 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: SrpPatchResult, 403: ErrorResponse, 404: ErrorResponse},
     "description": (
-        "Update an SRP request. Owners may withdraw; "
+        "Update an SRP request. Owners may withdraw a pending request; "
         "srp.change_evefleetshipreimbursement may set any status."
     ),
 }
@@ -43,6 +43,10 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
     if not can_use_feature(request.user, "srp.process"):
         if payload.status != "withdrawn":
             return 403, {"detail": "Permission denied"}
+        # A decided request stays decided: withdrawing it would let the same
+        # killmail be filed (and paid) again.
+        if reimbursement.status != "pending":
+            return 403, {"detail": "Only a pending request can be withdrawn"}
 
     old_status = reimbursement.status
     reimbursement.status = payload.status

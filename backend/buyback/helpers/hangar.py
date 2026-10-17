@@ -19,22 +19,27 @@ logger = logging.getLogger(__name__)
 SCOPE_CORPORATION_ASSETS = ["esi-assets.read_corporation_assets.v1"]
 
 
-def fetch_corporation_assets() -> list[dict]:
-    """ESI corp assets for M-EXC, or [] if no director / ESI error."""
+def fetch_corporation_assets() -> list[dict] | None:
+    """
+    ESI corp assets for M-EXC, or None when they could not be read.
+
+    None (no corp, no director token, ESI error) is not the same as an empty
+    hangar: callers must not record it as zero stock.
+    """
     try:
         corp = EveCorporation.objects.get(
             corporation_id=BUYBACK_CORPORATION_ID
         )
     except EveCorporation.DoesNotExist:
         logger.warning("M-EXC corporation %s missing", BUYBACK_CORPORATION_ID)
-        return []
+        return None
 
     character = get_director_with_scope(corp, SCOPE_CORPORATION_ASSETS)
     if character is None:
         logger.warning(
             "No director with corp assets scope for %s", BUYBACK_CORPORATION_ID
         )
-        return []
+        return None
 
     response = EsiClient(character).get_corporation_assets(
         BUYBACK_CORPORATION_ID
@@ -45,7 +50,7 @@ def fetch_corporation_assets() -> list[dict]:
             BUYBACK_CORPORATION_ID,
             response.response_code,
         )
-        return []
+        return None
     return list(response.results() or [])
 
 
@@ -100,7 +105,9 @@ def quantities_from_assets(
 
 def fetch_stockpile_quantities(
     *, settings: EveBuybackSettings | None = None
-) -> dict[int, int]:
-    return quantities_from_assets(
-        fetch_corporation_assets(), settings=settings
-    )
+) -> dict[int, int] | None:
+    """Tracked stockpile by type, or None when ESI assets were unavailable."""
+    assets = fetch_corporation_assets()
+    if assets is None:
+        return None
+    return quantities_from_assets(assets, settings=settings)

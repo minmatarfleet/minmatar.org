@@ -38,10 +38,15 @@ _JOB_CLASS_LABEL = {
 
 
 def normalize_me_te(value: float) -> float:
-    """Accept ME/TE as percent (10) or fraction (0.10)."""
+    """
+    Accept ME/TE as percent (10) or fraction (0.10).
+
+    1 means 1%: no blueprint reaches 100% ME or TE, so only values below 1
+    are read as fractions.
+    """
     if value < 0:
         raise ValueError("ME/TE must be non-negative")
-    if value > 1.0:
+    if value >= 1.0:
         return value / 100.0
     return value
 

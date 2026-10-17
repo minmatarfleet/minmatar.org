@@ -5,13 +5,13 @@ import jwt
 from django.conf import settings
 from django.db import connection
 from django.db.models import signals
-from django.test import Client
+from django.test import Client, override_settings
 from django.contrib.auth.models import User
 from esi.models import CallbackRedirect, Token
 
 from app.test import TestCase
 from discord.client import DiscordError
-from discord.models import DiscordUser
+from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import (
     set_primary_character,
@@ -23,6 +23,7 @@ from users.helpers import (
     offboard_user,
 )
 from users.models import UserDesktopSettings
+from users.redirects import is_allowed_login_redirect
 from users.router import callback
 
 # Create your tests here.
@@ -223,12 +224,13 @@ class UserRouterTestCase(TestCase):
         del settings.FAKE_LOGIN_USER_ID
 
         response = self.client.get(
-            "/api/users/login?redirect_url=abc123",
+            "/api/users/login?redirect_url=https://my.minmatar.org/auth/login",
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("scope=identify%20guilds.join", response.url)
         self.assertEqual(
-            "abc123", self.client.session["authentication_redirect_url"]
+            "https://my.minmatar.org/auth/login",
+            self.client.session["authentication_redirect_url"],
         )
 
         settings.FAKE_LOGIN_USER_ID = fake_user
@@ -251,11 +253,12 @@ class UserRouterTestCase(TestCase):
         del settings.FAKE_LOGIN_USER_ID
 
         response = self.client.get(
-            "/api/users/login?redirect_url=abc123",
+            "/api/users/login?redirect_url=https://my.minmatar.org/auth/login",
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(
-            "abc123", self.client.session["authentication_redirect_url"]
+            "https://my.minmatar.org/auth/login",
+            self.client.session["authentication_redirect_url"],
         )
 
         settings.FAKE_LOGIN_USER_ID = fake_user
@@ -528,3 +531,259 @@ class MakeUserObjectsTestCase(TestCase):
         self.assertEqual(
             EvePlayer.objects.get(user=again).nickname, first.nickname
         )
+
+
+def _discord_profile(discord_id, username):
+    return {
+        "id": discord_id,
+        "username": username,
+        "discriminator": "0",
+        "avatar": "abc",
+    }
+
+
+class DiscordLoginIdentityTestCase(TestCase):
+    """The Discord ID picks the account; a username never does."""
+
+    def test_rename_keeps_the_same_account(self):
+        original = make_user_objects(_discord_profile(5001, "alice"))
+        EveCharacter.objects.create(
+            character_id=91001, character_name="Alice Main", user=original
+        )
+
+        renamed = make_user_objects(_discord_profile(5001, "alice2"))
+
+        self.assertEqual(renamed.id, original.id)
+        self.assertEqual(renamed.username, "alice2")
+        self.assertEqual(User.objects.filter(username="alice").count(), 0)
+        self.assertEqual(
+            EveCharacter.objects.get(character_id=91001).user_id, original.id
+        )
+        self.assertEqual(DiscordUser.objects.get(id=5001).user_id, original.id)
+
+    def test_released_username_does_not_open_previous_owners_account(self):
+        victim = User.objects.create(username="alice", is_superuser=True)
+        DiscordUser.objects.create(id=5001, user=victim, discord_tag="alice#0")
+
+        claimer = make_user_objects(_discord_profile(6002, "alice"))
+
+        self.assertNotEqual(claimer.id, victim.id)
+        self.assertFalse(claimer.is_superuser)
+        self.assertEqual(DiscordUser.objects.get(id=5001).user_id, victim.id)
+        self.assertEqual(DiscordUser.objects.get(id=6002).user_id, claimer.id)
+
+    def test_account_without_discord_link_is_not_handed_over(self):
+        # The state the old code left behind after a rename: characters on
+        # an account no DiscordUser points at.
+        stranded = User.objects.create(username="alice")
+        EveCharacter.objects.create(
+            character_id=91002, character_name="Stranded", user=stranded
+        )
+
+        claimer = make_user_objects(_discord_profile(6003, "alice"))
+
+        self.assertNotEqual(claimer.id, stranded.id)
+        self.assertEqual(
+            EveCharacter.objects.get(character_id=91002).user_id, stranded.id
+        )
+
+    def test_case_variant_of_existing_username_gets_its_own_account(self):
+        other = User.objects.create(username="Alice")
+        DiscordUser.objects.create(id=5004, user=other, discord_tag="Alice#0")
+
+        claimer = make_user_objects(_discord_profile(6004, "alice"))
+
+        self.assertNotEqual(claimer.id, other.id)
+        self.assertTrue(claimer.username.startswith("alice__d"))
+
+    def test_rename_onto_a_stale_accounts_name_keeps_current_username(self):
+        stale = User.objects.create(username="bob")
+        DiscordUser.objects.create(id=5005, user=stale, discord_tag="bob#0")
+        mover = make_user_objects(_discord_profile(6005, "carol"))
+
+        again = make_user_objects(_discord_profile(6005, "bob"))
+
+        self.assertEqual(again.id, mover.id)
+        self.assertEqual(again.username, "carol")
+        self.assertEqual(User.objects.get(id=stale.id).username, "bob")
+
+
+class DiscordLoginRenameAndRaceTestCase(TestCase):
+    def test_rename_moves_voice_minutes_with_the_pilot(self):
+        pilot = make_user_objects(_discord_profile(7001, "alice"))
+        DiscordChannelActivityRecord.objects.create(
+            activity_type=DiscordChannelActivityRecord.VOICE_MINUTE,
+            username="alice",
+            quantity=90,
+            channel_id=1,
+            channel_name="Fleet 1",
+        )
+
+        make_user_objects(_discord_profile(7001, "alice2"))
+        newcomer = make_user_objects(_discord_profile(7002, "alice"))
+
+        self.assertEqual(newcomer.username, "alice")
+        self.assertFalse(
+            DiscordChannelActivityRecord.objects.filter(
+                username="alice"
+            ).exists()
+        )
+        self.assertEqual(
+            DiscordChannelActivityRecord.objects.get().username,
+            User.objects.get(id=pilot.id).username,
+        )
+
+    def test_concurrent_first_login_reuses_the_winning_account(self):
+        winner = User.objects.create(username="racer")
+        DiscordUser.objects.create(id=7003, user=winner, discord_tag="racer#0")
+        users_before = User.objects.count()
+        real_filter = DiscordUser.objects.filter
+        calls = {"n": 0}
+
+        def first_lookup_misses(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return DiscordUser.objects.none()
+            return real_filter(*args, **kwargs)
+
+        with patch.object(
+            DiscordUser.objects, "filter", side_effect=first_lookup_misses
+        ):
+            result = make_user_objects(_discord_profile(7003, "racer"))
+
+        self.assertEqual(result.id, winner.id)
+        self.assertEqual(User.objects.count(), users_before)
+
+
+class LoginRedirectAllowlistTestCase(TestCase):
+    """Logins append ?token=<JWT>, so they may only redirect to our own apps."""
+
+    def setUp(self):
+        super().setUp()
+        self.fake_user = settings.FAKE_LOGIN_USER_ID
+        del settings.FAKE_LOGIN_USER_ID
+
+    def tearDown(self):
+        settings.FAKE_LOGIN_USER_ID = self.fake_user
+        super().tearDown()
+
+    def _discord_login(self, redirect_url):
+        self.client.get("/api/users/login", {"redirect_url": redirect_url})
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.complete_oauth_login.return_value = {
+                "id": 1000077,
+                "username": "redirect_user",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+            return self.client.get("/api/users/callback?code=20077")
+
+    def test_offsite_redirect_never_receives_the_token(self):
+        response = self._discord_login("https://evil.example/steal")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("evil.example", response.url)
+        self.assertTrue(
+            response.url.startswith(
+                f"{settings.WEB_LINK_URL.rstrip('/')}/auth/login?token="
+            )
+        )
+
+    def test_tampered_session_redirect_falls_back_at_callback(self):
+        self.client.get(
+            "/api/users/login",
+            {"redirect_url": "https://my.minmatar.org/auth/login"},
+        )
+        session = self.client.session
+        session["authentication_redirect_url"] = "https://evil.example/"
+        session.save()
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.complete_oauth_login.return_value = {
+                "id": 1000078,
+                "username": "tamper_user",
+                "discriminator": "0",
+                "avatar": "abc",
+            }
+            response = self.client.get("/api/users/callback?code=20078")
+
+        self.assertNotIn("evil.example", response.url)
+
+    def test_website_redirect_is_kept(self):
+        response = self._discord_login("https://my.minmatar.org/friend/login")
+
+        self.assertTrue(
+            response.url.startswith(
+                "https://my.minmatar.org/friend/login?token="
+            )
+        )
+
+    @override_settings(
+        ESI_SSO_CLIENT_ID="test-client",
+        ESI_SSO_CALLBACK_URL="https://my.minmatar.org/sso/callback",
+    )
+    def test_eve_login_refuses_offsite_redirect(self):
+        self.client.get(
+            "/api/users/login/eve",
+            {"redirect_url": "https://evil.example/cb"},
+        )
+        self.assertEqual(
+            self.client.session.get("authentication_redirect_url"),
+            "mobile://auth/callback",
+        )
+
+    def test_eve_completion_ignores_offsite_session_redirect(self):
+        esi_token = Token.objects.create(
+            character_id=91077, character_name="Redirect Pilot"
+        )
+        session = self.client.session
+        session["authentication_redirect_url"] = "https://evil.example/"
+        session.save()
+        CallbackRedirect.objects.create(
+            session_key=session.session_key,
+            state="redirect-state",
+            url="/api/users/eve/complete/",
+            token=esi_token,
+        )
+
+        response = self.client.get("/api/users/eve/complete/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("evil.example", response.url)
+        self.assertTrue(response.url.startswith("mobile://auth/callback?"))
+
+
+class IsAllowedLoginRedirectTestCase(TestCase):
+    def test_allowed(self):
+        for url in [
+            "https://my.minmatar.org/auth/login",
+            "https://my.minmatar.org/friend/login",
+            "http://localhost:4321/auth/login",
+            "http://127.0.0.1:53123/callback/0123456789abcdef",
+            "http://[::1]:5000/callback/x",
+            "mobile://auth/callback",
+            "minmatar://auth/callback",
+            "exp://192.168.1.20:8081/--/auth/callback",
+        ]:
+            self.assertTrue(is_allowed_login_redirect(url), url)
+
+    def test_refused(self):
+        for url in [
+            "",
+            None,
+            "abc123",
+            "/auth/login",
+            "//evil.example/x",
+            "https://evil.example/x",
+            "https://my.minmatar.org.evil.example/x",
+            "https://evil.example#@my.minmatar.org",
+            "https://my.minmatar.org@evil.example/x",
+            "https://user:pw@my.minmatar.org/x",
+            "http://my.minmatar.org/auth/login",
+            "https://localhost.evil.example/x",
+            "https://127.0.0.1/x",
+            "javascript:alert(1)",
+            "data:text/html,hi",
+            "exp://evil.example:8081/--/auth/callback",
+            "exp://8.8.8.8:8081/--/auth/callback",
+        ]:
+            self.assertFalse(is_allowed_login_redirect(url), url)

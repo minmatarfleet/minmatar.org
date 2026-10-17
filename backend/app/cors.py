@@ -8,7 +8,7 @@ from django.conf import settings
 from django.http import HttpResponse
 
 
-def _allowed_origins() -> set[str]:
+def allowed_origins() -> set[str]:
     configured = getattr(settings, "CORS_ALLOWED_ORIGINS", None)
     if configured:
         return {str(o).rstrip("/") for o in configured if o}
@@ -34,14 +34,14 @@ class SimpleCorsMiddleware:
         if (
             request.method == "OPTIONS"
             and origin
-            and origin.rstrip("/") in _allowed_origins()
+            and origin.rstrip("/") in allowed_origins()
         ):
             response = HttpResponse(status=204)
             self._apply_cors(response, origin)
             return response
 
         response = self.get_response(request)
-        if origin and origin.rstrip("/") in _allowed_origins():
+        if origin and origin.rstrip("/") in allowed_origins():
             self._apply_cors(response, origin)
         return response
 

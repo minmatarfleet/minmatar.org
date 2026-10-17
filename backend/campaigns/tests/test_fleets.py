@@ -11,8 +11,12 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 from campaigns.helpers import campaign_day, day_bounds
-from campaigns.models import CampaignKillmail
-from campaigns.services import fleets
+from campaigns.models import (
+    CampaignDailyOrder,
+    CampaignKillmail,
+    CampaignOrderProgress,
+)
+from campaigns.services import fleets, plan, stats
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tests.helpers import (
     auth_headers,
@@ -98,6 +102,49 @@ class FleetAttendanceTests(TestCase):
         rows = fleets.attendance_for_day(self.campaign, self.today)
         self.assertEqual(rows[self.user.id]["attended"], 1)
         self.assertTrue(rows[self.user.id]["standing_day"])
+
+    def _gang_order(self):
+        return CampaignDailyOrder.objects.create(
+            campaign=self.campaign,
+            day=self.today,
+            kind=CampaignDailyOrder.Kind.GANG,
+            points=30,
+            params={},
+            scope="all",
+        )
+
+    def _gang_order_done(self, order):
+        stats.materialise_day(self.campaign, self.today)
+        plan.evaluate_orders(self.campaign, self.today)
+        return CampaignOrderProgress.objects.filter(
+            order=order, user=self.user, completed_at__isnull=False
+        ).exists()
+
+    def test_joining_a_gang_completes_the_gang_order(self):
+        order = self._gang_order()
+        fc_user, _ = enlist(self.campaign, "gang-fc", 6002)
+        gang = self._fleet(fleet_type="gang", created_by=fc_user)
+        self._member(
+            self._instance(gang), 6001, self.start + timedelta(minutes=10)
+        )
+
+        self.assertTrue(self._gang_order_done(order))
+
+    def test_forming_a_gang_completes_the_gang_order(self):
+        order = self._gang_order()
+        self._instance(self._fleet(fleet_type="gang", created_by=self.user))
+
+        self.assertTrue(self._gang_order_done(order))
+
+    def test_a_standing_fleet_does_not_complete_the_gang_order(self):
+        order = self._gang_order()
+        self._member(
+            self._instance(self._fleet()),
+            6001,
+            self.start + timedelta(minutes=10),
+        )
+
+        self.assertFalse(self._gang_order_done(order))
 
     def test_a_fleet_with_no_campaign_does_not_count(self):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):
