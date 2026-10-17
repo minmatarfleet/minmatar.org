@@ -75,6 +75,8 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
 </ComponentBlock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .fitting-card {
         position: relative;
 
@@ -116,5 +118,33 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
     small {
         color:  var(--fleet-yellow);
         text-wrap: balance;
+    }
+
+    .fitting-card {
+        @include phone_media_card('.fitting-card-body', '.ship-type-icon', $chevron: false);
+
+        // No hover on phones: show share/copy under the name, next to the thumbnail.
+        @media (max-width: 48rem) {
+            > :global(.flex-block) {
+                display: grid;
+                grid-template-columns: 64px minmax(0, 1fr);
+                align-items: center;
+            }
+
+            :global(picture) {
+                grid-row: 1 / span 2;
+            }
+
+            .fitting-card-body {
+                padding-block-end: 0;
+            }
+
+            .fitting-card-actions {
+                position: static;
+                opacity: 1;
+                padding-block-start: var(--space-3xs);
+                padding-inline: var(--space-xs);
+            }
+        }
     }
 </style>

@@ -145,6 +145,8 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
 </style>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .fitting-card {
         position: relative;
 
@@ -185,5 +187,9 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
 
     small {
         color:  var(--fleet-yellow);
+    }
+
+    .fitting-card {
+        @include phone_media_card('.fitting-card-body', '.ship-type-icon');
     }
 </style>

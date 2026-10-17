@@ -258,6 +258,8 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
 </div>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .accept {
         color: var(--green);
     }
@@ -318,5 +320,10 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
 
     h3 {
         font-size: var(--step-1);
+    }
+
+    // Phones: pilot portrait as a thumbnail beside the ship and amount.
+    .srp-item > :global(* > .card) {
+        @include phone_character_card;
     }
 </style>

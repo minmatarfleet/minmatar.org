@@ -73,3 +73,12 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
         ))}
     </Grid>
 </form>
+
+<style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
+    // Phones: compact character picker rows instead of one portrait per screen.
+    form :global(button > .card) {
+        @include phone_character_card;
+    }
+</style>

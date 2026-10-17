@@ -325,6 +325,30 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
         flex-direction: column;
         gap: var(--space-3xs);
     }
+
+    // Phones: the meters and sparkline span the card instead of shrinking to their
+    // caption's width, and the card loses some nested padding.
+    @media (max-width: 48rem) {
+        .campaign-system-card {
+            padding: var(--space-s);
+        }
+
+        .campaign-system-column {
+            align-items: stretch;
+        }
+
+        /* Kills and losses side by side. */
+        .campaign-system-column:last-child {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            column-gap: var(--space-l);
+            align-items: baseline;
+
+            > small:first-child {
+                grid-column: 1 / -1;
+            }
+        }
+    }
 </style>
 
 <style lang="scss" is:global>

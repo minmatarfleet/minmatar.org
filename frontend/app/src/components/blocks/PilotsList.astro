@@ -300,6 +300,52 @@ delete attributes.class
             opacity: 0.25;
         }
     }
+
+    // Phones: each pilot is its own block (divider between pilots) with that pilot's
+    // actions in one row underneath it, remove (✕) last, so a tap is never ambiguous.
+    @media (max-width: 48rem) {
+        .pilot-item {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            column-gap: var(--space-s);
+            row-gap: var(--space-xs);
+            align-items: center;
+            padding-block: var(--space-s);
+            border-block-start: 1px solid var(--border-color);
+
+            &:first-child {
+                border-block-start: none;
+                padding-block-start: 0;
+            }
+
+            > :global(picture) {
+                inline-size: 64px;
+                block-size: 64px;
+            }
+
+            > :global(.flex-inline) {
+                display: contents;
+            }
+
+            > :global(.flex-inline > .flex-inline) {
+                grid-column: 1 / -1;
+                flex-wrap: wrap;
+                gap: var(--space-2xs);
+            }
+
+            > :global(.flex-inline > .flex-inline:not(:has(*))) {
+                display: none;
+            }
+
+            > :global(.flex-inline > .flex-inline .button) {
+                padding-inline: var(--space-xs);
+            }
+
+            > :global(.flex-inline > .flex-inline > :last-child) {
+                margin-inline-start: auto;
+            }
+        }
+    }
 </style>
 
 <style lang="scss" is:global>

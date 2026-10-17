@@ -90,6 +90,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 </ComponentBlock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .doctrine-card {
         position: relative;
 
@@ -120,5 +122,9 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
     small {
         color: var(--fleet-yellow);
         text-wrap: balance;
+    }
+
+    .doctrine-card {
+        @include phone_media_card('.doctrine-card-body', '.doctrine-type-icon');
     }
 </style>

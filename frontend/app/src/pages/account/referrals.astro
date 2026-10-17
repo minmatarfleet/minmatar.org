@@ -80,13 +80,13 @@ const page_title = t('account.referral.page_title');
             </TextBox>
 
             <Flexblock>
-                <ComponentBlock width='narrow'>
+                <ComponentBlock width='narrow' class="[ referral-links ]">
                     <Flexblock gap='var(--space-l)' class="[ w-full ]">
                         <h2>{t('external_referrals')}</h2>
                         
                         <Flexblock>
                             {external_referrals_pages.map(page =>
-                                <FlexInline class="[ items-center ]">
+                                <FlexInline class="[ referral-row ][ items-center ]">
                                     <Flexblock class="basis-[450px]" gap='var(--space-3xs)'>
                                         <a href={page.target} target="_blank" rel="nofollow noopener noreferrer">{page.name}</a>
                                         <small>{page.decription}</small>
@@ -133,3 +133,33 @@ const page_title = t('account.referral.page_title');
         </Flexblock>
     </PageDefault>
 </Viewport>
+
+<style lang="scss">
+    // Phones: one compact row per link (name and type on the left, Copy inline on
+    // the right) instead of the button wrapping onto its own line.
+    @media (max-width: 48rem) {
+        .referral-links {
+            padding-inline: var(--space-s);
+        }
+
+        .referral-row {
+            flex-wrap: nowrap;
+            gap: var(--space-xs);
+            padding-block-end: var(--space-xs);
+            border-block-end: 1px solid var(--border-color);
+
+            > :global(:first-child) {
+                flex: 1 1 auto;
+                min-inline-size: 0;
+            }
+
+            > :global(:last-child) {
+                flex: 0 0 auto;
+            }
+
+            :global(.button) {
+                padding-inline: var(--space-xs);
+            }
+        }
+    }
+</style>
