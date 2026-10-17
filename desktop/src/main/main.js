@@ -140,13 +140,15 @@ const fades = new Map()   // window -> pending hide timers
 
 function reveal(win, { activate = false } = {}) {
     if (!win || win.isDestroyed()) return
+    if (win.__ghost) { win.__ghost_shown = true; return }   // hidden for a context menu: unghost shows it
     const pending = fades.get(win)
     if (pending) { clearTimeout(pending.delay); clearTimeout(pending.fade); fades.delete(win) }
     if (!win.isVisible()) activate ? win.show() : win.showInactive()
-    win.webContents.send('visibility', !win.__ghost)
+    win.webContents.send('visibility', true)
 }
 
 function conceal(win, { delay = 0, instant = false } = {}) {
+    if (win && win.__ghost) { win.__ghost_shown = false; return }
     if (!win || win.isDestroyed() || !win.isVisible()) return
     if (instant) {
         const pending = fades.get(win)
@@ -371,27 +373,28 @@ function sync_button_watch() {
     if (eve) eve.watch_buttons(!!state.user && !!settings.get('fade_on_right_click'))
 }
 
-// Faded windows stay shown (no hide, so nothing reshuffles) but the page fades out and the whole window is
-// click-through, buttons included, so clicks on the menu reach EVE.
+// Windows near the menu are hidden outright: fading only the page would leave the native glass (blur and tint)
+// over the menu. While hidden, reveal/conceal only record whether the window should come back (__ghost_shown).
 function ghost(win) {
     if (win.__ghost) return
     win.__ghost = true
-    win.setIgnoreMouseEvents(true)
-    win.webContents.send('visibility', false)
+    win.__ghost_shown = true
+    win.webContents.send('visibility', false)   // so it fades back in when shown
+    win.hide()
 }
 
 function unghost(win) {
-    if (!win.__ghost || win.isDestroyed()) return
+    if (!win.__ghost || win.isDestroyed()) return false
     win.__ghost = false
-    if (win.isFocusable()) win.setIgnoreMouseEvents(false)   // Intel while a report is being typed
-    else win.setIgnoreMouseEvents(true, { forward: true })
-    win.webContents.send('visibility', win.isVisible() && !fades.has(win))
+    if (!win.__ghost_shown) return false
+    reveal(win)
+    return true
 }
 
 function fadeable_windows() {
     const wins = [...overlays.values()]
     if (mascot_win) wins.push(mascot_win)
-    return wins.filter(win => !win.isDestroyed() && win.isVisible())
+    return wins.filter(win => !win.isDestroyed() && win.isVisible() && !fades.has(win))
 }
 
 menu_fade.on('fade', zone => {
@@ -400,7 +403,10 @@ menu_fade.on('fade', zone => {
     }
 })
 menu_fade.on('restore', () => {
-    for (const win of [...overlays.values(), mascot_win]) if (win) unghost(win)
+    const shown = [...overlays.values(), mascot_win].filter(win => win && unghost(win))
+    if (!shown.length) return
+    if (stays_with_eve()) stack_windows()
+    else for (const win of shown) win.moveTop()
 })
 
 // ---------------------------------------------------------------- Sneak (opens Settings)
@@ -880,7 +886,7 @@ ipcMain.on('window:close', event => {
 })
 ipcMain.on('mouse:interactive', (event, interactive) => {
     const win = sender_window(event)
-    if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable() && !win.__ghost) {
+    if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable()) {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
     }
 })
