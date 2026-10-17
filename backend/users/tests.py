@@ -5,7 +5,7 @@ import jwt
 from django.conf import settings
 from django.db import connection
 from django.db.models import signals
-from django.test import Client
+from django.test import Client, override_settings
 from django.contrib.auth.models import User
 from esi.models import CallbackRedirect, Token
 
@@ -717,6 +717,10 @@ class LoginRedirectAllowlistTestCase(TestCase):
             )
         )
 
+    @override_settings(
+        ESI_SSO_CLIENT_ID="test-client",
+        ESI_SSO_CALLBACK_URL="https://my.minmatar.org/sso/callback",
+    )
     def test_eve_login_refuses_offsite_redirect(self):
         self.client.get(
             "/api/users/login/eve",
