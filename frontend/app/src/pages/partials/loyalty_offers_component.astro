@@ -31,10 +31,8 @@ function binary_param(name: string): string | undefined {
     return undefined
 }
 
-const currency_raw = params.get('currency')
-const currency = currency_raw && /^\d+$/.test(currency_raw)
-    ? parseInt(currency_raw, 10)
-    : TLIB_CORP_ID
+// Only Tribal Liberation Force LP is traded; other militia stores are hidden.
+const currency = TLIB_CORP_ID
 const exclude_tags = binary_param('exclude_tags')
 const exclude_blueprints = binary_param('exclude_blueprints')
 const exclude_useless_offers = binary_param('exclude_useless_offers')
@@ -108,7 +106,9 @@ try {
             q,
             ordering,
         }),
-        get_loyalty_currencies(),
+        get_loyalty_currencies().then((rows) => rows.filter(
+            (row) => row.corporation_id === TLIB_CORP_ID,
+        )),
     ])
 } catch (error) {
     fetching_error = error as Error

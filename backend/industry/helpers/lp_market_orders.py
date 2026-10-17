@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -22,6 +24,11 @@ AWAITING_LP = IndustryLoyaltyPointMarketOrder.Status.AWAITING_LP
 AWAITING_ISK = IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK
 COMPLETED = IndustryLoyaltyPointMarketOrder.Status.COMPLETED
 CANCELLED = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+
+STANDARD = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
+EXPRESS = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+# Express orders promise settlement within this window of posting.
+EXPRESS_SLA = timedelta(hours=24)
 
 ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
 TERMINAL_STATUSES = (COMPLETED, CANCELLED)
@@ -46,6 +53,24 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 
 class LpMarketOrderError(ValueError):
     """Invalid LP market order mutation."""
+
+
+def tier_isk_per_lp(currency: IndustryLoyaltyPoint, tier: str) -> int:
+    """Published ISK/LP for a tier; raises when express is switched off."""
+    if tier == EXPRESS:
+        if not currency.express_isk_per_lp:
+            raise LpMarketOrderError(
+                f"Express orders are not available for {currency.name}."
+            )
+        return currency.express_isk_per_lp
+    return currency.default_isk_per_lp
+
+
+def express_due_at(order: IndustryLoyaltyPointMarketOrder) -> datetime | None:
+    """SLA deadline for express orders; cancelled orders carry no SLA."""
+    if order.tier != EXPRESS or order.status == CANCELLED:
+        return None
+    return order.created_at + EXPRESS_SLA
 
 
 def format_lp_quantity(quantity: int) -> str:
@@ -81,8 +106,13 @@ def create_order(
     created_by,
     notes: str = "",
     destination_character_name: str = "",
+    tier: str = STANDARD,
 ) -> IndustryLoyaltyPointMarketOrder:
     quantity = int(quantity)
+    if tier not in (STANDARD, EXPRESS):
+        raise LpMarketOrderError("tier must be 'standard' or 'express'.")
+    if tier == EXPRESS:
+        tier_isk_per_lp(currency, tier)
     if quantity <= 0:
         raise LpMarketOrderError("quantity must be a positive integer.")
     if (
@@ -121,6 +151,7 @@ def create_order(
         side=side,
         quantity=quantity,
         isk_per_lp=isk_per_lp,
+        tier=tier,
         status=OPEN,
         created_by=created_by,
         destination_character_name=destination,

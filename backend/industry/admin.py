@@ -149,6 +149,7 @@ class IndustryLoyaltyPointPriceHistoryInline(admin.TabularInline):
     fields = (
         "changed_at",
         "account",
+        "tier",
         "old_isk_per_lp",
         "new_isk_per_lp",
         "changed_by",
@@ -216,6 +217,7 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         "name",
         "corporation_id",
         "default_isk_per_lp",
+        "express_isk_per_lp",
         "is_active",
         "allow_buy",
         "allow_sell",
@@ -224,6 +226,7 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
     )
     list_editable = (
         "default_isk_per_lp",
+        "express_isk_per_lp",
         "is_active",
         "allow_buy",
         "allow_sell",
@@ -241,14 +244,18 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
                 "fields": (
                     "name",
                     "corporation_id",
-                    "default_isk_per_lp",
+                    ("default_isk_per_lp", "express_isk_per_lp"),
                     "is_active",
                     ("allow_buy", "allow_sell"),
                     "notes",
                 ),
                 "description": (
                     "Currency catalog for militia / navy LP. Default ISK/LP is "
-                    "used by the planner and as the offer fallback for accounts. "
+                    "the standard buyback rate (filled as volume and the "
+                    "market allow), and is used by the planner and as the "
+                    "offer fallback for accounts. Express ISK/LP is for "
+                    "orders settled within 24 hours; leave it empty to turn "
+                    "express off. "
                     "Allow buy / allow sell control which order sides pilots "
                     "can post on the public buyback book."
                 ),

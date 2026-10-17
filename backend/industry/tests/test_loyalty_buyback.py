@@ -1,6 +1,7 @@
 """Tests for LP buyback market orders API and Discord mirror."""
 
 import json
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import jwt
@@ -8,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.test import Client
+from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase as AppTestCase
 from eveonline.helpers.characters import set_primary_character
@@ -986,6 +988,94 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def _post_sell(self, **extra):
+        return self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 500_000,
+                    **extra,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_defaults_to_standard_tier(self, unused_notify):
+        response = self._post_sell()
+        self.assertEqual(response.status_code, 201, response.content)
+        body = response.json()
+        self.assertEqual(body["tier"], "standard")
+        self.assertEqual(body["isk_per_lp"], 800)
+        self.assertIsNone(body["express_due_at"])
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_express_uses_express_rate_and_sets_due(self, unused_notify):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        # A client-sent rate cannot undercut or beat the express price.
+        response = self._post_sell(tier="express", isk_per_lp=900)
+        self.assertEqual(response.status_code, 201, response.content)
+        body = response.json()
+        self.assertEqual(body["tier"], "express")
+        self.assertEqual(body["isk_per_lp"], 760)
+        order = IndustryLoyaltyPointMarketOrder.objects.get(pk=body["id"])
+        self.assertEqual(order.tier, "express")
+        self.assertIsNotNone(body["express_due_at"])
+        due = order.created_at + timedelta(hours=24)
+        self.assertAlmostEqual(
+            parse_datetime(body["express_due_at"]),
+            due,
+            delta=timedelta(milliseconds=1),
+        )
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_express_rejected_without_express_rate(self, unused_notify):
+        response = self._post_sell(tier="express")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Express", response.json()["detail"])
+        self.assertFalse(IndustryLoyaltyPointMarketOrder.objects.exists())
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_unknown_tier_rejected(self, unused_notify):
+        response = self._post_sell(tier="overnight")
+        self.assertEqual(response.status_code, 400)
+
+    def test_cancelled_express_order_has_no_due(self):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=100_000,
+            isk_per_lp=760,
+            tier=IndustryLoyaltyPointMarketOrder.Tier.EXPRESS,
+            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+            created_by=self.user,
+        )
+        response = self.client.get(
+            "/api/industry/loyalty/orders", {"status": "cancelled"}
+        )
+        row = response.json()["items"][0]
+        self.assertEqual(row["id"], order.pk)
+        self.assertEqual(row["tier"], "express")
+        self.assertIsNone(row["express_due_at"])
+
+    def test_currencies_include_express_rate(self):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        rows = {
+            row["corporation_id"]: row
+            for row in self.client.get(
+                "/api/industry/loyalty/currencies"
+            ).json()
+        }
+        self.assertEqual(rows[TLIB_CORP_ID]["express_isk_per_lp"], 760)
+        self.assertIsNone(rows[1000179]["express_isk_per_lp"])
+
 
 class LoyaltyBuybackDiscordTestCase(AppTestCase):
     def setUp(self):
@@ -1021,6 +1111,16 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
 
     def test_thread_title(self):
         self.assertEqual(order_thread_title(self.order), "WTS 2.5M TLIB @800")
+
+    def test_express_thread_title_and_starter(self):
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+        self.assertEqual(
+            order_thread_title(self.order), "WTS 2.5M TLIB @800 Express"
+        )
+        due = int((self.order.created_at + timedelta(hours=24)).timestamp())
+        self.assertIn(f"<t:{due}:R>", order_starter_message(self.order))
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
+        self.assertNotIn("Express", order_starter_message(self.order))
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_notify_order_created_skips_order_with_thread(self, discord_mock):

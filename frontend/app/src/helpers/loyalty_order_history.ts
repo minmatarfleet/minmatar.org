@@ -16,7 +16,6 @@ const API_STATUSES: Record<LoyaltyHistoryStatus, string> = {
 export interface LoyaltyHistoryFilters {
     page: number
     status: LoyaltyHistoryStatus
-    loyalty_point_id: number | null
 }
 
 export function parse_loyalty_history_params(
@@ -30,25 +29,19 @@ export function parse_loyalty_history_params(
         ? status_raw as LoyaltyHistoryStatus
         : DEFAULT_LOYALTY_HISTORY_STATUS
 
-    const currency_raw = params.get('loyalty_point_id') ?? ''
-    const loyalty_point_id = /^\d+$/.test(currency_raw)
-        ? parseInt(currency_raw, 10)
-        : null
-
-    return { page, status, loyalty_point_id }
+    return { page, status }
 }
 
 export function loyalty_history_query(
     filters: LoyaltyHistoryFilters,
+    loyalty_point_id: number,
 ): LoyaltyOrdersQuery {
     return {
         status: API_STATUSES[filters.status],
         ordering: '-updated_at',
         limit: LOYALTY_HISTORY_PAGE_SIZE,
         offset: (filters.page - 1) * LOYALTY_HISTORY_PAGE_SIZE,
-        ...(filters.loyalty_point_id != null
-            ? { loyalty_point_id: filters.loyalty_point_id }
-            : {}),
+        loyalty_point_id,
     }
 }
 
@@ -59,7 +52,5 @@ export function loyalty_history_partial_params(
     const query: Record<string, string> = {}
     if (filters.page > 1) query.page = String(filters.page)
     if (filters.status !== DEFAULT_LOYALTY_HISTORY_STATUS) query.status = filters.status
-    if (filters.loyalty_point_id != null)
-        query.loyalty_point_id = String(filters.loyalty_point_id)
     return query
 }
