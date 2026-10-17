@@ -156,101 +156,104 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
     
     <hr class="[ border-bottom animate-fade-in animate-duration-250 animate-delay-1000 ]" />
 
+    {show_my_pilots &&
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+        >
+            <FleetMyPilots
+                fleet_id={fleet.id}
+                pilots={pilots}
+                volunteers={ship_volunteers}
+                readonly={fleet.status === 'cancelled'}
+                can_manage={can_manage}
+            />
+        </Wrapper>
+    }
+
+    {!history && roles &&
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+        >
+            <FleetRoles
+                roles={roles}
+                composition={composition}
+                pilots={pilots}
+                fleet_id={fleet.id}
+                readonly={fleet.status === 'cancelled'}
+                is_fleet_commander={can_manage}
+            />
+        </Wrapper>
+    }
+
     {!history &&
-        <div class:list={['[ fleet-detail-columns ]', { 'fleet-detail-columns--aside': show_my_pilots }]}>
-            <BlockList gap="var(--space-xl)" class="[ min-w-0 ]">
-            {!history && roles &&
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='0'
-                    max_width='var(--max-col-width)'
-                    class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                >
-                    <FleetRoles
-                        roles={roles}
-                        composition={composition}
-                        pilots={pilots}
+        <>
+        {!history && (composition.length > 0 || can_manage) &&
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            >
+                <FleetShips
+                    fleet_id={fleet.id}
+                    composition={composition}
+                    volunteers={ship_volunteers}
+                    refits={refits}
+                    pilots={pilots}
+                    supply={supply}
+                    readonly={fleet.status === 'cancelled'}
+                    can_manage={can_manage}
+                    doctrine_name={fleet?.doctrine?.name ?? null}
+                />
+            </Wrapper>
+        }
+
+        {is_fleet_commander &&
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                x-data={`{
+                    global_collapse: $persist(false),
+                }`}
+            >
+                {fleet?.tracking &&
+                    <FleetCompositionBlock
+                        composition={fleet_composition ?? []}
+                        fleet_radar={fleet_radar ?? []}
                         fleet_id={fleet.id}
-                        readonly={fleet.status === 'cancelled'}
-                        is_fleet_commander={can_manage}
                     />
-                </Wrapper>
-            }
+                }
 
-            {!history && (composition.length > 0 || can_manage) &&
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='0'
-                    max_width='var(--max-col-width)'
-                    class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                >
-                    <FleetShips
-                        fleet_id={fleet.id}
-                        composition={composition}
-                        volunteers={ship_volunteers}
-                        refits={refits}
-                        pilots={pilots}
-                        supply={supply}
-                        readonly={fleet.status === 'cancelled'}
-                        can_manage={can_manage}
-                        doctrine_name={fleet?.doctrine?.name ?? null}
-                    />
-                </Wrapper>
-            }
-
-            {is_fleet_commander &&
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='0'
-                    max_width='var(--max-col-width)'
-                    class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                    x-data={`{
-                        global_collapse: $persist(false),
-                    }`}
-                >
-                    {fleet?.tracking &&
-                        <FleetCompositionBlock
-                            composition={fleet_composition ?? []}
-                            fleet_radar={fleet_radar ?? []}
-                            fleet_id={fleet.id}
-                        />
-                    }
-
-                    {!fleet?.tracking &&
-                        <template
-                            x-if="tracking_started"
+                {!fleet?.tracking &&
+                    <template
+                        x-if="tracking_started"
+                    >
+                        <div
+                            x-data={`{
+                                init() {
+                                    htmx.process($el)
+                                }
+                            }`}
+                            hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                            hx-trigger="load delay:30s once"
+                            hx-indicator=".loader"
+                            hx-swap="innerHTML transition:true"
                         >
-                            <div
-                                x-data={`{
-                                    init() {
-                                        htmx.process($el)
-                                    }
-                                }`}
-                                hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                                hx-trigger="load delay:30s once"
-                                hx-indicator=".loader"
-                                hx-swap="innerHTML transition:true"
-                            >
-                                <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                            </div>
-                        </template>
-                    }
-                </Wrapper>
-            }
-            </BlockList>
-
-            {show_my_pilots &&
-                <aside>
-                    <FleetMyPilots
-                        fleet_id={fleet.id}
-                        pilots={pilots}
-                        volunteers={ship_volunteers}
-                        readonly={fleet.status === 'cancelled'}
-                        can_manage={can_manage}
-                    />
-                </aside>
-            }
-        </div>
+                            <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                        </div>
+                    </template>
+                }
+            </Wrapper>
+        }
+        </>
     }
 </BlockList>
 <style lang="scss">
@@ -261,35 +264,9 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
         max-width: var(--max-text-width, 70ch);
     }
 
-    .fleet-detail-columns {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-xl);
-        align-items: start;
-
-        &.fleet-detail-columns--aside {
-            grid-template-columns: minmax(0, 1fr) 22rem;
-        }
-
-        aside {
-            position: sticky;
-            top: var(--space-l);
-        }
-
-        /* "Your pilots" carries the pick-ships button; one is enough. */
-        &.fleet-detail-columns--aside :global(.fleet-ships-pick) {
-            display: none;
-        }
+    /* "Your pilots" carries the pick-ships button; one is enough. */
+    :global(body:has(#fleet-my-pilots) .fleet-ships-pick) {
+        display: none;
     }
 
-    @media (max-width: 64rem) {
-        .fleet-detail-columns.fleet-detail-columns--aside {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .fleet-detail-columns aside {
-            position: static;
-            order: -1;
-        }
-    }
 </style>

@@ -55,6 +55,9 @@ import Button from '@components/blocks/Button.astro'
         {flying.length > 0 &&
             <small>{t('fleets.my_pilots.flying').replace('{count}', flying.length.toString())}</small>
         }
+        {flying.length > 0 && not_flying > 0 &&
+            <small>{t('fleets.my_pilots.not_flying').replace('{count}', not_flying.toString())}</small>
+        }
     </header>
 
     {flying.length > 0 ?
@@ -73,13 +76,10 @@ import Button from '@components/blocks/Button.astro'
         <p>{t('fleets.my_pilots.none')}</p>
     }
 
-    {flying.length > 0 && not_flying > 0 &&
-        <small>{t('fleets.my_pilots.not_flying').replace('{count}', not_flying.toString())}</small>
-    }
-
     {!readonly && pilots.length > 0 &&
         <Button
             type="button"
+            size="sm"
             color={flying.length > 0 ? 'transparent' : 'green'}
             x-on:click={`show_modal({ partial: '${PICK_SHIPS_MODAL_URL}' })`}
         >
@@ -89,27 +89,41 @@ import Button from '@components/blocks/Button.astro'
 </section>
 
 <style lang="scss">
+    /* One strip across the page: who you are bringing, then the button. */
     .fleet-my-pilots {
         display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s) var(--space-l);
+        padding: var(--space-s) var(--space-m);
         border: 1px solid var(--border-color);
 
         header {
+            flex: 0 0 auto;
             display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: var(--space-s);
+            flex-direction: column;
+            gap: var(--space-3xs);
         }
 
         h2 {
             font-size: var(--step-1);
         }
 
+        > p {
+            flex: 1 1 16rem;
+            margin: 0;
+        }
+
+        > :global(.button) {
+            flex: 0 0 auto;
+            width: auto;
+        }
+
         ul {
+            flex: 999 1 20rem;
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
             margin: 0;
             padding: 0;
             list-style: none;
@@ -118,9 +132,9 @@ import Button from '@components/blocks/Button.astro'
         li {
             display: flex;
             align-items: center;
-            gap: var(--space-s);
-            padding: var(--space-2xs) 0;
-            border-top: 1px solid var(--border-color);
+            gap: var(--space-xs);
+            padding: var(--space-3xs) var(--space-s) var(--space-3xs) var(--space-3xs);
+            border: 1px solid var(--border-color);
 
             span {
                 display: flex;
@@ -137,10 +151,6 @@ import Button from '@components/blocks/Button.astro'
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-        }
-
-        :global(button) {
-            width: 100%;
         }
     }
 
