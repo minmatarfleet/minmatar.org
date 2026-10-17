@@ -1,4 +1,3 @@
-import { parse_response_error } from '@helpers/string'
 import type {
     LearningCertificate,
     LearningCertificateAward,
@@ -6,6 +5,7 @@ import type {
     LearningPersona,
     LearningPersonaRecommendation,
 } from '@dtypes/api.minmatar.org'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/learning`
 
@@ -16,64 +16,34 @@ export async function get_learning_certificates(
     if (persona) params.set('persona', persona)
     const query = params.toString()
     const ENDPOINT = `${API_ENDPOINT}/certificates${query ? `?${query}` : ''}`
-    const METHOD = 'GET'
 
-    const response = await fetch(ENDPOINT, { method: METHOD })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
-
-    return (await response.json()) as LearningCertificate[]
+    return await api_request<LearningCertificate[]>(ENDPOINT, {
+        method: 'GET',
+    })
 }
 
 export async function get_learning_certificate(slug: string): Promise<LearningCertificate> {
     const ENDPOINT = `${API_ENDPOINT}/certificates/${encodeURIComponent(slug)}`
-    const METHOD = 'GET'
 
-    const response = await fetch(ENDPOINT, { method: METHOD })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
-
-    return (await response.json()) as LearningCertificate
+    return await api_request<LearningCertificate>(ENDPOINT, {
+        method: 'GET',
+    })
 }
 
 export async function get_learning_me(access_token: string): Promise<LearningMeResponse> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/me`
-    const METHOD = 'GET'
-
-    const response = await fetch(ENDPOINT, { headers, method: METHOD })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
-
-    return (await response.json()) as LearningMeResponse
+    return await api_request<LearningMeResponse>(`${API_ENDPOINT}/me`, {
+        method: 'GET',
+        token: access_token,
+    })
 }
 
 export async function get_learning_persona_recommendation(
     access_token: string,
 ): Promise<LearningPersonaRecommendation> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/persona/recommendation`
-    const METHOD = 'GET'
-
-    const response = await fetch(ENDPOINT, { headers, method: METHOD })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
-
-    return (await response.json()) as LearningPersonaRecommendation
+    return await api_request<LearningPersonaRecommendation>(`${API_ENDPOINT}/persona/recommendation`, {
+        method: 'GET',
+        token: access_token,
+    })
 }
 
 export type { LearningCertificateAward }

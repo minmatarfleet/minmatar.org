@@ -1,132 +1,43 @@
-import { parse_response_error } from '@helpers/string'
 import { get_shared_secret } from '@helpers/env'
 import type { NotificationSubscription, NotificationSubscriptionsFull } from '@dtypes/api.minmatar.org'
+import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/subscriptions`
 
 export async function get_user_subscriptions(access_token:string, user_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}?user_id=${user_id}`
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as NotificationSubscription[]
-    } catch (error) {
-        throw new Error(`Error fetching user notifications: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<NotificationSubscription[]>(`${API_ENDPOINT}?user_id=${user_id}`, {
+        method: 'GET',
+        token: access_token,
+        error: 'Error fetching user notifications',
+    })
 }
 
 export async function create_subscription(access_token:string, user_id:number, subscription:string) {
-    const data = JSON.stringify({
-        user_id: user_id,
-        subscription: subscription,
+    return await api_request<NotificationSubscription>(`${API_ENDPOINT}/`, {
+        method: 'POST',
+        token: access_token,
+        body: {
+            user_id: user_id,
+            subscription: subscription,
+        },
+        error: 'Error creating subscription',
     })
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/`
-    const METHOD = 'POST'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-    console.log(data)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-            body: data,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-                
-        return await response.json() as NotificationSubscription
-    } catch (error) {
-        throw new Error(`Error creating subscription: ${error.message}`, { cause: error.cause });
-    }
 }
 
 export async function remove_subscription(access_token:string, subscription_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
+    await api_response(`${API_ENDPOINT}/${subscription_id}?code=${get_shared_secret()}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting subscription',
+    })
 
-    const ENDPOINT = `${API_ENDPOINT}/${subscription_id}?code=${get_shared_secret()}`
-    const METHOD = 'DELETE'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return subscription_id
-    } catch (error) {
-        throw new Error(`Error deleting subscription: ${error.message}`, { cause: error.cause });
-    }
+    return subscription_id
 }
 
 export async function get_all_subscriptions(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = API_ENDPOINT
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as NotificationSubscriptionsFull[]
-    } catch (error) {
-        throw new Error(`Error fetching user notifications: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<NotificationSubscriptionsFull[]>(API_ENDPOINT, {
+        method: 'GET',
+        token: access_token,
+        error: 'Error fetching user notifications',
+    })
 }

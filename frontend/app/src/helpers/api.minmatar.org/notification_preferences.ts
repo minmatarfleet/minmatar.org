@@ -1,4 +1,4 @@
-import { parse_response_error } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/notifications`
 
@@ -24,17 +24,8 @@ export type NotificationFeaturePreferences = {
 }
 
 export async function get_notification_preferences(access_token: string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/preferences`
-    const response = await fetch(ENDPOINT, { headers, method: 'GET' })
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `GET ${ENDPOINT}`),
-            { cause: response.status }
-        )
-    }
-    return (await response.json()) as NotificationFeaturePreferences[]
+    return await api_request<NotificationFeaturePreferences[]>(`${API_ENDPOINT}/preferences`, {
+        method: 'GET',
+        token: access_token,
+    })
 }

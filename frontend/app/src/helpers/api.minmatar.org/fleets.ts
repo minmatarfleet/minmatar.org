@@ -10,98 +10,29 @@ import type {
     FleetMetrics,
     FleetCommanderMetrics,
 } from '@dtypes/api.minmatar.org'
-import { get_error_message, parse_error_message, parse_response_error } from '@helpers/string'
+import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
 export async function get_locations(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/v2/locations`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as Location[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet locations: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Location[]>(`${API_ENDPOINT}/v2/locations`, {
+        token: access_token,
+        error: 'Error fetching fleet locations',
+    })
 }
 
 export async function get_audiences(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/audiences`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as Audience[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet audiences: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Audience[]>(`${API_ENDPOINT}/audiences`, {
+        token: access_token,
+        error: 'Error fetching fleet audiences',
+    })
 }
 
 export async function get_fleets_v3(access_token:string, status:FleetStatus) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/v3?fleet_filter=${status}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as Fleet[];
-    } catch (error) {
-        throw new Error(`Error fetching fleets: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Fleet[]>(`${API_ENDPOINT}/v3?fleet_filter=${status}`, {
+        token: access_token,
+        error: 'Error fetching fleets',
+    })
 }
 
 /**
@@ -110,37 +41,12 @@ export async function get_fleets_v3(access_token:string, status:FleetStatus) {
  * campaign is not `scheduled`/`active` or does not exist.
  */
 export async function create_fleet(access_token:string, fleet:FleetRequest) {
-    const data = JSON.stringify(fleet)
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = API_ENDPOINT
-
-    console.log(`Requesting POST: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: data,
-            method: 'POST'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ))
-        }
-
-        return await response.json() as Fleet;
-    } catch (error) {
-        throw new Error(`Error creating fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Fleet>(API_ENDPOINT, {
+        method: 'POST',
+        token: access_token,
+        body: fleet,
+        error: 'Error creating fleet',
+    })
 }
 
 /**
@@ -149,217 +55,57 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
  * (JSON.stringify drops it) leaves the current campaign untouched.
  */
 export async function update_fleet(access_token:string, fleet:FleetPatchRequest, fleet_id: number) {
-    const data = JSON.stringify(fleet)
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}`
-
-    console.log(`Requesting PATCH: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: data,
-            method: 'PATCH'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ))
-        }
-
-        return await response.json() as Fleet;
-    } catch (error) {
-        throw new Error(`Error updating fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Fleet>(`${API_ENDPOINT}/${fleet_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: fleet,
+        error: 'Error updating fleet',
+    })
 }
 
 export async function get_fleet_by_id(access_token:string, id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${id}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as Fleet;
-    } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Fleet>(`${API_ENDPOINT}/${id}`, {
+        token: access_token,
+        error: 'Error fetching fleet',
+    })
 }
 
 export async function delete_fleet(access_token:string, id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${id}`
-
-    console.log(`Requesting DELETE: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'DELETE'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `DELETE ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error deleting fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/${id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting fleet',
+    })
 }
 
 export async function start_fleet_now(access_token: string, fc_character_id?: number): Promise<Fleet> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/start-now`
-    const body = fc_character_id != null ? JSON.stringify({ fc_character_id }) : undefined
-
-    const response = await fetch(ENDPOINT, {
-        headers,
+    return await api_request<Fleet>(`${API_ENDPOINT}/start-now`, {
         method: 'POST',
-        ...(body != null ? { body } : {})
+        token: access_token,
+        body: fc_character_id != null ? { fc_character_id } : undefined,
     })
-
-    if (!response.ok) {
-        const err = await parse_response_error(response, `POST ${ENDPOINT}`)
-        throw new Error(err)
-    }
-
-    return await response.json() as Fleet
 }
 
 export async function start_fleet(access_token:string, fleet_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/tracking`
-    const METHOD = 'POST'
-
-    console.log(`Requesting POST: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
-        
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error starting the fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/${fleet_id}/tracking`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error starting the fleet',
+    })
 }
 
 export async function get_fleet_members(access_token:string, id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${id}/members`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as FleetMember[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet members: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<FleetMember[]>(`${API_ENDPOINT}/${id}/members`, {
+        token: access_token,
+        error: 'Error fetching fleet members',
+    })
 }
 
 export async function get_fleet_users(access_token:string, fleet_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/users`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as FleetUsers[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<FleetUsers[]>(`${API_ENDPOINT}/${fleet_id}/users`, {
+        token: access_token,
+        error: 'Error fetching fleet',
+    })
 }
 
 export interface FleetRoleVolunteer {
@@ -374,15 +120,9 @@ export interface FleetRoleVolunteer {
 }
 
 export async function get_fleet_role_volunteers(access_token: string, fleet_id: number): Promise<FleetRoleVolunteer[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetRoleVolunteer[]
+    return await api_request<FleetRoleVolunteer[]>(`${API_ENDPOINT}/${fleet_id}/role-volunteers`, {
+        token: access_token,
+    })
 }
 
 export async function create_fleet_role_volunteer(
@@ -390,133 +130,47 @@ export async function create_fleet_role_volunteer(
     fleet_id: number,
     payload: { character_id: number; role: string; subtype?: string | null; quantity?: number | null }
 ): Promise<FleetRoleVolunteer> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers`
-    const response = await fetch(ENDPOINT, {
+    return await api_request<FleetRoleVolunteer>(`${API_ENDPOINT}/${fleet_id}/role-volunteers`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
-    return await response.json() as FleetRoleVolunteer
 }
 
 export async function delete_fleet_role_volunteer(access_token: string, fleet_id: number, volunteer_id: number): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/role-volunteers/${volunteer_id}`
-    const response = await fetch(ENDPOINT, { method: 'DELETE', headers })
-    if (!response.ok && response.status !== 204)
-        throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
+    await api_response(`${API_ENDPOINT}/${fleet_id}/role-volunteers/${volunteer_id}`, {
+        method: 'DELETE',
+        token: access_token,
+    })
 }
 
 export async function refresh_fleet_motd(access_token: string, fleet_id: number): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/refresh-motd`
-    const response = await fetch(ENDPOINT, { headers, method: 'POST' })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
+    await api_response(`${API_ENDPOINT}/${fleet_id}/refresh-motd`, {
+        method: 'POST',
+        token: access_token,
+    })
 }
 
 export async function preping(access_token:string, fleet_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/preping`
-    const METHOD = 'POST'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
-
-        return (response.status === 200)
-    } catch (error) {
-        throw new Error(`Error creating pre-ping: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/${fleet_id}/preping`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error creating pre-ping',
+    })
 }
 
 export async function get_fleets_metrics(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/metrics`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as FleetMetrics[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet metrics: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<FleetMetrics[]>(`${API_ENDPOINT}/metrics`, {
+        token: access_token,
+        error: 'Error fetching fleet metrics',
+    })
 }
 
 export async function get_fleet_commander_metrics(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/commander-metrics`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as FleetCommanderMetrics[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet commander metrics: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<FleetCommanderMetrics[]>(`${API_ENDPOINT}/commander-metrics`, {
+        token: access_token,
+        error: 'Error fetching fleet commander metrics',
+    })
 }
 // --- Cyno system assignment (on a pilot volunteered in a cyno fit) ----------
 
@@ -526,19 +180,11 @@ export async function assign_fleet_ship_volunteer_system(
     ship_volunteer_id: number,
     payload: { solar_system_id: number | null; solar_system_name: string | null }
 ): Promise<FleetShipVolunteer> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/ship-volunteers/${ship_volunteer_id}`
-    const response = await fetch(ENDPOINT, {
+    return await api_request<FleetShipVolunteer>(`${API_ENDPOINT}/${fleet_id}/ship-volunteers/${ship_volunteer_id}`, {
         method: 'PATCH',
-        headers,
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `PATCH ${ENDPOINT}`))
-    return await response.json() as FleetShipVolunteer
 }
 
 // --- Fleet roles, worked out from ships --------------------------------------
@@ -575,15 +221,9 @@ export interface FleetRoleCoverage {
 }
 
 export async function get_fleet_roles(access_token: string, fleet_id: number): Promise<FleetRoleCoverage> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/roles`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetRoleCoverage
+    return await api_request<FleetRoleCoverage>(`${API_ENDPOINT}/${fleet_id}/roles`, {
+        token: access_token,
+    })
 }
 
 // --- Ship volunteers (doctrine composition) ----------------------------------
@@ -673,32 +313,18 @@ export interface MyFleetPilot {
 }
 
 export async function get_fleet_my_pilots(access_token: string, fleet_id: number): Promise<MyFleetPilot[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/my-pilots`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as MyFleetPilot[]
+    return await api_request<MyFleetPilot[]>(`${API_ENDPOINT}/${fleet_id}/my-pilots`, {
+        token: access_token,
+    })
 }
 
 /** Replace the caller's ship volunteers: one ship per listed character, none = not flying. */
 export async function set_my_ship_volunteers(access_token: string, fleet_id: number, selections: ShipSelection[]): Promise<FleetShipVolunteer[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/my-ship-volunteers`
-    const response = await fetch(ENDPOINT, {
+    return await api_request<FleetShipVolunteer[]>(`${API_ENDPOINT}/${fleet_id}/my-ship-volunteers`, {
         method: 'PUT',
-        headers,
-        body: JSON.stringify({ selections }),
+        token: access_token,
+        body: { selections },
     })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `PUT ${ENDPOINT}`))
-    return await response.json() as FleetShipVolunteer[]
 }
 
 /** A custom EFT fit the caller has used on one of their fleets before. */
@@ -710,27 +336,15 @@ export interface MyFleetFitting {
 }
 
 export async function get_my_fleet_fittings(access_token: string): Promise<MyFleetFitting[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/my-fittings`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as MyFleetFitting[]
+    return await api_request<MyFleetFitting[]>(`${API_ENDPOINT}/my-fittings`, {
+        token: access_token,
+    })
 }
 
 export async function get_fleet_supply(access_token: string, fleet_id: number): Promise<FleetSupply> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/supply`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetSupply
+    return await api_request<FleetSupply>(`${API_ENDPOINT}/${fleet_id}/supply`, {
+        token: access_token,
+    })
 }
 
 /** Payload target for volunteers/refits: catalog fit or manual fleet fit. */
@@ -741,15 +355,9 @@ export const volunteer_matches_entry = (volunteer: FleetShipVolunteer, entry: Fl
     entry.fitting_id ? volunteer.fitting_id === entry.fitting_id : volunteer.fleet_fitting_id === entry.fleet_fitting_id
 
 export async function get_fleet_composition(access_token: string, fleet_id: number): Promise<FleetCompositionEntry[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/composition`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetCompositionEntry[]
+    return await api_request<FleetCompositionEntry[]>(`${API_ENDPOINT}/${fleet_id}/composition`, {
+        token: access_token,
+    })
 }
 
 export async function create_fleet_fitting(
@@ -757,54 +365,32 @@ export async function create_fleet_fitting(
     fleet_id: number,
     payload: { fitting_id?: number | null; eft_format?: string | null; role?: FleetFittingRole }
 ): Promise<FleetCompositionEntry> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/fittings`
-    const response = await fetch(ENDPOINT, {
+    return await api_request<FleetCompositionEntry>(`${API_ENDPOINT}/${fleet_id}/fittings`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
-    return await response.json() as FleetCompositionEntry
 }
 
 export async function delete_fleet_fitting(access_token: string, fleet_id: number, fleet_fitting_id: number): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/fittings/${fleet_fitting_id}`
-    const response = await fetch(ENDPOINT, { method: 'DELETE', headers })
-    if (!response.ok && response.status !== 204)
-        throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
+    await api_response(`${API_ENDPOINT}/${fleet_id}/fittings/${fleet_fitting_id}`, {
+        method: 'DELETE',
+        token: access_token,
+    })
 }
 
 export async function get_fleet_ship_volunteers(access_token: string, fleet_id: number): Promise<FleetShipVolunteer[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/ship-volunteers`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetShipVolunteer[]
+    return await api_request<FleetShipVolunteer[]>(`${API_ENDPOINT}/${fleet_id}/ship-volunteers`, {
+        token: access_token,
+    })
 }
 
 
 export async function delete_fleet_ship_volunteer(access_token: string, fleet_id: number, volunteer_id: number): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/ship-volunteers/${volunteer_id}`
-    const response = await fetch(ENDPOINT, { method: 'DELETE', headers })
-    if (!response.ok && response.status !== 204)
-        throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
+    await api_response(`${API_ENDPOINT}/${fleet_id}/ship-volunteers/${volunteer_id}`, {
+        method: 'DELETE',
+        token: access_token,
+    })
 }
 
 // --- Fleet refits (cargo to carry per doctrine fit) --------------------------
@@ -859,54 +445,30 @@ export interface FleetFittingAccess {
 }
 
 export async function get_fleet_fitting_access(access_token: string, fleet_id: number): Promise<FleetFittingAccess> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/fitting-access`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetFittingAccess
+    return await api_request<FleetFittingAccess>(`${API_ENDPOINT}/${fleet_id}/fitting-access`, {
+        token: access_token,
+    })
 }
 
 export async function get_fleet_refits(access_token: string, fleet_id: number): Promise<FleetRefit[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/refits`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetRefit[]
+    return await api_request<FleetRefit[]>(`${API_ENDPOINT}/${fleet_id}/refits`, {
+        token: access_token,
+    })
 }
 
 export async function create_fleet_refit(access_token: string, fleet_id: number, payload: FleetRefitRequest): Promise<FleetRefit> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/refits`
-    const response = await fetch(ENDPOINT, {
+    return await api_request<FleetRefit>(`${API_ENDPOINT}/${fleet_id}/refits`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
-    return await response.json() as FleetRefit
 }
 
 export async function delete_fleet_refit(access_token: string, fleet_id: number, refit_id: number): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/refits/${refit_id}`
-    const response = await fetch(ENDPOINT, { method: 'DELETE', headers })
-    if (!response.ok && response.status !== 204)
-        throw new Error(await parse_response_error(response, `DELETE ${ENDPOINT}`))
+    await api_response(`${API_ENDPOINT}/${fleet_id}/refits/${refit_id}`, {
+        method: 'DELETE',
+        token: access_token,
+    })
 }
 
 export interface FleetKillmail {
@@ -937,15 +499,9 @@ export interface FleetKills {
 }
 
 export async function get_fleet_kills(access_token: string, fleet_id: number): Promise<FleetKills> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/kills`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetKills
+    return await api_request<FleetKills>(`${API_ENDPOINT}/${fleet_id}/kills`, {
+        token: access_token,
+    })
 }
 
 export interface FleetResult {
@@ -963,15 +519,9 @@ export async function get_fleet_results(access_token: string, fleet_ids: number[
     if (fleet_ids.length === 0)
         return []
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/results?fleet_ids=${fleet_ids.join(',')}`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetResult[]
+    return await api_request<FleetResult[]>(`${API_ENDPOINT}/results?fleet_ids=${fleet_ids.join(',')}`, {
+        token: access_token,
+    })
 }
 
 export interface FleetSrpLoss {
@@ -987,15 +537,9 @@ export interface FleetSrpLoss {
 
 // The caller's ship losses in a fleet on hulls SRP covers.
 export async function get_fleet_my_srp(access_token: string, fleet_id: number): Promise<FleetSrpLoss[]> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/my-srp`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as FleetSrpLoss[]
+    return await api_request<FleetSrpLoss[]>(`${API_ENDPOINT}/${fleet_id}/my-srp`, {
+        token: access_token,
+    })
 }
 
 export interface MissingSignups {
@@ -1006,26 +550,15 @@ export interface MissingSignups {
 
 // FC and managers: signed-up pilots not in the live fleet, and the last DM nudge.
 export async function get_fleet_missing_signups(access_token: string, fleet_id: number): Promise<MissingSignups> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`))
-    return await response.json() as MissingSignups
+    return await api_request<MissingSignups>(`${API_ENDPOINT}/${fleet_id}/missing-signups`, {
+        token: access_token,
+    })
 }
 
 // Queue one DM per player who signed up but is not in fleet. 429 while cooling down.
 export async function nudge_fleet_missing_signups(access_token: string, fleet_id: number): Promise<{ pilots: number }> {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/missing-signups/nudge`
-    const response = await fetch(ENDPOINT, { method: 'POST', headers })
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `POST ${ENDPOINT}`))
-    return await response.json() as { pilots: number }
+    return await api_request<{ pilots: number }>(`${API_ENDPOINT}/${fleet_id}/missing-signups/nudge`, {
+        method: 'POST',
+        token: access_token,
+    })
 }

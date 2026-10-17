@@ -3,75 +3,26 @@ import type {
     CorporationApplicationDetails,
     OpenCorporationApplication,
 } from '@dtypes/api.minmatar.org'
-import { get_error_message, parse_response_error } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/applications/corporations`
 
 export async function get_corporation_applications(access_token:string, corporation_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplication[];
-    } catch (error) {
-        throw new Error(`Error fetching corporation applications: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CorporationApplication[]>(`${API_ENDPOINT}/${corporation_id}/applications`, {
+        token: access_token,
+        error: 'Error fetching corporation applications',
+    })
 }
 
 export async function create_corporation_application(access_token:string, corporation_id:number, description:string) {
-    const data = JSON.stringify({
-        'description': description,
-    });
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications`
-    
-    console.log(`Requesting: POST ${ENDPOINT}`)
-
     try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: data,
-            method: 'POST'
+        return await api_request<CorporationApplication>(`${API_ENDPOINT}/${corporation_id}/applications`, {
+            method: 'POST',
+            token: access_token,
+            body: {
+                'description': description,
+            },
         })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(await parse_response_error(
-                response,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplication;
     } catch (error) {
         if (error instanceof Error && typeof error.cause === 'number')
             throw error
@@ -81,137 +32,33 @@ export async function create_corporation_application(access_token:string, corpor
 }
 
 export async function get_my_open_application(access_token: string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${import.meta.env.API_URL}/api/applications/me/open`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        if (response.status === 204)
-            return null
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as OpenCorporationApplication;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        throw new Error(`Error fetching open corporation application: ${message}`, {
-            cause: error instanceof Error ? error.cause : undefined,
-        });
-    }
+    return await api_request<OpenCorporationApplication>(`${import.meta.env.API_URL}/api/applications/me/open`, {
+        token: access_token,
+        error: 'Error fetching open corporation application',
+    })
 }
 
 export async function get_corporation_applications_by_id(access_token:string, corporation_id:number, application_id) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-    
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplicationDetails;
-    } catch (error) {
-        throw new Error(`Error fetching corporation application: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CorporationApplicationDetails>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}`, {
+        token: access_token,
+        error: 'Error fetching corporation application',
+    })
 }
 
 export async function accept_corporation_applications(access_token:string, corporation_id:number, application_id) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`
-    
-    console.log(`Requesting: POST ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'POST'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplication[];
-    } catch (error) {
-        throw new Error(`Error accepting corporation application: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CorporationApplication[]>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error accepting corporation application',
+    })
 }
 
 export async function reject_corporation_applications(access_token:string, corporation_id:number, application_id) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/reject`
-    
-    console.log(`Requesting: POST ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'POST'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplication[];
-    } catch (error) {
-        throw new Error(`Error rejecting corporation application: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CorporationApplication[]>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/reject`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error rejecting corporation application',
+    })
 }
 
 export async function transfer_corporation_application(
@@ -220,35 +67,12 @@ export async function transfer_corporation_application(
     application_id: number,
     target_corporation_id: number,
 ) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/transfer`
-
-    console.log(`Requesting: POST ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: JSON.stringify({
-                corporation_id: target_corporation_id,
-            }),
-            method: 'POST'
-        })
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationApplication;
-    } catch (error) {
-        throw new Error(`Error transferring corporation application: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CorporationApplication>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/transfer`, {
+        method: 'POST',
+        token: access_token,
+        body: {
+            corporation_id: target_corporation_id,
+        },
+        error: 'Error transferring corporation application',
+    })
 }

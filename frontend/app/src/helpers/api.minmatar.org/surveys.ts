@@ -1,4 +1,4 @@
-import { parse_response_error } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 import type {
     ActiveSurvey,
     ChangelogEntry,
@@ -13,50 +13,21 @@ import type {
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/surveys`
 
-function auth_headers(access_token: string) {
-    return {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-}
-
-async function request<T>(
-    access_token: string,
-    path: string,
-    method = 'GET',
-    body?: unknown,
-): Promise<T> {
-    const ENDPOINT = `${API_ENDPOINT}${path}`
-    console.log(`Requesting ${method}: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: auth_headers(access_token),
-        method,
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    })
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `${method} ${ENDPOINT}`),
-            { cause: response.status },
-        )
-    }
-    return (await response.json()) as T
-}
-
 // ---- Member ----
 export async function get_active_survey(access_token: string) {
-    return request<ActiveSurvey>(access_token, '/active')
+    return api_request<ActiveSurvey>(`${API_ENDPOINT}/active`, { token: access_token })
 }
 
 export async function get_survey_context(access_token: string, id: number) {
-    return request<MemberContext>(access_token, `/${id}/context`)
+    return api_request<MemberContext>(`${API_ENDPOINT}/${id}/context`, { token: access_token })
 }
 
 export async function get_survey_questions(access_token: string, id: number) {
-    return request<SurveyQuestions>(access_token, `/${id}/questions`)
+    return api_request<SurveyQuestions>(`${API_ENDPOINT}/${id}/questions`, { token: access_token })
 }
 
 export async function get_my_response(access_token: string, id: number) {
-    return request<MyResponse>(access_token, `/${id}/response`)
+    return api_request<MyResponse>(`${API_ENDPOINT}/${id}/response`, { token: access_token })
 }
 
 export async function submit_survey_response(
@@ -65,19 +36,23 @@ export async function submit_survey_response(
     answers: SurveyAnswerInput[],
     context_corrections: Record<string, any> = {},
 ) {
-    return request<SubmitResult>(access_token, `/${id}/responses`, 'POST', {
-        answers,
-        context_corrections,
+    return api_request<SubmitResult>(`${API_ENDPOINT}/${id}/responses`, {
+        method: 'POST',
+        token: access_token,
+        body: {
+            answers,
+            context_corrections,
+        },
     })
 }
 
 export async function get_changelog(access_token: string, id: number) {
-    return request<ChangelogEntry[]>(access_token, `/${id}/changelog`)
+    return api_request<ChangelogEntry[]>(`${API_ENDPOINT}/${id}/changelog`, { token: access_token })
 }
 
 // ---- Leadership ----
 export async function list_campaigns(access_token: string) {
-    return request<SurveyCampaign[]>(access_token, '/')
+    return api_request<SurveyCampaign[]>(`${API_ENDPOINT}/`, { token: access_token })
 }
 
 export async function create_campaign(
@@ -90,11 +65,11 @@ export async function create_campaign(
         open_now?: boolean
     },
 ) {
-    return request<SurveyCampaign>(access_token, '/', 'POST', payload)
+    return api_request<SurveyCampaign>(`${API_ENDPOINT}/`, { method: 'POST', token: access_token, body: payload })
 }
 
 export async function get_corp_progress(access_token: string, id: number) {
-    return request<any>(access_token, `/${id}/corp-progress`)
+    return api_request<any>(`${API_ENDPOINT}/${id}/corp-progress`, { token: access_token })
 }
 
 export async function update_campaign(
@@ -102,13 +77,13 @@ export async function update_campaign(
     id: number,
     payload: { status?: string; opens_at?: string; closes_at?: string },
 ) {
-    return request<SurveyCampaign>(access_token, `/${id}`, 'PATCH', payload)
+    return api_request<SurveyCampaign>(`${API_ENDPOINT}/${id}`, { method: 'PATCH', token: access_token, body: payload })
 }
 
 export async function get_corp_report(access_token: string, id: number) {
-    return request<CorpReport>(access_token, `/${id}/corp-report`)
+    return api_request<CorpReport>(`${API_ENDPOINT}/${id}/corp-report`, { token: access_token })
 }
 
 export async function get_report(access_token: string, id: number) {
-    return request<any>(access_token, `/${id}/report`)
+    return api_request<any>(`${API_ENDPOINT}/${id}/report`, { token: access_token })
 }
