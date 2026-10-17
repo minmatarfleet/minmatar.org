@@ -70,6 +70,8 @@ import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astr
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import FleetFacts from '@components/blocks/FleetFacts.astro';
 import FleetMyPilots from '@components/blocks/FleetMyPilots.astro';
+import SectionTabs from '@components/blocks/SectionTabs.astro';
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
 import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
@@ -77,6 +79,18 @@ import FleetRoles from '@components/blocks/FleetRoles.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
 
 // Pilots pick ships from the doctrine; a cancelled fleet takes no more picks.
+const fleet_tabs = [
+    { id: 'overview', label: t('fleets.tabs.overview') },
+    ...(!history && fleet.status !== 'cancelled' && composition.length > 0 && pilots.length > 0 ? [{ id: 'your-pilots', label: t('fleets.tabs.your_pilots') }] : []),
+    ...(is_fleet_commander ? [{ id: 'fleet', label: t('fleets.tabs.fleet') }] : []),
+]
+
+import { query_string } from '@helpers/string'
+const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
+    fleet_id: fleet.id,
+    ...(can_manage && { can_manage: true }),
+})}`
+
 const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.length > 0 && pilots.length > 0
 
 ---
@@ -100,11 +114,11 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
             init_tooltips={init_tooltips}
         />
 
-        {fleet.description &&
-            <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
-                <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
-                <Markdown markdown={fleet.description as string} />
-            </section>
+        {history && fleet.description &&
+                <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
+                    <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
+                    <Markdown markdown={fleet.description as string} />
+                </section>
         }
     </Flexblock>
 
@@ -160,109 +174,131 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
         </Wrapper>
     }
     
-    <hr class="[ border-bottom animate-fade-in animate-duration-250 animate-delay-1000 ]" />
-
-    {show_my_pilots &&
-        <Wrapper
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-        >
-            <FleetMyPilots
-                fleet_id={fleet.id}
-                pilots={pilots}
-                volunteers={ship_volunteers}
-                readonly={fleet.status === 'cancelled'}
-                can_manage={can_manage}
-            />
-        </Wrapper>
-    }
-
-    {!history && roles &&
-        <Wrapper
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-        >
-            <FleetRoles
-                roles={roles}
-                composition={composition}
-                pilots={pilots}
-                fleet_id={fleet.id}
-                readonly={fleet.status === 'cancelled'}
-                is_fleet_commander={can_manage}
-            />
-        </Wrapper>
-    }
-
     {!history &&
-        <>
-        {/* Live, the FC watches who is in fleet before the ships list. */}
-        {is_fleet_commander &&
-            <Wrapper
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                x-data={`{
-                    global_collapse: $persist(false),
-                }`}
-            >
-                {fleet?.tracking &&
-                    <FleetCompositionBlock
-                        composition={fleet_composition ?? []}
-                        fleet_radar={fleet_radar ?? []}
-                        fleet_id={fleet.id}
-                    />
+        <SectionTabs
+            aria_label={t('fleets.tabs.label')}
+            id_prefix="fleet"
+            tabs={fleet_tabs}
+        >
+            <SectionTabPanel id="overview" id_prefix="fleet" is_default={true}>
+                <BlockList gap="var(--space-xl)">
+                {fleet.description &&
+                    <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
+                        <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
+                        <Markdown markdown={fleet.description as string} />
+                    </section>
                 }
 
-                {!fleet?.tracking &&
-                    <template
-                        x-if="tracking_started"
+                    {roles &&
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
                     >
-                        <div
-                            x-data={`{
-                                init() {
-                                    htmx.process($el)
-                                }
-                            }`}
-                            hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                            hx-trigger="load delay:30s once"
-                            hx-indicator=".loader"
-                            hx-swap="innerHTML transition:true"
+                        <FleetRoles
+                            roles={roles}
+                            composition={composition}
+                            pilots={pilots}
+                            fleet_id={fleet.id}
+                            readonly={fleet.status === 'cancelled'}
+                            is_fleet_commander={can_manage}
+                        />
+                    </Wrapper>
+                    }
+
+                    {(composition.length > 0 || can_manage) &&
+                        <Wrapper
+                            padding_block='0'
+                            padding_inline='0'
+                            max_width='var(--max-col-width)'
+                            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
                         >
-                            <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                        </div>
-                    </template>
-                }
-            </Wrapper>
-        }
+                            <FleetShips
+                                fleet_id={fleet.id}
+                                composition={composition}
+                                volunteers={ship_volunteers}
+                                refits={refits}
+                                pilots={pilots}
+                                supply={supply}
+                                readonly={fleet.status === 'cancelled'}
+                                can_manage={can_manage}
+                                doctrine_name={fleet?.doctrine?.name ?? null}
+                            />
+                        </Wrapper>
+                    }
+                </BlockList>
+            </SectionTabPanel>
 
-        {!history && (composition.length > 0 || can_manage) &&
-            <Wrapper
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            >
-                <FleetShips
-                    fleet_id={fleet.id}
-                    composition={composition}
-                    volunteers={ship_volunteers}
-                    refits={refits}
-                    pilots={pilots}
-                    supply={supply}
-                    readonly={fleet.status === 'cancelled'}
-                    can_manage={can_manage}
-                    doctrine_name={fleet?.doctrine?.name ?? null}
-                />
-            </Wrapper>
-        }
+            {show_my_pilots &&
+                <SectionTabPanel id="your-pilots" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <Flexblock gap="var(--space-l)">
+                            <FleetMyPilots
+                                pilots={pilots}
+                                volunteers={ship_volunteers}
+                            />
 
-        </>
+                            <div
+                                hx-get={PICK_SHIPS_URL}
+                                hx-trigger="load"
+                                hx-swap="innerHTML"
+                            >
+                                <p class="[ loading ]">{t('fleets.tabs.loading_picker')}</p>
+                            </div>
+                        </Flexblock>
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+
+            {is_fleet_commander &&
+                <SectionTabPanel id="fleet" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                        x-data={`{
+                            global_collapse: $persist(false),
+                        }`}
+                    >
+                        {fleet?.tracking &&
+                            <FleetCompositionBlock
+                                composition={fleet_composition ?? []}
+                                fleet_radar={fleet_radar ?? []}
+                                fleet_id={fleet.id}
+                            />
+                        }
+
+                        {!fleet?.tracking &&
+                            <template
+                                x-if="tracking_started"
+                            >
+                                <div
+                                    x-data={`{
+                                        init() {
+                                            htmx.process($el)
+                                        }
+                                    }`}
+                                    hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                                    hx-trigger="load delay:30s once"
+                                    hx-indicator=".loader"
+                                    hx-swap="innerHTML transition:true"
+                                >
+                                    <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                                </div>
+                            </template>
+                        }
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+        </SectionTabs>
     }
+
 </BlockList>
 <style lang="scss">
     .fleet-briefing {

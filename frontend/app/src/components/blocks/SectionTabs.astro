@@ -28,6 +28,7 @@ const default_tab = tab_ids[0] ?? ''
     <div
         {...attributes}
         class:list={['[ section-tabs ]', Astro.props.class]}
+        x-on:hashchange.window="if (tabs.includes(window.location.hash.slice(1))) select(window.location.hash.slice(1))"
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},

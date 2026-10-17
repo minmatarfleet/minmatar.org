@@ -72,12 +72,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <small id="count-text-oob" hx-swap-oob="true">
-        {count_text}
-    </small>
-
-    <>{upcoming ?
-        <FleetSchedule schedule={schedule as FleetScheduleData} init_tooltips={true} /> :
-        <FleetHistoryList history={history as FleetHistory} init_tooltips={true} />
-    }</>
+    <>
+        {!upcoming &&
+            <small id="count-text-oob" hx-swap-oob="true">{count_text}</small>
+        }
+        {upcoming ?
+            <FleetSchedule schedule={schedule as FleetScheduleData} init_tooltips={true} /> :
+            <FleetHistoryList history={history as FleetHistory} init_tooltips={true} />
+        }
+    </>
 }

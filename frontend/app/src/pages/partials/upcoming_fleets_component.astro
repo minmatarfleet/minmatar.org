@@ -36,15 +36,9 @@ const fleets = schedule.fleets
 
 const TIMEAGO_UPDATE_RATE_MS = 10000
 
-const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
-    .replace('{count}', String(fleets.length))
 
 import FleetSchedule from '@components/blocks/FleetSchedule.astro';
 ---
-
-<small id="count-text-oob" hx-swap-oob="true">
-    {count_text}
-</small>
 
 <div
     class="[ relative ]"

@@ -154,14 +154,9 @@ import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetManageMenu from '@components/blocks/FleetManageMenu.astro';
 
-import { query_string } from '@helpers/string'
-// Pilots pick ships from the page actions: the header on desktop, the
-// pinned bottom bar on phones.
+// Pilots pick ships in the Your pilots tab; on phones the bottom actions
+// bar links straight to it.
 const can_pick_ships = Boolean(fleet) && !history && fleet?.status !== 'cancelled' && composition.length > 0 && pilots.length > 0
-const PICK_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
-    fleet_id: fleet_id,
-    ...(can_manage_fleet && { can_manage: true }),
-})}`
 
 
 const page_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`;
@@ -206,10 +201,9 @@ const breadcrumbs = [
             <PageActions>
                 {can_pick_ships &&
                     <Button
-                        type="button"
+                        href="#your-pilots"
                         color="green"
                         class="[ xl:hidden! ]"
-                        x-on:click={`show_modal({ partial: '${PICK_SHIPS_MODAL_URL}' })`}
                     >
                         {t('fleets.spotlight.pick_ships')}
                     </Button>

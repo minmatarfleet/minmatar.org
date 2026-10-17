@@ -210,10 +210,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 {!fetch_error && !history && refresh_roles &&
     <FleetMyPilots
         hx-swap-oob="true"
-        fleet_id={fleet_id}
         pilots={pilots}
         volunteers={volunteers}
-        readonly={readonly}
-        can_manage={can_manage}
     />
 }

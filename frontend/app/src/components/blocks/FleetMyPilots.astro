@@ -1,32 +1,24 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { FleetShipVolunteer } from '@helpers/api.minmatar.org/fleets'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { query_string } from '@helpers/string'
 
 /**
- * Which ship each of the viewer's characters is bringing. Picking or
- * changing opens the same ship picker as the ships section, which handles
- * one ship per character. Re-rendered out of band when picks are saved.
+ * Which ship each of the viewer's characters is bringing, above the ship
+ * picker in the Your pilots tab. Re-rendered out of band when picks are saved.
  */
 interface Props {
-    fleet_id:       number;
     pilots:         SummaryCharacter[];
     volunteers:     FleetShipVolunteer[];
-    readonly?:      boolean;
-    can_manage?:    boolean;
     [propName: string]: any;
 }
 
 const {
-    fleet_id,
     pilots,
     volunteers,
-    readonly = false,
-    can_manage = false,
     ...attributes
 } = Astro.props
 
@@ -35,13 +27,6 @@ delete attributes.class
 const my_character_ids = new Set(pilots.map(pilot => pilot.character_id))
 const flying = volunteers.filter(volunteer => my_character_ids.has(volunteer.character_id))
 const not_flying = pilots.length - new Set(flying.map(volunteer => volunteer.character_id)).size
-
-const PICK_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
-    fleet_id: fleet_id,
-    ...(can_manage && { can_manage: true }),
-})}`
-
-import Button from '@components/blocks/Button.astro'
 ---
 
 <section
@@ -51,7 +36,7 @@ import Button from '@components/blocks/Button.astro'
     {...attributes}
 >
     <header>
-        <h2 id="fleet-my-pilots-title">{t('fleets.my_pilots.title')}</h2>
+        <h2 id="fleet-my-pilots-title" class="[ visually-hidden ]">{t('fleets.my_pilots.title')}</h2>
         {flying.length > 0 &&
             <small>{t('fleets.my_pilots.flying').replace('{count}', flying.length.toString())}</small>
         }
@@ -76,20 +61,10 @@ import Button from '@components/blocks/Button.astro'
         <p>{t('fleets.my_pilots.none')}</p>
     }
 
-    {!readonly && pilots.length > 0 &&
-        <Button
-            type="button"
-            size="sm"
-            color={flying.length > 0 ? 'transparent' : 'green'}
-            x-on:click={`show_modal({ partial: '${PICK_SHIPS_MODAL_URL}' })`}
-        >
-            {flying.length > 0 ? t('fleets.spotlight.change_ships') : t('fleets.spotlight.pick_ships')}
-        </Button>
-    }
 </section>
 
 <style lang="scss">
-    /* One strip across the page: who you are bringing, then the button. */
+    /* Who you are bringing, at the top of the Your pilots tab. */
     .fleet-my-pilots {
         display: flex;
         flex-wrap: wrap;
@@ -114,10 +89,6 @@ import Button from '@components/blocks/Button.astro'
             margin: 0;
         }
 
-        > :global(.button) {
-            flex: 0 0 auto;
-            width: auto;
-        }
 
         ul {
             flex: 999 1 20rem;
@@ -154,10 +125,4 @@ import Button from '@components/blocks/Button.astro'
         }
     }
 
-    /* Below xl the page actions bar at the bottom carries "Pick ships". */
-    @media (max-width: 79.99rem) {
-        .fleet-my-pilots :global(button) {
-            display: none;
-        }
-    }
 </style>

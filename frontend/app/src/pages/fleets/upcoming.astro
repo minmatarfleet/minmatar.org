@@ -74,8 +74,6 @@ import {
     get_location_cover_990,
 } from '@helpers/covers'
 
-const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
-    .replace('{count}', String(fleets.length))
 
 const is_video_cover = active_fleets.length > 0 ?
     Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
@@ -140,7 +138,6 @@ const page_title = t('fleets.upcoming.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small id="count-text-oob">{count_text}</small>
                 </Flexblock>
             </FlexInline>
             <PageActions>
