@@ -528,3 +528,78 @@ class MakeUserObjectsTestCase(TestCase):
         self.assertEqual(
             EvePlayer.objects.get(user=again).nickname, first.nickname
         )
+
+
+def _discord_profile(discord_id, username):
+    return {
+        "id": discord_id,
+        "username": username,
+        "discriminator": "0",
+        "avatar": "abc",
+    }
+
+
+class DiscordLoginIdentityTestCase(TestCase):
+    """The Discord ID picks the account; a username never does."""
+
+    def test_rename_keeps_the_same_account(self):
+        original = make_user_objects(_discord_profile(5001, "alice"))
+        EveCharacter.objects.create(
+            character_id=91001, character_name="Alice Main", user=original
+        )
+
+        renamed = make_user_objects(_discord_profile(5001, "alice2"))
+
+        self.assertEqual(renamed.id, original.id)
+        self.assertEqual(renamed.username, "alice2")
+        self.assertEqual(User.objects.filter(username="alice").count(), 0)
+        self.assertEqual(
+            EveCharacter.objects.get(character_id=91001).user_id, original.id
+        )
+        self.assertEqual(DiscordUser.objects.get(id=5001).user_id, original.id)
+
+    def test_released_username_does_not_open_previous_owners_account(self):
+        victim = User.objects.create(username="alice", is_superuser=True)
+        DiscordUser.objects.create(id=5001, user=victim, discord_tag="alice#0")
+
+        claimer = make_user_objects(_discord_profile(6002, "alice"))
+
+        self.assertNotEqual(claimer.id, victim.id)
+        self.assertFalse(claimer.is_superuser)
+        self.assertEqual(DiscordUser.objects.get(id=5001).user_id, victim.id)
+        self.assertEqual(DiscordUser.objects.get(id=6002).user_id, claimer.id)
+
+    def test_account_without_discord_link_is_not_handed_over(self):
+        # The state the old code left behind after a rename: characters on
+        # an account no DiscordUser points at.
+        stranded = User.objects.create(username="alice")
+        EveCharacter.objects.create(
+            character_id=91002, character_name="Stranded", user=stranded
+        )
+
+        claimer = make_user_objects(_discord_profile(6003, "alice"))
+
+        self.assertNotEqual(claimer.id, stranded.id)
+        self.assertEqual(
+            EveCharacter.objects.get(character_id=91002).user_id, stranded.id
+        )
+
+    def test_case_variant_of_existing_username_gets_its_own_account(self):
+        other = User.objects.create(username="Alice")
+        DiscordUser.objects.create(id=5004, user=other, discord_tag="Alice#0")
+
+        claimer = make_user_objects(_discord_profile(6004, "alice"))
+
+        self.assertNotEqual(claimer.id, other.id)
+        self.assertTrue(claimer.username.startswith("alice__d"))
+
+    def test_rename_onto_a_stale_accounts_name_keeps_current_username(self):
+        stale = User.objects.create(username="bob")
+        DiscordUser.objects.create(id=5005, user=stale, discord_tag="bob#0")
+        mover = make_user_objects(_discord_profile(6005, "carol"))
+
+        again = make_user_objects(_discord_profile(6005, "bob"))
+
+        self.assertEqual(again.id, mover.id)
+        self.assertEqual(again.username, "carol")
+        self.assertEqual(User.objects.get(id=stale.id).username, "bob")
