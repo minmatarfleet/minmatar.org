@@ -1,9 +1,9 @@
 """Custom industry orders and loyalty admin views."""
 
-from django.conf import settings
 from django.db.models import Count
 from django.urls import reverse
 
+from app.links import site_url
 from industry.helpers.admin_urls import add_url, changelist_url
 from industry.helpers.admin_views import (
     get_order_or_redirect,
@@ -27,9 +27,7 @@ from industry.models import (
 
 
 def _web_base() -> str:
-    return getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    return site_url()
 
 
 def _order_counts(order: IndustryOrder) -> dict:

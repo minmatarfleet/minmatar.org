@@ -1,3 +1,6 @@
+from app.links import site_url
+
+
 def get_fleet_discord_notification(
     fleet_id,
     fleet_type,
@@ -51,14 +54,16 @@ def get_fleet_discord_notification(
                     {
                         "style": 5,
                         "label": "View Fleet Information",
-                        "url": f"https://my.minmatar.org/fleets/history/{fleet_id}",
+                        "url": site_url(f"/fleets/history/{fleet_id}"),
                         "disabled": False,
                         "type": 2,
                     },
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": "https://my.minmatar.org/learning/guides/new-player-fleet-guide/",
+                        "url": site_url(
+                            "/learning/guides/new-player-fleet-guide/"
+                        ),
                         "disabled": False,
                         "type": 2,
                     },
@@ -75,7 +80,7 @@ def get_fleet_discord_notification(
                     "name": f"{fleet_commander_name}",
                     "icon_url": f"https://images.evetech.net/characters/{fleet_commander_id}/portrait?size=32",
                 },
-                "url": "https://my.minmatar.org/",
+                "url": site_url("/"),
                 "footer": {
                     "text": "Minmatar Fleet FC Team",
                     "icon_url": "https://minmatar.org/wp-content/uploads/2023/04/Logo13.png",

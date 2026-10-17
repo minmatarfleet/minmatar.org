@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from django import forms
-from django.conf import settings
 
+from app.links import site_url
 from campaigns.constants import CAMPAIGN_COVER_CHOICES, CAMPAIGN_COVER_PATHS
 from campaigns.models import (
     AreaScope,
@@ -31,8 +31,7 @@ class CoverImageRadioSelect(forms.RadioSelect):
             name, value, label, selected, index, subindex=subindex, attrs=attrs
         )
         path = "" if value in (None, "") else str(value)
-        base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-        option["cover_url"] = f"{base.rstrip('/')}{path}" if path else ""
+        option["cover_url"] = site_url(path) if path else ""
         return option
 
 

@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from django.conf import settings
-
+from app.links import site_url
 from fleets.models import NpsiExternalEvent
 
 POST_CUSTOM_ID_PREFIX = "npsi:create:"
@@ -30,8 +29,7 @@ def _unix(dt: datetime) -> int:
 
 
 def _fleet_url(fleet_id: int) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/"
+    return site_url("/fleets/upcoming/")
 
 
 def npsi_event_embed(event: NpsiExternalEvent) -> dict:

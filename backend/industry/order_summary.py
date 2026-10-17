@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.db.models import Case, IntegerField, Value, When
 
+from app.links import site_url
 from industry.endpoints.orders.serialization import (
     order_line_profit_per_unit,
     order_line_target_unit_price,
@@ -197,6 +198,6 @@ def get_order_summary_message(
             f"**Total order amount:** {format_isk_billions_trimmed(totals.total_order_amount_isk)}",
             f"**Total estimated profit:** {format_isk_billions_trimmed(totals.total_estimated_profit_isk)}",
             "",
-            "[View Order page](https://my.minmatar.org/industry/orders/)",
+            f"[View Order page]({site_url('/industry/orders/')})",
         ]
     )

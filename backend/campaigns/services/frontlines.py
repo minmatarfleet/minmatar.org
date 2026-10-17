@@ -14,6 +14,7 @@ from datetime import timedelta
 import requests
 from django.utils import timezone
 
+from app.links import PRODUCTION_SITE_URL
 from campaigns.models import (
     Campaign,
     CampaignAdvantageReading,
@@ -25,7 +26,7 @@ from eveonline.constants import AMARR_FACTION_ID, MINMATAR_FACTION_ID
 logger = logging.getLogger(__name__)
 
 WARZONE_STATUS_URL = "https://www.eveonline.com/api/warzone/status"
-USER_AGENT = "minmatar.org campaigns (https://my.minmatar.org)"
+USER_AGENT = f"minmatar.org campaigns ({PRODUCTION_SITE_URL})"
 # The page itself is served with max-age 150s; re-recording an unchanged
 # reading more often than this only pads the table.
 MIN_INTERVAL_MINUTES = 10
