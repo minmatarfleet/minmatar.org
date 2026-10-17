@@ -126,10 +126,8 @@ import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import FluidFixed from '@components/compositions/FluidFixed.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyQuote from '@components/blocks/LoyaltyQuote.astro'
-import LoyaltyDeskActivity from '@components/blocks/LoyaltyDeskActivity.astro'
 import LoyaltySaleSteps from '@components/blocks/LoyaltySaleSteps.astro'
 import LoyaltyMyOrders from '@components/blocks/LoyaltyMyOrders.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
@@ -224,15 +222,13 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 <p>{t('industry.loyalty.rates.empty')}</p>
             ) : (
                 <>
-                    <FluidFixed width="24rem" gap="var(--space-m)" class="[ loyalty-top ]">
-                        <LoyaltyQuote
-                            currency={currency}
-                            week_median_seconds={week_median_seconds}
-                            is_logged_in={is_logged_in}
-                            login_url={login_url}
-                        />
-                        {stats && <LoyaltyDeskActivity stats={stats} week_stats={week_stats} />}
-                    </FluidFixed>
+                    <LoyaltyQuote
+                        currency={currency}
+                        stats={stats}
+                        week_stats={week_stats}
+                        is_logged_in={is_logged_in}
+                        login_url={login_url}
+                    />
 
                     <LoyaltyMyOrders orders={my_orders} current_user_id={current_user_id} />
 
@@ -342,10 +338,6 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 display: none;
             }
         }
-    }
-
-    :global(.loyalty-top) {
-        align-items: start;
     }
 
     .loyalty-book {

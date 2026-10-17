@@ -4,7 +4,6 @@ import type { LoyaltyOrderStats } from '@dtypes/api.minmatar.org'
 import { format_number } from '@helpers/numbers'
 import { format_close_time } from '@helpers/loyalty_order_stats'
 import { weekly_bars } from '@helpers/loyalty_desk'
-import { get_player_icon } from '@helpers/eve_image_server'
 
 const { t, lang } = i18n(Astro.url)
 
@@ -24,7 +23,6 @@ const bars = weekly_bars(stats.weekly)
 const week_label = (week_start: string) =>
     new Date(`${week_start}T00:00:00Z`).toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
 const median_value = week_stats?.median_close_seconds ?? stats.median_close_seconds ?? null
-const converters = (stats.converters ?? []).filter((c) => c.character_id)
 const footnote = week_stats && week_stats.completed > 0
     ? t('industry.loyalty.activity.within_day')
         .replace('{paid}', String(week_stats.paid_within_day ?? 0))
@@ -37,7 +35,7 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
 
 <aside class:list={['[ loyalty-activity ]', Astro.props.class]} aria-labelledby="loyalty-activity-title" {...attributes}>
     <div class="[ loyalty-activity__head ]">
-        <h2 id="loyalty-activity-title">{t('industry.loyalty.activity.title')}</h2>
+        <h3 id="loyalty-activity-title">{t('industry.loyalty.activity.title')}</h3>
         <small>{days_label}</small>
     </div>
 
@@ -93,29 +91,6 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
 
     {footnote && <p class="[ loyalty-activity__note ]">{footnote}</p>}
 
-    {converters.length > 0 && (
-        <div class="[ loyalty-activity__team ]">
-            <ul class="[ loyalty-activity__faces ]">
-                {converters.slice(0, 8).map((converter) => (
-                    <li>
-                        <img
-                            src={get_player_icon(converter.character_id as number, 64)}
-                            alt={converter.name}
-                            title={converter.name}
-                            width="32"
-                            height="32"
-                            loading="lazy"
-                        />
-                    </li>
-                ))}
-            </ul>
-            <small>
-                {t('industry.loyalty.activity.converters')
-                    .replace('{count}', String(converters.length))
-                    .replace('{days}', String(stats.days))}
-            </small>
-        </div>
-    )}
 </aside>
 
 <style lang="scss">
@@ -134,7 +109,7 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
         align-items: baseline;
         gap: var(--space-xs);
 
-        h2 {
+        h3 {
             margin: 0;
             font-family: var(--default-font);
             font-size: var(--step-0);
@@ -147,13 +122,15 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
         }
     }
 
+    /* Two per row; a value too wide to share a row takes its own. */
     .loyalty-activity__stats {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: var(--space-s);
         margin: 0;
 
         div {
+            flex: 1 1 40%;
             display: flex;
             flex-direction: column;
             gap: var(--space-3xs);
@@ -167,6 +144,7 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
         dd {
             margin: 0;
             font-size: var(--step-2);
+            white-space: nowrap;
             font-weight: 700;
             color: var(--highlight);
 
@@ -225,38 +203,5 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
         font-size: var(--step--1);
         line-height: 1.5;
         color: var(--faded);
-    }
-
-    .loyalty-activity__team {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-xs);
-        padding-block-start: var(--space-s);
-        border-block-start: 1px solid var(--border-color-hover);
-
-        small {
-            color: var(--faded);
-        }
-    }
-
-    .loyalty-activity__faces {
-        display: flex;
-        margin: 0;
-        padding: 0;
-        padding-inline-end: var(--space-2xs);
-        list-style: none;
-
-        li + li {
-            margin-inline-start: calc(var(--space-2xs) * -1);
-        }
-
-        img {
-            display: block;
-            width: var(--space-l);
-            height: var(--space-l);
-            border: 2px solid var(--component-background);
-            border-radius: 50%;
-        }
     }
 </style>
