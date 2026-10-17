@@ -1,0 +1,93 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeShowcaseWeek } from '@dtypes/api.minmatar.org'
+import { format_number } from '@helpers/numbers'
+import { format_date_short } from '@helpers/date'
+import { fill_template } from '@helpers/tribe_activity'
+
+interface Props {
+    weekly: TribeShowcaseWeek[]
+    record_week_lp?: number
+}
+
+const {
+    weekly,
+    record_week_lp = 0,
+} = Astro.props
+
+const peak = Math.max(1, ...weekly.map((week) => week.lp))
+const best = Math.max(0, ...weekly.map((week) => week.lp))
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.lp.weekly_title')}
+    caption={t('tribes.activity.lp.weekly_caption')}
+>
+    <div class="[ weekly-bars ]">
+        <ol class="[ weekly-bars__chart ]">
+            {weekly.map((week) =>
+                <li
+                    class:list={['[ weekly-bars__bar ]', { 'weekly-bars__bar--best': week.lp > 0 && week.lp === best }]}
+                    style={`block-size: ${Math.max(2, (week.lp / peak) * 100)}%`}
+                    title={fill_template(t('tribes.activity.lp.weekly_label'), {
+                        week: format_date_short(lang, week.week_start),
+                        lp: format_number(week.lp),
+                    })}
+                >
+                    <span class="[ visually-hidden ]">
+                        {fill_template(t('tribes.activity.lp.weekly_label'), {
+                            week: format_date_short(lang, week.week_start),
+                            lp: format_number(week.lp),
+                        })}
+                    </span>
+                </li>
+            )}
+        </ol>
+        {record_week_lp > 0 &&
+            <p class="[ weekly-bars__record ]">
+                {fill_template(t('tribes.activity.lp.record_week'), {
+                    value: format_number(record_week_lp),
+                })}
+            </p>
+        }
+    </div>
+</ActivityBlock>
+
+<style lang="scss">
+    .weekly-bars {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .weekly-bars__chart {
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+        block-size: calc(var(--space-3xl) * 2);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .weekly-bars__bar {
+        flex: 1;
+        background: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    }
+
+    .weekly-bars__bar--best {
+        background: var(--fleet-yellow);
+    }
+
+    .weekly-bars__record {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+</style>

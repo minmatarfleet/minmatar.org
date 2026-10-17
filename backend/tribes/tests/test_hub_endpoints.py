@@ -238,8 +238,8 @@ class TribeGroupShowcaseTestCase(TestCase):
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
-            name="Thinkspeak",
-            code="pulse.thinkspeak",
+            name="Tournaments",
+            code="pulse.tournaments",
         )
         self.alliance = User.objects.create_user(username="ally")
         _grant_alliance_perm(self.alliance)

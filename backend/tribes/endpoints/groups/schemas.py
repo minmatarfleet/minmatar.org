@@ -103,6 +103,7 @@ class TribeGroupShowcaseContributorSchema(BaseModel):
     character_name: str = ""
     metric_key: str = ""
     metric_value: Any = 0
+    values: dict = {}
 
 
 class TribeGroupShowcaseSchema(BaseModel):
@@ -117,3 +118,4 @@ class TribeGroupShowcaseSchema(BaseModel):
     totals: dict = {}
     columns: List[str] = []
     contributors: List[TribeGroupShowcaseContributorSchema] = []
+    highlights: dict = {}

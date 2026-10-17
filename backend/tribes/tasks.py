@@ -5,6 +5,7 @@ Tasks:
 - create_tribe_membership_reminders: Discord reminders for pending memberships.
 - remove_tribe_members_without_permission: Removes members lacking base permission.
 - ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
+- warm_tribe_group_showcases: Rebuild cached group Activity tabs.
 """
 
 import logging
@@ -24,7 +25,9 @@ from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
 from tribes.helpers.external_guild import reconcile_external_guilds
-from tribes.models import TribeGroupMembership
+from tribes.helpers.showcase import build_group_showcase
+from tribes.models import TribeGroup, TribeGroupMembership
+from tribes.reports.registry import REPORT_BINDINGS
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -169,3 +172,24 @@ def remove_tribe_members_without_permission():
 def reconcile_tribe_external_guilds():
     """Desired-state poll for tribe secondary Discord guild seats."""
     return reconcile_external_guilds()
+
+
+@app.task()
+def warm_tribe_group_showcases():
+    """
+    Rebuild every group's Activity tab cache so no page view pays for the
+    all-time and best-month scans. Runs twice an hour; the cache lasts one.
+    """
+    groups = TribeGroup.objects.filter(
+        is_active=True,
+        code__in=[c for c, b in REPORT_BINDINGS.items() if not b.manual],
+    )
+    for group in groups:
+        try:
+            build_group_showcase(group, refresh=True)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Error warming showcase for tribe group %s: %s",
+                group.code,
+                exc,
+            )
