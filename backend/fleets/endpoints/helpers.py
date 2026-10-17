@@ -6,7 +6,7 @@ from typing import Optional
 
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from discord.outbox import queue_channel_message
 from eveonline.helpers.characters import user_characters
 from fittings.models import EveDoctrine
 from groups.helpers.feature_access import can_use_feature
@@ -97,8 +97,17 @@ def _fleet_authorized(request, fleet: EveFleet) -> bool:
 
 
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
-    """Send a Discord pre-ping for a fleet."""
+    """Queue a Discord pre-ping for a fleet; a worker posts it.
+
+    Returns False when the fleet has no audience channel to ping.
+    """
     if not fleet.audience:
+        return False
+    if not fleet.audience.discord_channel_id:
+        logger.error(
+            "Error sending Discord pre-ping for fleet %d : no channel",
+            fleet.id,
+        )
         return False
 
     notification = get_fleet_discord_notification(
@@ -119,19 +128,12 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
         fleet_start_time=fleet.start_time,
     )
 
-    try:
-        DiscordClient().create_message(
-            channel_id=fleet.audience.discord_channel_id,
-            payload=notification,
-        )
-        return True
-    except Exception as e:
-        logger.error(
-            "Error sending Discord pre-ping for fleet %d : %s",
-            fleet.id,
-            str(e),
-        )
-        return False
+    queue_channel_message(
+        fleet.audience.discord_channel_id,
+        payload=notification,
+        context=f"pre-ping for fleet {fleet.id}",
+    )
+    return True
 
 
 def _fleet_patch_audience_location_errors(

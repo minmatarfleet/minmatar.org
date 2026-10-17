@@ -4,9 +4,9 @@ from django.contrib.auth.models import User
 from django.db.models import signals
 from django.dispatch import receiver
 
+from discord.outbox import on_commit_enqueue
 from tribes.helpers.external_guild import (
-    on_membership_became_active,
-    on_membership_became_inactive,
+    binding_for_group,
     prepare_seats_for_user_delete,
 )
 from tribes.helpers.tribe_auth_groups import (
@@ -110,17 +110,31 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
     status_changed = created or (
         previous_status is not None and previous_status != current_status
     )
-    if status_changed:
+    # Queued so the request that changed the status never waits on Discord.
+    if status_changed and current_status in (
+        TribeGroupMembership.STATUS_ACTIVE,
+        TribeGroupMembership.STATUS_INACTIVE,
+    ):
         try:
-            if current_status == TribeGroupMembership.STATUS_ACTIVE:
-                on_membership_became_active(instance)
-            elif current_status == TribeGroupMembership.STATUS_INACTIVE:
-                on_membership_became_inactive(instance)
+            _queue_external_guild_sync(instance)
         except Exception:  # pylint: disable=broad-except
             logger.exception(
                 "External guild sync failed for membership %s",
                 instance.pk,
             )
+
+
+def _queue_external_guild_sync(membership: TribeGroupMembership) -> None:
+    if binding_for_group(membership.tribe_group_id) is None:
+        return
+    # pylint: disable=import-outside-toplevel
+    from tribes.tasks import sync_external_guild_for_membership
+
+    on_commit_enqueue(
+        sync_external_guild_for_membership,
+        (membership.pk,),
+        f"external guild sync for membership {membership.pk}",
+    )
 
 
 @receiver(

@@ -7,6 +7,7 @@ from celery_once import QueueOnce
 
 from app.celery import app
 from discord.client import DiscordClient
+from discord.outbox import on_commit_enqueue
 from fleets.helpers.active_clones import (
     POLL_SPREAD_SECONDS,
     members_to_poll,
@@ -45,7 +46,15 @@ def update_fleet_instances():
         fleet_instance.update_fleet_members()
 
 
-@app.task()
+# Saves within a couple of seconds share one refresh; see
+# queue_fleet_schedule_refresh.
+SCHEDULE_REFRESH_DELAY_SECONDS = 2
+
+
+@app.task(
+    base=QueueOnce,
+    once={"graceful": True, "unlock_before_run": True, "timeout": 60},
+)
 def update_fleet_schedule():
     """
     Updates fleet schedule message to display all upcoming fleets
@@ -126,6 +135,21 @@ def update_fleet_schedule():
 
     # Post new message
     discord_client.create_message(FLEET_SCHEDULE_CHANNEL_ID, payload=payload)
+
+
+def queue_fleet_schedule_refresh() -> None:
+    """Refresh the Discord schedule message from a worker, after commit.
+
+    The refresh deletes and re-posts the channel's messages, so it must not
+    run inside a web request. One queued refresh covers every save made
+    before it starts: QueueOnce drops duplicates while one is waiting and
+    unlocks just before it runs, so a save during a run queues another.
+    """
+    on_commit_enqueue(
+        update_fleet_schedule,
+        context="fleet schedule refresh",
+        countdown=SCHEDULE_REFRESH_DELAY_SECONDS,
+    )
 
 
 @app.task()

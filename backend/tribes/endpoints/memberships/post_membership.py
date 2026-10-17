@@ -3,7 +3,7 @@
 import logging
 
 from authentication import AuthBearer
-from discord.client import DiscordClient
+from discord.outbox import queue_dm
 from eveonline.models import EveCharacter
 from groups.helpers.feature_access import require_feature
 from tribes.endpoints.memberships.schemas import (
@@ -44,15 +44,11 @@ def _send_new_request_dm_to_chief(membership):
         f"**New tribe membership application** for **{tg.name}** ({tg.tribe.name}): "
         f"{applicant} has applied. Please review in the admin panel."
     )
-    try:
-        DiscordClient().send_dm(discord_user_id, message=message)
-    except Exception:  # pylint: disable=broad-except
-        logger.warning(
-            "Failed to send tribe request DM to chief %s for group %s",
-            chief,
-            tg,
-            exc_info=True,
-        )
+    queue_dm(
+        discord_user_id,
+        message=message,
+        context=f"tribe request DM to chief of group {tg.pk}",
+    )
 
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships"

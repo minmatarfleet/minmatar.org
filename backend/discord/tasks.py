@@ -16,6 +16,13 @@ from discord.helpers import (
 from .guilds import sync_discord_guilds
 from .models import DiscordRole, DiscordUser
 
+# Registers the outbox tasks with the worker (autodiscovery only imports
+# <app>.tasks).
+from .outbox import (  # noqa: F401 pylint: disable=unused-import
+    post_discord_message_task,
+    send_discord_dm_task,
+)
+
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
 

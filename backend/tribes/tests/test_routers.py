@@ -1,5 +1,7 @@
 """Tests for tribes router endpoints."""
 
+from unittest.mock import patch
+
 import jwt
 from django.conf import settings
 from django.contrib.auth.models import Permission, User
@@ -7,6 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
 
+from discord.models import DiscordUser
 from eveonline.models import EveCharacter
 from tribes.models import (
     Tribe,
@@ -124,6 +127,42 @@ class MembershipApplyTestCase(TestCase):
         data = response.json()
         self.assertEqual(data["status"], "pending")
         self.assertEqual(data["user_id"], self.user.pk)
+
+    @patch("discord.outbox.send_discord_dm_task")
+    @patch("discord.outbox.DiscordClient")
+    def test_apply_queues_chief_dm_instead_of_sending_inline(
+        self, discord_cls, dm_task
+    ):
+        chief = User.objects.create_user(username="chief")
+        DiscordUser.objects.create(id=777, discord_tag="chief#1", user=chief)
+        self.tribe_group.chief = chief
+        self.tribe_group.save()
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.client.post(
+                f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships",
+                data={"character_ids": [self.character.pk]},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(response.status_code, 200)
+        discord_cls.assert_not_called()
+        dm_task.apply_async.assert_not_called()
+
+        for callback in callbacks:
+            callback()
+        dm_task.apply_async.assert_called_once()
+        args = dm_task.apply_async.call_args.kwargs["args"]
+        self.assertEqual("777", args[0])
+        self.assertEqual(
+            [
+                "**New tribe membership application** for **Mining** "
+                "(Mining): miner has applied. Please review in the admin "
+                "panel."
+            ],
+            args[1],
+        )
+        discord_cls.assert_not_called()
 
     def test_apply_twice_returns_400(self):
         self.client.post(
