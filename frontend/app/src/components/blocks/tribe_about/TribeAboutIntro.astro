@@ -1,0 +1,126 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { Tribe, TribeAbout } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    tribe: Tribe
+    about: TribeAbout | null
+}
+
+const { tribe, about } = Astro.props
+
+interface Vital {
+    value: string
+    label: string
+    detail?: string
+}
+
+const ready = Boolean(about?.ready)
+const vitals: Vital[] = [
+    {
+        value: number_thousand_separator(ready ? about!.people : tribe.total_member_count),
+        label: t('tribes.about.people'),
+        detail: t('tribes.about.people_detail'),
+    },
+    {
+        value: String(tribe.group_count),
+        label: t('tribes.about.groups'),
+    },
+    ready && {
+        value: number_thousand_separator(about!.multi_group_people),
+        label: t('tribes.about.multi_group'),
+    },
+    ready && {
+        value: String(about!.corporation_count),
+        label: t('tribes.about.corporations'),
+    },
+].filter(Boolean) as Vital[]
+
+import TextBox from '@components/layout/TextBox.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+---
+
+<section class="[ intro ]">
+    <div class="[ words ]">
+        {tribe.description && <p class="[ lede ]">{tribe.description}</p>}
+        {tribe.content &&
+            <TextBox max_width="100%">
+                <Markdown markdown={tribe.content} />
+            </TextBox>
+        }
+    </div>
+    <dl class="[ vitals ]">
+        {vitals.map((vital) => (
+            <div class="[ vital ]">
+                <dt class="[ vital-label ]">
+                    {vital.label}
+                    {vital.detail && <span class="[ vital-detail ]"> · {vital.detail}</span>}
+                </dt>
+                <dd class="[ vital-value ]">{vital.value}</dd>
+            </div>
+        ))}
+    </dl>
+</section>
+
+<style lang="scss">
+    .intro {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        gap: var(--space-xl);
+        align-items: center;
+    }
+
+    .words {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-inline-size: 0;
+    }
+
+    .lede {
+        margin: 0;
+        max-inline-size: var(--max-text-width);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .vitals {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 1fr;
+        gap: 1px;
+        background: var(--border-color-hover);
+        border: 1px solid var(--border-color-hover);
+    }
+
+    // Number above its label; the dt stays first in the source for screen readers.
+    .vital {
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: center;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+        background: var(--component-background);
+    }
+
+    .vital-value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .vital-label {
+        font-size: var(--step--1);
+    }
+
+    .vital-detail {
+        color: var(--faded);
+    }
+</style>

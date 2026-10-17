@@ -1,0 +1,47 @@
+---
+interface Props {
+    title: string
+    caption?: string
+    [propName: string]: any
+}
+
+const {
+    title,
+    caption,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<section class:list={['[ tribe-about-section ]', Astro.props.class]} {...attributes}>
+    <header class="[ tribe-about-section__head ]">
+        <h2>{title}</h2>
+        {caption && <p>{caption}</p>}
+    </header>
+    <slot />
+</section>
+
+<style lang="scss">
+    .tribe-about-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .tribe-about-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h2 {
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+</style>

@@ -1,0 +1,94 @@
+---
+interface Bar {
+    label: string
+    value: number
+    /** Read by screen readers and shown on hover. */
+    title: string
+}
+
+interface Props {
+    bars: Bar[]
+    /** Printed under the chart, e.g. the best month. */
+    note?: string
+    [propName: string]: any
+}
+
+const {
+    bars,
+    note,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const peak = Math.max(1, ...bars.map((bar) => bar.value))
+const best = Math.max(0, ...bars.map((bar) => bar.value))
+---
+
+<div class:list={['[ month-bars ]', Astro.props.class]} {...attributes}>
+    <ol class="[ month-bars__chart ]">
+        {bars.map((bar) => (
+            <li class:list={['[ month-bars__col ]', { 'month-bars__col--best': bar.value > 0 && bar.value === best }]} title={bar.title}>
+                <span class="[ month-bars__track ]">
+                    <span class="[ month-bars__bar ]" style={`block-size: ${Math.max(2, (bar.value / peak) * 100)}%`}></span>
+                </span>
+                <span class="[ month-bars__label ]" aria-hidden="true">{bar.label}</span>
+                <span class="[ visually-hidden ]">{bar.title}</span>
+            </li>
+        ))}
+    </ol>
+    {note && <p class="[ month-bars__note ]">{note}</p>}
+</div>
+
+<style lang="scss">
+    .month-bars {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .month-bars__chart {
+        display: flex;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .month-bars__col {
+        flex: 1;
+        min-inline-size: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .month-bars__track {
+        display: flex;
+        align-items: flex-end;
+        block-size: calc(var(--space-3xl) * 2);
+    }
+
+    .month-bars__bar {
+        inline-size: 100%;
+        background: color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+    }
+
+    .month-bars__col--best .month-bars__bar {
+        background: var(--fleet-yellow);
+    }
+
+    .month-bars__label {
+        overflow: hidden;
+        font-size: var(--step--2);
+        text-align: center;
+        color: var(--faded);
+        white-space: nowrap;
+    }
+
+    .month-bars__note {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+</style>

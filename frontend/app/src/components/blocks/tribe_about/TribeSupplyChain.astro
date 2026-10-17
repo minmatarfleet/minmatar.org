@@ -1,0 +1,313 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TribeAboutGroup, TribeAboutSupply } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_number } from '@helpers/numbers'
+import { fill_template } from '@helpers/tribe_activity'
+import {
+    SUPPLY_FLOW,
+    TRIBE_ABOUT_STAGES,
+    group_has_year,
+    month_short,
+    order_groups,
+    trim_leading_zeros,
+} from '@helpers/tribe_about'
+
+interface Props {
+    supply: TribeAboutSupply | null
+    groups: TribeAboutGroup[]
+    tribe_id: number
+}
+
+const { supply, groups, tribe_id } = Astro.props
+
+const chain = order_groups(groups, SUPPLY_FLOW).map((group) => {
+    const stage = TRIBE_ABOUT_STAGES[group.code]
+    const has_year = group_has_year(group)
+    return {
+        group,
+        stage,
+        value: stage && has_year ? stage.value(group.totals) : '',
+        detail: stage?.detail && has_year ? stage.detail(t, group.totals) : '',
+    }
+})
+
+const mining_bars = trim_leading_zeros(supply?.mining_by_month ?? [], (row) => row.volume_m3).map((row) => ({
+    label: month_short(row.month, lang),
+    value: row.volume_m3,
+    title: fill_template(t('tribes.about.supply.month_m3'), {
+        month: month_short(row.month, lang),
+        m3: format_number(row.volume_m3),
+    }),
+}))
+const best_mining = (supply?.mining_by_month ?? []).reduce(
+    (best, row) => (row.volume_m3 > (best?.volume_m3 ?? 0) ? row : best),
+    null as { month: string, volume_m3: number } | null,
+)
+const hulls = groups.find((group) => group.code === 'supply.market')?.highlights?.hulls ?? []
+
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeHullList from '@components/blocks/tribe_about/TribeHullList.astro'
+import TribeMonthBars from '@components/blocks/tribe_about/TribeMonthBars.astro'
+import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astro'
+---
+
+<TribeAboutSection
+    title={t('tribes.about.supply.chain_title')}
+    caption={t('tribes.about.supply.chain_caption')}
+>
+    <ol class="[ chain ]">
+        {chain.map(({ group, stage, value, detail }, index) => (
+            <li class="[ chain__step ]">
+                <span class="[ chain__number ]" aria-hidden="true">{index + 1}</span>
+                <div class="[ chain__who ]">
+                    {stage && <p class="[ tribe-about-eyebrow ]">{t(stage.verb)}</p>}
+                    <h3>
+                        <a href={translatePath(`/alliance/tribes/${tribe_id}/${group.id}/`)}>{group.name}</a>
+                    </h3>
+                    <p class="[ chain__members ]">
+                        {fill_template(t(group.member_count === 1 ? 'tribes.about.members_one' : 'tribes.about.members'), {
+                            n: String(group.member_count),
+                        })}
+                    </p>
+                </div>
+                <div class="[ chain__what ]">
+                    {value ?
+                        <p class="[ chain__value ]">
+                            {value}
+                            {stage && <span class="[ chain__unit ]">{t(stage.unit)}</span>}
+                        </p>
+                        :
+                        <p class="[ chain__quiet ]">{t('tribes.about.quiet_year')}</p>
+                    }
+                    {detail && <p class="[ chain__detail ]">{detail}</p>}
+                </div>
+                {group.top_pilots.length > 0 && stage &&
+                    <div class="[ chain__pilots ]">
+                        <p class="[ tribe-about-eyebrow ]">
+                            {fill_template(t('tribes.about.top_by'), { metric: t(stage.pilot_metric) })}
+                        </p>
+                        <ul>
+                            {group.top_pilots.map((pilot) => (
+                                <li>
+                                    {pilot.character_id &&
+                                        <img src={get_player_icon(pilot.character_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                    }
+                                    <span class="[ chain__pilot-name ]">{pilot.character_name}</span>
+                                    <span class="[ chain__pilot-value ]">{stage.pilot_value(pilot.value)}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                }
+            </li>
+        ))}
+    </ol>
+</TribeAboutSection>
+
+{(mining_bars.length > 0 || (supply?.ores.length ?? 0) > 0 || hulls.length > 0) &&
+    <TribeAboutSection
+        title={t('tribes.about.supply.goods_title')}
+        caption={t('tribes.about.supply.goods_caption')}
+    >
+        <div class="[ tribe-about-row ]">
+            {mining_bars.length > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.supply.mined_by_month')}</h3>
+                    <TribeMonthBars
+                        bars={mining_bars}
+                        note={best_mining
+                            ? fill_template(t('tribes.about.supply.best_month'), {
+                                month: month_short(best_mining.month, lang),
+                                m3: format_number(best_mining.volume_m3),
+                            })
+                            : undefined}
+                    />
+                </article>
+            }
+            {(supply?.ores.length ?? 0) > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <TribeRankedBars
+                        title={t('tribes.about.supply.ores')}
+                        rows={(supply?.ores ?? []).map((ore) => ({
+                            label: ore.name,
+                            value: ore.volume_m3,
+                            display: `${format_number(ore.volume_m3)} m³`,
+                        }))}
+                    />
+                </article>
+            }
+            {hulls.length > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.supply.hulls')}</h3>
+                    <TribeHullList hulls={hulls} />
+                </article>
+            }
+        </div>
+    </TribeAboutSection>
+}
+
+<style lang="scss">
+    .chain {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        background: var(--border-color-hover);
+        border: 1px solid var(--border-color-hover);
+    }
+
+    .chain__step {
+        display: grid;
+        grid-template-columns: var(--space-l) minmax(0, 14rem) minmax(0, 1fr) minmax(0, 20rem);
+        align-items: center;
+        gap: var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        background: var(--component-background);
+    }
+
+    .chain__number {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--faded);
+    }
+
+    .chain__who {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-inline-size: 0;
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    @media (hover: hover) {
+        .chain__who a:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .chain__members,
+    .chain__detail {
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    .chain__members {
+        color: var(--faded);
+    }
+
+    .chain__what {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-inline-size: 0;
+    }
+
+    .chain__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .chain__unit {
+        margin-inline-start: var(--space-3xs);
+        font-size: var(--step-0);
+        color: var(--foreground);
+    }
+
+    .chain__quiet {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--faded);
+    }
+
+    .chain__pilots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-inline-size: 0;
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-size: var(--step--1);
+        }
+
+        img {
+            flex: none;
+            inline-size: var(--space-m);
+            block-size: var(--space-m);
+        }
+    }
+
+    .chain__pilot-name {
+        flex: 1;
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+
+    .chain__pilot-value {
+        font-family: var(--heading-font);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 64rem) {
+        .chain__step {
+            grid-template-columns: var(--space-l) minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .chain__pilots {
+            grid-column: 2 / -1;
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .chain__step {
+            grid-template-columns: var(--space-l) minmax(0, 1fr);
+            align-items: start;
+            gap: var(--space-xs) var(--space-s);
+        }
+
+        .chain__what,
+        .chain__pilots {
+            grid-column: 2 / -1;
+        }
+    }
+
+</style>

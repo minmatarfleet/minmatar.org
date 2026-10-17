@@ -1,0 +1,122 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TribeAboutGroup } from '@dtypes/api.minmatar.org'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    groups: TribeAboutGroup[]
+}
+
+const { groups } = Astro.props
+
+const SUPER_CLASSES = new Set(['Titan', 'Supercarrier'])
+
+// Fishermen's trophies and Thinkspeak's latest stories: the two things a
+// year of Pulse leaves you can actually look at.
+const catches = groups.find((group) => group.code === 'pulse.fishermen')?.highlights?.catches ?? []
+const work = (groups.find((group) => group.code === 'pulse.thinkspeak')?.highlights?.latest_work ?? [])
+    .map((piece) => ({
+        ...piece,
+        href: piece.post_id ? translatePath(`/alliance/propaganda/${piece.post_id}`) : piece.url,
+        external: !piece.post_id,
+    }))
+    .filter((piece) => piece.href)
+
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeKillList from '@components/blocks/tribe_about/TribeKillList.astro'
+---
+
+{(catches.length > 0 || work.length > 0) &&
+    <TribeAboutSection
+        title={t('tribes.about.pulse.showcase_title')}
+        caption={t('tribes.about.pulse.showcase_caption')}
+    >
+        <div class="[ tribe-about-row ]">
+            {catches.length > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.pulse.catches')}</h3>
+                    <TribeKillList
+                        columns={1}
+                        kills={catches.map((kill) => ({
+                            killmail_id: kill.killmail_id,
+                            ship_type_id: kill.ship_type_id,
+                            ship_name: kill.ship_name,
+                            meta: `${kill.ship_class} · ${format_date_short(lang, kill.killed_at)}`,
+                            trophy: SUPER_CLASSES.has(kill.ship_class),
+                        }))}
+                    />
+                </article>
+            }
+            {work.length > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.pulse.latest_work')}</h3>
+                    <ul class="[ work ]">
+                        {work.map((piece) => (
+                            <li>
+                                <a
+                                    href={piece.href}
+                                    target={piece.external ? '_blank' : undefined}
+                                    rel={piece.external ? 'noopener noreferrer' : undefined}
+                                >
+                                    <span class="[ work__title ]">{piece.title.trim()}</span>
+                                    <span class="[ work__meta ]">
+                                        {[piece.author, format_date_short(lang, piece.published_at)].filter(Boolean).join(' · ')}
+                                    </span>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </article>
+            }
+        </div>
+    </TribeAboutSection>
+}
+
+<style lang="scss">
+    .work {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        a {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-2xs) var(--space-xs);
+            box-shadow: inset 0 0 0 1px var(--border-color-hover);
+            color: var(--foreground);
+            text-decoration: none;
+            transition: box-shadow var(--fast-transition);
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    @media (hover: hover) {
+        .work a:hover {
+            box-shadow: inset 0 0 0 1px var(--highlight);
+        }
+    }
+
+    .work__title {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        color: var(--highlight);
+    }
+
+    .work__meta {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

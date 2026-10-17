@@ -193,6 +193,93 @@ export interface TribeGroupShowcase {
     highlights:         TribeShowcaseHighlights;
 }
 
+export interface TribeAboutPilot {
+    character_id:       number | null;
+    character_name:     string;
+    value:              number;
+}
+
+/** One group's last 12 months; ``totals`` keys depend on the group's report. */
+export interface TribeAboutGroup {
+    id:                 number;
+    code:               string;
+    name:               string;
+    member_count:       number;
+    manual:             boolean;
+    totals:             Record<string, number | string>;
+    highlights:         TribeShowcaseHighlights;
+    top_pilots:         TribeAboutPilot[];
+}
+
+export interface TribeAboutCorporation {
+    corporation_id:     number;
+    name:               string;
+    ticker:             string;
+    people:             number;
+}
+
+export interface TribeAboutHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+}
+
+export interface TribeAboutHangarGroup {
+    group_id:           number;
+    code:               string;
+    name:               string;
+    total:              number;
+    hulls:              TribeAboutHull[];
+}
+
+export interface TribeAboutCapitalKill {
+    killmail_id:        number;
+    ship_type_id:       number;
+    ship_name:          string;
+    ship_class:         string;
+    system:             string;
+    killed_at:          string;
+}
+
+export interface TribeAboutCapitals {
+    hangar:                 TribeAboutHangarGroup[];
+    kills_by_month:         { month: string, kills: number }[];
+    year_kills:             number;
+    all_time_kills:         number;
+    first_kill:             string | null;
+    victim_classes:         { name: string, kills: number }[];
+    capital_kills_year:     number;
+    recent_capital_kills:   TribeAboutCapitalKill[];
+    systems:                { name: string, kills: number }[];
+    fleets_year:            number;
+    median_turnout:         number;
+    record_turnout:         { pilots: number, date: string | null, systems: string[] } | null;
+    hours:                  number[];
+}
+
+export interface TribeAboutSupply {
+    mining_by_month:    { month: string, volume_m3: number }[];
+    ores:               { name: string, volume_m3: number }[];
+}
+
+/** A year of the tribe; ``ready`` is false until the backend cache is built. */
+export interface TribeAbout {
+    tribe_id:           number;
+    slug:               string;
+    ready:              boolean;
+    generated_at:       string | null;
+    period_start:       string | null;
+    period_end:         string | null;
+    people:             number;
+    multi_group_people: number;
+    growth:             { months: { month: string, label: string }[], counts: number[] };
+    corporations:       TribeAboutCorporation[];
+    corporation_count:  number;
+    groups:             TribeAboutGroup[];
+    capitals:           TribeAboutCapitals | null;
+    supply:             TribeAboutSupply | null;
+}
+
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
 
 export interface TribeMembershipCharacter {

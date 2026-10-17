@@ -24,12 +24,11 @@ if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
 import type { TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribe, get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 let tribe_group:TribeGroup | null = null
-let tribe_slug = ''
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
 let chief_membership:TribeMembership | null = null
@@ -37,12 +36,7 @@ let fetch_membership_error: Error | false = false
 let user_characters: SummaryCharacter[] = []
 
 try {
-    const [tribe, group] = await Promise.all([
-        get_tribe(tribe_id),
-        get_tribe_group(tribe_id, group_id, auth_token),
-    ])
-    tribe_group = group
-    tribe_slug = tribe.slug
+    tribe_group = await get_tribe_group(tribe_id, group_id, auth_token)
     
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
@@ -112,7 +106,7 @@ const breadcrumbs = [
     { page_title: t('tribes.page_title'), accumulated_path: translatePath('/alliance/tribes/') },
     ...(tribe_group
         ? [
-            { page_title: tribe_group.tribe_name, accumulated_path: `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}` },
+            { page_title: tribe_group.tribe_name, accumulated_path: translatePath(`/alliance/tribes/${tribe_id}/`) },
             { page_title: tribe_group.name, accumulated_path: `/alliance/tribes/${tribe_id}/${group_id}/` },
         ]
         : []),

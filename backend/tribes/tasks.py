@@ -6,6 +6,7 @@ Tasks:
 - remove_tribe_members_without_permission: Removes members lacking base permission.
 - ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
 - warm_tribe_group_showcases: Rebuild cached group Activity tabs.
+- warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages.
 """
 
 import logging
@@ -25,8 +26,9 @@ from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
 from tribes.helpers.external_guild import reconcile_external_guilds
+from tribes.helpers.about import refresh_tribe_about
 from tribes.helpers.showcase import build_group_showcase
-from tribes.models import TribeGroup, TribeGroupMembership
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 from tribes.reports.registry import REPORT_BINDINGS
 
 discord = DiscordClient()
@@ -192,4 +194,28 @@ def warm_tribe_group_showcases():
                 "Error warming showcase for tribe group %s: %s",
                 group.code,
                 exc,
+            )
+
+
+@app.task()
+def refresh_tribe_about_page(tribe_id: int):
+    """Rebuild one tribe's About page cache (queued on a cache miss)."""
+    tribe = Tribe.objects.filter(pk=tribe_id, is_active=True).first()
+    if tribe:
+        refresh_tribe_about(tribe)
+
+
+@app.task()
+def warm_tribe_about_pages():
+    """
+    Rebuild every tribe's About page. It scans a year of killmails, fleets
+    and group reports, so no page view ever computes it. The cache lasts
+    six hours; this runs every three.
+    """
+    for tribe in Tribe.objects.filter(is_active=True):
+        try:
+            refresh_tribe_about(tribe)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Error warming about page for tribe %s: %s", tribe.slug, exc
             )
