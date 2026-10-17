@@ -150,11 +150,31 @@ def get_discord_user(user: User, notify=False):
     return external_discord_user
 
 
-def notify_technology_team(location: str):
-    discord.create_message(
-        DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
-        message=f"Encountered error in {location}",
-    )
+def notify_technology_team(location: str, detail: str = "") -> bool:
+    """Post a short error alert to the technology team channel.
+
+    The one way to alert the team on Discord from error handling. It never
+    raises: callers are usually inside an except block, and a Discord outage
+    must not turn one failure into an aborted task. Log the exception
+    itself (logger.exception) so Sentry has the traceback; this is only the
+    nudge. Returns False if the alert could not be posted.
+    """
+    message = f"Encountered error in {location}"
+    if detail:
+        message = f"{message}: {detail}"
+    try:
+        discord.create_message(
+            DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
+            message=message,
+        )
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Could not post technology team alert for %s",
+            location,
+            exc_info=True,
+        )
+        return False
+    return True
 
 
 def find_unregistered_guild_members():

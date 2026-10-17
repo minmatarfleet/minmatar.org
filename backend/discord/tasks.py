@@ -33,8 +33,8 @@ def sync_discord_guilds_task():
         count = sync_discord_guilds()
         logger.info("Synced %s Discord guild(s)", count)
     except Exception as error:
-        notify_technology_team("sync_discord_guilds")
         logger.exception("Failed to sync Discord guilds: %s", error)
+        notify_technology_team("sync_discord_guilds")
         raise
 
 
@@ -59,6 +59,7 @@ def remove_roles_from_unregistered_guild_members():
 
 @app.task()
 def sync_discord_users():
+    failed = 0
     for user in User.objects.all():
         try:
             sync_discord_user(user.id)
@@ -67,10 +68,16 @@ def sync_discord_users():
                 user, e, "sync_discord_users"
             ):
                 continue
-            notify_technology_team("sync_discord_users")
-            logger.error(
+            failed += 1
+            logger.exception(
                 "Failed to sync discord user %s: %s", user.username, e
             )
+    # One alert per run, after the loop, instead of one per failing user.
+    if failed:
+        notify_technology_team(
+            "sync_discord_users", f"{failed} user(s) failed; see logs"
+        )
+    return failed
 
 
 @app.task()
