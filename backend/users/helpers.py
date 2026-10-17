@@ -4,10 +4,14 @@ from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
-from django.db import IntegrityError, connection
+from django.db import IntegrityError, connection, transaction
 
 from discord.client import DiscordClient
-from discord.models import DiscordRole, DiscordUser
+from discord.models import (
+    DiscordChannelActivityRecord,
+    DiscordRole,
+    DiscordUser,
+)
 from discord.sync_context import disable_discord_group_sync
 from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
@@ -274,13 +278,26 @@ def make_user_objects(user):
         django_user = discord_user.user
         _follow_discord_username(django_user, user["username"])
     else:
-        django_user = _create_user_for_discord(user["username"])
-        discord_user = DiscordUser.objects.create(
-            id=user["id"], user=django_user, discord_tag=discord_tag
-        )
-        logger.info(
-            "Discord user created: %s %s", discord_user.id, discord_tag
-        )
+        try:
+            with transaction.atomic():
+                django_user = _create_user_for_discord(user["username"])
+                discord_user = DiscordUser.objects.create(
+                    id=user["id"], user=django_user, discord_tag=discord_tag
+                )
+            logger.info(
+                "Discord user created: %s %s", discord_user.id, discord_tag
+            )
+        except IntegrityError:
+            # A second first-login for the same Discord ID (double click)
+            # got there first; its account is the one to use.
+            discord_user = (
+                DiscordUser.objects.filter(id=user["id"])
+                .select_related("user")
+                .first()
+            )
+            if discord_user is None:
+                raise
+            django_user = discord_user.user
 
     discord_user.discord_tag = discord_tag
     discord_user.avatar = user["avatar"]
@@ -348,8 +365,16 @@ def _follow_discord_username(django_user: User, discord_username: str):
         django_user.username,
         discord_username,
     )
-    django_user.username = discord_username
-    django_user.save(update_fields=["username"])
+    old_username = django_user.username
+    with transaction.atomic():
+        django_user.username = discord_username
+        django_user.save(update_fields=["username"])
+        # Voice minutes logged under the old name were this pilot's. Move
+        # them so they stay theirs, and are not credited to whoever claims
+        # the released name next.
+        DiscordChannelActivityRecord.objects.filter(
+            username=old_username
+        ).update(username=discord_username)
 
 
 def ensure_eve_player_for_user(django_user: User) -> EvePlayer:

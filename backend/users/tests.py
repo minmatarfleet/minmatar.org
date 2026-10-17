@@ -11,7 +11,7 @@ from esi.models import CallbackRedirect, Token
 
 from app.test import TestCase
 from discord.client import DiscordError
-from discord.models import DiscordUser
+from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import (
     set_primary_character,
@@ -606,6 +606,53 @@ class DiscordLoginIdentityTestCase(TestCase):
         self.assertEqual(again.id, mover.id)
         self.assertEqual(again.username, "carol")
         self.assertEqual(User.objects.get(id=stale.id).username, "bob")
+
+
+class DiscordLoginRenameAndRaceTestCase(TestCase):
+    def test_rename_moves_voice_minutes_with_the_pilot(self):
+        pilot = make_user_objects(_discord_profile(7001, "alice"))
+        DiscordChannelActivityRecord.objects.create(
+            activity_type=DiscordChannelActivityRecord.VOICE_MINUTE,
+            username="alice",
+            quantity=90,
+            channel_id=1,
+            channel_name="Fleet 1",
+        )
+
+        make_user_objects(_discord_profile(7001, "alice2"))
+        newcomer = make_user_objects(_discord_profile(7002, "alice"))
+
+        self.assertEqual(newcomer.username, "alice")
+        self.assertFalse(
+            DiscordChannelActivityRecord.objects.filter(
+                username="alice"
+            ).exists()
+        )
+        self.assertEqual(
+            DiscordChannelActivityRecord.objects.get().username,
+            User.objects.get(id=pilot.id).username,
+        )
+
+    def test_concurrent_first_login_reuses_the_winning_account(self):
+        winner = User.objects.create(username="racer")
+        DiscordUser.objects.create(id=7003, user=winner, discord_tag="racer#0")
+        users_before = User.objects.count()
+        real_filter = DiscordUser.objects.filter
+        calls = {"n": 0}
+
+        def first_lookup_misses(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return DiscordUser.objects.none()
+            return real_filter(*args, **kwargs)
+
+        with patch.object(
+            DiscordUser.objects, "filter", side_effect=first_lookup_misses
+        ):
+            result = make_user_objects(_discord_profile(7003, "racer"))
+
+        self.assertEqual(result.id, winner.id)
+        self.assertEqual(User.objects.count(), users_before)
 
 
 class LoginRedirectAllowlistTestCase(TestCase):
