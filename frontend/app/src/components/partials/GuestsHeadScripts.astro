@@ -18,3 +18,10 @@ import AlpineCdn from '@components/partials/AlpineCdn.astro'
 <AlpineCdn />
 
 <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<!-- Partial responses carry their CSS in what DOMParser treats as <head>, which htmx drops. -->
+<script>
+	import { bind_partial_styles } from '@helpers/htmx_partial_styles'
+
+	bind_partial_styles(window)
+</script>
