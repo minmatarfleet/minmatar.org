@@ -10,7 +10,7 @@ import logging
 from collections.abc import Iterable
 from datetime import date, timedelta
 
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from campaigns.constants import ADVANTAGE_DELTA_BY_SITE_KIND
@@ -279,25 +279,43 @@ def _add_fleets(campaign, rows: dict, day) -> None:
 def _add_orders(campaign, rows: dict, day) -> None:
     """Orders are only worth points once attribution says they were done."""
     weights = scoring.weights(campaign)
-    completed = CampaignOrderProgress.objects.filter(
-        order__campaign=campaign,
-        order__day=day,
-        completed_at__isnull=False,
-    ).select_related("order")
+    weekly = CampaignDailyOrder.Kind.WEEKLY_ACTIVE
+    start, end = day_bounds(day)
+    # Daily orders count on the day they were issued for. The weekly order
+    # is issued on the day the week opens but can only be finished later in
+    # the week, so it counts on the day it was completed.
+    completed = (
+        CampaignOrderProgress.objects.filter(
+            order__campaign=campaign, completed_at__isnull=False
+        )
+        .filter(
+            (Q(order__day=day) & ~Q(order__kind=weekly))
+            | Q(
+                order__kind=weekly,
+                completed_at__gte=start,
+                completed_at__lt=end,
+            )
+        )
+        .select_related("order")
+    )
 
     per_user: dict[int, int] = {}
     for progress in completed:
         row = rows.setdefault(progress.user_id, _blank_row())
         row["orders_completed"] += 1
         row["points"] += progress.order.points
-        per_user[progress.user_id] = per_user.get(progress.user_id, 0) + 1
+        if progress.order.kind != weekly:
+            per_user[progress.user_id] = per_user.get(progress.user_id, 0) + 1
 
     if not per_user:
         return
 
-    total_today = CampaignDailyOrder.objects.filter(
-        campaign=campaign, day=day
-    ).count()
+    # The full set is the day's own orders.
+    total_today = (
+        CampaignDailyOrder.objects.filter(campaign=campaign, day=day)
+        .exclude(kind=weekly)
+        .count()
+    )
     for user_id, done in per_user.items():
         if total_today and done >= total_today:
             rows[user_id]["points"] += weights["order_full_set"]

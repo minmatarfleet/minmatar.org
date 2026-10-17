@@ -1,6 +1,6 @@
 """The weekly plan and the orders derived from it."""
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
@@ -10,6 +10,8 @@ from campaigns.models import (
     CampaignAdvantageState,
     CampaignDailyOrder,
     CampaignKind,
+    CampaignOrderProgress,
+    CampaignParticipantDay,
     CampaignStructure,
     CampaignSystemArc,
     CampaignSystemSnapshot,
@@ -19,7 +21,8 @@ from campaigns.models import (
     StructureStatus,
     SystemGoal,
 )
-from campaigns.services import plan
+from campaigns.helpers import day_bounds
+from campaigns.services import plan, stats
 from campaigns.tests.helpers import enlist, make_campaign
 
 
@@ -326,3 +329,111 @@ class StrategicStructuresReportedTests(TestCase):
             metric=CampaignWeekTarget.Metric.STRUCTURES_REPORTED,
         )
         self.assertEqual(row.progress, 1.0)
+
+
+class WeeklyActiveOrderTests(TestCase):
+    """The weekly order is issued on Thursday and judged across the week."""
+
+    WEEK_START = date(2026, 9, 3)  # a Thursday
+
+    def setUp(self):
+        self.campaign = make_campaign()
+        self.user, _ = enlist(self.campaign, "steady", 6101)
+        self.order = CampaignDailyOrder.objects.create(
+            campaign=self.campaign,
+            day=self.WEEK_START,
+            kind=CampaignDailyOrder.Kind.WEEKLY_ACTIVE,
+            points=100,
+            params={"count": 5},
+            scope="all",
+        )
+
+    def _active_on(self, *offsets):
+        for offset in offsets:
+            CampaignParticipantDay.objects.create(
+                campaign=self.campaign,
+                user=self.user,
+                day=self.WEEK_START + timedelta(days=offset),
+                active=True,
+            )
+
+    def _progress(self):
+        return CampaignOrderProgress.objects.filter(
+            order=self.order, user=self.user
+        ).first()
+
+    def test_fifth_active_day_completes_the_weekly_order(self):
+        self._active_on(0, 1, 2, 3, 4)
+
+        plan.evaluate_orders(
+            self.campaign, self.WEEK_START + timedelta(days=4)
+        )
+
+        progress = self._progress()
+        self.assertIsNotNone(progress)
+        self.assertIsNotNone(progress.completed_at)
+
+    def test_progress_builds_through_the_week(self):
+        self._active_on(0, 1, 2)
+
+        plan.evaluate_orders(
+            self.campaign, self.WEEK_START + timedelta(days=2)
+        )
+
+        progress = self._progress()
+        self.assertEqual(progress.progress, 3)
+        self.assertIsNone(progress.completed_at)
+
+    def test_points_land_on_the_day_it_completes(self):
+        finish_day = self.WEEK_START + timedelta(days=4)
+        CampaignOrderProgress.objects.create(
+            order=self.order,
+            user=self.user,
+            progress=5,
+            completed_at=day_bounds(finish_day)[0] + timedelta(hours=1),
+        )
+
+        on_finish_day = {}
+        stats._add_orders(  # pylint: disable=protected-access
+            self.campaign, on_finish_day, finish_day
+        )
+        on_issue_day = {}
+        stats._add_orders(  # pylint: disable=protected-access
+            self.campaign, on_issue_day, self.WEEK_START
+        )
+
+        self.assertEqual(on_finish_day[self.user.id]["points"], 100)
+        self.assertEqual(on_finish_day[self.user.id]["orders_completed"], 1)
+        self.assertNotIn(self.user.id, on_issue_day)
+
+    def test_weekly_order_does_not_count_toward_the_daily_full_set(self):
+        day = self.WEEK_START + timedelta(days=4)
+        daily = CampaignDailyOrder.objects.create(
+            campaign=self.campaign,
+            day=day,
+            kind=CampaignDailyOrder.Kind.GANG,
+            points=30,
+            params={},
+            scope="all",
+        )
+        CampaignDailyOrder.objects.create(
+            campaign=self.campaign,
+            day=day,
+            kind=CampaignDailyOrder.Kind.STANDING_FLEET,
+            points=20,
+            params={"minutes": 30},
+            scope="all",
+        )
+        done_at = day_bounds(day)[0] + timedelta(hours=1)
+        for order in (self.order, daily):
+            CampaignOrderProgress.objects.create(
+                order=order, user=self.user, progress=1, completed_at=done_at
+            )
+
+        rows = {}
+        stats._add_orders(  # pylint: disable=protected-access
+            self.campaign, rows, day
+        )
+
+        # Weekly + one of two daily orders: no full-set bonus.
+        self.assertEqual(rows[self.user.id]["points"], 130)
