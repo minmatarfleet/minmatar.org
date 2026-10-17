@@ -8,11 +8,6 @@ the empire factions. Import these instead of writing the IDs inline; a test
 MINMATAR_FLEET_ALLIANCE_ID = 99011978  # ticker FL33T
 MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID = 99012009  # ticker BUILD
 
-ALLIED_ALLIANCE_NAMES = [
-    "Minmatar Fleet Alliance",
-    "Minmatar Fleet Associates",
-]
-
 # Alliance + Associates (BUILD) both count as FL33T membership on the site.
 FL33T_MEMBER_ALLIANCE_IDS = frozenset(
     {

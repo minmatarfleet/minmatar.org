@@ -1,5 +1,7 @@
 """Shared alliance/faction constants, the corporation scopes and site links."""
 
+from unittest.mock import patch
+
 from django.test import SimpleTestCase, override_settings
 
 from app.links import PRODUCTION_SITE_URL, site_url
@@ -12,6 +14,15 @@ from eveonline.helpers.alliances import (
     tracked_alliance_ids,
 )
 from eveonline.models import EveAlliance, EveCorporation
+from eveonline.tasks.corporations import (
+    sync_corporation_projects,
+    sync_corporations_projects,
+    update_corporation,
+    update_corporations,
+)
+from market.helpers.attributed_orders import (
+    allied_corporation_ids_for_order_sync,
+)
 
 
 class ConstantValuesTestCase(SimpleTestCase):
@@ -114,3 +125,40 @@ class CorporationScopesTestCase(TestCase):
         tracked = tracked_alliance_ids()
         self.assertEqual({99011978, 99012009, 99000001}, tracked)
         self.assertLessEqual(set(member_alliance_ids()), tracked)
+
+
+class MemberCorporationTasksTestCase(TestCase):
+    """Corp refresh and order sync pick corps by alliance ID, not name."""
+
+    def setUp(self):
+        super().setUp()
+        renamed = EveAlliance.objects.create(
+            alliance_id=constants.MINMATAR_FLEET_ALLIANCE_ID,
+            name="Renamed In Game",
+        )
+        impostor = EveAlliance.objects.create(
+            alliance_id=99000002, name="Minmatar Fleet Alliance"
+        )
+        EveCorporation.objects.create(
+            corporation_id=11, name="Ours", alliance=renamed
+        )
+        EveCorporation.objects.create(
+            corporation_id=12, name="Not Ours", alliance=impostor
+        )
+
+    def test_update_corporations_queues_member_corps(self):
+        with patch.object(update_corporation, "apply_async") as queued:
+            update_corporations()
+        self.assertEqual(
+            [11], [c.kwargs["args"][0] for c in queued.call_args_list]
+        )
+
+    def test_projects_sync_queues_member_corps(self):
+        with patch.object(sync_corporation_projects, "apply_async") as queued:
+            sync_corporations_projects()
+        self.assertEqual(
+            [11], [c.kwargs["args"][0] for c in queued.call_args_list]
+        )
+
+    def test_order_sync_uses_member_corps(self):
+        self.assertEqual([11], allied_corporation_ids_for_order_sync())
