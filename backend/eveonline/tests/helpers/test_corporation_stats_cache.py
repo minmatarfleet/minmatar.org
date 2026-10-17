@@ -44,6 +44,8 @@ class CorporationStatsCacheTestCase(TestCase):
                 "declared_by_user",
                 "observed_by_user",
                 "human_count",
+                "about",
+                "member_facts",
             },
             set(stats),
         )
@@ -51,7 +53,7 @@ class CorporationStatsCacheTestCase(TestCase):
     def test_task_refreshes_one_corporation(self):
         self.assertEqual(1, refresh_corporation_profile_stats(98726134))
         self.assertIsNotNone(
-            cache.get("corporation_profile_stats:v1:98726134")
+            cache.get("corporation_profile_stats:v2:98726134")
         )
 
     def test_cache_outage_degrades_to_no_stats(self):
