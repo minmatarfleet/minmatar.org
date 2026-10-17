@@ -65,8 +65,10 @@ def delete_character_by_id(request, character_id: int):
             ),
         )
         orphan_character(character, acting_user=request.user)
-    except Exception as e:
-        return 500, ErrorResponse.new(
-            f"Error removing character {character_id}", str(e)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # ErrorResponse.new takes one argument, so this used to raise a
+        # TypeError instead of returning the error id; log and return it.
+        return 500, ErrorResponse.log(
+            f"Error removing character {character_id}", e
         )
     return 200, None

@@ -49,6 +49,7 @@ def _discord_mention(user) -> str | None:
     try:
         return f"<@{user.discord_user.id}>"
     except Exception:  # pylint: disable=broad-except
+        # expected: no Discord link
         return None
 
 
