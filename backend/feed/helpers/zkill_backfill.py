@@ -8,26 +8,23 @@ import requests
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from feed.constants import R2Z2_USER_AGENT
 from feed.helpers.ingest import upsert_feed_killmail_from_raw
 from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.monitored_systems import get_monitored_system_ids
+from feed.helpers.zkill_client import (
+    ZKILL_API_BASE,
+    fetch_esi_killmail,
+    zkill_get,
+)
 from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
 
 ZKILL_MAX_PAST_SECONDS = 7 * 24 * 60 * 60
 ZKILL_PAST_SECONDS_URL = (
-    "https://zkillboard.com/api/kills/solarSystemID/{system_id}/"
+    ZKILL_API_BASE + "/kills/solarSystemID/{system_id}/"
     "pastSeconds/{past_seconds}/page/{page}/"
 )
-ESI_KILLMAIL_URL = (
-    "https://esi.evetech.net/latest/killmails/{killmail_id}/{killmail_hash}/"
-)
-
-
-def _headers() -> dict[str, str]:
-    return {"User-Agent": R2Z2_USER_AGENT, "Accept": "application/json"}
 
 
 def _empty_stats() -> dict[str, int]:
@@ -54,33 +51,10 @@ def fetch_system_kills_past_seconds(
         past_seconds=past_seconds,
         page=page,
     )
-    response = requests.get(url, headers=_headers(), timeout=60)
+    response = zkill_get(url)
     response.raise_for_status()
     kills = response.json()
     return kills if isinstance(kills, list) else []
-
-
-def fetch_esi_killmail(
-    killmail_id: int,
-    killmail_hash: str,
-    *,
-    max_attempts: int = 3,
-) -> dict | None:
-    url = ESI_KILLMAIL_URL.format(
-        killmail_id=killmail_id,
-        killmail_hash=killmail_hash,
-    )
-    for attempt in range(max_attempts):
-        response = requests.get(url, headers=_headers(), timeout=60)
-        if response.status_code == 200:
-            return response.json()
-        if response.status_code == 429 and attempt + 1 < max_attempts:
-            time.sleep(2**attempt)
-            continue
-        if response.status_code in {404, 420}:
-            return None
-        response.raise_for_status()
-    return None
 
 
 def _process_backfill_entry(
