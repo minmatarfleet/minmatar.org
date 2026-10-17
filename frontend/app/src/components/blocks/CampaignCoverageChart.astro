@@ -124,4 +124,21 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
     .campaign-coverage-key-hostiles {
         background-color: var(--fleet-red);
     }
+
+    /* Phones: fit all 24 hours on screen instead of scrolling; label every third hour. */
+    @media (max-width: 48rem) {
+        .campaign-coverage-chart {
+            min-width: 0;
+            gap: 1px;
+        }
+
+        .campaign-coverage-hour:not(:nth-child(3n + 1)) .campaign-coverage-label {
+            visibility: hidden;
+        }
+
+        .campaign-coverage-label {
+            align-self: flex-start;
+            white-space: nowrap;
+        }
+    }
 </style>

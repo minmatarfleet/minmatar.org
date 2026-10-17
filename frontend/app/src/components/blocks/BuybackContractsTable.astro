@@ -78,4 +78,19 @@ import Button from '@components/blocks/Button.astro';
         text-transform: uppercase;
         letter-spacing: 0.02em;
     }
+
+    @media (max-width: 48rem) {
+        .buyback-contracts-table__scroll {
+            overflow-x: visible;
+            mask-image: none;
+        }
+
+        .buyback-contracts-table__grid {
+            min-width: 0;
+        }
+
+        .buyback-contracts-table__header {
+            display: none;
+        }
+    }
 </style>

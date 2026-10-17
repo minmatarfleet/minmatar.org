@@ -144,13 +144,13 @@ const auth_token = Astro.cookies.has('auth_token')
                             {issue.categories.map((row) => (
                                 <tr>
                                     <td class="[ mk-table__when ]">{row.name}</td>
-                                    <td class="[ mk-table__bar ]">
+                                    <td class="[ mk-table__bar ]" data-label="ISK sold">
                                         <div class="[ mk-bar ]">
                                             <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_category_isk)}%`}></span>
                                         </div>
                                         <b>{row.isk_label}</b>
                                     </td>
-                                    <td class="[ mk-table__num ]">
+                                    <td class="[ mk-table__num ]" data-label={vs_label}>
                                         {row.isk_vs !== 0 && (
                                             <span class:list={['mk-delta', row.isk_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
                                                 <span class="[ mk-delta__arrow ]">{row.isk_vs > 0 ? '▲' : '▼'}</span>
@@ -159,8 +159,8 @@ const auth_token = Astro.cookies.has('auth_token')
                                         )}
                                         {row.isk_vs === 0 && '—'}
                                     </td>
-                                    <td class="[ mk-table__num ]">{number_thousand_separator(row.fills)}</td>
-                                    <td class="[ mk-table__num ]">
+                                    <td class="[ mk-table__num ]" data-label="Orders">{number_thousand_separator(row.fills)}</td>
+                                    <td class="[ mk-table__num ]" data-label="Markup">
                                         {row.markup_pct === null ? (
                                             <span title="No Jita price for types in this class">—</span>
                                         ) : (
@@ -683,5 +683,72 @@ const auth_token = Astro.cookies.has('auth_token')
 
     .mk-board {
         min-width: 0;
+    }
+
+    /* Phones: stack each row as a card — name, bar, then the numbers with their column labels. */
+    @media (max-width: 48rem) {
+        .mk-table--weeks {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--mk-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                background: none;
+                white-space: normal !important;
+                text-align: left !important;
+                min-width: 0;
+                width: auto;
+            }
+
+            td:nth-child(1),
+            td:nth-child(2) {
+                grid-column: 1 / -1;
+            }
+
+            td.mk-table__bar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0 var(--space-xs);
+                width: auto;
+                min-width: 0;
+
+                &::before {
+                    flex-basis: 100%;
+                }
+
+                > .mk-bar {
+                    flex: 1;
+                }
+
+                > b {
+                    margin-top: 0;
+                }
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
     }
 </style>

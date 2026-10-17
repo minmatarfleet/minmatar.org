@@ -58,13 +58,14 @@ import Tag from '@components/blocks/Tag.astro';
     <div
         class="[ freight-contract-item__created ]"
         role="cell"
+        data-label={t('date_created')}
         data-tippy-content={t('date_issued').replace('{date}', issued_datetime)}
         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <span class="[ whitespace-nowrap ]">{issued_date}</span>
     </div>
 
-    <div class="[ freight-contract-item__creator ]" role="cell">
+    <div class="[ freight-contract-item__creator ]" role="cell" data-label={t('creator')}>
         <PilotBadge
             character_id={contract.issuer_id}
             character_name={contract.issuer_character_name}
@@ -73,13 +74,14 @@ import Tag from '@components/blocks/Tag.astro';
         />
     </div>
 
-    <div class="[ freight-contract-item__route ]" role="cell">
+    <div class="[ freight-contract-item__route ]" role="cell" data-label={t('route')}>
         <span class="[ text-highlight ]">{route_label}</span>
     </div>
 
     <div
         class="[ freight-contract-item__status ]"
         role="cell"
+        data-label={t('status')}
         data-tippy-content={delivery_tooltip}
         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
@@ -91,28 +93,28 @@ import Tag from '@components/blocks/Tag.astro';
         />
     </div>
 
-    <div class="[ freight-contract-item__size ]" role="cell">
+    <div class="[ freight-contract-item__size ]" role="cell" data-label={t('size_m3')}>
         <span
             data-tippy-content={number_name(contract.volume, lang)}
             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
     </div>
 
-    <div class="[ freight-contract-item__collateral ]" role="cell">
+    <div class="[ freight-contract-item__collateral ]" role="cell" data-label={t('collateral')}>
         <span
             data-tippy-content={number_name(contract.collateral, lang)}
             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.collateral.toLocaleString()}</span> <span>ISK</span>
     </div>
 
-    <div class="[ freight-contract-item__reward ]" role="cell">
+    <div class="[ freight-contract-item__reward ]" role="cell" data-label={t('reward')}>
         <span
             data-tippy-content={number_name(contract.reward, lang)}
             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.reward.toLocaleString()}</span> <span>ISK</span>
     </div>
 
-    <div class="[ freight-contract-item__servicing ]" role="cell">
+    <div class="[ freight-contract-item__servicing ]" role="cell" data-label={t('servicing')}>
         {(contract.completed_by_id || contract.completed_by_character_name) ?
             <FlexInline
                 gap='var(--space-3xs)'
@@ -150,6 +152,48 @@ import Tag from '@components/blocks/Tag.astro';
         .freight-contract-item {
             grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1.2fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr);
             min-width: 70rem;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .freight-contract-item {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "creator status"
+                "route route"
+                "created size"
+                "collateral reward"
+                "servicing servicing";
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            min-width: 0;
+            padding-block: var(--space-s);
+            padding-inline: 0;
+        }
+
+        .freight-contract-item__creator { grid-area: creator; min-width: 0; }
+        .freight-contract-item__status { grid-area: status; justify-self: end; }
+        .freight-contract-item__route { grid-area: route; }
+        .freight-contract-item__created { grid-area: created; }
+        .freight-contract-item__size { grid-area: size; }
+        .freight-contract-item__collateral { grid-area: collateral; }
+        .freight-contract-item__reward { grid-area: reward; }
+        .freight-contract-item__servicing { grid-area: servicing; }
+
+        .freight-contract-item__servicing {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-xs);
+        }
+
+        .freight-contract-item [data-label]:not(.freight-contract-item__creator, .freight-contract-item__status, .freight-contract-item__route)::before {
+            content: attr(data-label);
+            display: block;
+            color: var(--faded);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
     }
 </style>

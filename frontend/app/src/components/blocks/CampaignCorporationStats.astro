@@ -61,18 +61,56 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                     }
                     <span>{corporation.corporation_name || t('campaigns.corporations.unknown')}</span>
                 </div>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.pilots}</span>
-                <span role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.active_hint')}>{corporation.active_pilots}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.characters_included}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.kills}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.losses}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{format_isk(corporation.isk_destroyed)}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.complexes}</span>
-                <span role="cell" class="[ campaign-table-numeric ]">{corporation.fleets_attended}</span>
-                <small role="cell" class="[ campaign-table-muted ]">
+                <span data-label={columns[1]} role="cell" class="[ campaign-table-numeric ]">{corporation.pilots}</span>
+                <span data-label={columns[2]} role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.active_hint')}>{corporation.active_pilots}</span>
+                <span data-label={columns[3]} role="cell" class="[ campaign-table-numeric ]">{corporation.characters_included}</span>
+                <span data-label={columns[4]} role="cell" class="[ campaign-table-numeric ]">{corporation.kills}</span>
+                <span data-label={columns[5]} role="cell" class="[ campaign-table-numeric ]">{corporation.losses}</span>
+                <span data-label={columns[6]} role="cell" class="[ campaign-table-numeric ]">{format_isk(corporation.isk_destroyed)}</span>
+                <span data-label={columns[7]} role="cell" class="[ campaign-table-numeric ]">{corporation.complexes}</span>
+                <span data-label={columns[8]} role="cell" class="[ campaign-table-numeric ]">{corporation.fleets_attended}</span>
+                <small data-label={columns[9]} role="cell" class="[ campaign-table-muted ]">
                     {corporation.last_active_day ? format_date_short(lang, corporation.last_active_day) : '—'}
                 </small>
             </div>
         )}
     </CampaignTable>
 }
+
+<style lang="scss">
+    @media (max-width: 48rem) {
+        :global(.campaign-corporations.campaign-table) {
+            min-width: 0 !important;
+        }
+
+        :global(.campaign-corporations .campaign-table-head) {
+            display: none;
+        }
+
+        .campaign-table-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            padding-inline: 0;
+            padding-block: var(--space-xs);
+        }
+
+        .campaign-table-row > :first-child {
+            grid-column: 1 / -1;
+        }
+
+        .campaign-table-row > .campaign-table-numeric {
+            text-align: left;
+        }
+
+        .campaign-table-row > [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-family: var(--heading-font);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--faded);
+        }
+    }
+</style>

@@ -168,4 +168,20 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
         flex-wrap: wrap;
         row-gap: var(--space-2xs);
     }
+
+    /* Phones: meta lines use the full card width; the planner button sits full width below them. */
+    @media (max-width: 48rem) {
+        .alignment-hack {
+            padding-left: 0;
+        }
+
+        .product-item-meta {
+            grid-row-gap: var(--space-2xs);
+        }
+
+        .product-item-actions > :global(.button) {
+            flex: 1 1 100%;
+            justify-content: center;
+        }
+    }
 </style>

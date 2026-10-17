@@ -126,6 +126,13 @@
     vertical-align: top;
 }
 
+/* Phones: tighter cells keep three-column tables inside the panel. */
+@media (max-width: 48rem) {
+    .guide-md-section :is(th, td) {
+        padding: var(--space-3xs) var(--space-2xs);
+    }
+}
+
 .guide-md-section :is(th) {
     font-family: var(--guide-md-display-font);
     font-size: var(--step--2);

@@ -146,7 +146,7 @@ const card_class = [
             </span>
         </FlexInline>
 
-        <span class="[ loyalty-order-card__numeric is-quantity ]">
+        <span class="[ loyalty-order-card__numeric is-quantity ]" data-label={t('industry.loyalty.orders.col.quantity')}>
             <span>{number_thousand_separator(order.quantity)}</span>
             {show_remaining && (
                 <small class="[ loyalty-order-card__remaining ]">
@@ -158,16 +158,16 @@ const card_class = [
             )}
         </span>
 
-        <span class="[ loyalty-order-card__numeric ]">{number_thousand_separator(order.isk_per_lp)}</span>
+        <span class="[ loyalty-order-card__numeric ]" data-label={t('industry.loyalty.orders.col.rate')}>{number_thousand_separator(order.isk_per_lp)}</span>
 
         <span class:list={[
             'loyalty-order-card__numeric',
             { 'is-due': order.status === 'awaiting_isk' },
-        ]}>
+        ]} data-label={t('industry.loyalty.orders.col.total')}>
             {number_thousand_separator(isk_total)}
         </span>
 
-        <span class="[ loyalty-order-card__status ]">
+        <span class="[ loyalty-order-card__status ]" data-label={t('industry.loyalty.orders.col.status')}>
             <Tag
                 text={status_label}
                 color={status_color}
@@ -176,7 +176,7 @@ const card_class = [
             />
         </span>
 
-        <FlexInline gap="var(--space-3xs)" class="[ loyalty-order-card__purchasers ]">
+        <FlexInline gap="var(--space-3xs)" class="[ loyalty-order-card__purchasers ]" data-label={t('industry.loyalty.orders.col.purchasers')}>
             {purchasers.length > 0 ? (
                 purchasers.map((pilot) => (
                     <CharacterPicture
@@ -321,6 +321,76 @@ const card_class = [
                 &:hover {
                     color: var(--fleet-yellow);
                 }
+            }
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .loyalty-order-card__grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "identity identity"
+                "quantity total"
+                "rate status"
+                "purchasers purchasers"
+                "actions actions";
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            padding-block: var(--space-3xs);
+        }
+
+        .loyalty-order-card__grid > :nth-child(1) { grid-area: identity; }
+        .loyalty-order-card__grid > :nth-child(2) { grid-area: quantity; }
+        .loyalty-order-card__grid > :nth-child(3) { grid-area: rate; }
+        .loyalty-order-card__grid > :nth-child(4) { grid-area: total; }
+        .loyalty-order-card__grid > :nth-child(5) { grid-area: status; }
+        .loyalty-order-card__grid > :nth-child(6) { grid-area: purchasers; }
+        .loyalty-order-card__grid > :nth-child(7) { grid-area: actions; }
+
+        .loyalty-order-card__title {
+            white-space: normal;
+        }
+
+        .loyalty-order-card__numeric {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .loyalty-order-card__purchasers {
+            justify-content: flex-start;
+        }
+
+        .loyalty-order-card__grid [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            flex-basis: 100%;
+            font-family: var(--button-font);
+            font-size: var(--step--2);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--faded);
+        }
+
+        .loyalty-order-card__status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .loyalty-order-card__actions {
+            justify-content: stretch;
+            border-top: solid 1px var(--border-color);
+            padding-top: var(--space-3xs);
+
+            :global(> *) {
+                flex: 1;
+            }
+
+            :global(button[data-appearance="plain"]) {
+                box-sizing: border-box;
+                width: 100%;
+                min-height: 44px;
             }
         }
     }

@@ -165,7 +165,7 @@ const reasons_list_class = guidance_reasons_ordered
                                             cell_index === 0 ? (
                                                 <th scope="row">{cell}</th>
                                             ) : (
-                                                <td>{cell}</td>
+                                                <td data-label={table.headers[cell_index]}>{cell}</td>
                                             ),
                                         )}
                                     </tr>
@@ -233,7 +233,7 @@ const reasons_list_class = guidance_reasons_ordered
                                 {crosstraining_rows.map((row) => (
                                     <tr>
                                         <th scope="row">{row.capitals}</th>
-                                        <td>{row.ships.join(', ')}</td>
+                                        <td data-label="Useful subcapitals">{row.ships.join(', ')}</td>
                                     </tr>
                                 ))}
                             </tbody>
