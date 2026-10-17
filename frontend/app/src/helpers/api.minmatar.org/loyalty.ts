@@ -1,6 +1,5 @@
 import type {
     LoyaltyCurrency,
-    LoyaltyLedgerEntry,
     LoyaltyMarketOrdersList,
     LoyaltyOffersList,
 } from '@dtypes/api.minmatar.org'
@@ -99,32 +98,6 @@ export async function get_loyalty_offers(params?: LoyaltyOffersQuery) {
         })
     }
     return await response.json() as LoyaltyOffersList
-}
-
-export async function get_loyalty_ledger(params?: {
-    loyalty_point_id?: number
-    account_id?: number
-    limit?: number
-}) {
-    const query: Record<string, string> = {}
-    if (params?.loyalty_point_id != null)
-        query.loyalty_point_id = String(params.loyalty_point_id)
-    if (params?.account_id != null)
-        query.account_id = String(params.account_id)
-    if (params?.limit != null)
-        query.limit = String(params.limit)
-    const qs = query_string(query)
-    const ENDPOINT = `${API_ENDPOINT}/ledger${qs ? `?${qs}` : ''}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyLedgerEntry[]
 }
 
 export interface LoyaltyOrdersQuery {

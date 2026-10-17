@@ -75,25 +75,6 @@ export interface CorporationApplicationAnswers {
     confirm_auth_chars: boolean;
 }
 
-export const EMPTY_CORPORATION_APPLICATION_ANSWERS: CorporationApplicationAnswers =
-    {
-        introduction: '',
-        activity_region: '',
-        activity_period: '',
-        timezone: '',
-        user_timezone: '',
-        roles: [],
-        doctrines: '',
-        how_found: '',
-        how_found_other: '',
-        is_existing_player_alt: false,
-        is_other_alliance_member: false,
-        main_character_name: '',
-        other_alliance_affiliation: '',
-        agree_tenets: false,
-        confirm_auth_chars: false,
-    };
-
 function trim(value: string): string {
     return value.trim();
 }

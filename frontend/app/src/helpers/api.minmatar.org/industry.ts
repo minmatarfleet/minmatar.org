@@ -2,13 +2,6 @@ import type {
     IndustryOrder,
     Product,
     Blueprint,
-    BlueprintDetail,
-    HarvestOverviewItem,
-    HarvestDrillDownResponse,
-    ProductionOverviewItem,
-    ProductionDrillDownResponse,
-    PlanetWithColoniesItem,
-    OrderAssignmentsBreakdown,
     IndustrySingleOrder,
     OrderAssignment,
     OrdersProfitSummary,
@@ -209,43 +202,6 @@ export async function get_orders_profit_summary(
     }
 }
 
-export async function refresh_order_profit_breakdown(
-    access_token: string,
-    order_id: number,
-) {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/profit-breakdown/refresh`
-
-    console.log(`Requesting: POST ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers,
-        })
-
-        if (!response.ok) {
-            throw new Error(
-                await parse_response_error(response, `POST ${ENDPOINT}`),
-                { cause: response.status },
-            )
-        }
-
-        return await response.json()
-    } catch (error) {
-        throw new Error(
-            `Error refreshing order profit breakdown: ${error.message}`,
-            { cause: error.cause },
-        )
-    }
-}
-
-
-
 export async function get_products() {
     const headers = {
         'Content-Type': 'application/json',
@@ -308,45 +264,6 @@ export async function get_product_by_id(id:number) {
     }
 }
 
-export async function get_product_breakdown(product_id:number, quantity:number, max_depth?:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const query_params = {
-        product_id: product_id,
-        quantity: quantity,
-        ...(max_depth && { max_depth }),
-    }
-
-    const query = query_string(query_params)
-
-    const ENDPOINT = `${API_ENDPOINT}/products${query ? `?${query}` : '/'}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as Product[];
-    } catch (error) {
-        throw new Error(`Error fetching product breakdown: ${error.message}`, { cause: error.cause });
-    }
-}
-
 export async function get_blueprints(query:string, is_copy:boolean = false) {
     const headers = {
         'Content-Type': 'application/json',
@@ -375,157 +292,6 @@ export async function get_blueprints(query:string, is_copy:boolean = false) {
         return await response.json() as Blueprint[];
     } catch (error) {
         throw new Error(`Error fetching blueprints: ${error.message}`, { cause: error.cause });
-    }
-}
-
-export async function get_blueprint(item_id: number): Promise<BlueprintDetail> {
-    const ENDPOINT = `${API_ENDPOINT}/blueprints/${item_id}`
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            }
-        )
-    }
-
-    return await response.json() as BlueprintDetail
-}
-
-const PLANETARY_ENDPOINT = `${API_ENDPOINT}/planetary`
-
-export async function get_planetary_harvest(): Promise<HarvestOverviewItem[]> {
-    const response = await fetch(PLANETARY_ENDPOINT + '/harvest', {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(response.status, `GET ${PLANETARY_ENDPOINT}/harvest`), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json()
-}
-
-export async function get_planetary_harvest_drilldown(
-    typeId: number
-): Promise<HarvestDrillDownResponse> {
-    const response = await fetch(
-        `${PLANETARY_ENDPOINT}/harvest/${typeId}`,
-        { headers: { 'Content-Type': 'application/json' } }
-    )
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(
-                response.status,
-                `GET ${PLANETARY_ENDPOINT}/harvest/${typeId}`
-            ), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json()
-}
-
-export async function get_planetary_production(): Promise<ProductionOverviewItem[]> {
-    const response = await fetch(PLANETARY_ENDPOINT + '/production', {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(
-                response.status,
-                `GET ${PLANETARY_ENDPOINT}/production`
-            ), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json()
-}
-
-export async function get_planetary_production_drilldown(
-    typeId: number
-): Promise<ProductionDrillDownResponse> {
-    const response = await fetch(
-        `${PLANETARY_ENDPOINT}/production/${typeId}`,
-        { headers: { 'Content-Type': 'application/json' } }
-    )
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(
-                response.status,
-                `GET ${PLANETARY_ENDPOINT}/production/${typeId}`
-            ), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json()
-}
-
-export async function get_planetary_planets(params: {
-    planet_id?: number
-    solar_system_id?: number
-} = {}): Promise<PlanetWithColoniesItem[]> {
-    const { planet_id, solar_system_id } = params
-
-    const query_params = {
-        ...(planet_id && { planet_id }),
-        ...(solar_system_id && { solar_system_id }),
-    };
-
-    const query = query_string(query_params)
-
-    const ENDPOINT = `${PLANETARY_ENDPOINT}/planets${query ? `?${query}` : ''}`
-
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-
-    if (!response.ok) {
-        throw new Error(
-            get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            }
-        )
-    }
-    
-    return await response.json()
-}
-
-export async function get_order_assignments_breakdown(order_id: number, order_item_id: number) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/assignments/breakdown`
-    
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as { assignments: OrderAssignmentsBreakdown[] };
-    } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -584,36 +350,6 @@ export async function post_order_blueprint_coordinator(
     if (!response.ok) {
         throw new Error(
             await parse_response_error(response, `POST ${ENDPOINT}`), {
-                cause: response.status
-            }
-        )
-    }
-
-    return await response.json() as OrderBlueprintCoordinator
-}
-
-export async function patch_order_blueprint_coordinator(
-    access_token: string,
-    order_id: number,
-    coordinator_id: number,
-    body: { eve_type_ids: number[] },
-): Promise<OrderBlueprintCoordinator> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/blueprint-coordinators/${coordinator_id}`
-
-    const response = await fetch(ENDPOINT, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(body),
-    })
-
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `PATCH ${ENDPOINT}`), {
                 cause: response.status
             }
         )

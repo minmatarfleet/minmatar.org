@@ -6,7 +6,6 @@ import type {
     CampaignPace,
     CampaignStatusChip,
     CampaignTotals,
-    CampaignWeekTarget,
     CampaignWeek,
 } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
@@ -252,54 +251,18 @@ export const coverage_bars = (coverage:CampaignCoverageHour[]):CoverageBar[] => 
     }))
 }
 
-export type CampaignPaceKey =
-    | 'campaigns.pace.ahead'
-    | 'campaigns.pace.behind'
-    | 'campaigns.pace.on_pace'
-
 export type CampaignStatusChipKey =
     | 'campaigns.chip.gaining'
     | 'campaigns.chip.losing'
     | 'campaigns.chip.holding'
-
-export type CampaignWeekMetricKey =
-    | 'campaigns.week.metric.victory_points'
-    | 'campaigns.week.metric.days_under_line'
-    | 'campaigns.week.metric.advantage'
-    | 'campaigns.week.metric.advantage_gain'
-    | 'campaigns.week.metric.advantage_destroy'
-    | 'campaigns.week.metric.advantage_maintain'
-    | 'campaigns.week.metric.structures_reported'
 
 export type CampaignActionErrorKey =
     | 'campaigns.not_enlisted_error'
     | 'campaigns.not_live_error'
     | 'campaigns.action_failed'
 
-export const pace_i18n_key = (pace:CampaignPace):CampaignPaceKey => {
-    switch (pace) {
-        case 'ahead': return 'campaigns.pace.ahead'
-        case 'behind': return 'campaigns.pace.behind'
-        default: return 'campaigns.pace.on_pace'
-    }
-}
-
-export const pace_color = (pace:CampaignPace):TagColors => {
-    switch (pace) {
-        case 'ahead': return 'green'
-        case 'behind': return 'fleet-red'
-        default: return 'fleet-yellow'
-    }
-}
-
 /** A week's move on one system: did it help the goal, hurt it, or hold. */
 export type CampaignWeekMove = 'ahead' | 'behind' | 'holding' | 'slipping'
-
-export type CampaignWeekMoveKey =
-    | 'campaigns.week.move.ahead'
-    | 'campaigns.week.move.behind'
-    | 'campaigns.week.move.holding'
-    | 'campaigns.week.move.slipping'
 
 /** Smaller than this is noise, same band the status chip uses. */
 const WEEK_MOVE_POINT = 0.5
@@ -359,19 +322,6 @@ export const week_contest_move = (
     return 'holding'
 }
 
-export const week_move_i18n_key = (move:CampaignWeekMove):CampaignWeekMoveKey => {
-    switch (move) {
-        case 'ahead': return 'campaigns.week.move.ahead'
-        case 'behind': return 'campaigns.week.move.behind'
-        case 'holding': return 'campaigns.week.move.holding'
-        case 'slipping': return 'campaigns.week.move.slipping'
-        default: {
-            const _exhaustive: never = move
-            return _exhaustive
-        }
-    }
-}
-
 export const week_move_color = (move:CampaignWeekMove):TagColors => {
     switch (move) {
         case 'ahead': return 'green'
@@ -409,30 +359,6 @@ export const status_chip_color = (chip:CampaignStatusChip):TagColors => {
         case 'gaining': return 'green'
         case 'losing': return 'fleet-red'
         default: return 'fleet-yellow'
-    }
-}
-
-/** Progress and the "where we should be by now" marker, both as percentages. */
-export const week_target_progress = (target:CampaignWeekTarget) => {
-    const goal = target.target || 1
-
-    return {
-        progress_percent: clamp_percent((target.progress / goal) * 100),
-        pace_percent: clamp_percent((target.pace_expected / goal) * 100),
-    }
-}
-
-/** Week targets carry a backend slug; map it to a label the UI can translate. */
-export const week_metric_i18n_key = (metric:string):CampaignWeekMetricKey | false => {
-    switch (metric) {
-        case 'victory_points': return 'campaigns.week.metric.victory_points'
-        case 'days_under_line': return 'campaigns.week.metric.days_under_line'
-        case 'advantage': return 'campaigns.week.metric.advantage'
-        case 'advantage_gain': return 'campaigns.week.metric.advantage_gain'
-        case 'advantage_destroy': return 'campaigns.week.metric.advantage_destroy'
-        case 'advantage_maintain': return 'campaigns.week.metric.advantage_maintain'
-        case 'structures_reported': return 'campaigns.week.metric.structures_reported'
-        default: return false
     }
 }
 

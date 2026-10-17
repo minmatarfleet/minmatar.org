@@ -175,22 +175,6 @@ export function net_isk_per_lp_for_cost_options(
     return net
 }
 
-/** @deprecated Prefer {@link net_isk_per_lp_for_cost_options}. */
-export function net_isk_per_lp_for_freight_option(
-    net_with_freight: number | null | undefined,
-    breakdown: Pick<
-        LoyaltyConversionBreakdown,
-        'input_freight_isk_per_lp' | 'output_freight_isk_per_lp'
-    >,
-    include_freight: boolean,
-): number | null {
-    return net_isk_per_lp_for_cost_options(
-        net_with_freight,
-        { ...breakdown, sales_tax_isk_per_lp: 0 },
-        { include_freight, include_sales_tax: true },
-    )
-}
-
 /**
  * Ledger-style tippy lines. Skips null/zero cost rows; keeps finished goods + net.
  * Omitted cost options skip their debit lines and are added back into net.

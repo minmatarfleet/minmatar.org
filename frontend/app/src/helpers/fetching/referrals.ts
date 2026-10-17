@@ -37,18 +37,6 @@ export function is_referral_url(pathname:string, lang:'en') {
     }
 }
 
-export function is_referral_url_debug(pathname:string, lang:'en') {
-    const translatePath = useTranslatedPath(lang)
-
-    try {
-        const referrable_pages = get_referrable_pages()
-        const referral = find_referral_page(pathname, lang)
-
-        return [ translatePath(referrable_pages[2].link ?? ''), pathname, referral, referrable_pages ]
-    } catch (error) {
-        return [ error.message ]
-    }
-}
 export async function check_referral_url(current_user_id:number, pathname:string, searchParams:URLSearchParams, clientIP:string, lang:'en') {
     const referral = find_referral_page(pathname, lang)
     const user_id = parseInt(searchParams.get('ref') ?? '0')

@@ -2,7 +2,7 @@ import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql, like, inArray } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
-import type { RegionBasic, MoonBasic, PlanetBasic } from '@dtypes/layout_components'
+import type { MoonBasic, PlanetBasic } from '@dtypes/layout_components'
 
 export async function get_system_id(solar_system:string) {
     console.log(`Requesting: sde_db.get_system_id(${solar_system})`)
@@ -35,35 +35,6 @@ export interface sde_system {
     x?:                 number;
     y?:                 number;
     z?:                 number;
-}
-
-export async function find_systems_by_name(find:string) {
-    console.log(`Requesting: sde_db.find_systems_by_name(${find})`)
-
-    const q = await sde_db.select({
-        solarSystemId: schema.mapSolarSystems.solarSystemId,
-        solarSystemName: schema.mapSolarSystems.solarSystemName,
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
-        security: schema.mapSolarSystems.security,
-        regionId: schema.mapSolarSystems.regionId,
-        regionName: schema.mapRegions.regionName,
-        constellationId: schema.mapSolarSystems.constellationId,
-        constellationName: schema.mapConstellations.constellationName,
-    })
-    .from(schema.mapSolarSystems)
-    .innerJoin(
-        schema.mapRegions,
-        eq(schema.mapSolarSystems.regionId, schema.mapRegions.regionId),
-    )
-    .innerJoin(
-        schema.mapConstellations,
-        eq(schema.mapSolarSystems.constellationId, schema.mapConstellations.constellationId),
-    )
-    .where(
-        like(schema.mapSolarSystems.solarSystemName, `%${find}%`),
-    );
-    
-    return q as sde_system[]
 }
 
 export interface sde_filtered_system {
@@ -135,26 +106,6 @@ export async function find_systems_moons(systems_ids:number[]) {
     return q as MoonBasic[]
 }
 
-export async function find_system_moons_fast(system_name:string) {
-    console.log(`Requesting: sde_db.find_system_moons(${system_name})`)
-
-    const SDE_MOONS_GROUP_ID = 8
-
-    const q = await sde_db.select({
-        id: schema.invUniqueNames.itemId,
-        name: schema.invUniqueNames.itemName,
-    })
-    .from(schema.invUniqueNames)
-    .where(
-        and(
-            eq(schema.invUniqueNames.groupId, SDE_MOONS_GROUP_ID),
-            like(schema.invUniqueNames.itemName, `${system_name}%`)
-        )
-    );
-    
-    return q as MoonBasic[]
-}
-
 export async function find_system_planets(system_id:number) {
     console.log(`Requesting: sde_db.find_system_planets(${system_id})`)
 
@@ -203,25 +154,6 @@ export async function get_system_sun_type_id(solar_system_id:number) {
     }
 }
 
-export async function get_system_sun_type_id_by_name(solar_system_name:string) {
-    console.log(`Requesting: sde_db.get_system_sun_type_id_by_name(${solar_system_name})`)
-
-    const q = await sde_db.select({
-        sunTypeId: schema.mapSolarSystems.sunTypeId,
-    })
-    .from(schema.mapSolarSystems)
-    .where(
-        eq(schema.mapSolarSystems.solarSystemName, solar_system_name),
-    )
-    .limit(1);
-    
-    if (q.length > 0) {
-        return q[0].sunTypeId
-    } else {
-        return null
-    }
-}
-
 export async function get_systems_coordinates() {
     console.log(`Requesting: sde_db.get_systems_coordinates()`)
 
@@ -249,78 +181,4 @@ export async function get_systems_coordinates() {
     )
     
     return q as sde_system[]
-}
-
-export async function get_regions() {
-    console.log(`Requesting: sde_db.get_regions()`)
-
-    const q = await sde_db.select({
-        id: schema.mapRegions.regionId,
-        name: schema.mapRegions.regionName,
-    })
-    .from(schema.mapRegions);
-    
-    return q as RegionBasic[]
-}
-
-import type { ConstellationBasic } from '@dtypes/layout_components'
-
-export async function get_constellations() {
-    console.log(`Requesting: sde_db.get_regions()`)
-
-    const q = await sde_db.select({
-        id: schema.mapConstellations.constellationId,
-        name: schema.mapConstellations.constellationName,
-    })
-    .from(schema.mapRegions);
-    
-    return q as ConstellationBasic[]
-}
-
-export async function get_system_name(solar_system_id:number) {
-    console.log(`Requesting: sde_db.get_system_name(${solar_system_id})`)
-
-    const q = await sde_db.select({
-        solarSystemName: schema.mapSolarSystems.solarSystemName,
-    })
-    .from(schema.mapSolarSystems)
-    .where(
-        eq(schema.mapSolarSystems.solarSystemId, solar_system_id),
-    )
-    .limit(1);
-    
-    if (q.length > 0) {
-        return q[0].solarSystemName
-    } else {
-        return null
-    }
-}
-
-export async function get_planet_info(planet_id:number) {
-    console.log(`Requesting: sde_db.get_planet_info(${planet_id})`)
-
-    const SDE_PLANETS_GROUP_ID = 7
-
-    const q = await sde_db.select({
-        id: schema.invItems.itemId,
-        name: schema.invUniqueNames.itemName,
-        type_id: schema.invItems.typeId,
-    })
-    .from(schema.invItems)
-    .innerJoin(
-        schema.invUniqueNames,
-        eq(schema.invUniqueNames.itemId, schema.invItems.itemId),
-    )
-    .where(
-        and(
-            eq(schema.invItems.itemId, planet_id)
-        )
-    )
-    .limit(1);
-
-    if (q.length > 0) {
-        return q[0] as PlanetBasic
-    } else {
-        return null
-    }
 }

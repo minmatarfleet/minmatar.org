@@ -23,9 +23,6 @@ export const SELL_ORDER_GAPS_DEFAULT_DIRECTIONS: Record<
     volume_7d: 'desc',
 }
 
-export const SELL_ORDER_GAPS_DEFAULT_ORDER_DIR: SellOrderGapsSortDirection =
-    SELL_ORDER_GAPS_DEFAULT_DIRECTIONS[SELL_ORDER_GAPS_DEFAULT_ORDER_BY]
-
 export interface SellOrderGapsFilterRow {
     item_name?: string
     item_type: string

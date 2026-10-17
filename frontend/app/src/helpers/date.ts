@@ -7,7 +7,6 @@ import moment from 'moment';
 const datetime_options = JSON.parse(import.meta.env.DATETIME_FORMAT)
 const date_options = JSON.parse(import.meta.env.DATE_FORMAT ?? '{"weekday":"short","year":"numeric","month":"short","day":"numeric"}')
 const date_short_options = JSON.parse(import.meta.env.DATE_FORMAT_SHORT ?? '{"year":"numeric","month":"short","day":"numeric"}')
-const date_shortest_options = JSON.parse(import.meta.env.DATE_FORMAT_SHORTEST ?? '{"year":"numeric","month":"long"}')
 
 export const format_date_time = (locale, date):string => {
     return new Date(date).toLocaleDateString(locale, datetime_options)
@@ -19,10 +18,6 @@ export const format_date = (locale, date):string => {
 
 export const format_date_short = (locale, date):string => {
     return new Date(date).toLocaleDateString(locale, date_short_options)
-}
-
-export const format_date_shortest = (locale, date):string => {
-    return new Date(date).toLocaleDateString(locale, date_shortest_options)
 }
 
 export const days_diff_text = (locale:Locales = 'en', from:Date, to:Date):string => {
@@ -140,20 +135,6 @@ export const hours_diff = (from:Date, to:Date):number => {
     return to_moment.diff(from_moment, 'hours');
 }
 
-export const month_diff = (from:Date, to:Date):number => {
-    var from_moment = moment(new Date(from))
-    var to_moment = moment(new Date(to))
-    
-    return to_moment.diff(from_moment, 'months');
-}
-
-export const year_diff = (from:Date, to:Date):number => {
-    var from_moment = moment(new Date(from))
-    var to_moment = moment(new Date(to))
-    
-    return to_moment.diff(from_moment, 'years');
-}
-
 export const from_to_text = (locale:Locales = 'en', from:Date, to:Date):string => {
     const t = useTranslations(locale);
 
@@ -247,7 +228,4 @@ export function get_date_progress_percent(start_date: Date | string, end_date: D
     const elapsed = current - start
 
     return (elapsed / total_duration) * 100
-}
-export const format_time = (locale, date):string => {
-    return new Date(date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 }

@@ -31,9 +31,6 @@ export const OPS_CONTRACTS_DEFAULT_DIRECTIONS: Record<
     unstocked_pct_30d: 'desc',
 }
 
-export const OPS_CONTRACTS_DEFAULT_ORDER_DIR: OpsContractsSortDirection =
-    OPS_CONTRACTS_DEFAULT_DIRECTIONS[OPS_CONTRACTS_DEFAULT_ORDER_BY]
-
 export interface OpsContractsFilterRow {
     fitting_id: number
     title?: string

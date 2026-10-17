@@ -2,8 +2,8 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import type { Corporation, CorporationApplicationDetails, EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import type { ApplicationOld, CorporationApplications, ApplicationBasic, ApplicationDetail, CorporationStatusType } from '@dtypes/layout_components'
+import type { Corporation, EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { CorporationApplications, ApplicationBasic, ApplicationDetail, CorporationStatusType } from '@dtypes/layout_components'
 import {
     get_corporation_applications,
     get_corporation_applications_by_id,
@@ -11,51 +11,6 @@ import {
 import { get_user_character, get_users_character } from '@helpers/fetching/characters'
 import { get_alliance_corporations_with_extraction } from '@helpers/fetching/corporations'
 import { unique_values } from '@helpers/array'
-
-export async function get_all_applications(access_token:string) {
-    let api_corporations:Corporation[]
-    let applications:ApplicationOld[]
-
-    api_corporations = await get_alliance_corporations_with_extraction()
-
-    applications = (await Promise.all(api_corporations.map(async (corporation) => {
-        let applications:ApplicationOld[] = []
-
-        const api_applications = await get_corporation_applications(access_token, corporation.corporation_id)
-        
-        if (!api_applications || api_applications?.length === 0)
-            return applications
-
-        const users_ids = unique_values(api_applications.map(api_application => api_application.user_id))
-        const character_profiles = await get_users_character(users_ids)
-
-        applications = api_applications.map(application => {
-            const character = character_profiles.find(character => character.user_id === application.user_id)
-
-            return {
-                id: application.application_id,
-                applied_corporation: application.corporation_id, // django corporation id
-                status: application.status,
-                corporation_id: character?.corporation_id ?? 0,
-                character_name: character?.character_name ?? t('unknown_character'),
-                corporation_name: character?.corporation_name ?? t('unknown_corporation'),
-            } as ApplicationOld
-        })
-
-        return applications
-    }))).flat()
-
-    applications = (await Promise.all(applications.map(async (application) => {
-        let application_details:CorporationApplicationDetails
-        application_details = await get_corporation_applications_by_id(access_token, application.corporation_id, application.id)
-
-        application.description = application_details.description
-
-        return application
-    })))
-
-    return applications
-}
 
 export async function get_all_corporations_applications(access_token:string, records:boolean = false) {
     let api_corporations:Corporation[]

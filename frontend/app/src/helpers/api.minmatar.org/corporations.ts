@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationMembersTop, CorporationAdmin, CorporationOpenApplication } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -118,16 +118,6 @@ async function authorized_get<T>(access_token: string, endpoint: string): Promis
 export async function get_corporation_members(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/members`
     return await authorized_get<CorporationMemberDetails[]>(access_token, endpoint)
-}
-
-export async function get_corporation_members_top(access_token: string, id: number, metric: string) {
-    const endpoint = `${API_ENDPOINT}/corporations/${id}/members/top?metric=${encodeURIComponent(metric)}`
-    return await authorized_get<CorporationMembersTop>(access_token, endpoint)
-}
-
-export async function get_corporation_admin(access_token: string, id: number) {
-    const endpoint = `${API_ENDPOINT}/corporations/${id}/admin`
-    return await authorized_get<CorporationAdmin>(access_token, endpoint)
 }
 
 export async function get_corporation_id_by_slug(slug: string) {

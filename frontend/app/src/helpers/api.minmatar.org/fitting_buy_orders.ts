@@ -312,33 +312,6 @@ export async function delete_fitting_buy_order(
     return await parse_json_or_throw(response, 'DELETE', endpoint)
 }
 
-export async function upsert_fitting_buy_line(
-    access_token: string,
-    order_id: number,
-    payload: { fitting_id: number; quantity: number },
-) {
-    const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/lines`
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
-    })
-    return await parse_json_or_throw(response, 'POST', endpoint) as FittingBuyOrderDetail
-}
-
-export async function delete_fitting_buy_line(
-    access_token: string,
-    order_id: number,
-    line_id: number,
-) {
-    const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/lines/${line_id}`
-    const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: auth_headers(access_token),
-    })
-    return await parse_json_or_throw(response, 'DELETE', endpoint) as FittingBuyOrderDetail
-}
-
 export async function apply_fitting_buy_swap(
     access_token: string,
     order_id: number,
@@ -346,20 +319,6 @@ export async function apply_fitting_buy_swap(
     payload: { preferred_type_id: number; substitute_type_id: number; notes?: string },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/lines/${line_id}/swaps`
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
-    })
-    return await parse_json_or_throw(response, 'POST', endpoint) as FittingBuyOrderDetail
-}
-
-export async function apply_fitting_buy_order_swap(
-    access_token: string,
-    order_id: number,
-    payload: { preferred_type_id: number; substitute_type_id: number; notes?: string },
-) {
-    const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/swaps`
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: auth_headers(access_token),

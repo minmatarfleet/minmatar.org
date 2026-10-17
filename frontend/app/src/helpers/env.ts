@@ -3,10 +3,6 @@ const API_PUBLIC_URL = import.meta.env.API_PUBLIC_URL ?? API_URL
 const APP_URL = import.meta.env.APP_URL
 const PROD_ERROR_MESSAGES = import.meta.env.PROD_ERROR_MESSAGES ?? false
 
-export const is_dev_mode = () => {
-    return import.meta.env.DEV;
-}
-
 export const is_prod_mode = () => {
     return import.meta.env.PROD;
 }

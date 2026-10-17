@@ -37,7 +37,7 @@ if (!fitting)
     return HTTP_404_Not_Found()
 
 try {
-    saved_logs = [] // user && !fetch_fleets_error ? await get_fitting_combatlogs(auth_token as string, parseInt(fitting_id ?? '0')) : []
+    saved_logs = []
 } catch (error) {
     console.log(error)
 }

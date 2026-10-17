@@ -1,9 +1,7 @@
 import type {
     CampaignListItem,
     CampaignDetail,
-    CampaignRightNow,
     CampaignWeek,
-    CampaignOrder,
     CampaignSystemSummary,
     CampaignFleet,
     CampaignLeaderboardRow,
@@ -13,14 +11,12 @@ import type {
     CampaignKillmail,
     CampaignKillmailOutcome,
     CampaignSite,
-    CampaignTimelineEvent,
     CampaignRoster,
     CampaignReadiness,
     CampaignEnlistRequest,
     CampaignEnlistResponse,
     CampaignAdvantageRequest,
     CampaignAdvantageResponse,
-    CampaignGangRequest,
     CampaignStructure,
     CampaignStructureAttachRequest,
     UniverseEntityMatch,
@@ -91,27 +87,11 @@ export async function get_campaign(slug:string, access_token:string | false = fa
     )
 }
 
-export async function get_campaign_now(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignRightNow>(
-        `${API_ENDPOINT}/${slug}/now`,
-        access_token,
-        'campaign live status',
-    )
-}
-
 export async function get_campaign_week(slug:string, access_token:string | false = false) {
     return await request_json<CampaignWeek>(
         `${API_ENDPOINT}/${slug}/week`,
         access_token,
         'campaign week plan',
-    )
-}
-
-export async function get_campaign_orders(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignOrder[]>(
-        `${API_ENDPOINT}/${slug}/orders`,
-        access_token,
-        'campaign orders',
     )
 }
 
@@ -186,14 +166,6 @@ export async function get_campaign_sites(slug:string, access_token:string | fals
         `${API_ENDPOINT}/${slug}/sites?limit=${limit}${offset > 0 ? `&offset=${offset}` : ''}`,
         access_token,
         'campaign sites',
-    )
-}
-
-export async function get_campaign_timeline(slug:string, access_token:string | false = false, limit:number = 25) {
-    return await request_json<CampaignTimelineEvent[]>(
-        `${API_ENDPOINT}/${slug}/timeline?limit=${limit}`,
-        access_token,
-        'campaign timeline',
     )
 }
 
@@ -279,16 +251,6 @@ export async function report_campaign_advantage(
         'campaign advantage reading',
         'POST',
         reading,
-    )
-}
-
-export async function create_campaign_gang(slug:string, access_token:string, gang:CampaignGangRequest) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/gangs`,
-        access_token,
-        'campaign gang',
-        'POST',
-        gang,
     )
 }
 

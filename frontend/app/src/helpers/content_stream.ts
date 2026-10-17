@@ -1,6 +1,5 @@
 import type { PostListUI } from '@dtypes/layout_components'
 import type { CampaignMeta } from '@/data/campaigns'
-import { campaigns } from '@/data/campaigns'
 
 export type ContentStreamKind = 'campaign' | 'siege' | 'warzone' | 'post'
 
@@ -18,24 +17,6 @@ export type ContentStreamItem = {
     period_key?: string
     campaign?: CampaignMeta
     post?: PostListUI
-}
-
-export function campaign_to_stream_item(
-    campaign: CampaignMeta,
-    resolve: (key: string) => string,
-): ContentStreamItem {
-    return {
-        id: `campaign-${campaign.slug}`,
-        kind: campaign.kind,
-        href: campaign.path,
-        title: resolve(campaign.nameKey),
-        excerpt: resolve(campaign.excerptKey),
-        cover: campaign.coverImage,
-        published_at: campaign.published_at,
-        isk_destroyed: campaign.iskDestroyed,
-        period_key: campaign.periodKey,
-        campaign,
-    }
 }
 
 export function post_to_stream_item(post: PostListUI): ContentStreamItem {
@@ -63,11 +44,6 @@ export function sort_content_stream(items: ContentStreamItem[]): ContentStreamIt
     })
 }
 
-export function build_static_stream_items(resolve: (key: string) => string): ContentStreamItem[] {
-    const campaign_items = campaigns.map((campaign) => campaign_to_stream_item(campaign, resolve))
-    return sort_content_stream(campaign_items)
-}
-
 export function merge_content_stream(
     static_items: ContentStreamItem[],
     posts: PostListUI[],
@@ -75,5 +51,3 @@ export function merge_content_stream(
     const post_items = posts.map(post_to_stream_item)
     return sort_content_stream([...static_items, ...post_items])
 }
-
-export const CONTENT_STREAM_PAGE_SIZE = 21

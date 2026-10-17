@@ -1,5 +1,5 @@
 import { parse_response_error } from '@helpers/string'
-import type { ReferralLinkStats, ReferralLink } from '@dtypes/api.minmatar.org'
+import type { ReferralLinkStats } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/referrals`
 
@@ -68,35 +68,5 @@ export async function record_referral(page:string, user_id:number, client_ip:str
         return (response.status === 201)
     } catch (error) {
         throw new Error(`Error recording referral: ${error.message}`, { cause: error.cause });
-    }
-}
-
-export async function get_links(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/links`
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as ReferralLink[]
-    } catch (error) {
-        throw new Error(`Error fetching links stats: ${error.message}`, { cause: error.cause });
     }
 }
