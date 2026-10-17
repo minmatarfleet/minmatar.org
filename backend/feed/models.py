@@ -341,7 +341,11 @@ class FeedAmarrFleetAlert(models.Model):
     cluster_key = models.CharField(max_length=256, db_index=True)
     # [{channel_id, message_id}, ...]
     discord_messages = models.JSONField(default=list)
+    # Bumped on every Discord edit (at least every few minutes while the
+    # rollup is live), so it keeps the session open but isn't when the fight
+    # happened. fight_at is the rollup's newest kill.
     last_activity_at = models.DateTimeField(db_index=True)
+    fight_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

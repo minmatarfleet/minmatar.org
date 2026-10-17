@@ -108,6 +108,22 @@ class EsiClientTest(SimpleTestCase):
         op_results.assert_called_once_with(operation, use_etag=False)
         self.assertEqual(response.response_code, SUCCESS)
 
+    def test_resolve_universe_ids_returns_the_object(self):
+        # POST /universe/ids answers one object; results() wrapped it in a
+        # list and broke the intel Local lookup.
+        operation = MagicMock()
+        operation.result.return_value = {
+            "characters": [{"id": 634915984, "name": "BearThatCares"}]
+        }
+        operation.results.return_value = [operation.result.return_value]
+        with patch("eveonline.client.esi_provider") as provider, patch(
+            "eveonline.client.live_esi_allowed", return_value=True
+        ):
+            provider.client.Universe.PostUniverseIds.return_value = operation
+            response = EsiClient(None).resolve_universe_ids(["BearThatCares"])
+
+        self.assertEqual(response.results()["characters"][0]["id"], 634915984)
+
     @patch("eveonline.client.Token.get_token")
     def test_update_fleet_details_passes_token_object(self, get_token_mock):
         token = MagicMock()
