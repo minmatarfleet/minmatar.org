@@ -9,7 +9,7 @@ from django.utils import timezone
 from app.test import TestCase
 from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
-from fleets.helpers.eft_items import parse_eft_items
+from fittings.eft import parse_eft_items
 from fleets.helpers.fit_roles import fit_roles
 from fleets.models import (
     EveFleetInstance,

@@ -14,6 +14,7 @@ from esi.models import Scope, Token
 from eveonline.client import SUCCESS, EsiResponse
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
+from fittings.eft import fitted_modules
 from fittings.models import (
     EveDoctrine,
     EveDoctrineFitting,
@@ -31,7 +32,6 @@ from fleets.helpers.esi_fittings import (
     fitting_publisher,
 )
 from fleets.helpers.refits import (
-    eft_fitted_modules,
     parse_cargo_modules,
     refit_cargo_diff,
 )
@@ -181,7 +181,7 @@ class RefitHelperTestCase(TestCase):
     """Pure helpers for EFT parsing and cargo diffs."""
 
     def test_eft_fitted_modules_skips_header_empty_and_cargo(self):
-        modules = eft_fitted_modules(BASE_EFT)
+        modules = fitted_modules(BASE_EFT)
         self.assertEqual(3, modules["720mm Howitzer Artillery II"])
         self.assertEqual(2, modules["Gyrostabilizer II"])
         self.assertNotIn("Warrior II", modules)
@@ -1148,11 +1148,11 @@ class FleetCompositionRouterTestCase(TestCase):
         from market.models import (  # pylint: disable=import-outside-toplevel
             EveMarketItemOrder,
         )
-        from fleets.helpers.supply import (  # pylint: disable=import-outside-toplevel
-            eft_purchase_items,
+        from fittings.eft import (  # pylint: disable=import-outside-toplevel
+            purchase_items,
         )
 
-        needed = eft_purchase_items(BASE_EFT)
+        needed = purchase_items(BASE_EFT)
         self.assertEqual(1, needed["Hurricane"])
         self.assertEqual(3, needed["720mm Howitzer Artillery II"])
         self.assertNotIn("Warrior II", needed)
