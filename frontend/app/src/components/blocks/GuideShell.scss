@@ -34,25 +34,17 @@
         .fwc-panel,
         .nfg-panel,
         .ndm-panel,
-        .fwc-ship,
-        .nfg-ship,
-        .ndm-ship
+        .guide-ship
     ) {
         padding-inline: var(--space-xs);
     }
 
-    .guide-shell.card :is(
-        .fwc-ship__hero-visual,
-        .nfg-ship__hero-visual,
-        .ndm-ship__hero-visual
-    ) {
+    .guide-shell.card .guide-ship__hero-visual {
         padding: var(--space-s);
     }
 
     .guide-shell.card :is(
-        .fwc-ship__stats,
-        .nfg-ship__stats,
-        .ndm-ship__stats,
+        .guide-ship__stats,
         .fwc-summary-card,
         .nfg-summary-card,
         .ndm-summary-card

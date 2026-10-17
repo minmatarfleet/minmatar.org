@@ -10,28 +10,30 @@ import Tag from '@components/blocks/Tag.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import type { GuideFitting } from '@/data/faction-warfare-cruiser-guide'
+import type { GuideFitting } from '@/data/ship-guide/types'
 import type { ResolvedGuideFitting } from '@helpers/guide_fittings'
 
 interface Props {
-    fit: ResolvedGuideFitting<GuideFitting>
-    shipName: string
+    fit:        ResolvedGuideFitting<GuideFitting>;
+    ship_name:  string;
+    /** Guide-specific id prefix, kept so copy-button ids stay stable (e.g. `nfg`). */
+    id_prefix:  string;
 }
 
-const { fit, shipName } = Astro.props
-const textareaId = `fwc-fit-${fit.id}`
+const { fit, ship_name, id_prefix } = Astro.props
+const textarea_id = `${id_prefix}-fit-${fit.id}`
 ---
 
 <ComponentBlock
-    class="fwc-fit-card"
+    class="guide-fit-card"
     padding_block="var(--space-s)"
     padding_inline="var(--space-s)"
 >
-    <Flexblock class="[ fwc-fit-card__layout ]" gap="var(--space-s)">
+    <Flexblock class="[ guide-fit-card__layout ]" gap="var(--space-s)">
         <FixedFluid class="[ items-start ]" width="64px" breakpoint="0">
             <ItemPicture
                 item_id={fit.shipId}
-                item_name={shipName}
+                item_name={ship_name}
                 size={64}
             />
             <Flexblock gap="var(--space-3xs)">
@@ -43,7 +45,7 @@ const textareaId = `fwc-fit-${fit.id}`
             </Flexblock>
         </FixedFluid>
 
-        <FlexInline class="[ fwc-fit-card__actions ]">
+        <FlexInline class="[ guide-fit-card__actions ]">
             {fit.fromLibrary && (
                 <FittingLink
                     class="[ action-button ]"
@@ -55,7 +57,7 @@ const textareaId = `fwc-fit-${fit.id}`
             )}
             <ClipboardButton
                 class="[ action-button ]"
-                id={textareaId}
+                id={textarea_id}
                 narrow={true}
                 text={t('copy_fitting')}
             >
@@ -66,7 +68,7 @@ const textareaId = `fwc-fit-${fit.id}`
 </ComponentBlock>
 
 <style lang="scss">
-    .fwc-fit-card__layout {
+    .guide-fit-card__layout {
         min-width: 0;
     }
 
@@ -86,14 +88,14 @@ const textareaId = `fwc-fit-${fit.id}`
         overflow-wrap: anywhere;
     }
 
-    .fwc-fit-card__actions {
+    .guide-fit-card__actions {
         gap: var(--space-xs);
         flex-wrap: wrap;
         justify-content: flex-start;
     }
 
     @media (min-width: 30rem) {
-        .fwc-fit-card__actions {
+        .guide-fit-card__actions {
             justify-content: flex-end;
         }
     }
