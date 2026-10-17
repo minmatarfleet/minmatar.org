@@ -12,13 +12,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from industry.helpers.build_planner import BuildPlan
 from industry.helpers.compressed_ore import CompressedOrePlan
-from market.helpers.pricing import get_prices_by_type_id
-from market.models import EveMarketItemLocationPrice
+from market.helpers.pricing import baseline_book, get_prices_by_type_id
 
 
 @dataclass(frozen=True)
@@ -91,14 +89,11 @@ def jita_sell_prices_by_type_id(type_ids: Sequence[int]) -> Dict[int, int]:
     if not unique:
         return {}
 
-    prices: Dict[int, int] = {}
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if baseline is not None:
-        for tid, sell in EveMarketItemLocationPrice.objects.filter(
-            location=baseline, item_id__in=unique
-        ).values_list("item_id", "sell_price"):
-            if sell is not None:
-                prices[int(tid)] = int(sell)
+    prices: Dict[int, int] = {
+        tid: int(row.sell)
+        for tid, row in baseline_book(unique).items()
+        if row.sell is not None
+    }
 
     missing = [tid for tid in unique if tid not in prices]
     if missing:
