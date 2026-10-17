@@ -16,12 +16,7 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from django.db.models import Q
 from django.utils import timezone
 
-from eveonline.helpers.corporations.safe_cache import (
-    cache_add,
-    cache_delete,
-    cache_get,
-    cache_set,
-)
+from app.cache import CachedRollup
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -599,28 +594,31 @@ def compute_product_insights(now: datetime | None = None) -> dict[int, dict]:
 def refresh_product_insights() -> int:
     insights = compute_product_insights()
     for product_id, data in insights.items():
-        cache_set(
-            _INSIGHTS_KEY.format(product_id=product_id),
-            data,
-            INSIGHTS_TTL_SECONDS,
-        )
-    cache_delete(_LOCK_KEY)
+        INSIGHTS.store(data, release=False, product_id=product_id)
+    # One lock covers the whole pass.
+    INSIGHTS.release()
     return len(insights)
 
 
 def product_insights(product_id: int) -> dict | None:
     """Cached insights, or None after queueing a refresh. Never computes inline."""
-    key = _INSIGHTS_KEY.format(product_id=product_id)
-    data = cache_get(key)
-    if data is not None:
-        return data
-    # cache.add is atomic, so only one request per window queues the work.
-    if cache_add(_LOCK_KEY, True, REFRESH_LOCK_SECONDS):
-        # Imported here: the task module imports this helper.
-        from industry.tasks import (  # pylint: disable=import-outside-toplevel
-            refresh_product_insights_task,
-        )
+    return INSIGHTS.get_or_queue(product_id=product_id)
 
-        refresh_product_insights_task.delay()
-    # Eager Celery (tests) fills the cache during the call above.
-    return cache_get(key)
+
+def _queue_refresh(**_params) -> None:
+    # Imported here: the task module imports this helper.
+    from industry.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_product_insights_task,
+    )
+
+    refresh_product_insights_task.delay()
+
+
+INSIGHTS = CachedRollup(
+    key=_INSIGHTS_KEY,
+    ttl=INSIGHTS_TTL_SECONDS,
+    # One pass refreshes every product, so one lock covers them all.
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    enqueue=_queue_refresh,
+)

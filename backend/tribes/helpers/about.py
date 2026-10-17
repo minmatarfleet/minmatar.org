@@ -21,12 +21,7 @@ from typing import Any
 from django.db.models import Count
 from django.utils import timezone
 
-from eveonline.helpers.corporations.safe_cache import (
-    cache_add,
-    cache_delete,
-    cache_get,
-    cache_set,
-)
+from app.cache import CachedRollup
 from eveonline.models import (
     EveCharacterAsset,
     EveCharacterKillmailAttacker,
@@ -515,24 +510,13 @@ def compute_tribe_about(tribe: Tribe) -> dict[str, Any]:
 
 def refresh_tribe_about(tribe: Tribe) -> dict[str, Any]:
     about = compute_tribe_about(tribe)
-    cache_set(_ABOUT_KEY.format(tribe_id=tribe.pk), about, ABOUT_TTL_SECONDS)
-    cache_delete(_LOCK_KEY.format(tribe_id=tribe.pk))
+    ABOUT.store(about, tribe_id=tribe.pk)
     return about
 
 
 def tribe_about(tribe_id: int) -> dict[str, Any] | None:
     """Cached About payload, or None after queueing a refresh."""
-    key = _ABOUT_KEY.format(tribe_id=tribe_id)
-    about = cache_get(key)
-    if about is not None:
-        return about
-    # cache.add is atomic, so only one request per window queues the work.
-    if cache_add(
-        _LOCK_KEY.format(tribe_id=tribe_id), True, REFRESH_LOCK_SECONDS
-    ):
-        _queue_refresh(tribe_id)
-    # Eager Celery (tests) fills the cache during the call above.
-    return cache_get(key)
+    return ABOUT.get_or_queue(tribe_id=tribe_id)
 
 
 def _queue_refresh(tribe_id: int) -> None:
@@ -541,10 +525,15 @@ def _queue_refresh(tribe_id: int) -> None:
         refresh_tribe_about_page,
     )
 
-    try:
-        refresh_tribe_about_page.apply_async(args=[tribe_id])
-    except Exception:  # pylint: disable=broad-exception-caught
-        logger.exception(
-            "Could not queue tribe about refresh for %s", tribe_id
-        )
-        cache_delete(_LOCK_KEY.format(tribe_id=tribe_id))
+    refresh_tribe_about_page.apply_async(args=[tribe_id])
+
+
+ABOUT = CachedRollup(
+    key=_ABOUT_KEY,
+    ttl=ABOUT_TTL_SECONDS,
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    # Late-bound so tests can patch _queue_refresh.
+    # pylint: disable-next=unnecessary-lambda
+    enqueue=lambda tribe_id: _queue_refresh(tribe_id),
+)
