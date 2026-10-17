@@ -85,6 +85,38 @@ test('builds overlay rows: FC names, doctrine names, links, soonest first, no FC
     assert.equal(rows[1].url, 'https://web.example/fleets/upcoming/2')
 })
 
+test('a backend that names FCs and doctrines needs one request for the schedule', async () => {
+    const calls = []
+    const named = FLEETS.map(fleet => ({
+        ...fleet,
+        fleet_commander_character_id: fleet.fleet_commander === 10 ? 9001 : null,
+        fleet_commander_name: fleet.fleet_commander === 10 ? 'FC One' : null,
+        doctrine_name: fleet.doctrine_id === 5 ? 'Hurricanes' : null,
+    }))
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: fake_fetch({
+            '/api/fleets/v3?fleet_filter=active': named,
+            '/api/users/profiles?ids=11': PROFILES.filter(p => p.user_id === 11),
+        }, calls),
+    })
+    const rows = await load_upcoming_fleets(api, 'https://web.example')
+    // FC 11 has no primary character, so only that profile is looked up (for the username).
+    assert.deepEqual(calls.map(c => c.url.replace('https://api.example', '')), ['/api/fleets/v3?fleet_filter=active', '/api/users/profiles?ids=11'])
+    // Same rows as the old join builds.
+    const old_api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: fake_fetch({
+            '/api/fleets/v3?fleet_filter=active': FLEETS,
+            '/api/users/profiles?ids=11,10': PROFILES,
+            '/api/doctrines/5': { id: 5, name: 'Hurricanes' },
+        }),
+    })
+    assert.deepEqual(rows, await load_upcoming_fleets(old_api, 'https://web.example'))
+})
+
 test('API errors carry the HTTP status (401 -> sign in again, 403 -> no fleet access)', async () => {
     const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/fleets/v3?fleet_filter=active': 403 }) })
     await assert.rejects(load_upcoming_fleets(api, 'https://web.example'), err => err instanceof ApiError && err.status === 403)

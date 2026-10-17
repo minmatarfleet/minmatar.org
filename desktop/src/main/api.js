@@ -200,17 +200,22 @@ class ApiClient {
     }
 }
 
-// Fleet list -> rows for the overlay, soonest first.
+// Fleet list -> rows for the overlay, soonest first. The backend names the FC's primary character
+// and the doctrine on each fleet; an older backend doesn't, so those fall back to the profile and
+// doctrine lookups (as does an FC with no primary character, who is shown by username).
 async function load_upcoming_fleets(api, web_url) {
     const fleets = (await api.fleets()).filter(fleet => fleet.fleet_commander)
-    const fc_ids = [...new Set(fleets.map(fleet => fleet.fleet_commander))]
+    const fc_ids = [...new Set(fleets.filter(fleet => !fleet.fleet_commander_name).map(fleet => fleet.fleet_commander))]
     const profiles = await api.profiles(fc_ids)
-    const doctrine_names = await Promise.all(fleets.map(fleet => api.doctrine_name(fleet.doctrine_id)))
+    const doctrine_names = await Promise.all(fleets.map(fleet =>
+        'doctrine_name' in fleet ? fleet.doctrine_name : api.doctrine_name(fleet.doctrine_id)))
 
     return fleets
         .map((fleet, i) => {
             const profile = profiles.find(p => p && p.user_id === fleet.fleet_commander)
-            const character = profile && profile.eve_character_profile
+            const character = fleet.fleet_commander_name
+                ? { character_id: fleet.fleet_commander_character_id, character_name: fleet.fleet_commander_name }
+                : profile && profile.eve_character_profile
             return {
                 id: fleet.id,
                 type: fleet.type,

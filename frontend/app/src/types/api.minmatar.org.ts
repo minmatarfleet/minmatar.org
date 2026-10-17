@@ -946,7 +946,10 @@ export interface Fleet {
     objective?:         string;
     start_time:         Date;
     fleet_commander?:   number;
+    fleet_commander_character_id?: number | null;
+    fleet_commander_name?: string | null;
     doctrine_id:        number;
+    doctrine_name?:     string | null;
     location:           string;
     disable_motd:       boolean;
     hide_volunteers:    boolean;
