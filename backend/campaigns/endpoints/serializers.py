@@ -413,6 +413,20 @@ ROSTER_COUNTS = (
 ROSTER_ACTIVE_DAYS = 7
 
 
+def tracked_character_counts(user_ids) -> dict[int, int]:
+    """Characters per pilot whose notifications we can read, which is what
+    site completions are attributed from. Worked out live, never stored."""
+    return dict(
+        EveCharacter.objects.filter(
+            user_id__in=list(user_ids),
+            token__scopes__name="esi-characters.read_notifications.v1",
+        )
+        .values_list("user_id")
+        .annotate(n=Count("id", distinct=True))
+        .values_list("user_id", "n")
+    )
+
+
 def roster_rows(campaign: Campaign) -> list[dict]:
     """The roster, in a handful of queries rather than three per pilot."""
     enlistments = list(
@@ -449,15 +463,7 @@ def roster_rows(campaign: Campaign) -> list[dict]:
             ]
         ).values_list("corporation_id", "name")
     )
-    tracked_by_user = dict(
-        EveCharacter.objects.filter(
-            user_id__in=user_ids,
-            token__scopes__name="esi-characters.read_notifications.v1",
-        )
-        .values_list("user_id")
-        .annotate(n=Count("id", distinct=True))
-        .values_list("user_id", "n")
-    )
+    tracked_by_user = tracked_character_counts(user_ids)
 
     rows = []
     for enlistment in enlistments:
