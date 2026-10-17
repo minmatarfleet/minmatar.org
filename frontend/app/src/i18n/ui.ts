@@ -5151,6 +5151,7 @@ export const ui = {
         'fleets.tabs.your_pilots': 'Your pilots',
         'fleets.tabs.fleet': 'Fleet',
         'fleets.tabs.loading_picker': 'Loading your characters...',
+        'fleets.tabs.fleet_pending': 'Fleet composition and member locations show here once tracking starts.',
         'fleets.missing.summary': '<b>{count} signed up but not in fleet</b>',
         'fleets.missing.summary_cynos': '<b>{count} signed up but not in fleet</b>, {cynos} of them cynos',
         'fleets.missing.nudge': 'DM them the fleet link',

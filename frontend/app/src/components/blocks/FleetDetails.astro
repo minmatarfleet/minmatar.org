@@ -275,6 +275,10 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
                         }
 
                         {!fleet?.tracking &&
+                            <p x-show="!tracking_started">{t('fleets.tabs.fleet_pending')}</p>
+                        }
+
+                        {!fleet?.tracking &&
                             <template
                                 x-if="tracking_started"
                             >
