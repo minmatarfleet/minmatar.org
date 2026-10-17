@@ -54,7 +54,7 @@
           ]
         }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
     },
     "portable": {
       "artifactName": "MinmatarFleet-${version}-portable.${ext}"
@@ -63,7 +63,9 @@
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": true,
-      "shortcutName": "Minmatar Fleet"
+      "shortcutName": "Minmatar Fleet",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "publish": [
       {
