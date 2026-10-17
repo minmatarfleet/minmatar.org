@@ -3,7 +3,7 @@ from django.db.models import signals
 from django.test import Client
 
 from app.test import TestCase
-from discord.signals import user_group_changed
+from discord.signals import group_post_save, user_group_changed
 from groups.helpers import user_in_group_named
 
 
@@ -18,6 +18,12 @@ class GroupsRouterTestCase(TestCase):
         """user_in_group_named returns True when user is in the named auth group."""
         self.assertFalse(user_in_group_named(self.user, "Nonexistent Group"))
 
+        # Creating a Group would also create its Discord role; earlier tests
+        # sometimes left that signal off, which made this pass by luck.
+        group_signal_was_connected = signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
@@ -32,3 +38,9 @@ class GroupsRouterTestCase(TestCase):
                 sender=User.groups.through,
                 dispatch_uid="user_group_changed",
             )
+            if group_signal_was_connected:
+                signals.post_save.connect(
+                    group_post_save,
+                    sender=Group,
+                    dispatch_uid="group_post_save",
+                )
