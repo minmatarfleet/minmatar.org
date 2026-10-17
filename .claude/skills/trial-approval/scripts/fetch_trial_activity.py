@@ -164,13 +164,22 @@ def fetch_activity(
                     "killmail__evecharacterkillmailattacker", distinct=True
                 )
             )
-            .values_list("character_id", "gang_size", "killmail__killmail_time")
+            .values_list(
+                "character_id",
+                "gang_size",
+                "killmail__killmail_time",
+                "killmail_id",
+            )
             .iterator(chunk_size=5000)
         )
-        for character_id, gang_size, kill_time in kill_rows:
+        # A person counts a mail once, however many of their alts were on it
+        # (matches alliance.helpers.health).
+        seen_mails: set[tuple[int, int]] = set()
+        for character_id, gang_size, kill_time, killmail_id in kill_rows:
             uid = user_by_eve.get(character_id)
-            if uid is None:
+            if uid is None or (uid, killmail_id) in seen_mails:
                 continue
+            seen_mails.add((uid, killmail_id))
             kills_by_user[uid] += 1
             bucket = gang_bucket(gang_size)
             gang_by_user[uid][bucket] += 1
