@@ -7,7 +7,7 @@ import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import type { CampaignDetail, CampaignRoster } from '@dtypes/api.minmatar.org'
 import { get_campaign, get_campaign_roster } from '@helpers/api.minmatar.org/campaigns'
 
@@ -25,9 +25,9 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+const can_view_campaigns = can(gates, 'campaigns.view')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()

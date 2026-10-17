@@ -9,6 +9,7 @@ How authentication and authorization work on minmatar.org.
 | [discord-groups.md](discord-groups.md) | Fail-closed `auth.Group` ↔ Discord roles; source/reconcile rules |
 | [discord-groups-verification.md](discord-groups-verification.md) | Live test-guild OPSEC verification playbook + how to run |
 | [feature-catalog.md](feature-catalog.md) | Every feature code, its scope, legacy permission, and default wiring |
+| [frontend-feature-gating.md](frontend-feature-gating.md) | Site gates, `/api/users/me/gates`, legacy/shadow/features rollout |
 | [migration.md](migration.md) | Retiring Django auth-group permissions in favor of feature wiring |
 
 ## Overview

@@ -12,8 +12,8 @@ const {
     character,
 } = Astro.props
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import FlexInline from "@components/compositions/FlexInline.astro";
 import PilotBadge from "@components/blocks/PilotBadge.astro";
@@ -33,6 +33,6 @@ import CharacterLinks from "@components/blocks/CharacterLinks.astro";
     <CharacterLinks
         character_id={character.character_id}
         user={user}
-        user_permissions={user_permissions}
+        gates={gates}
     />
 </FlexInline>

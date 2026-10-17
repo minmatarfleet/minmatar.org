@@ -11,6 +11,7 @@ const is_superuser = Boolean(user?.is_superuser)
 const is_auth = Boolean(user)
 
 import { get_user_profile } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { strip_markdown } from '@helpers/string'
 import { tribe_group_cover } from '@helpers/tribe_covers'
@@ -47,8 +48,8 @@ if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
 const user_profile = user && user?.username ? await get_user_profile(user.username) : null
-const user_permissions = user_profile?.permissions ?? []
-const is_alliance_member = user_permissions.includes('eveonline.add_evecharactertag') || is_superuser
+const gates = await get_gates(Astro)
+const is_alliance_member = can(gates, 'tribes.roster.view')
 const user_on_trial = user_profile?.community_status === 'trial'
 
 let tribe: Tribe | null = null

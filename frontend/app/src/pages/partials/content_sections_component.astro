@@ -10,9 +10,13 @@ const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
 import { is_thinkspeak_member } from '@helpers/thinkspeak'
+import { get_gates, can_custom } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 const can_manage_content = Boolean(
-    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
+    user && await can_custom(gates, 'content.manage', async () =>
+        is_superuser || Boolean(auth_token && await is_thinkspeak_member(auth_token))
+    )
 )
 const post_editor = can_manage_content ? (user as User).user_id : false
 

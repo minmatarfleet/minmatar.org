@@ -14,8 +14,8 @@ import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can, type GateKey } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import type { PageFinderUI } from '@dtypes/layout_components'
 import sitemap from '@json/sitemap.json'
@@ -45,7 +45,7 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (page.permissions?.team_director && !user_is_director)
         return false
 
-    if (page.permissions?.user && (!user || (page.permissions.user.filter( (i) => user_permissions.includes(i) ).length !== page.permissions.user.length) ))
+    if (page.permissions?.gate && (!user || !can(gates, page.permissions.gate as GateKey)))
         return false
 
     return true

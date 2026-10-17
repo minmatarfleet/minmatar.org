@@ -64,3 +64,22 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `fittings.doctrine.approve` | `staff` | — | staff permission |
 | `fittings.doctrine.propose` | `staff` | — | staff permission |
 | `tech.ops` | `auth_group` | — | Technology Team auth group (no `on_leave` deny) |
+
+## Site gates
+
+Added to move frontend gating off Django permission strings ([frontend-feature-gating.md](frontend-feature-gating.md)). They ship unwired, so their audience is exactly the legacy permission's; superuser-only codes use `auth_group` with no groups.
+
+| Code | Scope | Legacy permission | Default wiring |
+|------|-------|-------------------|----------------|
+| `fleets.manage_any` | `staff` | `fleets.manage_any_fleet` | staff permission |
+| `tribes.roster.view` | `affiliation` | `eveonline.add_evecharactertag` | — |
+| `industry.industrialists.view` | `affiliation` | `eveonline.add_evecharactertag` | — |
+| `characters.readiness` | `affiliation` | `eveonline.add_evecharactertag` | — |
+| `corporations.members.view_all` | `staff` | `eveonline.view_evecorporation` | staff permission |
+| `notifications.push` | `affiliation` | `subscriptions.add_usersubscription` | — |
+| `learning.admin` | `staff` | `learning.change_certificate` (staff: `learning.view_certificate`) | staff permission |
+| `skillsets.admin` | `staff` | `eveonline.change_eveskillset` (staff: `eveonline.view_eveskillset`) | staff permission |
+| `content.manage` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`), no `on_leave` deny |
+| `surveys.results.view` | `auth_group` | — | — (superusers only) |
+| `site.debug_pages` | `auth_group` | — | — (superusers only) |
+| `characters.lookup` | `auth_group` | — | — (superusers only) |

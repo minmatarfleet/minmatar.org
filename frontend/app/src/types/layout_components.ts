@@ -573,7 +573,8 @@ export interface Permissions {
     team_director?: boolean;
     superuser?:     boolean;
     auth?:          boolean;
-    user?:          string[];
+    /** Key in src/json/feature_gates.json */
+    gate?:          string;
 }
 
 export type MetaGroupType = 'Tech I' | 'Tech II' | 'Storyline' | 'Faction' | 'Officer' | 'Deadspace' | 'Tech III'

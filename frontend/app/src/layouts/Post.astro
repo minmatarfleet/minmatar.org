@@ -14,10 +14,9 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import { ClientRouter } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
@@ -150,9 +149,8 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 				<Neocom
 					user_is_officer={user_is_officer ?? false}
 					user_is_director={user_is_director ?? false}
-					user_is_superadmin={user_is_superadmin}
 					authenticated={user !== false}
-					user_permissions={user_permissions}
+					gates={gates}
 				/>
 			}
             <BlogPost

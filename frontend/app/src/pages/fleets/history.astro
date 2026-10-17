@@ -13,11 +13,11 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_add_fleets = can(gates, 'fleets.create')
+const can_view_fleets = can(gates, 'fleets.view')
 
 if (!can_view_fleets)
     return HTTP_403_Forbidden()

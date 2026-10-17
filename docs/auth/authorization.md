@@ -142,12 +142,7 @@ Custom staff admin views (industry orders, doctrines, tribes, onboarding, help t
 
 ## Frontend
 
-The frontend reads Django permission strings from the user profile:
-
-- `GET /api/users/me` returns `permissions: string[]` from `user.get_all_permissions()`.
-- Astro pages check those strings (e.g. `user_permissions.includes('fleets.view_evefleet')`).
-
-PilotFeature codes are not yet exposed to the frontend. Nav and page gating therefore still depend on Django permissions held by auth groups. Exposing feature codes on the profile API is the path to frontend-side feature checks (see [migration.md](migration.md)).
+The frontend gates with `can(await get_gates(Astro), '<gate>')`. Each gate in `frontend/app/src/json/feature_gates.json` maps to a feature code, and `GET /api/users/me/gates` returns the user's codes (`get_user_feature_codes`). `FRONTEND_GATE_SOURCE` decides whether the site acts on features or on the legacy permission expression each gate replaced; see [frontend-feature-gating.md](frontend-feature-gating.md).
 
 ## Testing
 

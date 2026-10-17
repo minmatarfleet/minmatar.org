@@ -11,10 +11,10 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_page = is_superuser || user_permissions.includes('applications.change_evecorporationapplication')
+const can_view_page = can(gates, 'applications.manage')
 
 import type { CharacterBasic, CorporationBasic } from '@dtypes/layout_components'
 const corporation = JSON.parse(Astro.url.searchParams.get('corporation') as string) as CorporationBasic

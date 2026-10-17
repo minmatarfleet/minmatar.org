@@ -13,12 +13,12 @@ const is_valid_user = (user && user.user_id > 0)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 let is_alliance = false
 
 try {
-    const user_permissions = is_valid_user ? await get_user_permissions(user?.username) : []
-    is_alliance = user_permissions.includes('eveonline.add_evecharactertag')
+    const gates = await get_gates(Astro)
+    is_alliance = can(gates, 'industry.industrialists.view#strict')
 } catch (error) {
     console.log(error)
 }

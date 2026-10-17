@@ -9,12 +9,12 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_timers = user_permissions.includes('structures.view_evestructuretimer')
-const can_add_moons = user_permissions.includes('moons.add_evemoon')
-const can_view_moons = user_permissions.includes('moons.view_evemoon')
+const can_view_timers = can(gates, 'structures.timers.view#strict')
+const can_add_moons = can(gates, 'moons.manage#strict')
+const can_view_moons = can(gates, 'moons.view#strict')
 
 import Viewport from '@layouts/Viewport.astro';
 

@@ -27,6 +27,15 @@ describe('sitemap_xml', () => {
 
         expect(
             isPublicCrawlablePage({
+                slug: 'fleets.upcoming',
+                path: '/fleets/upcoming/',
+                publish: true,
+                permissions: { gate: 'fleets.view' },
+            }),
+        ).toBe(false)
+
+        expect(
+            isPublicCrawlablePage({
                 slug: 'guides',
                 path: '/guides/',
                 publish: true,

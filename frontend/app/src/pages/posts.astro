@@ -15,11 +15,11 @@ if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redir
 
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_user_posts } from '@helpers/fetching/posts'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const can_manage_posts = can(gates, 'posts.create')
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()

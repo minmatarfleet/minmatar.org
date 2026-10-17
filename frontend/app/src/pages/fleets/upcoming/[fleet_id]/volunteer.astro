@@ -31,7 +31,7 @@ import {
     type FleetSupply,
 } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 
 let fleet: FleetUI | null = null
@@ -73,8 +73,8 @@ if (fleet) {
         supply = fetched_supply
         const user_character = await get_user_character(user.user_id)
         is_fleet_commander = user_character?.character_id === fleet.fleet_commander_id
-        const user_permissions = await get_user_permissions(user.username)
-        const is_strategic_fc = Boolean(user.is_superuser) || user_permissions.includes('fleets.manage_any_fleet')
+        const gates = await get_gates(Astro)
+        const is_strategic_fc = can(gates, 'fleets.manage_any')
         can_manage_fleet = is_fleet_commander || is_strategic_fc
     } catch (error) {
         fetch_error = error

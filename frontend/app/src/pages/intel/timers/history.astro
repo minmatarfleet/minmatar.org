@@ -13,13 +13,13 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
+if (!can(gates, 'structures.timers.view'))
     return HTTP_403_Forbidden()
 
-const can_add_timers = is_superuser || user_permissions.includes('fleets.add_evefleet')
+const can_add_timers = can(gates, 'structures.timers.add_button')
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'

@@ -202,6 +202,7 @@ Conventions:
 - Shared UI types (colors, sizes, spaces) come from `@dtypes/layout_components` (`ButtonColors`, `ButtonSizes`, `TagColors`, `spaces`, `FlexInlineJustify`, `PageCoverOptions`, ...).
 - Alpine directives (`x-data`, `x-on`, `x-show`, `x-collapse`, `x-trap`, `x-bind`) are for local UI state only — see rule 1.
 - htmx attributes (`hx-*`) for anything that reads/writes server state.
+- Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility & behavior
 

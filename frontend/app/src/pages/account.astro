@@ -24,7 +24,6 @@ import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 import { get_notification_preferences } from '@helpers/api.minmatar.org/notification_preferences'
 import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
 
-let user_permissions:string[] = []
 let pilots:SummaryCharacter[] = []
 let get_characters_error: Error | false = false
 let readonly = false
@@ -33,15 +32,16 @@ let notification_features:NotificationFeaturePreferences[] = []
 let readiness_character_id = 0
 let character_errors:CharacterErrorUI[] = []
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+const can_use_push_notifications = can(gates, 'notifications.push#strict')
 
 try {
-    user_permissions = await get_user_permissions(user?.username)
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
 
-    if (user_permissions.includes('eveonline.add_evecharactertag'))
+    if (can(gates, 'characters.readiness#strict'))
         readiness_character_id = pilots[0]?.character_id ?? 0
 
     if (readiness_character_id === 0)
@@ -55,7 +55,7 @@ try {
 }
 
 try {
-    if (user_permissions.includes('subscriptions.add_usersubscription'))
+    if (can_use_push_notifications)
         notification_subscriptions = await get_user_subscriptions(auth_token as string, user.user_id)
 } catch (error) {
     console.log(error)
@@ -270,7 +270,7 @@ const page_title = t('account.page_title');
                 <AccessibilityOptions color_blind={false} />
             </ComponentBlock>
 
-            {user_permissions.includes('subscriptions.add_usersubscription') &&
+            {can_use_push_notifications &&
                 <ComponentBlock width='narrow'>
                     <PushNotifications notification_subscriptions={notification_subscriptions} />
                 </ComponentBlock>
