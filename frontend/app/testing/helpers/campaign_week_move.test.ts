@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CampaignSystemSummary, CampaignWeek, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
-import { campaign_objective_rows, contest_bar_percent, objective_change_tone, progress_bar_color, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
+import { campaign_objective_rows, contest_bar_percent, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
 
 describe('week_contest_move', () => {
     it('treats a falling or low hold as good and a rising hold as bad', () => {
@@ -45,25 +45,55 @@ describe('week_contest_move', () => {
         const huola = rows.find(row => row.system_name === 'Huola')
 
         expect(kamela?.now_text).toBe('42.5%')
-        expect(kamela?.detail_text).toBe('')
         expect(kamela?.meter_percent).toBeCloseTo(42.5)
         expect(kamela?.marker_percent).toBeNull()
         expect(kamela?.target_text).toBe('')
+        expect(kamela?.change_text).toBe('+4%')
+        expect(kamela?.change_direction).toBe('up')
         expect(huola?.now_text).toBe('88%')
-        expect(huola?.detail_text).toBe('12.0% contested')
         expect(huola?.meter_percent).toBeCloseTo(88)
         expect(huola?.delta_from_percent).toBeCloseTo(93)
         expect(huola?.marker_percent).toBeNull()
+        expect(huola?.change_text).toBe('-5%')
         expect(huola?.change_direction).toBe('down')
-        expect(kamela && objective_change_tone(kamela)).toBe('good')
-        expect(huola && objective_change_tone(huola)).toBe('bad')
     })
 
-    it('reads a falling enemy advantage as good on a destroy row', () => {
-        expect(objective_change_tone({ kind: 'advantage_destroy', change_direction: 'down' })).toBe('good')
-        expect(objective_change_tone({ kind: 'advantage_destroy', change_direction: 'up' })).toBe('bad')
-        expect(objective_change_tone({ kind: 'advantage_gain', change_direction: 'up' })).toBe('good')
-        expect(objective_change_tone({ kind: 'offense', change_direction: 'flat' })).toBe('flat')
+    it('describes complex rows in victory points, never contested percent', () => {
+        const rows = campaign_objective_rows(week_with([
+            target({ id: 4, system: 'Auga', goal: 'hold', metric: 'days_under_line' }),
+            target({ id: 5, system: 'Dal', goal: 'take', metric: 'victory_points' }),
+        ]), [
+            system({ name: 'Auga', goal: 'hold', contested_percent: 1.6, victory_points: 1230, victory_points_threshold: 75000 }),
+            system({ name: 'Dal', goal: 'take', contested_percent: 13.4, victory_points: 0, victory_points_threshold: 0 }),
+        ], objective_t)
+
+        expect(rows.find(row => row.system_name === 'Auga')?.detail_text).toBe('1,230 of 75,000 victory points')
+        expect(rows.find(row => row.system_name === 'Dal')?.detail_text).toBe('')
+    })
+
+    it('prints the move in whole points, and a move under half a point as steady', () => {
+        const rows = campaign_objective_rows(week_with([
+            target({ id: 6, system: 'Siseide', goal: 'hold', metric: 'days_under_line' }),
+        ]), [
+            system({ name: 'Siseide', goal: 'hold', contested_percent: 0, contested_change_24h: -0.4 }),
+        ], objective_t)
+
+        expect(rows[0]?.change_text).toBe('0%')
+        expect(rows[0]?.change_direction).toBe('flat')
+    })
+
+    it('inverts a destroy row so the bar fills as their advantage falls', () => {
+        const rows = campaign_objective_rows(week_with([
+            target({ id: 7, system: 'Kamela', goal: 'take', metric: 'advantage_destroy', baseline: 60 }),
+        ]), [
+            system({ name: 'Kamela', goal: 'take', advantage_enemy_pct: 45 }),
+        ], objective_t)
+
+        expect(rows[0]?.meter_percent).toBe(55)
+        expect(rows[0]?.delta_from_percent).toBe(40)
+        expect(rows[0]?.change_text).toBe('+15%')
+        expect(rows[0]?.change_direction).toBe('up')
+        expect(rows[0]?.detail_text).toBe('theirs 45%')
     })
 
     it('reads a stable hold as 100% progress', () => {
@@ -74,17 +104,7 @@ describe('week_contest_move', () => {
         ], objective_t)
 
         expect(rows[0]?.now_text).toBe('100%')
-        expect(rows[0]?.detail_text).toBe('stable')
         expect(rows[0]?.meter_percent).toBe(100)
-    })
-
-    it('colors a bar from progress, so a stable hold is green and a slipping one is not', () => {
-        expect(progress_bar_color('defense', 100)).toBe('green')
-        expect(progress_bar_color('defense', 88)).toBe('fleet-yellow')
-        expect(progress_bar_color('defense', 30)).toBe('fleet-red')
-        expect(progress_bar_color('offense', 42.5)).toBe('fleet-yellow')
-        expect(progress_bar_color('offense', 80)).toBe('green')
-        expect(progress_bar_color('offense', 12)).toBe('fleet-red')
     })
 
     it('counts our advantage rising as good only while we are pushing', () => {
@@ -97,8 +117,8 @@ describe('week_contest_move', () => {
 
 const objective_t = (key:string):string => {
     switch (key) {
-        case 'campaigns.objective.stable': return 'stable'
-        case 'campaigns.objective.contested_now': return '{contested}% contested'
+        case 'campaigns.objective.victory_points_of': return '{value} of {threshold} victory points'
+        case 'campaigns.objective.level_theirs': return 'theirs {level}%'
         default: return key
     }
 }

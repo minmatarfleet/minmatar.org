@@ -22,11 +22,12 @@ const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-import type { CampaignDetail, CampaignWeek, CampaignReadiness } from '@dtypes/api.minmatar.org'
+import type { CampaignDetail, CampaignWeek, CampaignReadiness, CampaignLeaderboardRow } from '@dtypes/api.minmatar.org'
 import {
     get_campaign,
     get_campaign_week,
     get_campaign_readiness,
+    get_campaign_leaderboard,
     enlist_campaign,
     leave_campaign,
 } from '@helpers/api.minmatar.org/campaigns'
@@ -61,6 +62,7 @@ let fetch_campaign_error:Error | false = false
 let campaign:CampaignDetail | null = null
 let week:CampaignWeek | null = null
 let readiness:CampaignReadiness | null = null
+let leaderboard:CampaignLeaderboardRow[] | null = null
 
 try {
     campaign = await get_campaign(slug, auth_token as string)
@@ -68,14 +70,16 @@ try {
     fetch_campaign_error = error
 }
 
-/** Enlisting or leaving changes the table and the You tab, so both ride along; a miss only skips that refresh. */
+/** Enlisting or leaving changes the table, the You tab and the bottom bar, so they ride along; a miss only skips that refresh. */
 if (campaign && acted) {
     const extras = await Promise.allSettled([
         get_campaign_week(slug, auth_token as string),
         get_campaign_readiness(auth_token as string),
+        get_campaign_leaderboard(slug, auth_token as string, 'kills', 'week'),
     ])
     week = extras[0].status === 'fulfilled' ? extras[0].value : null
     readiness = extras[1].status === 'fulfilled' ? extras[1].value : null
+    leaderboard = extras[2].status === 'fulfilled' ? extras[2].value : null
 }
 
 const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${slug}`)
@@ -83,6 +87,7 @@ const ACTIONS_PARTIAL_URL = translatePath(`/partials/campaign_actions_component?
 import CampaignActions from '@components/blocks/CampaignActions.astro'
 import CampaignObjectivesTable from '@components/blocks/CampaignObjectivesTable.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
+import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -106,6 +111,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     </div>
                 }
                 <CampaignYouPanel campaign={campaign} readiness={readiness} hx-swap-oob="true" />
+                {leaderboard &&
+                    <CampaignEnlistBar campaign={campaign} leaderboard={leaderboard} user_id={user.user_id} hx-swap-oob="true" />
+                }
             </>
         }
     </>
