@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from feed.constants import ESI_FW_SYSTEMS_URL, FEED_FW_ESI_USER_AGENT
 from feed.models import FeedEvent
+from eveonline import esi_budget as esi_gate
 
 from campaigns.models import (
     Campaign,
@@ -23,7 +24,6 @@ from campaigns.models import (
     CampaignSystem,
     CampaignSystemSnapshot,
 )
-from campaigns.services import esi_gate
 from campaigns.services.jump_graph import classify_system
 
 logger = logging.getLogger(__name__)
