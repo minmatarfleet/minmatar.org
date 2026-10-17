@@ -16,6 +16,11 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import XFadeScroll from '@components/compositions/XFadeScroll.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CaretIcon from '@components/icons/CaretIcon.astro';
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
 ---
 
 <div
@@ -29,7 +34,43 @@ import Flexblock from '@components/compositions/Flexblock.astro';
             </Wrapper>
         </div>
 
-        <div class="[ subheader-bar ]">
+        {/*
+          On phones the bar wraps its actions instead of scrolling them sideways. When
+          they need more than one row it shows the first row plus a More toggle, and it
+          publishes its height so the page can pad its bottom past the fixed bar.
+        */}
+        <div
+            class="[ subheader-bar ]"
+            x-data={`{
+                bar_open: false,
+                bar_collapsible: false,
+                measure_bar() {
+                    const root = document.documentElement
+                    const row = this.$root.querySelector('.scroll-content > .flex-inline')
+                    if (!row || !window.matchMedia('(max-width: 48rem)').matches) {
+                        this.bar_open = false
+                        this.bar_collapsible = false
+                        root.style.removeProperty('--subheader-bar-height')
+                        return
+                    }
+
+                    const items = Array.from(row.querySelectorAll(':scope > *, :scope > #mobile-actions > .page-actions-slot > *, :scope > .subheader-content > *'))
+                        .filter(item => item.offsetParent !== null && item.offsetHeight > 0 && getComputedStyle(item).display !== 'contents')
+                    const first_top = Math.min(...items.map(item => item.offsetTop))
+                    const first_row = items.filter(item => item.offsetTop === first_top)
+                    const first_row_height = Math.max(0, ...first_row.map(item => item.offsetHeight))
+
+                    this.bar_collapsible = items.some(item => item.offsetTop > first_top)
+                    row.style.setProperty('--bar-first-row-height', first_row_height + 'px')
+
+                    this.$nextTick(() => root.style.setProperty('--subheader-bar-height', this.$root.offsetHeight + 'px'))
+                },
+            }`}
+            x-bind:class="{ 'bar-collapsible': bar_collapsible, 'bar-open': bar_open }"
+            x-init="$nextTick(() => { measure_bar(); new ResizeObserver(() => measure_bar()).observe($el.querySelector('.scroll-content > .flex-inline')) })"
+            x-on:resize.window.debounce.100ms="measure_bar()"
+            x-on:click.outside="bar_open = false"
+        >
             <Wrapper max_width='var(--max-content-width)' centered={true} neocom={neocom} padding_block='0'>
                 <Wrapper max_width='calc(100% + calc(2 * var(--space-xs)))' padding_block='0' padding_inline='0'>
                     <XFadeScroll flex>
@@ -42,6 +83,17 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                     </XFadeScroll>
                 </Wrapper>
             </Wrapper>
+
+            <button
+                type="button"
+                class="[ subheader-bar-toggle ]"
+                x-on:click="bar_open = !bar_open; $nextTick(() => measure_bar())"
+                x-bind:aria-expanded="bar_open"
+                x-bind:aria-label={`bar_open ? '${t('page_header.fewer_actions')}' : '${t('page_header.more_actions')}'`}
+            >
+                <span x-text={`bar_open ? '${t('page_header.fewer_actions')}' : '${t('page_header.more_actions')}'`}>{t('page_header.more_actions')}</span>
+                <CaretIcon />
+            </button>
         </div>
     </Flexblock>
 </div>
@@ -105,6 +157,44 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         }
     }
 
+    @media (max-width: 48rem) {
+        /* One wrapping row of full-width-ish actions instead of a sideways scroller. */
+        .subheader-bar .scroll-content > .flex-inline {
+            width: 100%;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+        }
+
+        .subheader-bar :is(#mobile-actions, .page-actions-slot, .subheader-content) {
+            display: contents;
+        }
+
+        .subheader-bar .scroll-content > .flex-inline > *,
+        .subheader-bar :is(.page-actions-slot, .subheader-content) > * {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .subheader-bar .scroll-content .input-group,
+        .subheader-bar .scroll-content .input-group input {
+            max-width: none;
+        }
+
+        .subheader-bar :is(.scroll-content > .flex-inline, .page-actions-slot, .subheader-content) > :not(.button) > :is(a.button, button.button) {
+            width: 100%;
+        }
+
+        /* Nothing to show: drop the empty strip pinned to the bottom of the screen. */
+        .subheader-bar:not(:has(.scroll-content > .flex-inline > :not(#mobile-actions, template), .page-actions-slot > :not(template))) {
+            display: none;
+        }
+
+        body:has(.subheader-bar) {
+            padding-bottom: var(--subheader-bar-height, 0px);
+        }
+    }
+
     @media screen and (max-width: 1279px) {
         .subheader-bar:not(:has(a, input, button)) {
             padding-top: 0 !important;
@@ -145,6 +235,53 @@ import Flexblock from '@components/compositions/Flexblock.astro';
         @media screen and (max-width: 979px) {
             background-color: var(--dark-transparency-background-mobile);
         }
+
+        @media (max-width: 48rem) {
+            &.bar-collapsible :global(.scroll-content) {
+                padding-right: calc(var(--subheader-toggle-width) + var(--space-2xs));
+            }
+
+            &.bar-collapsible:not(.bar-open) :global(.scroll-content > .flex-inline) {
+                max-height: var(--bar-first-row-height);
+                overflow: clip;
+                overflow-clip-margin: var(--space-3xs);
+            }
+
+            &.bar-collapsible .subheader-bar-toggle {
+                display: flex;
+            }
+        }
+    }
+
+    .subheader-bar {
+        --subheader-toggle-width: 4.25rem;
+    }
+
+    .subheader-bar-toggle {
+        display: none;
+        position: absolute;
+        right: var(--space-xs);
+        bottom: var(--space-xs);
+        width: var(--subheader-toggle-width);
+        height: var(--bar-toggle-height, 44px);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        background-color: var(--background);
+        border: solid 1px var(--border-color);
+
+        :global(svg) {
+            rotate: 180deg;
+            transition: var(--fast-transition);
+        }
+    }
+
+    .bar-open .subheader-bar-toggle :global(svg) {
+        rotate: 0deg;
     }
     
     .post-header {

@@ -142,7 +142,7 @@ const page_title = structure.name;
             <StructureFit fitting={structure.fitting} />
         </Flexblock>
 
-        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)]">
+        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)] structure-help-aside">
             <Flexblock>
                 <FixedFluid width="48" class="[ items-center ]">
                     <TutorialIcon />
@@ -163,6 +163,13 @@ const page_title = structure.name;
 </Viewport>
 
 <style lang="scss">
+    /* The aside stacks under the form on phones; drop the desktop sticky offset so it isn't pushed under the action bar. */
+    @media (max-width: 48rem) {
+        :global(.structure-help-aside) {
+            top: 0;
+        }
+    }
+
     h3 {
         margin-block-start: var(--space-l);
     }

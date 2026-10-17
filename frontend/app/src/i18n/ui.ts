@@ -4143,6 +4143,8 @@ export const ui = {
         'fetching_build_packs': 'Looking for alliance packs',
         'has_blueprints': 'Has blueprints',
         'actions': 'Actions',
+        'page_header.more_actions': 'More',
+        'page_header.fewer_actions': 'Less',
         'contact_it': 'Try reloading the page. If this error persist reach us by opening a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
         'become_a_trucker': 'Become a trucker',
         'join_market': 'Join Market',

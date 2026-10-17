@@ -389,7 +389,7 @@ const page_title = t('intel.add_structure.page_title')
             </ComponentBlock>
         </Flexblock>
 
-        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)]">
+        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)] structure-help-aside">
             <Flexblock>
                 <FixedFluid width="48" class="[ items-center ]">
                     <TutorialIcon />
@@ -421,6 +421,13 @@ const page_title = t('intel.add_structure.page_title')
 </script>
 
 <style lang="scss">
+    /* The aside stacks under the form on phones; drop the desktop sticky offset so it isn't pushed under the action bar. */
+    @media (max-width: 48rem) {
+        :global(.structure-help-aside) {
+            top: 0;
+        }
+    }
+
     .field-hint {
         color: var(--highlight);
         line-height: 1.35;
