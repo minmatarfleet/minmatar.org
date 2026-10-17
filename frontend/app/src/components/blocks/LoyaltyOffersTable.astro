@@ -158,6 +158,7 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
                                 hx-swap="innerHTML"
                                 hx-indicator=".loader"
                                 data-tippy-content={col.tip}
+                                data-tippy-maxWidth="320"
                             >
                                 {col.label}{sort_indicator(col.key)}
                             </button>
@@ -166,6 +167,7 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
                                 class="[ loyalty-offers-table__label ]"
                                 tabindex="0"
                                 data-tippy-content={col.tip}
+                                data-tippy-maxWidth="320"
                             >{col.label}</span>
                         )}
                     </div>

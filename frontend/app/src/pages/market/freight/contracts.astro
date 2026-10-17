@@ -18,6 +18,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = t('freight_contracts.page_title');
 const breadcrumbs = [
@@ -81,72 +82,12 @@ const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0
             </Flexblock>
         </FlexInline>
 
-        <div
+        <LazyPartial
             id="freight-contracts-slot"
             data-freight-contracts-deferred="1"
-            hx-get={FREIGHT_CONTRACTS_PARTIAL_URL}
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            hx-indicator=".loader"
-            aria-busy="true"
-            aria-live="polite"
+            url={FREIGHT_CONTRACTS_PARTIAL_URL}
         >
             <FreightContractsSkeleton />
-        </div>
+        </LazyPartial>
     </PageWide>
 </Viewport>
-
-<script>
-    function refreshFreightContractsSlot() {
-        const slot = document.getElementById('freight-contracts-slot')
-        if (!slot)
-            return
-
-        // htmx already processed the swapped content. Processing the slot again
-        // re-fires its hx-trigger="load" and fetches the partial a second time.
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#freight-contracts-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
-        }
-    }
-
-    function isFreightContractsRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('freight_contracts_component')
-    }
-
-    function bindFreightContractsDeferred() {
-        const slot = document.getElementById('freight-contracts-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isFreightContractsRequest(event))
-                return
-            refreshFreightContractsSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isFreightContractsRequest(event))
-                return
-            if (!event.detail?.successful) {
-                const root = document.getElementById('freight-contracts-slot')
-                root?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindFreightContractsDeferred()
-    document.addEventListener('astro:page-load', bindFreightContractsDeferred)
-</script>

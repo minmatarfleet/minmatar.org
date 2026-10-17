@@ -212,15 +212,9 @@ const results_partial = translatePath(
             if (target?.id !== 'order-summary-results') return
             setRefreshOrders(false)
             setResultsLoading(false)
+            // Alpine and tooltips in the new results are wired up globally
+            // (helpers/swap_init.ts).
             syncHistory()
-            if (typeof htmx !== 'undefined') htmx.process(target)
-            if (typeof Alpine !== 'undefined') Alpine.initTree(target)
-            if (typeof tippy === 'function') {
-                tippy('#order-summary-results [data-tippy-content]', {
-                    delay: [100, 200],
-                    arrow: true,
-                })
-            }
         })
 
         document.body.addEventListener('htmx:afterRequest', (event: any) => {

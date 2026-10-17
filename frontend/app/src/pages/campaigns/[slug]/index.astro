@@ -45,7 +45,6 @@ import Markdown from '@components/blocks/Markdown.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
@@ -250,7 +249,6 @@ const breadcrumbs = [
         <CampaignEnlistBar campaign={campaign} leaderboard={leaderboard} user_id={user.user_id} />
     }
 
-    <CampaignSwapInit />
 </Viewport>
 
 <style lang="scss">

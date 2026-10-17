@@ -2,7 +2,7 @@ import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test } from "vitest";
 import OrderBreakdown from "@components/blocks/OrderBreakdown.astro";
 
-test("order breakdown rebinds Alpine after outerHTML delivery swaps", async () => {
+test("order breakdown leaves outerHTML swap re-init to the global hook", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(OrderBreakdown, {
     props: {
@@ -40,9 +40,10 @@ test("order breakdown rebinds Alpine after outerHTML delivery swaps", async () =
   });
 
   expect(result).toContain('id="order-breakdown-46-inner"');
-  expect(result).toContain(
-    'hx-on--after-swap="window.minmatar_after_outer_html_swap?.call(this)"',
-  );
+  // htmx processes the replacement, Alpine's observer initialises it, and the
+  // teleported Actions panel processes itself (Dropdown x-init). A per-node
+  // after-swap hook would re-process it and could re-fire load triggers.
+  expect(result).not.toContain("minmatar_after_outer_html_swap");
   expect(result).toContain("delivery=false");
   expect(result).not.toMatch(/hx-on=["']htmx:afterSwap:/);
 });

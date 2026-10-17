@@ -20,7 +20,6 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import CampaignList from '@components/blocks/CampaignList.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
@@ -111,5 +110,4 @@ const breadcrumbs = [
         )}
     </PageWide>
 
-    <CampaignSwapInit />
 </Viewport>

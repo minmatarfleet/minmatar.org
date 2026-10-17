@@ -1,0 +1,51 @@
+---
+/**
+ * A slot that fetches a partial once and swaps it in, showing the slot's
+ * children (a skeleton or loading text) until then.
+ *
+ * - `hx-target="this"`: htmx inherits `hx-target`, so without it a slot inside
+ *   a DialogButton <form> swaps into the form's target behind the dialog.
+ * - `aria-busy` clears after the request, whether it succeeded or not.
+ * - No per-page re-init script: Alpine and tooltips in the swapped content are
+ *   handled globally (helpers/swap_init.ts), and the slot is never
+ *   `htmx.process`ed again, which would fire `load` a second time.
+ */
+
+interface Props {
+    url:        string;
+    /** `load` fetches with the page; `reveal` waits until the slot scrolls into view (or its dialog opens). */
+    trigger?:   'load' | 'reveal';
+    swap?:      'innerHTML' | 'outerHTML';
+    /** Element to show as busy while loading; pass `false` to skip the page loader. */
+    indicator?: string | false;
+    /** Extra script for `hx-on--after-request` (`this` is the slot), e.g. to drop a loading class. */
+    after_request?: string;
+    [propName: string]: any;
+}
+
+const {
+    url,
+    trigger = 'load',
+    swap = 'innerHTML',
+    indicator = '.loader',
+    after_request = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div
+    class:list={[Astro.props.class]}
+    hx-get={url}
+    hx-trigger={trigger === 'reveal' ? 'intersect once' : 'load'}
+    hx-swap={swap}
+    hx-target="this"
+    hx-indicator={indicator || undefined}
+    aria-busy="true"
+    aria-live="polite"
+    hx-on--after-request={`this.setAttribute('aria-busy', 'false')${after_request ? `; ${after_request}` : ''}`}
+    {...attributes}
+>
+    <slot />
+</div>
