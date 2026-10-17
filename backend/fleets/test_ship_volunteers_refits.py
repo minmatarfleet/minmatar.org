@@ -840,6 +840,37 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             EveFleetShipVolunteer.objects.filter(id=volunteer.id).exists()
         )
 
+    def test_other_fc_cannot_edit_or_cancel_someone_elses_fleet(self):
+        other_fc = User.objects.create(username="other-fc")
+        add_user_permission(other_fc, "add_evefleet")
+        auth = self._auth(token_for(other_fc))
+
+        response = Client().patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {"status": "cancelled", "description": "hijacked"},
+            "application/json",
+            **auth,
+        )
+
+        self.assertEqual(403, response.status_code, response.content)
+        self.fleet.refresh_from_db()
+        self.assertNotEqual("cancelled", self.fleet.status)
+        self.assertNotEqual("hijacked", self.fleet.description)
+
+    def test_fleet_owner_can_still_edit_their_fleet(self):
+        add_user_permission(self.fc_user, "add_evefleet")
+
+        response = self.fc_client.patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {"description": "Owner edit"},
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+
+        self.assertEqual(200, response.status_code, response.content)
+        self.fleet.refresh_from_db()
+        self.assertEqual("Owner edit", self.fleet.description)
+
 
 class FleetCompositionRouterTestCase(TestCase):
     """Makeshift doctrines (catalog picks) and manual EFT fits per fleet."""

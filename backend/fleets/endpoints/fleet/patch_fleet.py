@@ -8,6 +8,7 @@ from groups.helpers.feature_access import can_use_feature
 
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
+    _fleet_manager,
     _fleet_patch_audience_location_errors,
     is_strategic_fc,
     try_refresh_active_fleet_motd,
@@ -28,7 +29,9 @@ ROUTE_SPEC = {
         403: ErrorResponse,
         400: ErrorResponse,
     },
-    "description": "Update the fleet details. Must have fleets.add_evefleet permission",
+    "description": (
+        "Update the fleet details. Must be the fleet's FC or a Strategic FC."
+    ),
 }
 
 
@@ -41,6 +44,10 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
 
     fleet = EveFleet.objects.get(id=fleet_id)
+    # Same rule as the website's manage menu: the fleet's own FC, or a
+    # Strategic FC. Being able to create fleets is not enough.
+    if not _fleet_manager(request, fleet):
+        return 403, {"detail": "Only this fleet's FC may update it"}
 
     err = _fleet_patch_audience_location_errors(fleet, payload)
     if err:
