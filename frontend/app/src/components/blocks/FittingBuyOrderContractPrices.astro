@@ -930,4 +930,73 @@ const settings_disabled = !is_owner
     [x-cloak] {
         display: none !important;
     }
+
+    /* Phones: trim nested padding, put the hull thumbnail beside a full-width
+       name/variant column, full-width selects, 16px+ inputs (no iOS zoom). */
+    @media (max-width: 48rem) {
+        .wrapper.fitting-buy-contract-prices {
+            padding-inline: var(--space-s);
+        }
+
+        .contract-segments {
+            display: flex;
+        }
+
+        .contract-segment {
+            flex: 1 1 auto;
+        }
+
+        .contract-segment__sub {
+            white-space: normal;
+        }
+
+        .contract-segment__custom input[type='number'] {
+            font-size: var(--step-0);
+        }
+
+        .contract-fit {
+            padding: var(--space-xs);
+        }
+
+        .contract-fit__identity {
+            flex-wrap: wrap;
+            column-gap: var(--space-xs);
+            row-gap: var(--space-2xs);
+
+            > :global(picture) {
+                flex: 0 0 64px;
+                width: 64px;
+            }
+
+            > :global(.flex-block) {
+                flex: 1 1 0;
+            }
+        }
+
+        .contract-fit__hull {
+            font-size: var(--step-0);
+            line-height: 1.15;
+            overflow-wrap: break-word;
+        }
+
+        .contract-fit__fit,
+        .contract-fit__variant {
+            overflow-wrap: break-word;
+        }
+
+        .contract-fit__copy-fit {
+            flex-basis: 100%;
+            margin-inline-start: 0;
+        }
+
+        .contract-cost {
+            padding-inline: var(--space-xs);
+        }
+
+        .hull-source select {
+            max-width: none;
+            min-height: var(--space-xl);
+            font-size: var(--step-0);
+        }
+    }
 </style>

@@ -153,4 +153,35 @@ const opponentShip = resolveMatchupOpponentShip(entry.opponent, {
         line-height: 1.55;
         color: var(--text-color-secondary, var(--faded));
     }
+
+    /* Phones: thumbnail beside the name + load, advice below at full card width. */
+    @media (max-width: 48rem) {
+        .ndm-matchup-card__panel :global(.fixed-fluid) {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: var(--space-3xs) var(--space-xs);
+            align-items: start;
+        }
+
+        .ndm-matchup-card__panel :global(.fixed-fluid > picture),
+        .ndm-matchup-card__icon-placeholder {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            width: 64px;
+        }
+
+        .ndm-matchup-card__content {
+            display: contents;
+        }
+
+        .ndm-matchup-card__head,
+        .load {
+            grid-column: 2;
+        }
+
+        .advice {
+            grid-column: 1 / -1;
+            margin-top: var(--space-3xs);
+        }
+    }
 </style>

@@ -187,4 +187,11 @@ const section_refs = chapter.sections.map((section, index) => ({
         font-size: var(--step-2);
         color: color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
     }
+
+    /* Phones: the epigraph uses the full reading width instead of a 150px column. */
+    @media (max-width: 48rem) {
+        .chronicle-chapter__epigraph {
+            padding: var(--space-l) var(--space-2xs);
+        }
+    }
 </style>
