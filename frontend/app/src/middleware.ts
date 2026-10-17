@@ -4,7 +4,7 @@ import { is_auth_init_redirect, is_noindex_path } from '@helpers/seo'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
-import { status_page_rewrite } from '@helpers/http_responses'
+import { login_url, status_page_rewrite } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
@@ -71,8 +71,7 @@ export const onRequest = async ({ locals, cookies, request, rewrite }, next) => 
 
     if (should_rewrite_login_redirect(request, response)) {
         cookies.set('redirect_after_auth', url.href, { path: '/' })
-        const rewrite_url = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(url.href)}`
-        return rewrite(rewrite_url)
+        return rewrite(login_url({ url }, url.href))
     }
 
     const status_page = status_page_rewrite(request, response)

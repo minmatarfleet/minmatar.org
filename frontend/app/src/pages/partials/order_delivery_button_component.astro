@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { auth_token } = get_request_user(Astro)
 
 import type { Alert } from '@dtypes/layout_components'
 import { mark_assignment } from '@helpers/api.minmatar.org/industry'

@@ -2,10 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { get_request_user } from '@helpers/request_user'
-
-const { auth_token, user } = get_request_user(Astro)
-
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 

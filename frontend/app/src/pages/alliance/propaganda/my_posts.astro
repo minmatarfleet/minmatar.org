@@ -7,7 +7,7 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 import { get_gates, can } from '@helpers/gates'
 
 const gates = await get_gates(Astro)

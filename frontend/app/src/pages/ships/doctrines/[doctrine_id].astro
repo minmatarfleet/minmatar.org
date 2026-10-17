@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-const { auth_token, user } = get_request_user(Astro)
+const { auth_token } = get_request_user(Astro)
 
 import { get_request_user } from '@helpers/request_user'
 

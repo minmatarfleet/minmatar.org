@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { auth_token } = get_request_user(Astro)
 
 import { b64_to_Uint8Array } from '@helpers/string'
 

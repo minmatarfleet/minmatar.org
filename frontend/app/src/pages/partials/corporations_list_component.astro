@@ -5,7 +5,7 @@ const { lang, translatePath } = i18n(Astro.url)
 import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
-const user_id = user?.user_id ?? null
+const user_id = user ? user.user_id : null
 
 import type { CorporationType } from '@dtypes/layout_components'
 import { get_associates_data } from '@helpers/pages/associates'
@@ -15,7 +15,7 @@ let associates_data:AssociatesData = {}
 let data_fetching_error: Error | false = false
 
 try {
-    associates_data = await get_associates_data(auth_token, lang, user_id)
+    associates_data = await get_associates_data(auth_token || null, lang, user_id)
 } catch (error) {
     data_fetching_error = error
 }

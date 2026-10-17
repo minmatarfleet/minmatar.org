@@ -4,10 +4,6 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
-import { get_request_user } from '@helpers/request_user'
-
-const { auth_token, user } = get_request_user(Astro)
-
 import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
 import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
 

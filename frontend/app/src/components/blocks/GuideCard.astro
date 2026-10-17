@@ -31,7 +31,7 @@ const author = !is_multiple_authors ? guide.authors[0] : undefined
 const author_names = guide.authors.map((entry) => entry.name).join(', ')
 const cover = getGuideCoverImage(guide)
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 const share_url = user
     ? `${get_app_url(guide_href)}?ref=${user.user_id}`
     : get_app_url(guide_href)

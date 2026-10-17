@@ -25,7 +25,7 @@ const {
     ...attributes
 } = Astro.props
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 
 const fitting_path = translatePath(`/ships/fittings/${fitting_id}`)
 const share_url = user

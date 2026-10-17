@@ -6,7 +6,7 @@ import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { auth_token } = get_request_user(Astro)
 
 import type { IndustryOrderUI, Alert } from '@dtypes/layout_components'
 import { post_order_item_assignment, mark_assignment } from '@helpers/api.minmatar.org/industry'

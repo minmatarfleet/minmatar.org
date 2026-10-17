@@ -6,7 +6,7 @@ import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 

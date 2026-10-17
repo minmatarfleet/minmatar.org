@@ -1,10 +1,10 @@
 ---
 import {
-import { get_request_user } from '@helpers/request_user'
     get_issue,
     get_latest_issue,
     SOLD_CLASS_ALL,
 } from '@/data/amamake-market'
+import { get_request_user } from '@helpers/request_user'
 import AmamakeMarketVolume from '@components/blocks/amamake-market/AmamakeMarketVolume.astro'
 
 const issue_slug = Astro.url.searchParams.get('issue') ?? ''

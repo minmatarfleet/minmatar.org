@@ -6,7 +6,7 @@ import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_response
 
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 
 if (!user) return HTTP_403_Forbidden()
 
