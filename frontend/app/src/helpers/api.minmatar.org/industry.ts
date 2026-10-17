@@ -2,6 +2,7 @@ import type {
     IndustryOrder,
     Product,
     ProductInsights,
+    ProductBuild,
     Blueprint,
     IndustrySingleOrder,
     OrderAssignment,
@@ -292,6 +293,35 @@ export async function get_product_insights(access_token:string, id:number) {
         return await response.json() as ProductInsights;
     } catch (error) {
         throw new Error(`Error fetching product insights: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_product_build(id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/products/${id}/build`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            })
+        }
+
+        return await response.json() as ProductBuild;
+    } catch (error) {
+        throw new Error(`Error fetching product build: ${error.message}`, { cause: error.cause });
     }
 }
 

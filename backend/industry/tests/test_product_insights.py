@@ -22,8 +22,14 @@ from eveonline.models import (
 )
 from eveuniverse.models import (
     EveCategory,
+    EveConstellation,
     EveGroup,
+    EveIndustryActivityDuration,
+    EveIndustryActivityMaterial,
     EveIndustryActivityProduct,
+    EveMarketPrice,
+    EveRegion,
+    EveSolarSystem,
     EveType,
 )
 from market.models import (
@@ -44,6 +50,35 @@ ALLIANCE_ID = 99011978
 SHIP_TYPE_ID = 990001
 BLUEPRINT_TYPE_ID = 990002
 COMPONENT_TYPE_ID = 990003
+UNTRACKED_TYPE_ID = 990004
+AMAMAKE_ID = 30002537
+HUOLA_ID = 30003067
+
+
+def _system(system_id, name):
+    region, _ = EveRegion.objects.get_or_create(
+        id=10000030, defaults={"name": "Heimatar"}
+    )
+    constellation, _ = EveConstellation.objects.get_or_create(
+        id=20000334,
+        defaults={
+            "name": "Anher",
+            "eve_region": region,
+            "position_x": 0.0,
+            "position_y": 0.0,
+            "position_z": 0.0,
+        },
+    )
+    return EveSolarSystem.objects.create(
+        id=system_id,
+        name=name,
+        eve_constellation=constellation,
+        security_status=0.4,
+        position_x=0.0,
+        position_y=0.0,
+        position_z=0.0,
+        enabled_sections=0,
+    )
 
 
 def _job(model, job_id, end_date, runs=1, status="delivered", **kwargs):
@@ -204,6 +239,10 @@ class ProductInsightsTestCase(AppTestCase):
             ],
         )
         self.assertEqual(sum(week["built"] for week in data["weekly"]), 5)
+        [running] = data["running"]
+        self.assertEqual(running["character_name"], "Main Builder")
+        self.assertEqual(running["units"], 5)
+        self.assertEqual(running["corporation_name"], "")
 
     def test_orders_sales_hangars_and_losses(self):
         order = create_industry_order(
@@ -297,6 +336,44 @@ class ProductInsightsTestCase(AppTestCase):
             data["weekly"][-1]["lost"] + data["weekly"][-2]["lost"], 1
         )
 
+    def _loss(self, row_id, moment, system_id):
+        EveCharacterKillmail.objects.create(
+            id=row_id,
+            killmail_id=1000 + row_id,
+            killmail_hash="x",
+            killmail_time=moment,
+            solar_system_id=system_id,
+            ship_type_id=SHIP_TYPE_ID,
+            victim_character_id=self.main.character_id,
+            victim_alliance_id=ALLIANCE_ID,
+            attackers="[]",
+            items="[]",
+            character=self.main,
+        )
+
+    def test_losses_cluster_into_fights(self):
+        _system(AMAMAKE_ID, "Amamake")
+        fight_start = self.now - timedelta(days=7)
+        # Four losses an hour apart in Amamake are one fight, even though
+        # the first and last are more than the gap apart.
+        for i in range(4):
+            self._loss(i + 1, fight_start + timedelta(hours=i), AMAMAKE_ID)
+        # Back in Amamake the next day: a separate, small fight.
+        self._loss(10, fight_start + timedelta(days=1), AMAMAKE_ID)
+        # A loss elsewhere in between does not join or split the fight.
+        self._loss(11, fight_start + timedelta(minutes=30), HUOLA_ID)
+
+        losses = self._insights()["losses"]
+
+        [fight] = losses["fights"]
+        self.assertEqual(fight["solar_system_name"], "Amamake")
+        self.assertEqual(fight["units"], 4)
+        self.assertEqual(fight["killmail_id"], 1001)
+        self.assertEqual(fight["started_at"], fight_start)
+        self.assertEqual(fight["ended_at"], fight_start + timedelta(hours=3))
+        self.assertEqual(losses["small_fight_units"], 2)
+        self.assertEqual(losses["small_fight_systems"], 2)
+
     def test_non_ships_have_no_hangar_or_loss_tracking(self):
         data = compute_product_insights(self.now)[self.component_product.pk]
         self.assertFalse(data["is_ship"])
@@ -366,3 +443,111 @@ class QueueProductInsightsMigrationTestCase(AppTestCase):
         with patch("app.celery.app.send_task") as send_task:
             self._queue_refresh()(None, None)
         send_task.assert_not_called()
+
+
+class ProductBuildEndpointTestCase(AppTestCase):
+    def setUp(self):
+        super().setUp()
+        category = EveCategory.objects.create(
+            id=6, name="Ship", published=True
+        )
+        group = EveGroup.objects.create(
+            id=27, name="Battleship", published=True, eve_category=category
+        )
+        self.ship = EveType.objects.create(
+            id=SHIP_TYPE_ID, name="Test Hull", published=True, eve_group=group
+        )
+        blueprint = EveType.objects.create(
+            id=BLUEPRINT_TYPE_ID,
+            name="Test Hull Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        component = EveType.objects.create(
+            id=COMPONENT_TYPE_ID,
+            name="Test Component",
+            published=True,
+            eve_group=group,
+        )
+        untracked = EveType.objects.create(
+            id=UNTRACKED_TYPE_ID,
+            name="Test Mineral",
+            published=True,
+            eve_group=group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=blueprint,
+            activity_id=1,
+            product_eve_type=self.ship,
+            quantity=1,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=blueprint, activity_id=1, time=7200
+        )
+        for material, quantity in ((component, 2), (untracked, 100)):
+            EveIndustryActivityMaterial.objects.create(
+                eve_type=blueprint,
+                activity_id=1,
+                material_eve_type=material,
+                quantity=quantity,
+            )
+        self.product = IndustryProduct.objects.create(
+            eve_type=self.ship, strategy="produced"
+        )
+        # Saving the hull tracks its inputs too; leave only the component.
+        IndustryProduct.objects.filter(eve_type=untracked).delete()
+        IndustryProduct.objects.get_or_create(
+            eve_type=component, defaults={"strategy": "imported"}
+        )
+        self.url = f"/api/industry/products/{self.product.pk}/build"
+
+    def test_prices_one_run_and_margin(self):
+        for type_id, price in (
+            (SHIP_TYPE_ID, 1000),
+            (COMPONENT_TYPE_ID, 300),
+            (UNTRACKED_TYPE_ID, 2),
+        ):
+            EveMarketPrice.objects.create(
+                eve_type_id=type_id, average_price=price, adjusted_price=price
+            )
+
+        data = Client().get(self.url).json()
+
+        self.assertEqual(data["time_seconds"], 7200)
+        self.assertEqual(data["activity"], "manufacturing")
+        self.assertEqual(data["sell_price"], 1000)
+        self.assertEqual(data["material_cost"], 800)
+        self.assertEqual(data["margin"], 200)
+        self.assertTrue(data["prices_complete"])
+        component, mineral = data["materials"]
+        self.assertEqual(component["name"], "Test Component")
+        self.assertEqual(component["line_cost"], 600)
+        self.assertEqual(component["strategy"], "imported")
+        self.assertIsNotNone(component["industry_product_id"])
+        self.assertIsNone(mineral["strategy"])
+
+    def test_missing_price_leaves_margin_unknown(self):
+        EveMarketPrice.objects.create(
+            eve_type_id=SHIP_TYPE_ID, average_price=1000, adjusted_price=1000
+        )
+
+        data = Client().get(self.url).json()
+
+        self.assertFalse(data["prices_complete"])
+        self.assertIsNone(data["margin"])
+        self.assertEqual(data["material_cost"], 0)
+
+    def test_unknown_product_and_no_blueprint_are_404(self):
+        client = Client()
+        self.assertEqual(
+            client.get("/api/industry/products/999999/build").status_code, 404
+        )
+        mineral = IndustryProduct.objects.create(
+            eve_type_id=UNTRACKED_TYPE_ID, strategy="harvested"
+        )
+        self.assertEqual(
+            client.get(
+                f"/api/industry/products/{mineral.pk}/build"
+            ).status_code,
+            404,
+        )

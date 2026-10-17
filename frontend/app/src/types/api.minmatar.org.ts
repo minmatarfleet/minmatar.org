@@ -1389,6 +1389,48 @@ export interface ProductLoss {
     solar_system_id:    number | null;
 }
 
+export interface ProductFight {
+    solar_system_id:    number;
+    solar_system_name:  string;
+    started_at:         string;
+    ended_at:           string;
+    units:              number;
+    killmail_id:        number;
+}
+
+export interface ProductRunningJob {
+    character_id:       number;
+    character_name:     string;
+    corporation_name:   string;
+    units:              number;
+    ends_at:            string;
+}
+
+export interface ProductBuildMaterial {
+    type_id:                number;
+    name:                   string;
+    quantity:               number;
+    unit_price:             number | null;
+    line_cost:              number | null;
+    strategy:               string | null;
+    industry_product_id:    number | null;
+}
+
+/** One run at average prices: base SDE quantities and time, no ME/TE. */
+export interface ProductBuild {
+    product_id:         number;
+    type_id:            number;
+    blueprint_type_id:  number;
+    activity:           'manufacturing' | 'reaction';
+    products_per_run:   number;
+    time_seconds:       number;
+    sell_price:         number | null;
+    material_cost:      number | null;
+    margin:             number | null;
+    prices_complete:    boolean;
+    materials:          ProductBuildMaterial[];
+}
+
 export interface ProductWeek {
     week_start:         string;
     built:              number;
@@ -1415,6 +1457,7 @@ export interface ProductInsights {
     };
     builders:           ProductBuilder[];
     corporations:       ProductBuilderCorporation[];
+    running:            ProductRunningJob[];
     orders: {
         open_orders:            number;
         open_units:             number;
@@ -1440,9 +1483,12 @@ export interface ProductInsights {
         locations:      ProductLocationCount[];
     } | null;
     losses: {
-        units_30d:      number;
-        units_90d:      number;
-        recent:         ProductLoss[];
+        units_30d:              number;
+        units_90d:              number;
+        recent:                 ProductLoss[];
+        fights:                 ProductFight[];
+        small_fight_units:      number;
+        small_fight_systems:    number;
     } | null;
     weekly:             ProductWeek[];
 }
