@@ -33,7 +33,7 @@ export function build_canonical_url(
     return new URL(translatePath(path), get_site_origin(fallbackOrigin)).href
 }
 
-export const NOINDEX_PATH_PREFIXES = ['/partials/', '/redirects/'] as const
+export const NOINDEX_PATH_PREFIXES = ['/partials/', '/redirects/', '/go/'] as const
 
 export function is_noindex_path(pathname: string): boolean {
     return NOINDEX_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))

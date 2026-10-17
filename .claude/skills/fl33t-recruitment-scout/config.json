@@ -2,6 +2,16 @@
   "api_base_url": "https://api.minmatar.org/api",
   "corporation_types": ["alliance", "associate"],
   "discord_invite": "discord.gg/minmatar",
+  "tracked_links": {
+    "_note": "Targets must match frontend/app/src/json/scout-links.json. Link text stays the url; the href is <link_base><target>.",
+    "targets": {
+      "discord": "discord.gg/minmatar",
+      "learning": "https://my.minmatar.org/learning/",
+      "corporations": "https://my.minmatar.org/alliance/corporations/",
+      "warzone": "https://my.minmatar.org/warzone/",
+      "freight": "https://my.minmatar.org/market/freight/contracts/history/"
+    }
+  },
   "proof_videos": {
     "always": {
       "title": "Bring Fun Shit",

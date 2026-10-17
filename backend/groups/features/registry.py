@@ -146,6 +146,15 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="moons.add_evemoon",
         staff_permission="moons.add_evemoon",
     ),
+    "recruitment.scout": FeatureDefinition(
+        code="recruitment.scout",
+        label="Run the recruitment scout",
+        scope=FeatureScope.STAFF,
+        description="Register scout replies for click tracking and read "
+        "their click stats.",
+        legacy_permission="recruitment.add_scoutoutreach",
+        staff_permission="recruitment.add_scoutoutreach",
+    ),
     "posts.create": FeatureDefinition(
         code="posts.create",
         label="Create posts",
