@@ -159,8 +159,10 @@ export async function preping(access_token:string, fleet_id:number) {
     })
 }
 
-export async function get_fleets_metrics(access_token:string) {
-    return await api_request<FleetMetrics[]>(`${API_ENDPOINT}/metrics`, {
+/** Pass fleet_id for one fleet's row; the full list is a year of fleets. */
+export async function get_fleets_metrics(access_token:string, fleet_id?:number) {
+    const query = fleet_id ? `?fleet_id=${fleet_id}` : ''
+    return await api_request<FleetMetrics[]>(`${API_ENDPOINT}/metrics${query}`, {
         token: access_token,
         error: 'Error fetching fleet metrics',
     })

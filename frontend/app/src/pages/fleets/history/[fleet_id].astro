@@ -37,6 +37,7 @@ import {
     get_fleet_kills,
     get_fleet_my_srp,
 } from '@helpers/api.minmatar.org/fleets'
+import { settled_value } from '@helpers/settled'
 
 let fetch_fleets_error: Error | false = false
 let fleet:FleetUI | null = null
@@ -45,13 +46,26 @@ let saved_logs:FleetCombatLog[] = []
 let fleet_metrics: FleetMetrics | undefined
 let fleet_commander_metrics: FleetCommanderMetrics | undefined
 
+// None of these depend on each other. Results are read in the order the page
+// used to await them one by one, so a failure still lands where it did.
 try {
-    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
-    user_character = await get_user_character(user.user_id)
+    const [
+        fleet_result,
+        user_character_result,
+        fleets_metrics_result,
+        fleet_commanders_metrics_result,
+    ] = await Promise.allSettled([
+        fetch_fleet_by_id(auth_token as string, fleet_id),
+        get_user_character(user.user_id),
+        get_fleets_metrics(auth_token as string, fleet_id),
+        get_fleet_commander_metrics(auth_token as string),
+    ])
+    fleet = settled_value(fleet_result)
+    user_character = settled_value(user_character_result)
 
-    const fleets_metrics = await get_fleets_metrics(auth_token as string)
+    const fleets_metrics = settled_value(fleets_metrics_result)
     fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
-    const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
+    const fleet_commanders_metrics = settled_value(fleet_commanders_metrics_result)
     fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
 } catch (error) {
     if (error?.cause === 403)
