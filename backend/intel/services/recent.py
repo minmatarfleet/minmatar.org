@@ -174,7 +174,7 @@ def fleet_item(alert: FeedAmarrFleetAlert) -> dict:
         "report_id": None,
         "system_id": alert.solar_system_id,
         "system_name": alert.system_name,
-        "occurred_at": alert.last_activity_at,
+        "occurred_at": alert.fight_at or alert.last_activity_at,
         "source": "Feed",
         "note": "",
         "count": alert.pilots,

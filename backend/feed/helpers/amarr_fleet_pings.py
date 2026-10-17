@@ -323,6 +323,7 @@ def _create_amarr_fleet_alert(
         cluster_key=snapshot["cluster_key"],
         discord_messages=discord_messages,
         last_activity_at=timezone.now(),
+        fight_at=snapshot["occurred_at"],
     )
 
 
@@ -379,6 +380,7 @@ def _update_amarr_fleet_alert(
     alert.roster_total = snapshot["roster_total"]
     alert.ship_counts = snapshot.get("ship_counts") or alert.ship_counts
     alert.cluster_key = snapshot["cluster_key"] or alert.cluster_key
+    alert.fight_at = snapshot["occurred_at"] or alert.fight_at
     if should_edit:
         alert.last_activity_at = now
         discord_payload = build_amarr_fleet_alert_payload(
@@ -409,6 +411,7 @@ def _update_amarr_fleet_alert(
             "roster_total",
             "ship_counts",
             "cluster_key",
+            "fight_at",
             "last_activity_at",
         ]
     )

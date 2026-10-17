@@ -1,19 +1,18 @@
 // Intel window data: the shared intel sheet (pilot d-scan / Local reports) and the feed's capital
 // and Amarr fleet pings, plus the paste -> preview -> share flow and the report detail view.
 // Main process only; windows get view() through the normal state push.
-const { IntelMap, within_range } = require('./intel_map')
+const { IntelMap } = require('./intel_map')
 
 const REFRESH_MS = 30_000
 const NEW_FOR_MS = 5 * 60_000   // a row counts as new this long after it first shows up
 const MAX_PASTE_CHARS = 200_000  // same cap as the API
 
 class IntelController {
-    constructor({ api, web_url, on_change, on_unauthorized = () => {}, notify = () => {}, diag = () => {}, refresh_ms = REFRESH_MS, now = () => Date.now() }) {
+    constructor({ api, web_url, on_change, on_unauthorized = () => {}, diag = () => {}, refresh_ms = REFRESH_MS, now = () => Date.now() }) {
         this.api = api
         this.web_url = web_url
         this.on_change = on_change
         this.on_unauthorized = on_unauthorized
-        this.notify = notify
         this.diag = diag
         this.refresh_ms = refresh_ms
         this.now = now
@@ -33,7 +32,6 @@ class IntelController {
         this.updated_at = null
         this.origin = null            // { character, system } of the client in front
         this.range = 5                // jumps; null = any distance
-        this.alerts = true
         this.draft = null
         this.draft_text = null        // the paste stays here, never in the pushed state
         this.detail = null
@@ -63,7 +61,6 @@ class IntelController {
             updated_at: this.updated_at,
             origin: this.origin,
             range: this.range,
-            alerts: this.alerts,
             map_ready: this.map.loaded,
             draft: this.draft,
             detail: this.detail,
@@ -74,9 +71,8 @@ class IntelController {
         this.on_change(this.view())
     }
 
-    set_options({ range, alerts }) {
+    set_options({ range }) {
         if (range !== undefined) this.range = range === null ? null : Math.max(0, Number(range) || 0)
-        if (alerts !== undefined) this.alerts = !!alerts
         this.changed()
     }
 
@@ -117,19 +113,11 @@ class IntelController {
         try {
             const [recent] = await Promise.all([this.api.intel_recent(), this.load_map()])
             const now = this.now()
-            const fresh = []
             for (const item of recent.items) {
-                if (this.first_seen.has(item.id)) continue
-                this.first_seen.set(item.id, this.loaded_once ? now : 0)
-                if (this.loaded_once) fresh.push(item.id)
+                if (!this.first_seen.has(item.id)) this.first_seen.set(item.id, this.loaded_once ? now : 0)
             }
             this.raw_items = recent.items
             this.annotate()
-            if (this.alerts) {
-                for (const item of this.items) {
-                    if (item.is_ping && fresh.includes(item.id) && within_range(item, this.range)) this.notify(item)
-                }
-            }
             this.loaded_once = true
             this.error = null
             this.updated_at = new Date(now).toISOString()
@@ -183,7 +171,8 @@ class IntelController {
 
     edit_draft({ system, note }) {
         if (!this.draft) return
-        if (typeof system === 'string') this.draft = { ...this.draft, system: system.slice(0, 64), system_edited: true }
+        // Share sends the field back unchanged; only a real change stops it following the client's system.
+        if (typeof system === 'string' && system.slice(0, 64) !== this.draft.system) this.draft = { ...this.draft, system: system.slice(0, 64), system_edited: true }
         if (typeof note === 'string') this.draft = { ...this.draft, note: note.slice(0, 200) }
     }
 

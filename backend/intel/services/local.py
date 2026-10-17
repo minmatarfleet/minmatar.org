@@ -2,8 +2,14 @@
 
 Three bulk ESI calls at most (names -> ids, ids -> affiliation, alliance
 ids -> names), each cached per entity so the same pilots sitting in Local
-across many pastes cost nothing after the first. If ESI fails the report
-still saves with the pilot count and ``resolved: false``.
+across many pastes cost nothing after the first. The desktop preview runs
+this on every paste, so a Share right after costs nothing either.
+
+When ESI can't answer (down, or the app is close to ESI's error limit),
+affiliations come from the killmail feed's own table instead, which knows
+most pilots who fight in the warzone. Without names -> ids there is
+nothing to look up: the report keeps the pilot count and
+``resolved: false``.
 """
 
 from __future__ import annotations
@@ -14,8 +20,10 @@ from typing import Callable, Iterable
 
 from django.core.cache import cache
 
+from campaigns.services import esi_gate
 from eveonline.client import EsiClient
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from feed.models import FeedCharacterAffiliation
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +91,38 @@ def _esi_names(ids: list[int]) -> dict[int, str] | None:
     return found
 
 
+def _feed_affiliations(ids: list[int]) -> dict[int, dict]:
+    """Affiliations the killmail feed confirmed with ESI (refreshed weekly).
+
+    The feed only keeps militia factions, which is all a standing needs.
+    """
+    rows = FeedCharacterAffiliation.objects.filter(
+        character_id__in=ids, esi_checked_at__isnull=False
+    ).values_list(
+        "character_id", "corporation_id", "alliance_id", "faction_id"
+    )
+    return {
+        int(character_id): {
+            "corporation_id": corporation_id,
+            "alliance_id": alliance_id,
+            "faction_id": faction_id,
+        }
+        for character_id, corporation_id, alliance_id, faction_id in rows
+    }
+
+
+def esi_available() -> bool:
+    """False while ESI is error-limiting us, or close to it.
+
+    Successful calls don't count against ESI's app-wide error limit, but
+    every Local paste would add to a storm of errors during an outage.
+    """
+    return (
+        esi_gate.pause_remaining() == 0
+        and esi_gate.error_budget() > esi_gate.ERROR_BUDGET_FLOOR
+    )
+
+
 def _cached_lookup(
     keys: Iterable,
     prefix: str,
@@ -90,8 +130,13 @@ def _cached_lookup(
     ttl: int,
     *,
     missing=None,
+    fallback: Callable[[list], dict] | None = None,
 ) -> dict | None:
-    """cache.get_many, fetch the rest in bulk, cache.set_many them."""
+    """cache.get_many, fetch the rest in bulk, cache.set_many them.
+
+    When the fetch fails, ``fallback`` fills in what it can, uncached, so
+    ESI's answer replaces it as soon as ESI is back.
+    """
     keys = list(dict.fromkeys(keys))
     # Names have spaces; keep cache keys to one token.
     cache_keys = {key: f"{prefix}{key}".replace(" ", "_") for key in keys}
@@ -101,7 +146,10 @@ def _cached_lookup(
     if todo:
         fetched = fetch(todo)
         if fetched is None:
-            return None
+            if fallback is None:
+                return None
+            found.update(fallback(todo))
+            return found
         to_cache = {}
         for key in todo:
             value = fetched.get(key, missing)
@@ -123,7 +171,12 @@ def standing(affiliation: dict) -> str:
     return NEUTRAL
 
 
-def summarize_local(names: list[str]) -> dict:
+def _no_esi(keys: list) -> None:
+    """Stands in for an ESI fetch that isn't allowed: only cached keys."""
+    return None
+
+
+def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
     summary = {
         "pilots": len(names),
         "resolved": False,
@@ -132,10 +185,11 @@ def summarize_local(names: list[str]) -> dict:
         "militia": {"amarr": 0, "minmatar": 0, "none": 0},
         "alliances": [],
     }
+    use_esi = use_esi and esi_available()
     ids_by_name = _cached_lookup(
         (name.lower() for name in names),
         "intel:charid:",
-        _esi_ids,
+        _esi_ids if use_esi else _no_esi,
         NAME_TTL,
         missing=_MISSING,
     )
@@ -143,9 +197,13 @@ def summarize_local(names: list[str]) -> dict:
         return summary
     character_ids = [cid for cid in ids_by_name.values() if cid]
     affiliations = _cached_lookup(
-        character_ids, "intel:aff:", _esi_affiliations, AFFILIATION_TTL
+        character_ids,
+        "intel:aff:",
+        _esi_affiliations if use_esi else _no_esi,
+        AFFILIATION_TTL,
+        fallback=_feed_affiliations,
     )
-    if affiliations is None:
+    if character_ids and not affiliations:
         return summary
 
     alliance_counts: Counter = Counter()
@@ -172,7 +230,10 @@ def summarize_local(names: list[str]) -> dict:
     alliance_ids = [aid for aid in alliance_counts if aid]
     alliance_names = (
         _cached_lookup(
-            alliance_ids, "intel:entity:", _esi_names, ENTITY_NAME_TTL
+            alliance_ids,
+            "intel:entity:",
+            _esi_names if use_esi else _no_esi,
+            ENTITY_NAME_TTL,
         )
         or {}
     )

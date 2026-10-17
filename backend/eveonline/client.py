@@ -1181,7 +1181,8 @@ class EsiClient:
         if not live_esi_allowed():
             return EsiResponse(ERROR_CALLING_ESI)
         operation = esi_provider.client.Universe.PostUniverseIds(body=names)
-        return self._operation_results(operation)
+        # Single-object endpoint: results() would wrap it in a list.
+        return self._operation_result(operation)
 
     def get_fleet(self, fleet_id) -> EsiResponse:
         required_scopes = ["esi-fleets.read_fleet.v1"]

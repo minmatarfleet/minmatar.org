@@ -37,6 +37,9 @@ VIEW_FEATURE = "intel.view"
 REPORT_FEATURE = "intel.report"
 REPORTS_PER_WINDOW = 30
 REPORT_WINDOW_SECONDS = 300
+# Previews resolve Local too; past this a preview still parses, it just
+# skips ESI (the cache and the feed's affiliations still answer).
+PREVIEWS_PER_WINDOW = 60
 
 
 class PasteRequest(Schema):
@@ -143,23 +146,21 @@ def _reporter_name(user, character_name: str | None) -> str:
     return primary.character_name if primary else user.username
 
 
-def _rate_limited(user) -> bool:
-    key = f"intel:reports:{user.pk}"
+def _rate_limited(user, kind: str = "reports", limit=None) -> bool:
+    key = f"intel:{kind}:{user.pk}"
     added = cache.add(key, 1, REPORT_WINDOW_SECONDS)
     if added:
         return False
     try:
-        return cache.incr(key) > REPORTS_PER_WINDOW
+        return cache.incr(key) > (limit or REPORTS_PER_WINDOW)
     except ValueError:
         return False
 
 
-def _summarize(kind: str, entries: list, *, resolve_local: bool) -> dict:
+def _summarize(kind: str, entries: list, *, use_esi: bool = True) -> dict:
     if kind == DSCAN:
         return summarize_dscan(entries)
-    if resolve_local:
-        return summarize_local(entries)
-    return {"pilots": len(entries), "resolved": False}
+    return summarize_local(entries, use_esi=use_esi)
 
 
 def _previous_local(report: IntelReport) -> PreviousLocalSchema | None:
@@ -220,10 +221,15 @@ def preview_report(request, payload: PasteRequest):
         kind, entries = parse(payload.text, payload.kind)
     except PasteError as err:
         return 400, ErrorResponse(detail=str(err))
+    # Local resolves here too, so the pilot sees standings before sharing
+    # and the Share that follows is all cache hits.
+    use_esi = kind != LOCAL or not _rate_limited(
+        request.user, "previews", PREVIEWS_PER_WINDOW
+    )
     return PreviewResponse(
         kind=kind,
         lines=len(entries),
-        summary=_summarize(kind, entries, resolve_local=False),
+        summary=_summarize(kind, entries, use_esi=use_esi),
     )
 
 
@@ -261,7 +267,7 @@ def create_report(request, payload: CreateReportRequest):
         reporter_name=_reporter_name(request.user, payload.character_name),
         note=" ".join(payload.note.split())[:200],
         raw=payload.text,
-        summary=_summarize(kind, entries, resolve_local=True),
+        summary=_summarize(kind, entries),
     )
     invalidate_recent()
     return _report_response(report)

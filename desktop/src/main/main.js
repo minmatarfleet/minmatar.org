@@ -1,6 +1,6 @@
 // Minmatar Fleet desktop app: Discord sign-in, EVE-styled overlay windows (see windows.js) pinned as glass
 // over the EVE client, a Sneak mascot on EVE's notification badge that opens Settings, and the tray.
-const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard, Notification } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
@@ -32,8 +32,8 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
 
 // Settings the Settings window may change (booleans only), saved on the account (settings.js).
 // "locked" is the pin button: whether the windows can be dragged and resized.
-const USER_SETTINGS = ['locked', 'show_sneak', 'intel_alerts']
-const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, intel_alerts: true }
+const USER_SETTINGS = ['locked', 'show_sneak']
+const SETTINGS_DEFAULTS = { locked: true, show_sneak: true }
 const INTEL_DEFAULT_RANGE = 5   // jumps
 const SESSION_SETTINGS = []
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
@@ -459,8 +459,7 @@ function adopt_local_settings_file(remote_values) {
 function set_user_setting(key, value) {
     if (!USER_SETTINGS.includes(key) || typeof value !== 'boolean') return
     settings.set(key, value)
-    if (key === 'intel_alerts') intel.set_options({ alerts: value })
-    else if (key !== 'locked') update_overlay_visibility({ force: true })   // "locked" only changes the windows' drag region and grip
+    if (key !== 'locked') update_overlay_visibility({ force: true })   // "locked" only changes the windows' drag region and grip
     update_polling()
     update_tray()
     push_state()
@@ -564,7 +563,7 @@ function sync_intel() {
     const on = !!state.user && window_enabled('intel')
     if (on && !intel.timer) {
         const range = window_saved('intel').range
-        intel.set_options({ range: range === undefined ? INTEL_DEFAULT_RANGE : range, alerts: settings.get('intel_alerts') })
+        intel.set_options({ range: range === undefined ? INTEL_DEFAULT_RANGE : range })
         intel.set_origin(state.location)
         intel.start()
     } else if (!on && intel.timer) {
@@ -585,22 +584,6 @@ function intel_typing(on) {
         win.setFocusable(false)
         win.setIgnoreMouseEvents(true, { forward: true })
     }
-}
-
-const KIND_TITLES = { caps: 'Capital ping', fleet: 'Fleet ping' }
-
-// Alerts only inform (CCP rule 2): a Windows notification for a new ping within range.
-function notify_ping(item) {
-    if (!Notification.isSupported()) return
-    const where = item.jumps == null ? '' : item.jumps === 0 ? ' (here)' : ` (${item.jumps} ${item.jumps === 1 ? 'jump' : 'jumps'})`
-    const toast = new Notification({
-        title: `${KIND_TITLES[item.kind] || 'Intel'} · ${item.system_name}${where}`,
-        body: item.summary,
-        icon: path.join(ASSETS, 'icon.png'),
-    })
-    toast.on('click', () => { hidden.delete('intel'); show_windows() })
-    toast.show()
-    diag({ t: 'intel-ping', id: item.id })
 }
 
 async function verify_session() {
@@ -791,8 +774,15 @@ ipcMain.on('campaigns:open', () => {
 })
 ipcMain.on('intel:refresh', () => intel.refresh())
 // The paste button reads the clipboard here, on the pilot's click; Ctrl+V in a focused window sends the text.
-ipcMain.on('intel:paste', () => { intel_typing(true); intel.paste(clipboard.readText()) })
-ipcMain.on('intel:paste-text', (event, text) => { intel_typing(true); intel.paste(text) })
+// The draft starts on the system of the client in front (EVE's logs), which the pilot can overwrite.
+function start_draft(text) {
+    intel_typing(true)
+    update_location()
+    intel.set_origin(state.location)
+    intel.paste(text)
+}
+ipcMain.on('intel:paste', () => start_draft(clipboard.readText()))
+ipcMain.on('intel:paste-text', (event, text) => start_draft(text))
 ipcMain.on('intel:kind', (event, kind) => intel.set_kind(kind))
 ipcMain.on('intel:edit', (event, change) => change && intel.edit_draft(change))
 ipcMain.on('intel:share', async () => {
@@ -845,21 +835,22 @@ ipcMain.on('mouse:interactive', (event, interactive) => {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
     }
 })
-let resize_start = null
-ipcMain.on('resize:start', (event, point) => {
+// Unpinned windows move by the header and resize from the grip (eve_window.js wire_drag).
+let drag = null
+ipcMain.on('drag:start', (event, start) => {
     const win = sender_window(event)
-    if (win && !settings.get('locked')) resize_start = { point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
+    if (!win || settings.get('locked') || !start || !['move', 'resize'].includes(start.kind)) return
+    drag = { win, kind: start.kind, point: start.point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
 })
-ipcMain.on('resize:move', (event, point) => {
-    const win = sender_window(event)
-    if (!win || !resize_start) return
-    win.setBounds({
-        ...resize_start.bounds,
-        width: Math.max(resize_start.min.width, Math.round(resize_start.bounds.width + point.x - resize_start.point.x)),
-        height: Math.max(resize_start.min.height, Math.round(resize_start.bounds.height + point.y - resize_start.point.y)),
-    })
+ipcMain.on('drag:move', (event, point) => {
+    if (!drag || drag.win.isDestroyed() || drag.win !== sender_window(event)) return
+    const dx = Math.round(point.x - drag.point.x)
+    const dy = Math.round(point.y - drag.point.y)
+    // setBounds with the size kept, not setPosition, which can resize a window crossing monitors with different scaling.
+    if (drag.kind === 'move') drag.win.setBounds({ ...drag.bounds, x: drag.bounds.x + dx, y: drag.bounds.y + dy })
+    else drag.win.setBounds({ ...drag.bounds, width: Math.max(drag.min.width, drag.bounds.width + dx), height: Math.max(drag.min.height, drag.bounds.height + dy) })
 })
-ipcMain.on('resize:end', () => { resize_start = null })
+ipcMain.on('drag:end', () => { drag = null })
 
 // ---------------------------------------------------------------- lifecycle
 
@@ -896,7 +887,6 @@ app.whenReady().then(async () => {
         web_url: config.web_url,
         on_change: view => { state.intel = view; push_state() },
         on_unauthorized: () => sign_out('Your session has expired. Sign in again.'),
-        notify: notify_ping,
         diag,
     })
     settings = new Settings({

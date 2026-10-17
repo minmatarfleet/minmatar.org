@@ -319,6 +319,10 @@ class AmarrFleetPingTestCase(TestCase):
         mock_client.update_message.reset_mock()
         self.assertTrue(maybe_notify_amarr_fleet(event))
         mock_client.update_message.assert_called_once()
+        # The edit keeps the session alive; the fight time stays the event's.
+        alert.refresh_from_db()
+        self.assertGreater(alert.last_activity_at, event.occurred_at)
+        self.assertEqual(alert.fight_at, event.occurred_at)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_writer_notifies_amarr_fleet_active(self, mock_client_cls):

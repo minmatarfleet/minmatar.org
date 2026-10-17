@@ -6,7 +6,7 @@ const COMMANDS = [
     'login:start', 'login:cancel', 'auth:sign-out',
     'fleets:refresh', 'fleets:open', 'campaigns:open', 'lock:toggle',
     'window:minimize', 'window:close', 'mouse:interactive',
-    'resize:start', 'resize:move', 'resize:end',
+    'drag:start', 'drag:move', 'drag:end',
     'update:install', 'update:download', 'update:check',
     'settings:open', 'settings:set', 'window:set-enabled',
     'fleet:back', 'fleet:open-site', 'fleet:refresh-motd', 'fleet:copy-fit', 'fleet:sign-up',
