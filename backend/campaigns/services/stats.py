@@ -102,7 +102,12 @@ def owned_day_counters() -> dict:
 
 
 def _add_killmails(campaign, rows: dict, start, end) -> None:
-    """Fold every mail an enlisted pilot was on into their day row."""
+    """Fold every mail an enlisted pilot was on into their day row.
+
+    A pilot counts once per mail however many of their characters were on
+    it, so a multiboxer's eight alts on one kill are one kill, scored as one
+    pilot on the mail.
+    """
     participants = (
         CampaignKillmailParticipant.objects.filter(
             killmail__campaign=campaign,
@@ -115,11 +120,28 @@ def _add_killmails(campaign, rows: dict, start, end) -> None:
         .order_by("killmail__killmail_time")
     )
 
+    # {(mail id, user id, role): (mail, final blow by any of their chars)}
+    pilots_on_mails: dict[tuple, tuple] = {}
+    attackers_by_mail: dict[int, set] = {}
+    for participant in participants:
+        key = (participant.killmail_id, participant.user_id, participant.role)
+        _, final_blow = pilots_on_mails.get(key, (None, False))
+        pilots_on_mails[key] = (
+            participant.killmail,
+            final_blow or participant.final_blow,
+        )
+        if participant.role == "attacker":
+            attackers_by_mail.setdefault(participant.killmail_id, set()).add(
+                participant.user_id
+            )
+
     gang_size_max = scoring.weights(campaign)["gang_size_max"]
 
-    for participant in participants:
-        mail = participant.killmail
-        row = rows.setdefault(participant.user_id, _blank_row())
+    for (mail_id, user_id, role), (
+        mail,
+        final_blow,
+    ) in pilots_on_mails.items():
+        row = rows.setdefault(user_id, _blank_row())
         multiplier = scoring.day_multiplier(campaign, mail.killmail_time.hour)
 
         # Pods are listed in the killfeed but never scored, on either side:
@@ -127,35 +149,30 @@ def _add_killmails(campaign, rows: dict, start, end) -> None:
         if mail.is_pod:
             continue
 
-        if (
-            mail.outcome == KillmailOutcome.KILL
-            and participant.role == "attacker"
-        ):
+        if mail.outcome == KillmailOutcome.KILL and role == "attacker":
+            pilots_on_mail = len(attackers_by_mail[mail_id])
             row["kills"] += 1
             row["isk_destroyed"] += mail.isk_value
-            row["final_blows"] += int(participant.final_blow)
+            row["final_blows"] += int(final_blow)
             row["solo_kills"] += int(mail.is_solo)
             if mail.is_structure:
                 row["structure_kills"] += 1
             if mail.is_capital:
                 row["capital_kills"] += 1
-            if 2 <= mail.enlisted_attacker_count <= gang_size_max:
+            if 2 <= pilots_on_mail <= gang_size_max:
                 row["gang_kills"] += 1
             row["points"] += (
                 scoring.kill_points(
                     campaign,
-                    enlisted_on_mail=max(mail.enlisted_attacker_count, 1),
-                    final_blow=participant.final_blow,
+                    enlisted_on_mail=pilots_on_mail,
+                    final_blow=final_blow,
                     solo=mail.is_solo,
                     in_fleet=mail.fleet_id is not None,
                     isk_value=mail.isk_value,
                 )
                 * multiplier
             )
-        elif (
-            mail.outcome == KillmailOutcome.LOSS
-            and participant.role == "victim"
-        ):
+        elif mail.outcome == KillmailOutcome.LOSS and role == "victim":
             row["losses"] += 1
             row["isk_lost"] += mail.isk_value
             if mail.is_structure:
@@ -510,12 +527,9 @@ def leaderboard(
     """Every board reads the same day rows; only the window changes."""
     field = BOARD_METRICS.get(metric, "kills")
     queryset = CampaignParticipantDay.objects.filter(campaign=campaign)
-
-    if period == "week":
-        week_start = campaign_week_start()
-        queryset = queryset.filter(day__gte=week_start)
-    elif period == "rolling7":
-        queryset = queryset.filter(day__gte=campaign_day() - timedelta(days=7))
+    first_day = _period_first_day(period)
+    if first_day:
+        queryset = queryset.filter(day__gte=first_day)
 
     rows = queryset.values("user_id", "user__username").annotate(
         value=Sum(field)
@@ -549,22 +563,32 @@ def corporation_leaderboard(
 
     Pilots without a main share one row with no corporation. ``pilots``
     counts the pilots who put a number on the board in the window, so a
-    big corporation of idle pilots doesn't read as a busy one.
+    big corporation of idle pilots doesn't read as a busy one. Kill boards
+    count each mail once per corporation: thirty members on one kill is
+    one kill, not thirty.
     """
     field = BOARD_METRICS.get(metric, "kills")
     queryset = CampaignParticipantDay.objects.filter(campaign=campaign)
+    first_day = _period_first_day(period)
+    if first_day:
+        queryset = queryset.filter(day__gte=first_day)
 
-    if period == "week":
-        queryset = queryset.filter(day__gte=campaign_week_start())
-    elif period == "rolling7":
-        queryset = queryset.filter(day__gte=campaign_day() - timedelta(days=7))
-
-    by_user = dict(
-        queryset.values("user_id")
-        .annotate(value=Sum(field))
-        .filter(value__gt=0)
-        .values_list("user_id", "value")
-    )
+    # Kill boards read the mails themselves, keeping each one's id so a
+    # kill shared by several members counts once for their corporation.
+    mails_by_user: dict[int, dict[int, int]] = {}
+    if metric in KILL_BOARD_FILTERS:
+        for user_id, mail_id, isk_value in _kills_in_period(
+            campaign, first_day
+        ).filter(**KILL_BOARD_FILTERS[metric]):
+            mails_by_user.setdefault(user_id, {})[mail_id] = isk_value
+        by_user = {user_id: 0 for user_id in mails_by_user}
+    else:
+        by_user = dict(
+            queryset.values("user_id")
+            .annotate(value=Sum(field))
+            .filter(value__gt=0)
+            .values_list("user_id", "value")
+        )
     corporation_by_user = dict(
         EvePlayer.objects.filter(
             user_id__in=list(by_user), primary_character__isnull=False
@@ -577,6 +601,7 @@ def corporation_leaderboard(
     )
 
     corporations: dict[int | None, dict] = {}
+    mails_by_corporation: dict[int | None, dict[int, int]] = {}
     for user_id, value in by_user.items():
         corporation_id = corporation_by_user.get(user_id)
         row = corporations.setdefault(
@@ -590,6 +615,16 @@ def corporation_leaderboard(
         )
         row["pilots"] += 1
         row["value"] += float(value)
+        mails_by_corporation.setdefault(corporation_id, {}).update(
+            mails_by_user.get(user_id, {})
+        )
+
+    if metric in KILL_BOARD_FILTERS:
+        for corporation_id, row in corporations.items():
+            mails = mails_by_corporation[corporation_id]
+            row["value"] = float(
+                sum(mails.values()) if metric == "isk" else len(mails)
+            )
 
     rows = sorted(
         corporations.values(),
@@ -600,6 +635,48 @@ def corporation_leaderboard(
         ),
     )[:limit]
     return [{"rank": index, **row} for index, row in enumerate(rows, start=1)]
+
+
+# The boards that read mails rather than day rows when pilots are pooled,
+# and the mail filter each one applies.
+KILL_BOARD_FILTERS = {
+    "kills": {},
+    "isk": {},
+    "structures": {"killmail__is_structure": True},
+    "capitals": {"killmail__is_capital": True},
+}
+
+
+def _period_first_day(period: str) -> date | None:
+    """The first campaign day a board period covers; None for all of it."""
+    if period == "week":
+        return campaign_week_start()
+    if period == "rolling7":
+        return campaign_day() - timedelta(days=7)
+    return None
+
+
+def _kills_in_period(campaign, first_day: date | None):
+    """``(user_id, killmail_id, isk_value)`` for every scored kill.
+
+    The same mails ``_add_killmails`` counts as kills, one row per
+    character, so callers pooling pilots dedupe on the mail id.
+    """
+    participants = CampaignKillmailParticipant.objects.filter(
+        killmail__campaign=campaign,
+        killmail__outcome=KillmailOutcome.KILL,
+        killmail__is_pod=False,
+        enlisted=True,
+        user__isnull=False,
+        role="attacker",
+    )
+    if first_day:
+        participants = participants.filter(
+            killmail__killmail_time__gte=day_bounds(first_day)[0]
+        )
+    return participants.values_list(
+        "user_id", "killmail_id", "killmail__isk_value"
+    )
 
 
 def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
@@ -700,10 +777,20 @@ def week_summary(campaign: Campaign) -> dict:
     )
     return {
         "week_start": week_start.isoformat(),
-        "kills": rows.aggregate(v=Sum("kills"))["v"] or 0,
+        "kills": week_kills(campaign),
         "complexes": rows.aggregate(v=Sum("complexes"))["v"] or 0,
         "active_pilots": rows.filter(active=True)
         .values("user_id")
         .distinct()
         .count(),
     }
+
+
+def week_kills(campaign: Campaign) -> int:
+    """Kills this campaign week, each mail once however many of us were on it."""
+    return (
+        _kills_in_period(campaign, campaign_week_start())
+        .values("killmail_id")
+        .distinct()
+        .count()
+    )

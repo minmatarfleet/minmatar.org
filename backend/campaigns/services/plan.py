@@ -42,6 +42,7 @@ from campaigns.models import (
 )
 from campaigns.services import advantage
 from campaigns.services import fleets as fleet_service
+from campaigns.services import stats
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 
 logger = logging.getLogger(__name__)
@@ -906,8 +907,8 @@ def draft_commander_order(campaign: Campaign) -> str:
 
     totals = CampaignParticipantDay.objects.filter(
         campaign=campaign, day__gte=week_start
-    ).aggregate(kills=Sum("kills"), complexes=Sum("complexes"))
+    ).aggregate(complexes=Sum("complexes"))
     return (
-        f"On pace: {totals['kills'] or 0} kills and "
+        f"On pace: {stats.week_kills(campaign)} kills and "
         f"{totals['complexes'] or 0} complexes this week. Keep it rolling."
     )
