@@ -20,13 +20,12 @@ from campaigns.models import (
     CampaignSystem,
 )
 from campaigns.services import advantage
+from eveonline.constants import AMARR_FACTION_ID, MINMATAR_FACTION_ID
 
 logger = logging.getLogger(__name__)
 
 WARZONE_STATUS_URL = "https://www.eveonline.com/api/warzone/status"
 USER_AGENT = "minmatar.org campaigns (https://my.minmatar.org)"
-MINMATAR_FACTION_ID = 500002
-AMARR_FACTION_ID = 500003
 # The page itself is served with max-age 150s; re-recording an unchanged
 # reading more often than this only pads the table.
 MIN_INTERVAL_MINUTES = 10

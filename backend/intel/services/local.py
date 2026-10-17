@@ -22,13 +22,15 @@ from django.core.cache import cache
 
 from campaigns.services import esi_gate
 from eveonline.client import EsiClient
-from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from eveonline.constants import (
+    AMARR_FACTION_ID,
+    MINMATAR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+)
 from feed.models import FeedCharacterAffiliation
 
 logger = logging.getLogger(__name__)
 
-AMARR_FACTION_ID = 500003
-MINMATAR_FACTION_ID = 500002
 
 HOSTILE = "hostile"
 NEUTRAL = "neutral"
