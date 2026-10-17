@@ -26,7 +26,7 @@ function hasRestrictedPermissions(permissions: Permissions): boolean {
     if (permissions.group_officer) return true
     if (permissions.team_director) return true
     if (permissions.superuser) return true
-    if (permissions.user?.length) return true
+    if (permissions.gate) return true
     return false
 }
 

@@ -155,7 +155,7 @@
         "description": "page_finder.campaigns.description",
         "permissions": {
             "auth": true,
-            "user": ["campaigns.view_campaign"]
+            "gate": "campaigns.view"
         },
         "keywords": [
             "campaigns",
@@ -304,9 +304,7 @@
         "description": "page_finder.corporations.applications.description",
         "publish": true,
         "permissions": {
-            "user": [
-                "applications.change_evecorporationapplication"
-            ]
+            "gate": "applications.manage"
         }
     },
     {
@@ -315,9 +313,7 @@
         "description": "page_finder.corporations.applications.records.description",
         "publish": true,
         "permissions": {
-            "user": [
-                "applications.change_evecorporationapplication"
-            ]
+            "gate": "applications.manage"
         }
     },
     {
@@ -329,9 +325,7 @@
             "corporations"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -358,9 +352,7 @@
             "corporations"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -373,9 +365,7 @@
             "alts"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -523,9 +513,7 @@
         "description": "page_finder.posts.create.description",
         "icon": "/images/icons/48px-Notepad.png",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -537,9 +525,7 @@
         ],
         "description": "page_finder.propaganda.my_posts.description",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -548,9 +534,7 @@
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -591,9 +575,7 @@
             "program"
         ],
         "permissions": {
-            "user": [
-                "srp.view_evefleetshipreimbursement"
-            ]
+            "gate": "srp.view"
         }
     },
     {
@@ -608,9 +590,7 @@
             "program"
         ],
         "permissions": {
-            "user": [
-                "srp.view_evefleetshipreimbursement"
-            ]
+            "gate": "srp.view"
         }
     },
     {
@@ -625,9 +605,7 @@
             "schedule"
         ],
         "permissions": {
-            "user": [
-                "fleets.view_evefleet"
-            ]
+            "gate": "fleets.view"
         }
     },
     {
@@ -636,9 +614,7 @@
         "publish": true,
         "description": "page_finder.fleets.history.description",
         "permissions": {
-            "user": [
-                "fleets.view_evefleet"
-            ]
+            "gate": "fleets.view"
         }
     },
     {
@@ -652,9 +628,7 @@
             "new"
         ],
         "permissions": {
-            "user": [
-                "fleets.add_evefleet"
-            ]
+            "gate": "fleets.create"
         }
     },
     {
@@ -789,9 +763,7 @@
             "indy"
         ],
         "permissions": {
-            "user": [
-                "eveonline.add_evecharactertag"
-            ]
+            "gate": "industry.industrialists.view"
         }
     },
     {
@@ -899,9 +871,7 @@
         "icon": "/images/icons/48px-Calendaricon.png",
         "description": "page_finder.intel.timers.active.description",
         "permissions": {
-            "user": [
-                "structures.view_evestructuretimer"
-            ]
+            "gate": "structures.timers.view"
         }
     },
     {
@@ -910,9 +880,7 @@
         "publish": true,
         "description": "page_finder.intel.timers.history.description",
         "permissions": {
-            "user": [
-                "structures.view_evestructuretimer"
-            ]
+            "gate": "structures.timers.view"
         }
     },
     {
@@ -921,9 +889,7 @@
         "publish": true,
         "description": "page_finder.intel.timers.add.description",
         "permissions": {
-            "user": [
-                "structures.add_evestructuretimer"
-            ]
+            "gate": "structures.timers.manage"
         }
     },
     {
@@ -934,9 +900,7 @@
         "icon": "/images/icons/48px-Planets.png",
         "description": "page_finder.intel.moon_tracking.description",
         "permissions": {
-            "user": [
-                "moons.view_evemoon"
-            ]
+            "gate": "moons.view"
         }
     },
     {

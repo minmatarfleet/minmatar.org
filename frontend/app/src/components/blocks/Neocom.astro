@@ -2,27 +2,26 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import { can, type GateContext } from '@helpers/gates'
+
 interface Props {
     user_is_officer:    boolean;
     user_is_director:   boolean;
-    user_is_superadmin: boolean;
     authenticated:      boolean;
-    user_permissions:   string[];
+    gates:              GateContext;
 }
 
 const {
     user_is_officer,
     user_is_director,
-    user_is_superadmin,
     authenticated,
-    user_permissions,
+    gates,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot')
 
-const can_view_posts = user_is_superadmin || user_permissions.includes('posts.add_evepost')
-const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
-const can_view_campaigns = user_is_superadmin || user_permissions.includes('campaigns.view_campaign')
+const can_view_fleets = can(gates, 'fleets.view')
+const can_view_campaigns = can(gates, 'campaigns.view')
 
 import { is_prod_mode } from '@helpers/env'
 

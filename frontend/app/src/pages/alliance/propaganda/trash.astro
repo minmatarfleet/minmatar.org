@@ -10,11 +10,11 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const can_manage_posts = can(gates, 'posts.create')
 
 const post_editor = can_manage_posts ? (user as User).user_id : false
 

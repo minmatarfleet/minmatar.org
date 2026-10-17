@@ -7,7 +7,7 @@ import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import type {
     CampaignDetail,
     CampaignWeek,
@@ -55,10 +55,10 @@ const user_is_staff = Boolean(user && user.is_staff)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
-const can_edit_in_admin = user_is_staff || is_superuser || user_permissions.includes('campaigns.change_campaign')
+const can_view_campaigns = can(gates, 'campaigns.view')
+const can_edit_in_admin = user_is_staff || can(gates, 'campaigns.manage')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()

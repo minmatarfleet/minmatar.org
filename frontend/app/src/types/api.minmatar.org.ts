@@ -537,6 +537,17 @@ export interface UserProfile {
     discord_user_profile:  DiscordUserProfile | null;
 }
 
+export type GateSource = 'legacy' | 'shadow' | 'features'
+
+export interface UserGates {
+    features:    string[];
+    legacy:      {
+        permissions:  string[];
+        is_superuser: boolean;
+    };
+    gate_source: GateSource;
+}
+
 export interface DiscordUserProfile {
     id:          number;
     discord_tag: string;

@@ -18,7 +18,7 @@ import {
 } from '@helpers/api.minmatar.org/learning'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { get_characters_summary_sorted, get_skillsets } from '@helpers/fetching/characters'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import { PERSONA_COOKIE } from '@helpers/learning'
 import { getPublishedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
@@ -65,25 +65,17 @@ if (auth_token) {
             get_learning_persona_recommendation(auth_token),
         ])
 
-        const user_permissions = await get_user_permissions(user?.username)
-        if (user_permissions.includes('eveonline.add_evecharactertag')) {
+        const gates = await get_gates(Astro)
+        if (can(gates, 'characters.readiness#strict')) {
             const character_summary = await get_characters_summary_sorted(auth_token)
             readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
         }
 
         const api_base = get_api_url()
-        if (
-            user.is_superuser
-            || user_permissions.includes('learning.change_certificate')
-            || user_permissions.includes('learning.view_certificate')
-        ) {
+        if (can(gates, 'learning.admin')) {
             certificates_admin_href = `${api_base}/admin/learning/certificate/`
         }
-        if (
-            user.is_superuser
-            || user_permissions.includes('eveonline.change_eveskillset')
-            || user_permissions.includes('eveonline.view_eveskillset')
-        ) {
+        if (can(gates, 'skillsets.admin')) {
             skillsets_admin_href = `${api_base}/admin/eveonline/eveskillset/`
         }
 

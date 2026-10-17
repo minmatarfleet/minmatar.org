@@ -17,10 +17,10 @@ const is_superuser = (user ? user?.is_superuser : false)
 if (!user)
     return HTTP_403_Forbidden()
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_verify_timer = is_superuser || user_permissions.includes('structures.change_evestructuretimer')
+const can_verify_timer = can(gates, 'structures.timers.verify')
 
 import type { StructureTimerUI, Alert } from '@dtypes/layout_components'
 import { verify_structure_timer } from '@helpers/api.minmatar.org/structures'

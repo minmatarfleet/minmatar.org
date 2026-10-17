@@ -12,8 +12,8 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can, type GateKey } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import type { PageFinderUI, Pages } from '@dtypes/layout_components'
 import sitemap from '@json/sitemap.json'
@@ -77,7 +77,7 @@ const pages = sitemap.map( (page:PageFinderUI):Pages => {
         }
     }
 
-    if (page.permissions?.user && (!user || (page.permissions.user.filter( (i) => user_permissions.includes(i) ).length !== page.permissions.user.length) )) {
+    if (page.permissions?.gate && (!user || !can(gates, page.permissions.gate as GateKey))) {
         return {
             accumulated_path: page.path,
             page_title: t(`${page.slug}.page_title` as any) ?? `${page.slug}.page_title`,

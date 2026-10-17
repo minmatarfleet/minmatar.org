@@ -14,12 +14,12 @@ const is_superuser = (user ? user?.is_superuser : false)
 if (!user)
     return HTTP_403_Forbidden()
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_add_srp = can(gates, 'srp.resolve')
 const can_process_srp =
-    is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+    can(gates, 'srp.process')
 
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
 import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
@@ -36,7 +36,7 @@ import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
 import { b64_to_Uint8Array } from '@helpers/string'
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
 
-const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = can(gates, 'srp.process#strict')
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
@@ -170,7 +170,7 @@ try {
     data_fetching_error = error
 }
 
-const can_view_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement') || is_fleet_commander
+const can_view_srp = can(gates, 'srp.process') || is_fleet_commander
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

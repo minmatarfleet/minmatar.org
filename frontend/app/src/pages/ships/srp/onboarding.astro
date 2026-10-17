@@ -36,8 +36,6 @@ if (Astro.request.method === 'POST') {
     }
 }
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 import { is_onboarding_required } from '@helpers/onboarding/srpRedirect'
 

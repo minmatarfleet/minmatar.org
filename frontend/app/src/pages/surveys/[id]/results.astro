@@ -16,8 +16,9 @@ if (!user)
         `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
     )
 
-const is_superuser = user ? user.is_superuser : false
-if (!is_superuser) return HTTP_403_Forbidden()
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+if (!can(gates, 'surveys.results.view')) return HTTP_403_Forbidden()
 
 const campaign_id = parseInt(Astro.params.id as string)
 

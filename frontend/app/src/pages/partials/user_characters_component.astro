@@ -15,7 +15,9 @@ import { is_officer, is_director } from '@helpers/fetching/groups'
 const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
 const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
 
-const can_view_page = is_superuser || user_is_officer || user_is_director
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+const can_view_page = can(gates, 'characters.lookup') || user_is_officer || user_is_director
 
 if (!can_view_page)
     return HTTP_403_Forbidden()

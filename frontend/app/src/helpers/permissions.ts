@@ -8,8 +8,3 @@ export async function get_user_profile(user_name: string): Promise<UserProfile |
         return null
     }
 }
-
-export async function get_user_permissions(user_name:string) {
-    const profile = await get_user_profile(user_name)
-    return profile?.permissions ?? []
-}

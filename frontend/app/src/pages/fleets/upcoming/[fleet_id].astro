@@ -15,10 +15,10 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_view_fleets = can(gates, 'fleets.view')
 
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
@@ -72,7 +72,7 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
-    const is_strategic_fc = is_superuser || user_permissions.includes('fleets.manage_any_fleet')
+    const is_strategic_fc = can(gates, 'fleets.manage_any')
     can_manage_fleet = is_fleet_commander || is_strategic_fc
 
     if (is_fleet_commander) {
@@ -115,8 +115,7 @@ try {
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 const supply = fleet && !history ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
 
-const can_remove_fleet = is_superuser ||
-                         user_permissions.includes('fleets.delete_evefleet') ||
+const can_remove_fleet = can(gates, 'fleets.delete') ||
                          (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(true)}`)

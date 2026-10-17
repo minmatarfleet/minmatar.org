@@ -11,10 +11,10 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-if (!is_superuser && !user_permissions.includes('moons.view_evemoon'))
+if (!can(gates, 'moons.view'))
     return HTTP_403_Forbidden()
 
 let system_name = Astro.params.system_name ?? ''

@@ -30,8 +30,8 @@ let get_character_error: Error | false = false
 let race:CharacterRaces | null = null
 let cover:string | null = null
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 try {
     character = await get_character_by_id(character_id);
@@ -213,7 +213,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                         <CharacterLinks
                             character_id={character_id}
                             user={user}
-                            user_permissions={user_permissions}
+                            gates={gates}
                             is_alliance={is_alliance}
                         />
                     </FlexInline>

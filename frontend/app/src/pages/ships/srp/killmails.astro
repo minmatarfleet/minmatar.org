@@ -13,12 +13,12 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
-const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
-const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
+const can_view_srp = can(gates, 'srp.view')
+const can_view_all_srp = can(gates, 'srp.process')
+const has_explicit_srp_change = can(gates, 'srp.process#strict')
 
 if (!can_view_srp)
     return HTTP_403_Forbidden()
