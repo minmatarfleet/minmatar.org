@@ -44,6 +44,7 @@ from campaigns.services import (
     stats,
 )
 from campaigns.services import structures as structure_service
+from eveonline.constants import AMARR_FACTION_ID
 from eveonline.models import EveCharacter, EvePlayer
 from feed.models import FeedKillmail
 from structures.models import EveStructureTimer
@@ -170,7 +171,7 @@ class Command(BaseCommand):
         )
         CampaignParty.objects.update_or_create(
             campaign=campaign,
-            faction_id=500003,
+            faction_id=AMARR_FACTION_ID,
             defaults={
                 "name": "Amarr Militia",
                 "ticker": "AMARR",

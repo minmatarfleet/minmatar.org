@@ -1,7 +1,10 @@
 """Shared alliance/faction constants, the corporation scopes and site links."""
 
+import os
+import re
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 
 from app.links import PRODUCTION_SITE_URL, site_url
@@ -162,3 +165,63 @@ class MemberCorporationTasksTestCase(TestCase):
 
     def test_order_sync_uses_member_corps(self):
         self.assertEqual([11], allied_corporation_ids_for_order_sync())
+
+
+# Literals that must come from eveonline.constants or app.links.
+FORBIDDEN_LITERALS = {
+    "FL33T alliance ID": re.compile(r"\b99011978\b"),
+    "BUILD alliance ID": re.compile(r"\b99012009\b"),
+    "Minmatar faction ID": re.compile(r"\b500002\b"),
+    "Amarr faction ID": re.compile(r"\b500003\b"),
+    "production site URL": re.compile(r"https://my\.minmatar\.org"),
+}
+# Where the literals may appear: their definitions, settings, migrations,
+# tests, seed/test data (tech/) and one-off scripts.
+ALLOWED_FILES = {
+    os.path.join("eveonline", "constants.py"),
+    os.path.join("app", "links.py"),
+}
+ALLOWED_DIRS = {"migrations", "tests", "scripts", "tech"}
+TEST_FILE = re.compile(r"^(tests?|tests?_.*|test_.*)\.py$")
+SETTINGS_FILE = re.compile(r"^settings.*\.py$")
+
+
+def _product_python_files(root):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not d.startswith(".")
+            and d != "__pycache__"
+            and d not in ALLOWED_DIRS
+        ]
+        for filename in filenames:
+            if not filename.endswith(".py") or TEST_FILE.match(filename):
+                continue
+            path = os.path.join(dirpath, filename)
+            relative = os.path.relpath(path, root)
+            if relative in ALLOWED_FILES:
+                continue
+            if relative.startswith("app" + os.sep) and SETTINGS_FILE.match(
+                filename
+            ):
+                continue
+            yield relative, path
+
+
+class NoInlineIdentityLiteralsTestCase(SimpleTestCase):
+    """Alliance/faction IDs and the site URL come from one module each."""
+
+    def test_no_inline_literals_in_product_code(self):
+        offenders = []
+        for relative, path in _product_python_files(str(settings.BASE_DIR)):
+            with open(path, encoding="utf-8") as source:
+                for number, line in enumerate(source, start=1):
+                    for label, pattern in FORBIDDEN_LITERALS.items():
+                        if pattern.search(line):
+                            offenders.append(f"{relative}:{number} {label}")
+        self.assertEqual(
+            [],
+            offenders,
+            "Use eveonline.constants or app.links.site_url() instead.",
+        )
