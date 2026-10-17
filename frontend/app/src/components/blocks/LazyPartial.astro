@@ -5,6 +5,8 @@
  *
  * - `hx-target="this"`: htmx inherits `hx-target`, so without it a slot inside
  *   a DialogButton <form> swaps into the form's target behind the dialog.
+ *   `hx-disinherit="hx-target"` keeps that from leaking the other way: the
+ *   swapped-in content still targets itself by default, as it did before.
  * - `aria-busy` clears after the request, whether it succeeded or not.
  * - No per-page re-init script: Alpine and tooltips in the swapped content are
  *   handled globally (helpers/swap_init.ts), and the slot is never
@@ -41,6 +43,7 @@ delete attributes.class
     hx-trigger={trigger === 'reveal' ? 'intersect once' : 'load'}
     hx-swap={swap}
     hx-target="this"
+    hx-disinherit="hx-target"
     hx-indicator={indicator || undefined}
     aria-busy="true"
     aria-live="polite"

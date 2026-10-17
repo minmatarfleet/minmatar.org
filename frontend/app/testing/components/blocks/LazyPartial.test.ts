@@ -22,6 +22,8 @@ test("LazyPartial loads once on page load into itself", async () => {
     "hx-swap": "innerHTML",
     // Never inherit a surrounding <form>'s hx-target (DialogButton forms).
     "hx-target": "this",
+    // ...and don't hand that target down to the swapped-in content.
+    "hx-disinherit": "hx-target",
     "hx-indicator": ".loader",
     "aria-busy": "true",
     "aria-live": "polite",
