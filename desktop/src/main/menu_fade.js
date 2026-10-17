@@ -1,7 +1,7 @@
 // Fade on right-click: EVE draws its context menus inside the client, and our windows sit just above the
 // client, so a menu that opens under one of them is hidden. When the pilot right-clicks in a client, the
-// windows near the click fade out and turn fully click-through (their buttons too), so the menu can be seen
-// and clicked. They come back once the click that picks or dismisses the menu is released.
+// windows near the click are hidden (page and native glass both), so the menu can be seen and clicked. They
+// come back once the click that picks or dismisses the menu is released.
 //
 // Button events come from the native helper (eve_clients.js 'button'); positions are physical pixels.
 const { EventEmitter } = require('events')

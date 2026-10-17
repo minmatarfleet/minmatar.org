@@ -4,7 +4,7 @@
 // The only windows it changes are the overlay's own (glass, square corners, no native caption, their place in
 // the window order, a repaint after they lose focus). EVE's windows are only looked at, never moved or restyled.
 // While "fade on right-click" is on and a client is in front, it reads the mouse buttons' state (GetAsyncKeyState
-// polling, no input hook) so the app can fade windows away from a context menu. It never sends input.
+// polling, no input hook) so the app can hide windows over a context menu. It never sends input.
 //
 // Compiled at launch by PowerShell Add-Type (C# 5, .NET Framework, ships with Windows) so the app needs no native build step.
 //
@@ -140,7 +140,7 @@ public static class MfoHelper {
   }
 
   // Mouse buttons, for "fade on right-click": EVE draws its context menus inside the client, under our windows,
-  // so the app fades windows near a right-click until the next click closes the menu. A button change is
+  // so the app hides windows near a right-click until the next click closes the menu. A button change is
   // reported with where the cursor is and whether it's over a client (WindowFromPoint passes through our
   // click-through windows, so a click on one of our buttons is not "eve").
   static void OnButton(int bit, bool down) {
