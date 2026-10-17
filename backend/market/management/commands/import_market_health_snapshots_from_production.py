@@ -17,10 +17,11 @@ Options:
     --source    Database alias to read from (default: production_readonly).
 """
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections, transaction
+
+from eveonline.helpers.production_import import validate_source_alias
 
 from eveonline.models import EveLocation
 from market.models.health_snapshot import EveMarketHealthSnapshot
@@ -57,7 +58,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source = options["source"]
         local = "default"
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
 
         model = EveMarketHealthSnapshot
         loc_ids = set(
@@ -98,15 +99,6 @@ class Command(BaseCommand):
         self.stdout.write(
             f"{model.__name__}: source={source_count}, local={local_before}."
         )
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _ensure_location(self, location_id, source, local):
         existing = (
