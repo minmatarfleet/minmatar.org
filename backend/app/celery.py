@@ -50,7 +50,7 @@ app.conf.ONCE = {
 }
 
 # Load task modules from all registered Django app configs.
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.autodiscover_tasks()
 
 # Remove result from default log message on task success
 trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
