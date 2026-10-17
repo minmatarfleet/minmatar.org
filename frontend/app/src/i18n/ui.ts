@@ -1384,6 +1384,8 @@ export const ui = {
         'industry.loyalty.action.awaiting_lp': 'Await LP',
         'industry.loyalty.action.lp_received': 'LP received',
         'industry.loyalty.action.isk_sent': 'ISK sent',
+        'industry.loyalty.action.cancel_order': 'Cancel order',
+        'industry.loyalty.action.confirm_cancel': 'Cancel this order?',
         'industry.loyalty.claim.title': 'Claim loyalty points',
         'industry.loyalty.claim.amount': 'Claim amount (LP)',
         'industry.loyalty.claim.destination': 'Send LP to',

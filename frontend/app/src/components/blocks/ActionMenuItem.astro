@@ -1,0 +1,108 @@
+---
+interface Props {
+    variant?:           'default' | 'primary' | 'danger';
+    /**
+     * Two-step confirm: the first click swaps the item for this label, and
+     * only the second click runs the action (attributes go on that button).
+     * Arming moves focus to the confirm button (Enter twice confirms, Escape
+     * still closes) and the armed state resets when the menu closes. Use
+     * inside ActionMenu.
+     */
+    confirm_label?:     string;
+    [propName: string]: any;
+}
+
+const {
+    variant = 'default',
+    confirm_label,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const item_class = [
+    '[ action-menu-item ]',
+    `action-menu-item--${variant}`,
+    Astro.props.class,
+]
+---
+
+{confirm_label ? (
+    <div
+        class="[ action-menu-item__confirm ]"
+        x-data="{ confirming: false }"
+        x-effect="expanded || (confirming = false)"
+    >
+        <button
+            type="button"
+            class:list={item_class}
+            x-show="!confirming"
+            x-on:click.stop="confirming = true; $nextTick(() => $refs.confirm.focus())"
+        >
+            <slot />
+        </button>
+        <button
+            type="button"
+            class:list={[...item_class, 'is-confirm']}
+            x-show="confirming"
+            x-cloak
+            x-ref="confirm"
+            {...attributes}
+        >
+            {confirm_label}
+        </button>
+    </div>
+) : (
+    <button type="button" class:list={item_class} {...attributes}>
+        <slot />
+    </button>
+)}
+
+<style lang="scss">
+    .action-menu-item__confirm {
+        width: 100%;
+    }
+
+    .action-menu-item {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--foreground);
+            background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        &--primary {
+            color: var(--fleet-yellow);
+        }
+
+        &--danger:hover,
+        &--danger:focus-visible,
+        &.is-confirm {
+            color: var(--fleet-red);
+        }
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
