@@ -1,0 +1,515 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { ProductInsights } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    insights:           ProductInsights;
+    [propName: string]: any;
+}
+
+const {
+    insights,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+import { from_now_diff, format_date_short } from '@helpers/date'
+
+const { built, orders, sales, hangars, losses } = insights
+
+const n = (value: number) => number_thousand_separator(value)
+const ago = (value: string | null) => value ? from_now_diff(lang, new Date(value)) : t('industry.product.never')
+
+const sold_30d = sales.market_units_30d + sales.contract_units_30d
+const sold_90d = sales.market_units_90d + sales.contract_units_90d
+
+// Weeks of hangar stock at the last 30 days' loss rate.
+const weekly_loss_rate = losses ? losses.units_30d / (insights.recent_days / 7) : 0
+const cover_weeks = hangars && weekly_loss_rate > 0 ? hangars.units / weekly_loss_rate : null
+
+const stats = [
+    {
+        label: t('industry.product.built_30d'),
+        value: n(built.units_30d),
+        title: t('industry.product.built_title').replace('{n}', n(built.units_90d)).replace('{jobs}', n(built.jobs_90d)),
+    },
+    {
+        label: t('industry.product.in_production'),
+        value: n(built.running_units),
+        title: t('industry.product.in_production_title').replace('{jobs}', n(built.running_jobs)),
+    },
+    {
+        label: t('industry.product.builders_90d'),
+        value: n(built.builders_90d),
+    },
+    {
+        label: t('industry.product.open_orders'),
+        value: n(orders.open_units),
+        title: t('industry.product.open_orders_title').replace('{orders}', n(orders.open_orders)).replace('{delivered}', n(orders.open_delivered_units)),
+    },
+    {
+        label: t('industry.product.sold_30d'),
+        value: n(sold_30d),
+        title: t('industry.product.sold_title').replace('{market}', n(sales.market_units_30d)).replace('{contracts}', n(sales.contract_units_30d)),
+    },
+    ...(hangars ? [{
+        label: t('industry.product.in_hangars'),
+        value: n(hangars.units),
+        title: t('industry.product.in_hangars_title').replace('{pilots}', n(hangars.pilots)),
+    }] : []),
+    ...(losses ? [{
+        label: t('industry.product.lost_30d'),
+        value: n(losses.units_30d),
+        title: t('industry.product.lost_title').replace('{n}', n(losses.units_90d)),
+    }] : []),
+    ...(hangars && losses ? [{
+        label: t('industry.product.stock_cover'),
+        value: cover_weeks === null ? '—' : cover_weeks >= 52 ? '52+ wk' : `${cover_weeks.toFixed(cover_weeks < 10 ? 1 : 0)} wk`,
+        title: t('industry.product.stock_cover_title'),
+    }] : []),
+    ...(insights.unit_price ? [{
+        label: t('industry.product.unit_price'),
+        value: format_isk(insights.unit_price),
+        title: t('industry.product.unit_price_title'),
+    }] : []),
+]
+
+// One-line read of build vs. burn, so the numbers come with a takeaway.
+const MIN_LOSSES_FOR_SIGNAL = 3
+const burn = losses ? losses.units_30d + sold_30d : sold_30d
+const signals: { tone: 'good' | 'warn' | 'neutral'; text: string }[] = []
+if (built.units_30d === 0 && burn === 0 && built.running_units === 0)
+    signals.push({ tone: 'neutral', text: t('industry.product.signal_quiet') })
+else if (losses && losses.units_30d >= MIN_LOSSES_FOR_SIGNAL && losses.units_30d > built.units_30d + built.running_units)
+    signals.push({
+        tone: 'warn',
+        text: t('industry.product.signal_losses_outpace')
+            .replace('{lost}', n(losses.units_30d))
+            .replace('{built}', n(built.units_30d)),
+    })
+else if (built.units_30d > 0 && built.units_30d >= burn)
+    signals.push({
+        tone: 'good',
+        text: t('industry.product.signal_keeping_up')
+            .replace('{built}', n(built.units_30d))
+            .replace('{burn}', n(burn)),
+    })
+if (orders.open_units > 0 && built.running_units === 0)
+    signals.push({ tone: 'warn', text: t('industry.product.signal_orders_unbuilt').replace('{n}', n(orders.open_units)) })
+if (cover_weeks !== null && cover_weeks < 4)
+    signals.push({ tone: 'warn', text: t('industry.product.signal_low_cover').replace('{weeks}', cover_weeks.toFixed(1)) })
+if (built.builders_90d === 1 && built.units_90d > 0)
+    signals.push({ tone: 'warn', text: t('industry.product.signal_single_builder') })
+
+const top_builder_units = Math.max(1, ...insights.builders.map(builder => builder.units))
+const builders_total = insights.builders.reduce((sum, builder) => sum + builder.units, 0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CorporationPicture from '@components/blocks/CorporationPicture.astro'
+import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ product-insights ]', Astro.props.class]} {...attributes}>
+    <CampaignStatBar stats={stats} />
+
+    {signals.length > 0 &&
+        <ul class="[ signals ]" role="list">
+            {signals.map(signal =>
+                <li class:list={['[ signal ]', `signal-${signal.tone}`]}>{signal.text}</li>
+            )}
+        </ul>
+    }
+
+    <Grid min_item_width="min(100%, 28rem)" row_gap="var(--space-l)" column_gap="var(--space-l)">
+        <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+            <Flexblock gap="var(--space-s)">
+                <header>
+                    <h3>{t('industry.product.weekly_title')}</h3>
+                    <small>{t('industry.product.weekly_hint')}</small>
+                </header>
+                <ProductWeeklyChart weekly={insights.weekly} show_lost={losses !== null} />
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+            <Flexblock gap="var(--space-s)">
+                <header>
+                    <h3>{t('industry.product.builders_title')}</h3>
+                    <small>{t('industry.product.builders_hint').replace('{days}', String(insights.window_days))}</small>
+                </header>
+                {insights.builders.length === 0 ?
+                    <p class="[ empty ]">{t('industry.product.no_builders')}</p>
+                    :
+                    <ol class="[ rows ]" role="list">
+                        {insights.builders.map(builder =>
+                            <li class="[ row ]">
+                                <CharacterPicture
+                                    character_id={builder.character_id}
+                                    character_name={builder.character_name}
+                                    size={32}
+                                    icon_quality={64}
+                                />
+                                <Flexblock gap="var(--space-3xs)" class="[ grow min-w-0 ]">
+                                    <FlexInline justification="space-between" gap="var(--space-2xs)">
+                                        <span class="[ text-highlight truncate ]">{builder.character_name || t('industry.product.unknown_pilot')}</span>
+                                        <span class="[ value ]">{n(builder.units)}</span>
+                                    </FlexInline>
+                                    <span class="[ share ]" aria-hidden="true">
+                                        <span style={`width: ${(builder.units / top_builder_units) * 100}%`}></span>
+                                    </span>
+                                    <small>
+                                        {t('industry.product.builder_meta')
+                                            .replace('{jobs}', n(builder.jobs))
+                                            .replace('{share}', String(Math.round((builder.units / Math.max(1, builders_total)) * 100)))
+                                            .replace('{last}', ago(builder.last_built_at))}
+                                    </small>
+                                </Flexblock>
+                            </li>
+                        )}
+                    </ol>
+                }
+                {insights.corporations.length > 0 &&
+                    <Flexblock gap="var(--space-2xs)">
+                        <small class="[ subheading ]">{t('industry.product.corporation_jobs')}</small>
+                        <FlexInline gap="var(--space-xs)" class="[ flex-wrap ]">
+                            {insights.corporations.map(corporation =>
+                                <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
+                                    <CorporationPicture
+                                        corporation_id={corporation.corporation_id}
+                                        corporation_name={corporation.corporation_name}
+                                        size={24}
+                                    />
+                                    <small>{corporation.corporation_name} · {n(corporation.units)}</small>
+                                </FlexInline>
+                            )}
+                        </FlexInline>
+                    </Flexblock>
+                }
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+            <Flexblock gap="var(--space-s)">
+                <header>
+                    <h3>{t('industry.product.demand_title')}</h3>
+                    <small>
+                        {t('industry.product.demand_hint')
+                            .replace('{ordered}', n(orders.ordered_units_90d))
+                            .replace('{sold}', n(sold_90d))
+                            .replace('{days}', String(insights.window_days))}
+                    </small>
+                </header>
+
+                <Flexblock gap="var(--space-2xs)">
+                    <small class="[ subheading ]">{t('industry.product.recent_orders')}</small>
+                    {orders.recent.length === 0 ?
+                        <p class="[ empty ]">{t('industry.product.no_orders')}</p>
+                        :
+                        <ul class="[ rows ]" role="list">
+                            {orders.recent.map(order =>
+                                <li class="[ row ]">
+                                    {order.character_id ?
+                                        <CharacterPicture
+                                            character_id={order.character_id}
+                                            character_name={order.character_name}
+                                            size={32}
+                                            icon_quality={64}
+                                        />
+                                        :
+                                        <span class="[ avatar-placeholder ]"></span>
+                                    }
+                                    <Flexblock gap="var(--space-3xs)" class="[ grow min-w-0 ]">
+                                        <FlexInline justification="space-between" gap="var(--space-2xs)">
+                                            <a class="[ truncate ]" href={translatePath(`/industry/orders/${order.order_id}/`)}>
+                                                {order.public_short_code ? `#${order.public_short_code}` : `#${order.order_id}`}
+                                                {order.character_name && ` · ${order.character_name}`}
+                                            </a>
+                                            <span class="[ value ]">{n(order.quantity)}</span>
+                                        </FlexInline>
+                                        <span class="[ share ]" aria-hidden="true">
+                                            <span style={`width: ${Math.min(100, (order.delivered / Math.max(1, order.quantity)) * 100)}%`}></span>
+                                        </span>
+                                        <small>
+                                            {order.fulfilled_at ?
+                                                t('industry.product.order_fulfilled').replace('{date}', format_date_short(lang, order.fulfilled_at))
+                                                :
+                                                t('industry.product.order_open')
+                                                    .replace('{delivered}', n(order.delivered))
+                                                    .replace('{assigned}', n(order.assigned))
+                                                    .replace('{date}', order.needed_by ? format_date_short(lang, order.needed_by) : '—')
+                                            }
+                                        </small>
+                                    </Flexblock>
+                                </li>
+                            )}
+                        </ul>
+                    }
+                </Flexblock>
+
+                <Flexblock gap="var(--space-2xs)">
+                    <small class="[ subheading ]">{t('industry.product.market')}</small>
+                    <dl class="[ facts ]">
+                        <div>
+                            <dt>{t('industry.product.market_sales_30d')}</dt>
+                            <dd>{n(sales.market_units_30d)}</dd>
+                        </div>
+                        <div>
+                            <dt>{t('industry.product.contract_sales_30d')}</dt>
+                            <dd>{n(sales.contract_units_30d)}</dd>
+                        </div>
+                        <div>
+                            <dt>{t('industry.product.listed_now')}</dt>
+                            <dd>
+                                {n(sales.listed_units)}
+                                {sales.lowest_listed_price !== null &&
+                                    <small>{t('industry.product.from_price').replace('{price}', format_isk(sales.lowest_listed_price))}</small>
+                                }
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>{t('industry.product.outstanding_contracts')}</dt>
+                            <dd>{n(sales.outstanding_contracts)}</dd>
+                        </div>
+                    </dl>
+                    {sales.locations.length > 0 &&
+                        <small class="[ subheading ]">{t('industry.product.sales_by_location')}</small>
+                    }
+                    {sales.locations.length > 0 &&
+                        <ul class="[ location-list ]" role="list">
+                            {sales.locations.map(location =>
+                                <li>
+                                    <span class="[ truncate ]">{location.location_name}</span>
+                                    <span class="[ value ]">{n(location.units)}</span>
+                                </li>
+                            )}
+                        </ul>
+                    }
+                </Flexblock>
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+            <Flexblock gap="var(--space-s)">
+                <header>
+                    <h3>{t('industry.product.fleet_title')}</h3>
+                    <small>{hangars ? t('industry.product.fleet_hint') : t('industry.product.fleet_not_tracked')}</small>
+                </header>
+
+                {hangars &&
+                    <Flexblock gap="var(--space-2xs)">
+                        <small class="[ subheading ]">
+                            {t('industry.product.hangar_locations')
+                                .replace('{n}', n(hangars.units))
+                                .replace('{pilots}', n(hangars.pilots))}
+                        </small>
+                        {hangars.locations.length === 0 ?
+                            <p class="[ empty ]">{t('industry.product.no_hangars')}</p>
+                            :
+                            <ul class="[ location-list ]" role="list">
+                                {hangars.locations.map(location =>
+                                    <li>
+                                        <span class="[ truncate ]">{location.location_name}</span>
+                                        <span class="[ value ]">{n(location.units)}</span>
+                                    </li>
+                                )}
+                            </ul>
+                        }
+                    </Flexblock>
+                }
+
+                {losses &&
+                    <Flexblock gap="var(--space-2xs)">
+                        <small class="[ subheading ]">{t('industry.product.recent_losses')}</small>
+                        {losses.recent.length === 0 ?
+                            <p class="[ empty ]">{t('industry.product.no_losses')}</p>
+                            :
+                            <ul class="[ rows ]" role="list">
+                                {losses.recent.map(loss =>
+                                    <li class="[ row ]">
+                                        {loss.character_id ?
+                                            <CharacterPicture
+                                                character_id={loss.character_id}
+                                                character_name={loss.character_name}
+                                                size={32}
+                                                icon_quality={64}
+                                            />
+                                            :
+                                            <span class="[ avatar-placeholder ]"></span>
+                                        }
+                                        <FlexInline justification="space-between" gap="var(--space-2xs)" class="[ grow min-w-0 ]">
+                                            <span class="[ truncate ]">{loss.character_name || t('industry.product.unknown_pilot')}</span>
+                                            <a
+                                                href={`https://zkillboard.com/kill/${loss.killmail_id}/`}
+                                                target="_blank"
+                                                rel="nofollow noopener noreferrer"
+                                            >
+                                                {ago(loss.killmail_time)}
+                                            </a>
+                                        </FlexInline>
+                                    </li>
+                                )}
+                            </ul>
+                        }
+                    </Flexblock>
+                }
+
+                {!hangars && !losses &&
+                    <Tag color="fleet-yellow" text={t('industry.product.ships_only')} />
+                }
+            </Flexblock>
+        </ComponentBlock>
+    </Grid>
+
+    {insights.generated_at &&
+        <small class="[ generated ]">
+            {t('industry.product.generated').replace('{when}', ago(insights.generated_at))}
+        </small>
+    }
+</Flexblock>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    header small,
+    .generated,
+    .empty {
+        color: var(--foreground);
+    }
+
+    .subheading {
+        color: var(--fleet-yellow);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+    }
+
+    .signals {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: 0;
+        margin: 0;
+    }
+
+    .signal {
+        padding-inline-start: var(--space-xs);
+        border-inline-start: solid 3px var(--border-color-hover);
+        color: var(--highlight);
+
+        &.signal-good {
+            border-color: var(--green);
+        }
+
+        &.signal-warn {
+            border-color: var(--fleet-red);
+        }
+    }
+
+    .rows {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: 0;
+        margin: 0;
+    }
+
+    .row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .avatar-placeholder {
+        flex-shrink: 0;
+        width: var(--space-l);
+        height: var(--space-l);
+        background: var(--border-color);
+    }
+
+    .value {
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+        flex-shrink: 0;
+    }
+
+    .share {
+        display: block;
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+        overflow: hidden;
+
+        span {
+            display: block;
+            height: 100%;
+            background: var(--fleet-yellow);
+            border-radius: 2px;
+        }
+    }
+
+    .facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+        gap: var(--space-2xs);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--foreground);
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            font-variant-numeric: tabular-nums;
+
+            small {
+                font-family: var(--default-font);
+                color: var(--foreground);
+                margin-inline-start: var(--space-3xs);
+            }
+        }
+    }
+
+    .location-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: 0;
+        margin: 0;
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-xs);
+            padding-block: var(--space-3xs);
+            border-bottom: solid 1px var(--border-color);
+            min-width: 0;
+        }
+    }
+</style>

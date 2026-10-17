@@ -205,6 +205,13 @@ CELERYBEAT_INDUSTRY = [
             "schedule": crontab(minute=10),
         },
     ),
+    (
+        "[Industry] Refresh Product Insights",
+        {
+            "task": "industry.tasks.refresh_product_insights_task",
+            "schedule": crontab(minute=50, hour="*/2"),
+        },
+    ),
 ]
 
 # Groups

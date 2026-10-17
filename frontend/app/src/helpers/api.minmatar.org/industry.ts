@@ -1,6 +1,7 @@
 import type {
     IndustryOrder,
     Product,
+    ProductInsights,
     Blueprint,
     IndustrySingleOrder,
     OrderAssignment,
@@ -261,6 +262,36 @@ export async function get_product_by_id(id:number) {
         return await response.json() as Product;
     } catch (error) {
         throw new Error(`Error fetching products: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_product_insights(access_token:string, id:number) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/products/${id}/insights`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            })
+        }
+
+        return await response.json() as ProductInsights;
+    } catch (error) {
+        throw new Error(`Error fetching product insights: ${error.message}`, { cause: error.cause });
     }
 }
 

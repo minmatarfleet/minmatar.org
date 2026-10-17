@@ -1289,6 +1289,104 @@ export interface Product extends ProductBase {
     corporation_producers?:         Producer[];
 }
 
+export interface ProductBuilder {
+    character_id:       number;
+    character_name:     string;
+    units:              number;
+    jobs:               number;
+    last_built_at:      string | null;
+}
+
+export interface ProductBuilderCorporation {
+    corporation_id:     number;
+    corporation_name:   string;
+    units:              number;
+}
+
+export interface ProductOrderLine {
+    order_id:           number;
+    public_short_code:  string | null;
+    character_id:       number | null;
+    character_name:     string;
+    created_at:         string;
+    needed_by:          string | null;
+    fulfilled_at:       string | null;
+    quantity:           number;
+    assigned:           number;
+    delivered:          number;
+}
+
+export interface ProductLocationCount {
+    location_name:      string;
+    units:              number;
+}
+
+export interface ProductLoss {
+    killmail_id:        number;
+    killmail_time:      string;
+    character_id:       number | null;
+    character_name:     string;
+    solar_system_id:    number | null;
+}
+
+export interface ProductWeek {
+    week_start:         string;
+    built:              number;
+    sold:               number;
+    lost:               number;
+}
+
+/** GET /products/{id}/insights; cached, ready=false while the rollup runs. */
+export interface ProductInsights {
+    ready:              boolean;
+    generated_at:       string | null;
+    is_ship:            boolean;
+    window_days:        number;
+    recent_days:        number;
+    unit_price:         number | null;
+    built: {
+        units_30d:          number;
+        units_90d:          number;
+        jobs_90d:           number;
+        builders_90d:       number;
+        running_units:      number;
+        running_jobs:       number;
+        last_built_at:      string | null;
+    };
+    builders:           ProductBuilder[];
+    corporations:       ProductBuilderCorporation[];
+    orders: {
+        open_orders:            number;
+        open_units:             number;
+        open_assigned_units:    number;
+        open_delivered_units:   number;
+        ordered_units_90d:      number;
+        recent:                 ProductOrderLine[];
+    };
+    sales: {
+        market_units_30d:       number;
+        market_units_90d:       number;
+        contract_units_30d:     number;
+        contract_units_90d:     number;
+        listed_units:           number;
+        lowest_listed_price:    number | null;
+        outstanding_contracts:  number;
+        locations:              ProductLocationCount[];
+    };
+    /** Only ships are tracked in hangars and losses; null otherwise. */
+    hangars: {
+        units:          number;
+        pilots:         number;
+        locations:      ProductLocationCount[];
+    } | null;
+    losses: {
+        units_30d:      number;
+        units_90d:      number;
+        recent:         ProductLoss[];
+    } | null;
+    weekly:             ProductWeek[];
+}
+
 /** Planetary (PI) API types */
 export interface PlanetaryCharacterRef {
     character_id:   number;

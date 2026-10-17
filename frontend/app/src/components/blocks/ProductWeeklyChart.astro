@@ -1,0 +1,184 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { ProductWeek } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    weekly:             ProductWeek[];
+    show_lost:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    weekly,
+    show_lost,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+const series = [
+    { key: 'built', label: t('industry.product.built'), color: 'var(--green)' },
+    { key: 'sold', label: t('industry.product.sold'), color: 'var(--fleet-yellow)' },
+    ...(show_lost ? [{ key: 'lost', label: t('industry.product.lost'), color: 'var(--fleet-red)' }] : []),
+] as const
+
+const max_value = Math.max(1, ...weekly.flatMap(week => series.map(s => week[s.key])))
+const has_data = weekly.some(week => series.some(s => week[s.key] > 0))
+
+const week_label = (week_start: string) =>
+    new Date(week_start).toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+
+const height_for = (value: number) => value > 0 ? `max(2px, ${(value / max_value) * 100}%)` : '0'
+---
+
+<figure class:list={['[ weekly-chart ]', Astro.props.class]} {...attributes}>
+    <figcaption class="[ weekly-legend ]">
+        {series.map(s =>
+            <span class="[ legend-item ]">
+                <span class="[ legend-swatch ]" style={`background: ${s.color}`}></span>
+                {s.label}
+            </span>
+        )}
+        <small class="[ legend-scale ]">{t('industry.product.chart_max').replace('{n}', number_thousand_separator(max_value))}</small>
+    </figcaption>
+
+    {has_data ?
+        <div class="[ weekly-plot ]" aria-hidden="true">
+            {weekly.map((week, index) =>
+                <div
+                    class="[ week ]"
+                    data-tippy-content={[
+                        `<b>${t('industry.product.week_of').replace('{date}', week_label(week.week_start))}</b>`,
+                        ...series.map(s => `${s.label}: ${number_thousand_separator(week[s.key])}`),
+                    ].join('<br>')}
+                    x-init="tippy($el, { ...tippy_options, allowHTML: true })"
+                >
+                    <div class="[ bars ]">
+                        {series.map(s =>
+                            <span
+                                class="[ bar ]"
+                                style={`height: ${height_for(week[s.key])}; background: ${s.color}`}
+                            ></span>
+                        )}
+                    </div>
+                    <small class:list={['[ week-label ]', { 'is-hidden-label': index % 2 === 1 && index !== weekly.length - 1 }]}>
+                        {week_label(week.week_start)}
+                    </small>
+                </div>
+            )}
+        </div>
+        :
+        <p class="[ empty ]">{t('industry.product.no_weekly_activity')}</p>
+    }
+
+    <table class="[ visually-hidden ]">
+        <caption>{t('industry.product.weekly_title')}</caption>
+        <thead>
+            <tr>
+                <th scope="col">{t('industry.product.week')}</th>
+                {series.map(s => <th scope="col">{s.label}</th>)}
+            </tr>
+        </thead>
+        <tbody>
+            {weekly.map(week =>
+                <tr>
+                    <th scope="row">{week_label(week.week_start)}</th>
+                    {series.map(s => <td>{week[s.key]}</td>)}
+                </tr>
+            )}
+        </tbody>
+    </table>
+</figure>
+
+<style lang="scss">
+    .weekly-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin: 0;
+    }
+
+    .weekly-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        font-size: var(--step--1);
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+    }
+
+    .legend-swatch {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 2px;
+    }
+
+    .legend-scale {
+        margin-inline-start: auto;
+        color: var(--foreground);
+    }
+
+    .weekly-plot {
+        display: grid;
+        grid-template-columns: repeat(13, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        height: calc(var(--space-3xl) * 1.5);
+    }
+
+    .week {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        min-width: 0;
+        cursor: default;
+        border-radius: 4px 4px 0 0;
+        transition: background-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--border-color);
+            }
+        }
+    }
+
+    .bars {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 2px;
+        padding-inline: 2px;
+        min-height: 0;
+        border-bottom: solid 1px var(--border-color-hover);
+    }
+
+    .bar {
+        flex: 1;
+        max-width: var(--space-xs);
+        border-radius: 4px 4px 0 0;
+    }
+
+    .week-label {
+        padding-top: var(--space-3xs);
+        font-size: var(--step--2);
+        text-align: center;
+        white-space: nowrap;
+        overflow: visible;
+    }
+
+    .is-hidden-label {
+        visibility: hidden;
+    }
+
+    .empty {
+        color: var(--foreground);
+    }
+</style>

@@ -430,3 +430,14 @@ def reconcile_industry_contract_associations_for_character_task(
             character_id,
         )
         raise
+
+
+@app.task()
+def refresh_product_insights_task() -> int:
+    """Recompute the cached supply chain insights for every product."""
+    # Imported here: the helper queues this task on a cache miss.
+    from industry.helpers.product_insights import (  # pylint: disable=import-outside-toplevel
+        refresh_product_insights,
+    )
+
+    return refresh_product_insights()
