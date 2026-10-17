@@ -71,9 +71,9 @@ import Grid from '@components/compositions/Grid.astro'
         border-radius: 2px;
         background: linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.06) 100%
+            var(--hairline) 0%,
+            var(--hairline-strong) 50%,
+            var(--hairline) 100%
         );
         background-size: 200% 100%;
         animation: order-summary-skel 1.1s ease-in-out infinite;
@@ -96,12 +96,12 @@ import Grid from '@components/compositions/Grid.astro'
 
     .order-summary-skeleton .skel-stat {
         min-height: 4.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--hairline-medium);
         background-color: rgba(85, 85, 85, 0.12);
         background-image: linear-gradient(
             90deg,
             transparent 0%,
-            rgba(255, 255, 255, 0.08) 50%,
+            var(--hairline-medium) 50%,
             transparent 100%
         );
         background-size: 200% 100%;
@@ -112,7 +112,7 @@ import Grid from '@components/compositions/Grid.astro'
         width: 100%;
         min-height: 360px;
         height: min(420px, 70vh);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--hairline-medium);
         background-color: rgba(85, 85, 85, 0.1);
         background-image: linear-gradient(
             90deg,
@@ -131,7 +131,7 @@ import Grid from '@components/compositions/Grid.astro'
 
     .order-summary-skeleton .skel-row {
         height: 2.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--hairline);
     }
 
     @keyframes order-summary-skel {

@@ -34,6 +34,11 @@ const VAR_HEX_FALLBACK = /var\(\s*--[\w-]+\s*,\s*#[0-9a-fA-F]{3,8}\s*\)/g
 const URL_FUNCTION = /url\([^)]*\)/g
 const value_has_hex = (value: string) => [...value.replace(URL_FUNCTION, '').replace(VAR_HEX_FALLBACK, '').matchAll(HEX)].length > 0
 
+/** rgba()/rgb() of pure white or black with an alpha: rgba(255, 255, 255, 0.06), rgb(0 0 0 / 0.5). */
+const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/]\s*[\d.]+%?\s*\)/g
+/** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
+const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
+
 /** Numeric z-index at or above this competes with page chrome and must come from _z-index.scss. */
 export const Z_INDEX_LAYER_THRESHOLD = 100
 
@@ -82,6 +87,15 @@ export const RULES: ConventionRule[] = [
             const hits = hits_in(file, css_regions(file), HEX_IN_DECLARATION, (m) => value_has_hex(m[2]))
             const tailwind = is_astro(file) ? hits_in(file, [astro_template(file.text)], /(?<![\w-])[a-z]+(?:-[a-z]+)*-\[#[0-9a-fA-F]{3,8}\]/g) : []
             return [...hits, ...tailwind]
+        },
+    },
+    {
+        id: 'alpha_literal',
+        kind: 'ratchet',
+        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--hairline), var(--hairline-strong), var(--text-muted), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
+        find: (file) => {
+            if (file.path.startsWith('src/styles/properties/')) return []
+            return hits_in(file, css_regions(file), ALPHA_LITERAL, (m) => !is_var_fallback(m))
         },
     },
     {

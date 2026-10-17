@@ -129,6 +129,14 @@ describe('convention rule matchers', () => {
         expect(count('cdn_unpinned', tag('https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js'))).toBe(0)
     })
 
+    it('alpha_literal: white/black alpha in CSS, not tokens, fallbacks, other colours or scripts', () => {
+        expect(count('alpha_literal', astro(`<style>.a { border: 1px solid rgba(255, 255, 255, 0.06); background: rgba(0,0,0,.7) }</style>`))).toBe(2)
+        expect(count('alpha_literal', astro(`<div style="color: rgb(255 255 255 / 0.5)"></div>`))).toBe(1)
+        expect(count('alpha_literal', astro(`<style>.a { color: var(--border-color, rgba(255, 255, 255, 0.1)); mask: linear-gradient(rgb(0,0,0) 0%, transparent); background: rgba(85, 85, 85, 0.1) }</style>`))).toBe(0)
+        expect(count('alpha_literal', astro(`---\n---\n<script>chart.color = 'rgba(255, 255, 255, 0.5)'</script>`))).toBe(0)
+        expect(count('alpha_literal', { path: 'src/styles/properties/_colors.scss', text: ':root { --hairline: rgba(255, 255, 255, 0.06); }' })).toBe(0)
+    })
+
     it('tailwind_apply: any @apply in styles', () => {
         expect(count('tailwind_apply', astro(`<style>.card { @apply p-4 bg-black; }</style>`))).toBe(1)
         expect(count('tailwind_apply', astro(`<p>Click apply to @apply</p>`))).toBe(0)
