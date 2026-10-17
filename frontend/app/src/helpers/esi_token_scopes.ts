@@ -24,6 +24,7 @@ export const DIRECTOR_SCOPES = [
     'esi-corporations.read_facilities.v1',
     'esi-corporations.read_fw_stats.v1',
     'esi-corporations.read_medals.v1',
+    'esi-corporations.read_projects.v1',
     'esi-corporations.read_standings.v1',
     'esi-corporations.read_starbases.v1',
     'esi-corporations.read_titles.v1',

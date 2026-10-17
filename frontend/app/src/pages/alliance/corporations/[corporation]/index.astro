@@ -87,7 +87,7 @@ if (auth_token && user) {
     }
 }
 
-type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'apply' | 'settings'
+type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'apply' | 'settings'
 
 const has_activity = Boolean(corporation.activity_summary)
 const has_about = Boolean(biography)
@@ -116,12 +116,19 @@ for (const key of ['reddit', 'reddit_error']) {
 }
 const settings_partial = translatePath(`/partials/corporation_settings_component/?${settings_params}`)
 const forum_post_partial = translatePath(`/partials/corporation_forum_post_component/?corporation_id=${corporation_id}`)
+// Leadership tracks the corp's in-game projects; directors put them toward campaigns.
+const can_view_projects = member_access?.can_view_projects ?? false
+const projects_partial = translatePath(`/partials/corporation_projects_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+    corporation: corporation_slug(corporation.corporation_name),
+})}`)
 
 const tabs: CorporationTab[] = [
     ...(has_about ? ['about' as const] : []),
     ...(has_activity ? ['activity' as const] : []),
     'apply' as const,
     ...(can_view_members ? ['members' as const] : []),
+    ...(can_view_projects ? ['projects' as const] : []),
     ...(has_leadership ? ['leadership' as const] : []),
     ...(can_edit_settings ? ['settings' as const] : []),
 ]
@@ -137,6 +144,8 @@ function tab_label(tab: CorporationTab) {
             return t('corporations.detail.leadership')
         case 'members':
             return t('corporations.detail.members')
+        case 'projects':
+            return t('corporations.detail.projects')
         case 'apply':
             return t('corporations.detail.application_process')
         case 'settings':
@@ -243,6 +252,18 @@ const breadcrumbs = [
                             hx-swap="outerHTML"
                         >
                             <p class="corp-loading">{t('corporations.detail.loading_members')}</p>
+                        </div>
+                    </SectionTabPanel>
+                }
+
+                {can_view_projects &&
+                    <SectionTabPanel id="projects" id_prefix="corporation" is_default={default_tab === 'projects'}>
+                        <div
+                            hx-get={projects_partial}
+                            hx-trigger="intersect once"
+                            hx-swap="outerHTML"
+                        >
+                            <p class="corp-loading">{t('corporations.projects.loading')}</p>
                         </div>
                     </SectionTabPanel>
                 }

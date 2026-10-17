@@ -278,6 +278,66 @@ export interface CorporationOpenApplication {
     created_at: string;
 }
 
+/** An in-game corporation project's ESI state. */
+export type CorporationProjectState = 'Unspecified' | 'Active' | 'Closed' | 'Completed' | 'Expired' | 'Deleted'
+
+export interface CorporationProjectTarget {
+    /** The configuration key: locations, ships, factions, identities, items, materials, corporations */
+    kind:   string;
+    names:  string[];
+}
+
+export interface CorporationProjectContributor {
+    character_id:   number;
+    character_name: string;
+    contributed:    number;
+}
+
+export interface CorporationProjectCampaign {
+    slug:   string;
+    name:   string;
+    status: string;
+}
+
+export interface CorporationProject {
+    project_id:                 string;
+    corporation_id:             number;
+    corporation_name:           string;
+    name:                       string;
+    description:                string;
+    state:                      CorporationProjectState | string;
+    /** ESI configuration key, e.g. capture_fw_complex, destroy_ship, manual */
+    kind:                       string;
+    targets:                    CorporationProjectTarget[];
+    creator_id:                 number | null;
+    creator_name:               string;
+    progress_current:           number;
+    progress_desired:           number;
+    reward_initial:             number | null;
+    reward_remaining:           number | null;
+    reward_per_contribution:    number | null;
+    participation_limit:        number | null;
+    created:                    string | null;
+    expires:                    string | null;
+    finished:                   string | null;
+    last_modified:              string;
+    contributors:               CorporationProjectContributor[];
+    campaigns:                  CorporationProjectCampaign[];
+}
+
+export interface CorporationProjects {
+    corporation_id: number;
+    /** CEO or director: may put a project toward a campaign */
+    can_manage:     boolean;
+    /** A CEO or director token holds esi-corporations.read_projects.v1 */
+    has_token:      boolean;
+    synced_at:      string | null;
+    refreshing:     boolean;
+    projects:       CorporationProject[];
+    /** Scheduled and active campaigns a project can be put toward */
+    campaigns:      CorporationProjectCampaign[];
+}
+
 /** alliance: posted as u/MinmatarFleet; automatic: posted from the CEO's linked account */
 export type RedditDeliveryMethod = 'alliance' | 'automatic' | 'discord_reminder'
 

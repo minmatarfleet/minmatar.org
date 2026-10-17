@@ -17,6 +17,7 @@ from eveonline.helpers.corporations import (
     update_corporation_wallet_journal as refresh_corporation_wallet_journal,
 )
 from eveonline.constants import ALLIED_ALLIANCE_NAMES
+from eveonline.helpers.corporations import projects
 from eveonline.models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,25 @@ def update_corporations():
         update_corporation.apply_async(
             args=[corporation.corporation_id], queue="eveonline"
         )
+
+
+@app.task
+def sync_corporations_projects():
+    """Queue a projects sync for each allied corporation."""
+    for corporation_id in EveCorporation.objects.filter(
+        alliance__name__in=ALLIED_ALLIANCE_NAMES
+    ).values_list("corporation_id", flat=True):
+        sync_corporation_projects.apply_async(
+            args=[corporation_id], queue="eveonline"
+        )
+
+
+@app.task(rate_limit="20/m")
+def sync_corporation_projects(corporation_id):
+    """Mirror one corporation's in-game projects and their contributors."""
+    status = projects.sync_corporation_projects(corporation_id)
+    logger.info("Corporation %s projects sync: %s", corporation_id, status)
+    return status
 
 
 @app.task

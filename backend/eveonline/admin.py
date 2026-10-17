@@ -28,6 +28,8 @@ from .models import (
     EveCorporationContract,
     EveCorporationIndustryJob,
     EveCorporationMedia,
+    EveCorporationProject,
+    EveCorporationProjectContributor,
     EveCorporationWalletJournalEntry,
     EveSkillset,
     EveTag,
@@ -545,6 +547,32 @@ class EveCorporationWalletJournalEntryAdmin(admin.ModelAdmin):
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("corporation",)
     date_hierarchy = "date"
+
+
+class EveCorporationProjectContributorInline(admin.TabularInline):
+    model = EveCorporationProjectContributor
+    extra = 0
+    can_delete = False
+    readonly_fields = ("character_id", "character_name", "contributed")
+
+
+@admin.register(EveCorporationProject)
+class EveCorporationProjectAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "corporation",
+        "kind",
+        "state",
+        "progress_current",
+        "progress_desired",
+        "reward_remaining",
+        "last_modified",
+    )
+    list_filter = ("state", "kind")
+    search_fields = ("name", "corporation__name", "project_id")
+    autocomplete_fields = ("corporation",)
+    readonly_fields = ("detail_synced_at", "updated_at")
+    inlines = [EveCorporationProjectContributorInline]
 
 
 @admin.register(EveCorporationBlueprint)

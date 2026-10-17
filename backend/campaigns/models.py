@@ -1434,3 +1434,36 @@ class CampaignAward(models.Model):
 
     def __str__(self) -> str:
         return f"{self.label} — {self.user}"
+
+
+class CampaignProject(models.Model):
+    """An in-game corporation project a director put toward a campaign.
+
+    The project's own ISK is the reward; attaching it only puts the project
+    and its contributors on the campaign page.
+    """
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="projects"
+    )
+    project = models.ForeignKey(
+        "eveonline.EveCorporationProject",
+        on_delete=models.CASCADE,
+        related_name="campaign_links",
+    )
+    attached_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    attached_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-attached_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "project"],
+                name="campaign_project_unique",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.project_id} in {self.campaign.slug}"

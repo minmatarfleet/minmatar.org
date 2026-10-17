@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -134,10 +134,38 @@ export async function get_corporation_id_by_slug(slug: string) {
 
 export async function get_corporation_member_access(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/members/access`
-    return await authorized_get<{ can_view_members: boolean, can_view_characters: boolean, can_edit_settings?: boolean }>(access_token, endpoint)
+    return await authorized_get<{
+        can_view_members: boolean,
+        can_view_characters: boolean,
+        can_edit_settings?: boolean,
+        can_view_projects?: boolean,
+        can_manage_projects?: boolean,
+    }>(access_token, endpoint)
 }
 
 export async function get_corporation_open_applications(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/applications/open`
     return await authorized_get<CorporationOpenApplication[]>(access_token, endpoint)
+}
+export async function get_corporation_projects(access_token: string, id: number) {
+    const endpoint = `${API_ENDPOINT}/corporations/${id}/projects`
+    return await authorized_get<CorporationProjects>(access_token, endpoint)
+}
+
+/** Queue a sync from ESI. Resolves to the API status: 202 queued, 409 no token, 429 already pending. */
+export async function refresh_corporation_projects(access_token: string, id: number) {
+    const endpoint = `${API_ENDPOINT}/corporations/${id}/projects/refresh`
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${access_token}`,
+        },
+    })
+    if (![202, 409, 429].includes(response.status)) {
+        throw new Error(get_error_message(response.status, `POST ${endpoint}`), {
+            cause: response.status,
+        })
+    }
+    return response.status
 }

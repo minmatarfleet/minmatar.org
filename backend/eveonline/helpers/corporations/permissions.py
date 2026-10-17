@@ -83,3 +83,27 @@ def can_view_member_characters(
     return user_is_director(user, corporation) or user_is_recruiter(
         user, corporation
     )
+
+
+def can_manage_corporation_projects(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """CEO and directors put the corporation's projects toward campaigns."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    return user_is_ceo(user, corporation) or user_is_director(
+        user, corporation
+    )
+
+
+def can_view_corporation_projects(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """Projects tab: corp leadership, People and Tech teams, superusers."""
+    if can_manage_corporation(user, corporation):
+        return True
+    return bool(
+        user is not None
+        and getattr(user, "is_authenticated", False)
+        and user.is_superuser
+    )

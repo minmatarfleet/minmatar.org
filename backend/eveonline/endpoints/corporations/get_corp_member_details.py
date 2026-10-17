@@ -12,7 +12,9 @@ from eveonline.endpoints.corporations.schemas import (
     CorporationMemberDetails,
 )
 from eveonline.helpers.corporations.permissions import (
+    can_manage_corporation_projects,
     can_view_corporation_members,
+    can_view_corporation_projects,
     can_view_member_characters,
     user_is_ceo,
 )
@@ -67,6 +69,12 @@ def get_corp_member_access(request, corporation_id: int):
             request.user, corporation
         ),
         "can_edit_settings": user_is_ceo(request.user, corporation),
+        "can_view_projects": can_view_corporation_projects(
+            request.user, corporation
+        ),
+        "can_manage_projects": can_manage_corporation_projects(
+            request.user, corporation
+        ),
     }
 
 

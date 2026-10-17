@@ -324,6 +324,87 @@ class EveCorporationWalletJournalEntry(models.Model):
         )
 
 
+class EveCorporationProject(models.Model):
+    """
+    An in-game corporation project from ESI (esi-corporations.read_projects.v1).
+
+    The corporation reserves ISK and pays it out per unit of progress. ESI is
+    read-only: projects are created and funded in game, and this row mirrors
+    the listing plus the detail call. ``kind`` is the configuration's key
+    (``capture_fw_complex``, ``destroy_ship``, ``manual`` ...) and
+    ``configuration`` keeps the filters under it as ESI returned them.
+    """
+
+    project_id = models.UUIDField(primary_key=True)
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+        related_name="projects",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    state = models.CharField(max_length=16, db_index=True)
+    kind = models.CharField(max_length=32, blank=True, default="")
+    configuration = models.JSONField(default=dict, blank=True)
+    targets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="The configuration's filters with names resolved at sync: "
+        '[{"kind": "locations", "names": [...]}].',
+    )
+    career = models.CharField(max_length=32, blank=True, default="")
+    creator_id = models.BigIntegerField(null=True, blank=True)
+    creator_name = models.CharField(max_length=255, blank=True, default="")
+    progress_current = models.BigIntegerField(default=0)
+    progress_desired = models.BigIntegerField(default=0)
+    reward_initial = models.FloatField(null=True, blank=True)
+    reward_remaining = models.FloatField(null=True, blank=True)
+    reward_per_contribution = models.FloatField(null=True, blank=True)
+    participation_limit = models.BigIntegerField(null=True, blank=True)
+    submission_limit = models.BigIntegerField(null=True, blank=True)
+    submission_multiplier = models.FloatField(null=True, blank=True)
+    created = models.DateTimeField(null=True, blank=True)
+    expires = models.DateTimeField(null=True, blank=True)
+    finished = models.DateTimeField(null=True, blank=True)
+    last_modified = models.DateTimeField(
+        help_text="ESI's last_modified; contributions count as a change."
+    )
+    detail_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the detail and contributors were last fetched; "
+        "cleared when a fetch fails so the next sync retries.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-last_modified"]
+        indexes = [models.Index(fields=["corporation", "state"])]
+
+    def __str__(self):
+        return f"{self.name} ({self.corporation.name}, {self.state})"
+
+
+class EveCorporationProjectContributor(models.Model):
+    """One character's total progress on a corporation project."""
+
+    project = models.ForeignKey(
+        EveCorporationProject,
+        on_delete=models.CASCADE,
+        related_name="contributors",
+    )
+    character_id = models.BigIntegerField(db_index=True)
+    character_name = models.CharField(max_length=255)
+    contributed = models.BigIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-contributed", "character_name"]
+        unique_together = (("project", "character_id"),)
+
+    def __str__(self):
+        return f"{self.character_name}: {self.contributed}"
+
+
 class EveCorporationAllianceHistory(models.Model):
     """Cached ESI corporation alliance-history row (public, no token)."""
 

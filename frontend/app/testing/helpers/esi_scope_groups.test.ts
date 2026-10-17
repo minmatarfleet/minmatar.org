@@ -33,6 +33,6 @@ describe('requested scope groups', () => {
     it('counts each scope once', () => {
         expect(requested_scope_count([])).toBe(13)
         expect(requested_scope_count(['Industry', 'Market'])).toBe(26)
-        expect(requested_scope_count(['Industry', 'Market', 'Director'])).toBe(41)
+        expect(requested_scope_count(['Industry', 'Market', 'Director'])).toBe(42)
     })
 })

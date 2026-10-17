@@ -121,6 +121,14 @@ CELERYBEAT_CORPORATIONS = [
         },
     ),
     (
+        "[Corporations] Sync corporation projects",
+        {
+            "task": "eveonline.tasks.corporations.sync_corporations_projects",
+            "schedule": crontab(minute="5,35"),
+            "options": {"queue": "eveonline"},
+        },
+    ),
+    (
         "[Corporations] Structure Notifications",
         {
             "task": "structures.tasks.process_structure_notifications",

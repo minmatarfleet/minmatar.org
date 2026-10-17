@@ -20,6 +20,7 @@ import type {
     CampaignStructure,
     CampaignStructureAttachRequest,
     UniverseEntityMatch,
+    CorporationProject,
 } from '@dtypes/api.minmatar.org'
 import { parse_response_error } from '@helpers/string'
 
@@ -278,5 +279,32 @@ export async function attach_campaign_structure(
         'campaign structure',
         'POST',
         structure,
+    )
+}
+
+export async function get_campaign_projects(slug:string, access_token:string | false = false) {
+    return await request_json<CorporationProject[]>(
+        `${API_ENDPOINT}/${slug}/projects`,
+        access_token,
+        'campaign projects',
+    )
+}
+
+export async function attach_campaign_project(slug:string, access_token:string, project_id:string) {
+    return await request_json<null>(
+        `${API_ENDPOINT}/${slug}/projects`,
+        access_token,
+        'campaign project',
+        'POST',
+        { project_id: project_id },
+    )
+}
+
+export async function detach_campaign_project(slug:string, access_token:string, project_id:string) {
+    return await request_json<null>(
+        `${API_ENDPOINT}/${slug}/projects/${project_id}`,
+        access_token,
+        'campaign project',
+        'DELETE',
     )
 }

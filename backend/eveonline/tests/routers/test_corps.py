@@ -467,6 +467,10 @@ class CorporationRouterTestCase(TestCase):
                 "can_view_members": True,
                 "can_view_characters": False,
                 "can_edit_settings": False,
+                # People team sees the Projects tab; only CEO and
+                # directors put projects toward campaigns.
+                "can_view_projects": True,
+                "can_manage_projects": False,
             },
             access,
         )
