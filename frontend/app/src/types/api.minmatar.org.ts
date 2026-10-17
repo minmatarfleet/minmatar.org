@@ -186,6 +186,7 @@ export interface TribeGroupShowcase {
     period_start:       string | null;
     period_end:         string | null;
     manual:             boolean;
+    warming?:           boolean;
     message:            string;
     totals:             Record<string, number | string>;
     columns:            string[];

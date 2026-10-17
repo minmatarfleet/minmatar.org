@@ -6,6 +6,7 @@ Tasks:
 - remove_tribe_members_without_permission: Removes members lacking base permission.
 - ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
 - warm_tribe_group_showcases: Rebuild cached group Activity tabs.
+- refresh_tribe_group_showcase: Rebuild one group's Activity tab (cache miss).
 - warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages.
 """
 
@@ -27,7 +28,7 @@ from tribes.helpers.tribe_auth_groups import (
 )
 from tribes.helpers.external_guild import reconcile_external_guilds
 from tribes.helpers.about import refresh_tribe_about
-from tribes.helpers.showcase import build_group_showcase
+from tribes.helpers.showcase import refresh_group_showcase
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 from tribes.reports.registry import REPORT_BINDINGS
 
@@ -188,13 +189,21 @@ def warm_tribe_group_showcases():
     )
     for group in groups:
         try:
-            build_group_showcase(group, refresh=True)
+            refresh_group_showcase(group)
         except Exception as exc:  # pylint: disable=broad-except
             logger.error(
                 "Error warming showcase for tribe group %s: %s",
                 group.code,
                 exc,
             )
+
+
+@app.task()
+def refresh_tribe_group_showcase(group_id: int):
+    """Rebuild one group's Activity tab cache (queued on a cache miss)."""
+    group = TribeGroup.objects.filter(pk=group_id).first()
+    if group:
+        refresh_group_showcase(group)
 
 
 @app.task()

@@ -1,6 +1,7 @@
 """Tests for the tribe group Activity queries and their showcase highlights."""
 
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 import factory
 from django.contrib.auth.models import User
@@ -48,6 +49,7 @@ from industry.models import (
 )
 from market.models import EveMarketContract
 from posts.models import EvePost
+from tribes import tasks as tribe_tasks
 from tribes.helpers.showcase import build_group_showcase
 from tribes.models import (
     Tribe,
@@ -56,6 +58,7 @@ from tribes.models import (
     TribeGroupRequirement,
     TribeGroupRequirementAssetType,
 )
+from tribes.reports import ReportError
 from tribes.reports.period import parse_period
 from tribes.reports.queries.advocates import (
     ACADEMY_CORP_ID,
@@ -644,3 +647,66 @@ class ShowcaseTestCase(HelpDeskTestCase):
         self.assertNotIn("fixed", data["highlights"])
         self.assertIn("all_time", data["highlights"])
         self.assertEqual(data["totals"]["tickets_resolved"], 2)
+
+
+class ShowcaseCacheTestCase(HelpDeskTestCase):
+    """The Activity tab never runs the report inside a request."""
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        self.url = (
+            f"/api/tribes/{self.tribe.pk}/groups/{self.group.pk}/showcase"
+        )
+
+    def test_cold_cache_queues_a_refresh_and_answers_warming(self):
+        with patch.object(
+            tribe_tasks.refresh_tribe_group_showcase, "apply_async"
+        ) as queued, patch(
+            "tribes.helpers.showcase.run_group_report"
+        ) as run_report:
+            first = Client().get(self.url)
+            second = Client().get(self.url)
+        run_report.assert_not_called()
+        queued.assert_called_once_with(args=[self.group.pk])
+        for response in (first, second):
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            self.assertTrue(data["warming"])
+            self.assertTrue(data["manual"])
+            self.assertEqual(data["totals"], {})
+
+    def test_cache_outage_answers_warming_not_500(self):
+        with patch.multiple(
+            "app.cache.cache",
+            get=MagicMock(side_effect=ConnectionError("redis down")),
+            add=MagicMock(side_effect=ConnectionError("redis down")),
+        ), patch("tribes.helpers.showcase.run_group_report") as run_report:
+            response = Client().get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["warming"])
+        run_report.assert_not_called()
+
+    def test_refresh_task_fills_the_cache_the_endpoint_serves(self):
+        tribe_tasks.refresh_tribe_group_showcase(self.group.pk)
+        with patch("tribes.helpers.showcase.run_group_report") as run_report:
+            response = Client().get(self.url)
+        run_report.assert_not_called()
+        data = response.json()
+        self.assertFalse(data["warming"])
+        self.assertEqual(data["totals"]["tickets_resolved"], 2)
+
+    def test_warm_task_fills_the_cache(self):
+        tribe_tasks.warm_tribe_group_showcases()
+        self.assertIsNotNone(
+            cache.get(f"tribes:showcase:v1:{self.group.pk}:30d")
+        )
+
+    def test_cached_report_error_is_a_404(self):
+        with patch(
+            "tribes.helpers.showcase.run_group_report",
+            side_effect=ReportError("No view 'town_hall' configured"),
+        ):
+            tribe_tasks.refresh_tribe_group_showcase(self.group.pk)
+        response = Client().get(self.url)
+        self.assertEqual(response.status_code, 404)

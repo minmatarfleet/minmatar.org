@@ -1,11 +1,16 @@
-"""Cached public showcase (totals + optional named contributors) for a tribe group."""
+"""Cached public showcase (totals + optional named contributors) for a tribe group.
+
+The showcase runs the group's town-hall report plus its all-time and
+best-month highlights, which is far too slow for a page request. Celery
+warms every group twice an hour; a request only reads the cache and, on a
+miss, queues one refresh and returns a "still being calculated" payload.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
-from django.core.cache import cache
-
+from app.cache import CachedRollup
 from eveonline.models.characters import EvePlayer
 from tribes.reports import ReportError, run_group_report
 from tribes.reports.period import parse_period
@@ -13,7 +18,14 @@ from tribes.reports.registry import HIGHLIGHT_RUNNERS, binding_for_group
 from tribes.reports.types import ReportView
 
 SHOWCASE_CACHE_SECONDS = 3600
+REFRESH_LOCK_SECONDS = 10 * 60
 SHOWCASE_PERIOD = "30d"
+# v1: first versioned key; a cached ReportError is {"error": message}.
+_SHOWCASE_KEY = "tribes:showcase:v1:{group_id}:{period}"
+_LOCK_KEY = "tribes:showcase:refreshing:{group_id}:{period}"
+WARMING_MESSAGE = (
+    "Group Activity is still being calculated. Check back in a few minutes."
+)
 
 # Contributor metric for bindings that don't name one in presentation.
 LEGACY_METRIC_KEYS = (
@@ -27,10 +39,6 @@ LEGACY_METRIC_KEYS = (
 
 # Highlight lists that name pilots or quote tickets: roster viewers only.
 PRIVATE_HIGHLIGHT_KEYS = frozenset({"welcomed", "fixed"})
-
-
-def _cache_key(group_id: int, period: str) -> str:
-    return f"tribes:showcase:{group_id}:{period}"
 
 
 def _showcase_presentation(tribe_group) -> dict:
@@ -96,22 +104,33 @@ def _enrich_contributors(
     return contributors
 
 
-def build_group_showcase(
-    tribe_group, *, refresh: bool = False
-) -> dict[str, Any]:
+def _showcase_period(tribe_group) -> str:
+    return _showcase_presentation(tribe_group).get("period", SHOWCASE_PERIOD)
+
+
+def _manual_payload(tribe_group, period: str, message: str) -> dict:
+    return {
+        "group_id": tribe_group.pk,
+        "group_code": tribe_group.code or "",
+        "group_name": tribe_group.name,
+        "period": period,
+        "manual": True,
+        "message": message,
+        "totals": {},
+        "columns": [],
+        "contributors": [],
+        "highlights": {},
+    }
+
+
+def build_group_showcase(tribe_group) -> dict[str, Any]:
     """
-    Run town_hall with roster scope (or program when required).
-    Cached ~1h. Always includes totals; callers strip contributors and
-    private highlights for guests.
+    Run town_hall with roster scope (or program when required). Slow: only
+    Celery calls this (see refresh_group_showcase). Always includes totals;
+    callers strip contributors and private highlights for guests.
     """
     presentation = _showcase_presentation(tribe_group)
     period = presentation.get("period", SHOWCASE_PERIOD)
-    key = _cache_key(tribe_group.pk, period)
-    if not refresh:
-        cached = cache.get(key)
-        if cached is not None:
-            return cached
-
     try:
         result = run_group_report(
             tribe_group,
@@ -129,20 +148,7 @@ def build_group_showcase(
                 period=period,
             )
         elif "no report binding" in message.lower():
-            payload = {
-                "group_id": tribe_group.pk,
-                "group_code": tribe_group.code or "",
-                "group_name": tribe_group.name,
-                "period": period,
-                "manual": True,
-                "message": message,
-                "totals": {},
-                "columns": [],
-                "contributors": [],
-                "highlights": {},
-            }
-            cache.set(key, payload, SHOWCASE_CACHE_SECONDS)
-            return payload
+            return _manual_payload(tribe_group, period, message)
         else:
             raise
 
@@ -153,7 +159,7 @@ def build_group_showcase(
             list(result.rows or []), presentation.get("metric")
         )
     )
-    payload = {
+    return {
         "group_id": result.group_id,
         "group_code": result.group_code,
         "group_name": result.group_name,
@@ -169,8 +175,60 @@ def build_group_showcase(
             {} if result.manual else _highlights(tribe_group, period)
         ),
     }
-    cache.set(key, payload, SHOWCASE_CACHE_SECONDS)
+
+
+def refresh_group_showcase(tribe_group) -> dict[str, Any]:
+    """Recompute and cache one group's showcase (Celery)."""
+    try:
+        payload = build_group_showcase(tribe_group)
+    except ReportError as exc:
+        # Cached so the endpoint answers 404 instead of queueing forever.
+        payload = {"error": str(exc)}
+    SHOWCASE.store(
+        payload,
+        group_id=tribe_group.pk,
+        period=_showcase_period(tribe_group),
+    )
     return payload
+
+
+def group_showcase(tribe_group) -> dict[str, Any]:
+    """The cached showcase, or a "still being calculated" payload.
+
+    Never runs the report in the request. Groups without a report (or with
+    a manual one) have nothing slow to run, so they are answered directly.
+    """
+    binding = binding_for_group(tribe_group)
+    if binding is None or binding.manual:
+        return build_group_showcase(tribe_group)
+    period = _showcase_period(tribe_group)
+    payload = SHOWCASE.get_or_queue(group_id=tribe_group.pk, period=period)
+    if payload is not None:
+        return payload
+    # manual=True so clients that predate `warming` show the message
+    # rather than an empty scoreboard.
+    return {
+        **_manual_payload(tribe_group, period, WARMING_MESSAGE),
+        "warming": True,
+    }
+
+
+def _queue_refresh(group_id: int, **_params) -> None:
+    # Imported here: the task module imports this helper.
+    from tribes.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_tribe_group_showcase,
+    )
+
+    refresh_tribe_group_showcase.apply_async(args=[group_id])
+
+
+SHOWCASE = CachedRollup(
+    key=_SHOWCASE_KEY,
+    ttl=SHOWCASE_CACHE_SECONDS,
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    enqueue=_queue_refresh,
+)
 
 
 def _highlights(tribe_group, period: str) -> dict[str, Any]:
