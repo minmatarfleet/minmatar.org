@@ -22,8 +22,17 @@ if (
     user &&
     (await should_redirect_to_srp_onboarding(auth_token, has_explicit_srp_change))
 ) {
-    const return_to = encodeURIComponent(translatePath('/ships/srp/'))
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+    const onboarding_path = translatePath('/ships/srp/onboarding/')
+    if (Astro.request.headers.get('HX-Request') === 'true') {
+        return new Response('', {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html',
+                'HX-Redirect': onboarding_path,
+            },
+        })
+    }
+    return Astro.redirect(onboarding_path)
 }
 
 import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'

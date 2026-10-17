@@ -196,7 +196,10 @@ const breadcrumbs = [
 
     function initCoordinatorHtmxRoot(target: HTMLElement) {
         const scope = target.parentElement ?? target
-        if (typeof htmx !== 'undefined') {
+        // The lazy loader was just swapped by htmx; processing it again re-arms
+        // its "intersect once" trigger and loads the coordinators a second time.
+        const is_lazy_loader = target.classList.contains('order-coordinators-lazy')
+        if (typeof htmx !== 'undefined' && !is_lazy_loader) {
             htmx.process(target)
             if (scope !== target) htmx.process(scope)
         }
@@ -212,6 +215,8 @@ const breadcrumbs = [
         if (!body || body.dataset.bound === '1') return
         body.dataset.bound = '1'
 
+        // htmx processes swapped content itself. Re-processing a hx-trigger="load"
+        // slot after its swap fires the load again and fetches the partial twice.
         document.body.addEventListener('htmx:afterSwap', (event: any) => {
             const target = event.detail?.target as HTMLElement | undefined
             if (!target) return
@@ -226,10 +231,6 @@ const breadcrumbs = [
                     'order-detail-chart',
                 )
                 const chart = document.getElementById('order-detail-chart')
-                if (typeof htmx !== 'undefined') {
-                    htmx.process(target)
-                    if (chart) htmx.process(chart)
-                }
                 if (typeof Alpine !== 'undefined') {
                     Alpine.initTree(target)
                     if (chart) Alpine.initTree(chart)
@@ -249,7 +250,6 @@ const breadcrumbs = [
                     'order-detail-assignments-stack',
                     'order-detail-assignments',
                 )
-                if (typeof htmx !== 'undefined') htmx.process(target)
                 if (typeof Alpine !== 'undefined') Alpine.initTree(target)
                 if (typeof tippy === 'function') {
                     tippy('#order-detail-assignments [data-tippy-content]', {
@@ -259,7 +259,6 @@ const breadcrumbs = [
                 }
             }
             if (target.id === 'order-detail-header-slot') {
-                if (typeof htmx !== 'undefined') htmx.process(target)
                 if (typeof Alpine !== 'undefined') Alpine.initTree(target)
             }
 

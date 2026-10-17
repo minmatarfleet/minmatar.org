@@ -52,11 +52,12 @@ import Button from '@components/blocks/Button.astro'
 >
     <div class="[ campaign-enlist-bar-spacer ]" aria-hidden="true" />
 
+    {/* Under 1280px the page actions (the countdown) are also docked at the bottom; sit on top of them.
+        Keep comments out of x-init: Alpine only runs it as statements when it starts with const/let/if. */}
     <div
         class="[ campaign-enlist-bar-dock ][ card light-transparency animate-slide-in-bottom ]"
         x-data="{}"
         x-init={`
-            // Under 1280px the page actions (the countdown) are also docked at the bottom; sit on top of them.
             const actions = document.querySelector('.subheader-bar')
             const place = () => {
                 const docked = actions && getComputedStyle(actions).position === 'fixed'

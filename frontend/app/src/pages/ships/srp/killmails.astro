@@ -39,8 +39,7 @@ let ship_types:string[] = []
 
 try {
     if (await should_redirect_to_srp_onboarding(auth_token as string, has_explicit_srp_change)) {
-        const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
-        return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+        return Astro.redirect(translatePath('/ships/srp/onboarding/'))
     }
 
     const fleets_srps_data = await fetch_srps(auth_token as string)

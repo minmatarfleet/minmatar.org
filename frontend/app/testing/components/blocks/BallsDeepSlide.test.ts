@@ -6,7 +6,10 @@ test("BallsDeepSlide defaults", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(BallsDeepSlide, {
     props: {
-      corporation: 5,
+      corporation: {
+        corporation_id: 5,
+        corporation_name: "chicken attack",
+      },
       is_user_corporation: true,
     },
   });

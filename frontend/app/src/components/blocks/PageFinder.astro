@@ -197,7 +197,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                         
                                         {user && is_referral_url(page.path, lang) &&
                                             <div>
-                                                <ReferralLink id={page.slug} user_id={user.user_id} pathname={page.path} position='left' />
+                                                <ReferralLink id={`referral-link-${page.slug.replaceAll('.', '-')}`} user_id={user.user_id} pathname={page.path} position='left' />
                                             </div>
                                         }
                                     </FluidFixed>

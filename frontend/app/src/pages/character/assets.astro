@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -12,15 +12,17 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
+const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
+
+// Without a character this is the "Assets" breadcrumb above My assets; send everyone there.
+if (isNaN(character_id))
+    return Astro.redirect(translatePath('/character/assets/user/'))
+
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
 if (!can(gates, 'characters.view_staff'))
     return HTTP_403_Forbidden()
-
-const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
-if (isNaN(character_id))
-    return HTTP_404_Not_Found()
 
 import type { AssetsUI, CharacterBasic, SelectOptions } from '@dtypes/layout_components'
 import { get_assets } from '@helpers/fetching/characters'

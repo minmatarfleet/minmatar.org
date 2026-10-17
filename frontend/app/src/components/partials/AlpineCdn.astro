@@ -9,6 +9,11 @@
  * Scripts must load in order (plugins before alpinejs). Dynamically inserted
  * `defer` scripts can run out of order like async, which leaves $persist
  * undefined (MINMATAR-FRONTEND-EP / FR). Chain on onload instead.
+ *
+ * Alpine core starts as soon as it loads. From a warm cache that is mid-parse,
+ * before the deferred htmx/tippy run and before FooterScripts defines
+ * neocom_clock/edge_fade, so x-init throws "... is not defined". Hold the core
+ * until DOMContentLoaded, which is when a `defer` Alpine would have started.
  */
 ---
 
@@ -31,6 +36,12 @@
 		function load_next(index) {
 			if (index >= urls.length)
 				return
+			if (index === urls.length - 1 && document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', function () {
+					load_next(index)
+				}, { once: true })
+				return
+			}
 			const script = document.createElement('script')
 			script.src = urls[index]
 			script.onload = function () {

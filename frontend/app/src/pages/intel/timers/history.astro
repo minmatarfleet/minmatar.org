@@ -90,7 +90,7 @@ const page_title = t('intel.timers.history.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`${t('lastest_timers')}.replace('TIMERS', structure_timers_count.toString())`}>
+                    <small x-text={`${JSON.stringify(t('lastest_timers'))}.replace('TIMERS', structure_timers_count.toString())`}>
                         {t('lastest_timers').replace('TIMERS', structure_timers.length.toString())}
                     </small>
                 </Flexblock>

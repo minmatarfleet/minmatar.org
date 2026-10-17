@@ -28,6 +28,10 @@ import CollapsableButton from './CollapsableButton.astro';
     gap='var(--space-xl)'
     x-data={`{
         character_expanded: true,
+        // CollapsableButton turns its caret from \`expanded\`.
+        get expanded() {
+            return this.character_expanded
+        },
         assets_locations: ${JSON.stringify(character_assets.locations)},
         assets_locations_icons: ${JSON.stringify(character_assets.location_icons)},
         assets_locations_filtered: ${JSON.stringify(character_assets.locations)},

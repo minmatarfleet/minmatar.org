@@ -121,6 +121,8 @@ code {
     background-color: var(--component-background);
     color: var(--highlight);
     padding-inline: var(--space-3xs);
+    /* Long inline tokens (URLs, error paths) wrap instead of widening the page; <pre> keeps white-space: pre. */
+    overflow-wrap: anywhere;
 }
 
 .rifter-dialog,

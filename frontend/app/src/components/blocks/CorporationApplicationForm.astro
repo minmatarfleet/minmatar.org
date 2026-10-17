@@ -21,7 +21,8 @@ interface Props {
 const { corporation, include_field_names = false } = Astro.props;
 
 const formPrefix = CORPORATION_APPLICATION_FORM_PREFIX;
-const idPrefix = 'corp-app';
+// One form per corporation slide on the list page; keep label/field ids unique.
+const idPrefix = `corp-app-${corporation.corporation_id}`;
 ---
 
 <Flexblock class="corp-application-form" gap="var(--space-xl)">

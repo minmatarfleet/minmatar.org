@@ -51,13 +51,19 @@ if (
         has_explicit_srp_change,
     ))
 ) {
-    const returnPath =
-        fleet_id > 0 && !Number.isNaN(fleet_id)
-            ? translatePath(`/fleets/upcoming/${fleet_id}`)
-            : translatePath('/ships/srp/')
-    return Astro.redirect(
-        `${translatePath('/onboarding/')}?return=${encodeURIComponent(returnPath)}`,
-    )
+    // A partial can't redirect the page with a 302; htmx would swap the
+    // onboarding page into the table. Ask htmx to navigate instead.
+    const onboarding_path = translatePath('/ships/srp/onboarding/')
+    if (Astro.request.headers.get('HX-Request') === 'true') {
+        return new Response('', {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html',
+                'HX-Redirect': onboarding_path,
+            },
+        })
+    }
+    return Astro.redirect(onboarding_path)
 }
 
 let data_fetching_error: Error | false = false

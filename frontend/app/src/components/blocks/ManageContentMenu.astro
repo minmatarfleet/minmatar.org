@@ -9,6 +9,12 @@ const auth_token = Astro.cookies.has('auth_token')
     ? (Astro.cookies.get('auth_token')?.value as string)
     : false
 
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+// The menu shows for content.manage; the post pages themselves need posts.create.
+const can_create_posts = can(gates, 'posts.create')
+
 let accounts: CreatorAccount[] = []
 if (auth_token) {
     try {
@@ -40,24 +46,26 @@ import Dropdown from '@components/blocks/Dropdown.astro'
     </span>
 
     <nav class="[ manage-content-menu__list ]" aria-label={t('content.manage_my_content')}>
-        <a
-            class="[ manage-content-menu__item ]"
-            href={translatePath('/alliance/propaganda/new/editor')}
-        >
-            {t('create_post')}
-        </a>
-        <a
-            class="[ manage-content-menu__item ]"
-            href={translatePath('/alliance/propaganda/my_posts/')}
-        >
-            {t('my_posts')}
-        </a>
-        <a
-            class="[ manage-content-menu__item ]"
-            href={translatePath('/alliance/propaganda/trash/')}
-        >
-            {t('trash')}
-        </a>
+        {can_create_posts && <>
+            <a
+                class="[ manage-content-menu__item manage-content-menu__item--create ]"
+                href={translatePath('/alliance/propaganda/new/editor')}
+            >
+                {t('create_post')}
+            </a>
+            <a
+                class="[ manage-content-menu__item ]"
+                href={translatePath('/alliance/propaganda/my_posts/')}
+            >
+                {t('my_posts')}
+            </a>
+            <a
+                class="[ manage-content-menu__item ]"
+                href={translatePath('/alliance/propaganda/trash/')}
+            >
+                {t('trash')}
+            </a>
+        </>}
 
         {twitch ?
             <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
@@ -159,12 +167,12 @@ import Dropdown from '@components/blocks/Dropdown.astro'
             outline: none;
         }
 
-        &:first-child {
+        &--create {
             color: var(--green);
         }
 
-        &:first-child:hover,
-        &:first-child:focus-visible {
+        &--create:hover,
+        &--create:focus-visible {
             background: color-mix(in srgb, var(--green) 25%, transparent);
             color: var(--highlight);
         }

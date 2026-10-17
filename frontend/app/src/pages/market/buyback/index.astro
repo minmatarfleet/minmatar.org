@@ -116,7 +116,7 @@ const leading_text = settings?.leading_text?.trim() || ''
 
                     <Steps
                         step={4}
-                        title='Wait for appraisal then click on **Create contract walkthrought**'
+                        title='Wait for appraisal then click on **Create contract walkthrough**'
                     />
                     <Steps
                         step={5}
@@ -125,7 +125,7 @@ const leading_text = settings?.leading_text?.trim() || ''
                     />
                 </Grid>
 
-                <Flexblock gap='var(--space-2xs)' class="[ grow max-w-(--max-text-width) min-w-[450px] ]">
+                <Flexblock gap='var(--space-2xs)' class="[ grow max-w-(--max-text-width) min-w-[min(450px,100%)] ]">
                     <form
                         method="POST"
                         action={translatePath('/market/buyback/appraisal')}
