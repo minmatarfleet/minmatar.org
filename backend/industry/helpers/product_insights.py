@@ -22,8 +22,8 @@ from eveonline.helpers.corporations.safe_cache import (
     cache_get,
     cache_set,
 )
+from eveonline.helpers.alliances import tracked_alliance_ids
 from eveonline.models import (
-    EveAlliance,
     EveCharacter,
     EveCharacterAsset,
     EveCharacterIndustryJob,
@@ -428,9 +428,8 @@ def _fill_sales(insights, type_ids, now, weeks):
 def _fill_hangars(insights, ship_type_ids):
     if not ship_type_ids:
         return
-    alliance_ids = list(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
+    # Tracked scope: hangars of pilots in any alliance we sync.
+    alliance_ids = tracked_alliance_ids()
     rows = EveCharacterAsset.objects.filter(
         type_id__in=ship_type_ids,
         character__alliance_id__in=alliance_ids,
@@ -457,9 +456,8 @@ def _fill_losses(insights, ship_type_ids, now, weeks):
         return
     since = min(now - timedelta(days=WINDOW_DAYS), weeks.first)
     recent_since = now - timedelta(days=RECENT_DAYS)
-    alliance_ids = list(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
+    # Tracked scope: losses of pilots in any alliance we sync.
+    alliance_ids = tracked_alliance_ids()
     # Several of our pilots can hold the same killmail; count each kill once.
     seen = set()
     rows = (
