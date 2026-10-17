@@ -36,3 +36,12 @@ Desktop settings live on the pilot's account (`/api/users/me/desktop-settings`, 
 - Adding a key or a field is fine (minor). Older versions ignore it.
 - Read every key through `settings_schema.js`. An invalid or unknown value reads as the default, and a read never writes, so this version never "fixes" another version's value on the account.
 - When writing an object key, spread the stored value first (`stored_window`), so fields added by a newer version survive. Leave keys you don't know alone.
+
+## The backend contract with installed versions
+
+Every backend change to an endpoint the desktop calls ships at once to every installed copy, and portable builds never update themselves, so some pilots run old versions for months. The desktop-facing endpoints are the ones in `desktop/src/main/api.js`: `/api/campaigns/overlay`, `/api/fleets/window/*`, `/api/fleets/{id}/window`, `/api/fleets/v3`, `/api/users/me/desktop-settings`, `/api/intel/*` and the few others listed there.
+
+- **Changes are additive.** Add fields and endpoints freely; older versions ignore them. Never rename, retype, or change the meaning of a field a released version reads. Ship the new name next to the old one instead.
+- **Removal needs a deprecation window.** Every desktop request carries `X-Minmatar-Client: desktop/<version> (<installer|portable>)` (from `app.getVersion()`), and the backend counts it per day (`app/client_versions.py`; `manage.py api_clients --days 30`, or the `client` tag in Sentry). Remove a field only after the last release that reads it has stopped showing up for 30 days. Releases up to 0.10.x send no header; treat requests to desktop endpoints with a Node user agent and no header as those.
+- **New desktop code tolerates older backends**: check that a field is present before relying on it (as `load_campaign` does with `change_week`), because the backend may deploy after the app updates.
+- A change that needs a minimum backend or drops an old endpoint is a **major** desktop version.

@@ -21,10 +21,18 @@ const FLEET_TYPE_LABELS = {
 
 const REQUEST_TIMEOUT_MS = 10_000
 
+// Sent on every request as X-Minmatar-Client, so the backend can count which desktop versions
+// still call it before it changes a field they read (.claude/rules/desktop-release.md).
+// The version comes from the running app, never a constant.
+function client_id({ version, portable = false }) {
+    return `desktop/${version} (${portable ? 'portable' : 'installer'})`
+}
+
 class ApiClient {
-    constructor({ api_url, get_token, fetch_impl = globalThis.fetch, timeout_ms = REQUEST_TIMEOUT_MS }) {
+    constructor({ api_url, get_token, client = null, fetch_impl = globalThis.fetch, timeout_ms = REQUEST_TIMEOUT_MS }) {
         this.api_url = api_url
         this.get_token = get_token
+        this.client = client
         this.fetch = fetch_impl
         this.timeout_ms = timeout_ms
         this.doctrine_names = new Map()
@@ -35,6 +43,7 @@ class ApiClient {
     // still goes out with the token it started with.
     async request(method, path, { auth = true, body, etag = false } = {}) {
         const headers = { Accept: 'application/json' }
+        if (this.client) headers['X-Minmatar-Client'] = this.client
         if (auth) {
             const token = this.get_token()
             if (!token) throw new ApiError(401, 'Not signed in')
@@ -260,4 +269,4 @@ async function load_campaign(api, web_url) {
     }
 }
 
-module.exports = { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }
+module.exports = { ApiClient, ApiError, client_id, is_unauthorized, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }

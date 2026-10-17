@@ -62,7 +62,7 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 
 The **installer** build updates itself from this repo's GitHub Releases ([electron-updater](https://www.electron.build/auto-update), `src/main/updater.js`). It checks at start-up and every 4 hours and downloads new versions in the background. When an update is ready, the footer of every overlay window (Fleets, Campaigns, Intel) and the tray menu show **Restart to update**; otherwise the update installs the next time the app quits. The **portable** exe can't replace itself: the same footers show "v… available" and link to the release.
 
-To release, bump the version and merge. It uses semantic versioning: **patch** for fixes, **minor** for features, **major** for breaking changes. The full rules are in [.claude/rules/desktop-release.md](../.claude/rules/desktop-release.md).
+To release, bump the version and merge. It uses semantic versioning: **patch** for fixes, **minor** for features, **major** for breaking changes. The full rules are in [.claude/rules/desktop-release.md](../.claude/rules/desktop-release.md), including the backend contract: desktop endpoints change additively, and every request names its version in `X-Minmatar-Client` so the backend can tell when an old release has stopped calling before a field it reads is removed.
 
 ```
 npm version minor --no-git-tag-version   # updates package.json + package-lock.json

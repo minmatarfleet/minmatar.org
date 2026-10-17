@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('../src/main/api')
+const { ApiClient, ApiError, client_id, load_upcoming_fleets, load_campaign } = require('../src/main/api')
 const { load_config } = require('../src/main/config')
 
 function fake_fetch(routes, calls = []) {
@@ -38,6 +38,29 @@ test('sends the stored token as a Bearer header on authenticated calls only', as
     await load_upcoming_fleets(api, 'https://web.example')
     assert.equal(calls.find(c => c.url.includes('/fleets/v3')).auth, 'Bearer jwt')
     assert.equal(calls.find(c => c.url.includes('/profiles')).auth, undefined)
+})
+
+test('names the app and its version on every request, signed in or not', async () => {
+    const seen = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        client: client_id({ version: '1.2.3', portable: true }),
+        fetch_impl: async (url, options) => {
+            seen.push(options.headers['X-Minmatar-Client'])
+            return { ok: true, status: 200, json: async () => ({}) }
+        },
+    })
+    await api.me()
+    await api.intel_map()   // unauthenticated
+    await api.save_desktop_settings({ locked: true })
+    assert.deepEqual(seen, ['desktop/1.2.3 (portable)', 'desktop/1.2.3 (portable)', 'desktop/1.2.3 (portable)'])
+    assert.equal(client_id({ version: '0.10.0' }), 'desktop/0.10.0 (installer)')
+})
+
+test('main.js reads the client version from the running app', () => {
+    const source = require('fs').readFileSync(require.resolve('../src/main/main.js'), 'utf8')
+    assert.match(source, /client_id\(\{ version: app\.getVersion\(\)/)
 })
 
 test('builds overlay rows: FC names, doctrine names, links, soonest first, no FC-less fleets', async () => {
