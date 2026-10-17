@@ -1,8 +1,9 @@
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_internal_api_url } from '@helpers/env'
 
-const API_ENDPOINT = `${import.meta.env.API_URL}/api/freight`
+const API_ENDPOINT = `${get_internal_api_url()}/api/freight`
 
 export async function GET({ cookies }) {
     const auth_token = cookies.has('auth_token')

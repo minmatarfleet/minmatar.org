@@ -1,4 +1,5 @@
 ---
+import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -118,7 +119,7 @@ const breadcrumbs = [
     { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
-const api_base = import.meta.env.API_URL || ''
+const api_base = get_public_api_url()
 const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
 const rates_label = currency
     ? t('industry.loyalty.desk.rates')

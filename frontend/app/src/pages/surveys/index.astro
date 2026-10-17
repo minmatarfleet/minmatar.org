@@ -1,4 +1,5 @@
 ---
+import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
@@ -38,7 +39,7 @@ import {
     update_campaign,
 } from '@helpers/api.minmatar.org/surveys'
 
-const admin_base = import.meta.env.API_URL
+const admin_base = get_public_api_url()
 
 let action_error: string | null = null
 

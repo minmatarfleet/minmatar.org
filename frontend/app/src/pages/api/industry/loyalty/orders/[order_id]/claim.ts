@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro'
+import { get_internal_api_url } from '@helpers/env'
 
-const API_URL = import.meta.env.API_URL
+const API_URL = get_internal_api_url()
 
 export async function POST({ params, request, cookies }: APIContext) {
     const auth_token = cookies.has('auth_token')

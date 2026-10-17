@@ -1,7 +1,7 @@
 ---
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_internal_api_url, get_app_url } from '@helpers/env'
 
-const api = get_api_url()
+const api = get_internal_api_url()
 const qs = Astro.url.searchParams.toString()
 const fallback = get_app_url('/alliance/tribes/?external_guild=join_failed')
 
