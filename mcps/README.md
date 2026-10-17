@@ -106,7 +106,7 @@ If OAuth fails in Cursor, fallback stdio config:
 
 ## Discord (read messages)
 
-- **Binary:** `discord-mcp-1.0.0.jar` (tracked in git).
+- **Binary:** `discord-mcp-1.0.0.jar` (tracked in git). Built locally from [SaseQ/discord-mcp](https://github.com/SaseQ/discord-mcp) on 2026-04-05. It is **not** the upstream `v1.0.0` release asset: its message and user services differ, so don't swap in the release download without checking the tools you rely on still exist.
 - **Runner:** `run-discord-mcp.sh` loads `DISCORD_TOKEN` and `DISCORD_GUILD_ID` from `mcps/.env`.
 
 Create a **personal/community bot** at [Discord Developer Portal](https://discord.com/developers/applications) (separate from any work bot). Enable **Message Content Intent** if you need full message bodies. Invite the bot to your server with read permissions.
@@ -130,11 +130,20 @@ See sections below for JAR and Docker catalog setups. Reddit is **not** in `.cur
 | `.reddit-mcp/` | Reddit JAR OAuth config and tokens (not committed) |
 | `docker-compose-mcp.yml` | Docker Reddit MCP + optional HTTP/tunnel profiles |
 
+### JAR checksums
+
+The JARs are third-party builds with no upstream release to fetch them from (see the Discord and Reddit sections). Verify a checkout with `sha256sum -c` from `mcps/`:
+
+```text
+88a9ddf6f90ab8b5ff75d1ce3f3d517d261b85a3ebc36199e589456663d26445  discord-mcp-1.0.0.jar
+313cdab7bd0a43e3680ad6460908d2706aea488a1c8850e6958a470afeae3449  reddit-mcp-1.0.0.jar
+```
+
 ---
 
 ## Reddit (JAR — [wrxck/reddit-mcp](https://github.com/wrxck/reddit-mcp))
 
-- **Binary:** `reddit-mcp-1.0.0.jar` (tracked in git).
+- **Binary:** `reddit-mcp-1.0.0.jar` (tracked in git). Built locally from [wrxck/reddit-mcp](https://github.com/wrxck/reddit-mcp) on 2026-04-05; upstream publishes no release jars.
 - **Runner:** `run-reddit-mcp.sh` sets `HOME` to this directory so OAuth files live under **`mcps/.reddit-mcp/`** (gitignored), not your real home directory.
 
 First-time setup (from `mcps/`):
