@@ -1,0 +1,291 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { CorporationProject, CorporationProjects } from '@dtypes/api.minmatar.org'
+import type { ui } from '@i18n/ui'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_corporation_projects, refresh_corporation_projects } from '@helpers/api.minmatar.org/corporations'
+import { attach_campaign_project, detach_campaign_project } from '@helpers/api.minmatar.org/campaigns'
+import { is_corporation_slug } from '@helpers/corporations/reddit_settings'
+import { parse_project_action, sort_projects } from '@helpers/corporations/projects'
+import { from_now_diff } from '@helpers/date'
+import { get_app_url } from '@helpers/env'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import CorporationProjectCard from '@components/blocks/CorporationProjectCard.astro'
+
+type UiKey = keyof typeof ui['en']
+
+const ROOT_ID = 'corporation-projects'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const slug = params.get('corporation')
+if (!corporation_id || !is_corporation_slug(slug)) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_projects_component/?${query_string({
+    corporation_id: String(corporation_id),
+    corporation: slug,
+})}`)
+// The Director token round trip lands back on this tab.
+const corporation_page = `${get_app_url()}${translatePath(`/alliance/corporations/${slug}/`)}#projects`
+const DIRECTOR_TOKEN_URL = `${translatePath('/redirects/add_ceo_token_init')}?${query_string({ redirect: corporation_page })}`
+
+let flash: { kind: 'success' | 'error', key: UiKey } | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = parse_project_action(form.get('action'))
+    const project_id = String(form.get('project_id') ?? '')
+    const campaign = String(form.get('campaign') ?? '')
+    try {
+        if (action === 'refresh') {
+            const status = await refresh_corporation_projects(auth_token, corporation_id)
+            flash = status === 202
+                ? { kind: 'success', key: 'corporations.projects.refresh_queued' }
+                : status === 409
+                    ? { kind: 'error', key: 'corporations.projects.no_token' }
+                    : { kind: 'success', key: 'corporations.projects.refresh_pending' }
+        } else if (action === 'attach' && project_id && campaign) {
+            await attach_campaign_project(campaign, auth_token, project_id)
+            flash = { kind: 'success', key: 'corporations.projects.attached' }
+        } else if (action === 'detach' && project_id && campaign) {
+            await detach_campaign_project(campaign, auth_token, project_id)
+            flash = { kind: 'success', key: 'corporations.projects.detached' }
+        }
+    } catch {
+        flash = { kind: 'error', key: 'corporations.projects.error_save' }
+    }
+}
+
+const data = await get_corporation_projects(auth_token, corporation_id) as CorporationProjects | null
+if (!data) return HTTP_403_Forbidden()
+
+const projects = sort_projects(data.projects)
+const active = projects.filter((project) => project.state === 'Active')
+const finished = projects.filter((project) => project.state !== 'Active')
+
+function open_campaigns_for(project: CorporationProject) {
+    const attached = new Set(project.campaigns.map((campaign) => campaign.slug))
+    return data!.campaigns.filter((campaign) => !attached.has(campaign.slug))
+}
+
+const synced_text = data.synced_at
+    ? t('corporations.projects.synced').replace('{when}', from_now_diff(lang, new Date(data.synced_at)))
+    : t('corporations.projects.never_synced')
+---
+
+<div
+    id={ROOT_ID}
+    class="[ corp-projects ]"
+    {...(data.refreshing && {
+        'hx-get': PARTIAL_URL,
+        'hx-trigger': 'load delay:5s',
+        'hx-swap': 'outerHTML',
+    })}
+>
+    <Flexblock gap="var(--space-l)">
+        <Flexblock gap="var(--space-xs)">
+            <p class="[ corp-projects__leading ]">{t('corporations.projects.leading')}</p>
+            <FlexInline gap="var(--space-s)" class="[ items-center ]">
+                <small class="[ corp-projects__muted ]" role="status">
+                    {data.refreshing ? t('corporations.projects.refreshing') : synced_text}
+                </small>
+                {data.can_manage && data.has_token && !data.refreshing &&
+                    <form
+                        method="post"
+                        action={PARTIAL_URL}
+                        hx-post={PARTIAL_URL}
+                        hx-target={`#${ROOT_ID}`}
+                        hx-swap="outerHTML"
+                    >
+                        <Button type="submit" name="action" value="refresh" color="transparent" size="sm" narrow={true} off_disable={true}>
+                            {t('corporations.projects.refresh')}
+                        </Button>
+                    </form>
+                }
+            </FlexInline>
+        </Flexblock>
+
+        {flash &&
+            <p
+                class:list={['[ corp-projects__flash ]', { 'is-error': flash.kind === 'error' }]}
+                role={flash.kind === 'error' ? 'alert' : 'status'}
+            >
+                {t(flash.key)}
+            </p>
+        }
+
+        {!data.has_token &&
+            <section class="[ corp-projects__notice ]" aria-labelledby="corp-projects-token">
+                <Flexblock gap="var(--space-xs)">
+                    <h3 id="corp-projects-token">{t('corporations.projects.token_title')}</h3>
+                    <p>{t('corporations.projects.token_help')}</p>
+                    {data.can_manage &&
+                        <div>
+                            <Button href={DIRECTOR_TOKEN_URL} color="fleet-red" size="sm">
+                                {t('corporations.projects.update_token')}
+                            </Button>
+                        </div>
+                    }
+                </Flexblock>
+            </section>
+        }
+
+        {projects.length === 0 && data.has_token &&
+            <p class="[ corp-projects__muted ]">{t('corporations.projects.empty')}</p>
+        }
+
+        {[
+            { id: 'active', title: t('corporations.projects.active_title'), rows: active },
+            { id: 'finished', title: t('corporations.projects.finished_title'), rows: finished },
+        ].filter((group) => group.rows.length > 0).map((group) =>
+            <section aria-labelledby={`corp-projects-${group.id}`}>
+                <Flexblock gap="var(--space-s)">
+                    <h3 id={`corp-projects-${group.id}`}>{group.title} <span class="[ corp-projects__muted ]">{group.rows.length}</span></h3>
+                    {group.rows.map((project) => {
+                        const choices = open_campaigns_for(project)
+                        return (
+                            <CorporationProjectCard project={project}>
+                                <Flexblock slot="actions" gap="var(--space-xs)" class="[ corp-projects__actions ]">
+                                    {project.campaigns.length > 0 && <>
+                                        <small class="[ corp-projects__muted ]" id={`corp-project-in-${project.project_id}`}>{t('corporations.projects.in_campaigns')}</small>
+                                        <ul class="[ corp-projects__campaigns ]" aria-labelledby={`corp-project-in-${project.project_id}`}>
+                                            {project.campaigns.map((campaign) =>
+                                                <li>
+                                                    <a href={translatePath(`/campaigns/${campaign.slug}/#projects`)}>{campaign.name}</a>
+                                                    {data.can_manage &&
+                                                        <form
+                                                            method="post"
+                                                            action={PARTIAL_URL}
+                                                            hx-post={PARTIAL_URL}
+                                                            hx-target={`#${ROOT_ID}`}
+                                                            hx-swap="outerHTML"
+                                                        >
+                                                            <input type="hidden" name="project_id" value={project.project_id} />
+                                                            <input type="hidden" name="campaign" value={campaign.slug} />
+                                                            <Button
+                                                                type="submit"
+                                                                name="action"
+                                                                value="detach"
+                                                                color="transparent"
+                                                                size="sm"
+                                                                narrow={true}
+                                                                off_disable={true}
+                                                                aria-label={t('corporations.projects.detach_from').replace('{campaign}', campaign.name)}
+                                                            >
+                                                                {t('corporations.projects.detach')}
+                                                            </Button>
+                                                        </form>
+                                                    }
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </>}
+                                    {data.can_manage && project.state === 'Active' && choices.length > 0 &&
+                                        <form
+                                            method="post"
+                                            action={PARTIAL_URL}
+                                            hx-post={PARTIAL_URL}
+                                            hx-target={`#${ROOT_ID}`}
+                                            hx-swap="outerHTML"
+                                        >
+                                            <input type="hidden" name="project_id" value={project.project_id} />
+                                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                                <label class="[ visually-hidden ]" for={`corp-project-campaign-${project.project_id}`}>
+                                                    {t('corporations.projects.campaign_label')}
+                                                </label>
+                                                <Select
+                                                    id={`corp-project-campaign-${project.project_id}`}
+                                                    name="campaign"
+                                                    size="sm"
+                                                    width="auto"
+                                                    required
+                                                >
+                                                    {choices.map((campaign) =>
+                                                        <option value={campaign.slug}>{campaign.name}</option>
+                                                    )}
+                                                </Select>
+                                                <Button type="submit" name="action" value="attach" color="fleet-red" size="sm" off_disable={true}>
+                                                    {t('corporations.projects.attach')}
+                                                </Button>
+                                            </FlexInline>
+                                        </form>
+                                    }
+                                </Flexblock>
+                            </CorporationProjectCard>
+                        )
+                    })}
+                </Flexblock>
+            </section>
+        )}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    h3,
+    p,
+    ul {
+        margin-block-end: 0;
+    }
+
+    h3 {
+        font-size: var(--step-0);
+    }
+
+    .corp-projects__leading {
+        color: var(--highlight);
+        max-width: var(--max-text-width);
+    }
+
+    .corp-projects__muted {
+        color: var(--faded);
+    }
+
+    .corp-projects__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+
+    .corp-projects__notice {
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        border-left: solid var(--space-3xs) var(--fleet-yellow);
+        background-color: var(--component-background);
+        max-width: var(--max-text-width);
+    }
+
+    .corp-projects__actions {
+        padding-block-start: var(--space-xs);
+        border-block-start: solid 1px var(--border-color);
+    }
+
+    .corp-projects__campaigns {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-s);
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+        }
+    }
+</style>

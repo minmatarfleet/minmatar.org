@@ -30,6 +30,9 @@ ERROR_CALLING_ESI = 906
 
 ESI_BASE_URL = "https://esi.evetech.net/latest"
 ESI_COMPATIBILITY_DATE = "2026-06-09"
+SCOPE_CORPORATION_PROJECTS = ["esi-corporations.read_projects.v1"]
+# Cursor routes return at most 100 rows a page; stop a runaway walk.
+MAX_CURSOR_PAGES = 50
 
 
 def live_esi_allowed() -> bool:
@@ -1348,6 +1351,81 @@ class EsiClient:
             "DELETE",
             f"{ESI_BASE_URL}/characters/{self.character_id}/fittings/{fitting_id}/",
             ["esi-fittings.write_fittings.v1"],
+        )
+
+    # --- corporation projects (no OpenAPI tag in django-esi) ----------------
+
+    def _cursor_walk(
+        self, url: str, required_scopes: List[str], key: str, params=None
+    ) -> EsiResponse:
+        """
+        Walk an ESI cursor-paginated route from the newest record backwards
+        until a page comes back empty. ``data`` is every row under ``key``.
+        """
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+        headers = {
+            **self._bearer_headers(token),
+            "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
+        }
+        rows = []
+        before = None
+        for _ in range(MAX_CURSOR_PAGES):
+            query = {**(params or {}), "limit": 100}
+            if before:
+                query["before"] = before
+            try:
+                resp = requests.get(
+                    url, params=query, headers=headers, timeout=30
+                )
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if resp.status_code >= 400:
+                return EsiResponse(
+                    response_code=resp.status_code, response=resp.text
+                )
+            body = resp.json() if resp.content else {}
+            page = body.get(key) or []
+            rows.extend(page)
+            next_before = (body.get("cursor") or {}).get("before")
+            if not page or not next_before or next_before == before:
+                break
+            before = next_before
+        return EsiResponse(response_code=SUCCESS, data=rows)
+
+    def get_corporation_projects(
+        self, corporation_id: int, state: str = "All"
+    ) -> EsiResponse:
+        """Every project of the corporation (``state`` All or Active)."""
+        return self._cursor_walk(
+            f"{ESI_BASE_URL}/corporations/{corporation_id}/projects",
+            SCOPE_CORPORATION_PROJECTS,
+            "projects",
+            params={"state": state},
+        )
+
+    def get_corporation_project(
+        self, corporation_id: int, project_id: str
+    ) -> EsiResponse:
+        """One project with its configuration, reward and dates."""
+        return self._authenticated_esi_request(
+            "GET",
+            f"{ESI_BASE_URL}/corporations/{corporation_id}"
+            f"/projects/{project_id}",
+            SCOPE_CORPORATION_PROJECTS,
+        )
+
+    def get_corporation_project_contributors(
+        self, corporation_id: int, project_id: str
+    ) -> EsiResponse:
+        """Each contributor's total progress. Needs the Project_Manager
+        role in game, which CEOs and directors hold."""
+        return self._cursor_walk(
+            f"{ESI_BASE_URL}/corporations/{corporation_id}"
+            f"/projects/{project_id}/contributors",
+            SCOPE_CORPORATION_PROJECTS,
+            "contributors",
         )
 
     def get_corp_structures(self, corp_id: int) -> EsiResponse:

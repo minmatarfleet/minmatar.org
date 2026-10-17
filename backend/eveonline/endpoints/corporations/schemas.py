@@ -210,6 +210,9 @@ class CorporationMemberAccess(Schema):
     can_view_characters: bool
     # CEO only: the corporation page's Settings tab.
     can_edit_settings: bool = False
+    # Projects tab: corp leadership sees it; CEO and directors attach.
+    can_view_projects: bool = False
+    can_manage_projects: bool = False
 
 
 class CorporationMembersTopResponse(Schema):
@@ -230,3 +233,59 @@ class CorporationAdminResponse(Schema):
     growth_90d_pct: Optional[float] = None
     stewards: List[CorporationRoleCharacterResponse] = []
     leadership_missing_prime_time: List[CorporationLeadershipResponse] = []
+
+
+class CorporationProjectTarget(Schema):
+    # The configuration key: locations, ships, factions, identities ...
+    kind: str
+    names: List[str]
+
+
+class CorporationProjectContributor(Schema):
+    character_id: int
+    character_name: str
+    contributed: int
+
+
+class CorporationProjectCampaign(Schema):
+    slug: str
+    name: str
+    status: str
+
+
+class CorporationProject(Schema):
+    project_id: str
+    corporation_id: int
+    corporation_name: str
+    name: str
+    description: str = ""
+    state: str
+    kind: str = ""
+    targets: List[CorporationProjectTarget] = []
+    creator_id: Optional[int] = None
+    creator_name: str = ""
+    progress_current: int = 0
+    progress_desired: int = 0
+    reward_initial: Optional[float] = None
+    reward_remaining: Optional[float] = None
+    reward_per_contribution: Optional[float] = None
+    participation_limit: Optional[int] = None
+    created: Optional[datetime] = None
+    expires: Optional[datetime] = None
+    finished: Optional[datetime] = None
+    last_modified: datetime
+    contributors: List[CorporationProjectContributor] = []
+    campaigns: List[CorporationProjectCampaign] = []
+
+
+class CorporationProjectsResponse(Schema):
+    corporation_id: int
+    # CEO or director: may put a project toward a campaign.
+    can_manage: bool
+    # A CEO or director token with esi-corporations.read_projects.v1.
+    has_token: bool
+    synced_at: Optional[datetime] = None
+    refreshing: bool = False
+    projects: List[CorporationProject]
+    # Scheduled and active campaigns a project can be put toward.
+    campaigns: List[CorporationProjectCampaign]

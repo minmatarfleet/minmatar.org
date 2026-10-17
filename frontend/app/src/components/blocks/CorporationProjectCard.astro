@@ -1,0 +1,268 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { CorporationProject } from '@dtypes/api.minmatar.org'
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+import { format_date_short } from '@helpers/date'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { corporation_path } from '@helpers/corporations/detail'
+import {
+    contributor_share,
+    project_isk_paid,
+    project_kind_label,
+    project_percent,
+    project_state_color,
+    project_state_label,
+    project_target_label,
+} from '@helpers/corporations/projects'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+
+interface Props {
+    project:            CorporationProject;
+    /** On the campaign page the corporation leads the card. */
+    show_corporation?:  boolean;
+    contributors_open?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    project,
+    show_corporation = false,
+    contributors_open = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const percent = project_percent(project)
+const isk_paid = project_isk_paid(project)
+const is_active = project.state === 'Active'
+const progress_label = t('corporations.projects.progress')
+    .replace('{current}', number_thousand_separator(project.progress_current))
+    .replace('{desired}', number_thousand_separator(project.progress_desired))
+const ended_at = project.finished ?? (is_active ? null : project.expires)
+const contributors = project.contributors
+const has_slot = Astro.slots.has('actions')
+---
+
+<article class:list={['[ project-card ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap="var(--space-s)">
+        {show_corporation &&
+            <a class="[ project-card__corporation ]" href={translatePath(corporation_path(project.corporation_id, project.corporation_name))}>
+                <img
+                    loading="lazy"
+                    width="32"
+                    height="32"
+                    src={get_corporation_logo(project.corporation_id, 32)}
+                    alt=""
+                />
+                <span>{project.corporation_name}</span>
+            </a>
+        }
+
+        <FlexInline gap="var(--space-xs)" justification="space-between" class="[ items-start ]">
+            <Flexblock gap="var(--space-3xs)">
+                <h4 class="[ project-card__name ]">{project.name}</h4>
+                <small class="[ project-card__muted ]">
+                    {project_kind_label(project.kind, t)}
+                    {project.creator_name && <> · {t('corporations.projects.created_by').replace('{name}', project.creator_name)}</>}
+                </small>
+            </Flexblock>
+            <Tag
+                text={project_state_label(project.state, t)}
+                color={project_state_color(project.state)}
+                narrow={true}
+            />
+        </FlexInline>
+
+        <Flexblock gap="var(--space-3xs)">
+            <CampaignMeter
+                percent={percent}
+                color={is_active ? 'var(--fleet-yellow)' : project.state === 'Completed' ? 'var(--green)' : 'var(--faded)'}
+                label={progress_label}
+            />
+            <small class="[ project-card__muted ]">{progress_label}</small>
+        </Flexblock>
+
+        <dl class="[ project-card__facts ]">
+            {project.reward_initial != null &&
+                <div>
+                    <dt>{t('corporations.projects.reward')}</dt>
+                    <dd>{format_isk(project.reward_initial)}</dd>
+                </div>
+            }
+            {isk_paid != null &&
+                <div>
+                    <dt>{t('corporations.projects.paid_out')}</dt>
+                    <dd>{format_isk(isk_paid)}</dd>
+                </div>
+            }
+            {project.reward_per_contribution != null &&
+                <div>
+                    <dt>{t('corporations.projects.per_contribution')}</dt>
+                    <dd>{format_isk(project.reward_per_contribution)}</dd>
+                </div>
+            }
+            {project.participation_limit != null &&
+                <div>
+                    <dt>{t('corporations.projects.pilot_limit')}</dt>
+                    <dd>{number_thousand_separator(project.participation_limit)}</dd>
+                </div>
+            }
+            {is_active && project.expires &&
+                <div>
+                    <dt>{t('corporations.projects.expires')}</dt>
+                    <dd>{format_date_short(lang, project.expires)}</dd>
+                </div>
+            }
+            {ended_at &&
+                <div>
+                    <dt>{t('corporations.projects.ended')}</dt>
+                    <dd>{format_date_short(lang, ended_at)}</dd>
+                </div>
+            }
+            {project.targets.map((target) =>
+                <div>
+                    <dt>{project_target_label(target.kind, t)}</dt>
+                    <dd>{target.names.join(', ')}</dd>
+                </div>
+            )}
+        </dl>
+
+        {project.description &&
+            <p class="[ project-card__description ]">{project.description}</p>
+        }
+
+        <details class="[ project-card__contributors ]" open={contributors_open}>
+            <summary>
+                {t('corporations.projects.contributors').replace('{count}', String(contributors.length))}
+            </summary>
+            {contributors.length === 0 ?
+                <p class="[ project-card__muted ]">{t('corporations.projects.no_contributors')}</p>
+                :
+                <ol>
+                    {contributors.map((row) =>
+                        <li>
+                            <img
+                                loading="lazy"
+                                width="24"
+                                height="24"
+                                src={get_player_icon(row.character_id, 32)}
+                                alt=""
+                            />
+                            <span class="[ project-card__pilot ]">{row.character_name}</span>
+                            <span class="[ project-card__amount ]">{number_thousand_separator(row.contributed)}</span>
+                            <span class="[ project-card__muted project-card__share ]">
+                                {Math.round(contributor_share(row, contributors))}%
+                            </span>
+                        </li>
+                    )}
+                </ol>
+            }
+        </details>
+
+        {has_slot && <slot name="actions" />}
+    </Flexblock>
+</article>
+
+<style lang="scss">
+    .project-card {
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    h4,
+    p,
+    dl,
+    ol {
+        margin-block-end: 0;
+    }
+
+    .project-card__name {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .project-card__muted {
+        color: var(--faded);
+    }
+
+    .project-card__corporation {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        color: var(--highlight);
+        font-family: var(--button-font);
+    }
+
+    .project-card__facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 8rem), 1fr));
+        gap: var(--space-2xs) var(--space-s);
+
+        dt {
+            font-size: var(--step--2);
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .project-card__description {
+        white-space: pre-line;
+        max-width: var(--max-text-width);
+    }
+
+    .project-card__contributors {
+        summary {
+            cursor: pointer;
+            font-family: var(--button-font);
+            color: var(--highlight);
+        }
+
+        ol {
+            list-style: none;
+            padding: 0;
+            margin-block-start: var(--space-2xs);
+            max-block-size: 50vh;
+            overflow-y: auto;
+        }
+
+        li {
+            display: grid;
+            grid-template-columns: auto 1fr auto 3.5ch;
+            align-items: center;
+            gap: var(--space-2xs);
+            padding-block: var(--space-3xs);
+            border-block-end: solid 1px var(--border-color);
+        }
+    }
+
+    .project-card__pilot {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .project-card__amount {
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .project-card__share {
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
+</style>

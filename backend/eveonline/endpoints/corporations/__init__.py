@@ -18,6 +18,9 @@ from eveonline.endpoints.corporations.get_corporation_by_id import (
 from eveonline.endpoints.corporations.get_corporation_by_slug import (
     router as get_corporation_by_slug_router,
 )
+from eveonline.endpoints.corporations.get_corporation_projects import (
+    router as get_corporation_projects_router,
+)
 from eveonline.endpoints.corporations.get_corporation_info import (
     router as get_corporation_info_router,
 )
@@ -38,5 +41,6 @@ router.add_router("", get_corp_member_top_router)
 router.add_router("", get_corporation_admin_router)
 router.add_router("", get_corporation_applications_open_router)
 router.add_router("", get_managed_corp_ids_router)
+router.add_router("", get_corporation_projects_router)
 
 __all__ = ["router"]

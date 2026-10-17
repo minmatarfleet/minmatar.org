@@ -64,12 +64,13 @@ const structures_tracking = t('campaigns.structures.tracking')
     .replace('{remaining}', String(structures_remaining))
 const has_systems = systems.length > 0 || areas.length > 0
 /** Structures lead strategic; FW systems (and any theater systems) show when attached. */
-const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'you' )[] = [
+const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' )[] = [
     ...(is_strategic ? ['structures'] as const : []),
     ...(has_systems || !is_strategic ? ['systems'] as const : []),
     'fleets',
     'activity',
     'pilots',
+    'projects',
     'you',
 ]
 const tab_label = (tab:string) => t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
@@ -77,6 +78,8 @@ const default_tab = TABS[0]
 const show_systems_tab = TABS.includes('systems')
 const show_structures_tab = TABS.includes('structures')
 
+// Corporation projects directors put toward the campaign; loaded when the tab opens.
+const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -334,6 +337,23 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <CampaignCoverageChart coverage={roster?.coverage ?? []} />
                 </ComponentBlock>
             </Flexblock>
+        </section>
+
+        <section
+            id="campaign-panel-projects"
+            role="tabpanel"
+            aria-labelledby="campaign-tab-projects"
+            class="[ campaign-panel ]"
+            hidden
+            x-bind:hidden="tab !== 'projects'"
+        >
+            <div
+                hx-get={PROJECTS_PARTIAL_URL}
+                hx-trigger="intersect once"
+                hx-swap="outerHTML"
+            >
+                <p class="[ campaign-panel-label ]">{t('campaigns.projects.loading')}</p>
+            </div>
         </section>
 
         <section
