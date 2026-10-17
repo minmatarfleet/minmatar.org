@@ -879,27 +879,6 @@ export async function get_planner_facilities(access_token?: string) {
     return await response.json() as PlannerFacility[]
 }
 
-export async function get_planner_facility(
-    access_token: string | undefined,
-    facility_key: string,
-) {
-    const ENDPOINT = `${API_ENDPOINT}/planner/facilities/${facility_key}`
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    }
-    if (access_token)
-        headers.Authorization = `Bearer ${access_token}`
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `GET ${ENDPOINT}`), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json() as PlannerFacilityDetail
-}
-
 export interface PlannerRefineRate {
     facility_key: string
     refine_rate: number
@@ -939,31 +918,6 @@ export async function post_planner_refine_rate(
         )
     }
     return await response.json() as PlannerRefineRate
-}
-
-export async function post_planner_plan(
-    access_token: string | undefined,
-    body: PlannerPlanRequest,
-) {
-    const ENDPOINT = `${API_ENDPOINT}/planner/plans`
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    }
-    if (access_token)
-        headers.Authorization = `Bearer ${access_token}`
-    const response = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-    })
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `POST ${ENDPOINT}`), {
-                cause: response.status
-            }
-        )
-    }
-    return await response.json() as PlannerPlanResponse
 }
 
 export async function mark_assignment(
