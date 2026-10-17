@@ -26,6 +26,7 @@ from eveonline.helpers.corporations.safe_cache import (
     cache_get,
     cache_set,
 )
+from eveonline.helpers.characters.identity import owner_user_ids
 from eveonline.models import EveCharacter
 from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from feed.helpers.fleet_kills import fleet_kill_report
@@ -255,12 +256,7 @@ def _absent_volunteers(fleet, pilots) -> list[str]:
     if not volunteers:
         return []
     in_fleet = {p["character_id"] for p in pilots}
-    owners = dict(
-        EveCharacter.objects.filter(
-            character_id__in=in_fleet | {cid for cid, _ in volunteers},
-            user__isnull=False,
-        ).values_list("character_id", "user_id")
-    )
+    owners = owner_user_ids(in_fleet | {cid for cid, _ in volunteers})
     users_in_fleet = {owners[cid] for cid in in_fleet if cid in owners}
     absent, seen = [], set()
     for character_id, name in volunteers:

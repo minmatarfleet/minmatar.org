@@ -17,13 +17,16 @@ from django.db.models import Count, Max
 from django.utils import timezone
 from eveuniverse.models import EveType
 
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_refs_for_users,
+)
 from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
 from eveonline.helpers.corporations.summary import ship_bucket
 from eveonline.models import (
     EveCharacter,
     EveCharacterCorporationHistory,
     EveCorporation,
-    EvePlayer,
 )
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
@@ -209,8 +212,9 @@ def prime_windows(
 def _owners(characters: list[EveCharacter]) -> dict[int, int]:
     """character_id -> owning user id, or -character_id when unlinked, so
     alts fold together and unlinked characters count as their own person."""
+    linked = owner_user_ids(c.character_id for c in characters)
     return {
-        c.character_id: (c.user_id if c.user_id else -c.character_id)
+        c.character_id: linked.get(c.character_id, -c.character_id)
         for c in characters
     }
 
@@ -218,18 +222,13 @@ def _owners(characters: list[EveCharacter]) -> dict[int, int]:
 def _mains(owners: dict[int, int]) -> dict[int, tuple[int, str]]:
     """user id -> (character id, name) of their main, only when the main is
     in this corporation."""
-    user_ids = {owner for owner in owners.values() if owner > 0}
-    mains = {}
-    for user_id, character_id, name in EvePlayer.objects.filter(
-        user_id__in=user_ids, primary_character__isnull=False
-    ).values_list(
-        "user_id",
-        "primary_character__character_id",
-        "primary_character__character_name",
-    ):
-        if character_id in owners:
-            mains[user_id] = (character_id, name)
-    return mains
+    return {
+        user_id: main
+        for user_id, main in primary_refs_for_users(
+            owner for owner in owners.values() if owner > 0
+        ).items()
+        if main[0] in owners
+    }
 
 
 def _stint_starts(
