@@ -8,11 +8,15 @@ import re
 
 import discord
 
+from app.custom_ids import NOTIF_ACK_PREFIX
+from app.custom_ids import NOTIF_ACK_TEMPLATE as _NOTIF_ACK_TEMPLATE
+from app.custom_ids import custom_id
+
 from .service import ack_delivery
 
 logger = logging.getLogger(__name__)
 
-NOTIF_ACK_TEMPLATE = r"notif_ack:(?P<delivery_id>[0-9]+)"
+NOTIF_ACK_TEMPLATE = _NOTIF_ACK_TEMPLATE
 
 
 class MarkAsReadButton(
@@ -24,7 +28,7 @@ class MarkAsReadButton(
             discord.ui.Button(
                 label="Mark as read",
                 style=discord.ButtonStyle.secondary,
-                custom_id=f"notif_ack:{delivery_id}",
+                custom_id=custom_id(NOTIF_ACK_PREFIX, delivery_id),
             )
         )
         self.delivery_id = delivery_id

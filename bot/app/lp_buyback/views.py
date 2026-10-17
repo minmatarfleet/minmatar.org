@@ -8,12 +8,20 @@ import re
 
 import discord
 
+from app.custom_ids import (
+    LP_BUYBACK_ISK_SENT_PREFIX,
+    LP_BUYBACK_ISK_SENT_TEMPLATE,
+    LP_BUYBACK_LP_SENT_PREFIX,
+    LP_BUYBACK_LP_SENT_TEMPLATE,
+    custom_id,
+)
+
 from .service import DiscordAckError, discord_ack_order
 
 logger = logging.getLogger(__name__)
 
-LP_SENT_TEMPLATE = r"lp_buyback:lp:(?P<order_id>[0-9]+)"
-ISK_SENT_TEMPLATE = r"lp_buyback:isk:(?P<order_id>[0-9]+)"
+LP_SENT_TEMPLATE = LP_BUYBACK_LP_SENT_TEMPLATE
+ISK_SENT_TEMPLATE = LP_BUYBACK_ISK_SENT_TEMPLATE
 
 # Match help tickets: settle interaction traffic before archiving so Discord
 # does not unarchive the thread when a followup/edit lands after close.
@@ -91,7 +99,7 @@ class LpSentButton(
             discord.ui.Button(
                 label="LP sent",
                 style=discord.ButtonStyle.success,
-                custom_id=f"lp_buyback:lp:{order_id}",
+                custom_id=custom_id(LP_BUYBACK_LP_SENT_PREFIX, order_id),
             )
         )
         self.order_id = order_id
@@ -124,7 +132,7 @@ class IskSentButton(
             discord.ui.Button(
                 label="ISK sent",
                 style=discord.ButtonStyle.success,
-                custom_id=f"lp_buyback:isk:{order_id}",
+                custom_id=custom_id(LP_BUYBACK_ISK_SENT_PREFIX, order_id),
             )
         )
         self.order_id = order_id
