@@ -221,7 +221,7 @@ Conventions:
 Run from `frontend/app/`:
 
 ```bash
-npm run check      # astro check --minimumSeverity error
+npm run check      # astro check ratchet: fails when a file has more type errors than testing/conventions/type_check_baseline.json allows
 npm run test       # vitest
 ```
 

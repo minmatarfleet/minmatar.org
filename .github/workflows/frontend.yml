@@ -1,0 +1,43 @@
+name: Frontend
+# Merge gate for the Astro frontend (frontend/app):
+#   - vitest, including the conventions ratchet in testing/conventions/
+#   - the astro check ratchet: fails when a file has more type errors than
+#     testing/conventions/type_check_baseline.json allows (scripts/check_ratchet.mjs)
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "frontend/app/**"
+      - ".github/workflows/frontend.yml"
+  # Runs on main too so PRs can restore main's npm cache.
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/app/**"
+      - ".github/workflows/frontend.yml"
+
+jobs:
+  frontend-check:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Only the app is needed.
+          sparse-checkout: frontend/app
+      - uses: actions/setup-node@v4
+        with:
+          # Same major as frontend/Dockerfile.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/app/package-lock.json
+      - run: npm ci
+      - name: Unit and conventions tests
+        run: npm run test -- --run
+      - name: Type-check ratchet
+        run: npm run check

@@ -45,4 +45,4 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 ## 7. Verify
 
-Run from `frontend/app/`: `npm run check` and `npm run test` before finishing. No frontend change merges with failing `npm run check`.
+Run from `frontend/app/`: `npm run check` (astro check ratchet: fails when a file has more type errors than `testing/conventions/type_check_baseline.json` allows) and `npm run test` before finishing. No frontend change merges with failing `npm run check`.
