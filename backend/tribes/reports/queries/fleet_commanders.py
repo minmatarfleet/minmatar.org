@@ -1,12 +1,11 @@
 """Fleet commander leaderboard (fleets led per user)."""
 
-from django.db.models import Count
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 
 from eveonline.models import EveCorporation, EvePlayer
-from fleets.models import EveFleet
+from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 from tribes.reports.roster import roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -27,14 +26,10 @@ def run_fleet_commanders_report(
         datetime.combine(period.start, datetime.min.time())
     )
     end_dt = timezone.make_aware(
-        datetime.combine(period.end, datetime.max.time())
+        datetime.combine(period.end + timedelta(days=1), datetime.min.time())
     )
 
-    qs = EveFleet.objects.filter(
-        start_time__gte=start_dt,
-        start_time__lte=end_dt,
-        created_by_id__isnull=False,
-    ).exclude(status="cancelled")
+    qs = led_fleets(start_dt, end_dt)
 
     if scope == ReportScope.ROSTER:
         roster_ids = roster_user_ids(tribe_group)
@@ -42,11 +37,7 @@ def run_fleet_commanders_report(
             return [], {"total_fleets": 0}, COLUMNS
         qs = qs.filter(created_by_id__in=roster_ids)
 
-    rows_qs = (
-        qs.values("created_by_id")
-        .annotate(fleet_count=Count("id"))
-        .order_by("-fleet_count", "created_by_id")
-    )
+    rows_qs = fleets_led_by_user(qs)
 
     user_ids = [r["created_by_id"] for r in rows_qs]
     players = {

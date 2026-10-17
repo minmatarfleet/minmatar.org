@@ -311,8 +311,15 @@ class FleetCommandersReportTestCase(TestCase):
             created_by=self.fc,
             status="cancelled",
         )
+        # A campaign standing fleet is held, not led.
+        EveFleet.objects.create(
+            type="standing",
+            start_time=now - timedelta(days=1),
+            created_by=self.fc,
+            status="active",
+        )
 
-    def test_roster_fc_count_excludes_cancelled(self):
+    def test_roster_fc_count_excludes_cancelled_and_campaign_fleets(self):
         period = parse_period("30d")
         rows, totals, columns = run_fleet_commanders_report(
             self.group, period, ReportScope.ROSTER, {}
