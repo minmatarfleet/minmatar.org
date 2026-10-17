@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CampaignSystemSummary, CampaignWeek, CampaignWeekProgress, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
+import { readFileSync } from 'fs'
+
+import type { CampaignSystemSummary, CampaignWeek, CampaignWeekObjectiveRow, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
 import { campaign_objective_rows, contest_bar_percent, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
 
 describe('week_contest_move', () => {
@@ -34,12 +36,9 @@ describe('week_contest_move', () => {
 
     it('shows progress percent with no goal tick, and inverts a hold', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 1, system: 'Kamela', goal: 'take', metric: 'victory_points', progress: 1800, target: 3000, pace_expected: 900 }),
-            target({ id: 2, system: 'Huola', goal: 'hold', metric: 'days_under_line', progress: 4, target: 7, pace_expected: 3 }),
-        ]), [
-            system({ name: 'Kamela', goal: 'take', contested_percent: 42.5, contested_change_24h: 4 }),
-            system({ name: 'Huola', goal: 'hold', contested_percent: 12, contested_change_24h: 5 }),
-        ], objective_t)
+            row({ target_id: 1, system_id: 1, name: 'Kamela', objective: 'capture_complexes', progress_percent: 42.5, change_24h: 4 }),
+            row({ target_id: 2, system_id: 2, name: 'Huola', objective: 'defend_complexes', progress_percent: 88, change_24h: -5 }),
+        ]), [], objective_t)
 
         const kamela = rows.find(row => row.system_name === 'Kamela')
         const huola = rows.find(row => row.system_name === 'Huola')
@@ -60,12 +59,9 @@ describe('week_contest_move', () => {
 
     it('describes complex rows in victory points, never contested percent', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 4, system: 'Auga', goal: 'hold', metric: 'days_under_line' }),
-            target({ id: 5, system: 'Dal', goal: 'take', metric: 'victory_points' }),
-        ]), [
-            system({ name: 'Auga', goal: 'hold', contested_percent: 1.6, victory_points: 1230, victory_points_threshold: 75000 }),
-            system({ name: 'Dal', goal: 'take', contested_percent: 13.4, victory_points: 0, victory_points_threshold: 0 }),
-        ], objective_t)
+            row({ target_id: 4, name: 'Auga', objective: 'defend_complexes', progress_percent: 98.4, victory_points: 1230, victory_points_threshold: 75000 }),
+            row({ target_id: 5, name: 'Dal', objective: 'capture_complexes', progress_percent: 13.4, victory_points: 0, victory_points_threshold: 0 }),
+        ]), [], objective_t)
 
         expect(rows.find(row => row.system_name === 'Auga')?.detail_text).toBe('1,230 of 75,000 victory points')
         expect(rows.find(row => row.system_name === 'Dal')?.detail_text).toBe('')
@@ -73,10 +69,8 @@ describe('week_contest_move', () => {
 
     it('prints the move in whole points, and a move under half a point as steady', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 6, system: 'Siseide', goal: 'hold', metric: 'days_under_line' }),
-        ]), [
-            system({ name: 'Siseide', goal: 'hold', contested_percent: 0, contested_change_24h: -0.4 }),
-        ], objective_t)
+            row({ target_id: 6, name: 'Siseide', objective: 'defend_complexes', progress_percent: 100, change_24h: -0.4 }),
+        ]), [], objective_t)
 
         expect(rows[0]?.change_text).toBe('0%')
         expect(rows[0]?.change_direction).toBe('flat')
@@ -84,13 +78,12 @@ describe('week_contest_move', () => {
 
     it('inverts a destroy row so the bar fills as their advantage falls', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 7, system: 'Kamela', goal: 'take', metric: 'advantage_destroy', baseline: 60 }),
-        ]), [
-            system({ name: 'Kamela', goal: 'take', advantage_enemy_pct: 45 }),
-        ], objective_t)
+            row({ target_id: 7, name: 'Kamela', objective: 'destroy_advantage', progress_percent: 55, change_week: 15, advantage_level: 45 }),
+        ]), [], objective_t)
 
         expect(rows[0]?.meter_percent).toBe(55)
         expect(rows[0]?.delta_from_percent).toBe(40)
+        expect(rows[0]?.change_label).toBe('week')
         expect(rows[0]?.change_text).toBe('+15%')
         expect(rows[0]?.change_direction).toBe('up')
         expect(rows[0]?.detail_text).toBe('theirs 45%')
@@ -98,26 +91,28 @@ describe('week_contest_move', () => {
 
     it('reads a stable hold as 100% progress', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 3, system: 'Kourmonen', goal: 'hold', metric: 'days_under_line' }),
-        ]), [
-            system({ name: 'Kourmonen', goal: 'hold', contested_percent: 0, contested_change_24h: 0 }),
-        ], objective_t)
+            row({ target_id: 3, name: 'Kourmonen', objective: 'defend_complexes', progress_percent: 100, change_24h: 0 }),
+        ]), [], objective_t)
 
         expect(rows[0]?.now_text).toBe('100%')
         expect(rows[0]?.meter_percent).toBe(100)
     })
 
+    it('shows no figure before a system has a reading', () => {
+        const rows = campaign_objective_rows(week_with([
+            row({ target_id: 3, name: 'Vard', objective: 'capture_complexes', progress_percent: null }),
+        ]), [], objective_t)
+
+        expect(rows[0]?.now_text).toBe('')
+        expect(rows[0]?.meter_percent).toBe(0)
+        expect(rows[0]?.change_text).toBe('')
+    })
+
     it('measures complex rows from where the week opened, keeping the day for the hover', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 8, system: 'Kamela', goal: 'take', metric: 'victory_points' }),
-            target({ id: 9, system: 'Huola', goal: 'hold', metric: 'days_under_line' }),
-        ], [
-            week_progress({ system: 'Kamela', contested_start: 30, contested_now: 42.5 }),
-            week_progress({ system: 'Huola', contested_start: 4, contested_now: 12 }),
-        ]), [
-            system({ name: 'Kamela', goal: 'take', contested_percent: 42.5, contested_change_24h: -2 }),
-            system({ name: 'Huola', goal: 'hold', contested_percent: 12, contested_change_24h: 1 }),
-        ], objective_t)
+            row({ target_id: 8, name: 'Kamela', objective: 'capture_complexes', progress_percent: 42.5, change_week: 12.5, change_24h: -2 }),
+            row({ target_id: 9, name: 'Huola', objective: 'defend_complexes', progress_percent: 88, change_week: -8, change_24h: -1 }),
+        ]), [], objective_t)
 
         const kamela = rows.find(row => row.system_name === 'Kamela')
         const huola = rows.find(row => row.system_name === 'Huola')
@@ -135,29 +130,69 @@ describe('week_contest_move', () => {
 
     it('shows a flip instead of a move when the system changed hands this week', () => {
         const rows = campaign_objective_rows(week_with([
-            target({ id: 10, system: 'Kamela', goal: 'take', metric: 'victory_points' }),
-        ], [
-            week_progress({ system: 'Kamela', contested_start: 90, contested_now: 5, flipped: 'captured' }),
-        ]), [
-            system({ name: 'Kamela', goal: 'take', contested_percent: 5, contested_change_24h: -85 }),
-        ], objective_t)
+            row({ target_id: 10, name: 'Kamela', objective: 'capture_complexes', progress_percent: 5, change_24h: -85, flipped: 'captured' }),
+        ]), [], objective_t)
 
         expect(rows[0]?.flipped).toBe('captured')
+        expect(rows[0]?.change_label).toBe('week')
         expect(rows[0]?.change_text).toBe('')
         expect(rows[0]?.delta_from_percent).toBeNull()
+        expect(rows[0]?.change_24h_text).toBe('-85%')
     })
 
     it('falls back to the day when the week has no reading for the system', () => {
-        const rows = campaign_objective_rows(week_with([], [
-            week_progress({ system: 'Other', contested_start: 10, contested_now: 20 }),
-        ]), [
-            system({ name: 'Kamela', goal: 'take', contested_percent: 20, contested_change_24h: 3 }),
-        ], objective_t)
+        const rows = campaign_objective_rows(week_with([
+            row({ target_id: null, name: 'Kamela', objective: 'capture_complexes', progress_percent: 20, change_24h: 3 }),
+        ]), [], objective_t)
 
         expect(rows[0]?.change_label).toBe('24h')
         expect(rows[0]?.change_text).toBe('+3%')
         expect(rows[0]?.change_24h_text).toBe('')
         expect(rows[0]?.flipped).toBeNull()
+    })
+
+    it('keeps the backend order and joins the viewer\'s share and the system by id', () => {
+        const kamela = system({ id: 11, name: 'Kamela', goal: 'take', status_chip: 'losing' })
+        const week = week_with([
+            row({ target_id: 21, system_id: 12, name: 'Huola', objective: 'capture_complexes', pace: 'behind' }),
+            row({ target_id: 20, system_id: 11, name: 'Kamela', objective: 'capture_complexes', pace: 'ahead' }),
+        ])
+        week.targets = [target({ id: 20, system: 'Kamela', goal: 'take', metric: 'victory_points', my_complexes: 2 })]
+
+        const rows = campaign_objective_rows(week, [kamela], objective_t)
+
+        expect(rows.map(row => row.key)).toEqual(['target-21', 'target-20'])
+        expect(rows[0]?.status).toBe('losing')
+        expect(rows[0]?.system).toBeNull()
+        expect(rows[1]?.system?.id).toBe(11)
+        expect(rows[1]?.yours_text).toBe('campaigns.objective.yours_complexes')
+    })
+
+    it('reads a row without a target as on pace or behind from its system', () => {
+        const rows = campaign_objective_rows(week_with([
+            row({ target_id: null, system_id: 11, name: 'Kamela', objective: 'capture_complexes', pace: null }),
+        ]), [system({ id: 11, name: 'Kamela', goal: 'take', status_chip: 'holding' })], objective_t)
+
+        expect(rows[0]?.key).toBe('system-11')
+        expect(rows[0]?.pace).toBe('behind')
+        expect(rows[0]?.status).toBe('losing')
+    })
+
+    it('draws the contract week the backend generates', () => {
+        const { week, systems } = JSON.parse(readFileSync('testing/contracts/campaign_week.json', 'utf8'))
+        const rows = campaign_objective_rows(week, systems, objective_t)
+
+        expect(rows.map(row => [row.system_name, row.label, row.now_text, row.change_text, row.change_label, row.status])).toEqual([
+            ['Kourmonen', 'campaigns.objective.defend_complexes', '87%', '+7%', 'week', 'winning'],
+            ['Kamela', 'campaigns.objective.run_complexes', '62%', '+32%', 'week', 'losing'],
+            ['Kamela', 'campaigns.objective.gain_advantage', '0%', '0%', 'week', 'winning'],
+            ['Vard', 'campaigns.objective.run_complexes', '', '', '24h', 'winning'],
+            ['Huola', 'campaigns.objective.run_complexes', '10%', '', 'week', 'winning'],
+            ['Sosala', 'campaigns.objective.destroy_advantage', '65%', '+25%', 'week', 'winning'],
+            ['Arzad', 'campaigns.objective.maintain_advantage', '41%', '+11%', 'week', 'winning'],
+            ['Bosboger', 'campaigns.objective.report_structures', 'campaigns.objective.value_structure', '', 'week', 'winning'],
+        ])
+        expect(rows.find(row => row.system_name === 'Huola')?.flipped).toBe('captured')
     })
 
     it('counts our advantage rising as good only while we are pushing', () => {
@@ -223,24 +258,35 @@ const system = (overrides:Partial<CampaignSystemSummary> & Pick<CampaignSystemSu
     ...overrides,
 })
 
-const week_progress = (overrides:Partial<CampaignWeekProgress> & Pick<CampaignWeekProgress, 'system'>):CampaignWeekProgress => ({
-    system_id: overrides.system.length,
-    contested_start: null,
-    contested_now: null,
-    victory_points_start: null,
-    victory_points_now: null,
+const row = (overrides:Partial<CampaignWeekObjectiveRow> & Pick<CampaignWeekObjectiveRow, 'name' | 'objective'>):CampaignWeekObjectiveRow => ({
+    target_id: 1,
+    system_id: overrides.name.length,
+    solar_system_id: 1,
+    priority: 'medium',
+    holder: null,
+    pace: 'on_pace',
+    proposed: false,
+    progress_percent: 0,
+    change_week: null,
+    change_24h: null,
     flipped: null,
+    contested_percent: null,
+    victory_points: null,
+    victory_points_threshold: null,
+    advantage_level: null,
+    structures_reported: null,
+    structures_target: null,
     ...overrides,
 })
 
-const week_with = (targets:CampaignWeekTarget[], progress:CampaignWeekProgress[] = []):CampaignWeek => ({
+const week_with = (objective_rows:CampaignWeekObjectiveRow[]):CampaignWeek => ({
     week_start: '2026-10-13',
     week_end: '2026-10-20',
     week_index: 1,
     week_count: 4,
     day_index: 1,
-    targets,
-    progress,
+    targets: [],
+    objective_rows,
     commander_order_text: '',
     summary: {},
 })

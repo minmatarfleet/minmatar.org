@@ -3217,6 +3217,37 @@ export interface CampaignWeekTarget {
     my_structures_reported?: number;
 }
 
+export type CampaignObjectiveCode =
+    | 'capture_complexes'
+    | 'defend_complexes'
+    | 'gain_advantage'
+    | 'hold_advantage'
+    | 'destroy_advantage'
+    | 'report_structures'
+
+/** backend campaigns/services/objectives.py: progress reads higher is better, 0-100. */
+export interface CampaignWeekObjectiveRow {
+    target_id:                  number | null;
+    system_id:                  number;
+    name:                       string;
+    solar_system_id:            number;
+    priority:                   string;
+    holder:                     'minmatar' | 'amarr' | null;
+    objective:                  CampaignObjectiveCode;
+    pace:                       CampaignPace | null;
+    proposed:                   boolean;
+    progress_percent:           number | null;
+    change_week:                number | null;
+    change_24h:                 number | null;
+    flipped:                    'captured' | 'lost' | null;
+    contested_percent:          number | null;
+    victory_points:             number | null;
+    victory_points_threshold:   number | null;
+    advantage_level:            number | null;
+    structures_reported:        number | null;
+    structures_target:          number | null;
+}
+
 export interface CampaignWeekProgress {
     system:                 string;
     system_id:              number;
@@ -3245,6 +3276,8 @@ export interface CampaignWeek {
     day_index:              number;
     targets:                CampaignWeekTarget[];
     progress?:              CampaignWeekProgress[];
+    /** The week's objective rows, built and ordered by the backend for the website and the desktop window. */
+    objective_rows?:        CampaignWeekObjectiveRow[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
 }

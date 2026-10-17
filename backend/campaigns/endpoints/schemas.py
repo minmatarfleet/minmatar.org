@@ -214,6 +214,44 @@ class WeekSystemProgressOut(Schema):
     flipped: Literal["captured", "lost"] | None = None
 
 
+class WeekObjectiveRowOut(Schema):
+    """One row of the week's objectives, as the website table and the
+    desktop window draw it (campaigns/services/objectives.py).
+
+    Progress reads higher-is-better on 0-100. ``change_week`` is the move
+    since the week opened (None when the system changed hands: ``flipped``
+    says which way); ``change_24h`` is the last day's.
+    """
+
+    target_id: int | None = None
+    system_id: int
+    name: str
+    solar_system_id: int
+    priority: str = "medium"
+    holder: Literal["minmatar", "amarr"] | None = None
+    objective: Literal[
+        "capture_complexes",
+        "defend_complexes",
+        "gain_advantage",
+        "hold_advantage",
+        "destroy_advantage",
+        "report_structures",
+    ]
+    pace: Literal["behind", "on_pace", "ahead"] | None = None
+    proposed: bool = False
+    progress_percent: float | None = None
+    change_week: float | None = None
+    change_24h: float | None = None
+    flipped: Literal["captured", "lost"] | None = None
+    # The figures behind the bar, for its caption.
+    contested_percent: float | None = None
+    victory_points: int | None = None
+    victory_points_threshold: int | None = None
+    advantage_level: float | None = None
+    structures_reported: float | None = None
+    structures_target: float | None = None
+
+
 class WeekPlan(Schema):
     week_start: date
     week_end: date | None = None
@@ -222,6 +260,7 @@ class WeekPlan(Schema):
     day_index: int = 1
     targets: list[WeekTargetOut] = []
     progress: list[WeekSystemProgressOut] = []
+    objective_rows: list[WeekObjectiveRowOut] = []
     commander_order_text: str = ""
     summary: dict = {}
 

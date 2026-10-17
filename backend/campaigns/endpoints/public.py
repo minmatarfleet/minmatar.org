@@ -28,7 +28,7 @@ from campaigns.models import (
     SiteKind,
 )
 from campaigns.services import entities as entity_service
-from campaigns.services import plan, stats
+from campaigns.services import objectives, plan, stats
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from groups.helpers.feature_access import require_feature
@@ -349,6 +349,7 @@ def get_week(request, slug: str):
         **plan.week_position(campaign, week_start),
         "targets": targets,
         "progress": plan.week_system_progress(campaign, week_start),
+        "objective_rows": objectives.weekly_rows(campaign),
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
