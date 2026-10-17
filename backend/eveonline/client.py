@@ -1334,6 +1334,9 @@ def get_region_market_orders_pages(region_id: int, type_id: int | None = None):
     no auth). Each order includes location_id, type_id, price, is_buy_order,
     range, etc. Use this for NPC station locations; filter by location_id.
     If type_id is set, only orders for that type are returned (fewer pages).
+
+    Stops after the last page ESI reports in X-Pages. Without the header it
+    falls back to stopping on a short page.
     """
     logger.info(
         "get_region_market_orders_pages: region_id=%s type_id=%s — starting",
@@ -1382,7 +1385,12 @@ def get_region_market_orders_pages(region_id: int, type_id: int | None = None):
         if not page_data:
             break
         yield page_data
-        if len(page_data) < page_size:
+        total_pages = result.headers.get("X-Pages")
+        try:
+            last_page = page >= int(total_pages)
+        except (TypeError, ValueError):
+            last_page = len(page_data) < page_size
+        if last_page:
             break
         page += 1
         params["page"] = page

@@ -440,6 +440,28 @@ class RegionOrdersParityTest(_Base):
             ],
         )
 
+    def test_stops_at_x_pages_even_on_a_full_page(self):
+        path = "/markets/10000002/orders/"
+        full = [{"order_id": i} for i in range(1000)]
+        self.fake.add(
+            "GET", path, make_response(200, full, {"X-Pages": "1"}), page="1"
+        )
+        pages = list(get_region_market_orders_pages(10000002))
+        self.assertEqual(pages, [full])
+        self.assertEqual(len(self.fake.calls), 1)
+
+    def test_reads_past_a_short_page_when_x_pages_says_so(self):
+        path = "/markets/10000002/orders/"
+        for page in ("1", "2"):
+            self.fake.add(
+                "GET",
+                path,
+                make_response(200, [{"p": page}], {"X-Pages": "2"}),
+                page=page,
+            )
+        pages = list(get_region_market_orders_pages(10000002))
+        self.assertEqual(pages, [[{"p": "1"}], [{"p": "2"}]])
+
     def test_error_yields_none(self):
         self.fake.add(
             "GET", "/markets/10000002/orders/", make_response(500, None)
