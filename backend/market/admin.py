@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from django.utils.http import urlencode
 
 from eveonline.models import EveLocation
+from fittings.eft import item_quantities
 
 import market.admin_health_snapshots  # noqa: F401  # pylint: disable=unused-import
 from market.models import (
@@ -28,7 +29,6 @@ from market.models import (
     FittingBuyOrderLine,
     FittingBuyJitaCheck,
 )
-from market.models.item import parse_eft_items
 from market.admin_location_views import (
     market_expectations_view,
     market_location_buy_orders_view,
@@ -336,7 +336,7 @@ class EveMarketFittingExpectationAdmin(admin.ModelAdmin):
 
     @admin.display(description="Unique items")
     def get_item_count(self, obj):
-        return len(parse_eft_items(obj.fitting.eft_format))
+        return len(item_quantities(obj.fitting.eft_format))
 
     @admin.display(description="Items from fitting")
     def get_decomposed_items(self, obj):

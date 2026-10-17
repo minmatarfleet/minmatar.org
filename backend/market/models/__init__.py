@@ -29,7 +29,6 @@ from market.models.item import (
     EveTypeWithSellOrders,
     _get_consumable_items,
     get_effective_item_expectations,
-    parse_eft_items,
 )
 
 __all__ = [
@@ -57,5 +56,4 @@ __all__ = [
     "FittingBuyOrderStatus",
     "_get_consumable_items",
     "get_effective_item_expectations",
-    "parse_eft_items",
 ]
