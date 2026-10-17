@@ -64,6 +64,7 @@ class EveClients extends EventEmitter {
         }, 8000)
         this.proc.on('exit', code => {
             this.proc = null
+            this.watching_buttons = false
             if (!this.ready) this.failed = true
             this.ready = false
             this.emit('log', { t: 'helper-exit', code })
@@ -102,6 +103,8 @@ class EveClients extends EventEmitter {
             const front = this.clients.find(c => c.hwnd === this.foreground.hwnd)
             if (front) this.foreground = { ...this.foreground, title: front.title }
             this.emit('change')
+        } else if (message.t === 'btn') {
+            this.emit('button', message)
         } else {
             this.emit('log', message)
         }
@@ -110,6 +113,13 @@ class EveClients extends EventEmitter {
     apply_glass(win) {
         if (!this.proc || win.isDestroyed()) return
         this.send(`glass ${hwnd_of(win)} ${GLASS_TINT}`)
+    }
+
+    // Report mouse button changes while a client is in front ('button' events), for fade on right-click.
+    watch_buttons(on) {
+        if (this.watching_buttons === on || !this.proc || !this.ready) return
+        this.watching_buttons = on
+        this.send(`buttons ${on ? 'on' : 'off'}`)
     }
 
     // "Stay with EVE": put our windows directly above an EVE client in the window order, without activating them.

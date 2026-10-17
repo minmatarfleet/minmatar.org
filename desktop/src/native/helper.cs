@@ -3,12 +3,15 @@
 // It never reads EVE memory, never injects, never sends input to EVE.
 // The only windows it changes are the overlay's own (glass, square corners, no native caption, their place in
 // the window order, a repaint after they lose focus). EVE's windows are only looked at, never moved or restyled.
+// While "fade on right-click" is on and a client is in front, it reads the mouse buttons' state (GetAsyncKeyState
+// polling, no input hook) so the app can fade windows away from a context menu. It never sends input.
 //
 // Compiled at launch by PowerShell Add-Type (C# 5, .NET Framework, ships with Windows) so the app needs no native build step.
 //
 // Protocol: JSON lines on stdout, plain-text commands on stdin.
 //   out: {"t":"ready"} {"t":"fg",...} {"t":"clients","list":[...]} {"t":"glass","hwnd":"..","ok":true,"code":0}
-//   in : glass <hwnd> <AABBGGRR hex>     stack <eve hwnd> <hwnd>...     quit
+//        {"t":"btn","b":"r","down":true,"x":..,"y":..,"eve":true}
+//   in : glass <hwnd> <AABBGGRR hex>     stack <eve hwnd> <hwnd>...     buttons on|off     quit
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -48,6 +51,11 @@ public static class MfoHelper {
   [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
   [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] static extern bool RedrawWindow(IntPtr h, IntPtr rect, IntPtr rgn, uint flags);
+  [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+  [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+  [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+  [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
+  [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr h, uint flags);
 
   const uint EVENT_SYSTEM_FOREGROUND = 0x0003, EVENT_SYSTEM_MINIMIZEEND = 0x0017;
   const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B, EVENT_OBJECT_NAMECHANGE = 0x800C;
@@ -57,7 +65,9 @@ public static class MfoHelper {
   static readonly IntPtr HWND_TOP = IntPtr.Zero;
   const uint RDW_INVALIDATE = 0x1, RDW_ERASE = 0x4, RDW_ALLCHILDREN = 0x80, RDW_UPDATENOW = 0x100, RDW_FRAME = 0x400;
   const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
-  const uint WM_APP = 0x8000, WM_APP_CMD = WM_APP + 1, WM_APP_SCAN = WM_APP + 2;
+  const uint WM_APP = 0x8000, WM_APP_CMD = WM_APP + 1, WM_APP_SCAN = WM_APP + 2, WM_APP_BTN = WM_APP + 3;
+  const int VK_LBUTTON = 1, VK_RBUTTON = 2, VK_MBUTTON = 4, SM_SWAPBUTTON = 23;
+  const uint GA_ROOT = 2;
 
   static WinEventProc fgProc, objProc;   // keep delegates alive (GC would free the callback otherwise)
   static uint mainTid;
@@ -68,6 +78,8 @@ public static class MfoHelper {
   static readonly HashSet<long> ownHwnds = new HashSet<long>();   // our windows (every one gets glass)
   static long lastFg;
   static string lastClients = "";
+  static bool buttonsWanted;              // "buttons on" from the app
+  static volatile bool watchButtons;      // ...and a client is in front: the poll thread only reads this
 
   static void Out(string s) { lock (Console.Out) { Console.Out.WriteLine(s); Console.Out.Flush(); } }
   static string J(string s) {
@@ -124,6 +136,42 @@ public static class MfoHelper {
     Out("{\"t\":\"fg\",\"hwnd\":\"" + h.ToInt64() + "\",\"pid\":" + pid + ",\"proc\":" + J(n) + ",\"cls\":" + J(cls.ToString()) +
         ",\"title\":" + J(client ? Title(h) : "") + ",\"client\":" + (client ? "true" : "false") + "}");
     Scan();
+    watchButtons = buttonsWanted && client;
+  }
+
+  // Mouse buttons, for "fade on right-click": EVE draws its context menus inside the client, under our windows,
+  // so the app fades windows near a right-click until the next click closes the menu. A button change is
+  // reported with where the cursor is and whether it's over a client (WindowFromPoint passes through our
+  // click-through windows, so a click on one of our buttons is not "eve").
+  static void OnButton(int bit, bool down) {
+    POINT p; GetCursorPos(out p);
+    IntPtr root = GetAncestor(WindowFromPoint(p), GA_ROOT);
+    bool eve = clientHwnds.Contains(root.ToInt64());
+    string b = bit == 0 ? "l" : bit == 1 ? "r" : "m";
+    Out("{\"t\":\"btn\",\"b\":\"" + b + "\",\"down\":" + (down ? "true" : "false") + ",\"x\":" + p.X + ",\"y\":" + p.Y +
+        ",\"eve\":" + (eve ? "true" : "false") + "}");
+  }
+
+  // Polls the logical left/right/middle buttons every 25 ms while watchButtons is set. Polling instead of a
+  // WH_MOUSE_LL hook keeps us out of the input path entirely: nothing waits on this process before a click
+  // reaches EVE. GetAsyncKeyState reads the physical buttons, so swapped buttons are mapped back to logical.
+  static void PollButtons() {
+    int state = 0;
+    while (true) {
+      Thread.Sleep(25);
+      if (!watchButtons) { state = 0; continue; }
+      bool swap = GetSystemMetrics(SM_SWAPBUTTON) != 0;
+      int now = 0;
+      if (GetAsyncKeyState(swap ? VK_RBUTTON : VK_LBUTTON) < 0) now |= 1;
+      if (GetAsyncKeyState(swap ? VK_LBUTTON : VK_RBUTTON) < 0) now |= 2;
+      if (GetAsyncKeyState(VK_MBUTTON) < 0) now |= 4;
+      int changed = now ^ state;
+      state = now;
+      for (int bit = 0; bit < 3; bit++) {
+        if ((changed & (1 << bit)) == 0) continue;
+        PostThreadMessage(mainTid, WM_APP_BTN, new IntPtr(bit), new IntPtr((now >> bit) & 1));
+      }
+    }
   }
   static void OnObject(IntPtr hook, uint ev, IntPtr h, int obj, int child, uint thread, uint time) {
     if (obj != 0 || child != 0) return;            // OBJID_WINDOW only (ignore caret/cursor/child objects)
@@ -217,6 +265,8 @@ public static class MfoHelper {
     reader.IsBackground = true; reader.Start();
     var ticker = new Thread(delegate () { while (true) { Thread.Sleep(1000); PostThreadMessage(mainTid, WM_APP_SCAN, IntPtr.Zero, IntPtr.Zero); } });
     ticker.IsBackground = true; ticker.Start();
+    var buttons = new Thread(PollButtons);
+    buttons.IsBackground = true; buttons.Start();
 
     Out("{\"t\":\"ready\"}");
     Scan();
@@ -225,6 +275,7 @@ public static class MfoHelper {
     MSG m;
     while (GetMessage(out m, IntPtr.Zero, 0, 0) > 0) {   // WinEvent callbacks are delivered inside this loop
       if (m.message == WM_APP_SCAN) { Scan(); continue; }
+      if (m.message == WM_APP_BTN) { OnButton(m.w.ToInt32(), m.l.ToInt32() != 0); continue; }
       if (m.message != WM_APP_CMD) continue;
       while (true) {
         string c; lock (cmds) { if (cmds.Count == 0) break; c = cmds.Dequeue(); }
@@ -232,6 +283,7 @@ public static class MfoHelper {
         try {
           if (p[0] == "glass") Glass(p);
           else if (p[0] == "stack") Stack(p);
+          else if (p[0] == "buttons") { buttonsWanted = p.Length > 1 && p[1] == "on"; watchButtons = buttonsWanted && clientHwnds.Contains(lastFg); }
           else if (p[0] == "quit") return;
         } catch (Exception e) { Out("{\"t\":\"error\",\"msg\":" + J(e.Message) + "}"); }
       }

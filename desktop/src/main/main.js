@@ -17,6 +17,7 @@ const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
 const { IntelController } = require('./intel')
+const { MenuFade, intersects } = require('./menu_fade')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -32,8 +33,8 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
 
 // Settings the Settings window may change (booleans only), saved on the account (settings.js).
 // "locked" is the pin button: whether the windows can be dragged and resized.
-const USER_SETTINGS = ['locked', 'show_sneak']
-const SETTINGS_DEFAULTS = { locked: true, show_sneak: true }
+const USER_SETTINGS = ['locked', 'show_sneak', 'fade_on_right_click']
+const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, fade_on_right_click: true }
 const INTEL_DEFAULT_RANGE = 5   // jumps
 const SESSION_SETTINGS = []
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
@@ -60,6 +61,7 @@ let list_refreshed_at = 0
 let fleet_snapshot = null        // what the Fleets window's fleet view shows (fleet_window.js), sent on its own channel
 let quitting = false
 let glass_ready = false
+const menu_fade = new MenuFade()
 
 const state = {
     user: null,           // { name, character_id, avatar }
@@ -83,6 +85,12 @@ const state = {
 }
 
 // ---------------------------------------------------------------- window plumbing
+
+// Overlay, Sneak and Settings windows: never focused, no taskbar button, and tool windows ('toolbar' sets
+// WS_EX_TOOLWINDOW on Windows). skipTaskbar alone only drops the button; the shell still treats the window as an
+// app window, and showing, hiding or stacking one over a borderless (Fixed Window) client can make Windows
+// decide EVE is no longer the fullscreen app and bring the taskbar up over it. The shell ignores tool windows.
+const OVERLAY_WINDOW = { focusable: false, skipTaskbar: true, type: 'toolbar' }
 
 function base_window(options) {
     const win = new BrowserWindow({
@@ -135,7 +143,7 @@ function reveal(win, { activate = false } = {}) {
     const pending = fades.get(win)
     if (pending) { clearTimeout(pending.delay); clearTimeout(pending.fade); fades.delete(win) }
     if (!win.isVisible()) activate ? win.show() : win.showInactive()
-    win.webContents.send('visibility', true)
+    win.webContents.send('visibility', !win.__ghost)
 }
 
 function conceal(win, { delay = 0, instant = false } = {}) {
@@ -220,7 +228,7 @@ function create_overlay(def) {
     // click-through except their controls, so EVE stays the active window.
     const win = base_window({
         ...on_screen_bounds(window_saved(def.id).bounds, def), minWidth: def.min_size.width, minHeight: def.min_size.height,
-        focusable: false, skipTaskbar: true,
+        ...OVERLAY_WINDOW,
     })
     win.setIgnoreMouseEvents(true, { forward: true })
     win.__placed = JSON.stringify(win.getBounds())
@@ -356,12 +364,51 @@ function update_overlay_visibility({ force = false } = {}) {
     if (stay) stack_windows()
 }
 
+// ---------------------------------------------------------------- fade on right-click (menu_fade.js)
+
+// The helper reports mouse buttons only while this is on and a client is in front.
+function sync_button_watch() {
+    if (eve) eve.watch_buttons(!!state.user && !!settings.get('fade_on_right_click'))
+}
+
+// Faded windows stay shown (no hide, so nothing reshuffles) but the page fades out and the whole window is
+// click-through, buttons included, so clicks on the menu reach EVE.
+function ghost(win) {
+    if (win.__ghost) return
+    win.__ghost = true
+    win.setIgnoreMouseEvents(true)
+    win.webContents.send('visibility', false)
+}
+
+function unghost(win) {
+    if (!win.__ghost || win.isDestroyed()) return
+    win.__ghost = false
+    if (win.isFocusable()) win.setIgnoreMouseEvents(false)   // Intel while a report is being typed
+    else win.setIgnoreMouseEvents(true, { forward: true })
+    win.webContents.send('visibility', win.isVisible() && !fades.has(win))
+}
+
+function fadeable_windows() {
+    const wins = [...overlays.values()]
+    if (mascot_win) wins.push(mascot_win)
+    return wins.filter(win => !win.isDestroyed() && win.isVisible())
+}
+
+menu_fade.on('fade', zone => {
+    for (const win of fadeable_windows()) {
+        if (intersects(zone, screen.dipToScreenRect(win, win.getBounds()))) ghost(win)
+    }
+})
+menu_fade.on('restore', () => {
+    for (const win of [...overlays.values(), mascot_win]) if (win) unghost(win)
+})
+
 // ---------------------------------------------------------------- Sneak (opens Settings)
 
 function ensure_mascot() {
     if (mascot_win && !mascot_win.isDestroyed()) return mascot_win
     mascot_win = base_window({
-        width: 40, height: 36, focusable: false, skipTaskbar: true, alwaysOnTop: true, title: 'Minmatar Fleet',
+        width: 40, height: 36, ...OVERLAY_WINDOW, alwaysOnTop: true, title: 'Minmatar Fleet',
     })
     mascot_win.setIgnoreMouseEvents(true, { forward: true })   // only Sneak himself takes clicks
     mascot_win.loadFile(path.join(RENDERER, 'mascot.html'))
@@ -408,7 +455,7 @@ function open_settings() {
     settings_win = base_window({
         width: 420, height: 680,
         x: Math.round(area.x + (area.width - 420) / 2), y: Math.round(area.y + Math.max(0, (area.height - 680) / 2)),
-        focusable: false, skipTaskbar: true, alwaysOnTop: true,
+        ...OVERLAY_WINDOW, alwaysOnTop: true,
     })
     settings_win.__wanted = true
     settings_win.setAlwaysOnTop(true, 'screen-saver')
@@ -459,6 +506,7 @@ function adopt_local_settings_file(remote_values) {
 function set_user_setting(key, value) {
     if (!USER_SETTINGS.includes(key) || typeof value !== 'boolean') return
     settings.set(key, value)
+    if (key === 'fade_on_right_click' && !value) menu_fade.restore()
     if (key !== 'locked') update_overlay_visibility({ force: true })   // "locked" only changes the windows' drag region and grip
     update_polling()
     update_tray()
@@ -682,6 +730,7 @@ function set_fleet_snapshot(snapshot) {
 
 function push_state() {
     if (!settings) return
+    sync_button_watch()
     const payload = {
         ...state,
         version: app.getVersion(),
@@ -831,7 +880,7 @@ ipcMain.on('window:close', event => {
 })
 ipcMain.on('mouse:interactive', (event, interactive) => {
     const win = sender_window(event)
-    if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable()) {
+    if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable() && !win.__ghost) {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
     }
 })
@@ -913,6 +962,9 @@ app.whenReady().then(async () => {
         push_state()
     })
     eve.on('client-front', () => setTimeout(update_overlay_visibility, 300))   // EVE can land above us for a frame
+    eve.on('button', event => {
+        if (state.user && settings.get('fade_on_right_click')) menu_fade.button(event, state.eve_window.ui_scale)
+    })
     eve.on('log', diag)
     eve.start()
 
