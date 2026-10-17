@@ -1,0 +1,297 @@
+{
+ "buyback.created": [
+  [
+   "get_channel",
+   [
+    7001
+   ],
+   {}
+  ],
+  [
+   "create_forum_thread",
+   [],
+   {
+    "applied_tags": [
+     "222"
+    ],
+    "channel_id": 7001,
+    "components": [
+     {
+      "type": 1,
+      "components": [
+       {
+        "type": 2,
+        "style": 3,
+        "label": "Complete",
+        "custom_id": "buyback:complete:4242"
+       },
+       {
+        "type": 2,
+        "style": 4,
+        "label": "Cancel",
+        "custom_id": "buyback:cancel:4242"
+       }
+      ]
+     }
+    ],
+    "message": "<@1001>\n\n**Purchase order #4242**\nPilot: WTS Pilot\nTotal: **3,500,000 ISK**\nStatus: Pending\n\n- 10× Compressed Veldspar\nhttps://my.minmatar.org/market/buyback/orders/?order=4242",
+    "title": "Sale #4242 · WTS Pilot · 3.5M ISK"
+   }
+  ]
+ ],
+ "buyback.completed": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9001,
+    "payload": {
+     "content": "<@1001>\n\n:white_check_mark: Sale completed by **<@1003>**\n**3,500,000 ISK**\nhttps://my.minmatar.org/market/buyback/orders/?order=4242"
+    }
+   }
+  ],
+  [
+   "close_thread",
+   [],
+   {
+    "channel_id": 9001
+   }
+  ]
+ ],
+ "buyback.cancelled": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9001,
+    "payload": {
+     "content": "<@1001>\n\n:no_entry_sign: Sale cancelled\nhttps://my.minmatar.org/market/buyback/orders/?order=4242"
+    }
+   }
+  ],
+  [
+   "close_thread",
+   [],
+   {
+    "channel_id": 9001
+   }
+  ]
+ ],
+ "buyback.created_without_tags": [
+  [
+   "get_channel",
+   [
+    7001
+   ],
+   {}
+  ],
+  [
+   "create_forum_thread",
+   [],
+   {
+    "applied_tags": [],
+    "channel_id": 7001,
+    "components": [
+     {
+      "type": 1,
+      "components": [
+       {
+        "type": 2,
+        "style": 3,
+        "label": "Complete",
+        "custom_id": "buyback:complete:4243"
+       },
+       {
+        "type": 2,
+        "style": 4,
+        "label": "Cancel",
+        "custom_id": "buyback:cancel:4243"
+       }
+      ]
+     }
+    ],
+    "message": "<@1001>\n\n**Purchase order #4243**\nPilot: WTS Pilot\nTotal: **3,500,000 ISK**\nStatus: Pending\n\n- 10× Compressed Veldspar\nhttps://my.minmatar.org/market/buyback/orders/?order=4243",
+    "title": "Sale #4243 · WTS Pilot · 3.5M ISK"
+   }
+  ]
+ ],
+ "lp.created": [
+  [
+   "get_channel",
+   [
+    7002
+   ],
+   {}
+  ],
+  [
+   "create_forum_thread",
+   [],
+   {
+    "applied_tags": [
+     "333"
+    ],
+    "channel_id": 7002,
+    "message": "<@1001>\n\n**Sell** 1,000,000 Tribal Liberation Force @ 800 ISK/LP\nPilot: WTS Pilot\nStatus: Open\nNotes: Fast please\nhttps://my.minmatar.org/industry/loyalty/?order=5151",
+    "title": "WTS 1M TLIB @800"
+   }
+  ]
+ ],
+ "lp.claimed": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": ":handshake: Partial claim by **WTB Pilot**: **400,000** LP\n<@1001> Send LP to: **WTB Alt**\nISK due: **320,000,000 ISK** (400,000 LP @ 800)\nRemaining: **600,000** LP (still open)\nhttps://my.minmatar.org/industry/loyalty/?order=5151"
+    }
+   }
+  ]
+ ],
+ "lp.claims_released": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": ":arrows_counterclockwise: Claim released by **WTB Pilot** (400,000 LP).\nStatus: Open — **600,000** LP available\nhttps://my.minmatar.org/industry/loyalty/?order=5151"
+    }
+   }
+  ]
+ ],
+ "lp.status.awaiting_lp": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": "<@1001>\n\n:package: Awaiting LP transfer\nClaimed by **WTB Pilot**\nSend LP to: **(unset)**\n\nTake a screenshot of the LP transfer and paste it in this thread.\nhttps://my.minmatar.org/industry/loyalty/?order=5151",
+     "components": [
+      {
+       "type": 1,
+       "components": [
+        {
+         "type": 2,
+         "style": 3,
+         "label": "LP sent",
+         "custom_id": "lp_buyback:lp:5151"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ]
+ ],
+ "lp.status.awaiting_isk": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": "<@1002>\n\n:moneybag: LP received — awaiting ISK payment\nPay **320,000,000 ISK** to **WTS Pilot**\n400,000 LP @ 800 ISK/LP\nhttps://my.minmatar.org/industry/loyalty/?order=5151",
+     "components": [
+      {
+       "type": 1,
+       "components": [
+        {
+         "type": 2,
+         "style": 3,
+         "label": "ISK sent",
+         "custom_id": "lp_buyback:isk:5151"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ]
+ ],
+ "lp.status.completed": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": "<@1001>\n\n:white_check_mark: ISK sent — order completed\n**320,000,000 ISK** for 400,000 LP @ 800 ISK/LP\nhttps://my.minmatar.org/industry/loyalty/?order=5151"
+    }
+   }
+  ],
+  [
+   "close_thread",
+   [],
+   {
+    "channel_id": 9101
+   }
+  ]
+ ],
+ "lp.stalled_reminder": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": "<@1001>\n\n:alarm_clock: Reminder — this order has been waiting on you to send LP to **(unset)** for 24 hours.\nOnce it's sent, press **LP sent** below.\nIf nothing moves, this order is cancelled automatically <t:1790942400:R>.\nhttps://my.minmatar.org/industry/loyalty/?order=5151",
+     "components": [
+      {
+       "type": 1,
+       "components": [
+        {
+         "type": 2,
+         "style": 3,
+         "label": "LP sent",
+         "custom_id": "lp_buyback:lp:5151"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ]
+ ],
+ "lp.cancelled": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 9101,
+    "payload": {
+     "content": "<@1001> <@1002>\n\n:x: Order cancelled by **WTB Pilot**\nChanged my mind.\nhttps://my.minmatar.org/industry/loyalty/?order=5151"
+    }
+   }
+  ],
+  [
+   "close_thread",
+   [],
+   {
+    "channel_id": 9101
+   }
+  ]
+ ],
+ "lp.close_by_id": [
+  [
+   "close_thread",
+   [],
+   {
+    "channel_id": 9101
+   }
+  ]
+ ],
+ "lp.stale_digest": [
+  [
+   "create_message",
+   [],
+   {
+    "channel_id": 7003,
+    "payload": {
+     "content": ":hourglass: **1 LP buyback order** open for a week or more with no taker:\n- **WTS 1M TLIB @800** by WTS Pilot — 8d, 600,000 LP unclaimed · <#9101>"
+    }
+   }
+  ]
+ ]
+}
