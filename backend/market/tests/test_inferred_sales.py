@@ -12,7 +12,10 @@ from market.helpers.inferred_sales import (
     infer_sales_from_snapshots,
     velocity_stats,
 )
-from market.helpers.order_book_sync import apply_order_book_snapshot
+from market.helpers.order_book_sync import (
+    apply_order_book_snapshot,
+    sync_structure_order_book_for_location,
+)
 from market.models import (
     EveMarketInferredSale,
     EveMarketItemOrder,
@@ -267,3 +270,51 @@ class ApplyOrderBookSnapshotTestCase(TestCase):
         self.assertEqual(orders, 1)
         self.assertEqual(EveMarketInferredSale.objects.count(), 0)
         self.assertEqual(EveMarketItemOrder.objects.get().order_id, 2)
+
+
+class OrderBookSyncKeepsHistoryTestCase(TestCase):
+    """The monthly market report reads every month ever inferred."""
+
+    def setUp(self):
+        super().setUp()
+        self.location = EveLocation.objects.create(
+            location_id=9002,
+            location_name="Amamake Hub",
+            short_name="Hub",
+            solar_system_id=1,
+            solar_system_name="Amamake",
+            market_active=True,
+        )
+        self.item = _make_eve_type(34, "Tritanium")
+
+    def _sale(self, days_ago, reason):
+        return EveMarketInferredSale.objects.create(
+            location=self.location,
+            item=self.item,
+            quantity=1,
+            price=Decimal("5.00"),
+            inferred_at=timezone.now() - timedelta(days=days_ago),
+            reason=reason,
+        )
+
+    def test_sync_does_not_delete_old_inferred_sales(self):
+        imported = self._sale(200, EveMarketInferredSale.REASON_IMPORTED)
+        live = self._sale(120, EveMarketInferredSale.REASON_SELLOUT)
+        recent = self._sale(1, EveMarketInferredSale.REASON_PARTIAL_FILL)
+
+        with patch(
+            "market.helpers.order_book_sync.fetch_structure_orders_for_location",
+            return_value=[],
+        ), patch(
+            "market.helpers.order_book_sync.apply_order_book_snapshot",
+            return_value=(0, 0),
+        ):
+            result = sync_structure_order_book_for_location(
+                1, self.location.location_id
+            )
+
+        self.assertEqual(result, (0, 0))
+        self.assertEqual(
+            set(EveMarketInferredSale.objects.values_list("id", flat=True)),
+            {imported.id, live.id, recent.id},
+        )
