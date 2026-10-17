@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-17 — Previous corp Discord role stays after the main moves
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Main moved corp and the old corp Discord role kept returning. Primary `corporation_id` already matched ESI and the latest history row. Another linked character is still in the previous corporation, and member groups include every linked character.
+**Durable rule:** Dump every linked character's corporation, not only the primary. Refresh re-adds `Corp <TICKER>` while any character remains in that corp. Nickname follows the primary.
+**Skill update:** added the alt-still-in-previous-corp row next to the ESI-lag row.
+
 ## 2026-10-15 — Campaign page 403 for alliance members
 
 **Category:** pulse.technology
