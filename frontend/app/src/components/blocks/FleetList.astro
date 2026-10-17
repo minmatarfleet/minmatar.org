@@ -146,7 +146,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         
             {fleet_list.length > 0 &&
                 <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
-                    <StylessButton href='#other-fleets' class="[ caret-down ]" />
+                    <StylessButton href='#other-fleets' class="[ caret-down ]" aria-label={t('scroll_down')} />
                 </FlexInline>
             }
         </Flexblock>

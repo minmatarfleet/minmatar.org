@@ -36,12 +36,6 @@
         "description": "Guide"
     },
     {
-        "name": "wiki_overview_guide",
-        "title": "Overview Guide",
-        "target": "https://wiki.minmatar.org/guides/Alesis-Overview-Guide",
-        "description": "Guide"
-    },
-    {
         "name": "hosted_navy_destroyer_metagame",
         "title": "Faction Warfare Destroyer Guide",
         "target": "/learning/guides/navy-destroyer-metagame/",

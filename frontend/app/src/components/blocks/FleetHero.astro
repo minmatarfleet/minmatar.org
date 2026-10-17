@@ -89,9 +89,9 @@ import TextBox from '@components/layout/TextBox.astro';
                                     name: fleet.corporation_name as string,
                                     size: 'sm',
                                 }}
-                                show_modal={true}
+                                show_modal={Boolean(fleet.corporation_id)}
                             />
-                            {fleet.fleet_commander_fleet_count &&
+                            {Boolean(fleet.fleet_commander_fleet_count) &&
                                 <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
                                     <div
                                         class="[ text-highlight h-[16px] ]"
