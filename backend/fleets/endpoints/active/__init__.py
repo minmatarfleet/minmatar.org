@@ -12,6 +12,12 @@ from fleets.endpoints.active.get_current_fleet_window import (
     get_current_fleet_window,
     METHOD as get_current_fleet_window_method,
 )
+from fleets.endpoints.active.get_my_fleets import (
+    PATH as get_my_fleets_path,
+    ROUTE_SPEC as get_my_fleets_spec,
+    get_my_fleets,
+    METHOD as get_my_fleets_method,
+)
 from fleets.endpoints.active.post_start_fleet_now import (
     PATH as post_start_fleet_now_path,
     ROUTE_SPEC as post_start_fleet_now_spec,
@@ -31,6 +37,12 @@ _ROUTES = (
         get_current_fleet_window_path,
         get_current_fleet_window_spec,
         get_current_fleet_window,
+    ),
+    (
+        get_my_fleets_method,
+        get_my_fleets_path,
+        get_my_fleets_spec,
+        get_my_fleets,
     ),
     (
         post_start_fleet_now_method,

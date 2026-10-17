@@ -33,6 +33,7 @@ from fleets.tests import (
     make_test_fleet,
     setup_fleet_reference_data,
 )
+from srp.models import EveFleetShipReimbursement
 from users.helpers import add_user_permission
 
 RIFTER_ID = 587
@@ -52,6 +53,25 @@ def no_kills(fleet):
         "pods_destroyed": 0,
         "ships_lost": 0,
         "pods_lost": 0,
+    }
+
+
+def loss_row(killmail_id, character_id, minutes_ago=2, outcome="loss"):
+    return {
+        "killmail_id": killmail_id,
+        "killmail_time": (
+            timezone.now() - timedelta(minutes=minutes_ago)
+        ).isoformat(),
+        "outcome": outcome,
+        "solar_system_id": AMAMAKE,
+        "solar_system_name": "Amamake",
+        "victim_ship_type_id": GUARDIAN_ID,
+        "victim_ship_name": "Guardian",
+        "victim_character_id": character_id,
+        "victim_character_name": f"Pilot {character_id}",
+        "isk_value": 250_000_000,
+        "fleet_pilots": 4,
+        "is_capsule": False,
     }
 
 
@@ -208,6 +228,8 @@ class FleetWindowTestCase(TestCase):
                 "off_doctrine": ["Pilot 3001"],
                 "docked": ["Pilot 3004"],
                 "away": ["Pilot 3003"],
+                # Signed up for a Guardian, never joined.
+                "not_in_fleet": ["Pilot 3006"],
             },
             {a["reason"]: a["names"] for a in body["attention"]},
         )
@@ -362,3 +384,105 @@ class FleetWindowTestCase(TestCase):
         }
         self.assertEqual(1, ships["Devoter"])
         self.assertEqual(1, ships["Guardian"])
+
+    def test_only_the_fc_gets_the_kill_feed(self):
+        self._live_fleet()
+        report = no_kills(self.fleet)
+        report["killmails"] = [
+            loss_row(78, 9999, minutes_ago=1, outcome="kill"),
+            loss_row(77, 1001),
+        ]
+        report["ships_destroyed"], report["ships_lost"] = 1, 1
+        with patch(
+            "fleets.helpers.fleet_window.fleet_kill_report",
+            lambda fleet: report,
+        ):
+            fc = self._window(self.fc_auth)
+            member = self._window()
+
+        self.assertEqual(
+            [(78, "kill"), (77, "loss")],
+            [(r["killmail_id"], r["outcome"]) for r in fc["feed"]],
+        )
+        self.assertEqual("Pilot 9999", fc["feed"][0]["victim_name"])
+        self.assertEqual([], member["feed"])
+
+    def test_a_pilot_flying_an_alt_is_not_missing(self):
+        EveCharacter.objects.create(
+            character_id=1002, character_name="Pilot Alt", user=self.user
+        )
+        self._start()
+        self._member(FC_CHARACTER, DAMNATION_ID)
+        self._member(1001, GUARDIAN_ID)
+        self._volunteer(1002, self.guardian)
+
+        body = self._window(self.fc_auth)
+
+        self.assertNotIn(
+            "not_in_fleet", [a["reason"] for a in body["attention"]]
+        )
+
+    def _mine(self, auth=None):
+        response = self.client.get(
+            f"{BASE_URL}/window/mine", **(auth or self.auth)
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        return response.json()
+
+    def test_recent_lists_fleets_flown_with_srp_owed(self):
+        self._live_fleet()
+        EveFleetInstance.objects.filter(pk=self.instance.pk).update(
+            end_time=timezone.now()
+        )
+        report = no_kills(self.fleet)
+        report["killmails"] = [loss_row(77, 1001), loss_row(79, 1001)]
+        report["ships_lost"] = 2
+        EveFleetShipReimbursement.objects.create(
+            fleet=self.fleet,
+            external_killmail_link="https://zkillboard.com/kill/79/",
+            status="approved",
+            killmail_id=79,
+            character_id=1001,
+            character_name="Pilot One",
+            primary_character_id=1001,
+            primary_character_name="Pilot One",
+            amount=42_000_000,
+            ship_name="Guardian",
+            ship_type_id=GUARDIAN_ID,
+        )
+        with patch(
+            "fleets.helpers.my_fleets.fleet_kill_report",
+            lambda fleet: report,
+        ):
+            body = self._mine()
+
+        (row,) = body["fleets"]
+        self.assertEqual(self.fleet.id, row["fleet_id"])
+        self.assertEqual("Armor Damnations", row["title"])
+        self.assertFalse(row["live"])
+        self.assertFalse(row["was_fc"])
+        self.assertEqual(
+            {77: ("none", 0), 79: ("approved", 42_000_000)},
+            {
+                loss["killmail_id"]: (loss["srp_status"], loss["srp_amount"])
+                for loss in row["my_losses"]
+            },
+        )
+        self.assertEqual(1, body["srp_owed"])
+
+    def test_recent_is_empty_for_someone_who_never_flew(self):
+        body = self._mine()
+
+        self.assertEqual([], body["fleets"])
+        self.assertEqual(0, body["srp_owed"])
+
+    def test_signups_name_the_fit_for_upcoming_fleets(self):
+        self._volunteer(1001, self.guardian)
+        self._volunteer(3006, self.guardian)
+
+        (signup,) = self._mine()["signups"]
+
+        self.assertEqual(self.fleet.id, signup["fleet_id"])
+        self.assertEqual(1001, signup["character_id"])
+        self.assertIn("Guardian", signup["fit_name"])
+        self.assertEqual(GUARDIAN_ID, signup["ship_type_id"])

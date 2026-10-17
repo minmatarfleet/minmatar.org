@@ -50,7 +50,32 @@
         return groups
     }
 
-    const api = { eve_time, day_label, countdown, group_by_day }
+    // The viewer's local time, coloured by their hour like the site's LocalTimeGroup: the security-status
+    // ramp from red (asleep) through yellow (day) to blue and purple (late), plus the word for it.
+    const HOUR_BANDS = [
+        [7, 'h-sleep', 'Sleeptime'], [8, 'h-dawn', 'Sleeptime'], [9, 'h-morning', 'Daytime'], [19, 'h-day', 'Daytime'],
+        [20, 'h-dusk', 'Nighttime'], [21, 'h-evening', 'Nighttime'], [22, 'h-night', 'Nighttime'], [23, 'h-late', 'Nighttime'],
+        [24, 'h-midnight', 'Sleeptime'],
+    ]
+    function local_time(iso) {
+        const d = new Date(iso)
+        const hour = d.getHours()
+        const [, band, word] = HOUR_BANDS.find(([until]) => hour < until)
+        return { text: `${pad(hour)}:${pad(d.getMinutes())}`, band, word }
+    }
+
+    // The ticking fleet clock: HH:MM:SS to the start (with days when far out), then counting up once it
+    // has started.
+    function clock(iso, now = new Date()) {
+        const diff = Math.round((new Date(iso) - now) / 1000)
+        const started = diff <= 0
+        const s = Math.abs(diff)
+        const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60)
+        const text = `${d ? `${d}d ` : ''}${pad(h)}:${pad(m)}:${pad(s % 60)}`
+        return { text: started ? `+${text}` : text, started }
+    }
+
+    const api = { eve_time, day_label, countdown, group_by_day, local_time, clock }
     if (typeof module !== 'undefined' && module.exports) module.exports = api
     else root.fleet_format = api
 })(this)

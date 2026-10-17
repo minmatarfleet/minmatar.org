@@ -42,6 +42,8 @@ STALE_POLL = timedelta(minutes=15)
 AFTER_ACTION = timedelta(hours=3)
 # A loss shows on the pilot's window for this long.
 RECENT_LOSS = timedelta(minutes=15)
+# The FC's kill feed: newest killmails, kills and losses together.
+FEED_LIMIT = 40
 
 TYPE_LABELS = {
     "strategic": "Strategic",
@@ -234,6 +236,59 @@ def _fc_system(instance, members, fc_character_id):
     if not counts:
         return None, None
     return max(counts, key=counts.get)
+
+
+def _absent_volunteers(fleet, pilots) -> list[str]:
+    """Signed up but not in fleet, on any of their characters.
+
+    A pilot who signed up on their main and flies an alt is in fleet.
+    """
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetShipVolunteer
+
+    volunteers = list(
+        EveFleetShipVolunteer.objects.filter(eve_fleet=fleet)
+        .order_by("character_name")
+        .values_list("character_id", "character_name")
+    )
+    if not volunteers:
+        return []
+    in_fleet = {p["character_id"] for p in pilots}
+    owners = dict(
+        EveCharacter.objects.filter(
+            character_id__in=in_fleet | {cid for cid, _ in volunteers},
+            user__isnull=False,
+        ).values_list("character_id", "user_id")
+    )
+    users_in_fleet = {owners[cid] for cid in in_fleet if cid in owners}
+    absent, seen = [], set()
+    for character_id, name in volunteers:
+        owner = owners.get(character_id)
+        if character_id in in_fleet or (owner and owner in users_in_fleet):
+            continue
+        if (owner or character_id) in seen:
+            continue
+        seen.add(owner or character_id)
+        absent.append(name)
+    return absent
+
+
+def _feed_rows(report) -> list[dict]:
+    return [
+        {
+            "killmail_id": row["killmail_id"],
+            "killmail_time": row["killmail_time"],
+            "outcome": row["outcome"],
+            "ship_type_id": row.get("victim_ship_type_id"),
+            "ship_name": row.get("victim_ship_name") or "",
+            "victim_name": row.get("victim_character_name") or "",
+            "isk_value": row.get("isk_value") or 0,
+            "solar_system_name": row.get("solar_system_name") or "",
+            "fleet_pilots": row.get("fleet_pilots") or 0,
+            "capsule": bool(row.get("is_capsule")),
+        }
+        for row in report["killmails"][:FEED_LIMIT]
+    ]
 
 
 def _volunteer_keys(fleet) -> dict[int, str]:
@@ -435,6 +490,10 @@ def _build_shared(fleet, instance) -> dict:
         "pilots": pilots,
         "volunteers": volunteers,
         "losses": losses,
+        "feed": _feed_rows(report),
+        "absent_volunteers": (
+            _absent_volunteers(fleet, pilots) if live else []
+        ),
         "srp_killmails": sorted(srp_killmails),
         "after_action": after_action,
     }
@@ -484,7 +543,13 @@ def _needs(shared) -> list[dict]:
 def _attention(shared) -> list[dict]:
     """Pilots the FC may want to nudge, one group per reason."""
     system_id = shared["fleet"]["fc_system_id"]
-    groups = {"capsule": [], "off_doctrine": [], "docked": [], "away": []}
+    groups = {
+        "capsule": [],
+        "off_doctrine": [],
+        "docked": [],
+        "away": [],
+        "not_in_fleet": [],
+    }
     for pilot in shared["pilots"]:
         if pilot["capsule"]:
             reason = "capsule"
@@ -497,6 +562,7 @@ def _attention(shared) -> list[dict]:
         else:
             continue
         groups[reason].append(pilot["character_name"])
+    groups["not_in_fleet"] = list(shared.get("absent_volunteers") or [])
     return [
         {"reason": reason, "names": names}
         for reason, names in groups.items()
@@ -559,4 +625,5 @@ def fleet_window(fleet, user, shared=None) -> dict:
             _attention(shared) if is_fc and shared["fleet"]["live"] else []
         ),
         "after_action": shared["after_action"] if is_fc else None,
+        "feed": shared.get("feed", []) if is_fc else [],
     }

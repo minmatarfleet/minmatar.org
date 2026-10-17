@@ -9,8 +9,8 @@ const COMMANDS = [
     'drag:start', 'drag:move', 'drag:end',
     'update:install', 'update:download', 'update:check',
     'settings:open', 'settings:set', 'window:set-enabled',
-    'fleet:back', 'fleet:open-site', 'fleet:refresh-motd', 'fleet:copy-fit', 'fleet:sign-up',
-    'fleet:srp', 'fleet:dismiss-loss', 'fleet:done',
+    'fleet:close', 'fleet:open-site', 'fleet:refresh-motd', 'fleet:copy-fit', 'fleet:sign-up',
+    'fleet:srp', 'fleet:dismiss-loss', 'fleet:done', 'fleet:destination', 'fleet:preping', 'fleet:start', 'fleet:remind',
     'intel:refresh', 'intel:paste', 'intel:paste-text', 'intel:kind', 'intel:edit', 'intel:share', 'intel:discard',
     'intel:open-report', 'intel:close-report', 'intel:copy-link', 'intel:open-site', 'intel:range',
 ]

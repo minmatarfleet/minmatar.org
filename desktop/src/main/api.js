@@ -117,6 +117,29 @@ class ApiClient {
         return this.request('POST', `/api/fleets/${Number(fleet_id)}/refresh-motd`)
     }
 
+    // Recent fleets (with the pilot's own losses and their SRP state) and ship sign-ups. Polled.
+    my_fleets() {
+        return this.request('GET', '/api/fleets/window/mine', { etag: true })
+    }
+
+    // In-game destination for one of the pilot's characters (needs the Desktop scope group).
+    set_waypoint(character_id, destination_id) {
+        return this.request('POST', `/api/eveonline/characters/${Number(character_id)}/waypoint`, {
+            body: { destination_id: Number(destination_id), clear_other_waypoints: true },
+        })
+    }
+
+    preping(fleet_id) {
+        return this.request('POST', `/api/fleets/${Number(fleet_id)}/preping`)
+    }
+
+    // Start tracking: the API checks the FC's in-game fleet over ESI and pings Discord.
+    start_fleet(fleet_id, fc_character_id) {
+        return this.request('POST', `/api/fleets/${Number(fleet_id)}/tracking`, {
+            body: fc_character_id ? { fc_character_id: Number(fc_character_id) } : {},
+        })
+    }
+
     // Signing out must not leave one pilot's cached windows for the next.
     forget_cached() {
         this.etags.clear()
@@ -185,6 +208,7 @@ async function load_upcoming_fleets(api, web_url) {
                 start_time: fleet.start_time,
                 status: fleet.status || 'pending',
                 live: !!fleet.tracking,
+                fc_user_id: fleet.fleet_commander,
                 doctrine: doctrine_names[i],
                 fc_character_id: character ? character.character_id : null,
                 fc_name: character ? character.character_name : (profile ? profile.username : 'Unknown FC'),

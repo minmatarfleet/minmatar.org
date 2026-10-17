@@ -458,7 +458,8 @@ class FleetWindowPilot(BaseModel):
 
 
 class FleetWindowAttention(BaseModel):
-    reason: str  # capsule | off_doctrine | docked | away
+    # capsule | off_doctrine | docked | away | not_in_fleet (signed up)
+    reason: str
     names: List[str]
 
 
@@ -470,6 +471,21 @@ class FleetWindowLoss(BaseModel):
     isk_value: int
     solar_system_name: str
     srp_filed: bool
+
+
+class FleetWindowFeedRow(BaseModel):
+    """One killmail in the FC's kill feed."""
+
+    killmail_id: int
+    killmail_time: datetime
+    outcome: str  # kill | loss
+    ship_type_id: Optional[int] = None
+    ship_name: str = ""
+    victim_name: str = ""
+    isk_value: int = 0
+    solar_system_name: str = ""
+    fleet_pilots: int = 0
+    capsule: bool = False
 
 
 class FleetWindowMe(BaseModel):
@@ -510,6 +526,50 @@ class FleetWindowResponse(BaseModel):
     pilots: List[FleetWindowPilot] = []
     attention: List[FleetWindowAttention] = []
     after_action: Optional[FleetWindowAfterAction] = None
+    feed: List[FleetWindowFeedRow] = []
+
+
+class MyFleetLoss(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    ship_type_id: Optional[int] = None
+    ship_name: str = ""
+    isk_value: int = 0
+    solar_system_name: str = ""
+    srp_status: str  # none | pending | approved | rejected
+    srp_amount: int = 0
+
+
+class MyRecentFleet(BaseModel):
+    fleet_id: int
+    title: str
+    type_label: str
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+    live: bool
+    was_fc: bool
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+    aar_link: Optional[str] = None
+    my_losses: List[MyFleetLoss] = []
+
+
+class MyFleetSignup(BaseModel):
+    fleet_id: int
+    character_id: int
+    character_name: str
+    fit_name: str = ""
+    ship_type_id: Optional[int] = None
+
+
+class MyFleetsResponse(BaseModel):
+    """The desktop window's Recent tab and the user's ship sign-ups."""
+
+    fleets: List[MyRecentFleet] = []
+    srp_owed: int = 0
+    signups: List[MyFleetSignup] = []
 
 
 class CurrentFleetWindowResponse(BaseModel):

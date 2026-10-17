@@ -32,6 +32,12 @@ from eveonline.endpoints.characters.get_character_by_id import (
     get_character_by_id,
     METHOD as get_character_by_id_method,
 )
+from eveonline.endpoints.characters.post_character_waypoint import (
+    PATH as post_character_waypoint_path,
+    ROUTE_SPEC as post_character_waypoint_spec,
+    post_character_waypoint,
+    METHOD as post_character_waypoint_method,
+)
 from eveonline.endpoints.characters.get_character_tokens import (
     PATH as get_character_tokens_path,
     ROUTE_SPEC as get_character_tokens_spec,
@@ -175,6 +181,12 @@ _ROUTES = (
         delete_character_tag_path,
         delete_character_tag_spec,
         delete_character_tag,
+    ),
+    (
+        post_character_waypoint_method,
+        post_character_waypoint_path,
+        post_character_waypoint_spec,
+        post_character_waypoint,
     ),
 )
 for method, path, spec, view in _ROUTES:

@@ -1,7 +1,7 @@
 {
   "name": "minmatar-fleet-desktop",
   "productName": "Minmatar Fleet",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Minmatar Fleet desktop app: Discord sign-in and an upcoming-fleets window that overlays the EVE Online client.",
   "author": "Minmatar Fleet",
   "license": "MIT",

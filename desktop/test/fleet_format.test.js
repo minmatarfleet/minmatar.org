@@ -30,3 +30,19 @@ test('live fleets group first, then by day in order', () => {
     assert.deepEqual(groups.map(g => g.label), ['Live now', 'Today', 'Tomorrow'])
     assert.deepEqual(groups[0].fleets.map(f => f.id), [3])
 })
+
+test('the fleet clock ticks HH:MM:SS to the start, then counts up', () => {
+    const { clock } = require('../src/renderer/fleet_format')
+    assert.deepEqual(clock('2026-10-16T18:00:00Z', NOW), { text: '00:30:00', started: false })
+    assert.deepEqual(clock('2026-10-18T19:30:05Z', NOW), { text: '2d 02:00:05', started: false })
+    assert.deepEqual(clock('2026-10-16T17:00:00Z', NOW), { text: '+00:30:00', started: true })
+})
+
+test('local time carries the hour band and its word, like the site', () => {
+    const { local_time } = require('../src/renderer/fleet_format')
+    const at = hour => { const d = new Date(2026, 9, 16, hour, 5); return local_time(d.toISOString()) }
+    assert.deepEqual(at(3), { text: '03:05', band: 'h-sleep', word: 'Sleeptime' })
+    assert.deepEqual(at(12), { text: '12:05', band: 'h-day', word: 'Daytime' })
+    assert.deepEqual(at(20), { text: '20:05', band: 'h-evening', word: 'Nighttime' })
+    assert.deepEqual(at(23), { text: '23:05', band: 'h-midnight', word: 'Sleeptime' })
+})

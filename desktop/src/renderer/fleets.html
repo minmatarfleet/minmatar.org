@@ -6,16 +6,17 @@
 <link rel="stylesheet" href="eve-window.css">
 <link rel="stylesheet" href="fleets.css">
 <link rel="stylesheet" href="fleet_view.css">
-<title>Upcoming Fleets</title>
+<title>Fleet</title>
 </head>
 <body class="is-hidden is-locked">
 <section class="eve-window">
-    <header class="eve-window__header" data-interactive>
-        <button class="eve-icon-button" id="back" data-fleet-command="fleet:back" aria-label="Back to upcoming fleets" title="Back to upcoming fleets" hidden>
-            <svg viewBox="0 0 12 12"><path d="M7.5 2.5L4 6l3.5 3.5"/></svg>
-        </button>
-        <img class="eve-window__icon" src="../assets/icon.png" alt="">
-        <h1 class="eve-window__title" id="title">Upcoming Fleets</h1>
+    <header class="eve-window__header fw-header" data-interactive>
+        <img class="eve-window__icon" src="../assets/icon.png" alt="Minmatar Fleet">
+        <nav class="fw-tabs" role="tablist" aria-label="Fleet window">
+            <button role="tab" id="tab-fleet" data-tab="fleet" aria-selected="true"><span class="fw-tabs__dot" id="tab-fleet-dot" aria-hidden="true" hidden></span>Fleet</button>
+            <button role="tab" id="tab-upcoming" data-tab="upcoming" aria-selected="false">Upcoming <span class="fw-tabs__count" id="tab-upcoming-count"></span></button>
+            <button role="tab" id="tab-recent" data-tab="recent" aria-selected="false">Recent<span class="fw-tabs__owed" id="tab-recent-dot" title="SRP to file" hidden></span></button>
+        </nav>
         <nav class="eve-window__controls">
             <button class="eve-icon-button" id="refresh" data-command="fleets:refresh" aria-label="Refresh" title="Refresh">
                 <svg viewBox="0 0 12 12"><path d="M10 6a4 4 0 1 1-1.2-2.85M10 1.5v2.5H7.5"/></svg>
@@ -30,17 +31,12 @@
             <button class="eve-icon-button" data-command="window:close" aria-label="Close to tray" title="Close to tray"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
         </nav>
     </header>
-    <main class="eve-window__body" id="list" aria-live="polite"></main>
-    <section class="fw" id="fleet" hidden>
-        <div class="fw-top" id="fleet-top"></div>
-        <main class="eve-window__body fw-main" id="fleet-main" data-interactive></main>
-        <footer class="fw-foot" id="fleet-foot" data-interactive></footer>
-    </section>
-    <footer class="eve-window__footer" id="list-footer" data-interactive>
-        <span id="status"></span>
-        <button class="eve-link eve-link--update" id="update" hidden></button>
-        <button class="eve-link" id="sign-out">Sign out</button>
-        <span class="eve-version" id="version"></span>
+    <div class="fw-strip-slot" id="strip" data-interactive></div>
+    <main class="eve-window__body fw-main" id="view" data-interactive aria-live="polite"></main>
+    <footer class="fw-foot" id="foot" data-interactive>
+        <div class="fw-foot__actions" id="actions"></div>
+        <div class="fw-foot__status" id="status"></div>
+        <button class="fw-site" id="site" data-fleet-command="fleet:open-site" hidden>Open on site<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5h5v5M9.5 2.5l-7 7"/></svg></button>
     </footer>
     <div class="eve-resize" id="resize" data-interactive aria-hidden="true"></div>
 </section>

@@ -1141,6 +1141,34 @@ class EsiClient:
         # 204 No Content: result(), not results() (which wraps None as [None])
         return self._operation_result(operation, use_etag=False)
 
+    def set_autopilot_waypoint(
+        self, destination_id: int, clear_other_waypoints: bool = True
+    ) -> EsiResponse:
+        """Sets the in-game destination (POST /ui/autopilot/waypoint/).
+
+        A UI write: callers send it only on the pilot's own click.
+        """
+        token, status = self._valid_token(["esi-ui.write_waypoint.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        assert_esi_http_allowed()
+        response = requests.post(
+            url=f"{ESI_BASE_URL}/ui/autopilot/waypoint/",
+            params={
+                "add_to_beginning": "false",
+                "clear_other_waypoints": (
+                    "true" if clear_other_waypoints else "false"
+                ),
+                "destination_id": int(destination_id),
+            },
+            timeout=15,
+            headers=self._bearer_headers(token),
+        )
+        if response.status_code == 204:
+            return EsiResponse(response_code=SUCCESS)
+        return EsiResponse(response_code=response.status_code)
+
     def get_character_planets(self) -> EsiResponse:
         """Returns the list of planetary colonies for the character."""
         token, status = self._valid_token(["esi-planets.manage_planets.v1"])
