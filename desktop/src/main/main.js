@@ -20,6 +20,7 @@ const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE, REFRESH_MS: INTEL_R
 const { Poller, window_data_wanted } = require('./poller')
 const { MenuFade, intersects } = require('./menu_fade')
 const { COMMANDS, id_of, fleet_ship, intel_range, window_toggle } = require('./ipc_commands')
+const { TOGGLES, read_toggle, window_key, stored_window, read_window } = require('./settings_schema')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -33,11 +34,11 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
     'trademarks or registered trademarks of CCP hf. This application has been created under the EVE Developer License Agreement. ' +
     'It is a Minmatar Fleet alliance tool and is not affiliated with or endorsed by CCP hf.'
 
-// Settings the Settings window may change (booleans only), saved on the account (settings.js).
-// "locked" is the pin button: whether the windows can be dragged and resized.
-const USER_SETTINGS = ['locked', 'show_sneak', 'fade_on_right_click']
-const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, fade_on_right_click: true }
-const SESSION_SETTINGS = []
+// Settings the Settings window may change are the boolean TOGGLES in settings_schema.js, saved on the
+// account (settings.js) with every other key there. "locked" is the pin button: whether the windows can
+// be dragged and resized.
+const USER_SETTINGS = Object.keys(TOGGLES)
+const toggle = key => read_toggle(key, settings.get(key))
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 
 function diag(entry) {
@@ -204,20 +205,18 @@ function show_login() {
 // ---------------------------------------------------------------- overlay windows
 
 // Each window's settings are one key ("window.fleets": { enabled, bounds }) so a change to one window
-// never overwrites another's on the account.
-const window_key = id => `window.${id}`
-
+// never overwrites another's on the account. Read through settings_schema.js; a save spreads the stored
+// object so fields another version added survive.
 function window_saved(id) {
-    return settings.get(window_key(id)) || {}
+    return read_window(settings.get(window_key(id)), window_def(id))
 }
 
 function window_enabled(id) {
-    const saved = window_saved(id)
-    return typeof saved.enabled === 'boolean' ? saved.enabled : window_def(id).default_enabled
+    return window_saved(id).enabled
 }
 
 function save_window(id, patch) {
-    settings.set(window_key(id), { ...window_saved(id), ...patch })
+    settings.set(window_key(id), { ...stored_window(settings.get(window_key(id))), ...patch })
 }
 
 // Moves made by the app (restoring a saved spot, or the fallback when it's off this PC's screens) are
@@ -371,7 +370,7 @@ function update_overlay_visibility({ force = false } = {}) {
 
 // The helper reports mouse buttons only while this is on and a client is in front.
 function sync_button_watch() {
-    if (eve) eve.watch_buttons(!!state.user && !!settings.get('fade_on_right_click'))
+    if (eve) eve.watch_buttons(!!state.user && toggle('fade_on_right_click'))
 }
 
 // Windows near the menu are hidden outright: fading only the page would leave the native glass (blur and tint)
@@ -431,7 +430,7 @@ function update_mascot() {
     if (!eve || !settings) return
     if (eve.foreground.client && is_logged_in_client(eve.foreground)) active_hwnd = eve.foreground.hwnd
     const client = active_client()
-    const wanted = state.user && settings.get('show_sneak') && !helper_starting()
+    const wanted = state.user && toggle('show_sneak') && !helper_starting()
     const stay = stays_with_eve()
     const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client }) : false
     if (show === false) return conceal(mascot_win, { instant: !mascot_win || hide_instantly(eve.foreground) })
@@ -501,7 +500,7 @@ function adopt_local_settings_file(remote_values) {
     if (Object.keys(remote_values).length || !fs.existsSync(LEGACY_SETTINGS_FILE)) return
     let legacy
     try { legacy = JSON.parse(fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8')) } catch (e) { legacy = {} }
-    for (const key of USER_SETTINGS) if (!SESSION_SETTINGS.includes(key) && typeof legacy[key] === 'boolean') settings.set(key, legacy[key])
+    for (const key of USER_SETTINGS) if (typeof legacy[key] === 'boolean') settings.set(key, legacy[key])
     const windows = { ...(legacy.windows || {}) }
     if (legacy.fleets_bounds && !windows.fleets) windows.fleets = { bounds: legacy.fleets_bounds }
     for (const [id, saved] of Object.entries(windows)) if (window_def(id) && saved) settings.set(window_key(id), saved)
@@ -765,9 +764,9 @@ function push_state() {
     const payload = {
         ...state,
         version: app.getVersion(),
-        locked: settings.get('locked'),
+        locked: toggle('locked'),
         settings_sync: settings.status,
-        settings: Object.fromEntries(USER_SETTINGS.map(k => [k, settings.get(k)])),
+        settings: Object.fromEntries(USER_SETTINGS.map(k => [k, toggle(k)])),
         windows: OVERLAY_WINDOWS.map(def => ({ id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id) })),
         glass: glass_ready,
         eve_running: eve ? eve.eve_running : false,
@@ -903,7 +902,7 @@ on_command('window:set-enabled', (event, value) => {
     const change = window_toggle(value)
     if (change) set_window_enabled(change.id, change.enabled)
 })
-on_command('lock:toggle', () => set_user_setting('locked', !settings.get('locked')))
+on_command('lock:toggle', () => set_user_setting('locked', !toggle('locked')))
 on_command('window:minimize', event => {
     const win = sender_window(event)
     const id = overlay_id_of(win)
@@ -929,7 +928,7 @@ on_command('mouse:interactive', (event, interactive) => {
 let drag = null
 on_command('drag:start', (event, start) => {
     const win = sender_window(event)
-    if (!win || settings.get('locked') || !start || !['move', 'resize'].includes(start.kind)) return
+    if (!win || toggle('locked') || !start || !['move', 'resize'].includes(start.kind)) return
     drag = { win, kind: start.kind, point: start.point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
 })
 on_command('drag:move', (event, point) => {
@@ -983,8 +982,7 @@ app.whenReady().then(async () => {
     })
     create_pollers()
     settings = new Settings({
-        defaults: SETTINGS_DEFAULTS,
-        session_keys: SESSION_SETTINGS,
+        defaults: TOGGLES,
         remote: { load: () => api.desktop_settings(), save: values => api.save_desktop_settings(values) },
     })
     settings.on('loaded', adopt_local_settings_file)
@@ -1008,7 +1006,7 @@ app.whenReady().then(async () => {
     })
     eve.on('client-front', () => setTimeout(update_overlay_visibility, 300))   // EVE can land above us for a frame
     eve.on('button', event => {
-        if (state.user && settings.get('fade_on_right_click')) menu_fade.button(event, state.eve_window.ui_scale)
+        if (state.user && toggle('fade_on_right_click')) menu_fade.button(event, state.eve_window.ui_scale)
     })
     eve.on('log', diag)
     eve.start()

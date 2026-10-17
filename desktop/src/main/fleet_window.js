@@ -12,6 +12,7 @@
 const { EventEmitter } = require('events')
 const { ApiError, is_unauthorized } = require('./api')
 const { Poller, MAX_BACKOFF_MS } = require('./poller')
+const { REMINDERS_KEY, read_reminders } = require('./settings_schema')
 
 const POLL_MS = 30_000
 const MINE_POLL_MS = 120_000
@@ -22,7 +23,6 @@ const PREP_WINDOW_MS = 3 * 3600_000
 // "Remind me" fires this long before form-up, and not at all once the fleet is this far past its start.
 const REMIND_BEFORE_MS = 15 * 60_000
 const REMIND_LATE_MS = 10 * 60_000
-const REMINDERS_KEY = 'fleet_reminders'
 
 class FleetWindow extends EventEmitter {
     constructor({
@@ -256,8 +256,7 @@ class FleetWindow extends EventEmitter {
     }
 
     reminders() {
-        const list = this.store && this.store.get(REMINDERS_KEY)
-        return Array.isArray(list) ? list.filter(r => r && Number.isInteger(r.id)) : []
+        return read_reminders(this.store && this.store.get(REMINDERS_KEY))
     }
 
     view_of(win) {
