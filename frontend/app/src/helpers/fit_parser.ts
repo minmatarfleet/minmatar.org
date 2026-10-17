@@ -4,7 +4,8 @@ import { get_item_id, get_item_category } from '@helpers/sde/items'
 import type { Module, ShipFitting, CargoItem } from '@dtypes/layout_components';
 import { get_ship_fitting_capabilities } from '@helpers/sde/ships'
 
-export async function parse_eft(fitting_eft: string) {
+/** EFT to the fitting renderer's slot layout (uses the SDE for slot data). For plain EFT parsing use @helpers/eft. */
+export async function parse_eft_for_render(fitting_eft: string) {
     type EFTSection = 'name' | 'low' | 'med' | 'high' | 'rigs' | 'subsystem' | 'skip-drones' | 'drones' | 'cargo'
     let EFTSections:EFTSection[] = [ 'name', 'low', 'med', 'high', 'rigs', 'subsystem', 'drones', 'cargo' ]
     let has_subsystem = false
