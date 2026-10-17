@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from alliance.helpers.health_hygiene import compute_hygiene_payload
 from alliance.models import AllianceHealthSnapshot
+from app.eve_time import month_key
 from applications.models import EveCorporationApplication
 from buyback.models import BuybackContract
 from eveonline.models import (
@@ -63,10 +64,6 @@ EXEMPT_AUTH_GROUPS = frozenset(
 
 def _aware(d: date) -> datetime:
     return timezone.make_aware(datetime.combine(d, datetime.min.time()))
-
-
-def _month_key(dt: datetime | date) -> str:
-    return f"{dt.year:04d}-{dt.month:02d}"
 
 
 GONE_FOR_MONTHS_DAYS = 90
@@ -611,7 +608,7 @@ def compute_alliance_health(  # noqa: C901
         if prev is None or dt > prev:
             last_activity[uid] = dt
         if dt >= year_ago:
-            months_active[uid].add(_month_key(dt))
+            months_active[uid].add(month_key(dt))
 
     eligible = {uid for uid in roster_user_ids if status_of(uid) != "on_leave"}
     fading, dark, seasonal = classify_quiet_attention(
@@ -675,7 +672,7 @@ def compute_alliance_health(  # noqa: C901
         until_dt = _aware(nxt)
         monthly.append(
             {
-                "month": _month_key(cur),
+                "month": month_key(cur),
                 "label": (
                     cur.strftime("%b %y")
                     if cur.month == 1

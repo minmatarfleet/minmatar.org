@@ -2,24 +2,12 @@
 
 from typing import List
 
-from django.utils import timezone
-
+from app.eve_time import month_bounds
 from authentication import AuthBearer
 from eveonline.models import EveCorporation, EvePlayer
 
 from fleets.endpoints.schemas import EveFleetCommanderMetric
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
-
-
-def _calendar_month_bounds():
-    now = timezone.now()
-    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if start.month == 12:
-        end = start.replace(year=start.year + 1, month=1)
-    else:
-        end = start.replace(month=start.month + 1)
-    return start, end
-
 
 PATH = "/commander-metrics"
 METHOD = "get"
@@ -31,7 +19,7 @@ ROUTE_SPEC = {
 
 
 def get_fleet_commander_metrics(request):
-    month_start, month_end = _calendar_month_bounds()
+    month_start, month_end = month_bounds()
     rows = fleets_led_by_user(led_fleets(month_start, month_end))
 
     user_ids = [r["created_by_id"] for r in rows]

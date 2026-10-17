@@ -1,7 +1,5 @@
 """Execute tribe group reports from registry bindings."""
 
-from datetime import datetime
-
 from django.utils import timezone
 
 from tribes.models import TribeGroup
@@ -10,6 +8,7 @@ from tribes.reports.database import (
     validate_report_database,
 )
 from tribes.reports.period import parse_period
+from tribes.reports.queries.common import period_window
 from tribes.reports.registry import (
     QUERY_RUNNERS,
     REPORT_BINDINGS,
@@ -104,12 +103,7 @@ def _run_binding(
 ) -> ReportResult:
     now = timezone.now()
     bounds = parse_period(period)
-    period_start = timezone.make_aware(
-        datetime.combine(bounds.start, datetime.min.time())
-    )
-    period_end = timezone.make_aware(
-        datetime.combine(bounds.end, datetime.max.time())
-    )
+    period_start, period_end = period_window(bounds)
 
     if binding.manual:
         return ReportResult(

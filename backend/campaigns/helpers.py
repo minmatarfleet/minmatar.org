@@ -1,4 +1,9 @@
-"""Small shared helpers: campaign days, weeks and character/user resolution."""
+"""Small shared helpers: campaign days, weeks and character/user resolution.
+
+Campaign days and weeks are their own calendar (days roll over at 11:00
+UTC, weeks open on Thursday). Plain EVE-time days and months live in
+``app.eve_time``.
+"""
 
 from __future__ import annotations
 
