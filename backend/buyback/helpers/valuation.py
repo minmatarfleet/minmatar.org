@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
+from eveonline.helpers.universe import resolve_types_by_name
 from eveuniverse.models import EveType
 
 from buyback.helpers.accepted_items import (
@@ -43,13 +44,21 @@ def batch_estimate_guide_isk(
         for eve_type in EveType.objects.filter(id__in=type_ids)
     }
 
+    # Rows whose type id is missing or unknown fall back to their name,
+    # resolved in one query instead of one per row.
+    types_by_name = resolve_types_by_name(
+        name
+        for type_id, name, _ in rows
+        if name and (not type_id or int(type_id) not in types_by_id)
+    )
+
     ore_names: list[str] = []
     flat_type_ids: list[int] = []
     categories: list[BuybackCategory | None] = []
     for type_id, name, quantity in rows:
         eve_type = types_by_id.get(int(type_id)) if type_id else None
         if eve_type is None and name:
-            eve_type = EveType.objects.filter(name=name).first()
+            eve_type = types_by_name.get(name)
         if eve_type is None:
             categories.append(None)
             continue

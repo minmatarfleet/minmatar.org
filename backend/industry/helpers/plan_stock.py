@@ -14,9 +14,9 @@ from typing import (
     Tuple,
 )
 
-from buyback.helpers.classify import resolve_types_by_name
 from buyback.helpers.ore_names import buyback_ore_family
 from buyback.helpers.paste import parse_eve_paste
+from eveonline.helpers.universe import resolve_types_by_name
 from industry.helpers.compressed_ore import (
     ORE_BATCH_SIZE,
     reprocess_output,
@@ -59,7 +59,7 @@ def parse_stock_paste(paste: Optional[str]) -> StockParseResult:
         return empty
 
     names = [line.name for line in lines]
-    resolved = resolve_types_by_name(names)
+    resolved = resolve_types_by_name(names, case_insensitive=True)
 
     by_type_id: Dict[int, int] = {}
     by_name: Dict[str, int] = {}

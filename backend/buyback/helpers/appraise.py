@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from eveonline.helpers.universe import resolve_types_by_name
+
 from buyback.helpers.accepted_items import (
     compressed_ore_buy_market_name,
     get_active_accepted_type_ids,
@@ -13,7 +15,6 @@ from buyback.helpers.accepted_items import (
 from buyback.helpers.classify import (
     BuybackCategory,
     classify_eve_type,
-    resolve_types_by_name,
 )
 from buyback.helpers.demand import (
     mineral_name_to_id_for_ores,
@@ -66,7 +67,7 @@ def appraise_paste(
         )
 
     names = [line.name for line in paste_lines]
-    types_by_name = resolve_types_by_name(names)
+    types_by_name = resolve_types_by_name(names, case_insensitive=True)
     accepted_type_ids = get_active_accepted_type_ids()
     demand_by_type_id = stored_demand_by_type_id()
 
