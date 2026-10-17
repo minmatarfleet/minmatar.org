@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
 
 from django.db.models import Count, Max
 from django.utils import timezone
 from eveuniverse.models import EveType
 
+from app.eve_time import as_eve_time, month_key
 from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
 from eveonline.helpers.corporations.summary import ship_bucket
 from eveonline.models import (
@@ -291,7 +292,7 @@ def _heatmap(recent, owners) -> list[list[int]]:
     """Distinct people on fleets per EVE-time weekday (rows) and hour."""
     cells: dict[tuple[int, int], set] = defaultdict(set)
     for character_id, join_time, instance_id, *_ in recent:
-        when = _eve_time(join_time)
+        when = as_eve_time(join_time)
         cells[(when.weekday(), when.hour)].add(
             (owners.get(character_id), instance_id)
         )
@@ -332,9 +333,7 @@ def _records(attendance, owners) -> dict:
     for character_id, join_time, instance_id, fleet_id, *_ in attendance:
         turnout[instance_id].add(owners.get(character_id))
         if join_time and fleet_id:
-            fleets_by_month[_eve_time(join_time).strftime("%Y-%m")].add(
-                fleet_id
-            )
+            fleets_by_month[month_key(join_time)].add(fleet_id)
     biggest = None
     if turnout:
         instance_id, people = max(
@@ -444,8 +443,3 @@ def _earliest(values) -> datetime | None:
 
 def _iso(value) -> str | None:
     return value.isoformat() if value else None
-
-
-def _eve_time(value: datetime) -> datetime:
-    aware = timezone.make_aware(value) if timezone.is_naive(value) else value
-    return aware.astimezone(dt_timezone.utc)
