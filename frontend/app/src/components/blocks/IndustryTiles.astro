@@ -29,9 +29,15 @@ import Tile from '@components/blocks/Tile.astro'
             <Button size='sm' href={translatePath('/industry/orders/')}>
                 {t('browse')}
             </Button>
+        </Tile>
 
+        <Tile
+            title={t('industry.blueprints.page_title')}
+            description={t('industry.blueprints.leading_text')}
+            cover='/images/blueprint-cover.jpg'
+        >
             <Button size='sm' href={translatePath('/industry/blueprints/')}>
-                {t('find_blueprints')}
+                {t('browse')}
             </Button>
         </Tile>
 
