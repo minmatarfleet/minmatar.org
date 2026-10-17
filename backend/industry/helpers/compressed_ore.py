@@ -51,6 +51,7 @@ from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, List, Optional, Sequence, Tuple
 
+from eveonline.helpers.universe import resolve_types_by_name
 from eveuniverse.models import EveMarketPrice, EveType, EveTypeMaterial
 
 from industry.helpers.ore_variants import split_ore_variant
@@ -525,12 +526,7 @@ def categorize_materials(
         if qty > 0:
             named[name] = named.get(name, 0) + qty
 
-    type_by_name = {
-        t.name: t
-        for t in EveType.objects.filter(name__in=named.keys()).select_related(
-            "eve_group"
-        )
-    }
+    type_by_name = resolve_types_by_name(named.keys())
 
     for name, qty in named.items():
         if name in MINERAL_NAMES:
