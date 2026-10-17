@@ -8,6 +8,7 @@ from django.db import transaction
 from ninja import Router
 from pydantic import BaseModel
 
+from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
@@ -56,10 +57,6 @@ class CorporationApplicationRequest(BaseModel):
 
 class TransferCorporationApplicationRequest(BaseModel):
     corporation_id: int
-
-
-class ErrorResponse(BaseModel):
-    detail: str
 
 
 class OpenCorporationApplicationResponse(BaseModel):

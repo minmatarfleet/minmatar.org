@@ -11,7 +11,7 @@ from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
-from app.errors import create_error_id
+from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.exceptions import DiscordRoleAssignmentError
@@ -55,10 +55,6 @@ router.add_router("", endpoints_router)
 discord = DiscordClient()
 
 MOBILE_LOGIN_REDIRECT = "mobile://auth/callback"
-
-
-class ErrorResponse(BaseModel):
-    detail: str
 
 
 @router.get(
