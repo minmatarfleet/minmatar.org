@@ -78,19 +78,21 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<GuestsHeadScripts />
 
 		<link rel="manifest" href="/site.webmanifest">
-	</head>
-	{/* Analytics only from production builds, so dev traffic stays out of the GA property. */}
-	{is_prod_mode() && <>
-		<!-- Google tag (gtag.js) -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
-		<script is:inline>
-		window.dataLayer = window.dataLayer || [];
-		function gtag(){dataLayer.push(arguments);}
-		gtag('js', new Date());
 
-		gtag('config', 'G-H2HFG2XB2N');
-		</script>
-	</>}
+		{/* Analytics only from production builds, so dev traffic stays out of the GA property. */}
+		{is_prod_mode() && <>
+			<!-- Google tag (gtag.js) -->
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
+			<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+
+			gtag('config', 'G-H2HFG2XB2N');
+			</script>
+		</>}
+	</head>
+
 	<body
 		class="[ viewport-layout ]"
 		x-data={`{
