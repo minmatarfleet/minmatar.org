@@ -27,7 +27,7 @@ from campaigns.models import (
 from campaigns.endpoints import serializers
 from campaigns.services import advantage, plan
 from campaigns.services.attribution import attribute_feed_killmail
-from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.helpers import campaign_week_start, day_bounds, week_bounds
 from campaigns.tests.helpers import (
     KAMELA,
     KOURMONEN,
@@ -448,12 +448,31 @@ class CampaignApiTests(TestCase):
         big_a = self._pilot_in("big_a", 4001, 1)
         big_b = self._pilot_in("big_b", 4002, 1)
         small = self._pilot_in("small", 4003, 2)
-        no_main = User.objects.create(username="no_main")
+        no_main, _ = enlist(self.campaign, "no_main", 4005)
+        # Kill boards read the mails: big_a and big_b share two of Big's
+        # three kills, which count once each for the corporation.
+        for killmail_id, attacker_ids in (
+            (701, [4001, 4002]),
+            (702, [4002, 4001]),
+            (703, [4001]),
+            (704, [4003]),
+            (705, [4005]),
+            (706, [4005]),
+            (707, [4005]),
+            (708, [4005]),
+        ):
+            attribute_feed_killmail(
+                make_feed_killmail(
+                    killmail_id,
+                    victim_character_id=9999,
+                    attacker_ids=attacker_ids,
+                )
+            )
         for user, kills, complexes, advantage_generated, fleets_led in (
             (big_a, 3, 0, 4.0, 0),
             (big_b, 2, 1, 0.0, 0),
             (small, 1, 5, 0.0, 2),
-            (no_main, 9, 0, 0.0, 0),
+            (no_main, 4, 0, 0.0, 0),
         ):
             CampaignParticipantDay.objects.create(
                 campaign=self.campaign,
@@ -484,7 +503,15 @@ class CampaignApiTests(TestCase):
 
         self.assertEqual(
             board("kills"),
-            [(1, "", 1, 9), (2, "Big", 2, 5), (3, "Small", 1, 1)],
+            [(1, "", 1, 4), (2, "Big", 2, 3), (3, "Small", 1, 1)],
+        )
+        self.assertEqual(
+            board("isk"),
+            [
+                (1, "", 1, 200_000_000),
+                (2, "Big", 2, 150_000_000),
+                (3, "Small", 1, 50_000_000),
+            ],
         )
         self.assertEqual(
             board("sites"), [(1, "Small", 1, 5), (2, "Big", 1, 1)]
@@ -493,13 +520,19 @@ class CampaignApiTests(TestCase):
         self.assertEqual(board("fcs"), [(1, "Small", 1, 2)])
 
     def test_the_corporation_board_honours_the_period(self):
-        user = self._pilot_in("old_hand", 4004, 1)
-        CampaignParticipantDay.objects.create(
-            campaign=self.campaign,
-            user=user,
-            day=campaign_week_start() - timedelta(days=10),
-            kills=4,
-        )
+        old_day = campaign_week_start() - timedelta(days=10)
+        self.campaign.start_at = day_bounds(old_day)[0]
+        self.campaign.save()
+        self._pilot_in("old_hand", 4004, 1)
+        for killmail_id in (711, 712, 713, 714):
+            attribute_feed_killmail(
+                make_feed_killmail(
+                    killmail_id,
+                    victim_character_id=9999,
+                    attacker_ids=[4004],
+                    killmail_time=day_bounds(old_day)[0] + timedelta(hours=1),
+                )
+            )
         response = self.client.get(
             f"{BASE}/{self.campaign.slug}/leaderboard/corporations?period=week",
             **auth_headers(self.user),

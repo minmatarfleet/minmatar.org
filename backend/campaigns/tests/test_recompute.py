@@ -9,6 +9,7 @@ from django.utils import timezone
 from campaigns.helpers import campaign_day, day_bounds
 from campaigns.models import (
     CampaignAward,
+    CampaignEnlistmentCharacter,
     CampaignComplexCompletion,
     CampaignEvent,
     CampaignKillmail,
@@ -26,12 +27,19 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacterFwLpPayout, FwPayoutEventCode
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterFwLpPayout,
+    FwPayoutEventCode,
+)
 
 # Migration modules are named with a number, which is not a valid import.
 confirm_codes_and_recount = importlib.import_module(
     "campaigns.migrations.0025_confirm_complex_and_advantage_codes"
 ).confirm_codes_and_recount
+recount_multibox_days = importlib.import_module(
+    "campaigns.migrations.0028_recount_multibox_kills"
+).recount_multibox_days
 
 
 class RecomputeTests(TestCase):
@@ -62,6 +70,87 @@ class RecomputeTests(TestCase):
         self.assertEqual(row.kills, 0)
         self.assertEqual(row.points, 0)
         self.assertFalse(row.active)
+
+    def _add_alt(self, character_id):
+        alt = EveCharacter.objects.create(
+            character_id=character_id,
+            character_name=f"Alt {character_id}",
+            user=self.user,
+        )
+        CampaignEnlistmentCharacter.objects.create(
+            enlistment=self.campaign.enlistments.get(user=self.user),
+            character=alt,
+            included_from=self.campaign.start_at,
+        )
+
+    def _day_row(self):
+        return CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=self.today
+        )
+
+    def test_a_pilots_alts_on_one_kill_count_as_one_kill(self):
+        # Scored against the pilot on a mail of the same size with two
+        # outsiders, so zKill's solo flag is the same on both.
+        attribute_feed_killmail(
+            make_feed_killmail(
+                802, victim_character_id=9999, attacker_ids=[8001, 7001, 7002]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+        alone = self._day_row()
+
+        CampaignKillmail.objects.all().delete()
+        for character_id in (8002, 8003):
+            self._add_alt(character_id)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                803, victim_character_id=9999, attacker_ids=[8002, 8001, 8003]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+        boxed = self._day_row()
+
+        self.assertEqual(boxed.kills, 1)
+        self.assertEqual(boxed.final_blows, 1)
+        self.assertEqual(boxed.gang_kills, 0)
+        self.assertEqual(boxed.isk_destroyed, alone.isk_destroyed)
+        self.assertEqual(boxed.points, alone.points)
+        self.assertEqual(stats.week_kills(self.campaign), 1)
+
+    def test_the_week_counts_a_shared_kill_once(self):
+        enlist(self.campaign, "wingman", 8101)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                804, victim_character_id=9999, attacker_ids=[8001, 8101]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+
+        self.assertEqual(stats.week_kills(self.campaign), 1)
+        self.assertEqual(stats.week_summary(self.campaign)["kills"], 1)
+
+    def test_the_migration_recounts_older_multibox_days(self):
+        self._add_alt(8002)
+        earlier = self.today - timedelta(days=3)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                805,
+                victim_character_id=9999,
+                attacker_ids=[8001, 8002],
+                killmail_time=day_bounds(earlier)[0] + timedelta(hours=1),
+            )
+        )
+        # The day as the old per-character count left it.
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=self.user, day=earlier, kills=2
+        )
+
+        recount_multibox_days(None, None)
+
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=earlier
+        )
+        self.assertEqual(row.kills, 1)
 
     def test_a_pod_loss_is_not_scored_and_is_not_an_active_day(self):
         """The ship loss already cost the pilot; the pod must not again."""
