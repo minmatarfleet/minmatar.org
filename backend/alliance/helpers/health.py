@@ -369,6 +369,9 @@ def compute_alliance_health(  # noqa: C901
     hygiene_since = now - timedelta(days=HYGIENE_DAYS)
     hygiene_recent = now - timedelta(days=HYGIENE_RECENT_DAYS)
     hygiene_180 = now - timedelta(days=180)
+    # Fleets attended are distinct ESI fleet instances per person (alts
+    # folded). An EveFleet has had at most one instance in production, so
+    # this equals scheduled fleets; see fleets.helpers.metrics.
     fleets_90d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_30d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_180_times: dict[int, list[datetime]] = defaultdict(list)

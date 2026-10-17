@@ -6,7 +6,8 @@ from django.utils import timezone
 
 from fleets.models import EveFleet
 
-from surveys.constants import ACTIVITY_INACTIVE, COHORT_NEW
+from eveonline.helpers.corporations.summary import fleet_tier
+from surveys.constants import ACTIVITY_INACTIVE, COHORT_NEW, activity_tier
 from surveys.helpers.autofill import build_member_context, build_segmentation
 
 
@@ -49,3 +50,11 @@ class AutofillTests(TestCase):
             fleet.status = "complete"
             fleet.save()
         self.assertIn("fc", build_member_context(self.user)["role_flags"])
+
+    def test_corporation_tiers_are_the_survey_tiers(self):
+        for fleets in range(0, 13):
+            self.assertEqual(fleet_tier(fleets), activity_tier(fleets), fleets)
+        self.assertEqual(
+            [activity_tier(n) for n in (0, 1, 2, 3, 9, 10)],
+            ["inactive", "lapsing", "lapsing", "regular", "regular", "core"],
+        )
