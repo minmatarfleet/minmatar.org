@@ -1,5 +1,6 @@
 import type {
     LoyaltyCurrency,
+    LoyaltyMarketOrder,
     LoyaltyMarketOrdersList,
     LoyaltyOffersList,
     LoyaltyOrderStats,
@@ -150,4 +151,50 @@ export async function get_loyalty_stats(loyalty_point_id?: number, days?: number
         })
     }
     return await response.json() as LoyaltyOrderStats
+}
+
+export async function get_loyalty_order(order_id: number) {
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}`
+    console.log(`Requesting: ${ENDPOINT}`)
+    const response = await fetch(ENDPOINT, {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+            cause: response.status,
+        })
+    }
+    return await response.json() as LoyaltyMarketOrder
+}
+
+export interface LoyaltyOrderPatch {
+    status?: string
+    notes?: string
+}
+
+/** Move an order on: the API checks the caller may take this step. */
+export async function patch_loyalty_order(
+    access_token: string,
+    order_id: number,
+    body: LoyaltyOrderPatch,
+) {
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}`
+    console.log(`Requesting PATCH: ${ENDPOINT}`)
+    const response = await fetch(ENDPOINT, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${access_token}`,
+        },
+        body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+        let detail = get_error_message(response.status, `PATCH ${ENDPOINT}`)
+        try {
+            const data = await response.json()
+            if (typeof data.detail === 'string') detail = data.detail
+        } catch (e) {}
+        throw new Error(detail, { cause: response.status })
+    }
+    return await response.json() as LoyaltyMarketOrder
 }

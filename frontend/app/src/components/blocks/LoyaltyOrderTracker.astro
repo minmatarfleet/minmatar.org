@@ -1,0 +1,763 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { format_close_time } from '@helpers/loyalty_order_stats'
+import {
+    SEND_LP_HOURS,
+    isk_payer_id,
+    last_claim_at,
+    lp_sender_id,
+    order_converter,
+    order_destination,
+    order_payout,
+    order_stage_index,
+    owed_step,
+    send_lp_deadline,
+} from '@helpers/loyalty_desk'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+import Button from '@components/blocks/Button.astro'
+
+const { t, lang, translatePath } = i18n(Astro.url)
+
+interface Props {
+    order: LoyaltyMarketOrder
+    current_user_id: number
+    can_manage: boolean
+    /** Just posted: show the "order is live" banner. */
+    posted?: boolean
+    error?: string | false
+}
+
+const { order, current_user_id, can_manage, posted = false, error = false } = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/loyalty_order_tracker_component')}?order_id=${order.id}`
+
+const now = new Date()
+const eve_time = (value: Date | string | null | undefined) => {
+    if (!value) return ''
+    const date = new Date(value)
+    const day = date.toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    const time = date.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' })
+    return `${day} · ${time}`
+}
+const lp = number_thousand_separator(order.quantity)
+const payout = number_thousand_separator(order_payout(order))
+const tier_label = order.tier === 'express' ? t('industry.loyalty.tier.express') : t('industry.loyalty.tier.standard')
+const side_label = order.side === 'buy' ? t('industry.loyalty.side.buy') : t('industry.loyalty.side.sell')
+const destination = order_destination(order)
+const converter = order_converter(order)
+const stage = order_stage_index(order)
+const step = owed_step(order)
+const claimed_at = last_claim_at(order)
+const deadline = send_lp_deadline(order)
+
+const owes_send = step === 'send_lp' && order.status === 'awaiting_lp' && lp_sender_id(order) === current_user_id
+const owes_pay = step === 'pay_isk' && isk_payer_id(order) === current_user_id
+const your_move = owes_send || owes_pay
+const can_cancel = order.status === 'open' && order.created_by_user_id === current_user_id
+// Managers can move any order on; the menu stays on the desk.
+const manager_lp_received = can_manage && !owes_send && order.status === 'awaiting_lp'
+const manager_isk_sent = can_manage && !owes_pay && order.status === 'awaiting_isk'
+
+const seller_name = order.side === 'buy' ? (converter?.name ?? '') : (order.created_by_name ?? '')
+let state_text: string
+if (order.status === 'completed') state_text = t('industry.loyalty.tracker.state.completed')
+else if (order.status === 'cancelled') state_text = t('industry.loyalty.tracker.state.cancelled')
+else if (owes_send) state_text = t('industry.loyalty.tracker.state.your_send')
+else if (owes_pay) state_text = t('industry.loyalty.tracker.state.your_pay')
+else if (step === 'send_lp') state_text = t('industry.loyalty.tracker.state.send_lp').replace('{name}', order.side === 'buy' ? (converter?.name ?? '') : seller_name)
+else if (step === 'pay_isk') state_text = t('industry.loyalty.tracker.state.pay_isk').replace('{name}', order.side === 'buy' ? seller_name : (converter?.name ?? ''))
+else state_text = t('industry.loyalty.tracker.state.claim')
+
+const deadline_percent = claimed_at && deadline
+    ? Math.min(100, Math.max(2, ((now.getTime() - claimed_at.getTime()) / (SEND_LP_HOURS * 3_600_000)) * 100))
+    : 0
+
+type TimelineEntry = { title: string, text?: string, time?: string, state: 'done' | 'now' | 'todo', face?: number | null }
+const timeline: TimelineEntry[] = [
+    {
+        title: t('industry.loyalty.tracker.tl.posted'),
+        text: t('industry.loyalty.tracker.tl.posted_text')
+            .replace('{lp}', lp)
+            .replace('{rate}', number_thousand_separator(order.isk_per_lp))
+            .replace('{tier}', tier_label),
+        time: eve_time(order.created_at),
+        state: 'done',
+        face: order.created_by_character_id,
+    },
+    stage >= 1
+        ? {
+            title: t('industry.loyalty.tracker.tl.claimed').replace('{name}', converter?.name ?? ''),
+            text: destination ? t('industry.loyalty.tracker.tl.claimed_text').replace('{corporation}', destination.name) : undefined,
+            time: eve_time(claimed_at),
+            state: 'done',
+            face: converter?.character_id,
+        }
+        : { title: t('industry.loyalty.tracker.tl.claim_pending'), state: order.status === 'open' ? 'now' : 'todo' },
+    stage >= 2
+        ? { title: t('industry.loyalty.tracker.tl.lp_sent'), state: 'done' }
+        : { title: t('industry.loyalty.tracker.tl.lp_pending'), state: stage === 1 && order.status !== 'cancelled' ? 'now' : 'todo' },
+    stage >= 3
+        ? {
+            title: t('industry.loyalty.tracker.tl.paid'),
+            text: t('industry.loyalty.tracker.tl.paid_text').replace('{isk}', payout),
+            time: eve_time(order.completed_at),
+            state: 'done',
+        }
+        : { title: t('industry.loyalty.tracker.tl.paid'), state: stage === 2 && order.status !== 'cancelled' ? 'now' : 'todo' },
+]
+if (order.status === 'cancelled')
+    timeline.push({ title: t('industry.loyalty.tracker.tl.cancelled'), time: eve_time(order.updated_at), state: 'done' })
+---
+
+<div
+    id="loyalty-order-tracker"
+    class="[ loyalty-tracker ]"
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-indicator=".loader"
+>
+    {posted && (
+        <p class="[ loyalty-tracker__banner ]" role="status">
+            {t('industry.loyalty.tracker.posted_banner').replace('{id}', String(order.id))}
+        </p>
+    )}
+    {error && <p class="[ loyalty-tracker__error ]" role="alert">{error}</p>}
+
+    <header class="[ loyalty-tracker__header ]">
+        <div class="[ loyalty-tracker__meta ]">
+            <img
+                src={get_corporation_logo(order.corporation_id, 64)}
+                alt={order.loyalty_point_name}
+                width="40"
+                height="40"
+            />
+            <span>{side_label} · {tier_label} · {t('industry.loyalty.tracker.posted_on').replace('{date}', eve_time(order.created_at))}</span>
+        </div>
+        <p class="[ loyalty-tracker__headline tabular-nums ]">
+            {lp} LP <span aria-hidden="true">→</span> <strong>{payout} ISK</strong>
+        </p>
+        <span class:list={['loyalty-tracker__state', { 'is-your-move': your_move, 'is-done': order.status === 'completed', 'is-cancelled': order.status === 'cancelled' }]}>
+            {state_text}
+        </span>
+    </header>
+
+    <FluidFixed width="20rem" gap="var(--space-l)" class="[ loyalty-tracker__body ]">
+        <div class="[ loyalty-tracker__main ]">
+            {owes_send && destination && (
+                <section class="[ loyalty-tracker__move ]" aria-labelledby="loyalty-move-title">
+                    <div class="[ loyalty-tracker__move-body ]">
+                        <div class="[ loyalty-tracker__move-head ]">
+                            {destination.corporation_id && (
+                                <img
+                                    src={get_corporation_logo(destination.corporation_id, 128)}
+                                    alt={destination.name}
+                                    width="72"
+                                    height="72"
+                                />
+                            )}
+                            <div>
+                                <span class="[ loyalty-tracker__eyebrow ]">{t('industry.loyalty.tracker.your_move')}</span>
+                                <h2 id="loyalty-move-title">
+                                    {t('industry.loyalty.tracker.move_send').replace('{lp}', lp).replace('{corporation}', destination.name)}
+                                </h2>
+                            </div>
+                        </div>
+                        <div
+                            class="[ loyalty-tracker__copy ]"
+                            x-data="{ copied: false }"
+                        >
+                            <span>{destination.name}</span>
+                            <button
+                                type="button"
+                                x-on:click={`navigator.clipboard.writeText(${JSON.stringify(destination.name)}); copied = true; setTimeout(() => copied = false, 2000)`}
+                            >
+                                <span x-text={`copied ? ${JSON.stringify(t('industry.loyalty.tracker.copied'))} : ${JSON.stringify(t('industry.loyalty.tracker.copy'))}`}>
+                                    {t('industry.loyalty.tracker.copy')}
+                                </span>
+                            </button>
+                        </div>
+                        <ol class="[ loyalty-tracker__how ]">
+                            <li>{t('industry.loyalty.tracker.move_send_1').replace('{currency}', order.loyalty_point_name)}</li>
+                            <li>{t('industry.loyalty.tracker.move_send_2').replace('{lp}', lp)}</li>
+                            <li>{t('industry.loyalty.tracker.move_send_3')}</li>
+                        </ol>
+                        <div class="[ loyalty-tracker__buttons ]">
+                            <form hx-post={`${PARTIAL_URL}&action=lp_sent`}>
+                                <Button type="submit" color="fleet-red">{t('industry.loyalty.tracker.lp_sent')}</Button>
+                            </form>
+                            {order.discord_thread_url && (
+                                <Button href={order.discord_thread_url} new_tab={true}>{t('industry.loyalty.tracker.thread')}</Button>
+                            )}
+                        </div>
+                    </div>
+                    {deadline && claimed_at && (
+                        <div class="[ loyalty-tracker__deadline ]">
+                            <div class="[ loyalty-tracker__deadline-text ]">
+                                <span>{t('industry.loyalty.tracker.claimed_ago').replace('{time}', format_close_time((now.getTime() - claimed_at.getTime()) / 1000))}</span>
+                                <strong class="[ tabular-nums ]">{t('industry.loyalty.tracker.deadline').replace('{date}', eve_time(deadline))}</strong>
+                            </div>
+                            <div class="[ loyalty-tracker__deadline-bar ]" aria-hidden="true">
+                                <span style={`width: ${deadline_percent}%`}></span>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {owes_pay && (
+                <section class="[ loyalty-tracker__move ]" aria-labelledby="loyalty-move-title">
+                    <div class="[ loyalty-tracker__move-body ]">
+                        <div class="[ loyalty-tracker__move-head ]">
+                            {order.created_by_character_id && order.side !== 'buy' && (
+                                <img
+                                    src={get_player_icon(order.created_by_character_id, 128)}
+                                    alt={seller_name}
+                                    width="72"
+                                    height="72"
+                                />
+                            )}
+                            <div>
+                                <span class="[ loyalty-tracker__eyebrow ]">{t('industry.loyalty.tracker.your_move')}</span>
+                                <h2 id="loyalty-move-title">
+                                    {t('industry.loyalty.tracker.move_pay').replace('{isk}', payout).replace('{name}', order.side === 'buy' ? (destination?.name ?? '') : seller_name)}
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="[ loyalty-tracker__buttons ]">
+                            <form hx-post={`${PARTIAL_URL}&action=isk_sent`}>
+                                <Button type="submit" color="green">{t('industry.loyalty.tracker.isk_sent')}</Button>
+                            </form>
+                            {order.discord_thread_url && (
+                                <Button href={order.discord_thread_url} new_tab={true}>{t('industry.loyalty.tracker.thread')}</Button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {(manager_lp_received || manager_isk_sent) && (
+                <div class="[ loyalty-tracker__team ]">
+                    <span>{t('industry.loyalty.steps.team')}</span>
+                    {manager_lp_received && (
+                        <form hx-post={`${PARTIAL_URL}&action=lp_sent`}>
+                            <Button type="submit" size="sm">{t('industry.loyalty.tracker.lp_received')}</Button>
+                        </form>
+                    )}
+                    {manager_isk_sent && (
+                        <form hx-post={`${PARTIAL_URL}&action=isk_sent`}>
+                            <Button type="submit" size="sm" color="green">{t('industry.loyalty.tracker.isk_sent')}</Button>
+                        </form>
+                    )}
+                </div>
+            )}
+
+            <section class="[ loyalty-tracker__timeline ]" aria-labelledby="loyalty-timeline-title">
+                <h2 id="loyalty-timeline-title">{t('industry.loyalty.tracker.progress')}</h2>
+                <ol>
+                    {timeline.map((entry) => (
+                        <li class:list={[`is-${entry.state}`]} aria-current={entry.state === 'now' ? 'step' : undefined}>
+                            <span class="[ loyalty-tracker__dot ]" aria-hidden="true"></span>
+                            <span class="[ loyalty-tracker__entry ]">
+                                <strong>
+                                    {entry.face && (
+                                        <img src={get_player_icon(entry.face, 64)} alt="" width="22" height="22" loading="lazy" />
+                                    )}
+                                    {entry.title}
+                                </strong>
+                                {entry.text && <span>{entry.text}</span>}
+                            </span>
+                            <span class="[ loyalty-tracker__when tabular-nums ]">
+                                {entry.state === 'now' ? t('industry.loyalty.tracker.tl.now') : entry.time}
+                            </span>
+                        </li>
+                    ))}
+                </ol>
+            </section>
+        </div>
+
+        <aside class="[ loyalty-tracker__aside ]">
+            <section class="[ loyalty-tracker__panel ]" aria-labelledby="loyalty-summary-title">
+                <h2 id="loyalty-summary-title">{t('industry.loyalty.tracker.summary')}</h2>
+                <dl class="[ tabular-nums ]">
+                    <div><dt>{t('industry.loyalty.tracker.lp')}</dt><dd>{lp}</dd></div>
+                    <div><dt>{t('industry.loyalty.tracker.rate')}</dt><dd>{number_thousand_separator(order.isk_per_lp)} {t('industry.loyalty.rates.isk_per_lp')}</dd></div>
+                    <div><dt>{t('industry.loyalty.tracker.speed')}</dt><dd>{tier_label}</dd></div>
+                    <div class="[ is-total ]"><dt>{t('industry.loyalty.tracker.payout')}</dt><dd>{payout} ISK</dd></div>
+                </dl>
+            </section>
+
+            {order.created_by_name && order.side !== 'buy' && (
+                <section class="[ loyalty-tracker__panel ]">
+                    <h2>{t('industry.loyalty.tracker.seller')}</h2>
+                    <div class="[ loyalty-tracker__person ]">
+                        {order.created_by_character_id && (
+                            <img src={get_player_icon(order.created_by_character_id, 128)} alt="" width="56" height="56" />
+                        )}
+                        <strong>{order.created_by_name}</strong>
+                    </div>
+                </section>
+            )}
+
+            {converter && (
+                <section class="[ loyalty-tracker__panel ]">
+                    <h2>{t('industry.loyalty.tracker.converter')}</h2>
+                    <div class="[ loyalty-tracker__person ]">
+                        {converter.character_id && (
+                            <img src={get_player_icon(converter.character_id, 128)} alt="" width="56" height="56" />
+                        )}
+                        <span>
+                            <strong>{converter.name}</strong>
+                            <small>{t('industry.loyalty.steps.team')}</small>
+                        </span>
+                    </div>
+                    <p>{t('industry.loyalty.tracker.converter_note')}</p>
+                </section>
+            )}
+
+            {can_cancel && (
+                <section class="[ loyalty-tracker__panel is-quiet ]">
+                    <p>{t('industry.loyalty.tracker.cancel_note')}</p>
+                    <form
+                        hx-post={`${PARTIAL_URL}&action=cancel`}
+                        hx-confirm={t('industry.loyalty.action.confirm_cancel')}
+                    >
+                        <Button type="submit" size="sm">{t('industry.loyalty.action.cancel_order')}</Button>
+                    </form>
+                </section>
+            )}
+        </aside>
+    </FluidFixed>
+</div>
+
+<style lang="scss">
+    .loyalty-tracker {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .loyalty-tracker__banner,
+    .loyalty-tracker__error {
+        margin: 0;
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid var(--green);
+        background-color: color-mix(in srgb, var(--green) 14%, transparent);
+        color: var(--highlight);
+    }
+
+    .loyalty-tracker__error {
+        border-color: var(--fleet-red);
+        background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+    }
+
+    .loyalty-tracker__header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2xs);
+    }
+
+    .loyalty-tracker__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            background-color: var(--background);
+        }
+    }
+
+    .loyalty-tracker__headline {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1.05;
+        text-transform: uppercase;
+        color: var(--highlight);
+
+        span {
+            color: var(--faded);
+        }
+
+        strong {
+            font-weight: inherit;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-tracker__state {
+        padding: var(--space-3xs) var(--space-s);
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        font-weight: 700;
+        color: var(--highlight);
+
+        &.is-your-move {
+            border-color: var(--fleet-yellow);
+            background-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+
+        &.is-done {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        &.is-cancelled {
+            border-color: var(--fleet-red);
+            color: var(--fleet-red);
+        }
+    }
+
+    :global(.loyalty-tracker__body) {
+        align-items: start;
+    }
+
+    .loyalty-tracker__main {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        min-width: 0;
+    }
+
+    .loyalty-tracker__move {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        background-color: var(--component-background);
+
+        h2 {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step-1);
+            line-height: 1.3;
+            text-transform: none;
+        }
+    }
+
+    .loyalty-tracker__move-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m);
+    }
+
+    .loyalty-tracker__move-head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+
+        img {
+            flex: none;
+            width: var(--space-2xl);
+            height: var(--space-2xl);
+            border: 1px solid var(--border-color-hover);
+            background-color: var(--background);
+        }
+
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .loyalty-tracker__eyebrow {
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-tracker__copy {
+        display: flex;
+        align-items: stretch;
+        max-width: 32rem;
+        border: 1px solid var(--border-color-hover);
+        background-color: var(--background);
+
+        > span {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            min-height: var(--space-xl);
+            padding-inline: var(--space-s);
+            font-weight: 600;
+            color: var(--highlight);
+        }
+
+        button {
+            padding-inline: var(--space-s);
+            border: 0;
+            border-inline-start: 1px solid var(--border-color-hover);
+            background: transparent;
+            color: var(--fleet-yellow);
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            font-weight: 700;
+            cursor: pointer;
+        }
+    }
+
+    .loyalty-tracker__how {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+        gap: var(--space-s);
+        margin: 0;
+        padding-inline-start: var(--space-m);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--foreground);
+
+        li::marker {
+            font-family: var(--heading-font);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-tracker__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+
+    .loyalty-tracker__deadline {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s) var(--space-m);
+        border-block-start: 1px solid var(--border-color-hover);
+        background-color: var(--border-color);
+    }
+
+    .loyalty-tracker__deadline-text {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-s);
+        font-size: var(--step--1);
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .loyalty-tracker__deadline-bar {
+        height: var(--space-3xs);
+        background-color: var(--border-color-hover);
+
+        span {
+            display: block;
+            height: 100%;
+            background-color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-tracker__team {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        border: 1px dashed var(--border-color-hover);
+
+        > span {
+            margin-inline-end: auto;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-tracker__timeline {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+        }
+
+        ol {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            position: relative;
+            display: grid;
+            grid-template-columns: var(--space-m) 1fr auto;
+            gap: var(--space-s);
+            padding-block-end: var(--space-m);
+
+            &:not(:last-child)::before {
+                content: '';
+                position: absolute;
+                inset-inline-start: calc(var(--space-m) / 2 - 1px);
+                inset-block: var(--space-m) 0;
+                width: 2px;
+                background-color: var(--border-color-hover);
+            }
+
+            &.is-done:not(:last-child)::before {
+                background-color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .loyalty-tracker__dot {
+        width: var(--space-m);
+        height: var(--space-m);
+        box-sizing: border-box;
+        border: 2px solid var(--border-color-hover);
+        border-radius: 50%;
+        background-color: var(--background);
+
+        .is-done & {
+            border-color: var(--fleet-yellow);
+            background-color: var(--fleet-yellow);
+        }
+
+        .is-now & {
+            border-color: var(--fleet-yellow);
+            box-shadow: inset 0 0 0 4px var(--background), inset 0 0 0 10px var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-tracker__entry {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        strong {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            color: var(--highlight);
+
+            .is-todo & {
+                color: var(--faded);
+            }
+        }
+
+        img {
+            width: var(--space-s);
+            height: var(--space-s);
+            border-radius: 50%;
+        }
+
+        span {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-tracker__when {
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        .is-now & {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-tracker__aside {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .loyalty-tracker__panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color);
+        background-color: var(--component-background);
+
+        &.is-quiet {
+            background: transparent;
+        }
+
+        h2 {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step-0);
+            text-transform: none;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            line-height: 1.5;
+            color: var(--faded);
+        }
+
+        dl {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            font-size: var(--step--1);
+
+            div {
+                display: flex;
+                justify-content: space-between;
+                gap: var(--space-xs);
+            }
+
+            dt {
+                color: var(--faded);
+            }
+
+            dd {
+                margin: 0;
+                font-weight: 600;
+                color: var(--highlight);
+            }
+
+            .is-total {
+                padding-block-start: var(--space-2xs);
+                border-block-start: 1px solid var(--border-color-hover);
+
+                dd {
+                    color: var(--fleet-yellow);
+                }
+            }
+        }
+    }
+
+    .loyalty-tracker__person {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            width: var(--space-xl);
+            height: var(--space-xl);
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        strong {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--faded);
+        }
+    }
+</style>

@@ -1,0 +1,197 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import {
+    order_converter,
+    order_destination,
+    order_payout,
+    user_owes_step,
+} from '@helpers/loyalty_desk'
+import LoyaltyOrderProgress from '@components/blocks/LoyaltyOrderProgress.astro'
+import Button from '@components/blocks/Button.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    /** Active orders the viewer posted. */
+    orders: LoyaltyMarketOrder[]
+    current_user_id: number
+    [propName: string]: any
+}
+
+const { orders, current_user_id, ...attributes } = Astro.props
+
+delete attributes.class
+
+const TIER_LABELS = {
+    standard: t('industry.loyalty.tier.standard'),
+    express: t('industry.loyalty.tier.express'),
+}
+---
+
+{orders.length > 0 && (
+    <section class:list={['[ loyalty-mine ]', Astro.props.class]} aria-labelledby="loyalty-mine-title" {...attributes}>
+        <h2 id="loyalty-mine-title">{t('industry.loyalty.mine.title')}</h2>
+        <ul class="[ loyalty-mine__list ]">
+            {orders.map((order) => {
+                const destination = order_destination(order)
+                const converter = order_converter(order)
+                const your_move = user_owes_step(order, current_user_id)
+                return (
+                    <li class:list={['loyalty-mine__card', { 'is-your-move': your_move }]}>
+                        <div class="[ loyalty-mine__who ]">
+                            {destination?.corporation_id ? (
+                                <img
+                                    class="[ loyalty-mine__corp ]"
+                                    src={get_corporation_logo(destination.corporation_id, 64)}
+                                    alt={destination.name}
+                                    width="56"
+                                    height="56"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <img
+                                    class="[ loyalty-mine__corp ]"
+                                    src={get_corporation_logo(order.corporation_id, 64)}
+                                    alt={order.loyalty_point_name}
+                                    width="56"
+                                    height="56"
+                                    loading="lazy"
+                                />
+                            )}
+                            {converter?.character_id && (
+                                <img
+                                    class="[ loyalty-mine__face ]"
+                                    src={get_player_icon(converter.character_id, 64)}
+                                    alt={converter.name}
+                                    title={converter.name}
+                                    width="28"
+                                    height="28"
+                                    loading="lazy"
+                                />
+                            )}
+                        </div>
+                        <div class="[ loyalty-mine__text ]">
+                            <span class="[ loyalty-mine__meta ]">
+                                #{order.id} · {TIER_LABELS[order.tier] ?? order.tier}
+                                {your_move
+                                    ? <span class="[ loyalty-mine__badge ]">{t('industry.loyalty.mine.your_move')}</span>
+                                    : <span>· {t('industry.loyalty.mine.waiting')}</span>}
+                            </span>
+                            <strong class="[ tabular-nums ]">
+                                {number_thousand_separator(order.quantity)} LP → {number_thousand_separator(order_payout(order))} ISK
+                            </strong>
+                            {your_move && destination && (
+                                <span>{t('industry.loyalty.mine.send_to').replace('{corporation}', destination.name)}</span>
+                            )}
+                        </div>
+                        <LoyaltyOrderProgress class="[ loyalty-mine__progress ]" order={order} />
+                        <Button size="sm" href={translatePath(`/industry/loyalty/orders/${order.id}/`)}>
+                            {t('industry.loyalty.mine.open_order')}
+                        </Button>
+                    </li>
+                )
+            })}
+        </ul>
+    </section>
+)}
+
+<style lang="scss">
+    .loyalty-mine {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+        }
+    }
+
+    .loyalty-mine__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .loyalty-mine__card {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s) var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid var(--border-color-hover);
+        background-color: var(--component-background);
+
+        &.is-your-move {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        }
+    }
+
+    .loyalty-mine__who {
+        position: relative;
+        flex: none;
+    }
+
+    .loyalty-mine__corp {
+        display: block;
+        width: var(--space-xl);
+        height: var(--space-xl);
+        background-color: var(--background);
+    }
+
+    .loyalty-mine__face {
+        position: absolute;
+        inset-inline-end: calc(var(--space-2xs) * -1);
+        inset-block-end: calc(var(--space-2xs) * -1);
+        width: var(--space-m);
+        height: var(--space-m);
+        border: 2px solid var(--component-background);
+        border-radius: 50%;
+    }
+
+    .loyalty-mine__text {
+        flex: 1 1 16rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        strong {
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+
+        > span:last-child:not(.loyalty-mine__meta) {
+            font-size: var(--step--1);
+        }
+    }
+
+    .loyalty-mine__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .loyalty-mine__badge {
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        background-color: var(--fleet-yellow);
+        color: var(--background);
+    }
+
+    .loyalty-mine__progress {
+        flex: 1 1 18rem;
+    }
+</style>

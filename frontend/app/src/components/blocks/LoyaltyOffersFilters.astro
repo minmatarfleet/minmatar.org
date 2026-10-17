@@ -12,10 +12,8 @@ import {
 import { get_corporation_logo } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
 import Input from '@components/blocks/Input.astro'
-import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
@@ -117,27 +115,49 @@ const default_reset_url = with_params({
     q: undefined,
 })
 
+const sides = [
+    { value: 'buy', label: t('industry.loyalty.offers.side.jita_buy') },
+    { value: 'sell', label: t('industry.loyalty.offers.side.jita_sell') },
+    { value: 'avg_7d', label: t('industry.loyalty.offers.side.avg_7d') },
+] as const
+
+const costs = [
+    {
+        name: 'include_sales_tax_toggle',
+        label: t('industry.loyalty.offers.cost.sales_tax'),
+        active: sales_tax_included,
+        url: with_params({ include_sales_tax: sales_tax_included ? '0' : '1' }),
+    },
+    {
+        name: 'include_freight_toggle',
+        label: t('industry.loyalty.offers.cost.freight'),
+        active: freight_included,
+        url: with_params({ include_freight: freight_included ? '0' : '1' }),
+    },
+]
+
 const excludes = [
     {
         key: 'exclude_tags',
-        label: t('industry.loyalty.offers.exclude_tags'),
+        label: t('industry.loyalty.offers.hide.tags'),
         active: exclude_tags === '1',
     },
     {
         key: 'exclude_blueprints',
-        label: t('industry.loyalty.offers.exclude_blueprints'),
+        label: t('industry.loyalty.offers.hide.blueprints'),
         active: exclude_blueprints === '1',
     },
     {
         key: 'exclude_useless_offers',
-        label: t('industry.loyalty.offers.exclude_useless'),
+        label: t('industry.loyalty.offers.hide.useless'),
+        tip: t('industry.loyalty.offers.hide.useless_tip'),
         active: exclude_useless_offers === '1',
-        // Packages / chips / skins ride along with this chip.
+        // Packages / chips / skins ride along with this toggle.
         bundled: true,
     },
     {
         key: 'exclude_below_set_lp_price',
-        label: t('industry.loyalty.offers.exclude_below_set'),
+        label: t('industry.loyalty.offers.hide.below_set'),
         active: exclude_below_set_lp_price === '1',
     },
 ]
@@ -153,232 +173,226 @@ function exclude_toggle_overrides(
 }
 
 const hx_include_filters =
-    ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], select[name='side']"
+    ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], .loyalty-offers-filters__side"
 ---
 
-<Flexblock class="[ loyalty-offers-filters ]" gap="var(--space-s)">
-    <FlexInline
-        class="[ loyalty-offers-filters__toolbar ]"
-        gap="var(--space-s)"
-        justification="space-between"
-    >
-        <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__controls ]">
-            {sorted_currencies.length <= 1 ? (
-                <span class="[ loyalty-offers-filters__currency loyalty-offers-filters__currency-trigger is-static ]">
-                    {selected_currency_record && (
-                        <img
-                            class="[ loyalty-offers-filters__currency-logo ]"
-                            src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
-                            width="20"
-                            height="20"
-                            alt=""
-                            loading="lazy"
-                        />
-                    )}
-                    <span class="[ loyalty-offers-filters__currency-name ]">
-                        {selected_currency_record?.name
-                            ?? t('industry.loyalty.offers.currency_label')}
-                    </span>
+<aside
+    class="[ loyalty-offers-filters ]"
+    aria-label={t('industry.loyalty.offers.filters.aria_label')}
+>
+    <div class="[ loyalty-offers-filters__group ]">
+        <span class="[ loyalty-offers-filters__legend ]">{t('industry.loyalty.offers.filters.store')}</span>
+        {sorted_currencies.length <= 1 ? (
+            <span class="[ loyalty-offers-filters__currency-trigger is-static ]">
+                {selected_currency_record && (
+                    <img
+                        class="[ loyalty-offers-filters__currency-logo ]"
+                        src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
+                        width="20"
+                        height="20"
+                        alt=""
+                        loading="lazy"
+                    />
+                )}
+                <span class="[ loyalty-offers-filters__currency-name ]">
+                    {selected_currency_record?.name
+                        ?? t('industry.loyalty.offers.currency_label')}
                 </span>
-            ) : (
-            <div
-                class="[ loyalty-offers-filters__currency ]"
-                x-data={`{
-                    open: false,
-                    close() { this.open = false },
-                    toggle() { this.open = this.open ? false : true },
-                }`}
-                @keydown.escape.prevent.stop="close()"
-                @mousedown.outside="open && close()"
-                @htmx:before-request="close()"
-            >
-                <button
-                    type="button"
-                    class="[ loyalty-offers-filters__currency-trigger ]"
-                    @click.prevent="toggle()"
-                    x-bind:aria-expanded="open"
-                    aria-haspopup="listbox"
-                    aria-controls="loyalty-offers-currency-options"
-                    aria-label={t('industry.loyalty.offers.currency_label')}
-                >
-                    {selected_currency_record && (
-                        <img
-                            class="[ loyalty-offers-filters__currency-logo ]"
-                            src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
-                            width="20"
-                            height="20"
-                            alt=""
-                            loading="lazy"
-                        />
-                    )}
-                    <span class="[ loyalty-offers-filters__currency-name ]">
-                        {selected_currency_record?.name
-                            ?? t('industry.loyalty.offers.currency_label')}
-                    </span>
-                    <CaretIcon class="[ loyalty-offers-filters__currency-caret ]" />
-                </button>
-
-                <ul
-                    id="loyalty-offers-currency-options"
-                    class="[ loyalty-offers-filters__currency-options ]"
-                    role="listbox"
-                    x-show="open"
-                    x-cloak
-                    style="display: none"
-                >
-                    {sorted_currencies.map((c) => (
-                        <li role="presentation">
-                            <button
-                                type="button"
-                                role="option"
-                                class:list={[
-                                    '[ loyalty-offers-filters__currency-option ]',
-                                    {
-                                        'loyalty-offers-filters__currency-option--selected':
-                                            selected_currency === c.corporation_id,
-                                    },
-                                ]}
-                                aria-selected={selected_currency === c.corporation_id
-                                    ? 'true'
-                                    : 'false'}
-                                @click="close()"
-                                hx-get={with_params({
-                                    currency: String(c.corporation_id),
-                                })}
-                                hx-target={SLOT}
-                                hx-swap="innerHTML"
-                                hx-indicator=".loader"
-                            >
-                                <img
-                                    class="[ loyalty-offers-filters__currency-logo ]"
-                                    src={get_corporation_logo(c.corporation_id, 32)}
-                                    width="20"
-                                    height="20"
-                                    alt=""
-                                    loading="lazy"
-                                />
-                                <span>{c.name}</span>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            )}
-
-            <Select
-                name="side"
-                size="sm"
-                width="11rem"
-                hx-get={PARTIAL}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                hx-trigger="change"
-                hx-include={hx_include_filters}
-                class="[ loyalty-offers-filters__select ]"
-            >
-                <option value="sell" selected={side === 'sell'}>
-                    {t('industry.loyalty.offers.side_sell')}
-                </option>
-                <option value="buy" selected={side === 'buy'}>
-                    {t('industry.loyalty.offers.side_buy')}
-                </option>
-                <option value="avg_7d" selected={side === 'avg_7d'}>
-                    {t('industry.loyalty.offers.side_avg_7d')}
-                </option>
-            </Select>
-
-            <form
-                class="[ loyalty-offers-filters__search ]"
-                hx-get={PARTIAL}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                hx-trigger="submit, keyup changed delay:400ms from:find input"
-                hx-include={hx_include_filters}
-            >
-                <Input
-                    type="search"
-                    name="q"
-                    value={q}
-                    placeholder={t('industry.loyalty.offers.search_placeholder')}
-                    size="sm"
-                    width="22rem"
-                >
-                    <MagnifierIcon slot="icon" />
-                </Input>
-            </form>
-        </FlexInline>
-
-        <Button
-            size="sm"
-            color="transparent"
-            hx-get={default_reset_url}
-            hx-target={SLOT}
-            hx-swap="innerHTML"
-            hx-indicator=".loader"
+            </span>
+        ) : (
+        <div
+            class="[ loyalty-offers-filters__currency ]"
+            x-data={`{
+                open: false,
+                close() { this.open = false },
+                toggle() { this.open = this.open ? false : true },
+            }`}
+            @keydown.escape.prevent.stop="close()"
+            @mousedown.outside="open && close()"
+            @htmx:before-request="close()"
         >
-            {t('industry.loyalty.offers.clear_filters')}
-        </Button>
-    </FlexInline>
-
-    <FlexInline gap="var(--space-3xs)" class="[ loyalty-offers-filters__chips ]">
-        {excludes.map((item) => (
             <button
                 type="button"
-                class:list={[
-                    '[ loyalty-offers-filters__chip ]',
-                    { 'loyalty-offers-filters__chip--active': item.active },
-                ]}
-                hx-get={with_params(
-                    exclude_toggle_overrides(item.key, item.active, item.bundled),
+                class="[ loyalty-offers-filters__currency-trigger ]"
+                @click.prevent="toggle()"
+                x-bind:aria-expanded="open"
+                aria-haspopup="listbox"
+                aria-controls="loyalty-offers-currency-options"
+                aria-label={t('industry.loyalty.offers.currency_label')}
+            >
+                {selected_currency_record && (
+                    <img
+                        class="[ loyalty-offers-filters__currency-logo ]"
+                        src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
+                        width="20"
+                        height="20"
+                        alt=""
+                        loading="lazy"
+                    />
                 )}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                aria-pressed={item.active ? 'true' : 'false'}
-            >
-                {item.label}
+                <span class="[ loyalty-offers-filters__currency-name ]">
+                    {selected_currency_record?.name
+                        ?? t('industry.loyalty.offers.currency_label')}
+                </span>
+                <CaretIcon class="[ loyalty-offers-filters__currency-caret ]" />
             </button>
-        ))}
-    </FlexInline>
 
-    <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__cost-options ]">
-        <div class="[ loyalty-offers-filters__freight ]">
-            <RadioCheckInput
-                type="checkbox"
-                name="include_freight_toggle"
-                value="1"
-                checked={freight_included ? 'checked' : undefined}
-                hx-get={with_params({
-                    include_freight: freight_included ? '0' : '1',
-                })}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                hx-trigger="change"
+            <ul
+                id="loyalty-offers-currency-options"
+                class="[ loyalty-offers-filters__currency-options ]"
+                role="listbox"
+                x-show="open"
+                x-cloak
+                style="display: none"
             >
-                <small>{t('industry.loyalty.offers.include_freight')}</small>
-            </RadioCheckInput>
+                {sorted_currencies.map((c) => (
+                    <li role="presentation">
+                        <button
+                            type="button"
+                            role="option"
+                            class:list={[
+                                '[ loyalty-offers-filters__currency-option ]',
+                                {
+                                    'loyalty-offers-filters__currency-option--selected':
+                                        selected_currency === c.corporation_id,
+                                },
+                            ]}
+                            aria-selected={selected_currency === c.corporation_id
+                                ? 'true'
+                                : 'false'}
+                            @click="close()"
+                            hx-get={with_params({
+                                currency: String(c.corporation_id),
+                            })}
+                            hx-target={SLOT}
+                            hx-swap="innerHTML"
+                            hx-indicator=".loader"
+                        >
+                            <img
+                                class="[ loyalty-offers-filters__currency-logo ]"
+                                src={get_corporation_logo(c.corporation_id, 32)}
+                                width="20"
+                                height="20"
+                                alt=""
+                                loading="lazy"
+                            />
+                            <span>{c.name}</span>
+                        </button>
+                    </li>
+                ))}
+            </ul>
         </div>
-        <div class="[ loyalty-offers-filters__sales-tax ]">
-            <RadioCheckInput
-                type="checkbox"
-                name="include_sales_tax_toggle"
-                value="1"
-                checked={sales_tax_included ? 'checked' : undefined}
-                hx-get={with_params({
-                    include_sales_tax: sales_tax_included ? '0' : '1',
-                })}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                hx-trigger="change"
-            >
-                <small>{t('industry.loyalty.offers.include_sales_tax')}</small>
-            </RadioCheckInput>
-        </div>
-    </FlexInline>
+        )}
+    </div>
+
+    <form
+        class="[ loyalty-offers-filters__group loyalty-offers-filters__search ]"
+        hx-get={PARTIAL}
+        hx-target={SLOT}
+        hx-swap="innerHTML"
+        hx-indicator=".loader"
+        hx-trigger="submit, keyup changed delay:400ms from:find input"
+        hx-include={hx_include_filters}
+    >
+        <label class="[ loyalty-offers-filters__legend ]" for="loyalty-offers-search">
+            {t('industry.loyalty.offers.filters.search')}
+        </label>
+        <Input
+            id="loyalty-offers-search"
+            type="search"
+            name="q"
+            value={q}
+            placeholder={t('industry.loyalty.offers.search_placeholder')}
+            size="sm"
+        >
+            <MagnifierIcon slot="icon" />
+        </Input>
+    </form>
+
+    <Grid
+        class="[ loyalty-offers-filters__options ]"
+        min_item_width="8rem"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-m)"
+    >
+        <fieldset class="[ loyalty-offers-filters__group loyalty-offers-filters__side ]">
+            <legend class="[ loyalty-offers-filters__legend ]">
+                {t('industry.loyalty.offers.filters.sell_into')}
+            </legend>
+            {sides.map((option) => (
+                <RadioCheckInput
+                    type="radio"
+                    name="side"
+                    value={option.value}
+                    checked={side === option.value ? 'checked' : undefined}
+                    hx-get={PARTIAL}
+                    hx-target={SLOT}
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                    hx-trigger="change"
+                    hx-include={hx_include_filters}
+                >
+                    <small>{option.label}</small>
+                </RadioCheckInput>
+            ))}
+        </fieldset>
+
+        <fieldset class="[ loyalty-offers-filters__group ]">
+            <legend class="[ loyalty-offers-filters__legend ]">
+                {t('industry.loyalty.offers.filters.count_costs')}
+            </legend>
+            {costs.map((cost) => (
+                <RadioCheckInput
+                    type="checkbox"
+                    name={cost.name}
+                    value="1"
+                    checked={cost.active ? 'checked' : undefined}
+                    hx-get={cost.url}
+                    hx-target={SLOT}
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                    hx-trigger="change"
+                >
+                    <small>{cost.label}</small>
+                </RadioCheckInput>
+            ))}
+        </fieldset>
+
+        <fieldset class="[ loyalty-offers-filters__group ]">
+            <legend class="[ loyalty-offers-filters__legend ]">
+                {t('industry.loyalty.offers.filters.hide')}
+            </legend>
+            {excludes.map((item) => (
+                <RadioCheckInput
+                    type="checkbox"
+                    name={`${item.key}_toggle`}
+                    value="1"
+                    checked={item.active ? 'checked' : undefined}
+                    hx-get={with_params(
+                        exclude_toggle_overrides(item.key, item.active, item.bundled),
+                    )}
+                    hx-target={SLOT}
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                    hx-trigger="change"
+                >
+                    <small data-tippy-content={item.tip}>{item.label}</small>
+                </RadioCheckInput>
+            ))}
+        </fieldset>
+    </Grid>
+
+    <Button
+        size="sm"
+        color="transparent"
+        class="[ loyalty-offers-filters__reset ]"
+        hx-get={default_reset_url}
+        hx-target={SLOT}
+        hx-swap="innerHTML"
+        hx-indicator=".loader"
+    >
+        {t('industry.loyalty.offers.clear_filters')}
+    </Button>
 
     <div class="[ loyalty-offers-filters__persist ]" hidden>
         <input type="hidden" name="currency" value={String(selected_currency)} />
@@ -404,29 +418,49 @@ const hx_include_filters =
             <input type="hidden" name="exclude_below_set_lp_price" value="1" />
         )}
     </div>
-</Flexblock>
+</aside>
 
 <style lang="scss">
     [x-cloak] {
         display: none !important;
     }
 
-    .loyalty-offers-filters__toolbar {
-        flex-wrap: wrap;
-        width: 100%;
+    .loyalty-offers-filters {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: color-mix(in srgb, var(--background) 35%, transparent);
     }
 
-    .loyalty-offers-filters__controls {
-        flex-wrap: wrap;
-        flex: 1 1 auto;
-        align-items: center;
+    .loyalty-offers-filters__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .loyalty-offers-filters__legend {
+        padding: 0;
+        margin-block-end: var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .loyalty-offers-filters :global(.loyalty-offers-filters__reset) {
+        align-self: flex-start;
     }
 
     .loyalty-offers-filters__currency {
         position: relative;
-        flex-shrink: 0;
-        width: 18rem;
-        max-width: 100%;
+        width: 100%;
     }
 
     .loyalty-offers-filters__currency-trigger.is-static {
@@ -443,15 +477,15 @@ const hx_include_filters =
         padding-block: var(--space-2xs);
         padding-inline: var(--space-xs-s) var(--space-m);
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
-        backdrop-filter: blur(var(--input-backdrop-blur));
+        background-color: color-mix(in srgb, var(--faded) 10%, transparent);
         color: var(--form-color);
         cursor: pointer;
         text-align: left;
+        box-sizing: border-box;
         transition: border-color var(--fast-transition), background-color var(--fast-transition);
 
         @media (hover: hover) {
-            &:hover {
+            &:not(.is-static):hover {
                 border-color: var(--border-color-hover);
             }
         }
@@ -477,8 +511,8 @@ const hx_include_filters =
 
     .loyalty-offers-filters__currency-logo {
         flex-shrink: 0;
-        width: 20px;
-        height: 20px;
+        width: var(--space-s);
+        height: var(--space-s);
         border-radius: 2px;
         background-color: var(--background);
     }
@@ -496,7 +530,7 @@ const hx_include_filters =
         margin: 0;
         padding: 0;
         list-style: none;
-        width: max(100%, 18rem);
+        width: 100%;
         border: solid 1px var(--border-color);
         background-color: var(--component-background);
     }
@@ -535,68 +569,13 @@ const hx_include_filters =
         }
     }
 
-    .loyalty-offers-filters__search {
-        display: flex;
-        flex-shrink: 0;
-        width: 22rem;
+    .loyalty-offers-filters__search :global(.input-group) {
         max-width: 100%;
     }
 
-    .loyalty-offers-filters__freight,
-    .loyalty-offers-filters__sales-tax {
-        flex-shrink: 0;
-        align-items: center;
-    }
-
-    .loyalty-offers-filters__cost-options {
-        flex-wrap: wrap;
-    }
-
-    .loyalty-offers-filters__chips {
-        flex-wrap: wrap;
-    }
-
-    .loyalty-offers-filters__chip {
-        appearance: none;
-        margin: 0;
-        background: transparent;
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        color: var(--fleet-yellow);
-        cursor: pointer;
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        padding-block: var(--space-3xs);
-        padding-inline: var(--space-xs);
-        text-transform: uppercase;
-        transition:
-            border-color var(--fast-transition),
-            background-color var(--fast-transition),
-            color var(--fast-transition);
-
-        &--active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-                color: var(--fleet-yellow);
-            }
-
-            &--active:hover {
-                background: var(--fleet-yellow);
-                color: var(--background);
-            }
-        }
-
-        &:focus-visible {
-            outline: 1px solid var(--highlight);
-            outline-offset: 2px;
-        }
+    .loyalty-offers-filters :global(small[data-tippy-content]) {
+        cursor: help;
+        text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+        text-underline-offset: 0.2em;
     }
 </style>

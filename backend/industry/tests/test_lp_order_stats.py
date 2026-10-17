@@ -9,6 +9,7 @@ from django.utils import timezone
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointMarketOrder,
+    IndustryLoyaltyPointMarketOrderClaim,
 )
 
 User = get_user_model()
@@ -133,3 +134,56 @@ class LpOrderStatsTestCase(TestCase):
     def test_rejects_bad_window(self):
         response = self.client.get("/api/industry/loyalty/stats", {"days": 0})
         self.assertEqual(response.status_code, 422)
+
+    def _claim(self, order, user, *, after, amount=None):
+        claim = IndustryLoyaltyPointMarketOrderClaim.objects.create(
+            order=order,
+            claimed_by=user,
+            amount=amount or order.quantity,
+        )
+        order.refresh_from_db()
+        IndustryLoyaltyPointMarketOrderClaim.objects.filter(
+            pk=claim.pk
+        ).update(created_at=order.created_at + after)
+        return claim
+
+    def test_medians_split_wait_at_first_claim(self):
+        converter = User.objects.create_user(username="lp-converter")
+        fast = self._order(
+            quantity=200_000, age=timedelta(days=3), close=timedelta(hours=4)
+        )
+        slow = self._order(
+            quantity=100_000, age=timedelta(days=3), close=timedelta(hours=50)
+        )
+        self._claim(fast, converter, after=timedelta(hours=1))
+        self._claim(slow, converter, after=timedelta(hours=40))
+
+        body = self._stats()
+        self.assertEqual(body["median_close_seconds"], 27 * 3600)
+        self.assertEqual(body["paid_within_day"], 1)
+        self.assertEqual(body["lp_completed"], 300_000)
+        self.assertEqual(body["isk_completed"], 300_000 * 800)
+        # Posted -> claimed: 1h and 40h; claimed -> paid: 3h and 10h.
+        self.assertEqual(body["median_claim_seconds"], int(20.5 * 3600))
+        self.assertEqual(body["median_settle_seconds"], int(6.5 * 3600))
+
+        [row] = body["converters"]
+        self.assertEqual(row["user_id"], converter.pk)
+        self.assertEqual(row["name"], "lp-converter")
+        self.assertEqual(row["orders"], 2)
+        self.assertEqual(row["lp"], 300_000)
+        self.assertEqual(row["isk"], 300_000 * 800)
+        self.assertEqual(row["median_settle_seconds"], int(6.5 * 3600))
+
+    def test_weekly_spans_twelve_weeks_ending_this_week(self):
+        self._order(
+            quantity=400_000, age=timedelta(hours=3), close=timedelta(hours=1)
+        )
+        self._order(quantity=100_000, age=timedelta(days=200))
+
+        weekly = self._stats()["weekly"]
+        self.assertEqual(len(weekly), 12)
+        # This week, or last week right after Monday midnight.
+        self.assertEqual(weekly[-1]["lp"] + weekly[-2]["lp"], 400_000)
+        self.assertEqual(sum(w["lp"] for w in weekly), 400_000)
+        self.assertLess(weekly[0]["week_start"], weekly[-1]["week_start"])

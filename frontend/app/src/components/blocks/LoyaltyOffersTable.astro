@@ -4,6 +4,12 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import { conversion_ordering_key } from '@helpers/loyalty_offers_metrics'
+import {
+    bar_percent,
+    net_bar_scale,
+    offer_row_figures,
+} from '@helpers/loyalty_offers_rows'
+import { number_thousand_separator } from '@helpers/numbers'
 import { query_string } from '@helpers/string'
 
 interface Props {
@@ -13,6 +19,8 @@ interface Props {
     side: 'sell' | 'buy' | 'avg_7d'
     include_freight?: boolean
     include_sales_tax?: boolean
+    /** TLF standard buyback rate, drawn as a marker on every net bar. */
+    buyback_isk_per_lp?: number | null
     [propName: string]: any
 }
 
@@ -23,6 +31,7 @@ const {
     side,
     include_freight = true,
     include_sales_tax = true,
+    buyback_isk_per_lp = null,
 } = Astro.props
 
 const SLOT = '#loyalty-offers-slot'
@@ -38,37 +47,92 @@ function sort_url(column: string): string {
     else if (current === `-${column}`)
         next.ordering = column
     else
-        next.ordering = `-${column}`
+        next.ordering = column === 'type_name' ? column : `-${column}`
     return `${PARTIAL}?${query_string(next)}`
 }
 
-const columns = [
+function sort_state(column: string): 'ascending' | 'descending' | undefined {
+    if (ordering === column)
+        return 'ascending'
+    if (ordering === `-${column}`)
+        return 'descending'
+    return undefined
+}
+
+interface Column {
+    key: string
+    label: string
+    tip?: string
+    sortable: boolean
+    numeric?: boolean
+}
+
+const columns: Column[] = [
     { key: 'type_name', label: t('industry.loyalty.offers.col.item'), sortable: true },
-    { key: 'quantity', label: t('industry.loyalty.offers.col.quantity'), sortable: true, numeric: true },
-    { key: 'other_cost', label: t('industry.loyalty.offers.col.other_cost'), sortable: true, numeric: true },
     {
         key: conversion_key,
-        label: t('industry.loyalty.offers.col.conversion'),
+        label: t('industry.loyalty.offers.col.net'),
+        tip: t('industry.loyalty.offers.col.net_tip'),
         sortable: true,
         numeric: true,
     },
-    { key: 'volume_7d', label: t('industry.loyalty.offers.col.volume_7d'), sortable: true, numeric: true },
-    { key: 'volume_30d', label: t('industry.loyalty.offers.col.volume_30d'), sortable: true, numeric: true },
-] as const
+    {
+        key: 'capital_per_100k',
+        label: t('industry.loyalty.offers.col.capital'),
+        tip: t('industry.loyalty.offers.col.capital_tip'),
+        sortable: true,
+        numeric: true,
+    },
+    {
+        key: 'weekly_lp',
+        label: t('industry.loyalty.offers.col.weekly_lp'),
+        tip: t('industry.loyalty.offers.col.weekly_lp_tip'),
+        sortable: true,
+        numeric: true,
+    },
+    {
+        key: 'depth',
+        label: t('industry.loyalty.offers.col.depth'),
+        tip: t('industry.loyalty.offers.col.depth_tip'),
+        sortable: false,
+    },
+]
 
 function sort_indicator(column: string): string {
-    if (ordering === column)
+    const state = sort_state(column)
+    if (state === 'ascending')
         return ' ↑'
-    if (ordering === `-${column}`)
+    if (state === 'descending')
         return ' ↓'
     return ''
 }
+
+const rows = offers.map((offer) => ({
+    offer,
+    figures: offer_row_figures(offer, side, include_freight, include_sales_tax),
+}))
+const bar_scale = net_bar_scale(
+    rows.map((row) => row.figures.net_isk_per_lp),
+    buyback_isk_per_lp,
+)
+const buyback_percent = buyback_isk_per_lp != null
+    ? bar_percent(buyback_isk_per_lp, bar_scale)
+    : null
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
 ---
 
-<Flexblock class="[ loyalty-offers-table ]" gap="var(--space-s)">
+<Flexblock class="[ loyalty-offers-table ]" gap="var(--space-2xs)">
+    {buyback_isk_per_lp != null && (
+        <p class="[ loyalty-offers-table__legend ]">
+            <span class="[ loyalty-offers-table__legend-marker ]" aria-hidden="true"></span>
+            {t('industry.loyalty.offers.buyback_marker').replace(
+                '{value}',
+                number_thousand_separator(buyback_isk_per_lp),
+            )}
+        </p>
+    )}
     <div
         class="[ loyalty-offers-table__scroll ]"
         tabindex="0"
@@ -80,8 +144,9 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
                 {columns.map((col) => (
                     <div
                         role="columnheader"
+                        aria-sort={col.sortable ? (sort_state(col.key) ?? 'none') : undefined}
                         class:list={[
-                            { 'loyalty-offers-table__num': 'numeric' in col && col.numeric },
+                            { 'loyalty-offers-table__num': col.numeric },
                         ]}
                     >
                         {col.sortable ? (
@@ -92,23 +157,32 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
                                 hx-target={SLOT}
                                 hx-swap="innerHTML"
                                 hx-indicator=".loader"
+                                data-tippy-content={col.tip}
                             >
                                 {col.label}{sort_indicator(col.key)}
                             </button>
                         ) : (
-                            col.label
+                            <span
+                                class="[ loyalty-offers-table__label ]"
+                                tabindex="0"
+                                data-tippy-content={col.tip}
+                            >{col.label}</span>
                         )}
                     </div>
                 ))}
             </div>
 
             <div id="loyalty-offers-tbody">
-                {offers.map((offer) => (
+                {rows.map((row) => (
                     <LoyaltyOfferItem
-                        offer={offer}
+                        offer={row.offer}
+                        figures={row.figures}
                         side={side}
                         include_freight={include_freight}
                         include_sales_tax={include_sales_tax}
+                        bar_scale={bar_scale}
+                        buyback_isk_per_lp={buyback_isk_per_lp}
+                        buyback_percent={buyback_percent}
                     />
                 ))}
             </div>
@@ -117,38 +191,79 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
 </Flexblock>
 
 <style lang="scss">
+    .loyalty-offers-table__legend {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    .loyalty-offers-table__legend-marker {
+        display: inline-block;
+        width: 2px;
+        height: var(--step-0);
+        background-color: var(--highlight);
+    }
+
     .loyalty-offers-table__scroll {
         overflow-x: auto;
+        overscroll-behavior-x: contain;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
     }
 
     .loyalty-offers-table__grid {
-        min-width: 40rem;
+        --loyalty_offers_columns:
+            minmax(16rem, 3fr)
+            minmax(10rem, 1.4fr)
+            minmax(5rem, 0.55fr)
+            minmax(4.5rem, 0.55fr)
+            minmax(4rem, 0.45fr);
+        min-width: 44rem;
+
+        // Phones: a narrower item column so the net bar shows before scrolling.
+        @media (max-width: 30rem) {
+            --loyalty_offers_columns:
+                minmax(12rem, 3fr)
+                minmax(8rem, 1.4fr)
+                minmax(4.5rem, 0.55fr)
+                minmax(4.5rem, 0.55fr)
+                minmax(4rem, 0.45fr);
+            min-width: 38rem;
+        }
     }
 
     .loyalty-offers-table__header {
         display: grid;
-        grid-template-columns:
-            minmax(14rem, 2fr)
-            minmax(3.5rem, 0.45fr)
-            minmax(5.5rem, 0.75fr)
-            minmax(5.5rem, 0.75fr)
-            minmax(4rem, 0.55fr)
-            minmax(4.5rem, 0.6fr);
+        grid-template-columns: var(--loyalty_offers_columns);
         gap: var(--space-s);
         align-items: end;
         padding-block: var(--space-2xs);
         padding-inline: var(--space-2xs);
         border-bottom: solid 1px var(--border-color);
         color: var(--highlight);
-        font-size: var(--step--1);
+        font-size: var(--step--2);
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
-        min-width: 40rem;
+        letter-spacing: 0.04em;
     }
 
     .loyalty-offers-table__num {
         text-align: right;
+    }
+
+    .loyalty-offers-table__label {
+        cursor: help;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
     }
 
     .loyalty-offers-table__sort {
@@ -160,6 +275,7 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
         font: inherit;
         letter-spacing: inherit;
         padding: 0;
+        text-align: inherit;
         text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
         text-transform: inherit;
         text-underline-offset: 0.2em;

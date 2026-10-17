@@ -3,7 +3,8 @@ import { i18n } from '@helpers/i18n'
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
 import { format_date_short } from '@helpers/date'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { order_destination } from '@helpers/loyalty_desk'
 import { number_thousand_separator } from '@helpers/numbers'
 import {
     EXPRESS_SLA_HOURS,
@@ -12,10 +13,9 @@ import {
 } from '@helpers/loyalty_order_stats'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import Tag from '@components/blocks/Tag.astro'
 
-const { t, lang } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 interface Props {
     order: LoyaltyMarketOrder
@@ -94,6 +94,11 @@ const order_purchasers = (row: LoyaltyMarketOrder): PurchaserIcon[] => {
 }
 
 const purchasers = order_purchasers(order)
+const destination = order_destination(order)
+const tracker_url = translatePath(`/industry/loyalty/orders/${order.id}/`)
+const tier_label = order.tier === 'express'
+    ? t('industry.loyalty.tier.express')
+    : t('industry.loyalty.tier.standard')
 const quantity_claimed = order.quantity_claimed ?? 0
 const quantity_remaining = order.quantity_remaining ?? order.quantity
 const lp_for_total = quantity_claimed > 0 ? quantity_claimed : order.quantity
@@ -157,18 +162,15 @@ const card_class = [
 >
     <div class="[ loyalty-order-card__grid ]">
         <FlexInline gap="var(--space-xs)" class="[ loyalty-order-card__identity ]">
-            <img
-                class="[ loyalty-order-card__logo ]"
-                loading="lazy"
-                src={get_corporation_logo(order.corporation_id, 64)}
-                width="32"
-                height="32"
-                alt={`${order.loyalty_point_name} ${t('corporation_logo')}`}
-            />
             <span class="[ loyalty-order-card__identity-text ]">
                 <span class="[ loyalty-order-card__title-row ]">
-                    <Tag text={side_label} color={side_color} narrow={true} />
-                    <strong class="[ loyalty-order-card__title ]">{order.loyalty_point_name}</strong>
+                    {!is_sell && <Tag text={side_label} color={side_color} narrow={true} />}
+                    <a
+                        class="[ loyalty-order-card__title ]"
+                        href={tracker_url}
+                        title={date_label}
+                        aria-label={`${t('industry.loyalty.orders.open_order').replace('{id}', String(order.id))}: ${date_text}`}
+                    >{date_text}</a>
                 </span>
                 <span class="[ loyalty-order-card__meta ]">
                     {is_express && (
@@ -180,8 +182,8 @@ const card_class = [
                                 .replace('{hours}', String(EXPRESS_SLA_HOURS))}
                         />
                     )}
-                    <small class="[ loyalty-order-card__date ]" title={date_label}>
-                        {date_text}
+                    <small class="[ loyalty-order-card__date ]">
+                        #{order.id}{!is_express && ` · ${tier_label}`}
                         {sla && (
                             <span class:list={[
                                 'loyalty-order-card__sla',
@@ -225,21 +227,42 @@ const card_class = [
             />
         </span>
 
-        <FlexInline gap="var(--space-3xs)" class="[ loyalty-order-card__purchasers ]" data-label={t('industry.loyalty.orders.col.purchasers')}>
+        <span class="[ loyalty-order-card__purchasers ]" data-label={t('industry.loyalty.orders.col.converter')}>
             {purchasers.length > 0 ? (
-                purchasers.map((pilot) => (
-                    <CharacterPicture
-                        character_id={pilot.character_id}
-                        character_name={pilot.character_name}
-                        tooltip={pilot.character_name}
-                        size={32}
-                        icon_quality={64}
-                    />
-                ))
+                <>
+                    <span class="[ loyalty-order-card__faces ]">
+                        {purchasers.map((pilot) => (
+                            <img
+                                class="[ loyalty-order-card__face ]"
+                                src={get_player_icon(pilot.character_id, 64)}
+                                alt={pilot.character_name}
+                                title={pilot.character_name}
+                                width="32"
+                                height="32"
+                                loading="lazy"
+                            />
+                        ))}
+                        {destination?.corporation_id && (
+                            <img
+                                class="[ loyalty-order-card__corp ]"
+                                src={get_corporation_logo(destination.corporation_id, 64)}
+                                alt={destination.name}
+                                title={destination.name}
+                                width="24"
+                                height="24"
+                                loading="lazy"
+                            />
+                        )}
+                    </span>
+                    <span class="[ loyalty-order-card__people ]">
+                        <span>{purchasers.map((pilot) => pilot.character_name).join(', ')}</span>
+                        {destination && <small>{destination.name}</small>}
+                    </span>
+                </>
             ) : (
                 <span class="[ loyalty-order-card__none ]">{t('industry.loyalty.orders.no_purchasers')}</span>
             )}
-        </FlexInline>
+        </span>
 
         {variant === 'book' && (
             <span class="[ loyalty-order-card__actions ]">
@@ -271,16 +294,6 @@ const card_class = [
         flex-wrap: nowrap;
     }
 
-    .loyalty-order-card__logo {
-        flex-shrink: 0;
-        display: block;
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
-        border-radius: var(--border-radius);
-        background-color: var(--background);
-    }
-
     .loyalty-order-card__identity-text {
         display: flex;
         flex-direction: column;
@@ -300,12 +313,18 @@ const card_class = [
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        line-height: 1.1;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
+        font-size: var(--step--1);
+        font-weight: 600;
+        line-height: 1.2;
         color: var(--highlight);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--fleet-yellow);
+                text-decoration: underline;
+            }
+        }
     }
 
     .loyalty-order-card__date {
@@ -361,9 +380,58 @@ const card_class = [
     }
 
     .loyalty-order-card__purchasers {
-        justify-content: center;
+        display: flex;
         align-items: center;
-        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .loyalty-order-card__faces {
+        display: flex;
+        align-items: flex-end;
+        flex: none;
+    }
+
+    .loyalty-order-card__face {
+        display: block;
+        width: var(--space-l);
+        height: var(--space-l);
+        border-radius: 50%;
+
+        & + & {
+            margin-inline-start: calc(var(--space-2xs) * -1);
+        }
+    }
+
+    .loyalty-order-card__corp {
+        display: block;
+        width: var(--space-m);
+        height: var(--space-m);
+        margin-inline-start: calc(var(--space-xs) * -1);
+        border: 2px solid var(--component-background);
+        background-color: var(--background);
+    }
+
+    .loyalty-order-card__people {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        span,
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            font-size: var(--step--2);
+            color: var(--faded);
+        }
     }
 
     .loyalty-order-card__none {

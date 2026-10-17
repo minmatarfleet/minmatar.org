@@ -2126,6 +2126,8 @@ export interface LoyaltyMarketOrderClaim {
     amount:                          number;
     destination_character_name:      string;
     destination_corporation_name:    string;
+    /** Resolved from the name for its logo; null when unknown. */
+    destination_corporation_id?:     number | null;
     claimed_by_user_id:              number | null;
     claimed_by_name:                 string | null;
     claimed_by_character_id:         number | null;
@@ -2153,7 +2155,11 @@ export interface LoyaltyMarketOrder {
     claimed_by_name:            string | null;
     claimed_by_character_id:    number | null;
     destination_character_name: string;
+    /** Logo id for the corporation the LP goes to; null when unknown. */
+    destination_corporation_id?: number | null;
     discord_thread_id:          number | null;
+    /** Only on GET /orders/{id}: link to the order's Discord thread. */
+    discord_thread_url?:        string;
     notes:                      string;
     claims:                     LoyaltyMarketOrderClaim[];
     created_at:                 Date | string;
@@ -2167,14 +2173,43 @@ export interface LoyaltyOrderStatsTier {
     /** Orders completed in the window (close time / price sample). */
     completed:          number;
     avg_close_seconds:  number | null;
+    median_close_seconds?: number | null;
+    /** Completed orders paid within 24 hours of posting. */
+    paid_within_day?:   number;
+    lp_completed?:      number;
+    isk_completed?:     number;
     /** LP-weighted over completed orders. */
     avg_isk_per_lp:     number | null;
 }
 
+export interface LoyaltyOrderStatsWeek {
+    /** Monday the week starts on (YYYY-MM-DD). */
+    week_start: string;
+    lp:         number;
+}
+
+export interface LoyaltyOrderStatsConverter {
+    user_id:                number;
+    name:                   string;
+    character_id:           number | null;
+    orders:                 number;
+    lp:                     number;
+    isk:                    number;
+    /** First claim to paid, median. */
+    median_settle_seconds:  number | null;
+}
+
 export interface LoyaltyOrderStats extends LoyaltyOrderStatsTier {
     days:       number;
+    /** Posted to first claim, median over completed orders. */
+    median_claim_seconds?:  number | null;
+    /** First claim to paid, median over completed orders. */
+    median_settle_seconds?: number | null;
     standard:   LoyaltyOrderStatsTier;
     express:    LoyaltyOrderStatsTier;
+    /** LP completed per week, the last 12 weeks, oldest first. */
+    weekly?:     LoyaltyOrderStatsWeek[];
+    converters?: LoyaltyOrderStatsConverter[];
 }
 
 export interface LoyaltyMarketOrdersList {

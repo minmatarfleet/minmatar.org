@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+if (isNaN(order_id) || order_id <= 0)
+    return HTTP_404_Not_Found()
+
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import {
+    get_loyalty_capabilities,
+    get_loyalty_order,
+    patch_loyalty_order,
+} from '@helpers/api.minmatar.org/loyalty'
+
+// Each button names the step it confirms; the API checks who may take it.
+const ACTION_STATUS: Record<string, string> = {
+    lp_sent: 'awaiting_isk',
+    isk_sent: 'completed',
+    cancel: 'cancelled',
+}
+
+let error: string | false = false
+
+if (Astro.request.method === 'POST') {
+    if (!user || !auth_token)
+        return HTTP_403_Forbidden()
+    const status = ACTION_STATUS[Astro.url.searchParams.get('action') ?? '']
+    if (!status)
+        return HTTP_404_Not_Found()
+    try {
+        await patch_loyalty_order(auth_token, order_id, { status })
+    } catch (e) {
+        const detail = (e as Error).message
+        error = detail === 'feature_denied' ? t('industry.loyalty.feature_denied') : (detail || t('industry.loyalty.tracker.error'))
+    }
+}
+
+let order: LoyaltyMarketOrder
+try {
+    order = await get_loyalty_order(order_id)
+} catch (e) {
+    return HTTP_404_Not_Found()
+}
+
+let can_manage = false
+if (auth_token) {
+    try {
+        can_manage = Boolean((await get_loyalty_capabilities(auth_token)).can_manage)
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+import LoyaltyOrderTracker from '@components/blocks/LoyaltyOrderTracker.astro'
+---
+
+<LoyaltyOrderTracker
+    order={order}
+    current_user_id={user ? Number(user.user_id) : 0}
+    can_manage={can_manage}
+    error={error}
+/>

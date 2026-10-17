@@ -1,0 +1,459 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!auth_token || !user)
+    return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+import type {
+    LoyaltyCurrency,
+    LoyaltyMarketOrder,
+    LoyaltyOrderStats,
+} from '@dtypes/api.minmatar.org'
+import {
+    get_loyalty_capabilities,
+    get_loyalty_currencies,
+    get_loyalty_orders,
+    get_loyalty_stats,
+} from '@helpers/api.minmatar.org/loyalty'
+import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
+import { format_close_time, tlf_currency } from '@helpers/loyalty_order_stats'
+import { desk_lanes, order_payout, send_lp_deadline } from '@helpers/loyalty_desk'
+import { format_number, number_thousand_separator } from '@helpers/numbers'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+
+// Per-object right from the resource API, not a page gate.
+let can_manage = false
+try {
+    can_manage = Boolean((await get_loyalty_capabilities(auth_token)).can_manage)
+} catch (error) {
+    console.log(error)
+}
+if (!can_manage)
+    return HTTP_403_Forbidden()
+
+let currency: LoyaltyCurrency | null = null
+let orders: LoyaltyMarketOrder[] = []
+let stats: LoyaltyOrderStats | null = null
+let week_stats: LoyaltyOrderStats | null = null
+let fetching_error: Error | false = false
+let claim_characters: { character_name: string, corp_name: string, is_primary: boolean }[] = []
+
+const quiet_stats = (loyalty_point_id: number, days?: number) =>
+    get_loyalty_stats(loyalty_point_id, days).catch((error) => {
+        console.log(error)
+        return null
+    })
+
+try {
+    currency = tlf_currency(await get_loyalty_currencies())
+    if (currency) {
+        const [active, month, week] = await Promise.all([
+            get_loyalty_orders({ loyalty_point_id: currency.id }),
+            quiet_stats(currency.id),
+            quiet_stats(currency.id, 7),
+        ])
+        orders = active.items
+        stats = month
+        week_stats = week
+    }
+} catch (error) {
+    fetching_error = error as Error
+}
+
+try {
+    const summary = await get_characters_summary(auth_token)
+    claim_characters = (summary.characters ?? [])
+        .map((character) => ({
+            character_name: character.character_name,
+            corp_name: character.corp_name || '',
+            is_primary: Boolean(character.is_primary),
+        }))
+        .sort((a, b) => {
+            if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1
+            return a.character_name.localeCompare(b.character_name)
+        })
+} catch (error) {
+    console.log(error)
+}
+const claim_corporations = [...new Set(
+    claim_characters.map((c) => c.corp_name).filter((name) => Boolean(name))
+)].sort((a, b) => a.localeCompare(b))
+const primary = claim_characters.find((c) => c.is_primary) || claim_characters[0] || null
+
+const lanes = desk_lanes(orders)
+const now = new Date()
+const lane_lp = (lane: LoyaltyMarketOrder[]) => lane.reduce((sum, order) => sum + order.quantity, 0)
+const stalled = lanes.send_lp.filter((order) => {
+    const deadline = send_lp_deadline(order)
+    return deadline !== null && deadline < now
+}).length
+const isk_owed = lanes.pay_isk.reduce((sum, order) => sum + order_payout(order), 0)
+const team_lp = Math.max(1, stats?.lp_completed ?? 0)
+const can_post_buy = Boolean(currency?.allow_buy)
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
+import Button from '@components/blocks/Button.astro'
+
+const page_title = t('industry.loyalty.desk.page_title')
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+const api_base = import.meta.env.API_URL || ''
+const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
+const rates_label = currency
+    ? t('industry.loyalty.desk.rates')
+        .replace('{standard}', number_thousand_separator(currency.default_isk_per_lp))
+        .replace('{express}', currency.express_isk_per_lp ? number_thousand_separator(currency.express_isk_per_lp) : '—')
+    : ''
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.loyalty.desk.meta_description')}
+    components={{
+        alert_dialog: true,
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/loyalty-points-cover.webp',
+            image_990: '/images/loyalty-points-cover.webp',
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+        breadcrumbs={breadcrumbs}
+        breadcrumb_page_title={page_title}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-2xs)">
+                <FlexInline gap="var(--space-xs)" class="[ loyalty-desk__eyebrow ]">
+                    <img src={get_corporation_logo(currency?.corporation_id ?? 1000182, 64)} alt={currency?.name ?? ''} width="36" height="36" />
+                    <span>{t('industry.loyalty.desk.eyebrow')}</span>
+                </FlexInline>
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+            <PageActions>
+                {currency && (
+                    <Button href={admin_loyalty_url} color="transparent" new_tab={true}>
+                        {rates_label}
+                    </Button>
+                )}
+                {can_post_buy && (
+                    <Button color="green" x-data="{}" x-on:click="$dispatch('loyalty-open-buy')">
+                        {t('industry.loyalty.post_buy')}
+                    </Button>
+                )}
+            </PageActions>
+        </FlexInline>
+
+        {fetching_error ? (
+            <ErrorRefetch
+                args={{
+                    partial: translatePath('/industry/loyalty/desk/'),
+                    error: fetching_error,
+                    delay: 0,
+                }}
+            />
+        ) : (
+            <Flexblock gap="var(--space-2xl)">
+                <dl class="[ loyalty-desk__kpis ]">
+                    <div>
+                        <dt>{t('industry.loyalty.desk.kpi.claim')}</dt>
+                        <dd class="[ tabular-nums ]">{format_number(lane_lp(lanes.claim))} <small>LP</small></dd>
+                        <span>
+                            {lanes.claim.length === 0
+                                ? t('industry.loyalty.desk.kpi.clear')
+                                : t('industry.loyalty.desk.kpi.orders').replace('{count}', String(lanes.claim.length))}
+                        </span>
+                    </div>
+                    <div>
+                        <dt>{t('industry.loyalty.desk.kpi.send_lp')}</dt>
+                        <dd class="[ tabular-nums ]">{format_number(lane_lp(lanes.send_lp))} <small>LP</small></dd>
+                        <span class:list={{ 'is-late': stalled > 0 }}>
+                            {stalled > 0
+                                ? t('industry.loyalty.desk.kpi.stalled').replace('{count}', String(stalled))
+                                : t('industry.loyalty.desk.kpi.orders').replace('{count}', String(lanes.send_lp.length))}
+                        </span>
+                    </div>
+                    <div>
+                        <dt>{t('industry.loyalty.desk.kpi.pay_isk')}</dt>
+                        <dd class="[ tabular-nums ]">{format_number(isk_owed)} <small>ISK</small></dd>
+                        <span>{t('industry.loyalty.desk.kpi.orders').replace('{count}', String(lanes.pay_isk.length))}</span>
+                    </div>
+                    <div>
+                        <dt>{t('industry.loyalty.desk.kpi.claim_wait')} · {t('industry.loyalty.desk.kpi.week')}</dt>
+                        <dd class="[ tabular-nums ]">
+                            {format_close_time(week_stats?.median_claim_seconds)}
+                        </dd>
+                        {stats && (
+                            <span>
+                                {t('industry.loyalty.desk.kpi.claim_wait_note')
+                                    .replace('{time}', format_close_time(stats.median_claim_seconds))
+                                    .replace('{days}', String(stats.days))
+                                    .replace('{settle}', format_close_time(stats.median_settle_seconds))}
+                            </span>
+                        )}
+                    </div>
+                </dl>
+
+                <section aria-labelledby="loyalty-desk-queue">
+                    <Flexblock gap="var(--space-s)">
+                        <h2 id="loyalty-desk-queue">{t('industry.loyalty.desk.queue')}</h2>
+                        <LoyaltyOrderBook
+                            orders={orders}
+                            currency={currency}
+                            is_logged_in={true}
+                            current_user_id={Number(user.user_id)}
+                            can_manage_buyback={true}
+                            highlight_order_id={null}
+                            claim_characters={claim_characters}
+                            claim_corporations={claim_corporations}
+                            default_claim_character={primary?.character_name ?? ''}
+                            default_claim_corporation={primary?.corp_name || claim_corporations[0] || ''}
+                            layout="lanes"
+                        />
+                    </Flexblock>
+                </section>
+
+                {stats && (
+                    <section class="[ loyalty-desk__team ]" aria-labelledby="loyalty-desk-team">
+                        <FlexInline justification="space-between" class="[ w-full ]">
+                            <h2 id="loyalty-desk-team">
+                                {t('industry.loyalty.desk.team.title').replace('{days}', String(stats.days))}
+                            </h2>
+                            <small>
+                                {t('industry.loyalty.desk.team.summary')
+                                    .replace('{orders}', String(stats.completed))
+                                    .replace('{lp}', format_number(stats.lp_completed ?? 0))
+                                    .replace('{isk}', format_number(stats.isk_completed ?? 0))}
+                            </small>
+                        </FlexInline>
+                        {(stats.converters ?? []).length === 0 ? (
+                            <p>{t('industry.loyalty.desk.team.empty')}</p>
+                        ) : (
+                            <div class="[ loyalty-desk__table-wrap ]">
+                                <table class="[ tabular-nums ]">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{t('industry.loyalty.desk.team.col.converter')}</th>
+                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.orders')}</th>
+                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.lp')}</th>
+                                            <th scope="col">{t('industry.loyalty.desk.team.col.share')}</th>
+                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.isk')}</th>
+                                            <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.settle')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(stats.converters ?? []).map((member) => (
+                                            <tr>
+                                                <th scope="row">
+                                                    <span class="[ loyalty-desk__member ]">
+                                                        {member.character_id && (
+                                                            <img src={get_player_icon(member.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                                        )}
+                                                        {member.name}
+                                                    </span>
+                                                </th>
+                                                <td class="[ is-end ]">{member.orders}</td>
+                                                <td class="[ is-end ]">{format_number(member.lp)}</td>
+                                                <td>
+                                                    <span class="[ loyalty-desk__share ]" aria-hidden="true">
+                                                        <span style={`width: ${Math.max(1, Math.round((member.lp / team_lp) * 100))}%`}></span>
+                                                    </span>
+                                                </td>
+                                                <td class="[ is-end loyalty-desk__isk ]">{format_number(member.isk)}</td>
+                                                <td class="[ is-end ]">{format_close_time(member.median_settle_seconds)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </section>
+                )}
+            </Flexblock>
+        )}
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+        font-size: var(--step-2);
+    }
+
+    @supports (container-type: scroll-state) {
+        @container sticky-heading scroll-state(stuck: top) {
+            .loyalty-desk__eyebrow {
+                display: none;
+            }
+        }
+    }
+
+    .loyalty-desk__eyebrow {
+        align-items: center;
+        flex-wrap: nowrap;
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            background-color: var(--background);
+        }
+
+        span {
+            font-size: var(--step--1);
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-desk__kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+        gap: 1px;
+        margin: 0;
+        border: 1px solid var(--border-color);
+        background-color: var(--border-color);
+
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-3);
+            font-weight: 700;
+            color: var(--highlight);
+
+            small {
+                font-size: var(--step--1);
+                font-weight: 500;
+                color: var(--faded);
+            }
+        }
+
+        dd + span {
+            margin-block-start: auto;
+        }
+
+        span {
+            font-size: var(--step--1);
+            color: var(--faded);
+
+            &.is-late {
+                font-weight: 600;
+                color: var(--fleet-red);
+            }
+        }
+    }
+
+    .loyalty-desk__team {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        small,
+        p {
+            margin: 0;
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-desk__table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    table {
+        width: 100%;
+        min-width: 44rem;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-s);
+            text-align: start;
+            border-block-end: 1px solid var(--border-color);
+        }
+
+        thead th {
+            font-family: var(--button-font);
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--faded);
+        }
+
+        tbody th {
+            font-weight: 600;
+            color: var(--highlight);
+        }
+
+        .is-end {
+            text-align: end;
+        }
+    }
+
+    .loyalty-desk__member {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            border-radius: 50%;
+        }
+    }
+
+    .loyalty-desk__share {
+        display: block;
+        height: var(--space-2xs);
+        min-width: 6rem;
+        background-color: var(--border-color-hover);
+
+        span {
+            display: block;
+            height: 100%;
+            background-color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-desk__isk {
+        color: var(--fleet-yellow);
+    }
+</style>

@@ -1,0 +1,138 @@
+---
+import { i18n } from '@helpers/i18n'
+import { SEND_LP_HOURS } from '@helpers/loyalty_desk'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    [propName: string]: any
+}
+
+const { ...attributes } = Astro.props
+
+delete attributes.class
+
+const steps = [
+    { by: 'you', title: t('industry.loyalty.steps.post_title'), text: t('industry.loyalty.steps.post_text') },
+    { by: 'team', title: t('industry.loyalty.steps.claim_title'), text: t('industry.loyalty.steps.claim_text') },
+    {
+        by: 'you',
+        title: t('industry.loyalty.steps.send_title'),
+        text: t('industry.loyalty.steps.send_text').replace('{hours}', String(SEND_LP_HOURS)),
+    },
+    { by: 'team', title: t('industry.loyalty.steps.paid_title'), text: t('industry.loyalty.steps.paid_text') },
+]
+---
+
+<section class:list={['[ loyalty-steps ]', Astro.props.class]} aria-labelledby="loyalty-steps-title" {...attributes}>
+    <div class="[ loyalty-steps__head ]">
+        <h2 id="loyalty-steps-title">{t('industry.loyalty.steps.title')}</h2>
+        <p>{t('industry.loyalty.steps.lede')}</p>
+    </div>
+    <ol class="[ loyalty-steps__list ]">
+        {steps.map((step, index) => (
+            <li>
+                <div class="[ loyalty-steps__top ]">
+                    <span class="[ loyalty-steps__number ]" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                    <span class:list={['loyalty-steps__by', `is-${step.by}`]}>
+                        {step.by === 'you' ? t('industry.loyalty.steps.you') : t('industry.loyalty.steps.team')}
+                    </span>
+                </div>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+            </li>
+        ))}
+    </ol>
+</section>
+
+<style lang="scss">
+    .loyalty-steps {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .loyalty-steps__head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-m);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-steps__list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+        gap: 1px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--border-color);
+        background-color: var(--border-color);
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding: var(--space-s);
+            background-color: var(--component-background);
+        }
+
+        h3 {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step-0);
+            text-transform: none;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            line-height: 1.55;
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-steps__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .loyalty-steps__number {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-steps__by {
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+
+        &.is-you {
+            border: 1px solid var(--faded);
+            color: var(--highlight);
+        }
+
+        &.is-team {
+            background-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+</style>

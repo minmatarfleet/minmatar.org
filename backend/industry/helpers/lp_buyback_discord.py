@@ -96,6 +96,18 @@ def _lp_buyback_channel_row() -> tuple[int, int] | None:
     return _flagged_channel_row("receive_lp_buyback")
 
 
+def lp_buyback_thread_url(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Discord link to the order's thread, or "" without a thread/guild."""
+    row = _lp_buyback_channel_row()
+    if not order.discord_thread_id or not row:
+        return ""
+    _, guild_id = row
+    return (
+        f"https://discord.com/channels/{guild_id}/"
+        f"{int(order.discord_thread_id)}"
+    )
+
+
 def lp_conversion_alert_channel_id() -> int | None:
     row = _flagged_channel_row("receive_lp_conversion_alerts")
     return row[0] if row else None

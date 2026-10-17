@@ -1,32 +1,43 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { LoyaltyOffersMetrics } from '@helpers/loyalty_offers_metrics'
-import { format_number, number_name, number_thousand_separator } from '@helpers/numbers'
-
-import Grid from '@components/compositions/Grid.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import {
+    format_short_amount,
+    type DeepOffersSummary,
+} from '@helpers/loyalty_offers_rows'
+import { number_name, number_thousand_separator } from '@helpers/numbers'
 
 interface Props {
     metrics: LoyaltyOffersMetrics
+    deep: DeepOffersSummary
+    /** TLF standard buyback rate; null when not configured. */
+    buyback_isk_per_lp: number | null
     [propName: string]: any
 }
 
-const { metrics } = Astro.props
+const { metrics, deep, buyback_isk_per_lp } = Astro.props
 
-const avg_display = metrics.average_isk_per_lp != null
-    ? metrics.average_isk_per_lp.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    })
-    : '—'
-
-function lp_display(value: number): string {
-    if (value <= 0)
-        return '0'
-    return format_number(value, 1)
+function rate(value: number): string {
+    return number_thousand_separator(Math.round(value))
 }
+
+function range(min: number | null, max: number | null, format: (value: number) => string): string {
+    if (min == null || max == null)
+        return '—'
+    if (format(min) === format(max))
+        return format(min)
+    return t('industry.loyalty.offers.decision.range')
+        .replace('{min}', format(min))
+        .replace('{max}', format(max))
+}
+
+const deep_note = deep.count === 0
+    ? t('industry.loyalty.offers.decision.deep_none')
+    : deep.count === 1
+        ? t('industry.loyalty.offers.decision.deep_note_singular')
+        : t('industry.loyalty.offers.decision.deep_note_plural').replace('{count}', String(deep.count))
 
 function lp_exact(value: number): string {
     return t('industry.loyalty.offers.metrics.lp_exact').replace(
@@ -42,129 +53,225 @@ function volume_info(base: string, value: number): string {
     return `${base} ${amount}`
 }
 
-const cards = [
-    {
-        label: t('industry.loyalty.offers.metrics.avg_isk_lp'),
-        value: avg_display,
-        info: t('industry.loyalty.offers.metrics.avg_isk_lp_info'),
-    },
-    {
-        label: t('industry.loyalty.offers.metrics.weekly_stable'),
-        value: lp_display(metrics.weekly_stable_volume),
-        info: volume_info(
-            t('industry.loyalty.offers.metrics.weekly_stable_info'),
-            metrics.weekly_stable_volume,
+interface SummaryItem {
+    text: string
+    info: string
+}
+
+const summary: SummaryItem[] = []
+if (metrics.average_isk_per_lp != null) {
+    summary.push({
+        text: t('industry.loyalty.offers.summary.avg').replace(
+            '{value}',
+            rate(metrics.average_isk_per_lp),
         ),
-    },
+        info: t('industry.loyalty.offers.metrics.avg_isk_lp_info'),
+    })
+}
+summary.push(
     {
-        label: t('industry.loyalty.offers.metrics.weekly_total'),
-        value: lp_display(metrics.weekly_total_volume),
+        text: t('industry.loyalty.offers.summary.weekly_total').replace(
+            '{value}',
+            format_short_amount(metrics.weekly_total_volume),
+        ),
         info: volume_info(
             t('industry.loyalty.offers.metrics.weekly_total_info'),
             metrics.weekly_total_volume,
         ),
     },
-]
-
-const info_aria = t('industry.loyalty.offers.metrics.info_aria')
+    {
+        text: t('industry.loyalty.offers.summary.weekly_stable').replace(
+            '{value}',
+            format_short_amount(metrics.weekly_stable_volume),
+        ),
+        info: volume_info(
+            t('industry.loyalty.offers.metrics.weekly_stable_info'),
+            metrics.weekly_stable_volume,
+        ),
+    },
+)
 ---
 
 <section
-    class="[ loyalty-offers-metrics ]"
-    aria-label={t('industry.loyalty.offers.metrics.aria_label')}
+    class="[ loyalty-offers-decision ]"
+    aria-label={t('industry.loyalty.offers.decision.aria_label')}
 >
-    <Grid
-        class="[ loyalty-offers-metrics__grid ]"
-        min_item_width="220px"
-        row_gap="var(--space-s)"
-        column_gap="var(--space-s)"
-    >
-        {cards.map((card) => (
-            <ComponentBlock
-                class="[ loyalty-offers-metrics__card ]"
-                padding_block="var(--space-m)"
-                padding_inline="var(--space-m)"
-            >
-                <div class="[ loyalty-offers-metrics__header ]">
-                    <p class="[ loyalty-offers-metrics__label ]">{card.label}</p>
-                    <button
-                        type="button"
-                        class="[ loyalty-offers-metrics__info ]"
-                        data-tippy-content={card.info}
-                        aria-label={info_aria}
-                    >
-                        <span aria-hidden="true">i</span>
-                    </button>
-                </div>
-                <p class="[ loyalty-offers-metrics__value ]">{card.value}</p>
-            </ComponentBlock>
+    <div class="[ loyalty-offers-decision__strip ]">
+        <a
+            class="[ loyalty-offers-decision__cell loyalty-offers-decision__cell--buyback ]"
+            href={translatePath('/industry/loyalty/')}
+        >
+            <span class="[ loyalty-offers-decision__label ]">
+                {t('industry.loyalty.offers.decision.buyback_label')}
+                <span class="[ loyalty-offers-decision__arrow ]" aria-hidden="true">→</span>
+            </span>
+            <span class="[ loyalty-offers-decision__value ]">
+                {buyback_isk_per_lp != null
+                    ? rate(buyback_isk_per_lp)
+                    : t('industry.loyalty.offers.decision.buyback_unset')}
+                {buyback_isk_per_lp != null && (
+                    <span class="[ loyalty-offers-decision__unit ]">
+                        {t('industry.loyalty.offers.decision.isk_per_lp')}
+                    </span>
+                )}
+            </span>
+            <span class="[ loyalty-offers-decision__note ]">
+                {t('industry.loyalty.offers.decision.buyback_note')}
+            </span>
+        </a>
+
+        <div class="[ loyalty-offers-decision__cell ]">
+            <span class="[ loyalty-offers-decision__label ]">
+                {t('industry.loyalty.offers.decision.deep_label')}
+            </span>
+            <span class="[ loyalty-offers-decision__value ]">
+                {range(deep.net_min, deep.net_max, rate)}
+                {deep.net_min != null && (
+                    <span class="[ loyalty-offers-decision__unit ]">
+                        {t('industry.loyalty.offers.decision.isk_per_lp')}
+                    </span>
+                )}
+            </span>
+            <span class="[ loyalty-offers-decision__note ]">{deep_note}</span>
+        </div>
+
+        <div class="[ loyalty-offers-decision__cell ]">
+            <span class="[ loyalty-offers-decision__label ]">
+                {t('industry.loyalty.offers.decision.capital_label')}
+            </span>
+            <span class="[ loyalty-offers-decision__value ]">
+                {range(deep.capital_min, deep.capital_max, format_short_amount)}
+            </span>
+            <span class="[ loyalty-offers-decision__note ]">
+                {t('industry.loyalty.offers.decision.capital_note')}
+            </span>
+        </div>
+    </div>
+
+    <ul class="[ loyalty-offers-decision__summary ]">
+        {summary.map((item) => (
+            <li>
+                <span
+                    class="[ loyalty-offers-decision__summary-item ]"
+                    tabindex="0"
+                    data-tippy-content={item.info}
+                >{item.text}</span>
+            </li>
         ))}
-    </Grid>
+    </ul>
 </section>
 
 <style lang="scss">
-    .loyalty-offers-metrics :global(.loyalty-offers-metrics__card) {
+    .loyalty-offers-decision {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
-        height: 100%;
-        box-sizing: border-box;
-        position: relative;
-    }
-
-    .loyalty-offers-metrics__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
         gap: var(--space-2xs);
     }
 
-    .loyalty-offers-metrics__label {
-        margin: 0;
+    .loyalty-offers-decision__strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: 1px;
+        border: solid 1px var(--border-color);
+        background-color: var(--border-color);
+    }
+
+    .loyalty-offers-decision__cell {
+        // Subgrid keeps label, value and note on shared rows across cells.
+        display: grid;
+        grid-row: span 3;
+        grid-template-rows: subgrid;
+        align-content: start;
+        row-gap: var(--space-3xs);
+        padding-block: var(--space-s);
+        padding-inline: var(--space-m);
+        background-color: var(--component-background);
+        color: var(--foreground);
+        text-decoration: none;
+        min-width: 0;
+    }
+
+    .loyalty-offers-decision__cell--buyback {
+        box-shadow: inset var(--space-3xs) 0 0 var(--fleet-yellow);
+        transition: background-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: -2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: color-mix(in srgb, var(--fleet-yellow) 8%, var(--component-background));
+
+                .loyalty-offers-decision__arrow {
+                    transform: translateX(var(--space-3xs));
+                }
+            }
+        }
+    }
+
+    .loyalty-offers-decision__label {
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-2xs);
         font-size: var(--step--1);
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--fleet-yellow);
     }
 
-    .loyalty-offers-metrics__info {
-        flex-shrink: 0;
-        display: inline-grid;
-        place-items: center;
-        width: var(--space-s);
-        height: var(--space-s);
+    .loyalty-offers-decision__arrow {
+        transition: transform var(--fast-transition);
+    }
+
+    .loyalty-offers-decision__value {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .loyalty-offers-decision__unit {
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .loyalty-offers-decision__note {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .loyalty-offers-decision__summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
         margin: 0;
         padding: 0;
-        border: 1px solid color-mix(in srgb, var(--faded) 70%, transparent);
-        border-radius: 50%;
-        background: transparent;
-        color: var(--faded);
-        font-family: var(--default-font);
+        list-style: none;
         font-size: var(--step--2);
-        font-weight: 600;
-        line-height: 1;
-        text-transform: lowercase;
-        cursor: help;
+        color: var(--faded);
 
-        &:hover,
-        &:focus-visible {
-            color: var(--highlight);
-            border-color: var(--highlight);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
+        li + li::before {
+            content: '·';
+            margin-inline-end: var(--space-s);
         }
     }
 
-    .loyalty-offers-metrics__value {
-        margin: 0;
-        font-family: var(--heading-font);
-        font-size: clamp(2rem, 4.5vw, 3rem);
-        line-height: 0.95;
-        letter-spacing: -0.02em;
-        text-transform: uppercase;
-        color: var(--highlight);
+    .loyalty-offers-decision__summary-item {
+        cursor: help;
+        text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+        text-underline-offset: 0.2em;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
     }
 </style>

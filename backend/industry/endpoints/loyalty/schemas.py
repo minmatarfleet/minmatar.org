@@ -1,6 +1,6 @@
 """Schemas for industry loyalty / LP buyback endpoints."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from ninja import Schema
@@ -27,6 +27,7 @@ class LoyaltyMarketOrderClaimResponse(Schema):
     amount: int
     destination_character_name: str = ""
     destination_corporation_name: str = ""
+    destination_corporation_id: Optional[int] = None
     claimed_by_user_id: Optional[int] = None
     claimed_by_name: Optional[str] = None
     claimed_by_character_id: Optional[int] = None
@@ -53,7 +54,10 @@ class LoyaltyMarketOrderResponse(Schema):
     claimed_by_name: Optional[str] = None
     claimed_by_character_id: Optional[int] = None
     destination_character_name: str = ""
+    destination_corporation_id: Optional[int] = None
     discord_thread_id: Optional[int] = None
+    # Only GET /orders/{id} fills this (one channel lookup per order).
+    discord_thread_url: str = ""
     notes: str = ""
     claims: list[LoyaltyMarketOrderClaimResponse] = []
     created_at: datetime
@@ -99,13 +103,36 @@ class LoyaltyOrderStatsTier(Schema):
     orders: int
     completed: int
     avg_close_seconds: Optional[int] = None
+    median_close_seconds: Optional[int] = None
+    paid_within_day: int = 0
+    lp_completed: int = 0
+    isk_completed: int = 0
     avg_isk_per_lp: Optional[float] = None
+
+
+class LoyaltyOrderStatsWeek(Schema):
+    week_start: date
+    lp: int
+
+
+class LoyaltyOrderStatsConverter(Schema):
+    user_id: int
+    name: str
+    character_id: Optional[int] = None
+    orders: int
+    lp: int
+    isk: int
+    median_settle_seconds: Optional[int] = None
 
 
 class LoyaltyOrderStatsResponse(LoyaltyOrderStatsTier):
     days: int
+    median_claim_seconds: Optional[int] = None
+    median_settle_seconds: Optional[int] = None
     standard: LoyaltyOrderStatsTier
     express: LoyaltyOrderStatsTier
+    weekly: list[LoyaltyOrderStatsWeek] = []
+    converters: list[LoyaltyOrderStatsConverter] = []
 
 
 class LoyaltyLedgerEntryResponse(Schema):
