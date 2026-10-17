@@ -188,11 +188,3 @@ def classify_items(type_ids: Iterable[int]) -> dict[int, ItemClassification]:
         )
 
     return classified
-
-
-def classify_item_types(type_ids: Iterable[int]) -> dict[int, str]:
-    """Back-compat: type-only map (prefer classify_items)."""
-    return {
-        type_id: row.item_type
-        for type_id, row in classify_items(type_ids).items()
-    }

@@ -23,8 +23,6 @@ from buyback.helpers.purchase_discord_buttons import (
     cancel_custom_id,
     complete_custom_id,
     order_action_components,
-    parse_cancel_custom_id,
-    parse_complete_custom_id,
 )
 from buyback.models import (
     BuybackLedgerEntry,
@@ -39,12 +37,9 @@ from market.models import EveMarketItemLocationPrice
 
 
 class PurchaseDiscordButtonsTestCase(TestCase):
-    def test_custom_id_roundtrip(self):
+    def test_custom_id_format(self):
         self.assertEqual(complete_custom_id(42), "buyback:complete:42")
-        self.assertEqual(parse_complete_custom_id("buyback:complete:42"), 42)
-        self.assertIsNone(parse_complete_custom_id("buyback:cancel:42"))
         self.assertEqual(cancel_custom_id(7), "buyback:cancel:7")
-        self.assertEqual(parse_cancel_custom_id("buyback:cancel:7"), 7)
 
     def test_order_action_components(self):
         row = order_action_components(99)[0]["components"]

@@ -12,7 +12,7 @@ from applications.discord import notify_application_transferred
 from applications.l3arn import (
     L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
     L3ARN_CORPORATION_NAME,
-    l3arn_discord_description,
+    application_discord_description,
     validate_l3arn_application_description,
 )
 from applications.models import EveCorporationApplication
@@ -444,7 +444,7 @@ class L3arnCorporationApplicationValidationTest(TestCase):
             validate_l3arn_application_description(over_limit)
         )
 
-    def test_l3arn_discord_description_strips_how_found_line(self):
+    def test_application_discord_description_strips_how_found_line(self):
         description = (
             "Questionnaire:\n"
             "- Goals in EVE: FW\n"
@@ -452,7 +452,7 @@ class L3arnCorporationApplicationValidationTest(TestCase):
             "- Other corps considered: none"
         )
         self.assertEqual(
-            l3arn_discord_description(description),
+            application_discord_description(description),
             "Questionnaire:\n"
             "- Goals in EVE: FW\n"
             "- Other corps considered: none",

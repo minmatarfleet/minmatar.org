@@ -1,5 +1,4 @@
 import logging
-import math
 from datetime import datetime, timedelta
 from statistics import median
 from typing import Iterable, List
@@ -272,18 +271,6 @@ def estimate_contract_burst_size(bursts: list[int]) -> int | None:
     multi = [size for size in bursts if size >= 2]
     sample = multi if multi else bursts
     return max(1, int(median(sample)))
-
-
-def fleets_remaining_from_stock(
-    outstanding: int,
-    burst_size: int | None,
-) -> int | None:
-    """How many typical fleet pulls the outstanding stock covers."""
-    if burst_size is None or burst_size < 1:
-        return None
-    if outstanding <= 0:
-        return 0
-    return int(math.ceil(outstanding / burst_size))
 
 
 def finished_contract_burst_size_by_fitting(

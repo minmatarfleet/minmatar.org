@@ -173,20 +173,6 @@ def top_ships_from_counts(
     ]
 
 
-def format_top_ships_phrase(
-    ships: list[dict[str, int | str]], *, limit: int = 3
-) -> str:
-    parts: list[str] = []
-    for ship in ships[:limit]:
-        name = str(ship["name"])
-        count = int(ship["count"])
-        if count > 1:
-            parts.append(f"{name} ×{count}")
-        else:
-            parts.append(name)
-    return ", ".join(parts)
-
-
 def top_hull_classes_from_counts(
     ship_counts: dict[str, int] | None,
     *,

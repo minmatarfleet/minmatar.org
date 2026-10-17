@@ -6,7 +6,6 @@ from market.helpers.price_viability import (
     DEFAULT_PRICE_VIABILITY_POLICY,
     PriceViabilityPolicy,
     is_price_viable,
-    order_quantity_counts_as_reasonable,
 )
 
 
@@ -69,12 +68,4 @@ class PriceViabilityHelperTestCase(SimpleTestCase):
                 max_markup_pct=30,
                 baseline_price_floor=50,
             )
-        )
-
-    def test_sell_order_alias(self):
-        self.assertTrue(
-            order_quantity_counts_as_reasonable(2_400_000, 2_000_000)
-        )
-        self.assertFalse(
-            order_quantity_counts_as_reasonable(2_400_001, 2_000_000)
         )

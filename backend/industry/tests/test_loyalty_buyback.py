@@ -34,8 +34,6 @@ from industry.helpers.lp_buyback_discord_buttons import (
     isk_sent_custom_id,
     lp_sent_components,
     lp_sent_custom_id,
-    parse_isk_sent_custom_id,
-    parse_lp_sent_custom_id,
 )
 from industry.helpers.lp_market_orders import MAX_SELL_LP, format_lp_quantity
 from industry.helpers.lp_ledger import account_balance, post_ledger_entry
@@ -1113,12 +1111,9 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
 
 
 class LpBuybackDiscordButtonsTestCase(AppTestCase):
-    def test_custom_id_roundtrip(self):
+    def test_custom_id_format(self):
         self.assertEqual(lp_sent_custom_id(42), "lp_buyback:lp:42")
-        self.assertEqual(parse_lp_sent_custom_id("lp_buyback:lp:42"), 42)
-        self.assertIsNone(parse_lp_sent_custom_id("lp_buyback:isk:42"))
         self.assertEqual(isk_sent_custom_id(7), "lp_buyback:isk:7")
-        self.assertEqual(parse_isk_sent_custom_id("lp_buyback:isk:7"), 7)
 
     def test_lp_sent_components(self):
         button = lp_sent_components(99)[0]["components"][0]

@@ -14,7 +14,6 @@ from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     fetch_loyalty_offers_from_esi,
     get_offer_for_blueprint_type,
-    is_pure_lp_isk_offer,
     navy_bpc_cost_for_plan,
     resolve_isk_per_lp,
     sync_loyalty_store_offers,
@@ -73,19 +72,6 @@ TYFI_OFFERS = [
 
 
 class LoyaltyStoreHelperTestCase(TestCase):
-    def test_is_pure_lp_isk_offer(self):
-        self.assertTrue(is_pure_lp_isk_offer(TYFI_OFFERS[0]))
-        self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[1]))
-        self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[2]))
-        self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[3]))
-        self.assertFalse(
-            is_pure_lp_isk_offer(
-                {
-                    **TYFI_OFFERS[0],
-                    "ak_cost": 50,
-                }
-            )
-        )
 
     def test_sync_stores_full_catalog_including_required_items(self):
         count = sync_loyalty_store_offers(

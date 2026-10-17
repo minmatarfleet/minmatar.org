@@ -631,36 +631,6 @@ class EsiClient:
 
         return EsiResponse(response_code=SUCCESS, data=all_jobs)
 
-    def get_corporation_wallet_journal(
-        self, corporation_id: int, division: int, page: int = 1
-    ) -> EsiResponse:
-        """
-        Returns wallet journal for one corporation division and page.
-        Requires esi-wallet.read_corporation_wallets.v1 (Director/Market/Accountant).
-        """
-        token, status = self._valid_token(
-            ["esi-wallet.read_corporation_wallets.v1"]
-        )
-        if status > 0:
-            return EsiResponse(status)
-
-        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
-        headers = self._bearer_headers(token)
-        try:
-            resp = requests.get(
-                url,
-                params={"page": page},
-                headers=headers,
-                timeout=30,
-            )
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
-        if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
-
-        data = resp.json() if resp.content else []
-        return EsiResponse(response_code=SUCCESS, data=data)
-
     def get_corporation_wallet_journal_all_divisions(
         self, corporation_id: int
     ) -> EsiResponse:
@@ -853,53 +823,6 @@ class EsiClient:
             return EsiResponse(response_code=resp.status_code)
         data = resp.json() if resp.content else []
         return EsiResponse(response_code=SUCCESS, data=data)
-
-    def get_structure_market_orders(self, structure_id: int) -> EsiResponse:
-        """
-        Returns all market orders in a structure (requires character with
-        esi-markets.structure_markets.v1 and docking access to the structure).
-        Paginates automatically and returns the full list.
-        Prefer get_structure_market_orders_pages() for large structures to avoid OOM.
-        """
-        all_orders = []
-        for page_data in self.get_structure_market_orders_pages(structure_id):
-            if page_data is None:
-                return EsiResponse(response_code=NO_VALID_ESI_TOKEN)
-            all_orders.extend(page_data)
-        return EsiResponse(response_code=SUCCESS, data=all_orders)
-
-    def get_structure_market_orders_first_page_and_total(
-        self, structure_id: int
-    ) -> tuple[list | None, int]:
-        """
-        Fetch page 1 of structure market orders and return (data, total_pages).
-        Uses a single request so we can read the X-Pages header. Returns
-        (None, 0) if token invalid or request fails.
-        """
-        token, status = self._valid_token(["esi-markets.structure_markets.v1"])
-        if status > 0:
-            return None, 0
-
-        url = f"{ESI_BASE_URL}/markets/structures/{structure_id}/"
-        try:
-            resp = requests.get(
-                url,
-                params={"page": 1},
-                headers=self._bearer_headers(token),
-                timeout=30,
-            )
-        except Exception as e:
-            logger.exception(
-                "ESI request failed for structure %s: %s", structure_id, e
-            )
-            return None, 0
-
-        if resp.status_code >= 400:
-            return None, 0
-
-        total_pages = int(resp.headers.get("X-Pages", 1))
-        data = resp.json() if resp.content else []
-        return data, total_pages
 
     def get_structure_market_orders_page(
         self, structure_id: int, page: int
@@ -1368,12 +1291,6 @@ class EsiClient:
         )
         # Single-object endpoint: result(), not results().
         return self._operation_result(operation)
-
-    def _authenticated_esi_get(
-        self, url: str, required_scopes: List[str]
-    ) -> EsiResponse:
-        """GET an authenticated ESI route with the Equinox compatibility date."""
-        return self._authenticated_esi_request("GET", url, required_scopes)
 
     def _authenticated_esi_request(
         self,

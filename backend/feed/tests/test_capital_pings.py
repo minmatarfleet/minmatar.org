@@ -27,7 +27,6 @@ from feed.helpers.capital_pings import (
     build_capital_alert_payload,
     build_capital_ping_payload,
     maybe_notify_capital_kill,
-    send_capital_ping_discord,
 )
 from feed.helpers.capital_ships import (
     is_capital_ship_type,
@@ -836,26 +835,3 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalAlert.objects.count(), 2)
         self.assertEqual(mock_client.create_message.call_count, 2)
         mock_client.update_message.assert_not_called()
-
-    @patch("feed.helpers.capital_pings.DiscordClient")
-    def test_send_capital_ping_discord(self, mock_client_cls):
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"id": "1234567890"}
-        mock_client.create_message.return_value = mock_response
-        mock_client_cls.return_value = mock_client
-
-        payload = make_killmail_payload(
-            136500005,
-            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
-            ship_type_id=73790,
-        )
-
-        message_ids = send_capital_ping_discord(
-            payload["killmail"],
-            zkb=payload["zkb"],
-            distance_ly=0.0,
-            discord_client=mock_client,
-        )
-        self.assertEqual(message_ids, [1234567890])
-        mock_client.create_message.assert_called_once()

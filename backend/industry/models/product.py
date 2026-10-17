@@ -28,9 +28,9 @@ class IndustryProduct(models.Model):
       slightly differently where relevant).
     - **Produced**: we build it. Expand to the direct industry products (components)
       that make it up; those are treated as import at this step. Any of those
-      components can themselves be produced, and we repeat. Use resolve_order_to_imports()
-      / resolve_product_to_imports() in industry.helpers.type_breakdown to compute
-      the final import list.
+      components can themselves be produced, and we repeat. Use
+      resolve_type_to_demand_import_leaves() in industry.helpers.type_breakdown to
+      compute the final import list.
 
     **volume**: Property returning the type's volume in m³ (from eve_type.volume or
     packaged_volume). Requires eve_type to be loaded (e.g. select_related("eve_type")).

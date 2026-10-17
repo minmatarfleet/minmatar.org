@@ -336,10 +336,6 @@ def fetch_structure_sell_orders():
     )
 
 
-def fetch_eve_market_transactions():
-    pass
-
-
 @app.task()
 def sync_character_attributed_orders(character_id: int):
     """Sync personal open orders for one character."""

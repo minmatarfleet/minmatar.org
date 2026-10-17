@@ -23,19 +23,6 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-def preference_enabled(
-    user, notification_type: NotificationType, channel: str
-) -> bool:
-    pref = NotificationPreference.objects.filter(
-        user=user,
-        notification_type=notification_type.key,
-        channel=channel,
-    ).first()
-    if pref is None:
-        return notification_type.default_enabled(channel)
-    return pref.enabled
-
-
 def effective_preferences(user) -> dict[str, dict[str, bool]]:
     """Map type_key -> channel -> enabled for all registered types."""
     stored = {

@@ -343,24 +343,6 @@ class EveCharacterBlueprintAdmin(admin.ModelAdmin):
     autocomplete_fields = ("character",)
 
 
-class EveCharacterCloneInline(admin.TabularInline):
-    model = EveCharacterClone
-    extra = 0
-    readonly_fields = (
-        "clone_id",
-        "name",
-        "location_id",
-        "location_name",
-        "implants",
-        "total_value_isk",
-        "is_active",
-    )
-    can_delete = False
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(EveCharacterClone)
 class EveCharacterCloneAdmin(admin.ModelAdmin):
     list_display = (

@@ -27,11 +27,6 @@ class LocationExpectationsResponse(BaseModel):
     expectations: List[LocationFittingExpectationResponse]
 
 
-class MarketContractHistoricalQuantityResponse(BaseModel):
-    date: str
-    quantity: int
-
-
 class MarketContractSellerResponse(BaseModel):
     character_id: int | None = None
     character_name: str | None = None
