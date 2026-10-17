@@ -7,6 +7,7 @@ import {
     SCOPE_GROUPS_COOKIE,
     SCOPE_GROUPS_COOKIE_MAX_AGE,
     SCOPE_GROUPS_COOKIE_NONE,
+    SCOPE_GROUPS_COOKIE_VERSION,
     chosen_scope_groups,
     requested_scope_count,
 } from '@helpers/esi_scope_groups'
@@ -51,7 +52,7 @@ import Tag from '@components/blocks/Tag.astro'
         total_template: ${JSON.stringify(total_template)},
         save() {
             const chosen = Object.keys(this.on).filter((key) => this.on[key])
-            const value = encodeURIComponent(chosen.length ? chosen.join(',') : ${JSON.stringify(SCOPE_GROUPS_COOKIE_NONE)})
+            const value = encodeURIComponent('v${SCOPE_GROUPS_COOKIE_VERSION}:' + (chosen.length ? chosen.join(',') : ${JSON.stringify(SCOPE_GROUPS_COOKIE_NONE)}))
             const secure = window.location.protocol === 'https:' ? '; Secure' : ''
             document.cookie = ${JSON.stringify(SCOPE_GROUPS_COOKIE)} + '=' + value + '; path=/; max-age=${SCOPE_GROUPS_COOKIE_MAX_AGE}; SameSite=Lax' + secure
         },

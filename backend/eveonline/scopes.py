@@ -85,6 +85,26 @@ FACTION_WARFARE_SCOPES = [
     *CAMPAIGN_SCOPES,
 ]
 
+# What the Minmatar Fleet desktop app uses on the pilot's behalf. Optional, on
+# by default in the add-character dialog. UI writes happen only on an explicit
+# click, one request per click (docs/desktop/ccp-third-party-guidelines.md,
+# rules 2 and 14). Nothing here overlaps another group, so scope_group() can
+# tell a Desktop token apart.
+DESKTOP_SCOPES = [
+    # Set destination: route to the fleet, the form-up or staging.
+    "esi-ui.write_waypoint.v1",
+    # Open a contract, a market item or a pilot's info window in the client.
+    "esi-ui.open_window.v1",
+    # Where the pilot is, for jumps to the fleet when no game log is readable.
+    "esi-location.read_location.v1",
+    # The hull they're in, for the doctrine check before joining a fleet.
+    "esi-location.read_ship_type.v1",
+    # Which characters are logged in, for picking the one to sign up or route.
+    "esi-location.read_online.v1",
+    # Jump fatigue, for capital pilots deciding whether they can make a fleet.
+    "esi-characters.read_fatigue.v1",
+]
+
 
 class TokenType(Enum):
     DIRECTOR = "Director"
@@ -95,6 +115,7 @@ class TokenType(Enum):
     EXECUTOR = "Executor"
     FLEET_COMMANDER = "FleetCommander"
     FACTION_WARFARE = "FactionWarfare"
+    DESKTOP = "Desktop"
     # Legacy name for Faction Warfare. Still stored on characters and in
     # campaign links, so it stays parseable and grants the same scopes.
     CAMPAIGN = "Campaign"
@@ -110,6 +131,7 @@ SELECTABLE_SCOPE_GROUPS = (
     TokenType.FACTION_WARFARE,
     TokenType.INDUSTRY,
     TokenType.MARKET,
+    TokenType.DESKTOP,
     TokenType.FLEET_COMMANDER,
     TokenType.DIRECTOR,
 )
@@ -149,6 +171,8 @@ def scopes_for(token_type: TokenType):
             return ["publicData"]
         case TokenType.MARKET:
             return BASIC_SCOPES + MARKET_SCOPES
+        case TokenType.DESKTOP:
+            return BASIC_SCOPES + DESKTOP_SCOPES
         case TokenType.EXECUTOR:
             return (
                 BASIC_SCOPES
@@ -202,6 +226,10 @@ def scope_group(token: Token) -> str | None:
     # relabelled and lose their industry scopes on the next re-auth.
     if "esi-characters.read_notifications.v1" in token_scopes:
         return TokenType.FACTION_WARFARE.value
+    # Desktop comes after Faction Warfare for the same reason: new characters
+    # get both, and the label should stay the group campaigns look for.
+    if "esi-ui.write_waypoint.v1" in token_scopes:
+        return TokenType.DESKTOP.value
     if "esi-fleets.read_fleet.v1" in token_scopes:
         return TokenType.BASIC.value
 

@@ -16,6 +16,7 @@ from eveonline.helpers.characters import (
 )
 from eveonline.models import EveCharacter
 from eveonline.scopes import (
+    DESKTOP_SCOPES,
     TokenType,
     parse_scope_groups,
     scope_group,
@@ -226,6 +227,33 @@ class CharacterHelperTests(TestCase):
             scope_groups_granted(token, TokenType.BASIC),
         )
         self.assertEqual("FactionWarfare", scope_group(token))
+
+    def test_desktop_group_is_picked_recorded_and_labelled(self):
+        self.assertEqual(
+            [TokenType.DESKTOP], parse_scope_groups("Desktop,Desktop")
+        )
+
+        token = Token.objects.create(user=self.user, character_id=10011)
+        add_scopes(TokenType.BASIC, token)
+        add_scopes(TokenType.DESKTOP, token)
+        self.assertEqual("Desktop", scope_group(token))
+        self.assertEqual(
+            ["Basic", "Desktop"],
+            scope_groups_granted(token, TokenType.BASIC, [TokenType.DESKTOP]),
+        )
+
+        # New characters get Faction Warfare too; that label wins.
+        add_scopes(TokenType.FACTION_WARFARE, token)
+        self.assertEqual("FactionWarfare", scope_group(token))
+
+    def test_desktop_scopes_overlap_no_other_group(self):
+        desktop = set(DESKTOP_SCOPES)
+        for token_type in TokenType:
+            if token_type in (TokenType.DESKTOP, TokenType.PUBLIC):
+                continue
+            self.assertFalse(
+                desktop & set(scopes_for(token_type)), token_type.value
+            )
 
     def test_scopes_for_token_add_keeps_scopes_already_granted(self):
         char = EveCharacter.objects.create(
