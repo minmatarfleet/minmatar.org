@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="fleet_view.css">
 <title>Upcoming Fleets</title>
 </head>
-<body class="is-hidden">
+<body class="is-hidden is-locked">
 <section class="eve-window">
     <header class="eve-window__header" data-interactive>
         <button class="eve-icon-button" id="back" data-fleet-command="fleet:back" aria-label="Back to upcoming fleets" title="Back to upcoming fleets" hidden>
@@ -20,7 +20,7 @@
             <button class="eve-icon-button" id="refresh" data-command="fleets:refresh" aria-label="Refresh" title="Refresh">
                 <svg viewBox="0 0 12 12"><path d="M10 6a4 4 0 1 1-1.2-2.85M10 1.5v2.5H7.5"/></svg>
             </button>
-            <button class="eve-icon-button" id="overlay" data-command="overlay:toggle" aria-label="Overlay over EVE" aria-pressed="false" title="Overlay over EVE">
+            <button class="eve-icon-button" id="lock" data-command="lock:toggle" aria-label="Pin in place" aria-pressed="true" title="Pinned in place. Click to move and resize">
                 <svg viewBox="0 0 12 12"><path d="M4.5 1.5h3l-.5 3 2 1.5H3l2-1.5zM6 6v4.5"/></svg>
             </button>
             <button class="eve-icon-button" data-command="settings:open" aria-label="Settings" title="Settings">

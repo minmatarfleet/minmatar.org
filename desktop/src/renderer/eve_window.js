@@ -22,6 +22,15 @@
         document.body.classList.toggle('glass', glass)
         const transparency = state.eve_window ? state.eve_window.transparency : 1
         document.documentElement.style.setProperty('--eve-window-alpha', background_alpha(transparency, glass).toFixed(3))
+        // The pin button: pinned windows can't be dragged or resized (eve-window.css).
+        if (typeof state.locked === 'boolean') {
+            document.body.classList.toggle('is-locked', state.locked)
+            const lock = document.getElementById('lock')
+            if (lock) {
+                lock.setAttribute('aria-pressed', String(state.locked))
+                lock.title = state.locked ? 'Pinned in place. Click to move and resize' : 'Click to pin in place'
+            }
+        }
     }
 
     // Fade in/out on the main process's show/hide. The body starts hidden (class in the HTML).

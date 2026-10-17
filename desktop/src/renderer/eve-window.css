@@ -43,6 +43,8 @@ body.is-hidden .eve-window { opacity: 0; transition-timing-function: ease-in; }
 .eve-window__body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
 .eve-window__footer { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 22px 6px 10px; font-size: 11px; color: var(--eve-text-dim); }
 .eve-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+body.is-locked .eve-window__header { -webkit-app-region: no-drag; }
+body.is-locked .eve-resize { display: none; }
 .eve-resize::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border-right: 1px solid var(--eve-text-dim); border-bottom: 1px solid var(--eve-text-dim); }
 
 @keyframes eve-spin { to { transform: rotate(360deg); } }

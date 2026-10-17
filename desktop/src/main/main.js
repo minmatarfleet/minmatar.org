@@ -30,12 +30,12 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
     'trademarks or registered trademarks of CCP hf. This application has been created under the EVE Developer License Agreement. ' +
     'It is a Minmatar Fleet alliance tool and is not affiliated with or endorsed by CCP hf.'
 
-// Settings the Settings window may change (booleans only). Saved on the account (settings.js), except
-// "overlay" (pinned), which is back on at every launch.
-const USER_SETTINGS = ['overlay', 'only_over_eve', 'show_sneak', 'intel_alerts']
-const SETTINGS_DEFAULTS = { overlay: true, only_over_eve: true, show_sneak: true, intel_alerts: true }
+// Settings the Settings window may change (booleans only), saved on the account (settings.js).
+// "locked" is the pin button: whether the windows can be dragged and resized.
+const USER_SETTINGS = ['locked', 'show_sneak', 'intel_alerts']
+const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, intel_alerts: true }
 const INTEL_DEFAULT_RANGE = 5   // jumps
-const SESSION_SETTINGS = ['overlay']
+const SESSION_SETTINGS = []
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 
 function diag(entry) {
@@ -216,14 +216,17 @@ function place(win, bounds) {
 }
 
 function create_overlay(def) {
-    const win = base_window({ ...on_screen_bounds(window_saved(def.id).bounds, def), minWidth: def.min_size.width, minHeight: def.min_size.height })
+    // Overlay windows never take focus (only Intel, while a report is written: intel_typing) and are
+    // click-through except their controls, so EVE stays the active window.
+    const win = base_window({
+        ...on_screen_bounds(window_saved(def.id).bounds, def), minWidth: def.min_size.width, minHeight: def.min_size.height,
+        focusable: false, skipTaskbar: true,
+    })
+    win.setIgnoreMouseEvents(true, { forward: true })
     win.__placed = JSON.stringify(win.getBounds())
     overlays.set(def.id, win)
     win.loadFile(path.join(RENDERER, def.page))
-    win.once('ready-to-show', () => {
-        apply_mode()
-        reveal_overlays()
-    })
+    win.once('ready-to-show', () => update_overlay_visibility({ force: true }))
     const save_bounds = debounce(() => {
         if (win.isDestroyed()) return
         const bounds = win.getBounds()
@@ -280,29 +283,7 @@ function set_window_enabled(id, enabled) {
     push_state()
 }
 
-// Overlay mode = above EVE, never takes focus, click-through except the window's controls. With "Stay with
-// EVE" the windows sit right on top of the client (see stays_with_eve), otherwise above every app.
-function apply_mode() {
-    const overlay = settings.get('overlay')
-    for (const [id, win] of overlays) {
-        if (win.isDestroyed()) continue
-        set_topmost(win, overlay && !stays_with_eve())
-        win.setFocusable(!overlay)
-        win.setSkipTaskbar(overlay)
-        win.setIgnoreMouseEvents(overlay, overlay ? { forward: true } : undefined)
-        if (!overlay && !hidden.has(id)) reveal(win)   // unpinned windows don't follow EVE's focus
-    }
-    update_overlay_visibility()
-    update_polling()
-    update_tray()
-    push_state()
-}
-
 function reveal_overlays() {
-    if (!settings.get('overlay')) {
-        for (const [id, win] of overlays) if (!hidden.has(id)) reveal(win, { activate: true })
-        return
-    }
     update_overlay_visibility({ force: true })
 }
 
@@ -314,12 +295,12 @@ function own_pids() {
     return new Set(app.getAppMetrics().map(m => m.pid))
 }
 
-// "Stay with EVE" (saved as only_over_eve): while pinned and an EVE client is running, the windows drop
-// always-on-top and the helper stacks them directly above the client instead, so an app brought in front
-// of EVE (Discord, a browser) covers them like it covers EVE. Without the helper or a running client there
-// is nothing to sit on, and they float over everything.
+// The windows live on EVE: not always-on-top, the helper stacks them directly above the client instead,
+// so an app brought in front of EVE (Discord, a browser) covers them like it covers EVE, and they hide
+// when no logged-in client is on screen (overlay_rules.js). Only without the helper (not Windows, or
+// PowerShell blocked) is there nothing to sit on; then they float over everything.
 function stays_with_eve() {
-    return !!(settings && settings.get('overlay') && settings.get('only_over_eve') && eve && eve.ready && eve.eve_running)
+    return !!(eve && eve.ready && eve.eve_running)
 }
 
 function set_topmost(win, on) {
@@ -347,7 +328,7 @@ function stack_windows() {
 
 function update_overlay_visibility({ force = false } = {}) {
     update_mascot()
-    if (!settings.get('overlay')) return
+    if (!settings) return
     const stay = stays_with_eve()
     for (const win of overlays.values()) if (!win.isDestroyed()) set_topmost(win, !stay)
     if (helper_starting()) return
@@ -356,12 +337,14 @@ function update_overlay_visibility({ force = false } = {}) {
         eve_running: eve.eve_running,
         foreground: eve.foreground,
         own_pids: own_pids(),
-        stay_with_eve: settings.get('only_over_eve'),
     }
     const show = overlay_should_show({ ...rule, active_client: stack_client() })
     const targets = [...overlays].filter(([id, win]) => !win.isDestroyed() && !hidden.has(id)).map(([, win]) => [win, show])
-    // Settings stays above every app, so with "Stay with EVE" it still hides when another app comes in front.
-    if (settings_win && !settings_win.isDestroyed() && settings_win.__wanted) targets.push([settings_win, overlay_should_show({ ...rule, active_client: null })])
+    // Settings stays above every app, so it still hides when another app comes in front of EVE. With no
+    // client running it shows anyway: the tray opens it before the game is up.
+    if (settings_win && !settings_win.isDestroyed() && settings_win.__wanted) {
+        targets.push([settings_win, !eve.eve_running || overlay_should_show({ ...rule, active_client: null })])
+    }
     for (const [win, shown] of targets) {
         if (shown || (force && shown === null)) {
             reveal(win)
@@ -396,7 +379,7 @@ function update_mascot() {
     const client = active_client()
     const wanted = state.user && settings.get('show_sneak') && !helper_starting()
     const stay = stays_with_eve()
-    const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client, stay_with_eve: stay }) : false
+    const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client }) : false
     if (show === false) return conceal(mascot_win, { instant: !mascot_win || hide_instantly(eve.foreground) })
     if (show === null && !(mascot_win && mascot_win.isVisible())) return
     const win = ensure_mascot()
@@ -476,9 +459,8 @@ function adopt_local_settings_file(remote_values) {
 function set_user_setting(key, value) {
     if (!USER_SETTINGS.includes(key) || typeof value !== 'boolean') return
     settings.set(key, value)
-    if (key === 'overlay') apply_mode()
-    else if (key === 'intel_alerts') intel.set_options({ alerts: value })
-    else update_overlay_visibility({ force: true })
+    if (key === 'intel_alerts') intel.set_options({ alerts: value })
+    else if (key !== 'locked') update_overlay_visibility({ force: true })   // "locked" only changes the windows' drag region and grip
     update_polling()
     update_tray()
     push_state()
@@ -487,12 +469,12 @@ function set_user_setting(key, value) {
 // ---------------------------------------------------------------- data
 
 // The fleet list and the fleet view poll only while the Fleets window is up: not closed to the tray,
-// and (with "Stay with EVE") not while EVE isn't running, when the window can't show anyway.
+// and not while EVE isn't running, when the window can't show anyway.
 function polling_wanted() {
     if (!state.user || !settings) return false
     const win = overlays.get('fleets')
     if (!win || win.isDestroyed() || hidden.has('fleets')) return false
-    return !settings.get('overlay') || !settings.get('only_over_eve') || !eve || !eve.supported || eve.eve_running
+    return !eve || !eve.supported || eve.failed || eve.eve_running
 }
 
 function update_polling() {
@@ -590,16 +572,16 @@ function sync_intel() {
     }
 }
 
-// Typing a note needs keyboard focus, which pinned overlays never take. Let the Intel window take it
+// Typing a note needs keyboard focus, which overlay windows never take. Let the Intel window take it
 // while a report is being written, and give it back after.
 function intel_typing(on) {
     const win = overlays.get('intel')
     if (!win || win.isDestroyed()) return
-    const pinned = settings.get('overlay')
     if (on) {
-        if (pinned) { win.setFocusable(true); win.setIgnoreMouseEvents(false) }
+        win.setFocusable(true)
+        win.setIgnoreMouseEvents(false)
         win.focus()
-    } else if (pinned) {
+    } else if (win.isFocusable()) {
         win.setFocusable(false)
         win.setIgnoreMouseEvents(true, { forward: true })
     }
@@ -720,7 +702,7 @@ function push_state() {
     const payload = {
         ...state,
         version: app.getVersion(),
-        overlay: settings.get('overlay'),
+        locked: settings.get('locked'),
         settings_sync: settings.status,
         settings: Object.fromEntries(USER_SETTINGS.map(k => [k, settings.get(k)])),
         windows: OVERLAY_WINDOWS.map(def => ({ id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id) })),
@@ -815,7 +797,9 @@ ipcMain.on('intel:kind', (event, kind) => intel.set_kind(kind))
 ipcMain.on('intel:edit', (event, change) => change && intel.edit_draft(change))
 ipcMain.on('intel:share', async () => {
     const url = await intel.share()
-    if (url) clipboard.writeText(url)
+    if (!url) return   // failed: the draft stays open for another try
+    clipboard.writeText(url)
+    intel_typing(false)
 })
 ipcMain.on('intel:discard', () => { intel.discard(); intel_typing(false) })
 ipcMain.on('intel:open-report', (event, report_id) => intel.open_report(report_id))
@@ -839,11 +823,11 @@ ipcMain.on('update:check', () => updater && updater.check())
 ipcMain.on('settings:open', () => { if (state.user) open_settings() })
 ipcMain.on('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
 ipcMain.on('window:set-enabled', (event, change) => change && typeof change.enabled === 'boolean' && set_window_enabled(change.id, change.enabled))
-ipcMain.on('overlay:toggle', () => set_user_setting('overlay', !settings.get('overlay')))
+ipcMain.on('lock:toggle', () => set_user_setting('locked', !settings.get('locked')))
 ipcMain.on('window:minimize', event => {
     const win = sender_window(event)
     const id = overlay_id_of(win)
-    if (id && settings.get('overlay')) {
+    if (id) {
         hidden.add(id)   // overlays have no taskbar button: "minimise" hides until the tray or Settings brings it back
         conceal(win)
         update_polling()
@@ -857,14 +841,14 @@ ipcMain.on('window:close', event => {
 })
 ipcMain.on('mouse:interactive', (event, interactive) => {
     const win = sender_window(event)
-    if (win && (win === mascot_win || (overlay_id_of(win) && settings.get('overlay')))) {
+    if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable()) {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
     }
 })
 let resize_start = null
 ipcMain.on('resize:start', (event, point) => {
     const win = sender_window(event)
-    if (win) resize_start = { point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
+    if (win && !settings.get('locked')) resize_start = { point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
 })
 ipcMain.on('resize:move', (event, point) => {
     const win = sender_window(event)

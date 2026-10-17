@@ -82,7 +82,6 @@ function apply_geometry(root) {
 
 on_state(state => {
     window.eve_window.apply(state)
-    $('overlay').setAttribute('aria-pressed', String(state.overlay))
     $('refresh').classList.toggle('is-loading', state.loading)
     $('title').textContent = state.campaign ? state.campaign.name : 'Campaigns'
     $('status').textContent = state.campaign_updated_at ? `Updated ${eve_time(state.campaign_updated_at)} EVE` : ''
