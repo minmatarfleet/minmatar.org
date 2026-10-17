@@ -2,7 +2,7 @@ const $ = id => document.getElementById(id)
 const { send, on_state, on_visibility } = window.minmatar
 window.eve_window.follow_visibility(on_visibility)
 const { KIND_LABELS, split_ships, ago, jumps_label, type_icon, image_url, group_by_age } = window.intel_format
-const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const { esc, plural } = window.ui_helpers
 
 const RECENT_ROWS = 4
 const RANGES = [3, 5, 10, null]
@@ -16,7 +16,6 @@ let detail_tab = 'ships'
 let rendered = null          // signature of what #view shows
 
 const in_range = (item, range) => range == null || item.jumps == null || item.jumps <= range
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 // ---------------------------------------------------------------- rows
 
@@ -292,8 +291,9 @@ new ResizeObserver(capture_wheel).observe($('view'))
 on_state(next => {
     state = next
     window.eve_window.apply(state)
-    const intel = state.intel || { items: [], range: 5 }
-    $('range').textContent = intel.range == null ? 'Any distance' : `Within ${intel.range} jumps`
+    // The range comes from main (intel.js DEFAULT_RANGE until the pilot picks one); hidden until the map loads.
+    const intel = state.intel || { items: [] }
+    if (state.intel) $('range').textContent = intel.range == null ? 'Any distance' : `Within ${intel.range} jumps`
     $('range').hidden = !intel.map_ready
     $('status').textContent = intel.error ? 'Offline' : intel.updated_at ? 'Live' : 'Connecting…'
     $('status').classList.toggle('is-error', !!intel.error)
@@ -309,9 +309,8 @@ setInterval(() => {
 // ---------------------------------------------------------------- input
 
 document.addEventListener('click', event => {
-    const target = event.target.closest('[data-action], [data-command]')
+    const target = event.target.closest('[data-action]')
     if (!target) return
-    if (target.dataset.command) return send(target.dataset.command)
     const { action } = target.dataset
     if (action === 'paste') send('intel:paste')
     else if (action === 'all' || action === 'recent') { view = action; render() }
@@ -352,21 +351,8 @@ document.addEventListener('paste', event => {
 })
 
 $('range').addEventListener('click', () => {
-    const current = state && state.intel ? state.intel.range : 5
-    send('intel:range', RANGES[(RANGES.indexOf(current) + 1) % RANGES.length])
+    if (!state || !state.intel) return
+    send('intel:range', RANGES[(RANGES.indexOf(state.intel.range) + 1) % RANGES.length])
 })
 
-// Overlay mode is click-through except over [data-interactive]: tell main when the cursor is over one.
-let interactive = false
-document.addEventListener('mousemove', event => {
-    const over = !!event.target.closest('[data-interactive]')
-    if (over !== interactive) {
-        interactive = over
-        send('mouse:interactive', over)
-    }
-})
-document.addEventListener('mouseleave', () => {
-    if (interactive) { interactive = false; send('mouse:interactive', false) }
-})
-
-window.eve_window.wire_drag(send)
+window.eve_window.wire_overlay(send)

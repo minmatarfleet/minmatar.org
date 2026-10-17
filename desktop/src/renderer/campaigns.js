@@ -3,7 +3,7 @@ const { send, on_state, on_visibility } = window.minmatar
 window.eve_window.follow_visibility(on_visibility)
 const { eve_time } = window.fleet_format
 const { change_tone, change_text, bar, activity_text, ago_text, flip_tone, row_title, PERIODS, SHORT_PERIODS, FLIPS, FLIP_WORDS } = window.campaign_format
-const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const { esc, portrait } = window.ui_helpers
 
 const STACK_FACES = 5   // faces shown before "+N" when the window is narrow (campaigns.css)
 const HOLDERS = { minmatar: 'Held by Minmatar', amarr: 'Held by Amarr' }
@@ -51,7 +51,7 @@ function render_pilots(campaign) {
     if (!pilots.length) return '<p class="pilots-empty">Nobody has flown this campaign in the last hour.</p>'
     const faces = pilots.map((pilot, i) =>
         `<button class="pilot" data-interactive data-pilot="${i}" aria-label="${esc(`${pilot.name}: ${activity_text(pilot)}`)}">
-            <img src="https://images.evetech.net/characters/${encodeURIComponent(pilot.character_id)}/portrait?size=64" alt="">
+            <img src="${portrait(pilot.character_id)}" alt="">
         </button>`).join('')
     const more = pilots.length - STACK_FACES
     return `<div class="pilots">${faces}

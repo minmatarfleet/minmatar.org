@@ -16,7 +16,7 @@ const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
-const { IntelController } = require('./intel')
+const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE } = require('./intel')
 const { MenuFade, intersects } = require('./menu_fade')
 
 const config = load_config()
@@ -35,7 +35,6 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
 // "locked" is the pin button: whether the windows can be dragged and resized.
 const USER_SETTINGS = ['locked', 'show_sneak', 'fade_on_right_click']
 const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, fade_on_right_click: true }
-const INTEL_DEFAULT_RANGE = 5   // jumps
 const SESSION_SETTINGS = []
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 

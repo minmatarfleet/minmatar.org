@@ -6,6 +6,7 @@ const { IntelMap } = require('./intel_map')
 const REFRESH_MS = 30_000
 const NEW_FOR_MS = 5 * 60_000   // a row counts as new this long after it first shows up
 const MAX_PASTE_CHARS = 200_000  // same cap as the API
+const DEFAULT_RANGE = 5          // jumps, until the pilot picks another (saved in window.intel.range)
 
 class IntelController {
     constructor({ api, web_url, on_change, on_unauthorized = () => {}, diag = () => {}, refresh_ms = REFRESH_MS, now = () => Date.now() }) {
@@ -31,7 +32,7 @@ class IntelController {
         this.error = null
         this.updated_at = null
         this.origin = null            // { character, system } of the client in front
-        this.range = 5                // jumps; null = any distance
+        this.range = DEFAULT_RANGE    // jumps; null = any distance
         this.draft = null
         this.draft_text = null        // the paste stays here, never in the pushed state
         this.detail = null
@@ -252,4 +253,4 @@ class IntelController {
     }
 }
 
-module.exports = { IntelController, REFRESH_MS, NEW_FOR_MS }
+module.exports = { IntelController, REFRESH_MS, NEW_FOR_MS, DEFAULT_RANGE }
