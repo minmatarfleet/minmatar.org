@@ -1,16 +1,9 @@
 """Attach feed killmails to a tracked fleet.
 
 A killmail belongs to a fleet instance when one of its attackers, or its
-victim, was in that fleet when the ship died. Membership comes from the ESI
-fleet poller, which keeps one row per pilot per instance:
-
-- ``created_at`` is when the poller first saw the pilot. ``join_time`` is
-  copied from ESI on every pass and moves forward when a pilot drops and
-  rejoins (about 9% of members), so the window starts at the earlier one.
-- ``updated_at`` is rewritten on every pass, so it is the last-seen time.
-
-Bounding by those keeps a pilot who left early, or joined late, from
-claiming kills they were not there for.
+victim, was in that fleet when the ship died. Presence windows come from
+fleets.helpers.presence, which the campaign board shares, so a pilot who left
+early, or joined late, cannot claim kills they were not there for.
 
 Only killmails the feed stored are visible here, so a fleet that roams
 outside the monitored systems will be missing those kills.
@@ -20,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.utils import timezone
 from eveonline.helpers.corporations.safe_cache import cache_get, cache_set
@@ -32,13 +25,14 @@ from feed.helpers.eve_names import (
     resolve_type_names,
 )
 from feed.models import FeedKillmail
+from fleets.helpers.presence import (
+    JOIN_GRACE,
+    LAST_SEEN_GRACE,
+    member_window,
+    was_present,
+)
 
 logger = logging.getLogger(__name__)
-
-# ESI polls the fleet every few minutes, so a pilot can die or get on a mail
-# a little before their row is first written or after it was last touched.
-JOIN_GRACE = timedelta(minutes=2)
-LAST_SEEN_GRACE = timedelta(minutes=5)
 
 OUTCOME_KILL = "kill"
 OUTCOME_LOSS = "loss"
@@ -117,7 +111,8 @@ def summary_totals(killmails: list[dict]) -> dict:
 
 
 def _member_windows(instance) -> dict[int, tuple[datetime, datetime]]:
-    # Imported here so feed.helpers does not load fleets at import time.
+    # Imported here so feed.helpers does not load fleets.models at import
+    # time.
     # pylint: disable=import-outside-toplevel
     from fleets.models import EveFleetInstanceMember
 
@@ -125,10 +120,8 @@ def _member_windows(instance) -> dict[int, tuple[datetime, datetime]]:
     rows = EveFleetInstanceMember.objects.filter(
         eve_fleet_instance=instance
     ).values_list("character_id", "join_time", "created_at", "updated_at")
-    for character_id, joined, first_seen, last_seen in rows:
-        if first_seen is not None:
-            joined = min(joined, first_seen)
-        last_seen = last_seen or joined
+    for character_id, join_time, created_at, updated_at in rows:
+        joined, last_seen = member_window(join_time, created_at, updated_at)
         if character_id in windows:
             prior_joined, prior_seen = windows[character_id]
             joined = min(joined, prior_joined)
@@ -144,8 +137,7 @@ def _in_fleet(
 ) -> bool:
     if not character_id or character_id not in windows:
         return False
-    joined, last_seen = windows[character_id]
-    return joined - JOIN_GRACE <= moment <= last_seen + LAST_SEEN_GRACE
+    return was_present(windows[character_id], moment)
 
 
 def _instance_bounds(
