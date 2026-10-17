@@ -92,11 +92,24 @@ def public_profile(corporation: EveCorporation) -> dict:
         "weekday_distribution": stats.get("weekday_distribution", []),
         "public_summary": stats.get("public_summary"),
         "application_process": stats.get("application_process"),
+        "about": _about(corporation, stats),
         "highlights": corporation.highlights or None,
         "activity_summary": corporation.activity_summary or None,
         "media": [_media_item(item) for item in corporation.media.all()],
         "discord_invite_url": corporation.discord_invite_url or None,
     }
+
+
+def _about(corporation: EveCorporation, stats: dict) -> dict | None:
+    about = stats.get("about")
+    if about is None:
+        if corporation.date_founded is None:
+            return None
+        return {"founded": corporation.date_founded.isoformat()}
+    # ESI's founding date beats the corp-history estimate in the cache.
+    if corporation.date_founded:
+        about = {**about, "founded": corporation.date_founded.isoformat()}
+    return about
 
 
 def missing_prime_time(corporation: EveCorporation) -> list[dict]:

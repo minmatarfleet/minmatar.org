@@ -36,6 +36,13 @@ const default_tab = tab_ids[0] ?? ''
                 if (this.tabs.includes(hash)) this.tab = hash
                 this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
             },
+            // In-page links such as href="#apply" open their tab.
+            follow_hash() {
+                const hash = window.location.hash.replace('#', '')
+                if (!this.tabs.includes(hash) || hash === this.tab) return
+                this.tab = hash
+                this.$nextTick(() => this.$el.scrollIntoView({ block: 'start' }))
+            },
             refresh_panel() {
                 const panel = this.$refs['panel-' + this.tab]
                 if (!panel) return
@@ -54,6 +61,7 @@ const default_tab = tab_ids[0] ?? ''
                 this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
             },
         }`}
+        x-on:hashchange.window="follow_hash()"
     >
         <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
             {tabs.map((tab, index) =>

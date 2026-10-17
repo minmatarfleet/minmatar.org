@@ -12,6 +12,10 @@ from __future__ import annotations
 import logging
 
 
+from eveonline.helpers.corporations.about import (
+    corporation_about,
+    member_facts,
+)
 from eveonline.helpers.corporations.activity import activity_for_characters
 from eveonline.helpers.corporations.applications import application_process
 from eveonline.helpers.corporations.kills import RecentKills
@@ -34,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 STATS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_STATS_KEY = "corporation_profile_stats:v1:{corporation_id}"
+_STATS_KEY = "corporation_profile_stats:v2:{corporation_id}"
 _LOCK_KEY = "corporation_profile_stats:refreshing:{corporation_id}"
 
 
@@ -68,6 +72,8 @@ def compute_corporation_stats(
     declared = prime_time_codes_for_users(timezone_users)
     observed = observed_prime_buckets_for_users(timezone_users)
     return {
+        "about": corporation_about(corporation, characters, observed, kills),
+        "member_facts": member_facts(characters, corporation),
         "human_count": len(user_ids),
         # Per person, for leadership tags and the Members table.
         "declared_by_user": declared,

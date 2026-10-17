@@ -134,6 +134,84 @@ class CorporationPublicSummary(Schema):
     kills: CorporationKillSummary
 
 
+class CorporationPrimeWindow(Schema):
+    zone: str
+    start_hour: int
+    end_hour: int
+    pilots: int = 0
+
+
+class CorporationTenureBand(Schema):
+    key: str
+    count: int
+
+
+class CorporationTenure(Schema):
+    mains: int = 0
+    average_days: Optional[int] = None
+    bands: List[CorporationTenureBand] = []
+
+
+class CorporationHomeSystem(Schema):
+    name: str
+    share: float
+
+
+class CorporationHull(Schema):
+    type_id: int
+    name: str
+    pilots: int
+
+
+class CorporationTurnoutRecord(Schema):
+    pilots: int
+    date: Optional[str] = None
+    title: str = ""
+
+
+class CorporationMonthRecord(Schema):
+    month: str
+    fleets: int
+
+
+class CorporationRecords(Schema):
+    biggest_turnout: Optional[CorporationTurnoutRecord] = None
+    busiest_month: Optional[CorporationMonthRecord] = None
+
+
+class CorporationLeader(Schema):
+    character_id: int
+    character_name: str
+    value: int
+
+
+class CorporationLeaderboards(Schema):
+    fleets: List[CorporationLeader] = []
+    kills: List[CorporationLeader] = []
+    fleets_led: List[CorporationLeader] = []
+
+
+class CorporationTribeGroupCount(Schema):
+    name: str
+    members: int
+
+
+class CorporationAbout(Schema):
+    """Cached About-tab rollups; mains only, never alts."""
+
+    founded: Optional[str] = None
+    home_system: Optional[CorporationHomeSystem] = None
+    # 7 rows (Monday first) x 24 EVE-time hours of people on fleets.
+    heatmap: List[List[int]] = []
+    prime_windows: List[CorporationPrimeWindow] = []
+    tenure: Optional[CorporationTenure] = None
+    founders: int = 0
+    hulls: List[CorporationHull] = []
+    records: Optional[CorporationRecords] = None
+    leaderboards: Optional[CorporationLeaderboards] = None
+    tribe_groups: List[CorporationTribeGroupCount] = []
+
+
 class CorporationSlugResponse(Schema):
     corporation_id: int
     slug: str
@@ -166,6 +244,7 @@ class CorporationInfoResponse(Schema):
     discord_invite_url: Optional[str] = None
     public_summary: Optional[CorporationPublicSummary] = None
     application_process: Optional["CorporationApplicationProcess"] = None
+    about: Optional[CorporationAbout] = None
 
 
 class CorporationApplicationProcess(Schema):
@@ -199,10 +278,31 @@ class CorporationMemberDetails(Schema):
     prime_time: Optional[str] = None
     observed_prime_times: List[str] = []
     community_status: Optional[str] = None
+    corp_joined_at: Optional[str] = None
+    last_fleet_at: Optional[str] = None
+    # Per person (alts folded, each fleet once), repeated on each character.
+    person_fleets_90d: Optional[int] = None
+    # Distinct fleets per week for the person, oldest first, ending now.
+    weekly_fleets: List[int] = []
+    top_hull_id: Optional[int] = None
+    top_hull_name: Optional[str] = None
+    tribe_groups: List[str] = []
+    status_history: List["CorporationMemberStatusChange"] = []
+    # From the latest alliance health snapshot's trial review.
+    trial_ready: bool = False
+    trial_reason: Optional[str] = None
     # Set when the viewer may not see which characters belong to this person:
     # the row stands for the person and the rest are only counted.
     characters_hidden: bool = False
     hidden_character_count: int = 0
+
+
+class CorporationMemberStatusChange(Schema):
+    to_status: str
+    changed_at: str
+
+
+CorporationMemberDetails.model_rebuild()
 
 
 class CorporationMemberAccess(Schema):

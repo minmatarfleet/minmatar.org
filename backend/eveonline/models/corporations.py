@@ -4,6 +4,7 @@ from django.db import models
 from eveuniverse.models import EveFaction
 
 from eveonline.client import EsiClient
+from eveonline.helpers.esi import parse_esi_date
 from eveonline.models.alliances import EveAlliance
 from eveonline.models.characters import EveCharacter
 
@@ -22,6 +23,8 @@ class EveCorporation(models.Model):
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True, null=True)
     member_count = models.IntegerField(blank=True, null=True)
+    # From ESI; shown as "Founded" on the About tab.
+    date_founded = models.DateTimeField(blank=True, null=True)
     recruitment_active = models.BooleanField(default=True)
     trial = models.BooleanField(
         default=False,
@@ -93,6 +96,7 @@ class EveCorporation(models.Model):
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]
+        self.date_founded = parse_esi_date(esi_corporation.get("date_founded"))
         esi_alliance_id = esi_corporation["alliance_id"]
         if esi_alliance_id:
             self.alliance = EveAlliance.objects.filter(
