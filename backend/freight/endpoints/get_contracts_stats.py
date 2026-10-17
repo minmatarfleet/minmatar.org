@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 from ninja import Router
 
-from eveonline.models import EveCharacter
+from eveonline.helpers.characters.identity import owner_user_ids
 from freight.models import FreightContract, FREIGHT_CORPORATION_ID
 from freight.endpoints.schemas import FreightContractsStatsResponse
 
@@ -38,22 +38,14 @@ def _active_haulers_count(since) -> int:
     if not acceptor_ids:
         return 0
 
-    chars = EveCharacter.objects.filter(
-        character_id__in=acceptor_ids,
-    ).select_related("user", "token__user")
-    char_by_id = {c.character_id: c for c in chars}
-
+    owners = owner_user_ids(acceptor_ids)
     hauler_keys: set[tuple[str, int]] = set()
     for acceptor_id in acceptor_ids:
-        char = char_by_id.get(acceptor_id)
-        if char:
-            user = char.user or (
-                char.token.user if getattr(char, "token", None) else None
-            )
-            if user:
-                hauler_keys.add(("user", user.id))
-                continue
-        hauler_keys.add(("char", acceptor_id))
+        user_id = owners.get(acceptor_id)
+        if user_id:
+            hauler_keys.add(("user", user_id))
+        else:
+            hauler_keys.add(("char", acceptor_id))
     return len(hauler_keys)
 
 

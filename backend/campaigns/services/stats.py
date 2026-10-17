@@ -36,6 +36,7 @@ from campaigns.models import (
 )
 from campaigns.services import fleets, scoring
 from campaigns.services.prime_time import observed_activity
+from eveonline.helpers.characters.identity import primary_refs_for_users
 from eveonline.models import EveCorporation, EvePlayer
 from feed.models import FeedKillmail
 
@@ -716,15 +717,7 @@ def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
     A pilot without a primary character falls back to the username in the
     caller, so they are simply absent here.
     """
-    return {
-        player.user_id: (
-            player.primary_character.character_id,
-            player.primary_character.character_name,
-        )
-        for player in EvePlayer.objects.filter(
-            user_id__in=list(user_ids), primary_character__isnull=False
-        ).select_related("primary_character")
-    }
+    return primary_refs_for_users(user_ids)
 
 
 def campaign_totals(campaign: Campaign) -> dict:

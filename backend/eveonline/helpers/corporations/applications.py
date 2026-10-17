@@ -9,6 +9,9 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from applications.models import EveCorporationApplication
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCharacterSkill, EveCorporation, EvePlayer
 from groups.helpers.feature_access import can_use_feature
@@ -53,15 +56,9 @@ def outstanding_applications(corporation_id: int) -> list[dict]:
         .select_related("user")
         .order_by("created_at")
     )
-    players = EvePlayer.objects.filter(
-        user_id__in=[application.user_id for application in pending],
-        primary_character__isnull=False,
-    ).select_related("primary_character")
-    primaries = {
-        player.user_id: player.primary_character
-        for player in players
-        if player.primary_character is not None
-    }
+    primaries = primary_characters_for_users(
+        application.user_id for application in pending
+    )
     rows = []
     for application in pending:
         character = primaries.get(application.user_id)

@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
-from eveonline.models import EveCorporation, EvePlayer
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
+from eveonline.models import EveCorporation
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 from tribes.reports.roster import roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
@@ -40,18 +43,11 @@ def run_fleet_commanders_report(
     rows_qs = fleets_led_by_user(qs)
 
     user_ids = [r["created_by_id"] for r in rows_qs]
-    players = {
-        p.user_id: p
-        for p in EvePlayer.objects.filter(user_id__in=user_ids).select_related(
-            "primary_character"
-        )
-    }
+    mains = primary_characters_for_users(user_ids)
     corp_ids = {
-        int(p.primary_character.corporation_id)
-        for p in players.values()
-        if p
-        and p.primary_character
-        and p.primary_character.corporation_id is not None
+        int(main.corporation_id)
+        for main in mains.values()
+        if main.corporation_id is not None
     }
     corp_names = {
         c.corporation_id: c.name
@@ -64,8 +60,7 @@ def run_fleet_commanders_report(
         uid = row["created_by_id"]
         count = row["fleet_count"]
         total_fleets += count
-        player = players.get(uid)
-        char = player.primary_character if player else None
+        char = mains.get(uid)
         corp_id = (
             int(char.corporation_id)
             if char and char.corporation_id is not None
