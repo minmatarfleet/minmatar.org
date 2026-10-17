@@ -1,0 +1,259 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+
+import type { Product } from '@dtypes/api.minmatar.org'
+import { get_product_by_id } from '@helpers/api.minmatar.org/industry'
+
+const product_id = parseInt(Astro.params.id ?? '0')
+
+let product: Product | null = null
+let fetching_error: Error | false = false
+
+try {
+    if (isNaN(product_id) || product_id <= 0)
+        throw new Error(t('invalid_product_id'), { cause: 400 })
+
+    product = await get_product_by_id(product_id)
+} catch (error) {
+    fetching_error = error
+}
+
+if (fetching_error && (fetching_error.cause === 404 || fetching_error.cause === 400))
+    return Astro.redirect(translatePath('/industry/products/'))
+
+import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+import { format_volume_m3 } from '@helpers/numbers'
+
+const INSIGHTS_PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?product_id=${product_id}`
+const strategy_path = (strategy: string) => strategy === 'produced'
+    ? '/industry/products/'
+    : `/industry/products?strategy=${strategy}`
+
+const page_title = product?.name ?? t('industry.products.page_title')
+const breadcrumbs = [
+    { page_title: t('industry.page_title'), accumulated_path: '/industry/' },
+    {
+        page_title: t('industry.products.page_title'),
+        accumulated_path: product ? strategy_path(product.strategy) : '/industry/products/',
+    },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Picture from '@components/blocks/Picture.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+import IndustryIcon from '@components/icons/IndustryIcon.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.product.meta_description').replace('{name}', page_title)}
+>
+    <PageWide
+        cover={{
+            image: "/images/blueprint-cover.jpg",
+            image_990: "/images/blueprint-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <FlexInline gap="var(--space-s)" class="[ items-center ]">
+                {product &&
+                    <img
+                        class="[ product-icon ]"
+                        src={get_item_icon(product.type_id, 128)}
+                        width="64"
+                        height="64"
+                        alt=""
+                    />
+                }
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>{page_title}</PageTitle>
+                    {product &&
+                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                            <Tag
+                                color={product.strategy === 'imported' ? 'fleet-red' : product.strategy === 'harvested' ? 'fleet-yellow' : 'alliance-blue'}
+                                text={t(`industry.product.strategy_${product.strategy}` as any) ?? product.strategy}
+                            />
+                            {product.blueprint_or_reaction_type_id &&
+                                <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
+                                    <Picture
+                                        src={get_bpc_icon(product.blueprint_or_reaction_type_id, false, 32)}
+                                        alt=""
+                                        size={16}
+                                    />
+                                    <small>{t('industry.product.has_blueprint')}</small>
+                                </FlexInline>
+                            }
+                            {product.volume &&
+                                <small>{format_volume_m3(product.volume)} m³</small>
+                            }
+                        </FlexInline>
+                    }
+                </Flexblock>
+            </FlexInline>
+
+            {product?.blueprint_or_reaction_type_id &&
+                <PageActions>
+                    <Button
+                        size='sm'
+                        color='fleet-red'
+                        href={translatePath(`/industry/orders/planner?${query_string({
+                            type_id: product.type_id,
+                        })}`)}
+                    >
+                        <IndustryIcon slot="icon" size={24} />
+                        {t('planner')}
+                    </Button>
+                </PageActions>
+            }
+        </FlexInline>
+
+        {fetching_error !== false || !product ?
+            <ErrorRefetch
+                args={{
+                    partial: INSIGHTS_PARTIAL_URL,
+                    error: fetching_error || new Error(t('invalid_product_id')),
+                    delay: 0,
+                }}
+            />
+            :
+            <Flexblock gap="var(--space-xl)">
+                {auth_token ?
+                    <div
+                        hx-get={INSIGHTS_PARTIAL_URL}
+                        hx-trigger="load"
+                        hx-swap="outerHTML"
+                    >
+                        <p class="[ loading muted ]">{t('industry.product.loading_insights')}</p>
+                    </div>
+                    :
+                    <FlexInline gap="var(--space-s)" class="[ items-center ]">
+                        <p class="[ muted ]">{t('industry.product.login_for_insights')}</p>
+                        <ButtonAuth size="sm">{t('industry.orders.assign_log_in')}</ButtonAuth>
+                    </FlexInline>
+                }
+
+                {(product.supplies.length > 0 || product.supplied_for.length > 0) &&
+                    <section class="[ relations ]" aria-labelledby="supply-chain-heading">
+                        <h3 id="supply-chain-heading">{t('industry.product.supply_chain_title')}</h3>
+                        <div class="[ relation-groups ]">
+                            {product.supplies.length > 0 &&
+                                <Flexblock gap="var(--space-2xs)">
+                                    <small class="[ subheading ]">{t('industry.product.made_from')}</small>
+                                    <ul class="[ chips ]" role="list">
+                                        {product.supplies.map(component =>
+                                            <li>
+                                                <a class="[ chip ]" href={translatePath(`/industry/products/${component.id}/`)}>
+                                                    <ItemPicture item_id={component.type_id} size={24} icon_quality={32} />
+                                                    <span>{component.name}</span>
+                                                </a>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </Flexblock>
+                            }
+                            {product.supplied_for.length > 0 &&
+                                <Flexblock gap="var(--space-2xs)">
+                                    <small class="[ subheading ]">{t('industry.product.used_in')}</small>
+                                    <ul class="[ chips ]" role="list">
+                                        {product.supplied_for.map(parent =>
+                                            <li>
+                                                <a class="[ chip ]" href={translatePath(`/industry/products/${parent.id}/`)}>
+                                                    <ItemPicture item_id={parent.type_id} size={24} icon_quality={32} />
+                                                    <span>{parent.name}</span>
+                                                </a>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </Flexblock>
+                            }
+                        </div>
+                    </section>
+                }
+            </Flexblock>
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .product-icon {
+        width: var(--space-2xl);
+        height: var(--space-2xl);
+        flex-shrink: 0;
+    }
+
+    .muted {
+        color: var(--foreground);
+    }
+
+    .relations {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        h3 {
+            font-size: var(--step-1);
+        }
+    }
+
+    .relation-groups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+        gap: var(--space-l);
+    }
+
+    .subheading {
+        color: var(--fleet-yellow);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+    }
+
+    .chips {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        padding: 0;
+        margin: 0;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
+        border: solid 1px var(--border-color);
+        background-color: var(--background);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        text-decoration: none;
+        transition: border-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+            }
+        }
+    }
+</style>

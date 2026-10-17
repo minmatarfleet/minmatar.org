@@ -62,27 +62,6 @@ export async function get_module_props(module_name:string) {
     }
 }
 
-export async function get_weapon_charges_type(weapon_id:number) {
-    const q = await sde_db.select({
-        typeId: schema.dgmTypeAttributes.valueFloat,
-    })
-    .from(schema.invTypes)
-    .innerJoin(
-        schema.dgmTypeAttributes,
-        eq(schema.invTypes.typeId, schema.dgmTypeAttributes.typeId)
-    )
-    .innerJoin(
-        schema.dgmAttributeTypes,
-        eq(schema.dgmTypeAttributes.attributeId, schema.dgmAttributeTypes.attributeId)
-    )
-    .where(
-        and(
-            eq(schema.invTypes.typeId, weapon_id),
-            eq(schema.dgmAttributeTypes.attributeName, 'Charge size'),
-        )
-    )
-}
-
 export async function get_module_model(module_id:number) {
     const q = await sde_db.select({
         graphicFile: schema.eveGraphics.graphicFile,

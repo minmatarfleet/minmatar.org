@@ -75,15 +75,6 @@ PERIOD_DRONELANDS_ISK_LOSSES = 921_347_487_752
 ESI = "https://esi.evetech.net/latest"
 
 
-def month_range(year: int, month: int) -> tuple[datetime, datetime]:
-    start = timezone.make_aware(datetime(year, month, 1))
-    if month == 12:
-        end = timezone.make_aware(datetime(year + 1, 1, 1))
-    else:
-        end = timezone.make_aware(datetime(year, month + 1, 1))
-    return start, end
-
-
 def get_region_system_ids(region_id: int) -> set[int]:
     resp = requests.get(f"{ESI}/universe/regions/{region_id}/", timeout=30)
     resp.raise_for_status()

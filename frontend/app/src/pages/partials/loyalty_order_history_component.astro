@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import type { LoyaltyCurrency, LoyaltyMarketOrdersList } from '@dtypes/api.minmatar.org'
+import type { LoyaltyMarketOrdersList } from '@dtypes/api.minmatar.org'
 import {
     get_loyalty_currencies,
     get_loyalty_orders,
@@ -12,6 +12,7 @@ import {
     loyalty_history_query,
     parse_loyalty_history_params,
 } from '@helpers/loyalty_order_history'
+import { tlf_currency } from '@helpers/loyalty_order_stats'
 import { query_string } from '@helpers/string'
 
 const params = Astro.url.searchParams
@@ -22,14 +23,12 @@ const partial_qs = query_string(loyalty_history_partial_params(filters))
 const partial_url = `${translatePath('/partials/loyalty_order_history_component')}${partial_qs ? `?${partial_qs}` : ''}`
 
 let history: LoyaltyMarketOrdersList = { items: [], total: 0, limit: null, offset: 0 }
-let currencies: LoyaltyCurrency[] = []
 let fetching_error: Error | false = false
 
 try {
-    ;[history, currencies] = await Promise.all([
-        get_loyalty_orders(loyalty_history_query(filters)),
-        get_loyalty_currencies(),
-    ])
+    const currency = tlf_currency(await get_loyalty_currencies())
+    if (currency)
+        history = await get_loyalty_orders(loyalty_history_query(filters, currency.id))
 } catch (error) {
     fetching_error = error as Error
 }
@@ -52,7 +51,6 @@ import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
 ) : (
     <LoyaltyOrderHistory
         orders={history.items}
-        currencies={currencies}
         total={history.total}
         filters={filters}
     />

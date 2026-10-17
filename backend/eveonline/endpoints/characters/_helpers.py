@@ -228,17 +228,6 @@ def check_add_character_session_match(request, token):
     )
 
 
-def fixup_character_token_level(character, token_count):
-    if not character.esi_token_level:
-        if token_count == 1 and not character.token:
-            character.token = Token.objects.filter(
-                character_id=character.character_id
-            ).first()
-        if character.token:
-            character.esi_token_level = scope_group(character.token)
-            character.save(update_fields=["esi_token_level"])
-
-
 def _linked_token_level(token: Token, fallback_group: str) -> str:
     if token.scopes.exists():
         return scope_group(token) or fallback_group

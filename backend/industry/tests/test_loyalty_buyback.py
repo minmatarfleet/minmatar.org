@@ -1,6 +1,7 @@
 """Tests for LP buyback market orders API and Discord mirror."""
 
 import json
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 import jwt
@@ -8,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.test import Client
+from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase as AppTestCase
 from eveonline.helpers.characters import set_primary_character
@@ -34,8 +36,6 @@ from industry.helpers.lp_buyback_discord_buttons import (
     isk_sent_custom_id,
     lp_sent_components,
     lp_sent_custom_id,
-    parse_isk_sent_custom_id,
-    parse_lp_sent_custom_id,
 )
 from industry.helpers.lp_market_orders import MAX_SELL_LP, format_lp_quantity
 from industry.helpers.lp_ledger import account_balance, post_ledger_entry
@@ -727,6 +727,37 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(cancel.status_code, 200)
         self.assertEqual(cancel.json()["status"], "cancelled")
 
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_cancel_via_api_announces_who_cancelled(
+        self, unused_notify, cancelled_notify
+    ):
+        create = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 100_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        order_id = create.json()["id"]
+        IndustryLoyaltyPointMarketOrder.objects.filter(pk=order_id).update(
+            discord_thread_id=4242
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            cancel = self.client.patch(
+                f"/api/industry/loyalty/orders/{order_id}",
+                data=json.dumps({"status": "cancelled"}),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(cancel.status_code, 200)
+        cancelled_notify.assert_called_once_with(order_id, self.user.pk, "")
+
     @patch("industry.tasks.notify_lp_buyback_order_claims_released_task.delay")
     @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
@@ -957,6 +988,94 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def _post_sell(self, **extra):
+        return self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 500_000,
+                    **extra,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_defaults_to_standard_tier(self, unused_notify):
+        response = self._post_sell()
+        self.assertEqual(response.status_code, 201, response.content)
+        body = response.json()
+        self.assertEqual(body["tier"], "standard")
+        self.assertEqual(body["isk_per_lp"], 800)
+        self.assertIsNone(body["express_due_at"])
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_express_uses_express_rate_and_sets_due(self, unused_notify):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        # A client-sent rate cannot undercut or beat the express price.
+        response = self._post_sell(tier="express", isk_per_lp=900)
+        self.assertEqual(response.status_code, 201, response.content)
+        body = response.json()
+        self.assertEqual(body["tier"], "express")
+        self.assertEqual(body["isk_per_lp"], 760)
+        order = IndustryLoyaltyPointMarketOrder.objects.get(pk=body["id"])
+        self.assertEqual(order.tier, "express")
+        self.assertIsNotNone(body["express_due_at"])
+        due = order.created_at + timedelta(hours=24)
+        self.assertAlmostEqual(
+            parse_datetime(body["express_due_at"]),
+            due,
+            delta=timedelta(milliseconds=1),
+        )
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_express_rejected_without_express_rate(self, unused_notify):
+        response = self._post_sell(tier="express")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Express", response.json()["detail"])
+        self.assertFalse(IndustryLoyaltyPointMarketOrder.objects.exists())
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_unknown_tier_rejected(self, unused_notify):
+        response = self._post_sell(tier="overnight")
+        self.assertEqual(response.status_code, 400)
+
+    def test_cancelled_express_order_has_no_due(self):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=100_000,
+            isk_per_lp=760,
+            tier=IndustryLoyaltyPointMarketOrder.Tier.EXPRESS,
+            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+            created_by=self.user,
+        )
+        response = self.client.get(
+            "/api/industry/loyalty/orders", {"status": "cancelled"}
+        )
+        row = response.json()["items"][0]
+        self.assertEqual(row["id"], order.pk)
+        self.assertEqual(row["tier"], "express")
+        self.assertIsNone(row["express_due_at"])
+
+    def test_currencies_include_express_rate(self):
+        self.currency.express_isk_per_lp = 760
+        self.currency.save()
+        rows = {
+            row["corporation_id"]: row
+            for row in self.client.get(
+                "/api/industry/loyalty/currencies"
+            ).json()
+        }
+        self.assertEqual(rows[TLIB_CORP_ID]["express_isk_per_lp"], 760)
+        self.assertIsNone(rows[1000179]["express_isk_per_lp"])
+
 
 class LoyaltyBuybackDiscordTestCase(AppTestCase):
     def setUp(self):
@@ -992,6 +1111,43 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
 
     def test_thread_title(self):
         self.assertEqual(order_thread_title(self.order), "WTS 2.5M TLIB @800")
+
+    def test_express_thread_title_and_starter(self):
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+        self.assertEqual(
+            order_thread_title(self.order), "WTS 2.5M TLIB @800 Express"
+        )
+        due = int((self.order.created_at + timedelta(hours=24)).timestamp())
+        self.assertIn(f"<t:{due}:R>", order_starter_message(self.order))
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
+        self.assertNotIn("Express", order_starter_message(self.order))
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_skips_order_with_thread(self, discord_mock):
+        # The hourly retry and a late create task must not both post.
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=self.order.pk
+        ).update(discord_thread_id=111)
+        notify_order_created(self.order)
+        discord_mock.create_forum_thread.assert_not_called()
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_closes_thread_that_lost_the_race(
+        self, discord_mock
+    ):
+        def create_and_lose(**_kwargs):
+            IndustryLoyaltyPointMarketOrder.objects.filter(
+                pk=self.order.pk
+            ).update(discord_thread_id=111)
+            response = MagicMock()
+            response.json.return_value = {"id": "222"}
+            return response
+
+        discord_mock.create_forum_thread.side_effect = create_and_lose
+        notify_order_created(self.order)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discord_thread_id, 111)
+        discord_mock.close_thread.assert_called_once_with(channel_id=222)
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_notify_order_created_stores_thread_id(self, discord_mock):
@@ -1113,12 +1269,9 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
 
 
 class LpBuybackDiscordButtonsTestCase(AppTestCase):
-    def test_custom_id_roundtrip(self):
+    def test_custom_id_format(self):
         self.assertEqual(lp_sent_custom_id(42), "lp_buyback:lp:42")
-        self.assertEqual(parse_lp_sent_custom_id("lp_buyback:lp:42"), 42)
-        self.assertIsNone(parse_lp_sent_custom_id("lp_buyback:isk:42"))
         self.assertEqual(isk_sent_custom_id(7), "lp_buyback:isk:7")
-        self.assertEqual(parse_isk_sent_custom_id("lp_buyback:isk:7"), 7)
 
     def test_lp_sent_components(self):
         button = lp_sent_components(99)[0]["components"][0]
@@ -1328,20 +1481,39 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             ["create_message", "close_thread"],
         )
 
+    @patch("industry.helpers.lp_buyback_discord.time.sleep")
     @patch("industry.helpers.lp_buyback_discord.discord")
-    def test_cancelled_closes_thread_without_message(self, discord_mock):
+    def test_cancelled_posts_notice_then_closes_thread(
+        self, discord_mock, sleep_mock
+    ):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
             side=IndustryLoyaltyPointMarketOrder.Side.SELL,
             quantity=1000,
             isk_per_lp=800,
             created_by=self.seller,
+            claimed_by=self.claimer,
             discord_thread_id=777,
         )
         order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
-        order.save()
-        discord_mock.create_message.assert_not_called()
+        order.set_cancel_notice(cancelled_by_id=self.claimer.pk)
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("<@1001> <@1002>", payload["content"])
+        self.assertIn(
+            ":x: Order cancelled by **BearThatCares**", payload["content"]
+        )
+        sleep_mock.assert_called_once_with(5)
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
+        self.assertEqual(
+            [
+                call[0]
+                for call in discord_mock.method_calls
+                if call[0] in ("create_message", "close_thread")
+            ],
+            ["create_message", "close_thread"],
+        )
 
 
 class LpBuybackThreadCloseSignalTestCase(AppTestCase):
@@ -1385,22 +1557,85 @@ class LpBuybackThreadCloseSignalTestCase(AppTestCase):
         self.assertEqual(order.discord_thread_id, 666)
         enqueue_mock.assert_not_called()
 
-    @patch("industry.signals._close_market_order_discord_thread")
-    def test_cancel_enqueues_thread_close(self, enqueue_mock):
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_cancel_enqueues_cancel_notice(self, enqueue_mock):
         order = self._open_order()
         order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
-        order.save()
-        enqueue_mock.assert_called_once_with(555)
+        order.set_cancel_notice(cancelled_by_id=self.user.pk, reason="why")
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
+        enqueue_mock.assert_called_once_with(order.pk, self.user.pk, "why")
 
-    @patch("industry.signals._close_market_order_discord_thread")
-    def test_note_edit_does_not_enqueue_close(self, enqueue_mock):
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_resaving_cancelled_order_does_not_reannounce(self, enqueue_mock):
         order = self._open_order()
         order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
-        order.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
         enqueue_mock.reset_mock()
-        order.notes = "updated"
-        order.save(update_fields=["notes", "updated_at"])
+        reloaded = IndustryLoyaltyPointMarketOrder.objects.get(pk=order.pk)
+        reloaded.notes = "updated"
+        with self.captureOnCommitCallbacks(execute=True):
+            reloaded.save()
+            order.save(update_fields=["notes", "updated_at"])
         enqueue_mock.assert_not_called()
+
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_cancel_without_thread_does_not_enqueue(self, enqueue_mock):
+        order = self._open_order(thread_id=None)
+        order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
+        enqueue_mock.assert_not_called()
+
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_refresh_from_db_keeps_status_tracking_in_step(self, enqueue_mock):
+        order = self._open_order()
+        other = IndustryLoyaltyPointMarketOrder.objects.get(pk=order.pk)
+        other.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        other.save()
+        cancelled_at = other.status_changed_at
+
+        order.refresh_from_db()
+        order.notes = "after refresh"
+        with self.captureOnCommitCallbacks(execute=True):
+            order.save()
+        enqueue_mock.assert_not_called()
+        order.refresh_from_db()
+        self.assertEqual(order.status_changed_at, cancelled_at)
+
+    @patch("industry.tasks.notify_lp_buyback_order_cancelled_task.delay")
+    def test_deferred_status_change_is_still_tracked(self, enqueue_mock):
+        order = self._open_order()
+        before = order.status_changed_at
+        deferred = IndustryLoyaltyPointMarketOrder.objects.only(
+            "id", "discord_thread_id"
+        ).get(pk=order.pk)
+        deferred.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        with self.captureOnCommitCallbacks(execute=True):
+            deferred.save()
+        enqueue_mock.assert_called_once_with(order.pk, None, "")
+        order.refresh_from_db()
+        self.assertGreater(order.status_changed_at, before)
+
+    def test_status_changed_at_tracks_status_only(self):
+        order = self._open_order()
+        first = order.status_changed_at
+        self.assertIsNotNone(first)
+        order.stalled_reminder_at = first
+        order.save()
+        order = IndustryLoyaltyPointMarketOrder.objects.get(pk=order.pk)
+        order.notes = "note"
+        order.save(update_fields=["notes", "updated_at"])
+        order.refresh_from_db()
+        self.assertEqual(order.status_changed_at, first)
+        self.assertEqual(order.stalled_reminder_at, first)
+        order = IndustryLoyaltyPointMarketOrder.objects.get(pk=order.pk)
+        order.status = IndustryLoyaltyPointMarketOrder.Status.CLAIMED
+        order.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        self.assertGreater(order.status_changed_at, first)
+        self.assertIsNone(order.stalled_reminder_at)
 
 
 class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):

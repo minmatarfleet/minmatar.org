@@ -4,6 +4,14 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-10-16 tracked links
+
+Discord and my.minmatar.org links now carry a per-reply code (see "Tracked links" in SKILL.md). The visible text is unchanged; only the href moves to `https://my.minmatar.org/go/<code>/<target>`. Older entries below show plain `http://discord.gg/minmatar` hrefs. Those are historical sends, not the current shape.
+
+When a run's stats show a reply with clicks and the pilot joined, note the reply here. Clicks are the signal for which openings and seats land.
+
+---
+
 ## 2026-10-05 no named industry contact
 
 Recruiter correction after the 5 Oct scout. Forum drafts for the highsec miner, the retired nullsec PvE pilot, and the hisec RP character closed with `ask for Keldor00`. That person is not on the Minmatar Extraction Company roster. Do not name them. Do not use the older `Keldor` shorthand, or `Keldar Atram` / `keldar_atram` from the German industry reply.

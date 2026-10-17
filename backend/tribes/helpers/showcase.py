@@ -48,7 +48,7 @@ def _enrich_contributors(rows: list[dict]) -> list[dict[str, Any]]:
                     "kill_count",
                     "volume_m3",
                     "isk_pi_30d_estimate",
-                    "delivered_margin",
+                    "delivered_profit",
                     "fleet_count",
                     "contracts_completed",
                 )

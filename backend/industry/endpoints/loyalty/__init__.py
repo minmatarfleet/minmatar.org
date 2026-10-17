@@ -38,6 +38,12 @@ from industry.endpoints.loyalty.get_orders import (
     get_orders,
     METHOD as get_orders_method,
 )
+from industry.endpoints.loyalty.get_stats import (
+    PATH as get_stats_path,
+    ROUTE_SPEC as get_stats_spec,
+    get_stats,
+    METHOD as get_stats_method,
+)
 from industry.endpoints.loyalty.patch_order import (
     PATH as patch_order_path,
     ROUTE_SPEC as patch_order_spec,
@@ -81,6 +87,7 @@ _ROUTES = (
         get_capabilities,
     ),
     (get_orders_method, get_orders_path, get_orders_spec, get_orders),
+    (get_stats_method, get_stats_path, get_stats_spec, get_stats),
     (post_orders_method, post_orders_path, post_orders_spec, post_orders),
     (
         post_order_claim_method,

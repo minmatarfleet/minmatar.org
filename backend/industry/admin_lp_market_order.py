@@ -32,13 +32,14 @@ class IndustryLoyaltyPointMarketOrderAdmin(admin.ModelAdmin):
         "loyalty_point",
         "quantity",
         "isk_per_lp",
+        "tier",
         "total_isk_display",
         "status",
         "created_by",
         "claimed_by",
         "created_at",
     )
-    list_filter = ("side", "status", "loyalty_point")
+    list_filter = ("side", "tier", "status", "loyalty_point")
     search_fields = (
         "destination_character_name",
         "notes",
@@ -65,6 +66,7 @@ class IndustryLoyaltyPointMarketOrderAdmin(admin.ModelAdmin):
                     "side",
                     "quantity",
                     "isk_per_lp",
+                    "tier",
                     "total_isk_display",
                     "status",
                     "notes",

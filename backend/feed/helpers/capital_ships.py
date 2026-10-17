@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from typing import Any, Iterable
 
 from eveuniverse.models import EveType
@@ -59,34 +58,3 @@ def killmail_involves_capital(raw: dict[str, Any]) -> bool:
     return bool(
         filter_capital_ship_type_ids(collect_killmail_ship_type_ids(raw))
     )
-
-
-def capital_ships_on_killmail(
-    raw: dict[str, Any],
-) -> list[tuple[int, int, str]]:
-    """Return (type_id, count, role) for capital hulls on the mail.
-
-    Role is ``victim`` or ``attacker``.
-    """
-    victim = raw.get("victim") or {}
-    victim_ship_type_id = victim.get("ship_type_id")
-    capital_type_ids = filter_capital_ship_type_ids(
-        collect_killmail_ship_type_ids(raw)
-    )
-    if not capital_type_ids:
-        return []
-
-    attacker_counts: Counter[int] = Counter()
-    for attacker in raw.get("attackers") or []:
-        if attacker.get("corporation_id") == 1000125:
-            continue
-        ship_type_id = attacker.get("ship_type_id")
-        if ship_type_id and int(ship_type_id) in capital_type_ids:
-            attacker_counts[int(ship_type_id)] += 1
-
-    rows: list[tuple[int, int, str]] = []
-    if victim_ship_type_id and int(victim_ship_type_id) in capital_type_ids:
-        rows.append((int(victim_ship_type_id), 1, "victim"))
-    for type_id, count in attacker_counts.most_common():
-        rows.append((type_id, count, "attacker"))
-    return rows

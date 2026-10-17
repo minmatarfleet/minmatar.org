@@ -14,38 +14,6 @@ import { get_error_message, parse_error_message, parse_response_error } from '@h
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/fleets`
 
-export async function get_types(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/types`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as string[];
-    } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
-    }
-}
-
 export async function get_locations(access_token:string) {
     const headers = {
         'Content-Type': 'application/json',

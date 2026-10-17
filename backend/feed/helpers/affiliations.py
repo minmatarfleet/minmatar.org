@@ -195,10 +195,6 @@ def populate_character_affiliations_from_esi(character_ids: list[int]) -> int:
     return updated
 
 
-def populate_character_affiliation(character_id: int) -> bool:
-    return populate_character_affiliations_from_esi([character_id]) > 0
-
-
 def refresh_character_affiliation(character_id: int) -> bool:
     return populate_character_affiliations_from_esi([character_id]) > 0
 

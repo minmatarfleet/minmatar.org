@@ -82,19 +82,6 @@ class _OfferBuild:
     required: Tuple[Tuple[int, int], ...]  # (type_id, quantity)
 
 
-def is_pure_lp_isk_offer(row: dict) -> bool:
-    """True for LP+ISK offers with no required items and no ak_cost (navy BPC)."""
-    if not isinstance(row, dict):
-        return False
-    if row.get("required_items"):
-        return False
-    if int(row.get("ak_cost") or 0) > 0:
-        return False
-    lp_cost = int(row.get("lp_cost") or 0)
-    isk_cost = int(row.get("isk_cost") or 0)
-    return lp_cost > 0 and isk_cost > 0
-
-
 def corporation_ids_to_sync() -> List[int]:
     """Active IndustryLoyaltyPoint corps, else FW militia defaults."""
     ids = list(

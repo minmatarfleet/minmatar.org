@@ -43,11 +43,6 @@ def validate_application_description(description: str) -> str | None:
     return None
 
 
-def l3arn_discord_description(description: str) -> str:
-    """Strip web-only questionnaire lines before Discord posting or length checks."""
-    return application_discord_description(description)
-
-
 def validate_l3arn_application_description(description: str) -> str | None:
     """Return an error message when the description exceeds Discord-safe limits."""
     return validate_application_description(description)

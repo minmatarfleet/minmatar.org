@@ -8,7 +8,13 @@ from industry.endpoints.orders.schemas import (
     OrderListItemResponse,
     OrderLocationResponse,
 )
-from industry.endpoints.orders.serialization import order_line_list_targets
+from industry.endpoints.orders.serialization import (
+    order_line_profit_per_unit,
+    order_line_target_unit_price,
+)
+from industry.helpers.order_profit_breakdown import (
+    stored_profit_per_unit_by_type,
+)
 from industry.models import IndustryOrder
 
 PATH = ""
@@ -31,16 +37,18 @@ def get_orders(request):
     )
     result = []
     for order in orders:
+        profit_by_type = stored_profit_per_unit_by_type(order)
         items_flat = []
         for item in order.items.all():
-            unit, margin = order_line_list_targets(item)
             items_flat.append(
                 OrderItemQuantityResponse(
                     eve_type_id=item.eve_type_id,
                     eve_type_name=item.eve_type.name,
                     quantity=item.quantity,
-                    target_unit_price=unit,
-                    target_estimated_margin=margin,
+                    target_unit_price=order_line_target_unit_price(item),
+                    estimated_profit_per_unit=order_line_profit_per_unit(
+                        item, profit_by_type
+                    ),
                 )
             )
         seen = set()

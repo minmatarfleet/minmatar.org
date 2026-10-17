@@ -10,7 +10,7 @@ from eveonline.models import EveCharacter, EveLocation
 
 from industry.helpers.discord_summary_display import (
     format_isk_billions_trimmed,
-    format_margin_profit_parenthetical,
+    format_profit_parenthetical,
     order_location_short_label,
     pluralize_eve_group_name,
 )
@@ -45,15 +45,24 @@ class DiscordSummaryDisplayTests(AppTestCase):
 
     def test_format_profit_parenthetical(self):
         self.assertEqual(
-            format_margin_profit_parenthetical(Decimal("2000000000")),
+            format_profit_parenthetical(Decimal("2000000000")),
             "(2B profit)",
         )
         self.assertEqual(
-            format_margin_profit_parenthetical(Decimal("0")),
+            format_profit_parenthetical(Decimal("0")),
             "(0B profit)",
         )
+        self.assertEqual(
+            format_profit_parenthetical(Decimal("-300000000")),
+            "(0.3B loss)",
+        )
+        self.assertEqual(format_profit_parenthetical(None), "")
 
     def test_format_isk_billions_trimmed(self):
         self.assertEqual(
             format_isk_billions_trimmed(Decimal("1500000000")), "1.5B"
         )
+        self.assertEqual(
+            format_isk_billions_trimmed(Decimal("-1500000000")), "-1.5B"
+        )
+        self.assertEqual(format_isk_billions_trimmed(Decimal("1000")), "0B")

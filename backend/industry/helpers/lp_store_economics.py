@@ -19,12 +19,9 @@ from conversion — it is the LP-desk cost, not finished-hull build cost.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.db import ProgrammingError
-from django.db.models import Sum
-from django.utils import timezone
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
@@ -51,13 +48,11 @@ from industry.models import (
 )
 from market.helpers.pricing import (
     VOLUME_WINDOWS,
-    _baseline_region_id,
     get_prices_by_type_id,
     get_volume_weighted_average_by_type_id,
     get_volume_windows_by_type_id,
 )
 from market.models import EveMarketItemLocationPrice
-from market.models.history import EveMarketItemHistory
 
 # Forge 30d traded units below this (or missing history) = negligible LP
 # liquidity. Fuzzwork's "5% Volume" is order-book depth (qty within 5% of
@@ -140,64 +135,6 @@ def bpc_type_id_to_product_type_id() -> Dict[int, int]:
     return mapping
 
 
-def market_type_ids_with_viable_forge_volume(
-    type_ids: Optional[Iterable[int]] = None,
-    *,
-    min_volume_30d: int = NEGLIGIBLE_LP_FORGE_VOLUME_30D,
-) -> Set[int]:
-    """
-    Market type IDs with Forge 30d history volume >= ``min_volume_30d``.
-
-    Types with no recent history rows are omitted (treated as negligible by
-    callers). Requires EveMarketItemHistory sync for LP catalog types.
-    When ``type_ids`` is given, only those IDs are considered.
-    """
-    region_id = _baseline_region_id()
-    cutoff = timezone.now().date() - timedelta(days=30)
-    qs = EveMarketItemHistory.objects.filter(
-        region_id=region_id,
-        date__gte=cutoff,
-    )
-    if type_ids is not None:
-        unique = {int(t) for t in type_ids if int(t) > 0}
-        if not unique:
-            return set()
-        qs = qs.filter(item_id__in=unique)
-    rows = (
-        qs.values("item_id")
-        .annotate(total=Sum("volume"))
-        .filter(total__gte=int(min_volume_30d))
-        .values_list("item_id", flat=True)
-    )
-    return {int(item_id) for item_id in rows}
-
-
-def offer_type_ids_with_viable_forge_volume(
-    offer_type_ids: Iterable[int],
-    *,
-    min_volume_30d: int = NEGLIGIBLE_LP_FORGE_VOLUME_30D,
-    bpc_to_hull: Optional[Dict[int, int]] = None,
-) -> Set[int]:
-    """
-    Offer ``type_id``s whose market type (hull for navy BPCs) clears the
-    30d Forge volume floor. Missing history → not viable.
-    """
-    unique = {int(t) for t in offer_type_ids if int(t) > 0}
-    if not unique:
-        return set()
-    mapping = (
-        bpc_to_hull
-        if bpc_to_hull is not None
-        else bpc_type_id_to_product_type_id()
-    )
-    market_ids = {mapping.get(tid, tid) for tid in unique}
-    viable_market = market_type_ids_with_viable_forge_volume(
-        market_ids,
-        min_volume_30d=min_volume_30d,
-    )
-    return {tid for tid in unique if mapping.get(tid, tid) in viable_market}
-
-
 def offer_is_below_set_lp_price(
     econ: LpStoreOfferEconomics, *, side: str = "sell"
 ) -> bool:
@@ -221,33 +158,6 @@ def offer_is_below_set_lp_price(
     if buyback is None:
         return True
     return float(rate) < float(buyback)
-
-
-def offer_pks_below_set_lp_price(
-    offers: Iterable[IndustryLpStoreOffer],
-    *,
-    economics: Optional[Dict[int, LpStoreOfferEconomics]] = None,
-    side: str = "sell",
-) -> Set[int]:
-    """Primary keys of offers below the currency's set LP buy price.
-
-    Pass a precomputed ``economics`` map (e.g. request-scoped catalog cache)
-    to avoid recomputing offer_economics_for_queryset per filter.
-    """
-    rows = list(offers)
-    if not rows:
-        return set()
-    if economics is None:
-        economics = offer_economics_for_queryset(rows)
-    below: Set[int] = set()
-    for offer in rows:
-        pk = offer.pk
-        if pk is None:
-            continue
-        row = economics.get(pk)
-        if row is None or offer_is_below_set_lp_price(row, side=side):
-            below.add(pk)
-    return below
 
 
 def _acquisition_isk_per_unit(
@@ -303,21 +213,6 @@ def _resolve_sell_buy(
         buy = loc[1] if loc[1] is not None else hist
         return sell, buy
     return hist, hist
-
-
-def _conversion_isk_per_lp(
-    *,
-    market_price: Optional[int],
-    offer_qty: int,
-    isk_cost: int,
-    other_cost: Optional[int],
-    lp_cost: int,
-) -> Optional[float]:
-    """Legacy helper kept for tests that call the old Fuzzwork formula."""
-    if market_price is None or lp_cost <= 0:
-        return None
-    extras = int(other_cost or 0)
-    return (market_price * offer_qty - isk_cost - extras) / float(lp_cost)
 
 
 def _lp_store_required_cost(

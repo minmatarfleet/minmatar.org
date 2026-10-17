@@ -6,7 +6,6 @@ from django.utils import timezone
 from market.helpers.contracts import (
     cluster_completion_bursts,
     estimate_contract_burst_size,
-    fleets_remaining_from_stock,
 )
 
 
@@ -37,9 +36,3 @@ class ContractBurstHelpersTestCase(SimpleTestCase):
 
     def test_estimate_empty(self):
         self.assertIsNone(estimate_contract_burst_size([]))
-
-    def test_fleets_remaining_ceil(self):
-        self.assertEqual(fleets_remaining_from_stock(5, 3), 2)
-        self.assertEqual(fleets_remaining_from_stock(6, 3), 2)
-        self.assertEqual(fleets_remaining_from_stock(0, 3), 0)
-        self.assertIsNone(fleets_remaining_from_stock(5, None))

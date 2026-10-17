@@ -5,6 +5,11 @@ import type { TagColors } from '@dtypes/layout_components'
 import { format_date_short } from '@helpers/date'
 import { get_corporation_logo } from '@helpers/eve_image_server'
 import { number_thousand_separator } from '@helpers/numbers'
+import {
+    EXPRESS_SLA_HOURS,
+    express_hours_left,
+    format_close_time,
+} from '@helpers/loyalty_order_stats'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
@@ -112,6 +117,31 @@ const date_text = `${format_date_short(lang, row_date)} · ${row_time}`
 const date_label = variant === 'history'
     ? t('industry.loyalty.orders.settled_on')
     : t('industry.loyalty.orders.posted_on')
+// SLA line. Cancelled orders never carry one.
+const is_express = order.tier === 'express'
+let sla: { text: string, state: 'ok' | 'late' | 'neutral' } | null = null
+if (order.status === 'completed' && order.completed_at) {
+    const close_seconds = (
+        new Date(order.completed_at).getTime() - new Date(order.created_at).getTime()
+    ) / 1000
+    const late = is_express && close_seconds > EXPRESS_SLA_HOURS * 3600
+    sla = {
+        text: t('industry.loyalty.sla.closed_in').replace('{time}', format_close_time(close_seconds)),
+        state: is_express ? (late ? 'late' : 'ok') : 'neutral',
+    }
+} else if (order.status !== 'cancelled' && order.express_due_at) {
+    const hours_left = express_hours_left(order.express_due_at)
+    sla = hours_left >= 0
+        ? {
+            text: t('industry.loyalty.sla.due_in').replace('{time}', format_close_time(hours_left * 3600)),
+            state: 'ok',
+        }
+        : {
+            text: t('industry.loyalty.sla.overdue').replace('{time}', format_close_time(-hours_left * 3600)),
+            state: 'late',
+        }
+}
+
 const card_class = [
     'loyalty-order-card',
     `loyalty-order-card--${variant}`,
@@ -140,9 +170,28 @@ const card_class = [
                     <Tag text={side_label} color={side_color} narrow={true} />
                     <strong class="[ loyalty-order-card__title ]">{order.loyalty_point_name}</strong>
                 </span>
-                <small class="[ loyalty-order-card__date ]" title={date_label}>
-                    {date_text}
-                </small>
+                <span class="[ loyalty-order-card__meta ]">
+                    {is_express && (
+                        <Tag
+                            text={t('industry.loyalty.tier.express')}
+                            color="militia-purple"
+                            narrow={true}
+                            title={t('industry.loyalty.tier.express_description')
+                                .replace('{hours}', String(EXPRESS_SLA_HOURS))}
+                        />
+                    )}
+                    <small class="[ loyalty-order-card__date ]" title={date_label}>
+                        {date_text}
+                        {sla && (
+                            <span class:list={[
+                                'loyalty-order-card__sla',
+                                `is-${sla.state}`,
+                            ]}>
+                                · {sla.text}
+                            </span>
+                        )}
+                    </small>
+                </span>
             </span>
         </FlexInline>
 
@@ -263,6 +312,27 @@ const card_class = [
         font-size: var(--step--2);
         color: rgba(255, 255, 255, 0.55);
         white-space: nowrap;
+    }
+
+    .loyalty-order-card__meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        :global(.tag) {
+            font-size: var(--step--2);
+        }
+    }
+
+    .loyalty-order-card__sla {
+        &.is-ok {
+            color: var(--green);
+        }
+
+        &.is-late {
+            color: var(--fleet-red);
+        }
     }
 
     .loyalty-order-card__numeric {

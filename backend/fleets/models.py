@@ -329,38 +329,6 @@ class EveFleetInstance(models.Model):
         self.save()
         return response.results() if response.data is not None else None
 
-    def update_free_move(self):
-        """
-        Update the free move status for the fleet
-        """
-        if not self.eve_fleet.token:
-            logger.warning(
-                "Unable to set free move for fleet without token, %d",
-                self.eve_fleet.id,
-            )
-            return None
-        # token = self.eve_fleet.token
-        # response = esi.client.Fleets.put_fleets_fleet_id(
-        #     fleet_id=self.id,
-        #     new_settings={"is_free_move": True},
-        #     token=token,
-        # ).results()
-        update = {"is_free_move": True}
-        response = self.esi_client().update_fleet_details(self.id, update)
-        if not response.success():
-            logger.warning(
-                "Error setting free move for fleet %d: %s (%s)",
-                self.id,
-                response.response,
-                response.response_code,
-            )
-            return None
-        response = response.results() if response.data is not None else None
-
-        self.is_free_move = True
-        self.save()
-        return response
-
     def update_is_registered_status(self):
         """
         Fetch the advert status for the fleet

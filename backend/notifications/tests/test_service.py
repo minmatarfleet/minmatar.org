@@ -16,7 +16,6 @@ from notifications.service import (
     effective_preferences,
     notify_user,
     notify_users,
-    preference_enabled,
 )
 from notifications.tasks import deliver_notification
 
@@ -36,27 +35,6 @@ class RegistryTestCase(TestCase):
 class PreferenceResolutionTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user("prefuser", password="x")
-
-    def test_defaults_when_no_row(self):
-        ntype = get_type("industry.order.created")
-        self.assertTrue(
-            preference_enabled(self.user, ntype, NotificationChannel.WEB)
-        )
-        self.assertFalse(
-            preference_enabled(self.user, ntype, NotificationChannel.DISCORD)
-        )
-
-    def test_explicit_override(self):
-        NotificationPreference.objects.create(
-            user=self.user,
-            notification_type="industry.order.created",
-            channel=NotificationChannel.DISCORD,
-            enabled=True,
-        )
-        ntype = get_type("industry.order.created")
-        self.assertTrue(
-            preference_enabled(self.user, ntype, NotificationChannel.DISCORD)
-        )
 
     def test_effective_preferences_shape(self):
         prefs = effective_preferences(self.user)

@@ -18,7 +18,7 @@ test("order breakdown rebinds Alpine after outerHTML delivery swaps", async () =
           self_assign_maximum: null,
           self_assign_window_ends_at: new Date("2026-08-31T15:15:35.283Z"),
           target_unit_price: null,
-          target_estimated_margin: null,
+          estimated_profit_per_unit: null,
           assignments: [
             {
               id: 286,
@@ -26,7 +26,6 @@ test("order breakdown rebinds Alpine after outerHTML delivery swaps", async () =
               character_name: "Jyll Ataru",
               quantity: 10,
               target_unit_price: null,
-              target_estimated_margin: null,
               delivered_quantity: 10,
               delivered_at: new Date("2026-08-30T00:31:56.451Z"),
               has_blueprints: false,

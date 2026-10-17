@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Iterable
+from typing import Callable
 
 from notifications.models import NotificationChannel
 
@@ -64,20 +64,3 @@ def get_type(key: str) -> NotificationType:
 
 def all_types() -> list[NotificationType]:
     return sorted(_REGISTRY.values(), key=lambda t: (t.feature, t.key))
-
-
-def types_for_feature(feature: str) -> list[NotificationType]:
-    return [t for t in all_types() if t.feature == feature]
-
-
-def clear_registry_for_tests() -> None:
-    """Test helper only."""
-    _REGISTRY.clear()
-
-
-def iter_features() -> Iterable[str]:
-    seen = []
-    for t in all_types():
-        if t.feature not in seen:
-            seen.append(t.feature)
-            yield t.feature

@@ -56,20 +56,6 @@ def _types_for_ids(type_ids: Sequence[int]) -> List[EveType]:
     return list(EveType.objects.filter(id__in=type_ids).order_by("name"))
 
 
-def order_mineral_type_ids(
-    order: Optional[IndustryOrder] = None,
-) -> Set[int]:
-    """Eve type IDs allowed for mineral coordinators (order-independent)."""
-    del order  # catalog is fixed; signature kept for call-site compatibility
-    return basic_mineral_type_ids()
-
-
-def order_pi_type_ids(order: Optional[IndustryOrder] = None) -> Set[int]:
-    """Eve type IDs allowed for PI coordinators (order-independent)."""
-    del order
-    return navy_hull_pi_type_ids()
-
-
 def order_material_options(
     order: Optional[IndustryOrder] = None,
     *,

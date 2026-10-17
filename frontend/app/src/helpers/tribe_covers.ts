@@ -21,19 +21,8 @@ export const TRIBE_GROUP_COVERS: Record<number, string> = {
     19: '/images/blackops-cover.jpg',
 }
 
-export const TRIBE_COVERS: Record<number, string> = {
-    1: '/images/capitals-tribe-cover.webp',
-    4: '/images/comunity-tribe-cover.webp',
-    2: '/images/industry-tribe-cover.webp',
-    3: '/images/market-tribe-cover.webp',
-}
-
 export const TRIBES_COVER_FALLBACK = '/images/tribes-fallback-cover.webp'
 
 export function tribe_group_cover(group_id: number): string {
     return TRIBE_GROUP_COVERS[group_id] ?? TRIBES_COVER_FALLBACK
-}
-
-export function tribe_cover(tribe_id: number): string {
-    return TRIBE_COVERS[tribe_id] ?? TRIBES_COVER_FALLBACK
 }

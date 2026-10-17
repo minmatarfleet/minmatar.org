@@ -149,6 +149,7 @@ class IndustryLoyaltyPointPriceHistoryInline(admin.TabularInline):
     fields = (
         "changed_at",
         "account",
+        "tier",
         "old_isk_per_lp",
         "new_isk_per_lp",
         "changed_by",
@@ -216,6 +217,7 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         "name",
         "corporation_id",
         "default_isk_per_lp",
+        "express_isk_per_lp",
         "is_active",
         "allow_buy",
         "allow_sell",
@@ -224,6 +226,7 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
     )
     list_editable = (
         "default_isk_per_lp",
+        "express_isk_per_lp",
         "is_active",
         "allow_buy",
         "allow_sell",
@@ -241,14 +244,18 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
                 "fields": (
                     "name",
                     "corporation_id",
-                    "default_isk_per_lp",
+                    ("default_isk_per_lp", "express_isk_per_lp"),
                     "is_active",
                     ("allow_buy", "allow_sell"),
                     "notes",
                 ),
                 "description": (
                     "Currency catalog for militia / navy LP. Default ISK/LP is "
-                    "used by the planner and as the offer fallback for accounts. "
+                    "the standard buyback rate (filled as volume and the "
+                    "market allow), and is used by the planner and as the "
+                    "offer fallback for accounts. Express ISK/LP is for "
+                    "orders settled within 24 hours; leave it empty to turn "
+                    "express off. "
                     "Allow buy / allow sell control which order sides pilots "
                     "can post on the public buyback book."
                 ),
@@ -725,7 +732,6 @@ class IndustryOrderItemInline(admin.TabularInline):
         "quantity",
         "self_assign_maximum",
         "target_unit_price",
-        "target_estimated_margin",
         "assignments_link",
     )
     readonly_fields = ("assignments_link",)
@@ -1039,7 +1045,6 @@ class IndustryOrderItemAssignmentInline(admin.TabularInline):
         "character",
         "quantity",
         "target_unit_price",
-        "target_estimated_margin",
         "has_blueprints",
         "delivered_quantity",
         "delivered_at",
@@ -1055,7 +1060,6 @@ class IndustryOrderItemAdmin(admin.ModelAdmin):
         "eve_type",
         "quantity",
         "target_unit_price",
-        "target_estimated_margin",
     )
     list_filter = ("order",)
     raw_id_fields = ("eve_type",)
@@ -1094,7 +1098,6 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         "quantity",
         "delivered_quantity",
         "target_unit_price",
-        "target_estimated_margin",
         "has_blueprints",
         "delivered_at",
     )
@@ -1328,11 +1331,6 @@ def _build_industry_supply_index_links(request) -> list[dict]:
             }
         )
     return links
-
-
-def _build_industry_orders_index_link(request) -> dict:
-    """Back-compat helper for tests that expect a single orders link."""
-    return _build_industry_supply_index_links(request)[0]
 
 
 def _rename_industry_experimental_models(models: list[dict]) -> list[dict]:

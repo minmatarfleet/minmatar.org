@@ -24,11 +24,6 @@ class EveAssetResponse(pydantic.BaseModel):
     type_id: int
 
 
-class EveStructureResponse(pydantic.BaseModel):
-    name: str
-    solar_system_id: int
-
-
 def non_ship_location(location_flag: str) -> bool:
     if "FighterTube" in location_flag:
         return True

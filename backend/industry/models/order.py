@@ -138,13 +138,6 @@ class IndustryOrderItem(models.Model):
         blank=True,
         help_text="Target unit price (ISK) for this line; shown on the public order list.",
     )
-    target_estimated_margin = models.DecimalField(
-        max_digits=20,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Target estimated margin (ISK) for this line; shown on the public order list.",
-    )
 
     class Meta:
         ordering = ["id"]
@@ -176,13 +169,6 @@ class IndustryOrderItemAssignment(models.Model):
         null=True,
         blank=True,
         help_text="Target unit price (ISK); set in admin.",
-    )
-    target_estimated_margin = models.DecimalField(
-        max_digits=20,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Target estimated margin (ISK); set in admin.",
     )
     delivered_quantity = models.PositiveIntegerField(
         default=0,

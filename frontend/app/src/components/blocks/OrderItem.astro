@@ -100,7 +100,7 @@ import TippyOrderItem from './TippyOrderItem.astro';
                                     item_name={item.eve_type_name}
                                     quantity={item.quantity}
                                     contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * item.quantity : undefined}
-                                    earnings={item?.target_estimated_margin ? parseInt(item?.target_estimated_margin) * item.quantity : undefined}
+                                    earnings={item?.estimated_profit_per_unit ? item.estimated_profit_per_unit * item.quantity : undefined}
                                     init_tooltips={init_tooltips}
                                 >
                                     <ItemPicture

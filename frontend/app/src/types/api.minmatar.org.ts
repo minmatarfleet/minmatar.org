@@ -106,11 +106,6 @@ export interface TribeGroupRosterEntry {
     approved_at:                string | null;
 }
 
-export interface TribeGroupGrowth {
-    months:     { month: string; label: string }[];
-    counts:     number[];
-}
-
 export interface TribeGroupShowcaseContributor {
     character_id:       number | null;
     character_name:     string;
@@ -466,26 +461,6 @@ export interface CorporationMemberDetails {
     community_status?:      string | null;
     characters_hidden?:     boolean;
     hidden_character_count?: number;
-}
-
-export interface CorporationMembersTop {
-    metric:     string;
-    members:    CorporationMemberDetails[];
-}
-
-export interface CorporationAdmin {
-    corporation_id:     number;
-    executor_notes?:    string | null;
-    discord_bot_present: boolean;
-    discord_guild_name?: string | null;
-    discord_invite_url?: string | null;
-    bot_invite_url?:    string | null;
-    humans?:            number | null;
-    active_90d?:        number | null;
-    active_90d_pct?:    number | null;
-    growth_90d_pct?:    number | null;
-    stewards:           { character_id: number; character_name: string }[];
-    leadership_missing_prime_time: CorporationLeadershipMember[];
 }
 
 export interface CharacterCorp {
@@ -1314,66 +1289,112 @@ export interface Product extends ProductBase {
     corporation_producers?:         Producer[];
 }
 
+export interface ProductBuilder {
+    character_id:       number;
+    character_name:     string;
+    units:              number;
+    jobs:               number;
+    last_built_at:      string | null;
+}
+
+export interface ProductBuilderCorporation {
+    corporation_id:     number;
+    corporation_name:   string;
+    units:              number;
+}
+
+export interface ProductOrderLine {
+    order_id:           number;
+    public_short_code:  string | null;
+    character_id:       number | null;
+    character_name:     string;
+    created_at:         string;
+    needed_by:          string | null;
+    fulfilled_at:       string | null;
+    quantity:           number;
+    assigned:           number;
+    delivered:          number;
+}
+
+export interface ProductLocationCount {
+    location_name:      string;
+    units:              number;
+}
+
+export interface ProductLoss {
+    killmail_id:        number;
+    killmail_time:      string;
+    character_id:       number | null;
+    character_name:     string;
+    solar_system_id:    number | null;
+}
+
+export interface ProductWeek {
+    week_start:         string;
+    built:              number;
+    sold:               number;
+    lost:               number;
+}
+
+/** GET /products/{id}/insights; cached, ready=false while the rollup runs. */
+export interface ProductInsights {
+    ready:              boolean;
+    generated_at:       string | null;
+    is_ship:            boolean;
+    window_days:        number;
+    recent_days:        number;
+    unit_price:         number | null;
+    built: {
+        units_30d:          number;
+        units_90d:          number;
+        jobs_90d:           number;
+        builders_90d:       number;
+        running_units:      number;
+        running_jobs:       number;
+        last_built_at:      string | null;
+    };
+    builders:           ProductBuilder[];
+    corporations:       ProductBuilderCorporation[];
+    orders: {
+        open_orders:            number;
+        open_units:             number;
+        open_assigned_units:    number;
+        open_delivered_units:   number;
+        ordered_units_90d:      number;
+        recent:                 ProductOrderLine[];
+    };
+    sales: {
+        market_units_30d:       number;
+        market_units_90d:       number;
+        contract_units_30d:     number;
+        contract_units_90d:     number;
+        listed_units:           number;
+        lowest_listed_price:    number | null;
+        outstanding_contracts:  number;
+        locations:              ProductLocationCount[];
+    };
+    /** Only ships are tracked in hangars and losses; null otherwise. */
+    hangars: {
+        units:          number;
+        pilots:         number;
+        locations:      ProductLocationCount[];
+    } | null;
+    losses: {
+        units_30d:      number;
+        units_90d:      number;
+        recent:         ProductLoss[];
+    } | null;
+    weekly:             ProductWeek[];
+}
+
 /** Planetary (PI) API types */
 export interface PlanetaryCharacterRef {
     character_id:   number;
     character_name: string;
 }
 
-export interface HarvestOverviewItem {
-    type_id:                number;
-    name:                   string;
-    total_extractors:       number;
-    total_daily_quantity?:  number | null;
-}
-
-export interface HarvestDrillDownItem {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-    extractor_count:    number;
-    daily_quantity?:    number | null;
-}
-
-export interface ProductionOverviewItem {
-    type_id:                number;
-    name:                   string;
-    total_factories:        number;
-    total_daily_quantity?:  number | null;
-}
-
-export interface ProductionDrillDownItem {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-    factory_count:      number;
-    daily_quantity?:    number | null;
-}
-
 /** One colony on a planet (primary + actual character). */
 export interface ColonyEntry {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-}
-
-/** One planet with list of characters that have colonies on it. */
-export interface PlanetWithColoniesItem {
-    planet_id:        number;
-    solar_system_id:  number;
-    planet_type:     string;
-    colonies:        ColonyEntry[];
-}
-
-export interface HarvestDrillDownResponse {
-    characters:  PlanetaryCharacterRef[];
-    entries:     HarvestDrillDownItem[];
-}
-
-export interface ProductionDrillDownResponse {
-    characters:  PlanetaryCharacterRef[];
-    entries:     ProductionDrillDownItem[];
-}
-
-/** @deprecated Use PlanetWithColoniesItem for GET /planetary/planets */
-export interface PlanetSummaryItem {
     primary_character:  PlanetaryCharacterRef;
     actual_character:   PlanetaryCharacterRef;
 }
@@ -1383,7 +1404,7 @@ export interface RootItem {
     eve_type_name:              string;
     quantity:                   number;
     target_unit_price?:         string | null;
-    target_estimated_margin?:   string | null;
+    estimated_profit_per_unit?: number | null;
 }
 
 export interface IndustryOrder {
@@ -1756,39 +1777,6 @@ export interface Blueprint {
     activity_id:            number | null;
 }
 
-export type BlueprintIndustryJobSource = 'character' | 'corporation'
-
-export interface BlueprintIndustryJob {
-    job_id:                 number;
-    source:                 BlueprintIndustryJobSource;
-    activity_id:            number;
-    blueprint_type_id:      number;
-    status:                 string;
-    installer_id:           number;
-    start_date:             string;
-    end_date:               string;
-    completed_date:         string | null;
-    duration:               number;
-    runs:                   number;
-    licensed_runs:          number;
-    cost:                   string | null;
-    location_id:            number;
-    output_location_id:     number;
-    blueprint_location_id:  number;
-    facility_id:            number;
-    character_id:           number | null;
-    character_name:         string | null;
-    corporation_id:         number | null;
-    corporation_name:       string | null;
-}
-
-export interface BlueprintDetail extends Blueprint {
-    quantity:               number;
-    is_original:            boolean;
-    current_jobs:           BlueprintIndustryJob[];
-    historical_jobs:        BlueprintIndustryJob[];
-}
-
 export interface ContractHealthProblem {
     location_id:        number;
     location_name:      string;
@@ -1902,34 +1890,6 @@ export interface LiveSellOrderSupply {
     rows:               SellOrderHealthGap[];
 }
 
-export interface InferredSalesVolumeBucket {
-    date:   string;
-    units:  number;
-}
-
-export interface InferredSalesVelocity {
-    long_days:                  number;
-    short_days:                 number;
-    days_of_data:               number;
-    median_daily_units:         number;
-    short_mean_daily_units:     number;
-    total_units:                number;
-}
-
-export interface InferredSalesTopMover {
-    type_id:    number;
-    item_name:  string;
-    units:      number;
-}
-
-export interface InferredSalesVolume {
-    location_id:    number;
-    days:           number;
-    buckets:        InferredSalesVolumeBucket[];
-    velocity:       InferredSalesVelocity;
-    top_movers:     InferredSalesTopMover[];
-}
-
 export interface InferredSalesMonthlyVolumeClass {
     slug: string
     label: string
@@ -1968,30 +1928,12 @@ export interface InferredSalesMonthlyVolumePage {
     rows: InferredSalesMonthlyVolumeRow[]
 }
 
-export interface OrderAssignmentsBreakdownItem {
-    name:                   string;
-    type_id:                number;
-    quantity:               number;
-    source:                 string;
-    depth:                  number;
-    children:               OrderAssignmentsBreakdownItem[],
-    industry_product_id:    number;
-}
-
-export interface OrderAssignmentsBreakdown {
-    character_id:       number;
-    character_name:     string;
-    quantity:           number;
-    breakdown:          OrderAssignmentsBreakdownItem;
-}
-
 export interface OrderAssignment {
     id:                         number;
     character_id:               number;
     character_name:             string;
     quantity:                   number;
     target_unit_price:          number | null;
-    target_estimated_margin:    number | null;
     delivered_quantity:         number;
     delivered_at:               Date | null;
     has_blueprints:             boolean;
@@ -2006,7 +1948,7 @@ export interface RootSingleItem {
     self_assign_maximum:            number | null;
     self_assign_window_ends_at:     Date;
     target_unit_price:              string | null,
-    target_estimated_margin:        string | null,
+    estimated_profit_per_unit:      number | null,
     assignments:                    OrderAssignment[];
 }
 
@@ -2064,10 +2006,14 @@ export interface LoyaltyCurrency {
     name:               string;
     corporation_id:     number;
     default_isk_per_lp: number;
+    /** Express (<24h) rate; null when express is switched off. */
+    express_isk_per_lp: number | null;
     is_active:          boolean;
     allow_buy:          boolean;
     allow_sell:         boolean;
 }
+
+export type LoyaltyOrderTier = 'standard' | 'express'
 
 export interface LoyaltyMarketOrderClaim {
     id:                              number;
@@ -2090,6 +2036,9 @@ export interface LoyaltyMarketOrder {
     quantity_claimed:           number;
     quantity_remaining:         number;
     isk_per_lp:                 number;
+    tier:                       LoyaltyOrderTier;
+    /** Express SLA deadline; null for standard or cancelled orders. */
+    express_due_at:             Date | string | null;
     status:                     string;
     created_by_user_id:         number | null;
     created_by_name:            string | null;
@@ -2106,33 +2055,27 @@ export interface LoyaltyMarketOrder {
     completed_at:               Date | string | null;
 }
 
+export interface LoyaltyOrderStatsTier {
+    /** Non-cancelled orders posted in the window. */
+    orders:             number;
+    /** Orders completed in the window (close time / price sample). */
+    completed:          number;
+    avg_close_seconds:  number | null;
+    /** LP-weighted over completed orders. */
+    avg_isk_per_lp:     number | null;
+}
+
+export interface LoyaltyOrderStats extends LoyaltyOrderStatsTier {
+    days:       number;
+    standard:   LoyaltyOrderStatsTier;
+    express:    LoyaltyOrderStatsTier;
+}
+
 export interface LoyaltyMarketOrdersList {
     items:  LoyaltyMarketOrder[];
     total:  number;
     limit:  number | null;
     offset: number;
-}
-
-export interface LoyaltyLedgerEntry {
-    id:                     number;
-    account_id:             number;
-    account_name:           string;
-    account_role:           string;
-    loyalty_point_id:       number;
-    loyalty_point_name:     string;
-    corporation_id:         number;
-    amount:                 number;
-    isk_per_lp:             number;
-    balance_after:          number;
-    notes:                  string;
-    market_order_id:        number | null;
-    seller_user_id:         number | null;
-    seller_character_name:  string;
-    counterparty_user_id:   number | null;
-    counterparty_character_name: string;
-    created_by_user_id:     number | null;
-    created_by_name:        string | null;
-    created_at:             Date | string;
 }
 
 export interface LoyaltyOffer {
@@ -2897,41 +2840,6 @@ export interface CampaignDetail {
     standing_fleet_boss:        string | null;
 }
 
-export interface CampaignHostileGang {
-    title:          string;
-    system:         string;
-    occurred_at:    string;
-}
-
-export interface CampaignTickerEntry {
-    killmail_id:    number;
-    outcome:        CampaignKillmailOutcome;
-    isk_value:      number;
-    killmail_time:  string;
-}
-
-export interface CampaignGangForming {
-    id:             number;
-    ships:          string;
-    system:         string | null;
-    note:           string;
-    started_by:     string;
-    occurred_at:    string;
-}
-
-export interface CampaignRightNow {
-    active_pilots:          number;
-    system_heat:            number;
-    hostile_gangs:          CampaignHostileGang[];
-    standing_fleet_up:      boolean;
-    standing_fleet_members: number;
-    standing_fleet_boss:    string | null;
-    gangs_forming:          CampaignGangForming[];
-    my_orders_done:         number;
-    my_orders_total:        number;
-    ticker:                 CampaignTickerEntry[];
-}
-
 export interface CampaignWeekTarget {
     id:                     number;
     system:                 string;
@@ -2981,17 +2889,6 @@ export interface CampaignWeek {
     progress?:              CampaignWeekProgress[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
-}
-
-export interface CampaignOrder {
-    id:                 number;
-    kind:               string;
-    label:              string;
-    params:             Record<string, any>;
-    system:             string | null;
-    gap_share_pct:      number;
-    progress:           number;
-    completed:          boolean;
 }
 
 export interface CampaignFleet {
@@ -3172,13 +3069,6 @@ export interface CampaignAdvantageResponse {
     our_pct:    number | null;
     enemy_pct:  number | null;
     net_pct:    number | null;
-}
-
-export interface CampaignGangRequest {
-    ships:              string;
-    solar_system_id?:   number | null;
-    note?:              string;
-    voice_channel_id?:  number | null;
 }
 
 export interface IntelHull {

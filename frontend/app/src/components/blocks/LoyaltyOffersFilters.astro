@@ -163,6 +163,24 @@ const hx_include_filters =
         justification="space-between"
     >
         <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__controls ]">
+            {sorted_currencies.length <= 1 ? (
+                <span class="[ loyalty-offers-filters__currency loyalty-offers-filters__currency-trigger is-static ]">
+                    {selected_currency_record && (
+                        <img
+                            class="[ loyalty-offers-filters__currency-logo ]"
+                            src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
+                            width="20"
+                            height="20"
+                            alt=""
+                            loading="lazy"
+                        />
+                    )}
+                    <span class="[ loyalty-offers-filters__currency-name ]">
+                        {selected_currency_record?.name
+                            ?? t('industry.loyalty.offers.currency_label')}
+                    </span>
+                </span>
+            ) : (
             <div
                 class="[ loyalty-offers-filters__currency ]"
                 x-data={`{
@@ -245,6 +263,7 @@ const hx_include_filters =
                     ))}
                 </ul>
             </div>
+            )}
 
             <Select
                 name="side"
@@ -408,6 +427,10 @@ const hx_include_filters =
         flex-shrink: 0;
         width: 18rem;
         max-width: 100%;
+    }
+
+    .loyalty-offers-filters__currency-trigger.is-static {
+        cursor: default;
     }
 
     .loyalty-offers-filters__currency-trigger {

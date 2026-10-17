@@ -24,10 +24,3 @@ def union_audiences(*user_id_sets: Iterable[int]) -> set[int]:
     for s in user_id_sets:
         out.update(int(uid) for uid in s if uid)
     return out
-
-
-def users_from_ids(user_ids: Iterable[int]):
-    ids = list(union_audiences(user_ids))
-    if not ids:
-        return User.objects.none()
-    return User.objects.filter(id__in=ids)

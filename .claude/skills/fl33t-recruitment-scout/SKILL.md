@@ -44,12 +44,19 @@ python scripts/fetch_recruitment_ads.py --days 30 --json
 python scripts/fetch_proof_media.py --days 45 --json
 python scripts/fetch_reddit.py --days 7 --json
 python scripts/fetch_forums.py --days 7 --json
+
+# Tracked links (needs MINMATAR_API_TOKEN, see "Tracked links" below)
+python scripts/track_outreach.py stats --days 30
+python scripts/track_outreach.py register --surface evejobs \
+  --thread https://www.reddit.com/r/evejobs/comments/... --prospect u/name --seat BNSQ
 ```
 
 Reddit credentials (`REDDIT_CLIENT_ID`, `REDDIT_SECRET`, `REDDIT_USERNAME`,
 `REDDIT_PASSWORD`) live in `backend/.env`. Needed for `u/MinmatarFleet` ad
 history and reliable Reddit comment reads. Corporation data loads from the public
-API without them.
+API without them. `MINMATAR_API_TOKEN` (also in `backend/.env`, local only) is
+your `auth_token` cookie from my.minmatar.org; it needs the `recruitment.scout`
+feature.
 
 See [README.md](README.md) for setup.
 
@@ -64,10 +71,12 @@ Task Progress:
 - [ ] Pre-scout: load corporation profiles from public API
 - [ ] Pre-scout: review u/MinmatarFleet ads (past 30 days)
 - [ ] Pre-scout: gather recent AARs / capital videos (u/BearThatCares)
+- [ ] Pre-scout: read tracked-link clicks for the last 30 days (track_outreach.py stats)
 - [ ] Scout: find player LFC posts (past 7 days) — browse, search, or optional script
 - [ ] Read each thread; decide responded vs open
 - [ ] Route each open prospect to one primary corp (from pre-scout bios)
-- [ ] Draft outreach using voice rules below (+ any entries in examples.md)
+- [ ] Register each open thread for a tracking code (track_outreach.py register)
+- [ ] Draft outreach using voice rules below (+ any entries in examples.md), with tracked hrefs
 - [ ] Present the four-part output (overview, already replied, need to reply, copy-pastable replies)
 ```
 
@@ -95,6 +104,7 @@ feedback loop. Do not pre-fill templates.
 | `fetch_reddit.py` | Raw `/new` from `r/evejobs`, `r/eve` (default 7 days) | Yes |
 | `fetch_forums.py` | Recruitment-center latest topics (default 7 days) | No |
 | `match_corp_ads.py` | Map ad URLs to corp names (optional convenience) | No |
+| `track_outreach.py` | `register` a reply's tracking code; `stats` for clicks per reply | No (`MINMATAR_API_TOKEN`) |
 
 All scripts accept `--json` and `--config path/to/config.json`. `fetch_reddit.py`
 also accepts `--subreddit eve` (repeatable) to override config.
@@ -368,9 +378,9 @@ and the EVE forums. r/eve uses the subtle nudge below.
 
 | Surface | After the pitch paragraph |
 |---------|---------------------------|
-| **r/evejobs** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. See section 4. |
+| **r/evejobs** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. Discord and my.minmatar.org bullets use tracked hrefs. See section 4. |
 | **r/eve** | No pitch stack. One short answer, then at most one URL on its own line. See below. |
-| **Forums** | Pitch keeps the ad URL and `discord.gg/minmatar` as bare text in the last sentence. Then each proof URL on its own line so Discourse embeds it (Bring Fun Shit, Rock Hoppin' when mining, one AAR). Do not bold YouTube URLs. Do not use the Reddit `Some links` list. |
+| **Forums** | Pitch keeps the ad URL as bare text and `discord.gg/minmatar` as a tracked link in the last sentence. Then each proof URL on its own line so Discourse embeds it (Bring Fun Shit, Rock Hoppin' when mining, one AAR). Do not bold YouTube URLs. Do not use the Reddit `Some links` list. |
 
 #### r/eve (subtle nudge)
 
@@ -472,6 +482,43 @@ answer plus at most one link.
   for. Minmatar Extraction Company has no public Discord contact on the roster.
 - Keep motivational lines only when OP is about to quit EVE (still one paragraph).
 
+### Tracked links
+
+Discord and my.minmatar.org links carry a per-reply code so recruiters can see
+which replies get clicked. Nothing else is tracked: corp ads, AARs, YouTube and
+any other link stay exactly as they are.
+
+1. After routing, register every open thread you will draft for:
+   `python scripts/track_outreach.py register --surface evejobs|eve|forums
+   --thread <thread url> --prospect <their name> --seat <ticker, MFA, FW redirect>`.
+   It prints the code and a tracked URL per target. Drafting the same thread
+   again on a later run returns the same code.
+2. The **visible text stays the real URL**. Only the href changes to
+   `https://my.minmatar.org/go/<code>/<target>`:
+
+   | Link | Write it as |
+   |------|-------------|
+   | Discord | `[discord.gg/minmatar](https://my.minmatar.org/go/<code>/discord)` |
+   | Learning | `[https://my.minmatar.org/learning/](https://my.minmatar.org/go/<code>/learning)` |
+   | Corp directory | `[https://my.minmatar.org/alliance/corporations/](https://my.minmatar.org/go/<code>/corporations)` |
+   | Warzone report | `[https://my.minmatar.org/warzone/](https://my.minmatar.org/go/<code>/warzone)` |
+   | Freight history | `[https://my.minmatar.org/market/freight/contracts/history/](https://my.minmatar.org/go/<code>/freight)` |
+
+   Targets live in `config.json` → `tracked_links.targets`. A page with no
+   target there (the Auga siege page, for one) stays a plain link.
+3. One code per reply. Never reuse a code across threads, and never put a
+   tracked link in a corp ad, AAR or video slot.
+4. **No token, no tracking.** If `MINMATAR_API_TOKEN` is missing or the
+   register call fails, draft with the plain links and say so in section 1.
+   Never invent a code.
+
+One trade-off: on the forums a masked link shows as a plain link, not a
+onebox card. That is fine for the corp directory and warzone report. Bring Fun
+Shit, Rock Hoppin' and AARs keep their bare URLs so they still embed.
+
+Bots that unfurl a link (Discourse onebox, Reddit, Discord) are recorded but not
+counted, so posting a reply does not count as a click.
+
 ### Present output
 
 Four sections, in this order. Sections 1–3 are for reading. Section 4 is what a
@@ -482,6 +529,10 @@ recruiter copies. Do not put the pitch inside a markdown table.
 Short prose: lookback window, how many player posts, how many already replied,
 how many still need a reply, how many true no-replies. Name the corp seats used
 this run in one sentence. Flag a kit change (new AAR) here if one happened.
+
+Then one or two sentences from `track_outreach.py stats --days 30`: replies per
+surface, how many got any click, how many clicked Discord, and which seats or
+openings drew clicks. Note it when tracking was skipped this run (no token).
 
 #### 2. Overview of who we've already replied to
 
@@ -499,15 +550,15 @@ reply list.
 
 One block per open thread, in the same order as section 3. Each block:
 
-1. A heading the recruiter does not paste: title, seat, `r/evejobs`, `r/eve`, or `Forums`, link to the thread.
+1. A heading the recruiter does not paste: title, seat, `r/evejobs`, `r/eve`, or `Forums`, tracking code, link to the thread.
 2. A fenced code block they can copy whole.
 
 **r/evejobs** (what actually gets sent):
 
 - Pitch is one paragraph and contains no URLs.
 - Blank line, then the line `Some links`, then a markdown bullet list.
-- Each bullet is a markdown link whose visible text is the URL: `* [https://…](https://…)` .
-- Discord is `* [discord.gg/minmatar](http://discord.gg/minmatar)` .
+- Each bullet is a markdown link whose visible text is the URL: `* [https://…](https://…)` . For my.minmatar.org pages the href is the tracked link: `* [https://my.minmatar.org/learning/](https://my.minmatar.org/go/<code>/learning)` .
+- Discord is `* [discord.gg/minmatar](https://my.minmatar.org/go/<code>/discord)` (plain `http://discord.gg/minmatar` only when tracking was skipped).
 - Do not name a Discord person in the pitch or the link list. Discord in the list is the contact.
 - Brand-new teach-me Academy posts put `https://my.minmatar.org/learning/` first in the list and skip the AAR.
 - Other Academy / PvP posts: ad, discord, Bring Fun Shit, then one AAR when the kit says so.
@@ -517,14 +568,14 @@ One block per open thread, in the same order as section 3. Each block:
 
 - One paragraph, 1–3 sentences, no URLs inside it. Answer the thread. Name a corp only in the one-clause case above.
 - Optional blank line, then one URL alone. No `Some links`, no bullets, no r/evejobs ad.
-- That URL is the newest kit AAR, Bring Fun Shit, or Rock Hoppin', and only one of them. Discord replaces it only when they asked where to talk to people.
+- That URL is the newest kit AAR, Bring Fun Shit, or Rock Hoppin', and only one of them. Discord replaces it only when they asked where to talk to people; then register the thread with `--surface eve` and write it as `[discord.gg/minmatar](https://my.minmatar.org/go/<code>/discord)` on its own line.
 - Skip the URL when the paragraph already points them at the right space.
 
 **Forums** (bare URLs, so Discourse oneboxes):
 
-- Pitch is one paragraph. The corp ad URL and `discord.gg/minmatar` sit in the last sentence as bare text. No markdown links, no bold. Do not add an "ask for" name.
+- Pitch is one paragraph. The corp ad URL sits in the last sentence as bare text. `discord.gg/minmatar` sits there too as the one markdown link, `[discord.gg/minmatar](https://my.minmatar.org/go/<code>/discord)`. No other markdown links, no bold. Do not add an "ask for" name.
 - Blank line, then each proof URL on its own line: Bring Fun Shit, Rock Hoppin' when mining, then one AAR when the kit says so.
-- Named corp with no ad: bare `discord.gg/minmatar` in the pitch, then `https://my.minmatar.org/alliance/corporations/` on its own line before the videos.
+- Named corp with no ad: tracked `discord.gg/minmatar` in the pitch, then `[https://my.minmatar.org/alliance/corporations/](https://my.minmatar.org/go/<code>/corporations)` on its own line before the videos.
 - A full `https://www.reddit.com/r/evejobs/comments/...` URL oneboxes as Reddit. A `/r/evejobs/s/` shortlink does too.
 
 Do **not** dump WH-only or sov-mining seekers into a “skipped, no message” list.
@@ -547,6 +598,7 @@ markers, or routing. Those live in this skill.
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | For outreach closers (skill only) |
+| `tracked_links.targets` | Link targets for `my.minmatar.org/go/<code>/<target>`; must match `frontend/app/src/json/scout-links.json` |
 | `proof_videos.always` | Bring Fun Shit — required on every r/evejobs and forum send; not on r/eve |
 | `proof_videos.mining` | Rock Hoppin' — extra close for mining/industry |
 | `proof_aars` | Current billion-ISK AARs (newest first); rotate when a new one posts |

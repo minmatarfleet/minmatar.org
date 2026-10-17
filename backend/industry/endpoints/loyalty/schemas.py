@@ -11,6 +11,7 @@ class LoyaltyCurrencyResponse(Schema):
     name: str
     corporation_id: int
     default_isk_per_lp: int
+    express_isk_per_lp: Optional[int] = None
     is_active: bool
     allow_buy: bool = True
     allow_sell: bool = True
@@ -42,6 +43,8 @@ class LoyaltyMarketOrderResponse(Schema):
     quantity_claimed: int = 0
     quantity_remaining: int = 0
     isk_per_lp: int
+    tier: str = "standard"
+    express_due_at: Optional[datetime] = None
     status: str
     created_by_user_id: Optional[int] = None
     created_by_name: Optional[str] = None
@@ -70,6 +73,7 @@ class CreateLoyaltyMarketOrderRequest(Schema):
     side: str
     quantity: int
     isk_per_lp: Optional[int] = None
+    tier: str = "standard"
     destination_character_name: str = ""
     notes: str = ""
 
@@ -89,6 +93,19 @@ class PatchLoyaltyMarketOrderRequest(Schema):
 class DiscordAckLoyaltyMarketOrderRequest(Schema):
     discord_user_id: int
     action: str
+
+
+class LoyaltyOrderStatsTier(Schema):
+    orders: int
+    completed: int
+    avg_close_seconds: Optional[int] = None
+    avg_isk_per_lp: Optional[float] = None
+
+
+class LoyaltyOrderStatsResponse(LoyaltyOrderStatsTier):
+    days: int
+    standard: LoyaltyOrderStatsTier
+    express: LoyaltyOrderStatsTier
 
 
 class LoyaltyLedgerEntryResponse(Schema):

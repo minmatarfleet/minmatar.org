@@ -682,25 +682,6 @@ def _edit_alert_messages(
         )
 
 
-def send_capital_ping_discord(
-    raw: dict[str, Any],
-    *,
-    zkb: dict[str, Any],
-    distance_ly: float,
-    discord_client: DiscordClient | None = None,
-) -> list[int]:
-    """Post a fresh capital presence alert. Returns Discord message ids."""
-    channel_ids = _capital_ping_channel_ids()
-    if not channel_ids:
-        logger.info("Capital ping skipped: no Discord channels configured")
-        return []
-
-    payload = build_capital_ping_payload(raw, zkb=zkb, distance_ly=distance_ly)
-    client = discord_client or DiscordClient()
-    messages = _post_alert_messages(payload, discord_client=client)
-    return [message["message_id"] for message in messages]
-
-
 def _age_gate_blocks(raw: dict[str, Any]) -> bool:
     killmail_time_str = raw.get("killmail_time")
     killmail_time = (

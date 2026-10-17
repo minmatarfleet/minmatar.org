@@ -658,14 +658,6 @@ def best_belt_ore_for_mineral(
     return candidates[0]
 
 
-def belt_ore_compressed_volume_m3(belt_ore_units: Dict[str, float]) -> float:
-    """Total freighter m³ for a belt ore unit map (pre-compression ceil)."""
-    return sum(
-        max(0.0, float(units)) * compressed_volume_m3(ore)
-        for ore, units in belt_ore_units.items()
-    )
-
-
 def _credit_ore_byproducts(
     remaining: Dict[str, float],
     ore_yields: Dict[str, Dict[str, float]],

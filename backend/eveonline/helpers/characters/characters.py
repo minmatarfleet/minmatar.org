@@ -32,13 +32,6 @@ class CharacterResponse(BaseModel):
     is_primary: bool = False
 
 
-class CorporationCharacterResponse(BaseModel):
-    character_id: int
-    character_name: str
-    is_registered: bool = False
-    is_primary: bool = False
-
-
 def user_primary_character(user: User) -> EveCharacter | None:
     """Returns the primary character for a particular User"""
     player = user_player(user)
@@ -129,10 +122,6 @@ def orphan_character(
     character.token = None
     character.save(update_fields=["user", "token"])
     Token.objects.filter(character_id=character.character_id).delete()
-
-
-def player_characters(player: EvePlayer) -> List[EveCharacter]:
-    return user_characters(player.user)
 
 
 def _normalize_token_level(level: str) -> str:

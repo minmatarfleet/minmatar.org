@@ -192,10 +192,24 @@ CELERYBEAT_INDUSTRY = [
         },
     ),
     (
+        "[Industry] Sweep LP Buyback Orders",
+        {
+            "task": "industry.tasks.sweep_lp_buyback_orders_task",
+            "schedule": crontab(minute=25),
+        },
+    ),
+    (
         "[Industry] Rebuild LP Store Offer Economics",
         {
             "task": "industry.tasks.rebuild_lp_store_offer_economics_task",
             "schedule": crontab(minute=10),
+        },
+    ),
+    (
+        "[Industry] Refresh Product Insights",
+        {
+            "task": "industry.tasks.refresh_product_insights_task",
+            "schedule": crontab(minute=50, hour="*/2"),
         },
     ),
 ]

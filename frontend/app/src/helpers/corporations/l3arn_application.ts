@@ -31,11 +31,6 @@ export const L3ARN_APPLICATION_DESCRIPTION_FIXED_OVERHEAD = 771;
 /** Show character counter when remaining chars drop below this offset from the limit. */
 export const L3ARN_APPLICATION_COUNTER_THRESHOLD_OFFSET = 50;
 
-export const L3ARN_EXCLUDED_ALLIANCE_CORPORATIONS = [
-    L3ARN_CORPORATION_NAME,
-    'Minmatar Fleet Holdings',
-] as const;
-
 /** Main Minmatar Fleet Alliance corps (slider corps), excluding L3ARN and Holdings. */
 export const L3ARN_MAIN_ALLIANCE_CORPORATIONS = [
     'Rattini Tribe',
@@ -253,26 +248,6 @@ export interface L3arnApplicationAnswers {
     confirm_auth_chars: boolean;
 }
 
-export const EMPTY_L3ARN_APPLICATION_ANSWERS: L3arnApplicationAnswers = {
-    introduction: '',
-    activity_region: '',
-    activity_period: '',
-    timezone: '',
-    user_timezone: '',
-    roles: [],
-    goals: '',
-    how_found: '',
-    how_found_other: '',
-    other_corporations: [],
-    is_existing_player_alt: false,
-    is_other_alliance_member: false,
-    main_character_name: '',
-    other_alliance_affiliation: '',
-    agree_tenets: false,
-    confirm_omega: false,
-    confirm_auth_chars: false,
-};
-
 export function isL3arnCorporation(corporation: {
     corporation_name?: string;
 }): boolean {
@@ -363,51 +338,6 @@ export function withResolvedL3arnApplicationTimezone(
         ...answers,
         timezone: timezone || answers.timezone,
     };
-}
-
-/**
- * Infer US / AP / EU from the browser's IANA timezone, falling back to UTC offset.
- */
-export function detectL3arnApplicationRegionFromBrowser(): L3arnApplicationRegion {
-    try {
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-        if (
-            timeZone.startsWith('America/')
-            || timeZone === 'Pacific/Honolulu'
-            || timeZone === 'Pacific/Pago_Pago'
-            || timeZone === 'Pacific/Midway'
-        ) {
-            return 'US';
-        }
-
-        if (
-            timeZone.startsWith('Asia/')
-            || timeZone.startsWith('Australia/')
-            || (
-                timeZone.startsWith('Pacific/')
-                && timeZone !== 'Pacific/Honolulu'
-                && timeZone !== 'Pacific/Pago_Pago'
-                && timeZone !== 'Pacific/Midway'
-            )
-        ) {
-            return 'AP';
-        }
-
-        return 'EU';
-    } catch {
-        const utcOffsetHours = -new Date().getTimezoneOffset() / 60;
-
-        if (utcOffsetHours <= -2) {
-            return 'US';
-        }
-
-        if (utcOffsetHours >= 5) {
-            return 'AP';
-        }
-
-        return 'EU';
-    }
 }
 
 export function formatL3arnApplicationActivitySummary(

@@ -2,10 +2,6 @@ import _slugify from 'slugify';
 import { marked } from 'marked';
 import * as cheerio from 'cheerio';
 
-export const remove_space = (text:string):string => {
-    return text.replaceAll(" ", "_")
-}
-
 export const query_string = (params):string => {
     return new URLSearchParams(params).toString()
 }
@@ -31,16 +27,8 @@ export const slugify = (string:string):string => {
 
 export const is_html = RegExp.prototype.test.bind(/(<([^>]+)>)/i)
 
-export const capitalize = (text:string):string => {
-    return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 export const remove_line_breaks = (text:string):string => {
     return text.replace(/(\r\n|\n|\r)/gm, "")
-}
-
-export async function parse_markdown(text:string) {
-    return await marked.parseInline(text)
 }
 
 function format_response_detail(detail: unknown): string | null {
@@ -101,18 +89,6 @@ export const parse_error_message = (error_details:string) => {
     } else {
         return null; // or handle the case when the pattern doesn't match
     }
-}
-
-export const get_brackets_content = (str:string) => {
-    const match = str.match(/\[(.*?)\]/g);
-
-    return match ? match[1] : ''
-}
-
-export const get_parenthesis_content = (str:string) => {
-    const match = str.match(/\(([^)]+)\)/);
-
-    return match ? match[1] : ''
 }
 
 export const get_parenthesis_content_last = (str:string) => {

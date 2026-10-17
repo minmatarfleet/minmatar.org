@@ -1,0 +1,43 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Dropdown from '@components/blocks/Dropdown.astro'
+
+interface Props {
+    /** Trigger text and the list's accessible name. Defaults to "Actions". */
+    label?:             string;
+    [propName: string]: any;
+}
+
+const {
+    label = t('actions'),
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<Dropdown
+    class:list={['[ action-menu ]', Astro.props.class]}
+    {...attributes}
+>
+    <span slot="button">{label}</span>
+    <nav class="[ action-menu__list ]" aria-label={label}>
+        <slot />
+    </nav>
+</Dropdown>
+
+<style lang="scss" is:global>
+    .action-menu.dropdown-panel {
+        min-width: 12rem;
+        padding: var(--space-3xs);
+        background: var(--background);
+    }
+
+    .action-menu__list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+</style>

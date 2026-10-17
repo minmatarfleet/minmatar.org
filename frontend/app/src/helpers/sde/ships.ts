@@ -2,7 +2,7 @@ import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql, inArray } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
-import type { ShipFittingCapabilities, ShipInfo, ShipDNA, ShipType, ShipMeta } from '@dtypes/layout_components'
+import type { ShipFittingCapabilities, ShipInfo, ShipType, ShipMeta } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
     console.log(`Requesting: sde_db.get_ship_fitting_capabilities(${ship_name})`)
@@ -99,34 +99,6 @@ export async function get_ship_info(ship_id:number) {
     } else {
         return null
     }
-}
-
-export async function get_ship_graphics(ship_id:number) {
-    console.log(`Requesting: sde_db.get_ship_dna(${ship_id})`)
-    
-    const q = await sde_db.select({
-        sofFactionName: schema.eveGraphics.sofFactionName,
-        sofRaceName: schema.eveGraphics.sofRaceName,
-        sofHullName: schema.eveGraphics.sofHullName,
-    })
-    .from(schema.invTypes)
-    .innerJoin(
-        schema.eveGraphics,
-        eq(schema.invTypes.graphicId, schema.eveGraphics.graphicId),
-    )
-    .where(
-        eq(schema.invTypes.typeId, ship_id)
-    )
-    .limit(1)
-
-    if (q.length > 0) {
-        return {
-            model: q[0].sofHullName,
-            skin: q[0].sofFactionName,
-            race: q[0].sofRaceName,
-        } as ShipDNA
-    } else
-        return null
 }
 
 export async function get_ships_type(ships_id:number[]) {

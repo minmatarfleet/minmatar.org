@@ -262,16 +262,6 @@ export interface GroupListObject {
 
 export type GroupRequestType = 'join' | 'leave'
 
-export interface ApplicationOld {
-    id:                     number;
-    applied_corporation:    number;
-    character_name:         string;
-    corporation_id:         number;
-    corporation_name:       string;
-    description?:           string;
-    status:                 CorporationStatusType;
-}
-
 export interface CorporationApplications {
     corporation_id:         number;
     corporation_name:       string;
@@ -639,12 +629,6 @@ export interface ShipMeta {
     meta:       string;
 }
 
-export interface ShipDNA {
-    model:  string;
-    skin:   string;
-    race:   string;
-}
-
 export interface Fitting {
     id:             number;
     name:           string;
@@ -830,16 +814,6 @@ export interface SystemCardInfo {
     progress?:              number;
 }
 
-export interface RegionBasic {
-    id:      number;
-    name:    string;
-}
-
-export interface ConstellationBasic {
-    id:      number;
-    name:    string;
-}
-
 export interface MoonBasic {
     id:         number;
     name:       string;
@@ -937,15 +911,6 @@ export interface CombatLogMaxUI {
 }
 
 export interface FleetCombatLog {
-    id:             number;
-    uploaded_at:    Date;
-    user_id:        number;
-    logger:         CharacterBasic;
-    character_name: string;
-    system_name:    string;
-}
-
-export interface FittingCombatLog {
     id:             number;
     uploaded_at:    Date;
     user_id:        number;
@@ -1086,14 +1051,7 @@ export interface ColonySystems {
     planets:                ColonyPlanet[];
 }
 
-import type { BaseIndustryOrder, OrderAssignment } from '@dtypes/api.minmatar.org'
-
-export interface OrderBreakdownUI extends BaseIndustryOrder {
-    character_id:       number;
-    character_name:     string;
-    materials:          RootItem[];
-    copy_breakdown:     string;
-}
+import type { OrderAssignment } from '@dtypes/api.minmatar.org'
 
 export interface OrderBreakdownGroupedUI {
     id:                             number;

@@ -322,12 +322,6 @@ class DiscordClient(DiscordBaseClient):
             json=payload,
         )
 
-    def get_message(self, channel_id, message_id):
-        """Get a message from a discord channel"""
-        return self.get(
-            f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
-        )
-
     def get_messages(self, channel_id, limit=100):
         """Get messages from a discord channel"""
         return self.get(
@@ -403,16 +397,16 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
+    def get_active_threads(self):
+        """List active (unarchived) threads across the guild"""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/threads/active",
+        )
+
     def get_roles(self):
         """Get all roles from a discord server"""
         return self.get(
             f"{BASE_URL}/guilds/{self.guild_id}/roles",
-        )
-
-    def get_emojis(self):
-        """Get all emojis from a discord server"""
-        return self.get(
-            f"{BASE_URL}/guilds/{self.guild_id}/emojis",
         )
 
     def get_members(self):
@@ -487,15 +481,6 @@ class DiscordClient(DiscordBaseClient):
         return self.delete(
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}/roles/{role_id}",
         )
-
-    def create_guild_webhook(self, channel_id: int, name: str):
-        """Create a guild webhook"""
-        return self.post(
-            f"{BASE_URL}/channels/{channel_id}/webhooks",
-            json={
-                "name": name,
-            },
-        ).json()
 
     def get_guild_channels(self, guild_id=None):
         """Get all channels from a guild."""

@@ -2,7 +2,7 @@ import { useTranslations } from '@i18n/utils';
 
 const t = useTranslations('en');
 
-import type { CombatLogAnalysis, CombatLogMaxUI, FleetCombatLog, FittingCombatLog, RepairsUI } from '@dtypes/layout_components'
+import type { CombatLogAnalysis, CombatLogMaxUI, FleetCombatLog, RepairsUI } from '@dtypes/layout_components'
 import type { CombatLog, CombatLogStoreOptions } from '@dtypes/api.minmatar.org'
 import { analize_log, get_log_by_id, get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 import { generate_timeline } from '@helpers/date'
@@ -151,35 +151,5 @@ export async function get_fleet_combatlogs(access_token:string, fleet_id:number)
                 character_name: t('unknown_character')
             }
         } as FleetCombatLog
-    })
-}
-
-export async function get_fitting_combatlogs(access_token:string, fitting_id:number) {
-    const fitting_logs = await get_saved_logs(access_token as string, { fitting_id: fitting_id })
-    const not_null_logs = fitting_logs.filter(fitting_log => fitting_log && fitting_log.fitting_id === fitting_id)
-    const user_ids = unique_values(not_null_logs.map(log => log.user_id))
-    const loggers = user_ids.length > 0 ? await get_users_character(user_ids) : []
-
-    return fitting_logs.map(log => {
-        const logger = loggers.find(log => log.user_id === log.user_id)
-
-        return {
-            id: log.id,
-            uploaded_at: log.uploaded_at,
-            user_id: log.user_id,
-            character_name: log.character_name,
-            system_name: log.system_name,
-            logger: logger !== undefined ? {
-                character_id: logger.character_id,
-                character_name: logger.character_name,
-                corporation: {
-                    id: logger.corporation_id,
-                    name: logger.corporation_name,
-                }
-            } : {
-                character_id: 0,
-                character_name: t('unknown_character')
-            }
-        } as FittingCombatLog
     })
 }

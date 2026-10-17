@@ -16,7 +16,6 @@ from market.helpers.health_snapshot import (
     record_sell_order_health_snapshots,
 )
 from market.helpers.readiness import (
-    doctrine_readiness,
     fitting_readiness,
     shortfall,
 )
@@ -49,12 +48,6 @@ class ReadinessHelperTestCase(TestCase):
         self.assertEqual(fitting_readiness(5, 10), "thin")
         self.assertEqual(fitting_readiness(10, 10), "ready")
         self.assertEqual(fitting_readiness(3, None), "unknown")
-
-    def test_doctrine_readiness_aggregate(self):
-        self.assertEqual(doctrine_readiness([(10, 10), (5, 5)]), "ready")
-        self.assertEqual(doctrine_readiness([(0, 10), (0, 5)]), "empty")
-        self.assertEqual(doctrine_readiness([(0, 10), (5, 5)]), "thin")
-        self.assertEqual(doctrine_readiness([(1, None)]), "unknown")
 
     def test_shortfall(self):
         self.assertEqual(shortfall(3, 10), 7)

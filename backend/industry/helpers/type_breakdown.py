@@ -16,9 +16,9 @@ a max_depth when returning.
 Industry product flow (import vs build): ordered products can be marked Import
 (we source by importing) or Build (we build; direct components are import
 unless they are also Build, then we recurse). Use get_direct_components() for
-one level, resolve_product_to_imports() / resolve_order_to_imports() for the
-full resolved import list, and resolve_type_to_demand_import_leaves() when an
-imported root still has a blueprint whose components should count as demand.
+one level and resolve_type_to_demand_import_leaves() for the full resolved
+import list (an imported root that still has a blueprint expands one level so
+its components count as demand).
 """
 
 import copy
@@ -32,15 +32,12 @@ from eveuniverse.models import (
     EveTypeMaterial,
 )
 
-from industry.models import IndustryOrder, IndustryProduct, Strategy
+from industry.models import IndustryProduct, Strategy
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
 
 # Strategy.PRODUCED = we build it; expand to direct components (all import unless they are also produced).
-
-# Cap recursion depth to avoid stack overflow and long-running requests (e.g. gunicorn worker exit).
-MAX_BREAKDOWN_DEPTH_DEFAULT = 30
 
 
 def _ensure_industry_data_loaded_for_product(
@@ -263,34 +260,6 @@ def break_down_type(
     )
 
 
-def flatten_components(node: ComponentNode) -> Dict[int, int]:
-    """Aggregate tree to type_id -> total quantity (leaves only). Iterative to avoid recursion overflow."""
-    out: Dict[int, int] = {}
-    stack: List[ComponentNode] = [node]
-    while stack:
-        n = stack.pop()
-        if not n.children:
-            out[n.eve_type.id] = out.get(n.eve_type.id, 0) + n.quantity
-        for c in n.children:
-            stack.append(c)
-    return out
-
-
-def get_flat_breakdown(
-    eve_type: EveType,
-    quantity: int = 1,
-    max_depth: Optional[int] = None,
-) -> List[Tuple[EveType, int]]:
-    """Flat list of (EveType, quantity) for all base components."""
-    if max_depth is None:
-        max_depth = MAX_BREAKDOWN_DEPTH_DEFAULT
-    tree = break_down_type(eve_type, quantity=quantity, max_depth=max_depth)
-    agg = flatten_components(tree)
-    type_ids = list(agg.keys())
-    types = {t.id: t for t in EveType.objects.filter(id__in=type_ids)}
-    return [(types[tid], agg[tid]) for tid in type_ids if tid in types]
-
-
 def tree_to_nested(node: ComponentNode) -> Dict[str, Any]:
     """Convert tree to a nested dict (iterative to avoid recursion overflow)."""
     if not node.children:
@@ -321,18 +290,6 @@ def tree_to_nested(node: ComponentNode) -> Dict[str, Any]:
         else:
             result = d
     return result or {}
-
-
-def get_nested_breakdown(
-    eve_type: EveType,
-    quantity: int = 1,
-    max_depth: Optional[int] = None,
-) -> Dict[str, Any]:
-    """Full breakdown as a single nested dict (JSON-serializable, for tree UIs)."""
-    if max_depth is None:
-        max_depth = MAX_BREAKDOWN_DEPTH_DEFAULT
-    tree = break_down_type(eve_type, quantity=quantity, max_depth=max_depth)
-    return tree_to_nested(tree)
 
 
 def _scale_nested_quantity(node: Dict[str, Any], factor: int) -> None:
@@ -422,27 +379,6 @@ def get_breakdown_for_industry_product(
     out = scale_nested_breakdown(base, quantity)
     if max_depth is not None:
         out = truncate_breakdown_to_depth(out, max_depth)
-    return out
-
-
-def flatten_nested_breakdown_to_quantities(
-    data: Dict[str, Any],
-) -> Dict[int, int]:
-    """
-    Aggregate a nested breakdown dict to type_id -> total quantity (leaves only).
-    Use after get_breakdown_for_industry_product when you need a flat list of base materials.
-    """
-    out: Dict[int, int] = {}
-    stack: List[Dict[str, Any]] = [data]
-    while stack:
-        node = stack.pop()
-        children = node.get("children", [])
-        if not children:
-            tid = node.get("type_id")
-            if tid is not None:
-                out[tid] = out.get(tid, 0) + node.get("quantity", 0)
-        for c in children:
-            stack.append(c)
     return out
 
 
@@ -540,35 +476,6 @@ def _resolve_product_to_imports_impl(
         visited.discard(eve_type.id)
 
 
-def resolve_product_to_imports(
-    eve_type: EveType,
-    quantity: int = 1,
-) -> Dict[int, int]:
-    """
-    Resolve a single product (e.g. one order line) to a flat map of type_id ->
-    total quantity that must be imported. Respects industry product flow:
-    Import → leaf; Build → expand to direct components (import unless they are
-    Build, then recurse).
-    """
-    agg: Dict[int, int] = {}
-    _resolve_product_to_imports_impl(eve_type, quantity, agg, set())
-    return agg
-
-
-def resolve_order_to_imports(order: IndustryOrder) -> Dict[int, int]:
-    """
-    Resolve a full order to a flat map of type_id -> total quantity that must
-    be imported. Aggregates over all order items using the industry product
-    flow (Import = leaf, Build = expand to direct components, then recurse).
-    """
-    agg: Dict[int, int] = {}
-    for item in order.items.select_related("eve_type"):
-        _resolve_product_to_imports_impl(
-            item.eve_type, item.quantity, agg, set()
-        )
-    return agg
-
-
 def _resolve_type_to_demand_import_leaves_impl(
     eve_type: EveType,
     quantity: int,
@@ -578,7 +485,7 @@ def _resolve_type_to_demand_import_leaves_impl(
     """
     Resolve import leaves for supply-chain demand.
 
-    Like resolve_product_to_imports for strategy=produced. If the type is not
+    Produced types (strategy=produced) recurse to their imports. If the type is not
     produced (or has no IndustryProduct) but has a manufacturing/reaction
     blueprint, expand one level of components: produced children recurse;
     others are import leaves. Pure import leaves with no blueprint stay leaves.
@@ -626,16 +533,4 @@ def resolve_type_to_demand_import_leaves(
     """
     agg: Dict[int, int] = {}
     _resolve_type_to_demand_import_leaves_impl(eve_type, quantity, agg, set())
-    return agg
-
-
-def resolve_order_to_demand_import_leaves(
-    order: IndustryOrder,
-) -> Dict[int, int]:
-    """Aggregate demand import leaves across all items on an order."""
-    agg: Dict[int, int] = {}
-    for item in order.items.select_related("eve_type"):
-        _resolve_type_to_demand_import_leaves_impl(
-            item.eve_type, item.quantity, agg, set()
-        )
     return agg

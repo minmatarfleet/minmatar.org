@@ -50,3 +50,21 @@ export async function update_corporation_forum_post(
     }
     return await response.json() as CorporationForumPost
 }
+
+/**
+ * Record a visit through a recruitment scout reply's tracked link. Never
+ * throws: the visitor is redirected whether or not the click was saved.
+ */
+export async function record_scout_click(code: string, target: string, client_ip: string, user_agent: string) {
+    const endpoint = `${API_ENDPOINT}/scout/clicks`
+    try {
+        await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, target, client_ip, user_agent }),
+            signal: AbortSignal.timeout(1500),
+        })
+    } catch (error) {
+        console.log(`POST ${endpoint} failed: ${error.message}`)
+    }
+}

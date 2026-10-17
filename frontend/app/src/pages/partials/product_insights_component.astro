@@ -1,0 +1,75 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+
+const product_id = parseInt(Astro.url.searchParams.get('product_id') ?? '0')
+const attempt = parseInt(Astro.url.searchParams.get('attempt') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import type { ProductInsights } from '@dtypes/api.minmatar.org'
+import { get_product_insights } from '@helpers/api.minmatar.org/industry'
+
+// The rollup runs in the background on a cold cache; poll a few times.
+const MAX_ATTEMPTS = 12
+const POLL_SECONDS = 5
+
+let insights: ProductInsights | null = null
+let fetch_error: Error | false = false
+
+try {
+    if (isNaN(product_id) || product_id <= 0)
+        throw new Error(t('invalid_product_id'), { cause: 400 })
+
+    if (auth_token)
+        insights = await get_product_insights(auth_token, product_id)
+} catch (error) {
+    fetch_error = error
+}
+
+const PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?product_id=${product_id}`
+const POLL_URL = `${PARTIAL_URL}&attempt=${attempt + 1}`
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
+---
+
+{!auth_token ?
+    <div class="[ insights-notice ]">
+        <p>{t('industry.product.login_for_insights')}</p>
+    </div>
+    : fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+    : insights && insights.ready ?
+    <ProductInsightsPanel insights={insights} />
+    : attempt < MAX_ATTEMPTS ?
+    <div
+        class="[ insights-notice ]"
+        hx-get={POLL_URL}
+        hx-trigger={`load delay:${POLL_SECONDS}s`}
+        hx-swap="outerHTML"
+    >
+        <p class="[ loading ]">{t('industry.product.computing')}</p>
+    </div>
+    :
+    <div class="[ insights-notice ]">
+        <p>{t('industry.product.computing_slow')}</p>
+    </div>
+}
+
+<style lang="scss">
+    .insights-notice {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        color: var(--foreground);
+    }
+</style>

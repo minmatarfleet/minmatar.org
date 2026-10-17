@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -23,7 +25,18 @@ AWAITING_ISK = IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK
 COMPLETED = IndustryLoyaltyPointMarketOrder.Status.COMPLETED
 CANCELLED = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
 
+STANDARD = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
+EXPRESS = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+# Express orders promise settlement within this window of posting.
+EXPRESS_SLA = timedelta(hours=24)
+
 ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
+TERMINAL_STATUSES = (COMPLETED, CANCELLED)
+# Statuses where one named pilot owes the next step (reminders apply).
+STALLABLE_STATUSES = (CLAIMED, AWAITING_LP, AWAITING_ISK)
+# Before LP moves, a stalled order can be cancelled safely. After LP is
+# sent (awaiting_isk) cancelling would strand the seller, so only remind.
+PRE_LP_STATUSES = (CLAIMED, AWAITING_LP)
 
 # Maximum LP quantity for sell orders; buy orders have no quantity cap.
 MAX_SELL_LP = 2_500_000
@@ -40,6 +53,24 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 
 class LpMarketOrderError(ValueError):
     """Invalid LP market order mutation."""
+
+
+def tier_isk_per_lp(currency: IndustryLoyaltyPoint, tier: str) -> int:
+    """Published ISK/LP for a tier; raises when express is switched off."""
+    if tier == EXPRESS:
+        if not currency.express_isk_per_lp:
+            raise LpMarketOrderError(
+                f"Express orders are not available for {currency.name}."
+            )
+        return currency.express_isk_per_lp
+    return currency.default_isk_per_lp
+
+
+def express_due_at(order: IndustryLoyaltyPointMarketOrder) -> datetime | None:
+    """SLA deadline for express orders; cancelled orders carry no SLA."""
+    if order.tier != EXPRESS or order.status == CANCELLED:
+        return None
+    return order.created_at + EXPRESS_SLA
 
 
 def format_lp_quantity(quantity: int) -> str:
@@ -75,8 +106,13 @@ def create_order(
     created_by,
     notes: str = "",
     destination_character_name: str = "",
+    tier: str = STANDARD,
 ) -> IndustryLoyaltyPointMarketOrder:
     quantity = int(quantity)
+    if tier not in (STANDARD, EXPRESS):
+        raise LpMarketOrderError("tier must be 'standard' or 'express'.")
+    if tier == EXPRESS:
+        tier_isk_per_lp(currency, tier)
     if quantity <= 0:
         raise LpMarketOrderError("quantity must be a positive integer.")
     if (
@@ -115,6 +151,7 @@ def create_order(
         side=side,
         quantity=quantity,
         isk_per_lp=isk_per_lp,
+        tier=tier,
         status=OPEN,
         created_by=created_by,
         destination_character_name=destination,
@@ -310,6 +347,8 @@ def transition_order(
     new_status: str,
     *,
     destination_character_name: str | None = None,
+    actor=None,
+    reason: str = "",
 ) -> IndustryLoyaltyPointMarketOrder:
     with transaction.atomic():
         locked = (
@@ -344,6 +383,11 @@ def transition_order(
 
         previous = locked.status
         locked.status = new_status
+        if new_status == CANCELLED:
+            locked.set_cancel_notice(
+                cancelled_by_id=actor.pk if actor is not None else None,
+                reason=reason,
+            )
         if new_status == COMPLETED:
             locked.completed_at = timezone.now()
             if locked.side == IndustryLoyaltyPointMarketOrder.Side.SELL:
@@ -362,6 +406,39 @@ def transition_order(
 
         notify_lp_buyback_order_status_changed_task.delay(locked.pk)
     return locked
+
+
+def auto_cancel_stalled_order(
+    order_id: int,
+    *,
+    stalled_before,
+    reason: str,
+) -> bool:
+    """Cancel an order its own poster has left stalled before LP moved.
+
+    Re-checks under lock so a pilot pressing **LP sent** while the sweep runs
+    is never cancelled after LP has moved.
+    """
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import poster_is_stalling
+
+    with transaction.atomic():
+        # Lock only the order row; poster_is_stalling() loads the users.
+        locked = (
+            IndustryLoyaltyPointMarketOrder.objects.select_for_update()
+            .filter(
+                pk=order_id,
+                status__in=PRE_LP_STATUSES,
+                status_changed_at__lte=stalled_before,
+            )
+            .first()
+        )
+        if locked is None or not poster_is_stalling(locked):
+            return False
+        locked.status = CANCELLED
+        locked.set_cancel_notice(reason=reason)
+        locked.save()
+    return True
 
 
 def update_order_notes(

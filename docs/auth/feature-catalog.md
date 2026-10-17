@@ -58,6 +58,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
 | `applications.view` | `staff` | `applications.view_evecorporationapplication` | staff permission |
+| `recruitment.scout` | `staff` | `recruitment.add_scoutoutreach` | staff permission (register scout replies, read click stats) |
 | `applications.manage` | `staff` | `applications.change_evecorporationapplication` | staff permission |
 | `characters.view_staff` | `staff` | `eveonline.view_evecharacter` | staff permission |
 | `characters.delete_staff` | `staff` | `eveonline.delete_evecharacter` | staff permission |

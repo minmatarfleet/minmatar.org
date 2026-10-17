@@ -127,13 +127,6 @@ def parse_price_paste(paste: str) -> dict[str, PastedPrice]:
     return result
 
 
-def parse_unit_price_paste(paste: str) -> dict[str, Decimal]:
-    """Backwards-compatible view: name → pasted price (unit or total)."""
-    return {
-        name: pasted.price for name, pasted in parse_price_paste(paste).items()
-    }
-
-
 def pasted_prices_are_totals(rows: list[PriceRow]) -> bool:
     """
     Decide whether a paste holds line totals instead of unit prices.
