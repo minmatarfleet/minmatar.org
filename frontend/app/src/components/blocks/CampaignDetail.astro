@@ -104,6 +104,7 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 
     <div
         class="[ campaign-tabs ]"
+        x-on:hashchange.window="const hash = window.location.hash.replace('#', ''); if (tabs.includes(hash)) { tab = hash; $el.scrollIntoView({ behavior: 'smooth' }) }"
         x-data={`{
             tabs: ${JSON.stringify(TABS)},
             tab: '${default_tab}',

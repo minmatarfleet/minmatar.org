@@ -46,6 +46,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
 import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
@@ -125,6 +126,9 @@ if (campaign) {
     readiness = results[6].status === 'fulfilled' ? results[6].value : null
     corporation_board = results[7].status === 'fulfilled' ? results[7].value : []
 }
+
+/** Enlisting only makes sense while the campaign can still be joined. */
+const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'scheduled')
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
@@ -241,6 +245,10 @@ const breadcrumbs = [
             />
         }
     </PageWide>
+
+    {show_enlist_bar && campaign &&
+        <CampaignEnlistBar campaign={campaign} leaderboard={leaderboard} user_id={user.user_id} />
+    }
 
     <CampaignSwapInit />
 </Viewport>

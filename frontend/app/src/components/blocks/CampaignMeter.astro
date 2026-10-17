@@ -13,8 +13,6 @@ interface Props {
     fill_title?:        string;
     delta_title?:       string;
     marker_title?:      string;
-    /** Draw an arrowhead at the moving edge of the change, pointing the way the bar went. */
-    delta_arrow?:       boolean;
     [propName: string]: any;
 }
 
@@ -30,7 +28,6 @@ const {
     fill_title,
     delta_title,
     marker_title,
-    delta_arrow = false,
     ...attributes
 } = Astro.props
 
@@ -56,9 +53,6 @@ const delta_direction = safe_from === null || delta_width === 0 ? 'none' : safe_
     <span class="[ campaign-meter-fill ]" title={fill_title} />
     {delta_direction !== 'none' &&
         <span class="[ campaign-meter-delta ]" data-direction={delta_direction} title={delta_title} aria-hidden="true" />
-    }
-    {delta_arrow && delta_direction !== 'none' &&
-        <span class="[ campaign-meter-arrow ]" data-direction={delta_direction} aria-hidden="true" />
     }
     {safe_marker !== null &&
         <span class="[ campaign-meter-marker ]" title={marker_title ?? marker_label} />
@@ -92,37 +86,18 @@ const delta_direction = safe_from === null || delta_width === 0 ? 'none' : safe_
         background-color: var(--campaign_meter_color);
     }
 
-    /* The last 24 hours: a hatched stretch from where the bar was to where it is. Up eats into the track, down shows what was given back. */
+    /* The move since the last reading, as the desktop window draws it: a gain is solid green from
+       where the bar was to where it is; a loss is the stretch given back, in dimmed red. */
     .campaign-meter-delta {
         position: absolute;
         inset-block: 0;
         inset-inline-start: var(--campaign_meter_delta_start);
         width: var(--campaign_meter_delta_width);
-        background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0 2px, transparent 2px 5px);
-        opacity: 0.9;
+        background-color: var(--green);
     }
 
     .campaign-meter-delta[data-direction="down"] {
-        background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 2px, transparent 2px 5px);
-    }
-
-    /* The tip sits on the bar's current edge: pointing right when it grew, left when it shrank. */
-    .campaign-meter-arrow {
-        position: absolute;
-        inset-block: 0;
-        aspect-ratio: 0.7;
-        background-color: var(--highlight);
-        pointer-events: none;
-    }
-
-    .campaign-meter-arrow[data-direction="up"] {
-        inset-inline-end: calc(100% - var(--campaign_meter_percent));
-        clip-path: polygon(0 0, 100% 50%, 0 100%);
-    }
-
-    .campaign-meter-arrow[data-direction="down"] {
-        inset-inline-start: var(--campaign_meter_percent);
-        clip-path: polygon(100% 0, 0 50%, 100% 100%);
+        background-color: color-mix(in srgb, var(--fleet-red) 45%, transparent);
     }
 
     .campaign-meter-marker {
