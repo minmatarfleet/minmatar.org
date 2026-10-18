@@ -29,7 +29,7 @@ You'll need a superuser for API access and Discord bot integration.
 
 1. Open a django shell:
     ```sh
-    python manage.py shell_plus
+    pipenv run python manage.py shell_plus
     ```
 2. In the Django shell, run:
     ```python
@@ -49,7 +49,7 @@ Site permissions and roles are managed via Discord. Sync roles from Discord to D
 
 1. Open the Django shell:
     ```sh
-    python manage.py shell_plus
+    pipenv run python manage.py shell_plus
     ```
 2. Run:
     ```python
@@ -66,7 +66,7 @@ Now, seed the database with development data. This step depends on roles being s
 
 1. In the Django shell:
     ```sh
-    python manage.py shell_plus
+    pipenv run python manage.py shell_plus
     ```
 2. Run:
     ```python
@@ -75,6 +75,14 @@ Now, seed the database with development data. This step depends on roles being s
     ```
     - This will populate the database with test users, organizations, characters, and other essential data for development.
     - To dig in to what exactly it does, please read the code in tech.seed_data
+3. Sync the pilot features (deploy runs this after every migrate, and `./dev.sh` does too). Without it, feature-gated pages such as campaigns return 403:
+    ```sh
+    pipenv run python manage.py sync_pilot_features
+    ```
+4. Optional: load the production-like reference data (tribes, doctrines, locations, market config). See [Reference fixtures](../backend/README.md#reference-fixtures) for the prerequisites:
+    ```sh
+    pipenv run python manage.py load_reference_fixtures
+    ```
 
 ---
 
@@ -130,7 +138,7 @@ npm run dev
 2. **Register a Main Character:** Pick a character in the "FL33T" alliance.
 3. **Promote to Superuser:** In the Django shell:
     ```sh
-    python manage.py shell_plus
+    pipenv run python manage.py shell_plus
     ```
     ```python
     from django.contrib.auth.models import User
@@ -162,10 +170,10 @@ In production, background tasks are scheduled. For development, you can run them
 - Updating character affiliations
   - this gets your characters in to the alliance role
 - Syncing Discord users and nicknames
-- Fetching public contracts
+- Fetching contracts at market-active locations
 
 ```sh
-python manage.py shell_plus
+pipenv run python manage.py shell_plus
 ```
 ```python
 from discord.tasks import *
@@ -176,7 +184,7 @@ update_character_affilliations()
 update_affiliations()
 sync_discord_users()
 sync_discord_user_nicknames()
-fetch_eve_public_contracts()
+fetch_eve_market_contracts()
 ```
 
 ---
