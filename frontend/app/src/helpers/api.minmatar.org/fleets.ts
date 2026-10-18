@@ -9,6 +9,9 @@ import type {
     FleetPatchRequest,
     FleetMetrics,
     FleetCommanderMetrics,
+    FleetPingPreview,
+    FleetPingPreviewRequest,
+    RestrictedResponse,
 } from '@dtypes/api.minmatar.org'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
@@ -28,10 +31,48 @@ export async function get_audiences(access_token:string) {
     })
 }
 
-export async function get_fleets_v3(access_token:string, status:FleetStatus) {
-    return await api_request<Fleet[]>(`${API_ENDPOINT}/v3?fleet_filter=${status}`, {
+/** `host_group_id` lists one tribe group's fleets (those the viewer can see). */
+export async function get_fleets_v3(access_token:string, status:FleetStatus, host_group_id?:number | null) {
+    const group = host_group_id ? `&host_group_id=${host_group_id}` : ''
+
+    return await api_request<Fleet[]>(`${API_ENDPOINT}/v3?fleet_filter=${status}${group}`, {
         token: access_token,
         error: 'Error fetching fleets',
+    })
+}
+
+/**
+ * A fleet, or the group that hosts it when it is a members-only tribe
+ * group fleet the viewer can't see (403 RestrictedResponse). Other errors,
+ * including a plain 403, throw.
+ */
+export async function get_fleet_access(access_token:string, id:number):Promise<
+    { fleet: Fleet, restricted: null } | { fleet: null, restricted: RestrictedResponse }
+> {
+    const response = await api_response(`${API_ENDPOINT}/${id}`, {
+        token: access_token,
+        error: 'Error fetching fleet',
+        allow: [403],
+    })
+    const body = await response.json()
+
+    if (response.status === 403) {
+        if (body?.host_group)
+            return { fleet: null, restricted: body as RestrictedResponse }
+
+        throw new Error('Error fetching fleet: HTTP error! Status — 403', { cause: 403 })
+    }
+
+    return { fleet: body as Fleet, restricted: null }
+}
+
+/** The Discord start ping these fleet form fields would send (same builder as the real ping). */
+export async function preview_fleet_ping(access_token:string, fleet:FleetPingPreviewRequest) {
+    return await api_request<FleetPingPreview>(`${API_ENDPOINT}/ping-preview`, {
+        method: 'POST',
+        token: access_token,
+        body: fleet,
+        error: 'Error previewing fleet ping',
     })
 }
 

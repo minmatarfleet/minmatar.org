@@ -2018,7 +2018,7 @@ export interface paths {
         put?: never;
         /**
          * Create Fleet
-         * @description Create a new fleet, type/location/audience is from other endpoints. Must have fleets.add_evefleet permission
+         * @description Create a new fleet, type/location/audience is from other endpoints. Must have fleets.add_evefleet permission, or, with host_group_id, be able to schedule fleets for that tribe group.
          */
         post: operations["fleets_endpoints_catalog_post_create_fleet_create_fleet"];
         delete?: never;
@@ -2186,6 +2186,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/ping-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Ping Preview
+         * @description The Discord start ping for these fleet details, built by the same code as the real ping (a group fleet: the group's channel and role). channel_name is null when there is no channel to ping. Needs fleets.create, or, with host_group_id, the group's fleet publishing right.
+         */
+        post: operations["fleets_endpoints_catalog_post_ping_preview_post_ping_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/results": {
         parameters: {
             query?: never;
@@ -2269,7 +2289,7 @@ export interface paths {
         };
         /**
          * Get V3 Fleets
-         * @description List fleets matching the filter. Requires fleets.view_evefleet.
+         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.
          */
         get: operations["fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets"];
         put?: never;
@@ -2329,7 +2349,7 @@ export interface paths {
         };
         /**
          * Get Fleet
-         * @description Get fleet by ID. Requires fleets.view_evefleet.
+         * @description Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_get_fleet"];
         put?: never;
@@ -2343,7 +2363,7 @@ export interface paths {
         head?: never;
         /**
          * Update Fleet
-         * @description Update the fleet details. Must be the fleet's FC or a Strategic FC.
+         * @description Update the fleet details. Must be the fleet's FC or a Strategic FC (a tribe group fleet: or a manager of the group).
          */
         patch: operations["fleets_endpoints_fleet_patch_fleet_update_fleet"];
         trace?: never;
@@ -5726,6 +5746,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/discord-channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discord channels for the group channel and event pickers.
+         * @description Text channels, or voice channels (stage channels included). For anyone who can manage a group or create events for one. Cached for 10 minutes.
+         */
+        get: operations["tribes_endpoints_publishing_get_discord_channels_get_discord_channels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a group event; the Discord event follows.
+         * @description The event's creator or a manager of its group.
+         */
+        patch: operations["tribes_endpoints_events_patch_event_patch_event"];
+        trace?: never;
+    };
+    "/api/tribes/events/{event_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a group event; the Discord event is cancelled too.
+         * @description The event's creator or a manager of its group.
+         */
+        post: operations["tribes_endpoints_events_post_event_cancel_post_event_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/external-guild/join": {
         parameters: {
             query?: never;
@@ -5752,6 +5832,91 @@ export interface paths {
         };
         /** Current user's seat on a tribe group's external Discord guild. */
         get: operations["tribes_endpoints_external_guild_get_external_guild_seat_get_external_guild_seat"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/groups/{group_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A group's upcoming events.
+         * @description Scheduled events that aren't over, and ones cancelled in the last 24 hours. Members-only events are left out for viewers outside the group (their creator still sees them).
+         */
+        get: operations["tribes_endpoints_events_get_group_events_get_group_events"];
+        put?: never;
+        /**
+         * Create a group event (and its Discord scheduled event).
+         * @description Needs the group's event publishing right. The Discord event and the announcement are created by a worker after the save.
+         */
+        post: operations["tribes_endpoints_events_post_group_event_post_group_event"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/groups/{group_id}/events/announcement-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The announcement a new group event would post.
+         * @description Built by the same code as the real announcement. content is null when announce is off or the group has no channel; the event link is a placeholder until Discord creates the event.
+         */
+        post: operations["tribes_endpoints_events_post_event_announcement_preview_post_event_announcement_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/groups/{group_id}/publishing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who may publish as the group, and its Discord channel.
+         * @description Managers of the group only.
+         */
+        get: operations["tribes_endpoints_publishing_get_group_publishing_get_group_publishing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change who may publish as the group, and its channel.
+         * @description Managers of the group only. Every field is optional. Chosen publishers are given as character ids of active members.
+         */
+        patch: operations["tribes_endpoints_publishing_patch_group_publishing_patch_group_publishing"];
+        trace?: never;
+    };
+    "/api/tribes/publishable-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tribe groups the viewer may post, schedule fleets or create events as. */
+        get: operations["tribes_endpoints_publishing_get_publishable_groups_get_publishable_groups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9419,6 +9584,8 @@ export interface components {
              * @default false
              */
             hide_volunteers?: boolean;
+            /** Host Group Id */
+            host_group_id?: number | null;
             /**
              * Immediate Ping
              * @default false
@@ -9428,6 +9595,16 @@ export interface components {
             location_id?: number | null;
             /** Objective */
             objective?: string | null;
+            /**
+             * On Schedule
+             * @default false
+             */
+            on_schedule?: boolean;
+            /**
+             * Open To Alliance
+             * @default false
+             */
+            open_to_alliance?: boolean;
             /**
              * Start Time
              * Format: date-time
@@ -9450,10 +9627,22 @@ export interface components {
         };
         /** CreateEvePostRequest */
         CreateEvePostRequest: {
+            /**
+             * Announce
+             * @default false
+             */
+            announce?: boolean;
             /** Campaign Id */
             campaign_id?: number | null;
             /** Content */
             content: string;
+            /** Host Group Id */
+            host_group_id?: number | null;
+            /**
+             * Members Only
+             * @default false
+             */
+            members_only?: boolean;
             /** Seo Description */
             seo_description: string;
             /** State */
@@ -9824,6 +10013,20 @@ export interface components {
             action: string;
             /** Discord User Id */
             discord_user_id: number;
+        };
+        /**
+         * DiscordChannelKind
+         * @enum {string}
+         */
+        DiscordChannelKind: "text" | "voice";
+        /** DiscordChannelSchema */
+        DiscordChannelSchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
         };
         /** DiscordNpsiActionRequest */
         DiscordNpsiActionRequest: {
@@ -10313,12 +10516,23 @@ export interface components {
              * @default false
              */
             hide_volunteers?: boolean;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
             /** Id */
             id: number;
             /** Location */
             location: string;
             /** Objective */
             objective?: string | null;
+            /**
+             * On Schedule
+             * @default false
+             */
+            on_schedule?: boolean;
+            /**
+             * Open To Alliance
+             * @default false
+             */
+            open_to_alliance?: boolean;
             /** Roam Report Url */
             roam_report_url?: string | null;
             /** Start Time */
@@ -10597,8 +10811,14 @@ export interface components {
              * Format: date-time
              */
             date_posted: string;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
             /** Image */
             image: string;
+            /**
+             * Members Only
+             * @default false
+             */
+            members_only?: boolean;
             /** Post Id */
             post_id: number;
             /** Seo Description */
@@ -10636,6 +10856,12 @@ export interface components {
              * Format: date-time
              */
             date_posted: string;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
+            /**
+             * Members Only
+             * @default false
+             */
+            members_only?: boolean;
             /** Post Id */
             post_id: number;
             /** Seo Description */
@@ -10759,6 +10985,21 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * EventRecurrence
+         * @enum {string}
+         */
+        EventRecurrence: "none" | "weekly" | "monthly";
+        /**
+         * EventStatus
+         * @enum {string}
+         */
+        EventStatus: "scheduled" | "cancelled" | "completed";
+        /**
+         * EventWhereKind
+         * @enum {string}
+         */
+        EventWhereKind: "voice" | "place";
         /** FacilityDetailSchema */
         FacilityDetailSchema: {
             cost_indices: components["schemas"]["CostIndicesSchema"];
@@ -11430,6 +11671,38 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * FleetPingPreviewRequest
+         * @description The fleet form's fields that shape the start ping.
+         */
+        FleetPingPreviewRequest: {
+            /** Audience Id */
+            audience_id?: number | null;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Host Group Id */
+            host_group_id?: number | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Objective */
+            objective?: string | null;
+            type: components["schemas"]["EveFleetType"];
+        };
+        /**
+         * FleetPingPreviewResponse
+         * @description The start ping exactly as the bot would post it.
+         */
+        FleetPingPreviewResponse: {
+            /** Channel Name */
+            channel_name?: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /** FleetWindowAfterAction */
         FleetWindowAfterAction: {
@@ -12165,6 +12438,22 @@ export interface components {
             status: string;
             /** Thread Id */
             thread_id: number;
+        };
+        /**
+         * HostGroupRef
+         * @description The tribe group a fleet, post or event is published as.
+         */
+        HostGroupRef: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Tribe Id */
+            tribe_id: number;
+            /** Tribe Name */
+            tribe_name: string;
         };
         /** HygieneCounts */
         HygieneCounts: {
@@ -15678,6 +15967,42 @@ export interface components {
             /** Worst Profit */
             worst_profit: number | null;
         };
+        /** PublishableGroupSchema */
+        PublishableGroupSchema: {
+            /** Allow Alliance Posts */
+            allow_alliance_posts: boolean;
+            /** Allow Open Fleets */
+            allow_open_fleets: boolean;
+            /** Code */
+            code: string;
+            /** Id */
+            id: number;
+            /** Member Count */
+            member_count: number;
+            /** Name */
+            name: string;
+            /** Tribe Id */
+            tribe_id: number;
+            /** Tribe Name */
+            tribe_name: string;
+        };
+        /** PublisherSchema */
+        PublisherSchema: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+        };
+        /**
+         * PublishingKind
+         * @enum {string}
+         */
+        PublishingKind: "post" | "fleet" | "event";
+        /**
+         * PublishingPolicy
+         * @enum {string}
+         */
+        PublishingPolicy: "chiefs" | "chosen" | "members";
         /** PutAllocationsRequest */
         PutAllocationsRequest: {
             /** Entries */
@@ -16068,6 +16393,15 @@ export interface components {
             victim_character_id: number;
             /** Victim Character Name */
             victim_character_name: string;
+        };
+        /**
+         * RestrictedResponse
+         * @description 403 for a members-only item: names the group, hides the content.
+         */
+        RestrictedResponse: {
+            /** Detail */
+            detail: string;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
         };
         /** ResultsSchema */
         ResultsSchema: {
@@ -17284,6 +17618,159 @@ export interface components {
             /** Tribe Id */
             tribe_id: number;
         };
+        /**
+         * TribeEventAnnouncementPreview
+         * @description The announcement exactly as the bot would post it (the event link
+         *     is a placeholder until Discord creates the event).
+         */
+        TribeEventAnnouncementPreview: {
+            /** Channel Name */
+            channel_name?: string | null;
+            /** Content */
+            content?: string | null;
+            event_preview: components["schemas"]["TribeEventPreviewSchema"];
+        };
+        /** TribeEventCreate */
+        TribeEventCreate: {
+            /**
+             * Announce
+             * @default true
+             */
+            announce?: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Ends At */
+            ends_at?: string | null;
+            /**
+             * Location
+             * @default
+             */
+            location?: string;
+            /**
+             * Members Only
+             * @default false
+             */
+            members_only?: boolean;
+            /** @default none */
+            recurrence?: components["schemas"]["EventRecurrence"];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Title */
+            title: string;
+            /** Voice Channel Id */
+            voice_channel_id?: number | null;
+            /** @default voice */
+            where_kind?: components["schemas"]["EventWhereKind"];
+        };
+        /**
+         * TribeEventPatch
+         * @description Every field optional; left out means unchanged.
+         */
+        TribeEventPatch: {
+            /** Description */
+            description?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Members Only */
+            members_only?: boolean | null;
+            recurrence?: components["schemas"]["EventRecurrence"] | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Voice Channel Id */
+            voice_channel_id?: number | null;
+            where_kind?: components["schemas"]["EventWhereKind"] | null;
+        };
+        /** TribeEventPreviewSchema */
+        TribeEventPreviewSchema: {
+            /** Recurrence Label */
+            recurrence_label: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Title */
+            title: string;
+            /** Where Label */
+            where_label: string;
+        };
+        /** TribeEventSchema */
+        TribeEventSchema: {
+            /** Announce */
+            announce: boolean;
+            /**
+             * Can Manage
+             * @default false
+             */
+            can_manage?: boolean;
+            /** Cancelled At */
+            cancelled_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            created_by?: components["schemas"]["CharacterRefSchema"] | null;
+            /** Description */
+            description: string;
+            /** Discord Event Id */
+            discord_event_id?: string | null;
+            /** Discord Event Url */
+            discord_event_url?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Interested Count
+             * @default 0
+             */
+            interested_count?: number;
+            /**
+             * Location
+             * @default
+             */
+            location?: string;
+            /** Members Only */
+            members_only: boolean;
+            recurrence: components["schemas"]["EventRecurrence"];
+            /** Recurrence Label */
+            recurrence_label: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            status: components["schemas"]["EventStatus"];
+            /** Title */
+            title: string;
+            tribe_group: components["schemas"]["HostGroupRef"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
+            /**
+             * Voice Channel Name
+             * @default
+             */
+            voice_channel_name?: string;
+            where_kind: components["schemas"]["EventWhereKind"];
+            /** Where Label */
+            where_label: string;
+        };
         /** TribeGroupGrowthSchema */
         TribeGroupGrowthSchema: {
             /** Counts */
@@ -17292,6 +17779,53 @@ export interface components {
             months: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * TribeGroupPublishingPatch
+         * @description Every field optional; left out means unchanged.
+         */
+        TribeGroupPublishingPatch: {
+            /** Allow Alliance Posts */
+            allow_alliance_posts?: boolean | null;
+            /** Allow Open Fleets */
+            allow_open_fleets?: boolean | null;
+            /** Discord Channel Id */
+            discord_channel_id?: number | null;
+            event_policy?: components["schemas"]["PublishingPolicy"] | null;
+            /** Event Publisher Character Ids */
+            event_publisher_character_ids?: number[] | null;
+            fleet_policy?: components["schemas"]["PublishingPolicy"] | null;
+            /** Fleet Publisher Character Ids */
+            fleet_publisher_character_ids?: number[] | null;
+            post_policy?: components["schemas"]["PublishingPolicy"] | null;
+            /** Post Publisher Character Ids */
+            post_publisher_character_ids?: number[] | null;
+        };
+        /** TribeGroupPublishingSchema */
+        TribeGroupPublishingSchema: {
+            /** Allow Alliance Posts */
+            allow_alliance_posts: boolean;
+            /** Allow Open Fleets */
+            allow_open_fleets: boolean;
+            /** Discord Channel Id */
+            discord_channel_id?: string | null;
+            /** Discord Role Name */
+            discord_role_name?: string | null;
+            /** Effective Discord Channel Id */
+            effective_discord_channel_id?: string | null;
+            /** Effective Discord Channel Name */
+            effective_discord_channel_name?: string | null;
+            event_policy: components["schemas"]["PublishingPolicy"];
+            /** Event Publishers */
+            event_publishers: components["schemas"]["PublisherSchema"][];
+            fleet_policy: components["schemas"]["PublishingPolicy"];
+            /** Fleet Publishers */
+            fleet_publishers: components["schemas"]["PublisherSchema"][];
+            /** Group Id */
+            group_id: number;
+            post_policy: components["schemas"]["PublishingPolicy"];
+            /** Post Publishers */
+            post_publishers: components["schemas"]["PublisherSchema"][];
         };
         /** TribeGroupRankSchema */
         TribeGroupRankSchema: {
@@ -17395,6 +17929,16 @@ export interface components {
         /** TribeGroupSchema */
         TribeGroupSchema: {
             /**
+             * Allow Alliance Posts
+             * @default true
+             */
+            allow_alliance_posts?: boolean;
+            /**
+             * Allow Open Fleets
+             * @default false
+             */
+            allow_open_fleets?: boolean;
+            /**
              * Allowed Affiliations
              * @default []
              */
@@ -17405,10 +17949,25 @@ export interface components {
              */
             can_apply?: boolean;
             /**
+             * Can Create Events
+             * @default false
+             */
+            can_create_events?: boolean;
+            /**
              * Can Manage
              * @default false
              */
             can_manage?: boolean;
+            /**
+             * Can Post
+             * @default false
+             */
+            can_post?: boolean;
+            /**
+             * Can Schedule Fleets
+             * @default false
+             */
+            can_schedule_fleets?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Code
@@ -17424,10 +17983,19 @@ export interface components {
             description: string;
             /** Discord Channel Id */
             discord_channel_id?: number | null;
+            /** Discord Role Name */
+            discord_role_name?: string | null;
+            /** Effective Discord Channel Id */
+            effective_discord_channel_id?: string | null;
             /** Id */
             id: number;
             /** Is Active */
             is_active: boolean;
+            /**
+             * Is Member
+             * @default false
+             */
+            is_member?: boolean;
             /**
              * Member Count
              * @default 0
@@ -17714,10 +18282,16 @@ export interface components {
             doctrine_id?: number | null;
             /** Hide Volunteers */
             hide_volunteers?: boolean | null;
+            /** Host Group Id */
+            host_group_id?: number | null;
             /** Location Id */
             location_id?: number | null;
             /** Objective */
             objective?: string | null;
+            /** On Schedule */
+            on_schedule?: boolean | null;
+            /** Open To Alliance */
+            open_to_alliance?: boolean | null;
             /** Start Time */
             start_time?: string | null;
             /** Status */
@@ -17733,10 +18307,16 @@ export interface components {
         };
         /** UpdateEvePostRequest */
         UpdateEvePostRequest: {
+            /** Announce */
+            announce?: boolean | null;
             /** Campaign Id */
             campaign_id?: number | null;
             /** Content */
             content?: string | null;
+            /** Host Group Id */
+            host_group_id?: number | null;
+            /** Members Only */
+            members_only?: boolean | null;
             /** Seo Description */
             seo_description?: string | null;
             /** State */
@@ -18891,6 +19471,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvePostResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestrictedResponse"];
                 };
             };
             /** @description Not Found */
@@ -23140,6 +23729,48 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_catalog_post_ping_preview_post_ping_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FleetPingPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetPingPreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_metrics_get_fleet_results_get_fleet_results: {
         parameters: {
             query?: {
@@ -23266,6 +23897,7 @@ export interface operations {
         parameters: {
             query?: {
                 fleet_filter?: "active" | "upcoming" | "recent";
+                host_group_id?: number | null;
             };
             header?: never;
             path?: never;
@@ -23381,7 +24013,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RestrictedResponse"] | null;
+                };
             };
             /** @description Not Found */
             404: {
@@ -31133,6 +31767,139 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_publishing_get_discord_channels_get_discord_channels: {
+        parameters: {
+            query?: {
+                kind?: "text" | "voice";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordChannelSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_events_patch_event_patch_event: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeEventPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeEventSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_events_post_event_cancel_post_event_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeEventSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     tribes_endpoints_external_guild_get_external_guild_join_get_external_guild_join: {
         parameters: {
             query: {
@@ -31211,6 +31978,258 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    tribes_endpoints_events_get_group_events_get_group_events: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeEventSchema"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_events_post_group_event_post_group_event: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeEventCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeEventSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_events_post_event_announcement_preview_post_event_announcement_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeEventCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeEventAnnouncementPreview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_publishing_get_group_publishing_get_group_publishing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeGroupPublishingSchema"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_publishing_patch_group_publishing_patch_group_publishing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeGroupPublishingPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeGroupPublishingSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_publishing_get_publishable_groups_get_publishable_groups: {
+        parameters: {
+            query: {
+                kind: "post" | "fleet" | "event";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishableGroupSchema"][];
                 };
             };
         };
