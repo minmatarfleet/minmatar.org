@@ -2083,6 +2083,7 @@ export const ui = {
         'tribes.showcase.last_30d': 'Last 30 days',
         'tribes.showcase.manual': 'This tribe group uses manual / narrative metrics.',
         'tribes.showcase.unavailable': 'Group Activity is unavailable right now.',
+        'tribes.showcase.warming': 'Group Activity is still being calculated. Check back in a few minutes.',
         'tribes.showcase.no_totals': 'No activity recorded for this period.',
         'tribes.showcase.contributors': 'Top contributors',
         'tribes.showcase.last_90d': 'Last 90 days',

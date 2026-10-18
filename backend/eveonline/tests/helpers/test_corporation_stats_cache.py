@@ -58,10 +58,10 @@ class CorporationStatsCacheTestCase(TestCase):
 
     def test_cache_outage_degrades_to_no_stats(self):
         with patch(
-            "eveonline.helpers.corporations.safe_cache.cache.get",
+            "app.cache.cache.get",
             side_effect=ConnectionError("redis down"),
         ), patch(
-            "eveonline.helpers.corporations.safe_cache.cache.add",
+            "app.cache.cache.add",
             side_effect=ConnectionError("redis down"),
         ):
             self.assertIsNone(stats_cache.corporation_stats(98726134))

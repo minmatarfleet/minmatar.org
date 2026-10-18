@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone as dt_timezone
 
-from django.core.cache import cache
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
+from app.cache import CachedRollup
 from market.models import EveMarketInferredSale
 
 # A closed month never changes; the running month gets a short TTL so the
@@ -22,6 +22,15 @@ from market.models import EveMarketInferredSale
 CACHE_TTL_CLOSED_MONTH = 60 * 60 * 24
 CACHE_TTL_OPEN_MONTH = 60 * 15
 CACHE_KEY = "market:inferred_sales_monthly:{location_id}:{year}-{month:02d}"
+# A month scan takes seconds; concurrent misses wait for the first one.
+COMPUTE_LOCK_SECONDS = 120
+
+MONTHLY = CachedRollup(
+    key=CACHE_KEY + "{using_suffix}",
+    ttl=CACHE_TTL_OPEN_MONTH,
+    lock_key=CACHE_KEY + "{using_suffix}:computing",
+    lock_ttl=COMPUTE_LOCK_SECONDS,
+)
 
 ISK_EXPR = ExpressionWrapper(
     F("quantity") * F("price"),
@@ -59,14 +68,26 @@ def build_monthly_response(
     Pass ``using`` to read from an alternate DB alias (e.g.
     ``production_readonly``). The public API leaves this unset.
     """
-    start, end = month_bounds(year, month)
-    key = CACHE_KEY.format(location_id=location_id, year=year, month=month)
-    if using:
-        key = f"{key}:using:{using}"
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+    _, end = month_bounds(year, month)
+    ttl = (
+        CACHE_TTL_CLOSED_MONTH
+        if end <= timezone.now()
+        else CACHE_TTL_OPEN_MONTH
+    )
+    return MONTHLY.get_or_compute(
+        lambda: _monthly_payload(location_id, year, month, using=using),
+        ttl=ttl,
+        location_id=location_id,
+        year=year,
+        month=month,
+        using_suffix=f":using:{using}" if using else "",
+    )
 
+
+def _monthly_payload(
+    location_id: int, year: int, month: int, *, using: str | None
+) -> dict:
+    start, end = month_bounds(year, month)
     sales = EveMarketInferredSale.objects
     if using:
         sales = sales.using(using)
@@ -139,10 +160,4 @@ def build_monthly_response(
         "by_type": by_type,
     }
 
-    ttl = (
-        CACHE_TTL_CLOSED_MONTH
-        if end <= timezone.now()
-        else CACHE_TTL_OPEN_MONTH
-    )
-    cache.set(key, payload, ttl)
     return payload

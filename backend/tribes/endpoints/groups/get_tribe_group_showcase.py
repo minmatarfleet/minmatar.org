@@ -8,7 +8,7 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupShowcaseSchema,
 )
 from tribes.helpers import user_can_view_group_roster
-from tribes.helpers.showcase import build_group_showcase, public_highlights
+from tribes.helpers.showcase import group_showcase, public_highlights
 from tribes.models import TribeGroup
 from tribes.reports import ReportError
 
@@ -33,9 +33,11 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
         return 404, {"detail": "Tribe group not found."}
 
     try:
-        payload = build_group_showcase(tg)
+        payload = group_showcase(tg)
     except ReportError as exc:
         return 404, {"detail": str(exc)}
+    if payload.get("error"):
+        return 404, {"detail": payload["error"]}
 
     include_names = user_can_view_group_roster(request.user, tg)
     highlights = payload.get("highlights") or {}
@@ -60,6 +62,7 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
         period_start=payload.get("period_start"),
         period_end=payload.get("period_end"),
         manual=bool(payload.get("manual")),
+        warming=bool(payload.get("warming")),
         message=payload.get("message") or "",
         totals=payload.get("totals") or {},
         columns=payload.get("columns") or [],

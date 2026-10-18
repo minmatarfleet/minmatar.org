@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
-from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
+from app.locks import single_flight
 from eveonline.client import EsiClient
 from eveonline.models import EveLocation
 
@@ -168,15 +168,16 @@ def sync_structure_order_book_for_location(
 
     Returns (sales_created, orders_written), or None if lock/fetch skipped.
     """
-    lock_key = _lock_key(location_id)
-    if not cache.add(lock_key, "1", timeout=ORDER_BOOK_SYNC_LOCK_TTL):
-        logger.info(
-            "Order book sync already in progress for location_id=%s, skipping",
-            location_id,
-        )
-        return None
+    with single_flight(
+        _lock_key(location_id), ORDER_BOOK_SYNC_LOCK_TTL
+    ) as acquired:
+        if not acquired:
+            logger.info(
+                "Order book sync already in progress for location_id=%s, skipping",
+                location_id,
+            )
+            return None
 
-    try:
         location = EveLocation.objects.filter(location_id=location_id).first()
         if not location:
             logger.warning(
@@ -192,5 +193,3 @@ def sync_structure_order_book_for_location(
 
         sales, orders = apply_order_book_snapshot(location, order_dicts)
         return sales, orders
-    finally:
-        cache.delete(lock_key)

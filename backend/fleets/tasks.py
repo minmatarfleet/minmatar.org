@@ -6,6 +6,7 @@ from django.conf import settings
 from celery_once import QueueOnce
 
 from app.celery import app
+from app.locks import overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
 from fleets.helpers.active_clones import (
@@ -32,6 +33,7 @@ def get_fleet_emoji(fleet_type):
 
 
 @app.task()
+@overlap_guard(ttl=5 * 60)
 def update_fleet_instances():
     """
     Update fleet instances
@@ -153,6 +155,7 @@ def queue_fleet_schedule_refresh() -> None:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def poll_active_fleet_implants():
     """Queue implant polls for active fleet members within the 45-minute window."""
     members = members_to_poll()

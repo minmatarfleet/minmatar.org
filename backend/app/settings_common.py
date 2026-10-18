@@ -7,27 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
 CACHE_URL = "redis://localhost:6379/2"
-CELERY_IMPORTS = (
-    "eveonline.tasks",
-    "structures.tasks",
-    "groups.tasks",
-    "discord.tasks",
-    "fleets.tasks",
-    "reminders.tasks",
-    "moons.tasks",
-    "market.tasks",
-    "industry.tasks",
-    "reddit.tasks",
-    "creators.tasks",
-    "tribes.tasks",
-    "feed.tasks",
-    "notifications.tasks",
-    "buyback.tasks",
-    "alliance.tasks",
-    "fittings.tasks",
-    "surveys.tasks",
-    "campaigns.tasks",
-)
 
 
 # ESI

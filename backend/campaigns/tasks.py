@@ -15,6 +15,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from app.celery import app
+from app.locks import overlap_guard
 from campaigns.helpers import campaign_day, campaign_week_start
 from campaigns.models import (
     Campaign,
@@ -73,6 +74,7 @@ def _defer_for_downtime(kind: str) -> dict | None:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def sweep_campaign_killmails(hours: int = 4) -> dict:
     """Re-attribute recent feed killmails so nothing is lost.
 
@@ -100,6 +102,7 @@ def poll_campaign_snapshots() -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def poll_frontlines_advantage() -> dict:
     """Advantage per system, read off CCP's frontlines page instead of pilots."""
     result = frontlines.record_advantage()
@@ -353,6 +356,7 @@ def attribute_new_payouts(hours: int = 72) -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def link_campaign_fleets() -> dict:
     """Attach campaign mails to the fleet their pilots were flying in."""
     linked = 0
@@ -365,6 +369,7 @@ def link_campaign_fleets() -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def materialise_campaign_stats() -> dict:
     """Rebuild today's and yesterday's rows, then the roll-ups and ranks."""
     written = 0
@@ -385,6 +390,7 @@ def materialise_campaign_stats() -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=30 * 60)
 def mirror_campaign_feed_events() -> dict:
     mirrored = 0
     for campaign in _live_campaigns():
@@ -438,6 +444,7 @@ def generate_campaign_orders() -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=5 * 60)
 def run_campaign_lifecycle() -> dict:
     """Scheduled becomes active on time; active completes at the end.
 
@@ -490,6 +497,7 @@ def run_campaign_lifecycle() -> dict:
 
 
 @app.task()
+@overlap_guard(ttl=15 * 60)
 def campaign_health() -> dict:
     """What the KPI panel reads, and what pages an operator when it slips."""
     day = campaign_day()

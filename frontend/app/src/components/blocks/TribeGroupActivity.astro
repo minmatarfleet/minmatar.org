@@ -60,7 +60,10 @@ const private_block_hidden = (activity.block === 'welcomed' && !highlights.welco
             !showcase ?
                 <p>{t('tribes.showcase.unavailable')}</p>
                 :
-                <p>{showcase.message || t('tribes.showcase.manual')}</p>
+                showcase.warming ?
+                    <p>{t('tribes.showcase.warming')}</p>
+                    :
+                    <p>{showcase.message || t('tribes.showcase.manual')}</p>
             :
             <Flexblock gap="var(--space-l)">
                 <Grid
