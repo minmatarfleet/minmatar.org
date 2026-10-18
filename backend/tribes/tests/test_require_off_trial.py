@@ -1,7 +1,5 @@
 """Tests for TribeGroup.require_off_trial application gate."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
@@ -16,13 +14,9 @@ from tribes.helpers.trial_requirements import (
     application_blocked_by_trial,
 )
 from tribes.models import Tribe, TribeGroup
+from app.testing import make_token
 
 BASE_URL = "/api/tribes"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def setUpModule():
@@ -119,7 +113,7 @@ class OffTrialGateTestCase(TestCase):
         UserCommunityStatus.objects.create(
             user=self.user, status=UserCommunityStatus.STATUS_TRIAL
         )
-        token = _make_token(self.user)
+        token = make_token(self.user)
         response = self.client.post(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/memberships",
             data={"character_ids": [self.character.character_id]},
@@ -133,7 +127,7 @@ class OffTrialGateTestCase(TestCase):
         UserCommunityStatus.objects.create(
             user=self.user, status=UserCommunityStatus.STATUS_ACTIVE
         )
-        token = _make_token(self.user)
+        token = make_token(self.user)
         response = self.client.post(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/memberships",
             data={"character_ids": [self.character.character_id]},

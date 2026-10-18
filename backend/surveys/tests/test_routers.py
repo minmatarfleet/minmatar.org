@@ -1,7 +1,5 @@
 import json
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
@@ -12,18 +10,13 @@ from surveys.models import (
     SurveyCampaign,
     SurveyResponse,
 )
+from app.testing import make_token
 
 BASE = "/api/surveys"
 
 
-def _token(user):
-    return jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
-
-
 def _auth(user):
-    return {"HTTP_AUTHORIZATION": f"Bearer {_token(user)}"}
+    return {"HTTP_AUTHORIZATION": f"Bearer {make_token(user)}"}
 
 
 class SurveyRouterTests(TestCase):
