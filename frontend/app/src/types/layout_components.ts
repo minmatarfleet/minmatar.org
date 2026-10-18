@@ -964,4 +964,69 @@ export interface DiscordPreviewEventUI {
     recurrence_label?:  string | null;
     cover_url?:         string | null;
     interested_count?:  number;
+
+
+/* Tribe publishing: view models for the shared blocks (not API shapes). */
+
+/** A tribe group as other items refer to it. */
+export interface TribeGroupRefUI {
+    id:             number;
+    code:           string;
+    name:           string;
+    tribe_id:       number;
+    tribe_name:     string;
+}
+
+/** A group reference that also carries the crest the page chose for it. */
+export interface TribeGroupCrestUI extends TribeGroupRefUI {
+    crest_url?:     string;
+}
+
+export type TribeVisibility = 'members_only' | 'open'
+
+export interface HostOptionUI {
+    value:          string;
+    label:          string;
+    sub?:           string;
+    image_url:      string;
+}
+
+export interface PostTileUI {
+    id:                     number;
+    title:                  string;
+    excerpt:                string;
+    image_url:              string | null;
+    href:                   string;
+    author_character_id:    number;
+    author_character_name:  string;
+    /** ISO date. */
+    date:                   string;
+    members_only:           boolean;
+    /** The post belongs to a pilot and was tagged with this group, rather than published by it. */
+    tagged:                 boolean;
+}
+
+export type TribeEventWhereKind = 'stage' | 'voice' | 'place'
+export type TribeEventStatus = 'scheduled' | 'cancelled' | 'completed'
+
+export interface TribeEventRowUI {
+    id:                     number;
+    title:                  string;
+    cover_url:              string | null;
+    /** ISO time; null while the date is not set. */
+    starts_at:              string | null;
+    ends_at:                string | null;
+    where_kind:             TribeEventWhereKind;
+    where_label:            string;
+    recurrence_label:       string | null;
+    status:                 TribeEventStatus;
+    interested_count:       number;
+    discord_event_url:      string | null;
+    edit_href:              string | null;
+}
+
+export interface DiscordChannelUI {
+    id:             string;
+    name:           string;
+    type:           'text' | 'voice' | 'stage';
 }
