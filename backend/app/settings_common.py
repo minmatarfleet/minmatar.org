@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django_admin_tabs",
     "django_extensions",
     "django_celery_beat",
+    "app",
     "safedelete",
     "esi",
     # Discord auth

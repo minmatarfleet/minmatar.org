@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.utils import timezone
 
+from app.queues import queue_for_task
 from app.test import TestCase
 
 from eveonline.models import (
@@ -180,7 +181,11 @@ class MarketTaskTestCase(TestCase):
         self.assertEqual(0, EveMarketContractError.objects.count())
         self.assertEqual(2, items_task_mock.apply_async.call_count)
         _, kwargs = items_task_mock.apply_async.call_args_list[0]
-        self.assertEqual("market", kwargs["queue"])
+        # app.queues routes it; call sites never pick a queue.
+        self.assertNotIn("queue", kwargs)
+        self.assertEqual(
+            "market", queue_for_task("market.tasks.fetch_contract_items_task")
+        )
         self.assertEqual(0, kwargs["countdown"])
 
     def test_get_fitting_id_for_contract(self):

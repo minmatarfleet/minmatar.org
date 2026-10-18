@@ -330,7 +330,7 @@ class EnqueueHistoryForTypesTestCase(TestCase):
             [self.fresh.id, self.stale.id, 950299]
         )
         self.assertEqual(queued, [950299])
-        apply_async.assert_called_once_with(args=[950299], queue="market")
+        apply_async.assert_called_once_with(args=[950299])
 
     @patch("market.tasks.fetch_market_item_history_for_type.apply_async")
     def test_stale_before_also_queues_old_history(self, apply_async):

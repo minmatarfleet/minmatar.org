@@ -132,6 +132,9 @@ As they cannot be easily tested, they should contain minimal logic.
 Some of the background Celery tasks identify a set of entities and then create another asynchronous task instance for each
 of those entities. The outer tasks are therefore generally not tested.
 
+Queues, routing and the task standards (dedupe, `expires`, `cooldown`,
+`exclusive`) are in [docs/architecture/celery-queues.md](../docs/architecture/celery-queues.md).
+
 You can also use an annotation to disable signals for a test...
 ```
 import factory

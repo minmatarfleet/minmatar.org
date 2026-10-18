@@ -109,7 +109,5 @@ def refresh_corporation_projects(request, corporation_id: int):
         return 409, ErrorResponse(detail="no_token")
     if not projects.mark_refreshing(corporation.corporation_id):
         return 429, ErrorResponse(detail="refresh_pending")
-    sync_corporation_projects.apply_async(
-        args=[corporation.corporation_id], queue="eveonline"
-    )
+    sync_corporation_projects.apply_async(args=[corporation.corporation_id])
     return 202, None

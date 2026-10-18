@@ -1,0 +1,40 @@
+---
+paths:
+  - "backend/**/tasks.py"
+  - "backend/**/tasks/*.py"
+  - "backend/app/celery.py"
+  - "backend/app/queues.py"
+  - "backend/app/task_base.py"
+  - "backend/app/settings_celery.py"
+  - "docker-compose-prod.yml"
+---
+# Celery tasks and queues
+
+Read **`docs/architecture/celery-queues.md`**. The non-negotiables:
+
+## Queues
+
+- **`celery` is the fast lane.** Only tasks listed in `FAST_TASKS` (`backend/app/queues.py`) run there: someone is waiting, it finishes in seconds, it never fans out. Adding one needs that justification in the PR.
+- **Everything else runs on its feature's queue**, chosen by prefix in `ROUTES`. A new app adds its prefix there.
+- **A major new feature gets its own queue and worker service**: a `QueueSpec`, a route, a `celery-<queue>` service in `docker-compose-prod.yml`, and the queue in `dev.sh` and the root `README.md`.
+- **Never pass `queue=`** to `@app.task`, `apply_async`, `signature` or a beat entry. Routing lives only in `backend/app/queues.py`.
+
+## Tasks
+
+- Every task is an `AppTask` (the app's `task_cls`). Don't set `base=`. It dedupes queued copies of the same call, skips redelivered messages, and tags Sentry with the queue.
+- Use the decorator options instead of hand-rolled locks: `expires=` (stale copies drop), `cooldown=` (same call at most once per window), `exclusive=` (same call never overlaps), `dedupe=False` (each copy is distinct work).
+- Beat entries every 15 minutes or faster set `"options": {"expire_seconds": ...}`.
+- Don't use `send_task`; use `app.signature("<name>", args=[...]).delay()`.
+- Don't re-queue a task from inside itself on downtime, 429s or a paused ESI budget. Return; the next scheduled run picks it up. Use `self.retry()` for retries.
+- Throttle ESI with `eveonline.esi_budget`, not `rate_limit=` (per-worker, and rate-limited messages get redelivered).
+- Fan-out parents queue only work that will run. Children set `expires` near the schedule interval.
+- Tasks must be safe to run twice.
+
+## Monitoring
+
+- Sentry setup lives only in `backend/app/monitoring.py`. Don't call `sentry_sdk.init` elsewhere.
+- A scheduled job whose silent failure would hurt goes in `CRON_MONITORED_SCHEDULES` (each monitor counts against the plan).
+
+## Verify
+
+`pipenv run python manage.py test app --settings=app.settings_test` (from `backend/`). `app.tests.test_queue_standards` fails on any rule above that code can check.

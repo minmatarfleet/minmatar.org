@@ -46,20 +46,21 @@ CORPORATION_HISTORY_BACKFILL_BATCH = 50
 
 def _refresh_contracts_and_reconcile(eve_character_id: int) -> None:
     refresh_character_contracts(eve_character_id)
-    app.send_task(
+    # A signature, not send_task, so AppTask dedupes it like any call.
+    app.signature(
         "industry.tasks.reconcile_industry_contract_associations_for_character_task",
         args=[eve_character_id],
-    )
+    ).delay()
 
 
 def _refresh_industry_jobs_and_notify(eve_character_id: int) -> None:
     result = refresh_character_industry_jobs(eve_character_id)
     created_job_ids = result[1] if isinstance(result, tuple) else []
     if created_job_ids:
-        app.send_task(
+        app.signature(
             "industry.tasks.emit_order_job_notifications_for_jobs",
             args=[created_job_ids],
-        )
+        ).delay()
 
 
 @app.task(rate_limit="5/m")
@@ -70,7 +71,6 @@ def update_character(eve_character_id):
         update_character.apply_async(
             args=[eve_character_id],
             countdown=countdown,
-            queue="eveonline",
         )
         logger.info(
             "Deferring character update for %s by %s s (ESI downtime 11:00–11:15 UTC)",
@@ -193,7 +193,6 @@ def queue_stale_character_corporation_history(
     for character_id in character_ids:
         sync_character_corporation_history_task.apply_async(
             args=[character_id],
-            queue="eveonline",
         )
     logger.info(
         "Queued corporation history sync for %d character(s)",
@@ -222,6 +221,4 @@ def update_alliance_characters():
         all_characters.count(),
     )
     for character in all_characters:
-        update_character.apply_async(
-            args=[character.character_id], queue="eveonline"
-        )
+        update_character.apply_async(args=[character.character_id])

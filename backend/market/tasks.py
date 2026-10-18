@@ -6,7 +6,6 @@ from django.utils import timezone
 from celery import chord, group
 
 from app.celery import app
-from app.locks import DedupedTask
 from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacterContract,
@@ -55,7 +54,7 @@ CONTRACT_ITEMS_FETCH_INTERVAL_SECONDS = 6
 CONTRACT_ITEMS_SCHEDULE_CACHE_TTL = 3600
 
 
-@app.task(queue="market")
+@app.task()
 def run_fitting_buy_jita_check_task(check_id: int):
     # pylint: disable=import-outside-toplevel
     from market.helpers.fitting_buy_check import run_fitting_buy_jita_check
@@ -339,7 +338,7 @@ def fetch_structure_sell_orders():
 
 # Beat fans these out every 30 minutes, on the market workers. ESI caches
 # open orders for 20 minutes, so a copy that waited 25 is not worth running.
-@app.task(base=DedupedTask, queue="market", expires=25 * 60, cooldown=15 * 60)
+@app.task(expires=25 * 60, cooldown=15 * 60)
 def sync_character_attributed_orders(character_id: int):
     """Sync personal open orders for one character."""
     result = sync_character_orders(character_id)
@@ -352,7 +351,7 @@ def sync_character_attributed_orders(character_id: int):
     return result.status.value
 
 
-@app.task(base=DedupedTask, queue="market", expires=25 * 60, cooldown=15 * 60)
+@app.task(expires=25 * 60, cooldown=15 * 60)
 def sync_corporation_attributed_orders(corporation_id: int):
     """Sync corp open orders for one corporation (issued_by attribution)."""
     result = sync_corporation_orders(corporation_id)
@@ -365,7 +364,7 @@ def sync_corporation_attributed_orders(corporation_id: int):
     return result.status.value
 
 
-@app.task(base=DedupedTask, queue="market", expires=30 * 60, cooldown=15 * 60)
+@app.task(expires=30 * 60, cooldown=15 * 60)
 def fetch_attributed_market_orders():
     """Enqueue per-character and per-corp attributed order syncs."""
     character_ids = character_ids_for_attributed_order_sync()
@@ -524,7 +523,6 @@ def fetch_eve_market_contracts():
         fetch_contract_items_task.apply_async(
             args=[contract_id],
             countdown=i * CONTRACT_ITEMS_FETCH_INTERVAL_SECONDS,
-            queue="market",
         )
         scheduled += 1
     logger.info(
@@ -539,7 +537,7 @@ def fetch_eve_market_contracts():
     record_contract_health_snapshot_task.delay()
 
 
-@app.task(queue="market")
+@app.task()
 def fetch_contract_items_task(contract_id: int) -> bool:
     return fetch_and_match_contract_items(contract_id)
 
@@ -614,9 +612,7 @@ def fetch_market_item_history():
         return
 
     for type_id in sorted(type_ids):
-        fetch_market_item_history_for_type.apply_async(
-            args=[type_id], queue="market"
-        )
+        fetch_market_item_history_for_type.apply_async(args=[type_id])
 
     logger.info(
         "fetch_market_item_history scheduled %s type_id task(s)",
