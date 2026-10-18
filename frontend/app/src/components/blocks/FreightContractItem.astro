@@ -52,7 +52,7 @@ import CharacterPicture from "@components/blocks/CharacterPicture.astro";
 import Tag from '@components/blocks/Tag.astro';
 ---
 
-<div class="[ freight-contract-item ]" role="row">
+<div class="[ data-grid-row freight-contract-item ]" role="row">
     <div
         class="[ freight-contract-item__created ]"
         role="cell"
@@ -62,7 +62,7 @@ import Tag from '@components/blocks/Tag.astro';
         <span class="[ whitespace-nowrap ]">{issued_date}</span>
     </div>
 
-    <div class="[ freight-contract-item__creator ]" role="cell" data-label={t('creator')}>
+    <div class="[ freight-contract-item__creator ]" role="cell">
         <PilotBadge
             character_id={contract.issuer_id}
             character_name={contract.issuer_character_name}
@@ -71,14 +71,13 @@ import Tag from '@components/blocks/Tag.astro';
         />
     </div>
 
-    <div class="[ freight-contract-item__route ]" role="cell" data-label={t('route')}>
+    <div class="[ freight-contract-item__route ]" role="cell">
         <span class="[ text-highlight ]">{route_label}</span>
     </div>
 
     <div
         class="[ freight-contract-item__status ]"
         role="cell"
-        data-label={t('status')}
         data-tippy-content={delivery_tooltip}
     >
         <Tag
@@ -129,24 +128,7 @@ import Tag from '@components/blocks/Tag.astro';
 </div>
 
 <style lang="scss">
-    .freight-contract-item {
-        display: grid;
-        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(10rem, 1.4fr) minmax(8rem, 1fr) minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(7rem, 1fr) minmax(7rem, 1fr);
-        gap: var(--space-s);
-        align-items: center;
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
-        font-size: var(--step--1);
-    }
-
-    @media (max-width: 72rem) {
-        .freight-contract-item {
-            grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1.2fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr);
-            min-width: 70rem;
-        }
-    }
-
+    /* Columns, gaps and padding come from DataGrid (ledger); phones get cards. */
     @media (max-width: 48rem) {
         .freight-contract-item {
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -156,11 +138,6 @@ import Tag from '@components/blocks/Tag.astro';
                 "created size"
                 "collateral reward"
                 "servicing servicing";
-            gap: var(--space-2xs) var(--space-s);
-            align-items: start;
-            min-width: 0;
-            padding-block: var(--space-s);
-            padding-inline: 0;
         }
 
         .freight-contract-item__creator { grid-area: creator; min-width: 0; }
@@ -177,15 +154,6 @@ import Tag from '@components/blocks/Tag.astro';
             align-items: center;
             justify-content: space-between;
             gap: var(--space-xs);
-        }
-
-        .freight-contract-item [data-label]:not(.freight-contract-item__creator, .freight-contract-item__status, .freight-contract-item__route)::before {
-            content: attr(data-label);
-            display: block;
-            color: var(--faded);
-            font-size: var(--step--2);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
         }
     }
 </style>
