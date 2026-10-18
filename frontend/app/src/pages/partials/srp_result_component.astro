@@ -67,7 +67,7 @@ if (Astro.request.method === "POST") {
 
         await create_fleet_srp(auth_token as string, {
             fleet_id: fleet_id,
-            combatlog_id: combat_log_analysis?.id,
+            combat_log_id: combat_log_analysis?.id,
             external_killmail_link: external_killmail_link,
             is_corp_ship: is_corp_ship,
         })
