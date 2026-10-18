@@ -1315,6 +1315,14 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         return HttpResponseRedirect(reverse("admin:fittings_manage_doctrines"))
 
+    def save_related(self, request, form, formsets, change):
+        # Fittings and locations are applied from the doctrine payload
+        # (immediately, or when a change request is approved). The admin
+        # form factory still lists `locations`, so the default save_m2m()
+        # would write that relation here and 500 when the row has no id.
+        for formset in formsets:
+            self.save_formset(request, form, formset, change=change)
+
     def save_model(self, request, obj, form, change):
         payload = build_doctrine_payload_from_form(form.cleaned_data)
 
