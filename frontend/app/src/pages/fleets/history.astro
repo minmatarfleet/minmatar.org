@@ -21,18 +21,29 @@ if (!can_view_fleets)
 
 import { fetch_fleet_history, type FleetHistory } from '@helpers/fetching/fleet_schedule'
 
+// /fleets/history/?group=<id>: one tribe group's fleets (the group page links here).
+const group_param = parseInt(Astro.url.searchParams.get('group') ?? '')
+const host_group_id = Number.isFinite(group_param) && group_param > 0 ? group_param : null
+
 let fetch_fleets_error: Error | false = false
 let history: FleetHistory | null = null
 
 try {
-    history = await fetch_fleet_history(auth_token as string)
+    history = await fetch_fleet_history(auth_token as string, host_group_id)
 } catch (error) {
     fetch_fleets_error = error
 }
 
 const fleets = history?.tracked ?? []
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}`)
+// The chip names the group from its fleets; with none in the list it falls back to a generic label.
+const filter_group = host_group_id === null ? null :
+    [ ...(history?.tracked ?? []), ...(history?.untracked ?? []) ]
+        .map(fleet => fleet.host_group)
+        .find(group => group?.id === host_group_id) ?? null
+const filter_group_name = filter_group?.name ?? t('fleets.host.group_fallback')
+
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}${host_group_id ? `&group=${host_group_id}` : ''}`)
 
 const AUTH_REDIRECT_URL = login_url(Astro)
 
@@ -58,6 +69,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FleetHistoryList from '@components/blocks/FleetHistoryList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetHistoryGroupFilter from '@components/blocks/FleetHistoryGroupFilter.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
@@ -112,6 +124,14 @@ const page_description = t('page_finder.fleets.history.description');
         </PageSubheader>        
         
         <Flexblock gap='var(--space-xl)'>
+            {host_group_id !== null &&
+                <FleetHistoryGroupFilter
+                    group_name={filter_group_name}
+                    group={filter_group}
+                    remove_href={translatePath('/fleets/history/')}
+                />
+            }
+
             {fetch_fleets_error ?
                 <ErrorRefetch
                     args={{

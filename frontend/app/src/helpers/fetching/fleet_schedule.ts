@@ -6,6 +6,14 @@ import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { get_fleet_commander_metrics, get_fleet_ship_volunteers, get_fleet_results, type FleetResult } from '@helpers/api.minmatar.org/fleets'
 import { unique_values } from '@helpers/array'
 import { fleet_phase } from '@helpers/fleet_phase'
+import { get_tribe_group } from '@helpers/api.minmatar.org/tribes'
+import {
+    count_fleets_by_host,
+    filter_fleets_by_host,
+    fleet_host_groups,
+    type FleetHostCounts,
+    type FleetHostFilter,
+} from '@helpers/fleet_hosts'
 
 export interface FleetScheduleDoctrine {
     name:       string;
@@ -24,14 +32,22 @@ export interface FleetSchedule {
     /** How many of the viewer's characters are signed up for the next fleet. */
     next_signups:   number;
     fc_metrics:     FleetCommanderMetrics[];
+    /** The host filter applied to `fleets` (All · Alliance · Tribe fleets · My groups). */
+    host_filter:    FleetHostFilter;
+    /** Counted before the host filter; `tribe` is 0 when the viewer sees no group fleets. */
+    host_counts:    FleetHostCounts;
 }
 
 const is_live = (fleet:FleetItem) => fleet_phase(fleet) === 'active'
 
-export async function fetch_fleet_schedule(auth_token:string):Promise<FleetSchedule> {
+export async function fetch_fleet_schedule(auth_token:string, host_filter:FleetHostFilter = 'all'):Promise<FleetSchedule> {
     const fc_metrics = await get_fleet_commander_metrics(auth_token)
-    const fleets = await fetch_fleets_auth(auth_token, true, false, fc_metrics)
-    fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    const all_fleets = await fetch_fleets_auth(auth_token, true, false, fc_metrics)
+    all_fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+
+    const host_counts = count_fleets_by_host(all_fleets)
+    const my_group_ids = host_filter === 'mine' ? await fetch_my_group_ids(auth_token, all_fleets) : []
+    const fleets = filter_fleets_by_host(all_fleets, host_filter, my_group_ids)
 
     const live = fleets.filter(is_live)
     const next = fleets.find(fleet => !is_live(fleet) && fleet.status !== 'cancelled') ?? null
@@ -54,7 +70,24 @@ export async function fetch_fleet_schedule(auth_token:string):Promise<FleetSched
         }
     }
 
-    return { fleets, live, next, rest, doctrines, next_signups, fc_metrics }
+    return { fleets, live, next, rest, doctrines, next_signups, fc_metrics, host_filter, host_counts }
+}
+
+/**
+ * The host groups on these fleets that the viewer is an active member of.
+ * Only the groups the list names are asked about, so it is a call or two.
+ */
+export async function fetch_my_group_ids(auth_token:string, fleets:FleetItem[]):Promise<number[]> {
+    const groups = await Promise.all(fleet_host_groups(fleets).map(async group => {
+        try {
+            const tribe_group = await get_tribe_group(group.tribe_id, group.id, auth_token)
+            return tribe_group.is_member ? group.id : null
+        } catch (error) {
+            console.log(`Skipping group ${group.id} membership: ${error.message}`)
+            return null
+        }
+    }))
+    return groups.filter((id):id is number => id !== null)
 }
 
 /** Name and lead hull of each doctrine the fleets use; a doctrine that fails to load is left out. */
@@ -91,9 +124,10 @@ export interface FleetHistory {
     fc_metrics:     FleetCommanderMetrics[];
 }
 
-export async function fetch_fleet_history(auth_token:string):Promise<FleetHistory> {
+/** `host_group_id` narrows the history to one tribe group's fleets. */
+export async function fetch_fleet_history(auth_token:string, host_group_id:number | null = null):Promise<FleetHistory> {
     const fc_metrics = await get_fleet_commander_metrics(auth_token)
-    const fleets = await fetch_fleets_auth(auth_token, false, false, fc_metrics)
+    const fleets = await fetch_fleets_auth(auth_token, false, false, fc_metrics, host_group_id)
     const started = (fleet:FleetItem) => new Date(fleet.tracking?.start_time ?? fleet.start_time).getTime()
     fleets.sort((a, b) => started(b) - started(a))
 

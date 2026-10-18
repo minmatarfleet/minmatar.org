@@ -31,12 +31,14 @@ let schedule: FleetScheduleData | null = null
 let history: FleetHistory | null = null
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
+const group_param = parseInt(Astro.url.searchParams.get('group') ?? '')
+const host_group_id = Number.isFinite(group_param) ? group_param : null
 
 try {
     if (upcoming)
         schedule = await fetch_fleet_schedule(auth_token as string)
     else
-        history = await fetch_fleet_history(auth_token as string)
+        history = await fetch_fleet_history(auth_token as string, host_group_id)
 } catch (error) {
     fetch_fleets_error = error
 }
@@ -51,7 +53,7 @@ else
     count_text = t(fleets.length !== 1 ? 'fleets_in_the_past_30_days_plural' : 'fleets_in_the_past_30_days_singular')
         .replace('{count}', String(fleets.length))
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}${host_group_id ? `&group=${host_group_id}` : ''}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
