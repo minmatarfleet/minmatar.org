@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { pilot_odds } from '@helpers/fleet_fights'
+
+/**
+ * Our numbers against theirs for a finished fleet's outcome cards, such as
+ * "50 vs 150 · Outnumbered 3 to 1". The caller renders the card and label.
+ */
+interface Props {
+    /** Pilots tracked in our fleet. */
+    our_pilots:         number | null | undefined;
+    /** Hostiles on the fleet's killmails. */
+    hostile_pilots:     number | null | undefined;
+    [propName: string]: any;
+}
+
+const {
+    our_pilots,
+    hostile_pilots,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const odds = pilot_odds(our_pilots, hostile_pilots)
+const caption = !odds ? null :
+    odds.side === 'even' ? t('fleets.numbers.even') :
+    t(odds.side === 'outnumbered' ? 'fleets.numbers.outnumbered' : 'fleets.numbers.outnumbering').replace('{ratio}', odds.ratio.toString())
+---
+
+<span
+    class:list={['[ fleet-numbers ]', Astro.props.class]}
+    title={t('fleets.numbers.explain')}
+    {...attributes}
+>
+    <b class="[ fleet-numbers__count ]">
+        {our_pilots ?? '—'}
+        <span class="[ fleet-numbers__versus ]">{t('fleets.numbers.versus')}</span>
+        {hostile_pilots ?? '—'}
+    </b>
+    {caption && <small>{caption}</small>}
+</span>
+
+<style lang="scss">
+    .fleet-numbers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fleet-numbers__count {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        font-weight: 400;
+        line-height: 1.05;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fleet-numbers__versus {
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.6;
+    }
+</style>

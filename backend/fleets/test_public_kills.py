@@ -10,7 +10,11 @@ from app.test import TestCase
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from feed.models import FeedEvent, FeedEventFleetLink
-from fleets.models import EveFleetAudience, EveFleetInstance
+from fleets.models import (
+    EveFleetAudience,
+    EveFleetFightTimeline,
+    EveFleetInstance,
+)
 from fleets.models import EveFleetInstanceMember
 from fleets.tests import (
     BASE_URL,
@@ -185,6 +189,34 @@ class FleetPublicKillsTestCase(TestCase):
             self.assertNotIn(key, body)
         for killmail in body["killmails"]:
             self.assertNotIn("fleet_pilots", killmail)
+
+    def test_numbers_count_our_fleet_against_hostiles_on_the_mails(self):
+        EveFleetFightTimeline.objects.create(
+            eve_fleet=self.fleet,
+            killmails=[
+                # Our kill: its victim was a hostile.
+                {"outcome": "kill", "victim": 9001, "hostiles": []},
+                # Their pod again: still one pilot.
+                {"outcome": "kill", "victim": 9001, "hostiles": []},
+                # Our loss: its attackers were hostiles, one of them twice.
+                {
+                    "outcome": "loss",
+                    "victim": 3001,
+                    "hostiles": [[99, 9002], [99, 9003], [98, 9001]],
+                },
+            ],
+        )
+
+        body = self._get().json()
+
+        self.assertEqual(2, body["our_pilots"])
+        self.assertEqual(3, body["hostile_pilots"])
+
+    def test_numbers_wait_for_the_fight_timeline(self):
+        body = self._get().json()
+
+        self.assertEqual(2, body["our_pilots"])
+        self.assertIsNone(body["hostile_pilots"])
 
     def test_signed_in_viewer_also_works(self):
         response = self._get(HTTP_AUTHORIZATION=f"Bearer {self.token}")

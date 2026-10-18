@@ -11,6 +11,7 @@ import {
     round_opponents,
     move_to_side,
     killmail_engagement,
+    pilot_odds,
 } from '@helpers/fleet_fights'
 
 const contract = (name: string): FleetFights =>
@@ -109,5 +110,22 @@ describe('killmail engagement', () => {
 
     it('leaves a mail far from every engagement untagged', () => {
         expect(killmail_engagement('2001-01-01T00:00:00Z', rounds)).toBeNull()
+    })
+})
+
+describe('pilot odds', () => {
+    it('says who had the numbers, to one decimal', () => {
+        expect(pilot_odds(50, 150)).toEqual({ side: 'outnumbered', ratio: 3 })
+        expect(pilot_odds(40, 25)).toEqual({ side: 'outnumbering', ratio: 1.6 })
+    })
+
+    it('calls close numbers even', () => {
+        expect(pilot_odds(30, 34)).toEqual({ side: 'even', ratio: 1 })
+    })
+
+    it('has nothing to say without both sides', () => {
+        expect(pilot_odds(30, 0)).toBeNull()
+        expect(pilot_odds(null, 12)).toBeNull()
+        expect(pilot_odds(30, undefined)).toBeNull()
     })
 })

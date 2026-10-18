@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from authentication import AuthOptional
 from feed.helpers.fleet_kills import fleet_kill_report
 
-from fleets.models import EveFleet, EveFleetInstance
+from fleets.helpers.fights.serve import pilot_numbers
+from fleets.models import EveFleet, EveFleetFightTimeline, EveFleetInstance
 
 PATH = "/{fleet_id}/public-kills"
 METHOD = "get"
@@ -44,6 +45,9 @@ class FleetPublicKillsResponse(BaseModel):
     isk_destroyed: int
     isk_lost: int
     efficiency: Optional[int] = None
+    # How many flew against how many they fought; never who.
+    our_pilots: Optional[int] = None
+    hostile_pilots: Optional[int] = None
     killmails: List[FleetPublicKillmail]
 
 
@@ -57,7 +61,9 @@ ROUTE_SPEC = {
         "hidden audience. Only what the killmails already show publicly: "
         "the roster, doctrine, staging and description are never included. "
         "Killmails are newest first; totals count capsules towards ISK but "
-        "not ships."
+        "not ships. our_pilots counts the pilots tracked in the fleet and "
+        "hostile_pilots the hostiles on its killmails; both are null until "
+        "there is something to count."
     ),
 }
 
@@ -111,6 +117,8 @@ def get_fleet_public_kills(request, fleet_id: int):
         if row["solar_system_name"] not in systems:
             systems.append(row["solar_system_name"])
     destroyed, lost = report["isk_destroyed"], report["isk_lost"]
+    timeline = EveFleetFightTimeline.objects.filter(eve_fleet=fleet).first()
+    numbers = pilot_numbers(fleet, timeline.killmails if timeline else None)
     fc = fleet.fleet_commander
     return FleetPublicKillsResponse(
         fleet_id=fleet.id,
@@ -130,5 +138,6 @@ def get_fleet_public_kills(request, fleet_id: int):
             if destroyed + lost
             else None
         ),
+        **numbers,
         killmails=killmails,
     )

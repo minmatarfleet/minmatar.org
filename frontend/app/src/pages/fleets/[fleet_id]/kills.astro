@@ -17,7 +17,7 @@ const { user } = get_request_user(Astro)
 
 import { get_fleet_public_kills, type FleetPublicKills, type FleetKills } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image_server'
 import { eve_clock } from '@helpers/fleet_fights'
 
 let report:FleetPublicKills | null = null
@@ -56,6 +56,7 @@ const fleet_kills:FleetKills = {
     })),
 }
 
+// The share card shows the priciest hull we killed.
 const biggest = report.killmails
     .filter(killmail => killmail.outcome === 'kill' && !killmail.is_capsule)
     .reduce<FleetPublicKills['killmails'][number] | null>((best, killmail) => !best || killmail.isk_value > best.isk_value ? killmail : best, null)
@@ -83,6 +84,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import FleetKillFeed from '@components/blocks/FleetKillFeed.astro'
+import FleetNumbers from '@components/blocks/FleetNumbers.astro'
 import Button from '@components/blocks/Button.astro'
 ---
 
@@ -129,18 +131,10 @@ import Button from '@components/blocks/Button.astro'
                         <dt>{t('fleets.history.isk_efficiency')}</dt>
                         <dd><b>{report.efficiency !== null && report.efficiency !== undefined ? `${report.efficiency}%` : '—'}</b></dd>
                     </div>
-                    {biggest &&
-                        <div>
-                            <dt>{t('fleets.kills.biggest')}</dt>
-                            <dd class="[ public-kills__biggest ]">
-                                {biggest.victim_ship_type_id && <img src={get_item_icon(biggest.victim_ship_type_id, 64)} alt="" width="44" height="44" loading="lazy" />}
-                                <span>
-                                    <b>{biggest.victim_ship_name}</b>
-                                    <small>{format_isk(biggest.isk_value)} · {biggest.solar_system_name}</small>
-                                </span>
-                            </dd>
-                        </div>
-                    }
+                    <div>
+                        <dt>{t('fleets.numbers.title')}</dt>
+                        <dd><FleetNumbers our_pilots={report.our_pilots} hostile_pilots={report.hostile_pilots} /></dd>
+                    </div>
                 </dl>
 
                 {fleet_kills.killmails.length > 0 &&
@@ -215,20 +209,5 @@ import Button from '@components/blocks/Button.astro'
 
     .public-kills__cards .public-kills__loss {
         color: color-mix(in srgb, var(--fleet-red) 70%, white);
-    }
-
-    .public-kills__cards .public-kills__biggest {
-        flex-direction: row;
-        align-items: center;
-        gap: var(--space-xs);
-
-        > span {
-            display: flex;
-            flex-direction: column;
-        }
-
-        b {
-            color: var(--highlight);
-        }
     }
 </style>

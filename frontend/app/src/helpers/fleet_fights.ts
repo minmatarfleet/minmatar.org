@@ -161,3 +161,17 @@ export function move_to_side(sides: string, group: number, team: number): string
     if (Number.isInteger(group) && group > 0 && Number.isInteger(team) && team >= 0) moves.set(group, team)
     return [...moves.entries()].sort((a, b) => a[0] - b[0]).map(([id, index]) => `${id}:${index}`).join(',')
 }
+
+export interface PilotOdds {
+    side:   'outnumbered' | 'outnumbering' | 'even';
+    /** The bigger side per pilot on the smaller, to one decimal: 3 for 150 vs 50. */
+    ratio:  number;
+}
+
+/** Who had the numbers, from our pilots and the hostiles we fought; null when either is unknown. */
+export function pilot_odds(ours: number | null | undefined, theirs: number | null | undefined): PilotOdds | null {
+    if (!ours || !theirs) return null
+    const ratio = Math.round(10 * Math.max(ours, theirs) / Math.min(ours, theirs)) / 10
+    if (ratio < 1.2) return { side: 'even', ratio: 1 }
+    return { side: theirs > ours ? 'outnumbered' : 'outnumbering', ratio }
+}

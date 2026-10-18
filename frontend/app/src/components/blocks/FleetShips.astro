@@ -16,6 +16,8 @@ interface Props {
     readonly?:          boolean;
     can_manage?:        boolean;
     doctrine_name?:     string | null;
+    /** Off on a finished fleet: who signed up no longer matters. */
+    show_volunteers?:   boolean;
 }
 
 const {
@@ -28,6 +30,7 @@ const {
     readonly = false,
     can_manage = false,
     doctrine_name = null,
+    show_volunteers = true,
 } = Astro.props
 
 // Capitals are listed last regardless of doctrine role: most pilots can skip them.
@@ -130,6 +133,7 @@ import CogIcon from '@components/icons/buttons/CogIcon.astro'
                             pilots={pilots}
                             readonly={readonly}
                             can_manage={can_manage}
+                            show_volunteers={show_volunteers}
                         />
                     )}
                 </BlockList>
