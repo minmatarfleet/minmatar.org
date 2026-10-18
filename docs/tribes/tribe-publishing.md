@@ -293,7 +293,7 @@ A "New" menu (post, fleet, event) shows for anyone with a `can_*` flag.
 Components (frontend/app/src/components/blocks/): `TribeGroupChip`,
 `VisibilityTag`, `HostPicker`, `PostTile`, `MembersOnlyGate`,
 `TribeEventRow`, `EventWherePicker`, `DiscordEmbedPreview` (+
-`partials/discord_preview_component.astro`). Extended: `Tag` (outline
+`frontend/app/src/pages/partials/discord_preview_component.astro`). Extended: `Tag` (outline
 variant), `SectionTabs` (scrolls at every width), `FleetScheduleRow`,
 `FleetSpotlight`, `FleetHistoryRow`, `FleetHero` (host strip),
 `FleetFeedItem`, `FleetForm`, the post editor, `PostItem`, desktop
