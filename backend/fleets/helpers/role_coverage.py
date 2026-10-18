@@ -64,6 +64,38 @@ def _present_members(fleet, visible):
     return [m for m in members if visible(m.character_id)]
 
 
+def hull_only_roles(group_name: str | None) -> FitRoles:
+    """Off-doctrine hull: only logi can be told from the hull alone."""
+    return FitRoles(logi=group_name in LOGI_HULL_GROUPS)
+
+
+def hull_roles(fleet, ship_type_ids) -> dict[int, FitRoles]:
+    """
+    Roles each hull fills in this fleet, without knowing the pilot's fit.
+
+    The same rule ``fleet_role_pilots`` applies to a pilot in fleet: the
+    composition fit for that hull (first by role order), else logi from a
+    logi hull group.
+    """
+    ship_type_ids = set(ship_type_ids)
+    by_hull = {}
+    for entry in fleet_composition(fleet):
+        by_hull.setdefault(entry.ship_id, entry)
+    groups = dict(
+        EveType.objects.filter(id__in=ship_type_ids).values_list(
+            "id", "eve_group__name"
+        )
+    )
+    return {
+        type_id: (
+            by_hull[type_id].roles
+            if type_id in by_hull
+            else hull_only_roles(groups.get(type_id))
+        )
+        for type_id in ship_type_ids
+    }
+
+
 def fleet_role_pilots(fleet, visible=lambda character_id: True):
     """Every pilot whose ship fills a role, volunteered or in fleet."""
     # pylint: disable=import-outside-toplevel
@@ -120,10 +152,7 @@ def fleet_role_pilots(fleet, visible=lambda character_id: True):
             roles, fitting_name = entry.roles, entry.name
             bursts = roles.default_bursts()
         else:
-            # Off-doctrine hull: only logi can be told from the hull alone.
-            roles = FitRoles(
-                logi=hull_groups.get(member.ship_type_id) in LOGI_HULL_GROUPS
-            )
+            roles = hull_only_roles(hull_groups.get(member.ship_type_id))
             fitting_name, bursts = "", []
         pilots[member.character_id] = RolePilot(
             character_id=member.character_id,

@@ -1,0 +1,44 @@
+---
+// no-error-refetch: mutation form; a failed save shows inline under the doctrine list.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import { update_fleet } from '@helpers/api.minmatar.org/fleets'
+
+const data = await Astro.request.formData()
+const doctrine_id = parseInt((data.get('doctrine_id') as string) ?? '0')
+
+// The backend checks the caller manages this fleet (its FC or a strategic FC).
+let failed = !doctrine_id
+if (!failed) {
+    try {
+        failed = !(await update_fleet(auth_token as string, { doctrine_id }, fleet_id))
+    } catch (error) {
+        console.log(`Setting the doctrine failed: ${error.message}`)
+        failed = true
+    }
+}
+
+// Saved: reload onto the Ships tab, which now lists the doctrine's fits.
+if (!failed)
+    Astro.response.headers.set('HX-Refresh', 'true')
+---
+
+{failed && <small role="alert">{t('fleets.ships_setup.failed')}</small>}

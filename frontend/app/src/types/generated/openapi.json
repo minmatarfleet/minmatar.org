@@ -13569,6 +13569,225 @@
         "title": "FleetFightTotals",
         "type": "object"
       },
+      "FleetParticipantsHull": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "ship_name",
+          "count"
+        ],
+        "title": "FleetParticipantsHull",
+        "type": "object"
+      },
+      "FleetParticipantsNoShow": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "ship_name",
+          "ship_type_id"
+        ],
+        "title": "FleetParticipantsNoShow",
+        "type": "object"
+      },
+      "FleetParticipantsResponse": {
+        "properties": {
+          "changed_ship": {
+            "title": "Changed Ship",
+            "type": "integer"
+          },
+          "ended_in_pod": {
+            "title": "Ended In Pod",
+            "type": "integer"
+          },
+          "flew": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsHull"
+            },
+            "title": "Flew",
+            "type": "array"
+          },
+          "joined_without_signing_up": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joined Without Signing Up"
+          },
+          "logi_fc": {
+            "items": {
+              "$ref": "#/components/schemas/EveFleetRoleVolunteerResponse"
+            },
+            "title": "Logi Fc",
+            "type": "array"
+          },
+          "no_shows": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FleetParticipantsNoShow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Shows"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "roles_flown": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsRole"
+            },
+            "title": "Roles Flown",
+            "type": "array"
+          },
+          "signed_up": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Up"
+          }
+        },
+        "required": [
+          "pilots",
+          "flew",
+          "changed_ship",
+          "ended_in_pod",
+          "roles_flown",
+          "logi_fc"
+        ],
+        "title": "FleetParticipantsResponse",
+        "type": "object"
+      },
+      "FleetParticipantsRole": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "hulls": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsRoleHull"
+            },
+            "title": "Hulls",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsRolePilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "logi",
+              "links",
+              "cyno"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "label",
+          "pilots",
+          "count",
+          "hulls"
+        ],
+        "title": "FleetParticipantsRole",
+        "type": "object"
+      },
+      "FleetParticipantsRoleHull": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ship_name",
+          "count"
+        ],
+        "title": "FleetParticipantsRoleHull",
+        "type": "object"
+      },
+      "FleetParticipantsRolePilot": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "ship_name"
+        ],
+        "title": "FleetParticipantsRolePilot",
+        "type": "object"
+      },
       "FleetPingPreviewRequest": {
         "description": "The fleet form's fields that shape the start ping.",
         "properties": {
@@ -20155,6 +20374,73 @@
           }
         },
         "title": "MyFleetsResponse",
+        "type": "object"
+      },
+      "MyPilotLocationResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "has_location_scope": {
+            "title": "Has Location Scope",
+            "type": "boolean"
+          },
+          "solar_system_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solar System Id"
+          },
+          "solar_system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solar System Name"
+          },
+          "station_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Station Id"
+          },
+          "structure_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structure Id"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "has_location_scope"
+        ],
+        "title": "MyPilotLocationResponse",
         "type": "object"
       },
       "MyRecentFleet": {
@@ -39265,6 +39551,54 @@
         ]
       }
     },
+    "/api/fleets/{fleet_id}/my-pilot-locations": {
+      "get": {
+        "description": "Where each of the caller's characters is (ESI location, cached for a minute). has_location_scope is false when the character's token lacks esi-location.read_location.v1 (the Desktop scope group); the location is null then, and also when ESI fails for that character.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_my_pilot_locations_get_fleet_my_pilot_locations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MyPilotLocationResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet My Pilot Locations",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/{fleet_id}/my-pilots": {
       "get": {
         "description": "The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for.",
@@ -39424,6 +39758,50 @@
           }
         ],
         "summary": "Get Fleet My Srp",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/participants": {
+      "get": {
+        "description": "Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetParticipantsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Participants",
         "tags": [
           "Fleets"
         ]

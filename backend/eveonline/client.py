@@ -1011,6 +1011,14 @@ class EsiClient:
             return EsiResponse(response_code=SUCCESS)
         return EsiResponse(response_code=result.status)
 
+    def get_character_location(self) -> EsiResponse:
+        """Where the character is: solar_system_id, plus station_id or
+        structure_id when docked (GET /characters/{id}/location/)."""
+        return self._raw_get(
+            f"/characters/{self.character_id}/location/",
+            ["esi-location.read_location.v1"],
+        )
+
     def get_character_planets(self) -> EsiResponse:
         """Returns the list of planetary colonies for the character."""
         return self._raw_get(

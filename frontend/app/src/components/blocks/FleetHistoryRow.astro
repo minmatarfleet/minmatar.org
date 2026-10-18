@@ -103,7 +103,7 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
             :
             <>
                 <span class="[ fleet-history-row__isk ]">
-                    <span>{format_isk(destroyed)}</span>
+                    <span class="[ fleet-history-row__killed ]">{format_isk(destroyed)}</span>
                     <span class="[ fleet-history-row__lost ]">{format_isk(lost)}</span>
                 </span>
                 <span class="[ fleet-history-row__bar ]" aria-hidden="true">
@@ -200,9 +200,13 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         font-variant-numeric: tabular-nums;
     }
 
+    /* Kills blue, losses red, as on the Fights tab. */
+    .fleet-history-row__killed {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
     .fleet-history-row__lost {
-        color: var(--fleet-red);
-        filter: brightness(1.5);
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
     }
 
     .fleet-history-row__bar {
@@ -211,7 +215,7 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         background-color: var(--fleet-red);
 
         span {
-            background-color: var(--fleet-yellow);
+            background-color: var(--alliance-blue);
         }
     }
 

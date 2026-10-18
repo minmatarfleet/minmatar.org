@@ -33,6 +33,39 @@ export const link_kinds = (
     }))
     .filter(row => row.ship_names.length > 0 || row.pilots.length > 0)
 
+/** Cynos the roles list asks for. */
+export const CYNOS_WANTED = 2
+
+export interface RoleTally {
+    /** Rows with a target: Logi FC, cynos (when the fits carry one), each link kind. */
+    total: number
+    filled: number
+    /** Labels of the rows still short, in list order. */
+    open: string[]
+}
+
+/**
+ * How many roles with a target are filled. The roles list and the Overview's
+ * "Before form-up" card both count this way, so they always agree.
+ */
+export const role_tally = (
+    roles:FleetRoleCoverage,
+    composition:FleetCompositionEntry[],
+    labels:{ logi_fc:string, cynos:string },
+):RoleTally => {
+    const show_cynos = ships_for_role(composition, entry => entry.fit_roles?.cyno ?? false).length > 0 || roles.cynos.length > 0
+    const rows = [
+        { label: labels.logi_fc, filled: roles.logi_fc.length >= 1 },
+        ...(show_cynos ? [{ label: labels.cynos, filled: roles.cynos.length >= CYNOS_WANTED }] : []),
+        ...link_kinds(roles, composition).map(row => ({ label: row.label, filled: row.pilots.length >= 1 })),
+    ]
+    return {
+        total: rows.length,
+        filled: rows.filter(row => row.filled).length,
+        open: rows.filter(row => !row.filled).map(row => row.label),
+    }
+}
+
 /** The fit's online bursts as per-kind counts (the pick form's defaults). */
 export const default_burst_counts = (roles:FleetFitRoles):Partial<Record<BurstKind, number>> =>
     ({ ...roles.bursts_online })

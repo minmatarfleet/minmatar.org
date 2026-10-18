@@ -18,6 +18,11 @@ interface Props {
     fleet_id:           number;
     /** The viewer's losses here on hulls SRP covers; null when they cannot file SRP. */
     srp_losses?:        FleetSrpLoss[] | null;
+    /**
+     * Result and SRP only. A fleet with a Fights tab shows its minute-by-minute
+     * chart and its ships there, so the Overview keeps just the outcome.
+     */
+    summary_only?:      boolean;
     [propName: string]: any;
 }
 
@@ -25,6 +30,7 @@ const {
     fleet_kills,
     fleet_id,
     srp_losses = null,
+    summary_only = false,
     ...attributes
 } = Astro.props
 
@@ -145,7 +151,7 @@ import SRPButton from '@components/blocks/SRPButton.astro'
                 </section>
             }
 
-            {buckets.length > 1 &&
+            {!summary_only && buckets.length > 1 &&
                 <section class="[ fleet-kills__timeline ]" aria-labelledby="fleet-timeline-title">
                     <header>
                         <h3 id="fleet-timeline-title">{t('fleets.kills.timeline')}</h3>
@@ -173,6 +179,10 @@ import SRPButton from '@components/blocks/SRPButton.astro'
                 </section>
             }
 
+            {summary_only ?
+                <a class="[ fleet-kills__to-fights ]" href="#fights">{t('fleets.kills.see_fights')}</a>
+                :
+                <>
             <section class="[ fleet-kills__hulls ]" aria-labelledby="fleet-hulls-title">
                 <header>
                     <h3 id="fleet-hulls-title">{t('fleets.kills.killmails')}</h3>
@@ -243,11 +253,18 @@ import SRPButton from '@components/blocks/SRPButton.astro'
             </section>
 
             <small class="[ fleet-kills__note ]">{t('fleets.kills.source_note')}</small>
+                </>
+            }
         </>
     }
 </Flexblock>
 
 <style lang="scss">
+    .fleet-kills__to-fights {
+        align-self: flex-start;
+        font-weight: 700;
+    }
+
     .fleet-kills h3 {
         font-size: var(--step-1);
     }

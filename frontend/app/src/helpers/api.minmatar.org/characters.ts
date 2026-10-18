@@ -137,3 +137,17 @@ export async function get_character_tags(access_token:string, character_id:numbe
         error: 'Error fetching character summary',
     })
 }
+/**
+ * Sets one of the caller's characters' in-game destination. Resolves to the
+ * HTTP status: 204 set, 409 the token lacks esi-ui.write_waypoint.v1,
+ * 429 too many clicks, anything else a failure.
+ */
+export async function set_character_waypoint(access_token:string, character_id:number, destination_id:number) {
+    const response = await api_response(`${API_ENDPOINT}/${character_id}/waypoint`, {
+        method: 'POST',
+        token: access_token,
+        body: { destination_id, clear_other_waypoints: true },
+        allow: [400, 404, 409, 429, 502],
+    })
+    return response.status
+}

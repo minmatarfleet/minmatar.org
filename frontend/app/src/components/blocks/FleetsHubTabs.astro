@@ -1,0 +1,74 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The Fleets page's two tabs. Each is its own URL (/fleets/upcoming/,
+ * /fleets/history/), so the tabs are links and old links keep working.
+ */
+interface Props {
+    active:     'upcoming' | 'history';
+}
+
+const { active } = Astro.props
+
+const tabs = [
+    { id: 'upcoming', label: t('fleets.hub.upcoming'), href: translatePath('/fleets/upcoming/') },
+    { id: 'history', label: t('fleets.hub.history'), href: translatePath('/fleets/history/') },
+]
+---
+
+<nav class="[ fleets-hub-tabs ]" aria-label={t('fleets.hub.label')}>
+    {tabs.map(tab =>
+        <a
+            href={tab.href}
+            class:list={['[ fleets-hub-tab ]', { 'is-active': tab.id === active }]}
+            aria-current={tab.id === active ? 'page' : undefined}
+        >
+            {tab.label}
+        </a>
+    )}
+</nav>
+
+<style lang="scss">
+    .fleets-hub-tabs {
+        display: flex;
+        gap: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color-hover);
+    }
+
+    .fleets-hub-tab {
+        border-bottom: 3px solid transparent;
+        margin-block-end: -1px;
+        padding: var(--space-2xs) var(--space-s);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: var(--foreground);
+
+        &.is-active {
+            color: var(--highlight);
+            border-bottom-color: var(--fleet-red);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .fleets-hub-tab:hover {
+            color: var(--highlight);
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .fleets-hub-tab {
+            flex: 1 0 auto;
+            text-align: center;
+            font-size: var(--step-0);
+        }
+    }
+</style>
