@@ -40,4 +40,13 @@
     --button-color-blind:   white;
     --border-color:         rgb(255, 255, 255, 0.05);
     --border-color-hover:   rgb(255, 255, 255, 0.1);
+
+    // White hairlines and dark tints at the alphas components kept writing by
+    // hand. For any other alpha, mix a token: color-mix(in srgb, var(--highlight) 20%, transparent).
+    --hairline:             rgba(255, 255, 255, 0.06);
+    --hairline-medium:      rgba(255, 255, 255, 0.08);
+    --hairline-strong:      rgba(255, 255, 255, 0.12);
+    --text-muted:           rgba(255, 255, 255, 0.55);
+    --glow:                 rgba(255, 255, 255, 0.75);
+    --surface-sunken:       rgba(0, 0, 0, 0.22);
 }

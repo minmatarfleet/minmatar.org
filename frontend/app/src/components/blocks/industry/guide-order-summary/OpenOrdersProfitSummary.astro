@@ -231,6 +231,8 @@ const results_partial = translatePath(
 </script>
 
 <style lang="scss">
+    @use '../../../../styles/mixins/skeleton';
+
     .order-summary {
         min-width: 0;
     }
@@ -267,23 +269,7 @@ const results_partial = translatePath(
             position: absolute;
             inset: 0;
             border-radius: 2px;
-            background: linear-gradient(
-                90deg,
-                rgba(0, 0, 0, 0.15) 0%,
-                rgba(255, 255, 255, 0.06) 50%,
-                rgba(0, 0, 0, 0.15) 100%
-            );
-            background-size: 200% 100%;
-            animation: order-summary-orders-skel 1.1s ease-in-out infinite;
-        }
-    }
-
-    @keyframes order-summary-orders-skel {
-        0% {
-            background-position: 100% 0;
-        }
-        100% {
-            background-position: -100% 0;
+            @include skeleton.shimmer(rgba(0, 0, 0, 0.15), var(--hairline));
         }
     }
 </style>

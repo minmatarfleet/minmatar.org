@@ -462,13 +462,27 @@ import { number_name } from '@helpers/numbers'
 
         &:hover,
         &:focus-visible {
-            transform: translateX(2px);
             border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
         }
 
-        &:hover::before,
+        &:focus-visible {
+            transform: translateX(2px);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                transform: translateX(2px);
+            }
+        }
+
         &:focus-visible::before {
             transform: scale(1.03);
+        }
+
+        @media (hover: hover) {
+            &:hover::before {
+                transform: scale(1.03);
+            }
         }
 
         &:focus-visible {
@@ -573,7 +587,16 @@ import { number_name } from '@helpers/numbers'
     .sp-headline-card:hover .sp-headline-card__arrow,
     .sp-headline-card:focus-visible .sp-headline-card__arrow {
         color: var(--fleet-yellow);
+    }
+
+    .sp-headline-card:focus-visible .sp-headline-card__arrow {
         transform: translateX(3px);
+    }
+
+    @media (hover: hover) {
+        .sp-headline-card:hover .sp-headline-card__arrow {
+            transform: translateX(3px);
+        }
     }
 
     .sp-campaign__footer {

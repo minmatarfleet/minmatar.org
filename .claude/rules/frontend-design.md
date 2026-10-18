@@ -19,7 +19,7 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 ## 3. Design tokens — never hardcode values
 
 - Use the CSS custom properties in `src/styles/properties/`: colors (`--fleet-red`, `--fleet-yellow`, `--alliance-blue`, `--militia-purple`, `--green`, semantic `--foreground`/`--highlight`/`--background`), Utopia fluid space `--space-*` and type `--step-*`, fonts (`--heading-font`/`--button-font`/`--default-font`), layout widths, transitions (`--fast-transition`…`--slowest-transition`).
-- No raw `px`/`rem` for spacing/type; no hardcoded hex colors. For glass/transparency use the `.*-transparency` effect classes.
+- No raw `px`/`rem` for spacing/type; no hardcoded hex colors or white/black `rgba()` tints. Use the alpha tokens (`--hairline`, `--hairline-medium`, `--hairline-strong`, `--text-muted`, `--surface-sunken`, `--border-color`, `--faded`) or `color-mix(in srgb, var(--token) N%, transparent)` for other alphas. For glass/transparency use the `.*-transparency` effect classes.
 - Z-index must derive from the layered chain in `_z-index.scss` (`--header` → `--neocom` → `--backdrop` → `--dialog` → `--page-finder` → `--alert` → `--dialog-close` → `--tooltips`). Never invent z-index values.
 
 ## 4. Layout
@@ -34,6 +34,7 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 - Scoped `<style lang="scss">` by default; `is:global` only for shared classes. Pass props into CSS via `define:vars`.
 - Tailwind = utilities only; reference tokens with arbitrary values (`top-[var(--space-2xs)]`). No component-level `@apply` blobs.
 - User-visible strings via `@helpers/i18n` (`t`, `translatePath`); shared UI types via `@dtypes/layout_components`.
+- Empty lists/panels render `<EmptyState title={t(...)} />` (add `hint` for a whole-panel empty); a partial that fetches from the API renders failures with `ErrorRefetch`. Both are styled globally, so they work inside htmx partials. No new `__empty` styles.
 - Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility

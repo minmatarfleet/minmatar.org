@@ -483,7 +483,12 @@ const is_veteran = (context?.tenure_days ?? 0) >= 365
         cursor: pointer;
         transition: transform 0.15s ease;
     }
-    .wizard-btn:hover { transform: scale(1.03); }
+    @media (hover: hover) {
+        .wizard-btn:hover { transform: scale(1.03); }
+    }
+    @media (hover: none) {
+        .wizard-btn:active:not(:disabled) { transform: scale(0.95); }
+    }
     .wizard-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .wizard-btn:disabled:hover { transform: none; }
     .wizard-btn--ghost { background: transparent; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.25)); color: var(--foreground); }

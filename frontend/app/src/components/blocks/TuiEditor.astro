@@ -151,9 +151,20 @@ const {
         white-space: nowrap;
 
         &:hover {
-            transform: scale(1.1) !important;
             background-color: var(--fleet-red) !important;
             border-color: var(--fleet-red) !important;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                transform: scale(1.1) !important;
+            }
+        }
+
+        @media (hover: none) {
+            &:active {
+                transform: scale(0.95) !important;
+            }
         }
     }
 
@@ -166,8 +177,19 @@ const {
 
     .toastui-editor-dark .toastui-editor-toolbar-icons:not(:disabled):hover {
         background-color: var(--fleet-red);
-        transform: scale(1.1);
         border-color: var(--fleet-red);
+    }
+
+    @media (hover: hover) {
+        .toastui-editor-dark .toastui-editor-toolbar-icons:not(:disabled):hover {
+            transform: scale(1.1);
+        }
+    }
+
+    @media (hover: none) {
+        .toastui-editor-dark .toastui-editor-toolbar-icons:not(:disabled):active {
+            transform: scale(0.95);
+        }
     }
 
     .toastui-editor-dark .toastui-editor-toolbar-divider {

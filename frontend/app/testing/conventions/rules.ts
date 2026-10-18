@@ -7,7 +7,7 @@
 //
 // Keep every rule narrow enough that a hit is always a real violation.
 
-import { astro_template, css_regions, hits_in, type Hit, type SourceFile } from './scan'
+import { astro_template, css_regions, hits_in, line_at, type Hit, type Region, type SourceFile } from './scan'
 
 export interface ConventionRule {
     id: string
@@ -33,6 +33,51 @@ const HEX = /#[0-9a-fA-F]{3,8}\b/g
 const VAR_HEX_FALLBACK = /var\(\s*--[\w-]+\s*,\s*#[0-9a-fA-F]{3,8}\s*\)/g
 const URL_FUNCTION = /url\([^)]*\)/g
 const value_has_hex = (value: string) => [...value.replace(URL_FUNCTION, '').replace(VAR_HEX_FALLBACK, '').matchAll(HEX)].length > 0
+
+/** rgba()/rgb() of pure white or black with an alpha: rgba(255, 255, 255, 0.06), rgb(0 0 0 / 0.5). */
+const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/]\s*[\d.]+%?\s*\)/g
+/** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
+const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
+
+// `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
+const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
+const HOVER_GATE = /@media[^{]*\(\s*hover\s*:\s*hover\s*\)/
+
+/**
+ * `transform`/`scale`/`translate`/`rotate` declarations that apply on :hover
+ * without an enclosing `@media (hover: hover)`. Walks the nested (SCSS) block
+ * structure, so `&:hover` inside a rule and gating on any ancestor both count.
+ */
+function ungated_hover_motion(file: SourceFile, region: Region): Hit[] {
+    // Blank out comments, keeping offsets (// only at line start or after whitespace, so url(https://...) survives).
+    const text = region.text.replace(/\/\*[\s\S]*?\*\/|(^|[\s;{}])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' '))
+    const hits: Hit[] = []
+    const stack: string[] = []
+    let start = 0
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i]
+        if (c !== '{' && c !== '}' && c !== ';') continue
+        const chunk = text.slice(start, i).trim()
+        if (c === '{') stack.push(chunk)
+        else {
+            const hovered = stack.some((s) => /:hover\b/.test(s) && !s.startsWith('@'))
+            const gated = stack.some((s) => HOVER_GATE.test(s))
+            if (hovered && !gated && MOTION_DECLARATION.test(chunk)) {
+                const index = region.offset + start + (text.slice(start, i).length - text.slice(start, i).trimStart().length)
+                hits.push({ line: line_at(file.text, index), snippet: `${stack.filter((s) => !s.startsWith('@')).at(-1)} { ${chunk} }`.replace(/\s+/g, ' ').slice(0, 80) })
+            }
+            if (c === '}') stack.pop()
+        }
+        start = i + 1
+    }
+    return hits
+}
+
+/** A class selector for a hand-styled empty state: `.activity-empty`, `.cm-empty`, `.x__empty-title`. Not `--empty` modifiers or `.is-empty` states. */
+const BESPOKE_EMPTY_SELECTOR = /\.(?!is-empty\b)[a-z][\w-]*?(?:__empty|[a-z0-9]-empty)(?:-[a-z]+)?(?![\w-])(?=[^{};]*\{)/g
+
+/** Partials that read the API render failures with ErrorRefetch, or say why not (`no-error-refetch: <reason>`, e.g. a form result). */
+const DATA_HELPER_IMPORT = /from\s+['"]@helpers\/(?:api\.minmatar\.org|fetching)\//
 
 /** Numeric z-index at or above this competes with page chrome and must come from _z-index.scss. */
 export const Z_INDEX_LAYER_THRESHOLD = 100
@@ -82,6 +127,49 @@ export const RULES: ConventionRule[] = [
             const hits = hits_in(file, css_regions(file), HEX_IN_DECLARATION, (m) => value_has_hex(m[2]))
             const tailwind = is_astro(file) ? hits_in(file, [astro_template(file.text)], /(?<![\w-])[a-z]+(?:-[a-z]+)*-\[#[0-9a-fA-F]{3,8}\]/g) : []
             return [...hits, ...tailwind]
+        },
+    },
+    {
+        id: 'alpha_literal',
+        kind: 'ratchet',
+        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--hairline), var(--hairline-strong), var(--text-muted), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
+        find: (file) => {
+            if (file.path.startsWith('src/styles/properties/')) return []
+            return hits_in(file, css_regions(file), ALPHA_LITERAL, (m) => !is_var_fallback(m))
+        },
+    },
+    {
+        id: 'skeleton_keyframes',
+        kind: 'absolute',
+        why: 'Loading skeletons use @include skeleton.shimmer / skeleton.pulse from src/styles/mixins/_skeleton.scss: one set of keyframes (styles/_animations.scss) that stops under prefers-reduced-motion. Do not define per-component skeleton keyframes.',
+        find: (file) => {
+            if (file.path === 'src/styles/_animations.scss') return []
+            return hits_in(file, css_regions(file), /@keyframes\s+[\w-]*(?:skel|shimmer)[\w-]*/g)
+        },
+    },
+    {
+        id: 'hover_motion_ungated',
+        kind: 'absolute',
+        why: 'Rule 6: hover transforms (scale/translate/rotate) go inside @media (hover: hover), or touch screens keep the element stuck mid-effect after a tap. Keep a :focus-visible variant outside the query; touch press states go in @media (hover: none) on :active.',
+        find: (file) => css_regions(file).flatMap((region) => ungated_hover_motion(file, region)),
+    },
+    {
+        id: 'bespoke_empty_state',
+        kind: 'ratchet',
+        why: 'Empty lists and panels render <EmptyState title={t(...)} /> (or title + hint), styled once in src/styles/components/_empty-state.scss so it also works inside htmx partials. Do not style a new __empty / -empty class.',
+        find: (file) => {
+            if (file.path.startsWith('src/styles/')) return []
+            return hits_in(file, css_regions(file), BESPOKE_EMPTY_SELECTOR)
+        },
+    },
+    {
+        id: 'partial_error_state',
+        kind: 'ratchet',
+        why: 'A partial that fetches from the API renders its failure with <ErrorRefetch args={{ partial, error, delay }} /> (retry with backoff). Mutation partials that show inline form errors instead add a `no-error-refetch: <reason>` comment.',
+        find: (file) => {
+            if (!file.path.startsWith('src/pages/partials/') || !is_astro(file)) return []
+            if (!DATA_HELPER_IMPORT.test(file.text) || /ErrorRefetch|no-error-refetch:/.test(file.text)) return []
+            return [{ line: 1, snippet: 'fetches API data without ErrorRefetch' }]
         },
     },
     {
