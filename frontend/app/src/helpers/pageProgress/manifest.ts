@@ -51,7 +51,7 @@ export function pageProgressFromMarkdown(options: {
  *   page_title: 'Navy Destroyer Guide',
  *   sections: ['credits', 'history', 'introduction'],
  * })
- * // Mark DOM: <PageProgressSection id="credits">...</PageProgressSection>
+ * // Mark DOM: <section id="credits" data-section-id="credits">...</section>
  */
 export function pageProgressFromSections(options: {
     page_key: string

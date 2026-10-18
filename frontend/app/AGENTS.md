@@ -14,8 +14,8 @@ Full methodology: **`../../docs/frontend-design.md`** (read it before editing UI
 ## Styling
 - Never hardcode colors/spacing/type — use the CSS custom properties in `src/styles/properties/` (`--fleet-red`, `--space-*`, `--step-*`, fonts, transitions). No raw px/rem for spacing/type, no hand-rolled hex.
 - Z-index only via the layered chain in `_z-index.scss`. Transparency via the `.*-transparency` effect classes.
-- Compose layout from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `Flexblock`, `FixedFluid`, `Cover`, `ScrollX`, …) rather than hand-rolling.
-- Reuse `Button`, `Badge`, `Tag`, `Card`, `Input`; one `.astro` component per file; scoped `<style lang="scss">` (`is:global` only for shared classes); `define:vars` to pass props into CSS.
+- Compose layout from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `Flexblock`, `FixedFluid`, `BlockList`, `XFadeScroll` for horizontal scroll, …) rather than hand-rolling.
+- Reuse `Button`, `Badge`, `Tag`, `Input`, and `ComponentBlock` for bordered panels (`Card` is only the hover picture card); one `.astro` component per file; scoped `<style lang="scss">` (`is:global` only for shared classes); `define:vars` to pass props into CSS.
 
 ## Accessibility
 - Dark-only; respect `body.color-blind-mode`; keep `:focus-visible`; gate hover effects behind `@media (hover: hover)` and tactile press behind `@media (hover: none)`.

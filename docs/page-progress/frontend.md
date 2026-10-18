@@ -30,8 +30,9 @@ import {
   pageProgressFromSections,
 } from '@helpers/pageProgress'
 import PageProgress from '@components/blocks/PageProgress.astro'
-import PageProgressSection from '@components/blocks/PageProgressSection.astro'
 ```
+
+Mark each section in the DOM with `id` and `data-section-id` set to the same value.
 
 `<PageProgress />` handles auth cookies and i18n labels. It mounts whenever `section_ids` is non-empty (anonymous or signed-in).
 
@@ -81,7 +82,6 @@ Best for bespoke layouts (ship guides, multi-component pages).
 ---
 import { pageProgressFromSections } from '@helpers/pageProgress'
 import PageProgress from '@components/blocks/PageProgress.astro'
-import PageProgressSection from '@components/blocks/PageProgressSection.astro'
 
 const page_title = 'Example Page'
 const progress = pageProgressFromSections({
@@ -101,17 +101,16 @@ const progress = pageProgressFromSections({
   <h1>{page_title}</h1>
   <PageProgress {...progress} />
 
-  <PageProgressSection id="intro">
+  <section id="intro" data-section-id="intro">
     <h2>Introduction</h2>
     <p>…</p>
-  </PageProgressSection>
+  </section>
 
-  <PageProgressSection id="details">
+  <section id="details" data-section-id="details">
     <h2>Details</h2>
     <p>…</p>
-  </PageProgressSection>
+  </section>
 
-  <!-- Equivalent low-level marking: -->
   <section id="summary" data-section-id="summary">
     <h2>Summary</h2>
     <p>…</p>
@@ -207,6 +206,5 @@ Django admin → **User page progress**
 | Public helpers | `frontend/app/src/helpers/pageProgress/` |
 | Local stash | `frontend/app/src/helpers/pageProgress/localStore.ts` |
 | UI drop-in | `frontend/app/src/components/blocks/PageProgress.astro` |
-| Section wrapper | `frontend/app/src/components/blocks/PageProgressSection.astro` |
 | Tracker (internal) | `frontend/app/src/components/blocks/PageProgressTracker.astro` |
 | Backend API | `backend/page_progress/` (`/api/page-progress/...`, including `/import`) |

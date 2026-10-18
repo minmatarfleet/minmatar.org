@@ -53,8 +53,9 @@ Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx
 
 - `src/components/blocks/LoyaltyOrderBook.astro`
 - `src/components/blocks/PageProgressTracker.astro`
-- `src/components/partials/LearningAlpine.astro`
-- `src/components/blocks/NotificationPreferences.astro`
+- `src/components/blocks/PushNotifications.astro`
+- `src/components/partials/LearningAlpine.astro` (with `src/helpers/learning/localStore.ts`)
+- `src/components/partials/NotificationPreferencesAlpine.astro`
 - `src/pages/account.astro`
 - `src/pages/industry/orders/planner.astro`
 
@@ -143,17 +144,19 @@ Compose layout from the primitives in `src/components/compositions/` instead of 
 | `Flexblock` | Vertical flex column with child gutters (`gap` selects a `gap-*` class): `centered`, `first_element_gap`, `.push-bottom` on children |
 | `FixedFluid` | Media-object: fixed-width first child (`width`) + fluid remainder; `fluid_first` reverses |
 | `FluidFixed` | Fluid first child + fixed-width last child |
-| `Cover` | Full-height column (min-block-size 100vh) that vertically centers the body between `header`/`footer` slots |
-| `Center` | Centering wrapper (flex, justify + align center) |
-| `ScrollX` | Horizontal scroll region with `min_content_width` |
-| `AspectRatio` | Box that preserves `horizontal`/`vertical` ratio |
+| `FlexInlineSiblings` | Two-child row that wraps: `shrinkable-sibbling` (`first` or `second`) shrinks down to `min-shink-width`, the other keeps its width; `gap` |
 | `BlockList` | Vertical stack of full-width children with a uniform `gap` |
+| `XFadeScroll` | Horizontal scroll region whose edges fade while there is more to scroll (`fade_size`, `flex`). Use it for wide tables and chip rows instead of a hand-rolled `overflow-x: auto` |
+| `Cover` | Full-height column (min-block-size 100vh) that vertically centers the body between `header`/`footer` slots. No page uses it today |
+| `Center` | Centering wrapper (flex, justify + align center). No page uses it today |
 
 Rules:
 
 - Prefer composing existing primitives over adding bespoke layout CSS.
 - Pass spacing via tokens, not literal values.
-- Reuse `Button`, `Badge`, `Tag`, `Card`, `Input` etc. instead of restyling raw elements.
+- Reuse `Button`, `Badge`, `Tag`, `Input` etc. instead of restyling raw elements.
+- A bordered panel is `ComponentBlock` (`src/components/blocks/ComponentBlock.astro`). `Card` is the picture card with hover actions (`CharacterCard`, `PictureCard`), not a general panel.
+- `backend/app/tests/test_docs.py` fails when this table and `src/components/compositions/` disagree.
 
 ## 5. Component conventions
 

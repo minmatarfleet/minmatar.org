@@ -6,7 +6,7 @@
  * 1. Build a manifest with `pageProgressFromMarkdown` or `pageProgressFromSections`.
  * 2. Put `data-page-progress-root` on a parent that wraps the tracker + sections.
  * 3. Mount `<PageProgress {...progress} />` and mark sections
- *    (`progress.html` for markdown, or `<PageProgressSection id="…" />` / `data-section-id`).
+ *    (`progress.html` for markdown, or `id` + `data-section-id` on each section element).
  *
  * Anonymous visitors get localStorage progress; on login it merges to the server.
  * Auth labels are handled by `<PageProgress />`.

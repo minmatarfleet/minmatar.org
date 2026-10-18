@@ -24,8 +24,8 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 ## 4. Layout
 
-- Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `Flexblock`, `FixedFluid`, `FluidFixed`, `Cover`, `Center`, `ScrollX`, `AspectRatio`, `BlockList`) instead of hand-rolling flex/grid.
-- Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Card`, `Input` rather than restyling raw elements.
+- Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `FlexInlineSiblings`, `Flexblock`, `FixedFluid`, `FluidFixed`, `BlockList`, `XFadeScroll`, `Cover`, `Center`) instead of hand-rolling flex/grid. Wide tables and chip rows scroll inside `XFadeScroll`, not a hand-rolled `overflow-x: auto`.
+- Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Input` rather than restyling raw elements. A bordered panel is `ComponentBlock`; `Card` is only the picture card with hover actions.
 
 ## 5. Component conventions
 
