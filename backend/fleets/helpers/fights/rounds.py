@@ -308,6 +308,10 @@ def brtools_related_url(system: int, start: datetime) -> str:
 def battle_report_links(
     rows: list[dict], systems: list[dict], names: dict, battles: dict
 ) -> dict:
+    """zKill related over every system and the rows' whole span, br.evetools
+    for the busiest system (``systems`` come busiest first) at the first
+    mail's hour, and the first eve-kill battle found. Used per round and,
+    over all rows, for the whole fleet."""
     start, end = parse_time(rows[0]["t"]), parse_time(rows[-1]["t"])
     system_ids = [system["id"] for system in systems]
     links = {
@@ -453,6 +457,11 @@ def build_payload(
         "round_count": number,
         "skirmish_count": len(summaries) - number,
         "rounds": summaries,
+        "links": (
+            battle_report_links(rows, _systems(rows, names), names, battles)
+            if rows
+            else None
+        ),
         "events": events,
         "chart": chart(rows, start, chart_end),
         "edits": [

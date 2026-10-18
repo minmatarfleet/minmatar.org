@@ -590,6 +590,14 @@ class EveFleetFightTimeline(models.Model):
     them), so the timeline outlives the feed's 30-day killmail purge and an
     FC edit can re-cut the rounds without matching again. ``payload`` is the
     cut result the API serves. See fleets.helpers.fights.
+
+    ``battle_killmails`` is the round battle report's snapshot: every feed
+    killmail in the matched mails' systems from the first matched mail minus
+    a minute to the last plus a minute, third parties included, as compact
+    rows (see fleets.helpers.fights.battle). ``battle_names`` holds the
+    character, corporation, alliance and ship names on them.
+    ``battle_collected_at`` is None until a rebuild (or the first report
+    request, for older timelines) has taken that snapshot.
     """
 
     eve_fleet = models.OneToOneField(
@@ -600,6 +608,9 @@ class EveFleetFightTimeline(models.Model):
     names = models.JSONField(default=dict, blank=True)
     payload = models.JSONField(default=dict, blank=True)
     battle_links = models.JSONField(default=dict, blank=True)
+    battle_killmails = models.JSONField(default=list, blank=True)
+    battle_names = models.JSONField(default=dict, blank=True)
+    battle_collected_at = models.DateTimeField(null=True, blank=True)
     computed_at = models.DateTimeField(null=True, blank=True)
     swept_at = models.DateTimeField(null=True, blank=True)
     settled_at = models.DateTimeField(null=True, blank=True)

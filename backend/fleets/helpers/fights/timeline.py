@@ -146,6 +146,7 @@ def recut(timeline, *, now: datetime | None = None, save: bool = True):
 def rebuild(fleet, *, now: datetime | None = None):
     """Match the fleet's killmails again and re-cut them."""
     # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights.battle import snapshot
     from fleets.models import EveFleetFightTimeline
 
     now = now or timezone.now()
@@ -155,6 +156,8 @@ def rebuild(fleet, *, now: datetime | None = None):
         return timeline
     timeline.killmails = rows
     timeline.names = resolve_names(rows, our_groups, timeline.names)
+    # Every mail around the rounds, for the battle report.
+    snapshot(timeline, now=now)
     timeline.events = collect_events(instances)
     timeline.computed_at = now
     recut(timeline, now=now, save=False)

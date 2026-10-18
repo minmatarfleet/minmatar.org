@@ -151,6 +151,18 @@ def _named(names: dict[int, str], prior: dict) -> dict[str, str]:
     return kept
 
 
+def lookup_entity_names(ids: set[int]) -> dict[int, str]:
+    """ESI names for characters, corporations and alliances, or none."""
+    if not ids:
+        return {}
+    try:
+        return resolve_entity_names(ids)
+    except Exception:  # pylint: disable=broad-exception-caught
+        # Names are cosmetic; an ESI outage must not stop the rebuild.
+        logger.warning("Could not resolve fight timeline names")
+        return {}
+
+
 def resolve_names(
     rows: list[dict], our_groups: Counter, prior: dict | None
 ) -> dict:
@@ -177,13 +189,7 @@ def resolve_names(
     known_characters = prior.get("characters") or {}
     unknown = {g for g in groups if str(g) not in known_groups}
     unknown |= {c for c in characters if str(c) not in known_characters}
-    resolved: dict[int, str] = {}
-    if unknown:
-        try:
-            resolved = resolve_entity_names(unknown)
-        except Exception:  # pylint: disable=broad-exception-caught
-            # Names are cosmetic; an ESI outage must not stop the rebuild.
-            logger.warning("Could not resolve fight timeline names")
+    resolved = lookup_entity_names(unknown)
     return {
         "systems": {**(prior.get("systems") or {}), **system_names},
         "ships": {**(prior.get("ships") or {}), **ship_names},
