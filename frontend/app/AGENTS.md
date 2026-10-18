@@ -3,10 +3,10 @@
 Full methodology: **`../../docs/frontend-design.md`** (read it before editing UI). Non-negotiable rules:
 
 ## Interactivity & state
-- **htmx owns all server state.** Data fetching, mutations, partial re-renders, DOM updates → htmx (`hx-*`, `hx-swap-oob`, `htmx.process()`) against partials in `src/pages/partials/*_component.astro`. Server renders HTML; never build DOM from JSON.
+- **htmx owns all server state.** Data fetching, mutations, partial re-renders, DOM updates → htmx (`hx-*`, `hx-swap-oob`) against partials in `src/pages/partials/*_component.astro`. Server renders HTML; never build DOM from JSON.
 - **Alpine = minor, local UI only**: toggles, collapsibles, filters, dialog open/close.
 - **Never** use Alpine to call endpoints (`fetch()`/axios) or hold/drive DOM from server data. If data must change the DOM, use an htmx partial.
-- After htmx injects a partial, re-init Alpine/htmx with `htmx.process()` / `Alpine.initTree()`.
+- Swapped-in partials are initialised globally (`src/helpers/swap_init.ts`). Never `htmx.process()` swapped content (an `hx-trigger="load"` element would fetch twice) and don't add `htmx:afterSwap` re-init scripts; `htmx.process()` is only for markup Alpine creates (`x-teleport`, `x-if`/`x-for`). Load deferred slots with `LazyPartial`.
 
 ## Naming
 - **snake_case** for props, variables, functions, files. **PascalCase** for interfaces and data types only.
