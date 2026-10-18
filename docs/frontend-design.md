@@ -61,6 +61,11 @@ Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx
 - `src/pages/account.astro`
 - `src/pages/industry/orders/planner.astro`
 
+These render server records client-side from JSON embedded in `x-data` (`x-for` over assets/blueprints) and must move to server-rendered partials with htmx filtering:
+
+- `src/pages/character/assets.astro` with `AssetsListAlpine`, `AssetsBlockAlpine`, `AssetLocationItemAlpine`, `AssetItemAlpine` (render through `src/pages/partials/assets_list_component.astro`)
+- `src/pages/industry/blueprints.astro` and `src/pages/industry/blueprints/copies.astro` with `BlueprintTableAlpine`, `BlueprintTableItemAlpine` (render through `src/pages/partials/blueprints_component.astro`)
+
 Migration pattern: move the rendering logic into `src/pages/partials/*_component.astro`, expose a `PARTIAL_URL`, and trigger it with `hx-get`/`hx-post` + `hx-swap`, using `hx-swap-oob` for independent regions.
 
 ## 2. Naming conventions
