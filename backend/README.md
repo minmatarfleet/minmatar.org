@@ -26,7 +26,7 @@ See also [Discord setup](../docs/developer_discord_setup.md) and [data seeding](
 
 ## Setting your user as admin
 ```python
-python3 manage.py shell_plus
+# pipenv run python manage.py shell_plus
 user = User.objects.all()[0]
 user.is_superuser = True
 user.is_staff = True
@@ -38,7 +38,7 @@ It is also possible to make and use a standalone test
 user that doesn't use Discord for authentication.
 
 ```
-python manage.py shell_plus
+pipenv run python manage.py shell_plus
 ```
 Then...
 ```
@@ -127,7 +127,7 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 
 ### Setup test data
 ```
-./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
+pipenv run python manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
 ```
 
 ### Reference fixtures
@@ -167,12 +167,9 @@ pipenv run python manage.py sync_pilot_features
 
 ### Create a test admin user and display JWT
 ```
-./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
+pipenv run python manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
 ```
 
 ## Code cleanup tasks
 
-* Remove `EveFleetLocation`, `EveFreightLocation` and `EveMarketLocation`
-* Remove `EvePrimaryCharacter`
-* Remove `EveCharacter.tokens` property
 * Remove `EveCharacter.is_primary`

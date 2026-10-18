@@ -1,54 +1,43 @@
-# Astro Starter Kit: Basics
+# my.minmatar.org frontend
 
-```sh
-npm create astro@latest -- --template basics
+The Astro site at [my.minmatar.org](https://my.minmatar.org/). Pages are rendered on the server; htmx swaps in server-rendered partials, and Alpine.js handles small local UI state. It talks to the Django API in `backend/`.
+
+Read [docs/frontend-design.md](../../docs/frontend-design.md) before changing UI code. It is the source of truth for the htmx/Alpine split, design tokens, layout compositions and component conventions. [AGENTS.md](AGENTS.md) has the short version.
+
+## Setup
+
+Use Node 22 (newer majors break `npm i`; see [Toolchain versions](../../README.md#toolchain-versions)). From the repo root:
+
+```bash
+cp frontend/.env.example frontend/app/.env
+cd frontend/app
+npm i
+npm run dev        # http://localhost:4321, against the API in API_URL
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+`./dev.sh` at the repo root starts the frontend together with the API and Celery.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Commands
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+Run from `frontend/app/`:
 
-## 🚀 Project Structure
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server on port 4321 |
+| `npm run check` | `astro check` at error severity. Must pass before a frontend change merges |
+| `npm run test` | vitest (tests live in `testing/`) |
+| `npm run build` | Type check, then production build |
+| `npm run warzone:extract` / `npm run amamake:extract` | Data extraction for the monthly Warzone and Amamake reports |
 
-Inside of your Astro project, you'll see the following folders and files:
+`check`, `test` and `build` load `.env.BUILDONLY`, a committed set of placeholder values that lets them run without a real `.env`.
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── components/
-│   │   └── Card.astro
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+## Layout
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+| Path | |
+| --- | --- |
+| `src/pages/` | Routes. `src/pages/partials/*_component.astro` are the htmx partials |
+| `src/components/` | `blocks/`, `compositions/` (layout primitives), `page/`, `partials/`, `layout/`, `icons/`, `logos/` |
+| `src/helpers/` | API clients (`api.minmatar.org/`, `api.eveonline/`), i18n, gates, formatting |
+| `src/json/feature_gates.json` | Access gates; see [frontend-feature-gating.md](../../docs/auth/frontend-feature-gating.md) |
+| `src/styles/properties/` | Design tokens (colors, space, type, z-index) |
+| `testing/` | vitest suites |

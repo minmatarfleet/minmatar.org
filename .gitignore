@@ -176,6 +176,9 @@ artifacts/
 
 .vscode/
 
+# Agent plan scratch space (Cursor/Claude Code). Shipped plans live in docs/archive/plans/.
+.claude/plans/
+.cursor/plans/
 
 # debugging / script outputs
 backend/scripts/outputs/

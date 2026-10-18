@@ -34,25 +34,6 @@ API: `GET /api/tribes/{tribe_id}/groups/{group_id}/reports/{view}?period=30d&sco
 
 Bindings are keyed by `TribeGroup.code` in `REPORT_BINDINGS`. Manual Pulse narrative groups set `manual=True`. Capitals groups use qualifying ship types from group asset requirements.
 
-## Prod: Industry + Market → Supply merge
+## Archived runbooks
 
-Catalog codes and fixtures already describe **Supply**. Live memberships/auth/Discord are migrated with a management command (not `migrate` / not `load_reference_fixtures --clear`).
-
-```bash
-# Dry-run (default): print planned renames + auth moves
-docker compose -f docker-compose-prod.yml exec app \
-  python3 manage.py merge_supply_tribe --dry-run
-
-# Apply: ORM + Discord rename/add/remove via signals
-docker compose -f docker-compose-prod.yml exec app \
-  python3 manage.py merge_supply_tribe --apply
-```
-
-Idempotent. If one user looks wrong on Discord after apply:
-
-```bash
-docker compose -f docker-compose-prod.yml exec app \
-  python3 manage.py shell -c 'from discord.tasks import sync_discord_user; sync_discord_user.run(USER_ID)'
-```
-
-Smoke: tribe list is Capitals / Supply / Pulse; Supply has seven active groups including **Market** (`supply.market`); Discord roles `Tribe - Supply` and `Tribe Group - Market`.
+The one-off Industry + Market → Supply tribe merge (July 2026, `merge_supply_tribe`) is in [docs/archive/runbooks/supply-tribe-merge.md](../../../docs/archive/runbooks/supply-tribe-merge.md).

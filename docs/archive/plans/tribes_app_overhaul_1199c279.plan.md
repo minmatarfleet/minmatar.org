@@ -1,3 +1,10 @@
+> **Historical plan. Shipped in #1977 (February 2026); do not work from it.** The todo list below was never updated, so every item still reads `pending`.
+>
+> What differs from the code today:
+> - `TribeActivity` was removed in #1988. Tribe metrics are computed from source data by `backend/tribes/reports/`.
+> - Teams and SIGs are gone from `groups`; tribes replaced them.
+> - The app has more models than planned: ranks, skill and asset requirements, membership history and external guild seats (`backend/tribes/models/`).
+
 ---
 name: ""
 overview: ""

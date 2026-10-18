@@ -1,3 +1,12 @@
+> **Historical plan. Shipped in #2430 (July 2026); do not work from it.** The todo list below was never updated, so every item still reads `pending`.
+>
+> What differs from the code today:
+> - The verification tooling (`verification_archetypes.py`, `import_auth_verification_users`, `verify_feature_access_parity`) was never built. Frontend gate parity is checked by `audit_frontend_gate_parity` (#2825).
+> - Features are exposed to the frontend: since #2825 the site gates on pilot features through `frontend/app/src/json/feature_gates.json`.
+> - The docs live in `docs/auth/` (start at `docs/auth/README.md`), not `docs/authorization.md`.
+>
+> Current reference: `docs/auth/README.md`, `docs/auth/feature-catalog.md`, `backend/groups/features/registry.py`.
+
 ---
 name: PilotFeature Authorization
 overview: Introduce a code-defined PilotFeature catalog synced to the database, a single `can_use_feature()` utility with legacy Django-permission fallback, full backend refactor of permission checks, and new authorization documentation—without exposing features to the frontend yet.

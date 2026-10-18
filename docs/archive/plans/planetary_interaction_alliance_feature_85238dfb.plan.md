@@ -1,3 +1,7 @@
+> **Historical plan. Shipped in #2021 (March 2026); do not work from it.** Later PRs changed the code, so where this plan and the code disagree, the code is right.
+>
+> Current reference: `backend/industry/endpoints/planetary/`, `backend/eveonline/helpers/characters/planets.py` (`extractor_count` and `factory_count` on `EveCharacterPlanetOutput`).
+
 ---
 name: Planetary interaction alliance feature
 overview: Add a new "Planetary" (PI) feature under industry that provides alliance-scoped harvest summary (extractor counts per P0), production summary (factory counts with P2→P3 dedup), and planet summary (people per planet), reusing products-page patterns and existing planet/output models.
