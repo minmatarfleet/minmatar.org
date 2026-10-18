@@ -1,9 +1,10 @@
 ---
 import { get_public_api_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
+import { get_request_user } from '@helpers/request_user'
 
 const redirect_url = Astro.url.searchParams.get('redirect')
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
 const redirect = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=Director${account_user_query}`
 
 return Astro.redirect(redirect)

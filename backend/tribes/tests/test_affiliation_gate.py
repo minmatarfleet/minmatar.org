@@ -154,6 +154,18 @@ class TribeGroupAffiliationGateTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["can_manage"])
 
+    def test_group_schema_can_manage_for_superuser(self):
+        """The site shows superusers the manage controls from this flag."""
+        superuser = User.objects.create_user(
+            username="aff_gate_superuser", is_superuser=True
+        )
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.alliance_only.pk}",
+            HTTP_AUTHORIZATION=f"Bearer {_make_token(superuser)}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["can_manage"])
+
     def test_offboard_only_ineligible_memberships(self):
         alliance_membership = TribeGroupMembership.objects.create(
             user=self.user,

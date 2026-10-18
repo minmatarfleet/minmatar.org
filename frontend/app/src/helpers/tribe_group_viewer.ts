@@ -13,10 +13,10 @@ export function tribe_group_is_leader(args: {
     return Boolean(args.user_characters?.some((character) => character.character_id === chief_id))
 }
 
+/** can_manage comes from the API, which already grants it to superusers. */
 export function tribe_group_can_manage(args: {
     group: TribeGroup | null | undefined
     is_leader: boolean
-    is_superuser: boolean
 }): boolean {
-    return Boolean(args.group?.can_manage) || args.is_leader || args.is_superuser
+    return Boolean(args.group?.can_manage) || args.is_leader
 }

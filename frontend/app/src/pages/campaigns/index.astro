@@ -3,10 +3,9 @@ import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 import { get_gates, can } from '@helpers/gates'
 import type { CampaignListItem } from '@dtypes/api.minmatar.org'
@@ -24,17 +23,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-const user_is_staff = Boolean(user && user.is_staff)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
 const gates = await get_gates(Astro)
 
 const can_view_campaigns = can(gates, 'campaigns.view')
-const can_edit_in_admin = user_is_staff || can(gates, 'campaigns.manage')
+const can_edit_in_admin = can(gates, 'campaigns.manage')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()

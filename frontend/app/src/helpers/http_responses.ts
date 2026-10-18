@@ -1,3 +1,5 @@
+import { i18n } from '@helpers/i18n'
+
 export const HTTP_404_Not_Found = (body:BodyInit | null = null):Response => {
     return new Response(body, {
         status: 404,
@@ -63,4 +65,21 @@ export const HTTP_502_Server_Error = (body:BodyInit | null = null):Response => {
         status: 502,
         statusText: 'Service Unavailable'
     });
+}
+
+/** The login notice, which returns to `return_url` (query string included) afterwards. */
+export const login_url = (context: { url: URL }, return_url: string = context.url.href): string => {
+    const { translatePath } = i18n(context.url)
+    return `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(return_url)}`
+}
+
+/**
+ * Send a visitor without a session to the login notice, then back to this
+ * URL. Every page and partial that needs a login returns this.
+ */
+export const login_redirect = (context: { request: Request, url: URL }): Response => {
+    return new Response(null, {
+        status: 302,
+        headers: { Location: login_url(context, context.request.url) },
+    })
 }

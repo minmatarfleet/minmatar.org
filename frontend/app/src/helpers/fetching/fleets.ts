@@ -27,6 +27,7 @@ import { get_system_sun_type_id } from '@helpers/sde/map'
 import { get_fleet_users } from '@helpers/api.minmatar.org/fleets'
 import { unique_values } from '@helpers/array'
 import { time_diff_text } from '@helpers/date'
+import { settled_value } from '@helpers/settled'
 
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
@@ -96,27 +97,29 @@ export function add_fleet_info(
     } as FleetItem
 }
 
-export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
-    const fleet = await get_fleet_by_id(access_token, fleet_id)
-        
-    let character_profile:EveCharacterProfile | null = null
-    if (fleet?.fleet_commander)
-        character_profile = await get_user_character(fleet.fleet_commander)
-
-    let doctrine:DoctrineType | null = null
-    if (fleet?.doctrine_id)
-        doctrine = await fetch_doctrine_by_id(fleet.doctrine_id)
-
+async function fetch_campaign_name(access_token:string, campaign_slug:string):Promise<string | null> {
     // The fleet payload only carries the slug. The readable name is a bonus:
     // a viewer without the campaigns feature gets a 403 and keeps the slug.
-    let campaign_name:string | null = null
-    if (fleet?.campaign_slug) {
-        try {
-            campaign_name = (await get_campaign(fleet.campaign_slug, access_token))?.name ?? null
-        } catch (error) {
-            console.log(`Skipping campaign name: ${error.message}`)
-        }
+    try {
+        return (await get_campaign(campaign_slug, access_token))?.name ?? null
+    } catch (error) {
+        console.log(`Skipping campaign name: ${error.message}`)
+        return null
     }
+}
+
+export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
+    const fleet = await get_fleet_by_id(access_token, fleet_id)
+
+    // FC, doctrine and campaign only need the fleet, so fetch them together.
+    const [profile_result, doctrine_result, campaign_name_result] = await Promise.allSettled([
+        fleet?.fleet_commander ? get_user_character(fleet.fleet_commander) : null,
+        fleet?.doctrine_id ? fetch_doctrine_by_id(fleet.doctrine_id) : null,
+        fleet?.campaign_slug ? fetch_campaign_name(access_token, fleet.campaign_slug) : null,
+    ])
+    const character_profile:EveCharacterProfile | null = settled_value(profile_result)
+    const doctrine:DoctrineType | null = settled_value(doctrine_result)
+    const campaign_name:string | null = settled_value(campaign_name_result)
 
     return {
         id: fleet.id,

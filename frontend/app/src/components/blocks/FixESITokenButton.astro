@@ -23,7 +23,8 @@ const {
 
 import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+import { get_request_user } from '@helpers/request_user'
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
 const FIX_CHARACTER_URL = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}${account_user_query}`
 
 import { esi_token_roles } from '@dtypes/api.minmatar.org'

@@ -2,13 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
@@ -61,7 +54,6 @@ const leading_text = t('intel.leading_text');
                 can_view_timers={can_view_timers}
                 can_add_moons={can_add_moons}
                 can_view_moons={can_view_moons}
-                is_superuser={is_superuser}
             />
         </Flexblock>
     </PageLanding>

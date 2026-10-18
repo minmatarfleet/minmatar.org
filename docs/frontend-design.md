@@ -203,6 +203,7 @@ Conventions:
 - Alpine directives (`x-data`, `x-on`, `x-show`, `x-collapse`, `x-trap`, `x-bind`) are for local UI state only — see rule 1.
 - htmx attributes (`hx-*`) for anything that reads/writes server state.
 - Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
+- Session: `const { auth_token, user } = get_request_user(Astro)` from `@helpers/request_user` (decoded once per request; never read the `auth_token` cookie or import `jose` yourself). Pages and partials that need a login `return login_redirect(Astro)`; login links use `login_url(Astro)` (both in `@helpers/http_responses`). `testing/helpers/request_user.test.ts` enforces this.
 
 ## 6. Accessibility & behavior
 

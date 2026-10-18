@@ -2,12 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = Boolean(user?.is_superuser)
+const { auth_token, user } = get_request_user(Astro)
 const is_auth = Boolean(user)
 
 import { get_user_profile } from '@helpers/permissions'
@@ -110,11 +107,10 @@ const is_leader = tribe_group_is_leader({
 const can_manage = tribe_group_can_manage({
     group: tribe_group,
     is_leader,
-    is_superuser,
 })
 const roster_hidden = Boolean(tribe_group?.roster_hidden)
 const can_see_roster = roster_hidden
-    ? Boolean(is_superuser || can_manage || membership?.status === 'active')
+    ? Boolean(can_manage || membership?.status === 'active')
     : is_alliance_member
 
 if (!fetch_group_error && auth_token && tribe_group && can_see_roster) {
@@ -277,7 +273,6 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                             group_id={group_id}
                             is_auth={is_auth}
                             is_leader={is_leader}
-                            is_superuser={is_superuser}
                             user_on_trial={user_on_trial}
                             user_characters={user_characters}
                             available_characters={available_characters}

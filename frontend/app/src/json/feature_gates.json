@@ -156,6 +156,11 @@
         "characters.lookup": {
             "feature": "characters.lookup",
             "legacy": { "perms": [], "superuser": true }
+        },
+        "site.all_pages": {
+            "feature": "site.all_pages",
+            "legacy": { "perms": [], "superuser": true },
+            "note": "Page finder and breadcrumbs list every page as available, whatever its own gate."
         }
     }
 }

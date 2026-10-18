@@ -24,7 +24,8 @@ export async function create_subscription(access_token:string, user_id:number, s
     })
 }
 
-export async function remove_subscription(access_token:string, subscription_id:number) {
+/** Signed-out visitors pass false: the shared secret authorises the removal. */
+export async function remove_subscription(access_token:string | false, subscription_id:number) {
     await api_response(`${API_ENDPOINT}/${subscription_id}?code=${get_shared_secret()}`, {
         method: 'DELETE',
         token: access_token,

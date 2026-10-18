@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { login_url } from '@helpers/http_responses'
 const { translatePath } = i18n(Astro.url)
 
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
@@ -19,7 +20,7 @@ const {
     ...attributes
 } = Astro.props;
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+const AUTH_REDIRECT_URL = login_url(Astro)
 
 import Button from '@components/blocks/Button.astro';
 ---
