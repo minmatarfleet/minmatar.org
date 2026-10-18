@@ -43,6 +43,7 @@ from campaigns.services import (
     stats,
 )
 from campaigns.services.sites import attribute_payouts, contested_factor
+from eveonline.constants import AMARR_FACTION_ID, MINMATAR_FACTION_ID
 from eveonline.models import EveCharacter, EveCharacterFwLpPayout, EvePlayer
 from feed.models import FeedKillmail, FeedMonitoredSystem
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
@@ -52,9 +53,6 @@ SYSTEMS = [
     ("Kourmonen", SystemGoal.HOLD, SystemRole.PRIMARY, "hold"),
     ("Auga", SystemGoal.HOLD, SystemRole.SECONDARY, "hold"),
 ]
-
-MINMATAR_FACTION_ID = 500002
-AMARR_FACTION_ID = 500003
 
 
 class Command(BaseCommand):

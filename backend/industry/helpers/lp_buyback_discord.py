@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from django.conf import settings
-
+from app.links import site_url
 from discord.client import DiscordClient
 from discord.forum_threads import ForumThreadMirror, flagged_channel_row
 from eveonline.helpers.characters import user_primary_character
@@ -57,9 +56,7 @@ STALE_DIGEST_MAX_LINES = 15
 
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     return f"{base}/industry/loyalty/?order={order.pk}"
 
 

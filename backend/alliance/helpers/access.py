@@ -2,19 +2,15 @@
 
 from django.contrib.auth.models import User
 
+from eveonline.helpers.alliances import alliance_corporations
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCorporation
 from groups.helpers.feature_access import can_use_feature
 
-ALLIANCE_ID = 99011978
-MH0LD_TICKER = "MH0LD"
 EXECUTOR_FEATURE = "alliance.health.executor"
 
 
 def mfa_corporation_qs():
-    return EveCorporation.objects.filter(
-        alliance__alliance_id=ALLIANCE_ID
-    ).exclude(ticker=MH0LD_TICKER)
+    return alliance_corporations(include_holding_corporation=False)
 
 
 def ceo_corp_ids(user: User) -> set[int]:

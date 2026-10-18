@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from django.conf import settings
-
+from app.links import site_url
 from notifications.models import NotificationChannel
 from notifications.registry import NotificationType, register
 
@@ -18,9 +17,7 @@ _MAX_ITEM_LINES = 8
 
 
 def _web_base() -> str:
-    return getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    return site_url()
 
 
 def _order_url(order_id: int) -> str:

@@ -21,13 +21,14 @@ from alliance.helpers.health_hygiene import compute_hygiene_payload
 from alliance.models import AllianceHealthSnapshot
 from applications.models import EveCorporationApplication
 from buyback.models import BuybackContract
+from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from eveonline.helpers.alliances import alliance_corporations
 from eveonline.models import (
     EveCharacter,
     EveCharacterIndustryJob,
     EveCharacterKillmailAttacker,
     EveCharacterMiningEntry,
     EveCharacterPlanet,
-    EveCorporation,
     EvePlayer,
 )
 from eveonline.killmail_classes import (
@@ -48,9 +49,7 @@ from tribes.models import (
     TribeGroupMembershipHistory,
 )
 
-ALLIANCE_ID = 99011978
 ACADEMY_CORP_ID = 98741376
-MH0LD_TICKER = "MH0LD"
 GOAL_MAP = 500
 HIST_MONTHS = 12
 HYGIENE_DAYS = 90
@@ -286,9 +285,9 @@ def compute_alliance_health(  # noqa: C901
     hist_date = hist_start.date()
 
     corps = list(
-        EveCorporation.objects.filter(alliance__alliance_id=ALLIANCE_ID)
-        .exclude(ticker=MH0LD_TICKER)
-        .values("corporation_id", "name", "ticker", "member_count")
+        alliance_corporations(include_holding_corporation=False).values(
+            "corporation_id", "name", "ticker", "member_count"
+        )
     )
     corp_by_id = {c["corporation_id"]: c for c in corps}
     corp_ids = list(corp_by_id)
@@ -877,7 +876,7 @@ def compute_alliance_health(  # noqa: C901
             hygiene_since=hygiene_since,
             hygiene_recent=hygiene_recent,
             hygiene_180=hygiene_180,
-            alliance_id=ALLIANCE_ID,
+            alliance_id=MINMATAR_FLEET_ALLIANCE_ID,
             exempt_auth_groups=EXEMPT_AUTH_GROUPS,
             restore_grace_days=RESTORE_GRACE_DAYS,
             corp_display_name=_corp_display_name,

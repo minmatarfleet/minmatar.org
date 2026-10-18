@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from eveonline.client import EsiClient
-from eveonline.constants import ALLIED_ALLIANCE_NAMES
+from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.characters import market_scope_character_ids
 from eveonline.helpers.corporations import get_director_with_scope
 from eveonline.helpers.db_sync import replace_with_bulk_create
@@ -189,8 +189,4 @@ def character_ids_for_attributed_order_sync() -> list[int]:
 
 
 def allied_corporation_ids_for_order_sync() -> list[int]:
-    return list(
-        EveCorporation.objects.filter(
-            alliance__name__in=ALLIED_ALLIANCE_NAMES
-        ).values_list("corporation_id", flat=True)
-    )
+    return list(member_corporations().values_list("corporation_id", flat=True))

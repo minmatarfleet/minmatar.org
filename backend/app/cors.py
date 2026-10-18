@@ -7,6 +7,8 @@ methods, so cross-origin POSTs fail OPTIONS with 405 without this middleware.
 from django.conf import settings
 from django.http import HttpResponse
 
+from app.links import PRODUCTION_SITE_URL
+
 
 def allowed_origins() -> set[str]:
     configured = getattr(settings, "CORS_ALLOWED_ORIGINS", None)
@@ -14,7 +16,7 @@ def allowed_origins() -> set[str]:
         return {str(o).rstrip("/") for o in configured if o}
     origins = {
         "http://localhost:4321",
-        "https://my.minmatar.org",
+        PRODUCTION_SITE_URL,
         "https://minmatar.org",
     }
     web_link = getattr(settings, "WEB_LINK_URL", None)

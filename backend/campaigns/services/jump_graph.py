@@ -24,12 +24,11 @@ from pathlib import Path
 from django.conf import settings
 
 from campaigns.models import OperationalState
+from eveonline.constants import AMARR_FACTION_ID, MINMATAR_FACTION_ID
 
 logger = logging.getLogger(__name__)
 
 FIXTURE_NAME = "warzone_jump_graph.json"
-MINMATAR_FACTION_ID = 500002
-AMARR_FACTION_ID = 500003
 
 
 def fixture_path() -> Path:

@@ -12,9 +12,9 @@ import logging
 from collections import defaultdict
 from datetime import timedelta
 
-from django.conf import settings
 from django.utils import timezone
 
+from app.links import site_url
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from eveonline.helpers.corporations.safe_cache import (
@@ -104,8 +104,7 @@ def claim_nudge(fleet_id: int) -> bool:
 
 
 def _fleet_url(fleet) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/{fleet.id}"
+    return site_url(f"/fleets/upcoming/{fleet.id}")
 
 
 def build_nudge_message(fleet, characters: list[dict]) -> str:

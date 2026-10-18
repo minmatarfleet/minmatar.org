@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.core import signing
 from django.utils import timezone
 
+from app.links import site_url
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.core import format_discord_nickname
 from discord.helpers import (
@@ -460,9 +461,7 @@ def seat_for_user_group(
 
 
 def allowlisted_redirect_url(url: str) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     if not url:
         return base
     parts = urlsplit(url)
@@ -513,9 +512,7 @@ def decode_oauth_state(state: str) -> dict | None:
 
 
 def pending_join_return_url(seat: TribeExternalGuildSeat) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     group = seat.binding.tribe_group
     return f"{base}/alliance/tribes/{group.tribe_id}/{group.id}/"
 
@@ -539,9 +536,7 @@ def build_pending_join_dm_message(seat: TribeExternalGuildSeat) -> str:
     group_name = seat.binding.tribe_group.name
     join_url = pending_join_oauth_url(seat)
     if not join_url:
-        base = getattr(
-            settings, "WEB_LINK_URL", "https://my.minmatar.org"
-        ).rstrip("/")
+        base = site_url()
         join_url = (
             f"{base}/redirects/external_guild_join"
             f"?group_id={seat.binding.tribe_group_id}"

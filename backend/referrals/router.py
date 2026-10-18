@@ -10,6 +10,7 @@ from django.shortcuts import redirect
 
 from app.client_ip import client_ip as client_ip_of
 from app.errors import ErrorResponse
+from app.links import site_url
 from authentication import AuthBearer
 
 from .models import ReferralClick
@@ -37,24 +38,20 @@ class ReferralRecord(BaseModel):
     client_ip: str
 
 
-links = [
-    LinkInfo(
-        name="Corps",
-        target="https://my.minmatar.org/alliance/corporations/list/",
-    ),
-    LinkInfo(
-        name="Freight",
-        target="https://my.minmatar.org/market/freight/standard/",
-    ),
-    LinkInfo(
-        name="Plexing",
-        target="https://my.minmatar.org/learning/guides/faction-warfare-plexing/",
-    ),
-    LinkInfo(
-        name="Advantage",
-        target="https://my.minmatar.org/learning/guides/faction-warfare-advantage/",
-    ),
-]
+LINK_PATHS = {
+    "Corps": "/alliance/corporations/list/",
+    "Freight": "/market/freight/standard/",
+    "Plexing": "/learning/guides/faction-warfare-plexing/",
+    "Advantage": "/learning/guides/faction-warfare-advantage/",
+}
+
+
+def referral_links() -> List[LinkInfo]:
+    """Referral pages, pointing at this environment's website."""
+    return [
+        LinkInfo(name=name, target=site_url(path))
+        for name, path in LINK_PATHS.items()
+    ]
 
 
 @router.get("", description="Redirect referral link to final destination")
@@ -79,13 +76,13 @@ def referral_redirect(request, page: str, code: str):
     )
 
     target = ""
-    for link in links:
+    for link in referral_links():
         if page.lower() == link.name.lower():
             target = link.target
 
     if target == "":
         log.info("Could not find target for %s", page)
-        return redirect("https://my.minmatar.org/badreferral")
+        return redirect(site_url("/badreferral"))
     else:
         ReferralClick.objects.get_or_create(
             page=page, user_id=user_id, identifier=client_id
@@ -142,7 +139,7 @@ def record_referral(request, referral: ReferralRecord) -> str:
 def get_user_links(request) -> List[LinkInfo]:
     code = "Q" + str(request.user.id * 83 + 7)
     userlinks = []
-    for link in links:
+    for link in referral_links():
         userlink = LinkInfo(
             name=link.name,
             link=request.build_absolute_uri("/api/referrals")

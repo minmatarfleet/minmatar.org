@@ -13,10 +13,11 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from eveonline import esi_budget as esi_gate
+from eveonline.constants import MINMATAR_FACTION_ID
+from eveonline.esi_http import esi_request
 from feed.constants import ESI_FW_SYSTEMS_URL
 from feed.models import FeedEvent
-from eveonline import esi_budget as esi_gate
-from eveonline.esi_http import esi_request
 
 from campaigns.models import (
     Campaign,
@@ -28,8 +29,6 @@ from campaigns.services.jump_graph import classify_system
 
 logger = logging.getLogger(__name__)
 
-MINMATAR_FACTION_ID = 500002
-AMARR_FACTION_ID = 500003
 
 THRESHOLD_WARN_PERCENT = 80.0
 

@@ -2,8 +2,8 @@ from django.db.models import signals
 from django.test import Client
 
 from app.test import TestCase
+from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID as FL33T_ID
 from eveonline.helpers.corporations.slugs import (
-    FL33T_ID,
     corporation_for_slug,
     corporation_slug,
 )

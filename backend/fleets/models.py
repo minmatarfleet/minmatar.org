@@ -1,11 +1,11 @@
 import logging
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
+from app.links import site_url
 from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
@@ -1025,8 +1025,7 @@ def _fitting_web_url(fitting_id):
     """Public fitting page for a catalog fit; None for manual fits."""
     if not fitting_id:
         return None
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/ships/fittings/{fitting_id}"
+    return site_url(f"/ships/fittings/{fitting_id}")
 
 
 def _motd_composition(eve_fleet, in_game=True):
@@ -1053,8 +1052,7 @@ def _motd_composition(eve_fleet, in_game=True):
 
 def _motd_fleet_edit_url(eve_fleet):
     """URL to the fleet edit page for MOTD."""
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/edit/{eve_fleet.id}"
+    return site_url(f"/fleets/upcoming/edit/{eve_fleet.id}")
 
 
 class EveFleetAudience(models.Model):

@@ -310,7 +310,7 @@ def get_corp_progress(request, campaign_id: int):
         return 404, {"detail": "Campaign not found."}
 
     from eveonline.models import EveCorporation, EvePlayer
-    from surveys.helpers.corp_history import FL33T_ALLIANCE_ID
+    from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
 
     # Submitted count per corp (from snapshotted corporation on each response).
     submitted: dict[int, int] = defaultdict(int)
@@ -325,7 +325,7 @@ def get_corp_progress(request, campaign_id: int):
 
     corps = []
     for corp in EveCorporation.objects.filter(
-        alliance__alliance_id=FL33T_ALLIANCE_ID
+        alliance__alliance_id=MINMATAR_FLEET_ALLIANCE_ID
     ).order_by("name"):
         total = (
             EvePlayer.objects.filter(

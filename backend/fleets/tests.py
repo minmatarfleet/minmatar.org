@@ -8,7 +8,7 @@ import jwt
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models import signals
-from django.test import Client, SimpleTestCase
+from django.test import Client, SimpleTestCase, override_settings
 from django.contrib.auth.models import User, Permission
 from django.utils import timezone
 
@@ -143,6 +143,7 @@ def make_test_fleet(
 class FleetHelperTestCase(SimpleTestCase):
     """Tests for Fleet helper code"""
 
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_get_motd_is_compact(self):
         """No role nag or quote: MOTD real estate is for fleet info."""
         motd = get_motd(
