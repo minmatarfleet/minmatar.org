@@ -15,11 +15,13 @@ LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
 APP_SCHEMES = {"mobile", "minmatar"}
 
 # Expo Go during mobile development: exp://<LAN IP>:8081/--/auth/callback.
-EXPO_SCHEMES = {"exp", "exps"}
+EXPO_SCHEMES = {"exp"}
 
 
 class DeepLinkRedirect(HttpResponseRedirect):
-    allowed_schemes = ["http", "https", "mobile", "minmatar", "exp"]
+    # Built from the allowlist above, so every login redirect that
+    # is_allowed_login_redirect accepts can actually be served.
+    allowed_schemes = ["http", "https", *sorted(APP_SCHEMES | EXPO_SCHEMES)]
 
 
 def oauth_redirect(url: str):
