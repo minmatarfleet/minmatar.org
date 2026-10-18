@@ -49,7 +49,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
-import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
+import RankingReel from '@components/blocks/RankingReel.astro'
+import { industry_manufacturers_reel } from '@helpers/ranking_reels'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -150,5 +151,5 @@ const breadcrumbs = [
         }
     </PageWide>
 
-    <IndustryManufacturersReel manufacturers={manufacturers} />
+    <RankingReel {...industry_manufacturers_reel(manufacturers, t, translatePath)} />
 </Viewport>

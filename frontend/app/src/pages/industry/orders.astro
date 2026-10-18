@@ -77,7 +77,8 @@ import OrdersTable from '@components/blocks/OrdersTable.astro'
 import Button from '@components/blocks/Button.astro'
 import ButtonOrdersLearnMore from '@components/blocks/ButtonOrdersLearnMore.astro'
 import TextBox from '@components/layout/TextBox.astro'
-import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
+import RankingReel from '@components/blocks/RankingReel.astro'
+import { industry_manufacturers_reel } from '@helpers/ranking_reels'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -210,5 +211,5 @@ const breadcrumbs = [
         </Flexblock>
     </PageWide>
 
-    <IndustryManufacturersReel manufacturers={manufacturers} />
+    <RankingReel {...industry_manufacturers_reel(manufacturers, t, translatePath)} />
 </Viewport>

@@ -90,7 +90,8 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetSchedule from '@components/blocks/FleetSchedule.astro';
-import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
+import RankingReel from '@components/blocks/RankingReel.astro';
+import { fleet_commanders_reel } from '@helpers/ranking_reels';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
@@ -180,7 +181,7 @@ const page_title = t('fleets.upcoming.page_title');
         </UpcomingFleetsUpdater>
 
         {fc_metrics.length > 0 &&
-            <FleetCommandersReel fc_metrics={fc_metrics} />
+            <RankingReel {...fleet_commanders_reel(fc_metrics, t)} />
         }
 	</PageWide>
 </Viewport>
