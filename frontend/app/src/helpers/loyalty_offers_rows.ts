@@ -271,7 +271,7 @@ export function offer_lp_waterfall(
         quantity: offer.quantity,
         market_price: market_price_for_side(offer, side),
         input_cost_isk: offer.input_cost_isk,
-        input_freight_isk: offer.input_freight_isk,
+        costs: offer.conversion_costs?.[side],
         isk_cost: offer.isk_cost,
         other_cost: offer.other_cost,
         net_isk_per_lp: conversion_for_side(offer, side, true, true),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { with_api_costs } from './fixtures/loyalty_api_costs'
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
@@ -18,7 +19,7 @@ import {
 } from '@helpers/loyalty_offers_rows'
 
 function offer(overrides: Partial<LoyaltyOffer>): LoyaltyOffer {
-    return {
+    return with_api_costs({
         offer_id: 1,
         corporation_id: 1000182,
         type_id: 1,
@@ -44,7 +45,7 @@ function offer(overrides: Partial<LoyaltyOffer>): LoyaltyOffer {
         kind: 'input',
         updated_at: '2026-08-05T00:00:00Z',
         ...overrides,
-    }
+    })
 }
 
 /** Live numbers for Navy Cap Booster 400 ×20 (Oct 2026). */

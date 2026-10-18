@@ -1,12 +1,12 @@
 /**
- * LP offer ISK/LP hover breakdown (mirrors backend plan_lp_offer_conversion).
+ * LP offer ISK/LP hover breakdown.
  *
- * Net conversion already includes these; tippy shows the components.
+ * The backend owns the conversion (industry.helpers.plan_costing): the net and
+ * the tax and freight inside it come from the API (`conversion_costs`). This
+ * module only lines them up for the tooltip and the cost toggles.
  */
 
-export const LP_CONVERSION_SALES_TAX_RATE = 0.0337
-/** Red Frog: 45M ISK per 1.5B cargo. */
-export const LP_CONVERSION_FREIGHT_RATE = 45_000_000 / 1_500_000_000
+import type { LoyaltyOfferConversionCosts } from '@dtypes/api.minmatar.org'
 
 export interface LoyaltyConversionBreakdown {
     raw_isk_per_lp: number | null
@@ -22,10 +22,11 @@ export interface LoyaltyConversionBreakdownInput {
     quantity: number
     market_price: number | null | undefined
     input_cost_isk: number | null | undefined
-    input_freight_isk: number | null | undefined
+    /** This side's tax and freight per LP, as served by the API. */
+    costs: LoyaltyOfferConversionCosts | null | undefined
     /** Fallback when API has not stored input_cost_isk yet. */
     isk_cost?: number | null
-    /** Fallback for input cost + input-freight basis. */
+    /** Fallback for input cost. */
     other_cost?: number | null
     net_isk_per_lp: number | null | undefined
 }
@@ -70,23 +71,6 @@ export function resolve_input_cost_isk(
     return (input.isk_cost ?? 0) + (input.other_cost ?? 0)
 }
 
-/**
- * Red Frog on required items / materials. Prefer API field; else % of other_cost.
- */
-export function resolve_input_freight_isk(
-    input: Pick<
-        LoyaltyConversionBreakdownInput,
-        'input_freight_isk' | 'other_cost'
-    >,
-): number {
-    if (input.input_freight_isk != null)
-        return input.input_freight_isk
-    const basis = input.other_cost ?? 0
-    if (basis <= 0)
-        return 0
-    return Math.ceil(LP_CONVERSION_FREIGHT_RATE * basis)
-}
-
 export function loyalty_conversion_breakdown(
     input: LoyaltyConversionBreakdownInput,
 ): LoyaltyConversionBreakdown {
@@ -96,21 +80,15 @@ export function loyalty_conversion_breakdown(
         ? input.market_price * qty
         : null
 
-    const sales_tax = revenue != null
-        ? Math.ceil(LP_CONVERSION_SALES_TAX_RATE * revenue)
-        : null
-    const output_freight = revenue != null
-        ? Math.ceil(LP_CONVERSION_FREIGHT_RATE * revenue)
-        : null
     const input_cost = resolve_input_cost_isk(input)
-    const input_freight = resolve_input_freight_isk(input)
+    const costs = input.costs
 
     return {
         raw_isk_per_lp: per_lp(revenue, lp),
         input_isk_per_lp: per_lp(input_cost, lp),
-        sales_tax_isk_per_lp: per_lp(sales_tax, lp),
-        input_freight_isk_per_lp: per_lp(input_freight, lp),
-        output_freight_isk_per_lp: per_lp(output_freight, lp),
+        sales_tax_isk_per_lp: revenue != null ? costs?.sales_tax_isk_per_lp ?? null : null,
+        input_freight_isk_per_lp: costs?.input_freight_isk_per_lp ?? null,
+        output_freight_isk_per_lp: revenue != null ? costs?.output_freight_isk_per_lp ?? null : null,
         net_isk_per_lp: input.net_isk_per_lp ?? null,
     }
 }

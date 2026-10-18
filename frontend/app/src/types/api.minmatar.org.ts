@@ -2376,11 +2376,19 @@ export interface LoyaltyOffer {
     conversion_isk_per_lp_sell:     number | null;
     conversion_isk_per_lp_buy:      number | null;
     conversion_isk_per_lp_avg_7d:   number | null;
+    /** Per-LP tax and freight inside each side's net, keyed by side (backend plan_costing). */
+    conversion_costs?:              Partial<Record<'sell' | 'buy' | 'avg_7d', LoyaltyOfferConversionCosts>>;
     volume_1d:                      number | null;
     volume_7d:                      number | null;
     volume_30d:                     number | null;
     kind:                           string;
     updated_at:                     Date | string;
+}
+
+export interface LoyaltyOfferConversionCosts {
+    sales_tax_isk_per_lp:           number | null;
+    input_freight_isk_per_lp:       number | null;
+    output_freight_isk_per_lp:      number | null;
 }
 
 export interface LoyaltyOffersList {
