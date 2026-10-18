@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetItem } from '@dtypes/layout_components'
@@ -25,7 +25,7 @@ import StylessButton from './StylessButton.astro';
             character_name={fleet.fleet_commander_name}
             heading={true}
         >
-            <small class="[ text-nowrap! ]">{t(`${fleet.type}_fleet` as any) ?? fleet.type}</small>
+            <small class="[ text-nowrap! ]">{t(t_key('', fleet.type, '_fleet')) ?? fleet.type}</small>
         </PilotBadge>
         <div class="[ fleet-status-text-wrapper ]">
             {fleet?.status === 'cancelled' &&

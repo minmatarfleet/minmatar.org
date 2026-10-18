@@ -2,13 +2,12 @@
 
 .guide-shell {
     --guide-shell-display-font: 'Orbitron', var(--heading-font);
-    --guide-shell-body-font: 'Source Sans 3', var(--body-font);
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: clip;
     padding: var(--space-2xl) var(--space-l-xl);
-    font-family: var(--guide-shell-body-font);
+    font-family: inherit;
 }
 
 @media (max-width: 48rem) {

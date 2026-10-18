@@ -51,9 +51,6 @@ export const ui = {
         'alliance.cover_alt': 'FLEET propaganda collage with a gas giant planet and Auga star in the background',
         'alliance.cover_credits': 'All posters in the background art are courtesy of ',
         'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events.',
-        'alliance.description.directors': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams members and applications. Read about our recent events',
-        'alliance.description.officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your SIGs members and applications. Read about our recent events',
-        'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications. Read about our recent events',
 
         'alliance.story.page_title': 'Our story',
         'alliance.values.page_title': 'Alliance Values',

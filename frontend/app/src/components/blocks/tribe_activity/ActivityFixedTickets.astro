@@ -13,6 +13,7 @@ interface Props {
 const { fixed } = Astro.props
 
 import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 <ActivityBlock
@@ -20,7 +21,7 @@ import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro
     caption={t('tribes.activity.technology.fixed_caption')}
 >
     {fixed.length === 0 ?
-        <p class="[ activity-empty ]">{t('tribes.activity.technology.fixed_empty')}</p>
+        <EmptyState title={t('tribes.activity.technology.fixed_empty')} />
         :
         <ul class="[ fixed-list ]">
             {fixed.map((ticket) =>
@@ -53,12 +54,6 @@ import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro
 </ActivityBlock>
 
 <style lang="scss">
-    .activity-empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--faded);
-    }
-
     .fixed-list {
         margin: 0;
         padding: 0;

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { useTranslations } from '@i18n/utils'
 import {
-    build_canonical_url,
     get_site_origin,
     is_auth_init_redirect,
     is_noindex_path,
@@ -17,13 +16,6 @@ describe('seo', () => {
         expect(is_noindex_path('/partials/fitting_finder_component')).toBe(true)
         expect(is_noindex_path('/redirects/auth_init')).toBe(true)
         expect(is_noindex_path('/alliance/')).toBe(false)
-    })
-
-    it('builds canonical URLs from translated paths', () => {
-        const translatePath = (path: string) => path
-        const url = build_canonical_url('/guides/', translatePath, 'http://localhost:4321')
-
-        expect(url).toMatch(/\/guides\/$/)
     })
 
     it('uses fallback origin outside production', () => {

@@ -1,6 +1,6 @@
 ---
 import { login_redirect } from '@helpers/http_responses'
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
@@ -61,7 +61,7 @@ if (Astro.request.method === 'POST') {
         const create_fleet_role_volunteer_error = error.message
         
         alert = {
-            title: subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(role as any) ?? role),
+            title: subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(dynamic_key(role)) ?? role),
             content: create_fleet_role_volunteer_error as string,
         }
     }
@@ -81,7 +81,7 @@ if (Astro.request.method === 'DELETE') {
         const delete_fleet_role_volunteer_error = error.message
 
         alert = {
-            title: subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(role as any) ?? role),
+            title: subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(dynamic_key(role)) ?? role),
             content: delete_fleet_role_volunteer_error as string,
         }
     }
@@ -142,7 +142,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
     :
     <FleetRoleItem
         id={id}
-        title={subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(`${role}_label` as any) ?? role)}
+        title={subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(t_key('', role, '_label')) ?? role)}
         fleet_id={fleet_id}
         role={role as FleetRoles}
         subtype={subtype ? subtype as FleetRolesSubtypes : undefined}

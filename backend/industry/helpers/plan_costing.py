@@ -741,6 +741,57 @@ def _apply_freight_options(
     )
 
 
+def lp_offer_revenue_costs(
+    revenue_isk: int,
+    *,
+    output_freight: Optional[FreightOptions] = None,
+    sales_tax: Optional[SalesTaxOptions] = None,
+) -> Tuple[int, FreightCost]:
+    """Sales tax and output freight on an LP offer's market revenue."""
+    out_freight_opts = output_freight or FreightOptions.red_frog_jita_amo()
+    tax_opts = sales_tax or SalesTaxOptions.accounting_v()
+    sales_tax_isk = 0
+    if tax_opts.enabled and tax_opts.rate > 0:
+        sales_tax_isk = int(math.ceil(float(tax_opts.rate) * revenue_isk))
+    output_freight_cost = _apply_freight_options(
+        basis_isk=revenue_isk, options=out_freight_opts
+    )
+    return sales_tax_isk, output_freight_cost
+
+
+def lp_offer_side_costs(
+    *,
+    lp_cost: int,
+    quantity: int,
+    market_price_isk: Optional[int],
+    input_freight_isk: Optional[int],
+) -> dict:
+    """
+    Per-LP cost components for one market side of a stored LP offer, with
+    the same defaults as the economics rebuild (``plan_lp_offer_conversion``).
+    The API serves these so the frontend does not re-derive tax or freight.
+    """
+    lp = int(lp_cost)
+
+    def per_lp(amount: Optional[int]) -> Optional[float]:
+        if amount is None or lp <= 0:
+            return None
+        return float(amount) / float(lp)
+
+    sales_tax_isk: Optional[int] = None
+    output_freight_isk: Optional[int] = None
+    if market_price_isk is not None:
+        revenue = int(market_price_isk) * max(int(quantity), 1)
+        sales_tax_isk, output_freight_cost = lp_offer_revenue_costs(revenue)
+        output_freight_isk = output_freight_cost.isk
+
+    return {
+        "sales_tax_isk_per_lp": per_lp(sales_tax_isk),
+        "input_freight_isk_per_lp": per_lp(input_freight_isk),
+        "output_freight_isk_per_lp": per_lp(output_freight_isk),
+    }
+
+
 def plan_lp_offer_conversion(
     *,
     lp_cost: int,
@@ -790,10 +841,8 @@ def plan_lp_offer_conversion(
     output_freight_cost = FreightCost(mode=out_freight_opts.mode)
     if market_price_isk is not None:
         revenue = int(market_price_isk) * qty
-        if tax_opts.enabled and tax_opts.rate > 0:
-            sales_tax_isk = int(math.ceil(float(tax_opts.rate) * revenue))
-        output_freight_cost = _apply_freight_options(
-            basis_isk=revenue, options=out_freight_opts
+        sales_tax_isk, output_freight_cost = lp_offer_revenue_costs(
+            revenue, output_freight=out_freight_opts, sales_tax=tax_opts
         )
 
     def per_lp(amount: Optional[int]) -> Optional[float]:

@@ -32,9 +32,10 @@
  * Output: src/data/amamake-market/<slug>-boards.ts   (do not hand-edit; re-run instead)
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { existsSync, statSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
+import { resolve_sde_path } from '../src/helpers/sde_path.mjs'
 
 const args = Object.fromEntries(
     process.argv.slice(2).reduce((p, t, i, l) => (t.startsWith('--') && p.push([t.slice(2), l[i + 1]]), p), []),
@@ -192,27 +193,15 @@ await mkdir(KILL_CACHE, { recursive: true })
 await mkdir(MARKET_CACHE, { recursive: true })
 await mkdir(OUT_DIR, { recursive: true })
 
-// ---------------------------------------------------------------- SDE lookups (newest bundled sqlite first, same candidates as sde_db.ts)
+// ---------------------------------------------------------------- SDE lookups (file from src/helpers/sde_path.mjs, like the site)
 const ESI_BASE = 'https://esi.evetech.net/latest'
 const ESI_TYPES_CACHE = path.join(MARKET_CACHE, 'esi-types.json')
 const empty_type_meta = () => ({
     name: '', group_id: 0, group_name: '', category: '', volume: 0, packaged_volume: null,
 })
-function resolve_sde_path() {
-    const candidates = [
-        path.join(ROOT, 'src', 'data', 'sde-3409592.sqlite'),
-        path.join(ROOT, 'src', 'data', 'sde-3316380.sqlite'),
-    ]
-    for (const candidate of candidates) {
-        try {
-            if (existsSync(candidate) && statSync(candidate).size > 0) return candidate
-        } catch { /* try next */ }
-    }
-    return candidates[candidates.length - 1]
-}
-const sde_path = resolve_sde_path()
+const sde_path = resolve_sde_path({ root: ROOT }).path
 console.error(`sde: ${path.relative(ROOT, sde_path)}`)
-const sde = new Database(sde_path, { readonly: true })
+const sde = new Database(sde_path, { readonly: true, fileMustExist: true })
 const type_row = sde.prepare(`
     SELECT t.typeName AS name, t.groupID AS group_id, g.groupName AS group_name, c.categoryName AS category,
            t.volume AS volume, v.volume AS packaged_volume

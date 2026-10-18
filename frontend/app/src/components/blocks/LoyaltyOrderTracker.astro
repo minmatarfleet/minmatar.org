@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
 import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
@@ -40,7 +41,7 @@ const now = new Date()
 const eve_time = (value: Date | string | null | undefined) => {
     if (!value) return ''
     const date = new Date(value)
-    const day = date.toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    const day = eve_day_short(lang, date)
     const time = date.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' })
     return `${day} · ${time}`
 }

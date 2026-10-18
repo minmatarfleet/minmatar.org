@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import { format_date } from '@helpers/date'
@@ -90,7 +90,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
                     </FluidFixed>
                     <FlexInline gap='var(--space-l)' justification='space-between'>
                         <FlexInline gap='var(--space-l)'>
-                            <TextGroup title={t('state')}><small>{t(post.state as any) ?? post.state}</small></TextGroup>
+                            <TextGroup title={t('state')}><small>{t(dynamic_key(post.state)) ?? post.state}</small></TextGroup>
                             <TextGroup title={t('publish_date')}><small>{format_date(lang, post.date_posted)}</small></TextGroup>
                             {post.tags.length > 0 &&
                                 <TextGroup title={t('post_tags')}>

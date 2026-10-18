@@ -59,16 +59,11 @@ import Grid from '@components/compositions/Grid.astro'
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .market-health-skeleton .skel {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.06) 100%
-        );
-        background-size: 200% 100%;
-        animation: market-health-skel 1.1s ease-in-out infinite;
+        @include skeleton.shimmer;
     }
 
     .market-health-skeleton__health {
@@ -83,7 +78,7 @@ import Grid from '@components/compositions/Grid.astro'
         gap: var(--space-3xs);
         padding: var(--space-m);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.22);
+        background: var(--surface-sunken);
     }
 
     .market-health-skeleton__chart {
@@ -92,7 +87,7 @@ import Grid from '@components/compositions/Grid.astro'
         gap: var(--space-xs);
         padding: var(--space-m);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.22);
+        background: var(--surface-sunken);
     }
 
     .skel-chart {
@@ -147,14 +142,5 @@ import Grid from '@components/compositions/Grid.astro'
         width: 9rem;
         height: 2rem;
         margin-block-start: var(--space-2xs);
-    }
-
-    @keyframes market-health-skel {
-        0% {
-            background-position: 100% 0;
-        }
-        100% {
-            background-position: -100% 0;
-        }
     }
 </style>

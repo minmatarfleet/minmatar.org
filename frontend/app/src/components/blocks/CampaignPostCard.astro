@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignMeta } from '@/data/campaigns'
@@ -16,10 +16,10 @@ const {
 } = Astro.props
 
 const href = translatePath(campaign.path)
-const name = t(campaign.nameKey as any)
-const period = t(campaign.periodKey as any)
+const name = t(dynamic_key(campaign.nameKey))
+const period = t(dynamic_key(campaign.periodKey))
 const view_label = t('campaigns.view_report')
-const isk_label = t((campaign.isk_label_key ?? 'destroyed') as any)
+const isk_label = t(dynamic_key(campaign.isk_label_key ?? 'destroyed'))
 
 let kind_label: string
 let kind_color: TagColors

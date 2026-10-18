@@ -12,10 +12,6 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
-
 import { check_referral_url } from '@helpers/fetching/referrals'
 await check_referral_url(
 	user ? user.user_id : 0,
@@ -192,8 +188,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 			{neocom &&
 				<Neocom
-					user_is_officer={user_is_officer ?? false}
-					user_is_director={user_is_director ?? false}
 					authenticated={user !== false}
 					gates={gates}
 				/>

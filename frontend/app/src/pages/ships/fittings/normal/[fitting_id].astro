@@ -23,7 +23,7 @@ if (!fitting)
     return HTTP_404_Not_Found()
 
 import { get_item_icon } from '@helpers/eve_image_server';
-import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
+import { parse_eft_for_render, parse_pod } from '@helpers/fit_parser.ts';
 import { get_item_id } from '@helpers/sde/items'
 import { strip_markdown } from '@helpers/string'
 import { format_date_short } from '@helpers/date';
@@ -35,7 +35,7 @@ import {
     type FittingDetailSeoInput,
 } from '@helpers/fitting_seo'
 
-const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
+const fitting_parsed = await parse_eft_for_render(fitting?.eft_format ?? '')
 const ship_id = await get_item_id(fitting_parsed?.ship_name as string)
 
 function transform_into_cargohold(input: Module[]): CargoItem[] {

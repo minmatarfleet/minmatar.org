@@ -14,7 +14,8 @@ test("add character dialog requires Basic and Faction Warfare and defaults the r
     const html = await render();
 
     expect(html).toContain("esi-characters.read_notifications.v1");
-    expect(html).toContain("26 scopes will be requested");
+    // Basic + Faction Warfare + the default-on Industry, Market and Desktop groups.
+    expect(html).toContain("32 scopes will be requested");
     expect(html).toContain("Role-specific, off by default");
     expect(html).toContain('"Industry":true');
     expect(html).toContain('"Director":false');

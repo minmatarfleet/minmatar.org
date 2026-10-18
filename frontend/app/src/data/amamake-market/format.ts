@@ -1,16 +1,13 @@
-/** ISK short labels for report UI (1.25T, 186B, 16.8M, 31.3k). */
+import { ISK_REPORT, ISK_REPORT_UNIT, format_compact } from '@helpers/numbers'
+
+/** ISK short labels for report UI (1.25T, 186B, 16.80B, 17M, 31k). */
 export function format_isk(value: number): string {
-    if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
-    if (value >= 100_000_000_000) return `${Math.round(value / 1_000_000_000)}B`
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`
-    return `${(value / 1_000).toFixed(0)}k`
+    return format_compact(value, ISK_REPORT)
 }
 
+/** Per-unit prices: millions as format_isk, then 31.3k, 950. */
 export function format_unit_isk(value: number): string {
-    if (value >= 1_000_000) return format_isk(value)
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`
-    return `${Math.round(value)}`
+    return format_compact(value, ISK_REPORT_UNIT)
 }
 
 export function percent(part: number, total: number): number {

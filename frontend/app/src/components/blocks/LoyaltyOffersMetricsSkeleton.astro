@@ -16,6 +16,8 @@
 </section>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .loyalty-offers-metrics-skeleton {
         display: flex;
         flex-direction: column;
@@ -41,8 +43,7 @@
 
     .loyalty-offers-metrics-skeleton .skel {
         border-radius: 2px;
-        background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
-        animation: loyalty-offers-metrics-skel 1.2s ease-in-out infinite;
+        @include skeleton.pulse(color-mix(in srgb, var(--component-background) 70%, var(--foreground)));
     }
 
     .skel-label {
@@ -66,15 +67,5 @@
     .skel-summary {
         width: min(100%, 32rem);
         height: var(--step--2);
-    }
-
-    @keyframes loyalty-offers-metrics-skel {
-        0%,
-        100% {
-            opacity: 0.45;
-        }
-        50% {
-            opacity: 0.85;
-        }
     }
 </style>

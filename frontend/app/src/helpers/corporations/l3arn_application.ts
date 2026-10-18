@@ -200,7 +200,7 @@ export const L3ARN_APPLICATION_HOW_FOUND_LABELS: Record<
     other: 'Other',
 };
 
-const L3ARN_APPLICATION_STRING_FIELDS = [
+export const L3ARN_APPLICATION_STRING_FIELDS = [
     'introduction',
     'activity_region',
     'activity_period',
@@ -213,12 +213,12 @@ const L3ARN_APPLICATION_STRING_FIELDS = [
     'other_alliance_affiliation',
 ] as const;
 
-const L3ARN_APPLICATION_ARRAY_FIELDS = [
+export const L3ARN_APPLICATION_ARRAY_FIELDS = [
     'roles',
     'other_corporations',
 ] as const;
 
-const L3ARN_APPLICATION_BOOLEAN_FIELDS = [
+export const L3ARN_APPLICATION_BOOLEAN_FIELDS = [
     'is_existing_player_alt',
     'is_other_alliance_member',
     'agree_tenets',
@@ -266,14 +266,6 @@ export function l3arnApplicationTimezoneLabel(timezone: string): string {
     }
 
     return timezone;
-}
-
-export function l3arnApplicationTimezoneEveWindow(timezone: string): string {
-    if (isL3arnApplicationTimezone(timezone)) {
-        return L3ARN_APPLICATION_TIMEZONE_EVE_WINDOWS[timezone];
-    }
-
-    return '';
 }
 
 export function isL3arnApplicationRegion(
@@ -355,17 +347,6 @@ export function formatL3arnApplicationActivitySummary(
     );
 
     return `${region} region, ${period} → ${bucket}`;
-}
-
-/**
- * Read the browser IANA timezone (e.g. America/New_York).
- */
-export function detectL3arnApplicationUserTimezone(): string {
-    try {
-        return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    } catch {
-        return '';
-    }
 }
 
 /**
@@ -645,26 +626,6 @@ export function formatL3arnApplicationRequirements(
     return lines;
 }
 
-export function estimateL3arnApplicationDescriptionLength(
-    answers: Pick<
-        L3arnApplicationAnswers,
-        L3arnApplicationLimitedField | 'other_corporations'
-    >,
-): number {
-    const userTextLength = (
-        Object.keys(L3ARN_APPLICATION_FIELD_LIMITS) as L3arnApplicationLimitedField[]
-    ).reduce((total, field) => total + answers[field].length, 0);
-    const corpsLength = formatL3arnApplicationCorpConsideration({
-        other_corporations: answers.other_corporations,
-    }).length;
-
-    return (
-        L3ARN_APPLICATION_DESCRIPTION_FIXED_OVERHEAD
-        + userTextLength
-        + corpsLength
-    );
-}
-
 export function isL3arnApplicationFieldWithinLimit(
     field: L3arnApplicationLimitedField,
     value: string,
@@ -874,347 +835,3 @@ export function descriptionFromL3arnPayload(value: unknown): string {
     return formatL3arnApplicationWebDescription(answers);
 }
 
-export function l3arnApplicationToDraftPayload(
-    answers: L3arnApplicationAnswers,
-): L3arnApplicationAnswers & { l3arn: true } {
-    return {
-        l3arn: true,
-        ...answers,
-    };
-}
-
-export function parseL3arnApplicationDraft(
-    raw: string | null,
-): L3arnApplicationAnswers | null {
-    if (!raw) {
-        return null;
-    }
-
-    try {
-        const parsed = JSON.parse(raw);
-
-        if (!isL3arnApplicationPayload(parsed)) {
-            return null;
-        }
-
-        return l3arnAnswersFromPayload(parsed);
-    } catch {
-        return null;
-    }
-}
-
-export function serializeL3arnApplicationDraft(
-    answers: L3arnApplicationAnswers,
-): string {
-    return JSON.stringify(l3arnApplicationToDraftPayload(answers));
-}
-
-export function hasL3arnApplicationDraftContent(
-    answers: L3arnApplicationAnswers,
-): boolean {
-    return (
-        L3ARN_APPLICATION_STRING_FIELDS.some(
-            (field) => trim(answers[field]).length > 0,
-        )
-        || L3ARN_APPLICATION_ARRAY_FIELDS.some(
-            (field) => answers[field].length > 0,
-        )
-        || L3ARN_APPLICATION_BOOLEAN_FIELDS.some((field) => answers[field])
-    );
-}
-
-function l3arnDraftRestoreAlpineBlock(): string {
-    return [
-        ...L3ARN_APPLICATION_STRING_FIELDS.map(
-            (field) => `this.${field} = saved.${field} ?? '';`,
-        ),
-        ...L3ARN_APPLICATION_ARRAY_FIELDS.map(
-            (field) => `this.${field} = Array.isArray(saved.${field}) ? saved.${field} : [];`,
-        ),
-        ...L3ARN_APPLICATION_BOOLEAN_FIELDS.map(
-            (field) => `this.${field} = Boolean(saved.${field});`,
-        ),
-    ].join('\n                        ');
-}
-
-function l3arnDraftHasContentAlpineExpression(): string {
-    const stringChecks = L3ARN_APPLICATION_STRING_FIELDS.map(
-        (field) => `payload.${field}?.trim()`,
-    ).join(' || ');
-    const arrayChecks = L3ARN_APPLICATION_ARRAY_FIELDS.map(
-        (field) => `payload.${field}?.length`,
-    ).join(' || ');
-    const booleanChecks = L3ARN_APPLICATION_BOOLEAN_FIELDS.map(
-        (field) => `payload.${field}`,
-    ).join(' || ');
-
-    return `Boolean(${stringChecks} || ${arrayChecks} || ${booleanChecks})`;
-}
-
-export function l3arnApplicationAlpineState(dialogMode: boolean): string {
-    const dialogUpdate = dialogMode
-        ? `
-            if (typeof confirm_dialog_hx !== 'undefined') {
-                confirm_dialog_hx.vals = JSON.stringify(this.buildDescriptionPayload());
-            }
-            if (typeof confirm_dialog_set_accept_disable === 'function') {
-                confirm_dialog_set_accept_disable(this.error);
-            }
-        `
-        : '';
-    const regionValues = L3ARN_APPLICATION_REGIONS.map(
-        (region) => `'${region}'`,
-    ).join(', ');
-    const periodValues = L3ARN_APPLICATION_ACTIVITY_PERIODS.map(
-        (period) => `'${period}'`,
-    ).join(', ');
-    const regionPeriodMapping = JSON.stringify(L3ARN_REGION_PERIOD_TO_TIMEZONE);
-    const howFoundValues = L3ARN_APPLICATION_HOW_FOUND_OPTIONS.map(
-        (option) => `'${option}'`,
-    ).join(', ');
-    const fieldLimits = JSON.stringify(L3ARN_APPLICATION_FIELD_LIMITS);
-    const descriptionMaxLength = L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH;
-    const descriptionFixedOverhead = L3ARN_APPLICATION_DESCRIPTION_FIXED_OVERHEAD;
-    const regionLabels = JSON.stringify(L3ARN_APPLICATION_REGION_LABELS);
-    const timezoneLabels = JSON.stringify(L3ARN_APPLICATION_TIMEZONE_LABELS);
-    const timezoneEveWindows = JSON.stringify(L3ARN_APPLICATION_TIMEZONE_EVE_WINDOWS);
-
-    return `{
-        introduction: '',
-        activity_region: '',
-        activity_period: '',
-        timezone: '',
-        user_timezone: '',
-        roles: [],
-        goals: '',
-        how_found: '',
-        how_found_other: '',
-        other_corporations: [],
-        is_existing_player_alt: false,
-        is_other_alliance_member: false,
-        main_character_name: '',
-        other_alliance_affiliation: '',
-        agree_tenets: false,
-        confirm_omega: false,
-        confirm_auth_chars: false,
-        error: true,
-        detectActivityRegion() {
-            try {
-                const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                if (
-                    timeZone.startsWith('America/')
-                    || timeZone === 'Pacific/Honolulu'
-                    || timeZone === 'Pacific/Pago_Pago'
-                    || timeZone === 'Pacific/Midway'
-                ) {
-                    return 'US';
-                }
-                if (
-                    timeZone.startsWith('Asia/')
-                    || timeZone.startsWith('Australia/')
-                    || (
-                        timeZone.startsWith('Pacific/')
-                        && timeZone !== 'Pacific/Honolulu'
-                        && timeZone !== 'Pacific/Pago_Pago'
-                        && timeZone !== 'Pacific/Midway'
-                    )
-                ) {
-                    return 'AP';
-                }
-                return 'EU';
-            } catch (error) {
-                const utcOffsetHours = -new Date().getTimezoneOffset() / 60;
-                if (utcOffsetHours <= -2) {
-                    return 'US';
-                }
-                if (utcOffsetHours >= 5) {
-                    return 'AP';
-                }
-                return 'EU';
-            }
-        },
-        detectUserTimezone() {
-            try {
-                return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-            } catch (error) {
-                return '';
-            }
-        },
-        userTimezoneLabel() {
-            if (!this.user_timezone) {
-                return '';
-            }
-            try {
-                const offsetLabel = new Intl.DateTimeFormat('en-US', {
-                    timeZone: this.user_timezone,
-                    timeZoneName: 'short',
-                })
-                    .formatToParts(new Date())
-                    .find((part) => part.type === 'timeZoneName')?.value;
-                return offsetLabel
-                    ? \`\${this.user_timezone} (\${offsetLabel})\`
-                    : this.user_timezone;
-            } catch (error) {
-                return this.user_timezone;
-            }
-        },
-        syncTimezoneFromActivity() {
-            const mapping = ${regionPeriodMapping};
-            if (
-                [${regionValues}].includes(this.activity_region)
-                && [${periodValues}].includes(this.activity_period)
-            ) {
-                this.timezone = mapping[this.activity_region][this.activity_period];
-            } else {
-                this.timezone = '';
-            }
-        },
-        activityRegionLabel() {
-            const labels = ${regionLabels};
-            return labels[this.activity_region] || '';
-        },
-        timezoneBucketLabel() {
-            const labels = ${timezoneLabels};
-            return this.timezone ? (labels[this.timezone] || '') : '';
-        },
-        timezoneEveWindow() {
-            const windows = ${timezoneEveWindows};
-            return this.timezone ? (windows[this.timezone] || '') : '';
-        },
-        fieldWithinLimit(field) {
-            const limits = ${fieldLimits};
-            return (this[field]?.length ?? 0) <= limits[field];
-        },
-        fieldsWithinLimits() {
-            const limits = ${fieldLimits};
-            return Object.keys(limits).every(
-                (field) => (this[field]?.length ?? 0) <= limits[field],
-            );
-        },
-        descriptionWithinLimit() {
-            const limits = ${fieldLimits};
-            const userTextLength = Object.keys(limits).reduce(
-                (total, field) => total + (this[field]?.length ?? 0),
-                0,
-            );
-            const corpsLength = (this.other_corporations || []).join(', ').length || 4;
-            return (
-                ${descriptionFixedOverhead} + userTextLength + corpsLength
-                <= ${descriptionMaxLength}
-            );
-        },
-        answersReady() {
-            this.syncTimezoneFromActivity();
-            return Boolean(
-                this.introduction?.trim()
-                && this.user_timezone
-                && [${regionValues}].includes(this.activity_region)
-                && [${periodValues}].includes(this.activity_period)
-                && this.timezone
-                && this.roles?.length
-                && this.goals?.trim()
-                && [${howFoundValues}].includes(this.how_found)
-                && (this.how_found !== 'other' || this.how_found_other?.trim())
-                && this.agree_tenets
-                && this.confirm_omega
-                && this.confirm_auth_chars
-                && this.fieldsWithinLimits()
-                && this.descriptionWithinLimit()
-            );
-        },
-        buildDescriptionPayload() {
-            this.syncTimezoneFromActivity();
-            return {
-                l3arn: true,
-                introduction: this.introduction,
-                activity_region: this.activity_region,
-                activity_period: this.activity_period,
-                timezone: this.timezone,
-                user_timezone: this.user_timezone,
-                roles: this.roles,
-                goals: this.goals,
-                how_found: this.how_found,
-                how_found_other: this.how_found_other,
-                other_corporations: this.other_corporations,
-                is_existing_player_alt: this.is_existing_player_alt,
-                is_other_alliance_member: this.is_other_alliance_member,
-                main_character_name: this.main_character_name,
-                other_alliance_affiliation: this.other_alliance_affiliation,
-                agree_tenets: this.agree_tenets,
-                confirm_omega: this.confirm_omega,
-                confirm_auth_chars: this.confirm_auth_chars,
-            };
-        },
-        initL3arnForm() {
-            try {
-                const raw = sessionStorage.getItem('${L3ARN_APPLICATION_DRAFT_STORAGE_KEY}');
-                if (raw) {
-                    const saved = JSON.parse(raw);
-                    if (saved && saved.l3arn === true) {
-                        ${l3arnDraftRestoreAlpineBlock()}
-                    }
-                }
-            } catch (error) {}
-            this.user_timezone = this.detectUserTimezone();
-            this.activity_region = this.detectActivityRegion();
-            this.syncTimezoneFromActivity();
-            this.updateApplicationStatus();
-        },
-        persistL3arnForm() {
-            const payload = this.buildDescriptionPayload();
-            const hasContent = ${l3arnDraftHasContentAlpineExpression()};
-
-            try {
-                if (hasContent) {
-                    sessionStorage.setItem(
-                        '${L3ARN_APPLICATION_DRAFT_STORAGE_KEY}',
-                        JSON.stringify(payload),
-                    );
-                } else {
-                    sessionStorage.removeItem('${L3ARN_APPLICATION_DRAFT_STORAGE_KEY}');
-                }
-            } catch (error) {}
-        },
-        onExistingPlayerAltChange() {
-            if (!this.is_existing_player_alt) {
-                this.main_character_name = '';
-            }
-            this.updateApplicationStatus();
-        },
-        onOtherAllianceMemberChange() {
-            if (!this.is_other_alliance_member) {
-                this.other_alliance_affiliation = '';
-            }
-            this.updateApplicationStatus();
-        },
-        updateApplicationStatus() {
-            this.syncTimezoneFromActivity();
-            this.error = !this.answersReady();
-            this.persistL3arnForm();
-            ${dialogUpdate}
-        },
-        clearL3arnForm() {
-            this.introduction = '';
-            this.activity_region = this.detectActivityRegion();
-            this.activity_period = '';
-            this.timezone = '';
-            this.user_timezone = this.detectUserTimezone();
-            this.roles = [];
-            this.goals = '';
-            this.how_found = '';
-            this.how_found_other = '';
-            this.other_corporations = [];
-            this.is_existing_player_alt = false;
-            this.is_other_alliance_member = false;
-            this.main_character_name = '';
-            this.other_alliance_affiliation = '';
-            this.agree_tenets = false;
-            this.confirm_omega = false;
-            this.confirm_auth_chars = false;
-            try {
-                sessionStorage.removeItem('${L3ARN_APPLICATION_DRAFT_STORAGE_KEY}');
-            } catch (error) {}
-            this.updateApplicationStatus();
-        }
-    }`;
-}

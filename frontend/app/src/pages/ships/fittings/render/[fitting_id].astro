@@ -49,7 +49,7 @@ import { get_item_id } from '@helpers/sde/items'
 import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
-import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
+import { parse_eft_for_render, parse_pod } from '@helpers/fit_parser.ts';
 import { format_fitting_tags_line } from '@helpers/fitting_tags'
 import {
     buildFittingDetailJsonLd,
@@ -58,7 +58,7 @@ import {
     type FittingDetailSeoInput,
 } from '@helpers/fitting_seo'
 
-const fitting_parsed = await parse_eft(fitting.eft_format ?? '')
+const fitting_parsed = await parse_eft_for_render(fitting.eft_format ?? '')
 
 if (!fitting_parsed)
     return HTTP_404_Not_Found()

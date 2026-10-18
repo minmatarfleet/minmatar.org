@@ -10,7 +10,7 @@ import type {
     BuybackAppraisal,
     BuybackSettings,
 } from '@dtypes/api.minmatar.org'
-import { number_name } from '@helpers/numbers.ts'
+import { format_isk_full, number_name } from '@helpers/numbers.ts'
 
 let settings: BuybackSettings | null = null
 let appraisal: BuybackAppraisal | null = null
@@ -100,10 +100,7 @@ const format_rate = (rate: number | null) => {
     return `${Math.round(rate * 100)}%`
 }
 
-const format_isk = (value: number | null) => {
-    if (value == null) return '—'
-    return Math.round(value).toLocaleString()
-}
+const format_isk = (value: number | null) => format_isk_full(value)
 ---
 
 <Viewport

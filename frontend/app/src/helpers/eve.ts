@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { decode_unicode_escapes, get_parenthesis_content_last } from '@helpers/string'
 import type { CombatLogItem } from '@dtypes/api.minmatar.org'
 import { get_item_id } from '@helpers/sde/items'
+import { SHIP_GROUP_NAMES, ship_group_icon } from '@helpers/ship_groups'
 
 export const get_zkillboard_character_link = (character_id):string => {
     return `https://zkillboard.com/character/${character_id}/`
@@ -89,104 +90,9 @@ export const get_structure_id = (structure_type:string):number => {
     return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
 }
 
-export const get_ship_type_icon = (ship_type:string):string => {
-    const SHIP_TYPE_ICONS = {
-        'Frigate': 'Isis_frigate.png',
-        'Electronic Attack Ship': 'Isis_frigate.png',
-        'Assault Frigate': 'Isis_frigate.png',
-        'Logistics Frigate': 'Isis_frigate.png',
-        'Covert Ops': 'Isis_frigate.png',
-        'Stealth Bomber': 'Isis_frigate.png',
-        'Interceptor': 'Isis_frigate.png',
-        'Destroyer': 'Isis_destroyer.png',
-        'Interdictor': 'Isis_destroyer.png',
-        'Command Destroyer': 'Isis_destroyer.png',
-        'Tactical Destroyer': 'Isis_destroyer.png',
-        'Cruiser': 'Isis_cruiser.png',
-        'Heavy Assault Cruiser': 'Isis_cruiser.png',
-        'Heavy Interdiction Cruiser': 'Isis_cruiser.png',
-        'Logistics': 'Isis_cruiser.png',
-        'Logistics Crusiers': 'Isis_cruiser.png',
-        'Strategic Cruiser': 'Isis_cruiser.png',
-        'Recon Ship': 'Isis_cruiser.png',
-        'Force Recon Ship': 'Isis_cruiser.png',
-        'Combat Recon Ship': 'Isis_cruiser.png',
-        'Battlecruiser': 'Isis_battlecruiser.png',
-        'Combat Battlecruiser': 'Isis_battlecruiser.png',
-        'Attack Battlecruiser': 'Isis_battlecruiser.png',
-        'Command Ship': 'Isis_battlecruiser.png',
-        'Battleship': 'Isis_battleship.png',
-        'Marauder': 'Isis_battleship.png',
-        'Black Ops': 'Isis_battleship.png',
-        'Capital': 'Isis_capital.png',
-        'Dreadnought': 'Isis_capital.png',
-        'Lancer Dreadnought': 'Isis_capital.png',
-        'Carrier': 'Isis_supercapital.png',
-        'Force Auxiliary': 'Isis_supercapital.png',
-        'Command Carrier': 'Isis_supercapital.png',
-        'Super Capital': 'Isis_supercapital.png',
-        'Super Carrier': 'Isis_supercarrier.png',
-        'Titan': 'Isis_titan.png',
-        'Mining Frigate': 'Isis_miningfrigate.png',
-        'Expedition Frigate': 'Isis_miningfrigate.png',
-        'Mining Barge': 'Isis_miningbarge.png',
-        'Industrial': 'Isis_industrial.png',
-        'Transport Ship': 'Isis_industrial.png',
-        'Freighter': 'Isis_industrial.png',
-        'Jump Freighters': 'Isis_freighter.png',
-        'Industrial Command Ship': 'Isis_industrialcommand.png',
-    }
+export const get_ship_type_icon = (ship_type:string):string | null => ship_group_icon(ship_type)
 
-    return SHIP_TYPE_ICONS[ship_type] ?? null
-}
-
-export const SHIP_TYPES_SORTED = [
-    'Frigate',
-    'Electronic Attack Ship',
-    'Assault Frigate',
-    'Logistics Frigate',
-    'Covert Ops',
-    'Stealth Bomber',
-    'Interceptor',
-    'Destroyer',
-    'Interdictor',
-    'Command Destroyer',
-    'Tactical Destroyer',
-    'Cruiser',
-    'Heavy Assault Cruiser',
-    'Heavy Interdiction Cruiser',
-    'Logistics',
-    'Logistics Crusiers',
-    'Strategic Cruiser',
-    'Recon Ship',
-    'Force Recon Ship',
-    'Combat Recon Ship',
-    'Battlecruiser',
-    'Combat Battlecruiser',
-    'Attack Battlecruiser',
-    'Command Ship',
-    'Battleship',
-    'Marauder',
-    'Black Ops',
-    'Capital',
-    'Dreadnought',
-    'Lancer Dreadnought',
-    'Carrier',
-    'Force Auxiliary',
-    'Super Capital',
-    'Super Carrier',
-    'Command Carrier',
-    'Titan',
-    'Mining Frigate',
-    'Expedition Frigate',
-    'Mining Barge',
-    'Industrial',
-    'Transport Ship',
-    'Freighter',
-    'Jump Freighters',
-    'Industrial Command Ship',
-    'Unclassified',
-]
+export const SHIP_TYPES_SORTED = SHIP_GROUP_NAMES
 
 const METERS_IN_A_YEAR_LIGHT = 9460528400000000
 
@@ -297,48 +203,3 @@ function format_selected_item_date(date:Date) {
     return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`
 }
 
-export const SHIP_WEIGHT = {
-    'Frigate': 50,
-    'Electronic Attack Ship': 50,
-    'Assault Frigate': 50,
-    'Logistics Frigate': 50,
-    'Covert Ops': 50,
-    'Stealth Bomber': 50,
-    'Interceptor': 50,
-    'Destroyer': 100,
-    'Interdictor': 100,
-    'Command Destroyer': 100,
-    'Tactical Destroyer': 100,
-    'Cruiser': 200,
-    'Heavy Assault Cruiser': 200,
-    'Heavy Interdiction Cruiser': 200,
-    'Logistics': 200,
-    'Logistics Crusiers': 200,
-    'Strategic Cruiser': 200,
-    'Recon Ship': 200,
-    'Force Recon Ship': 200,
-    'Combat Recon Ship': 200,
-    'Battlecruiser': 300,
-    'Combat Battlecruiser': 300,
-    'Attack Battlecruiser': 300,
-    'Command Ship': 300,
-    'Battleship': 500,
-    'Marauder': 500,
-    'Black Ops': 500,
-    'Capital': 700,
-    'Dreadnought': 700,
-    'Lancer Dreadnought': 700,
-    'Carrier': 600,
-    'Force Auxiliary': 700,
-    'Supercapital': 700,
-    'Supercarrier': 700,
-    'Titan': 900,
-    'Miningfrigate': 50,
-    'Expedition Frigate': 50,
-    'Miningbarge': 100,
-    'Industrial': 300,
-    'Transport Ship': 100,
-    'Freighter': 500,
-    'Jump Freighters': 500,
-    'Industrialcommand': 700,
-}

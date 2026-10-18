@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignListItem } from '@dtypes/api.minmatar.org'
@@ -40,7 +40,7 @@ const period = is_upcoming
     ? upcoming_countdown
     : `${start_label} – ${end_label}`
 
-const kind_label = t(`campaigns.kind.${campaign.kind}` as any)
+const kind_label = t(t_key('campaigns.kind.', campaign.kind))
 const kind_color: TagColors = is_strategic ? 'fleet-red' : 'alliance-blue'
 const party_label = (party: { ticker?: string; name: string }) => {
     const ticker = (party.ticker || '').trim()

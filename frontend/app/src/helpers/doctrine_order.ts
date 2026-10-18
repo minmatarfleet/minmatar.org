@@ -1,66 +1,5 @@
 import type { DoctrineType, DoctrineTypes, FittingItem } from '@dtypes/layout_components'
-
-/** Hull groups, small to large. Order inside a size is the tie-break after tech level. */
-const HULL_SIZES: readonly (readonly string[])[] = [
-    [
-        'Frigate',
-        'Electronic Attack Ship',
-        'Assault Frigate',
-        'Logistics Frigate',
-        'Covert Ops',
-        'Stealth Bomber',
-        'Interceptor',
-        'Mining Frigate',
-        'Expedition Frigate',
-    ],
-    [
-        'Destroyer',
-        'Interdictor',
-        'Command Destroyer',
-        'Tactical Destroyer',
-    ],
-    [
-        'Cruiser',
-        'Heavy Assault Cruiser',
-        'Heavy Interdiction Cruiser',
-        'Logistics',
-        'Logistics Crusiers',
-        'Strategic Cruiser',
-        'Recon Ship',
-        'Force Recon Ship',
-        'Combat Recon Ship',
-        'Mining Barge',
-        'Industrial',
-    ],
-    [
-        'Battlecruiser',
-        'Combat Battlecruiser',
-        'Attack Battlecruiser',
-        'Command Ship',
-    ],
-    [
-        'Battleship',
-        'Marauder',
-        'Black Ops',
-        'Transport Ship',
-    ],
-    [
-        'Capital',
-        'Dreadnought',
-        'Lancer Dreadnought',
-        'Carrier',
-        'Force Auxiliary',
-        'Freighter',
-        'Jump Freighters',
-        'Industrial Command Ship',
-    ],
-    [
-        'Super Capital',
-        'Super Carrier',
-        'Command Carrier',
-        'Titan',
-    ],
-]
+import { ship_group_index, ship_size_rank } from '@helpers/ship_groups'
 
 /** T1, then faction, then T2, then T3. */
 const SHIP_META_ORDER = ['Tech I', 'Storyline', 'Faction', 'Tech II', 'Tech III']
@@ -76,16 +15,6 @@ const DOCTRINE_VARIANT_ORDER: readonly DoctrineTypes[] = [
 ]
 
 const UNKNOWN_RANK = 1000
-
-const hull_size_rank = new Map<string, number>()
-const hull_group_rank = new Map<string, number>()
-
-HULL_SIZES.forEach((groups, size) => {
-    groups.forEach((group, group_index) => {
-        hull_size_rank.set(group, size)
-        hull_group_rank.set(group, group_index)
-    })
-})
 
 function meta_rank(meta: string | undefined): number {
     if (!meta) return 0
@@ -110,9 +39,11 @@ function fitting_ranks(fitting: FittingItem | undefined) {
     }
 
     return {
-        size: hull_size_rank.get(fitting.ship_type) ?? UNKNOWN_RANK,
+        // Hull size bucket, small to large; list order inside a size is the
+        // tie-break after tech level.
+        size: ship_size_rank(fitting.ship_type) ?? UNKNOWN_RANK,
         meta: meta_rank(fitting.ship_meta),
-        group: hull_group_rank.get(fitting.ship_type) ?? UNKNOWN_RANK,
+        group: ship_size_rank(fitting.ship_type) === null ? UNKNOWN_RANK : ship_group_index(fitting.ship_type),
         ship_name: fitting.ship_name ?? '',
         ship_id: fitting.ship_id ?? 0,
     }

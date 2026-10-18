@@ -1,9 +1,8 @@
 .cap-guide {
     --cap-display-font: 'Orbitron', var(--heading-font);
-    --cap-body-font: 'Source Sans 3', var(--body-font);
     --cap-panel-padding-block: var(--component-padding-block);
     --cap-panel-padding-inline: var(--space-l-xl);
-    font-family: var(--cap-body-font);
+    font-family: inherit;
     display: flex;
     flex-direction: column;
     gap: var(--space-l);

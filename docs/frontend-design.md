@@ -86,6 +86,8 @@ Never hardcode colors, spacing, type sizes, or fonts. Use the tokens below, whic
 - EVE meta groups: `--tech-i`, `--tech-ii`, `--storyline`, `--faction`, `--officer`, `--deadspace`, `--tech-iii`, `--abyssal`.
 - Security status: `--security-status-1` … `--security-status-null`.
 - Semantic: `--foreground` (default `--fleet-yellow`), `--background` (black), `--component-background` (`rgb(25,25,25)`), `--highlight` (white), `--faded`, `--button-color`, `--form-color`, `--border-color`, `--border-color-hover`.
+- Alpha tints (white or black at a fixed alpha): `--hairline` (white 0.06: faint rules, skeleton base), `--hairline-medium` (0.08: panel borders), `--hairline-strong` (0.12: stronger rules, skeleton highlight), `--text-muted` (0.55: secondary text), `--glow` (0.75: logo drop-shadows), `--surface-sunken` (black 0.22: stat tiles). `--border-color` (0.05), `--border-color-hover` (0.1) and `--faded` (0.5) cover the rest.
+- Any other alpha: mix a token instead of writing `rgba()`, e.g. `color-mix(in srgb, var(--highlight) 20%, transparent)` or `color-mix(in srgb, var(--fleet-yellow) 12%, transparent)`. The `alpha_literal` conventions ratchet fails on new white/black `rgba()` literals.
 
 ### Fonts (`_font-families.scss`, `_fonts.scss`)
 
@@ -199,10 +201,14 @@ Conventions:
 - Bracket notation groups classes for readability: `class:list={['[ button ]', { narrow: narrow }, Astro.props.class]}`.
 - `define:vars` maps props to **scoped** CSS custom properties (`lang="scss"`). Global/shared classes use `lang="scss" is:global` — reserve it for truly shared patterns.
 - Tailwind is used for utility classes only; reference tokens via arbitrary values (e.g. `top-[var(--space-2xs)]`, `min-w-[100px]`, `text-highlight`). No `@apply` for whole components; no hand-rolled color/space literals.
-- i18n: `import { i18n } from '@helpers/i18n'; const { t, translatePath } = i18n(Astro.url)`. User-visible strings go through `t(...)`; internal URLs through `translatePath(...)`.
+- i18n: `import { i18n } from '@helpers/i18n'; const { t, translatePath } = i18n(Astro.url)`. User-visible strings go through `t(...)`; internal URLs through `translatePath(...)`. Keys built from data use `t(t_key('burst_kind_', kind))` (the prefix/suffix is type-checked against `ui.ts`) or, for a whole key from an API enum, `t(dynamic_key(state))`; never `t(x as any)`. Add a vitest that every value of a dynamic family has a key (see `testing/helpers/i18n_t_key.test.ts`). Exemption: editorial long-form content (the monthly reports in `components/blocks/warzone/` and `components/blocks/amamake-market/`, the guides in `components/blocks/*-guide/` and `navy-destroyer-metagame/`, and campaign write-ups in `components/blocks/campaigns/<campaign>/`) may keep its prose inline; page chrome around it (titles, buttons, labels, meta) still goes through `t()`.
 - Shared UI types (colors, sizes, spaces) come from `@dtypes/layout_components` (`ButtonColors`, `ButtonSizes`, `TagColors`, `spaces`, `FlexInlineJustify`, `PageCoverOptions`, ...).
 - Alpine directives (`x-data`, `x-on`, `x-show`, `x-collapse`, `x-trap`, `x-bind`) are for local UI state only — see rule 1.
 - htmx attributes (`hx-*`) for anything that reads/writes server state.
+- Loading, empty and error states:
+  - Loading: a `*Skeleton` component that keeps the real layout and takes its fill from `@include skeleton.shimmer` / `skeleton.pulse` (see §6 Motion).
+  - Empty: `<EmptyState title={t('x.empty')} />` renders one muted line (`--faded`, `--step--1`). For a panel whose whole body is empty, pass `hint` (or `prominent`) for a highlighted title with a hint, and an optional `action` slot. Its styles live in `src/styles/components/_empty-state.scss`, loaded on every page, because htmx drops a partial's own `<style>` blocks. Don't style new `__empty` classes (the `bespoke_empty_state` ratchet).
+  - Error: a partial that fetches from the API catches the failure and renders `<ErrorRefetch args={{ partial: PARTIAL_URL, error, delay }} />` (retry with backoff). Form/mutation partials keep inline errors (`InputError`) and say so with a `no-error-refetch: <reason>` comment (the `partial_error_state` ratchet).
 - Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility & behavior
@@ -213,16 +219,17 @@ Conventions:
 - `SkipToContent` exists; main content is `id="content"`.
 - `.visually-hidden` for screen-reader-only text.
 - Interaction media queries:
-  - `@media (hover: hover)`: hover/focus scale effects (e.g. buttons `transform: scale(1.05)`).
+  - `@media (hover: hover)`: hover/focus scale effects (e.g. buttons `transform: scale(1.05)`). Any `:hover` rule that sets `transform`/`scale`/`translate`/`rotate` goes inside it, or a tap on a touch screen leaves the element stuck mid-effect. Keep a `:focus-visible` variant outside the query so keyboard users still get it (the `hover_motion_ungated` conventions rule enforces this).
   - `@media (hover: none)`: tactile press states (`scale(0.95)` on active).
 - Dialogs/modals: focus-trap with `x-trap`, `aria-hidden` while closed, `inert` binding, Escape to close.
+- Motion: looping animations stop under `@media (prefers-reduced-motion: reduce)`. Loading skeletons keep their layout in the component and take fill and motion from `@include skeleton.shimmer` / `skeleton.pulse` (`@use '<relative path>/styles/mixins/skeleton'`), which already do this; don't add per-component skeleton keyframes (the `skeleton_keyframes` ratchet fails on them).
 
 ## 7. Verification
 
 Run from `frontend/app/`:
 
 ```bash
-npm run check      # astro check --minimumSeverity error
+npm run check      # astro check ratchet: fails when a file has more type errors than testing/conventions/type_check_baseline.json allows
 npm run test       # vitest
 ```
 

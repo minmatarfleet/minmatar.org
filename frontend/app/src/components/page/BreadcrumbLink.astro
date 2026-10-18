@@ -34,9 +34,23 @@ const {
     a:focus-visible,
     a:hover {
         outline: none;
+    }
 
-        small {
+    /* Keyboard focus scales everywhere; hover and click focus only where the pointer can hover. */
+    a:focus-visible small {
+        transform: scale(1.07);
+    }
+
+    @media (hover: hover) {
+        a:focus-within small,
+        a:hover small {
             transform: scale(1.07);
+        }
+    }
+
+    @media (hover: none) {
+        a:active small {
+            transform: scale(0.95);
         }
     }
 </style>
