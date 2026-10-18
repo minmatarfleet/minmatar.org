@@ -16,6 +16,7 @@ const { catches } = Astro.props
 const SUPER_CLASSES = new Set(['Titan', 'Supercarrier'])
 
 import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Grid from '@components/compositions/Grid.astro'
 ---
 
@@ -24,7 +25,7 @@ import Grid from '@components/compositions/Grid.astro'
     caption={t('tribes.activity.fishermen.catches_caption')}
 >
     {catches.length === 0 ?
-        <p class="[ activity-empty ]">{t('tribes.activity.fishermen.catches_empty')}</p>
+        <EmptyState title={t('tribes.activity.fishermen.catches_empty')} />
         :
         <Grid min_item_width="20rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
             {catches.map((kill) =>
@@ -68,12 +69,6 @@ import Grid from '@components/compositions/Grid.astro'
 </ActivityBlock>
 
 <style lang="scss">
-    .activity-empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--faded);
-    }
-
     .catch-card {
         --catch-accent: rgba(255, 255, 255, 0.18);
 

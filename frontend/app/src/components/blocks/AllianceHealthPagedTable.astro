@@ -10,6 +10,7 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import {
     read_alliance_health_list_state,
     type AllianceHealthUrlSection,
@@ -119,7 +120,7 @@ const initial_page = page_query?.page ?? 1
         </div>
 
         {rows.length === 0 ? (
-            <p class="[ alliance-health-paged-table__empty ]">{empty_label}</p>
+            <EmptyState title={empty_label} />
         ) : (
             <FlexInline gap="var(--space-xs)" class="[ alliance-health-paged-table__pager ]">
                 <small>
@@ -150,7 +151,6 @@ const initial_page = page_query?.page ?? 1
         flex-wrap: wrap;
     }
 
-    .alliance-health-paged-table__empty,
     .alliance-health-paged-table__pager {
         color: var(--faded);
         font-size: var(--step--1);

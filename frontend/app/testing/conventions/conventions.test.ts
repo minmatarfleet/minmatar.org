@@ -156,6 +156,23 @@ describe('convention rule matchers', () => {
         expect(count('hover_motion_ungated', astro(`<style>@media (hover: none) { .a:active { transform: scale(0.95) } }</style>`))).toBe(0)
     })
 
+    it('bespoke_empty_state: hand-styled empty classes, not states or the shared component', () => {
+        expect(count('bespoke_empty_state', astro(`<style>.activity-empty { color: var(--faded) } .cm-empty, .cm-pager { margin: 0 }</style>`))).toBe(2)
+        expect(count('bespoke_empty_state', astro(`<style lang="scss">.coords__empty { padding: 0 } .coords__empty-title { margin: 0 }</style>`))).toBe(2)
+        expect(count('bespoke_empty_state', astro(`<style>.chip--empty { opacity: .5 } .day.is-empty { opacity: .6 } .slot:empty { display: none } .empty-state { color: red }</style>`))).toBe(0)
+        expect(count('bespoke_empty_state', astro(`<p class="activity-empty">none</p>`))).toBe(0)
+    })
+
+    it('partial_error_state: data partials without ErrorRefetch or an explicit opt-out', () => {
+        const partial = (text: string) => ({ path: 'src/pages/partials/x_component.astro', text })
+        const fetches = "---\nimport { get_things } from '@helpers/api.minmatar.org/things'\n---\n"
+        expect(count('partial_error_state', partial(fetches + '<div />'))).toBe(1)
+        expect(count('partial_error_state', partial(fetches + '{fetch_error && <ErrorRefetch args={args} />}'))).toBe(1 - 1)
+        expect(count('partial_error_state', partial(fetches.replace('---\n', '---\n// no-error-refetch: form result, errors render inline\n') + '<form />'))).toBe(0)
+        expect(count('partial_error_state', partial('---\nimport { i18n } from "@helpers/i18n"\n---\n<div />'))).toBe(0)
+        expect(count('partial_error_state', { path: 'src/components/blocks/Thing.astro', text: fetches })).toBe(0)
+    })
+
     it('tailwind_apply: any @apply in styles', () => {
         expect(count('tailwind_apply', astro(`<style>.card { @apply p-4 bg-black; }</style>`))).toBe(1)
         expect(count('tailwind_apply', astro(`<p>Click apply to @apply</p>`))).toBe(0)

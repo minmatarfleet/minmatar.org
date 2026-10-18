@@ -72,6 +72,12 @@ function ungated_hover_motion(file: SourceFile, region: Region): Hit[] {
     return hits
 }
 
+/** A class selector for a hand-styled empty state: `.activity-empty`, `.cm-empty`, `.x__empty-title`. Not `--empty` modifiers or `.is-empty` states. */
+const BESPOKE_EMPTY_SELECTOR = /\.(?!is-empty\b)[a-z][\w-]*?(?:__empty|[a-z0-9]-empty)(?:-[a-z]+)?(?![\w-])(?=[^{};]*\{)/g
+
+/** Partials that read the API render failures with ErrorRefetch, or say why not (`no-error-refetch: <reason>`, e.g. a form result). */
+const DATA_HELPER_IMPORT = /from\s+['"]@helpers\/(?:api\.minmatar\.org|fetching)\//
+
 /** Numeric z-index at or above this competes with page chrome and must come from _z-index.scss. */
 export const Z_INDEX_LAYER_THRESHOLD = 100
 
@@ -145,6 +151,25 @@ export const RULES: ConventionRule[] = [
         kind: 'absolute',
         why: 'Rule 6: hover transforms (scale/translate/rotate) go inside @media (hover: hover), or touch screens keep the element stuck mid-effect after a tap. Keep a :focus-visible variant outside the query; touch press states go in @media (hover: none) on :active.',
         find: (file) => css_regions(file).flatMap((region) => ungated_hover_motion(file, region)),
+    },
+    {
+        id: 'bespoke_empty_state',
+        kind: 'ratchet',
+        why: 'Empty lists and panels render <EmptyState title={t(...)} /> (or title + hint), styled once in src/styles/components/_empty-state.scss so it also works inside htmx partials. Do not style a new __empty / -empty class.',
+        find: (file) => {
+            if (file.path.startsWith('src/styles/')) return []
+            return hits_in(file, css_regions(file), BESPOKE_EMPTY_SELECTOR)
+        },
+    },
+    {
+        id: 'partial_error_state',
+        kind: 'ratchet',
+        why: 'A partial that fetches from the API renders its failure with <ErrorRefetch args={{ partial, error, delay }} /> (retry with backoff). Mutation partials that show inline form errors instead add a `no-error-refetch: <reason>` comment.',
+        find: (file) => {
+            if (!file.path.startsWith('src/pages/partials/') || !is_astro(file)) return []
+            if (!DATA_HELPER_IMPORT.test(file.text) || /ErrorRefetch|no-error-refetch:/.test(file.text)) return []
+            return [{ line: 1, snippet: 'fetches API data without ErrorRefetch' }]
+        },
     },
     {
         id: 'tailwind_apply',

@@ -13,6 +13,7 @@ interface Props {
 const { welcomed } = Astro.props
 
 import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Grid from '@components/compositions/Grid.astro'
 ---
 
@@ -21,7 +22,7 @@ import Grid from '@components/compositions/Grid.astro'
     caption={t('tribes.activity.advocates.welcomed_caption')}
 >
     {welcomed.length === 0 ?
-        <p class="[ activity-empty ]">{t('tribes.activity.advocates.welcomed_empty')}</p>
+        <EmptyState title={t('tribes.activity.advocates.welcomed_empty')} />
         :
         <Grid min_item_width="8rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
             {welcomed.map((pilot) =>
@@ -43,12 +44,6 @@ import Grid from '@components/compositions/Grid.astro'
 </ActivityBlock>
 
 <style lang="scss">
-    .activity-empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--faded);
-    }
-
     .welcomed-card {
         display: flex;
         flex-direction: column;

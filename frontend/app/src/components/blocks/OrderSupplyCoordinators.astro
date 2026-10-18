@@ -61,6 +61,7 @@ const PARTIAL_URL = translatePath(
 )
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
@@ -171,26 +172,12 @@ const modal_form_id = `${form_id}-modal`
                         x-show="!volunteering"
                     >
                         {options.length === 0 ? (
-                            <Flexblock
-                                gap="var(--space-2xs)"
-                                class="[ supply-coordinators__empty ]"
-                            >
-                                <p class="[ supply-coordinators__empty-title ]">
-                                    {t(`${i18n_prefix}.no_options`)}
-                                </p>
-                            </Flexblock>
+                            <EmptyState title={t(`${i18n_prefix}.no_options`)} prominent />
                         ) : coordinators.length === 0 ? (
-                            <Flexblock
-                                gap="var(--space-2xs)"
-                                class="[ supply-coordinators__empty ]"
-                            >
-                                <p class="[ supply-coordinators__empty-title ]">
-                                    {t(`${i18n_prefix}.empty`)}
-                                </p>
-                                <small class="[ supply-coordinators__empty-hint ]">
-                                    {t(`${i18n_prefix}.empty_hint`)}
-                                </small>
-                            </Flexblock>
+                            <EmptyState
+                                title={t(`${i18n_prefix}.empty`)}
+                                hint={t(`${i18n_prefix}.empty_hint`)}
+                            />
                         ) : (
                             <Flexblock
                                 gap="var(--space-xs)"
@@ -352,26 +339,12 @@ const modal_form_id = `${form_id}-modal`
                     }
                 </>
             ) : options.length === 0 ? (
-                <Flexblock
-                    gap="var(--space-2xs)"
-                    class="[ supply-coordinators__empty ]"
-                >
-                    <p class="[ supply-coordinators__empty-title ]">
-                        {t(`${i18n_prefix}.no_options`)}
-                    </p>
-                </Flexblock>
+                <EmptyState title={t(`${i18n_prefix}.no_options`)} prominent />
             ) : coordinators.length === 0 ? (
-                <Flexblock
-                    gap="var(--space-2xs)"
-                    class="[ supply-coordinators__empty ]"
-                >
-                    <p class="[ supply-coordinators__empty-title ]">
-                        {t(`${i18n_prefix}.empty`)}
-                    </p>
-                    <small class="[ supply-coordinators__empty-hint ]">
-                        {t(`${i18n_prefix}.empty_hint`)}
-                    </small>
-                </Flexblock>
+                <EmptyState
+                    title={t(`${i18n_prefix}.empty`)}
+                    hint={t(`${i18n_prefix}.empty_hint`)}
+                />
             ) : (
                 <Flexblock
                     gap="var(--space-xs)"
@@ -449,24 +422,6 @@ const modal_form_id = `${form_id}-modal`
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-    }
-
-    .supply-coordinators__empty {
-        padding-block: var(--space-s);
-        text-align: left;
-        max-width: 26rem;
-    }
-
-    .supply-coordinators__empty-title {
-        margin: 0;
-        font-size: var(--step-0);
-        color: var(--highlight);
-        line-height: 1.35;
-    }
-
-    .supply-coordinators__empty-hint {
-        line-height: 1.45;
-        color: var(--foreground);
     }
 
     .supply-coordinators__notice {

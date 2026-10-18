@@ -204,6 +204,10 @@ Conventions:
 - Shared UI types (colors, sizes, spaces) come from `@dtypes/layout_components` (`ButtonColors`, `ButtonSizes`, `TagColors`, `spaces`, `FlexInlineJustify`, `PageCoverOptions`, ...).
 - Alpine directives (`x-data`, `x-on`, `x-show`, `x-collapse`, `x-trap`, `x-bind`) are for local UI state only — see rule 1.
 - htmx attributes (`hx-*`) for anything that reads/writes server state.
+- Loading, empty and error states:
+  - Loading: a `*Skeleton` component that keeps the real layout and takes its fill from `@include skeleton.shimmer` / `skeleton.pulse` (see §6 Motion).
+  - Empty: `<EmptyState title={t('x.empty')} />` renders one muted line (`--faded`, `--step--1`). For a panel whose whole body is empty, pass `hint` (or `prominent`) for a highlighted title with a hint, and an optional `action` slot. Its styles live in `src/styles/components/_empty-state.scss`, loaded on every page, because htmx drops a partial's own `<style>` blocks. Don't style new `__empty` classes (the `bespoke_empty_state` ratchet).
+  - Error: a partial that fetches from the API catches the failure and renders `<ErrorRefetch args={{ partial: PARTIAL_URL, error, delay }} />` (retry with backoff). Form/mutation partials keep inline errors (`InputError`) and say so with a `no-error-refetch: <reason>` comment (the `partial_error_state` ratchet).
 - Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility & behavior
