@@ -13,7 +13,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import LoyaltyOrderCard from '@components/blocks/LoyaltyOrderCard.astro'
 import LoyaltyOrderList from '@components/blocks/LoyaltyOrderList.astro'
 import Select from '@components/blocks/Select.astro'
-import Button from '@components/blocks/Button.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 
 const { t, lang, translatePath } = i18n(Astro.url)
 
@@ -100,35 +100,14 @@ const rows = orders
         )}
 
         {(total > page_size || filters.page > 1) && (
-            <FlexInline
-                justification="space-between"
-                class="[ loyalty-history__pager w-full ]"
-                gap="var(--space-s)"
+            <HtmxPager
+                page={page}
+                total_pages={total_pages}
+                url_for={(to) => partial_url({ page: to })}
+                target={TARGET}
             >
-                <small class="[ loyalty-history__page-status ]">{page_status}</small>
-                <FlexInline gap="var(--space-3xs)">
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        disabled={page <= 1}
-                        hx-get={partial_url({ page: page - 1 })}
-                        hx-target={TARGET}
-                        hx-swap="outerHTML"
-                    >
-                        {t('industry.loyalty.history.prev')}
-                    </Button>
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        disabled={page >= total_pages}
-                        hx-get={partial_url({ page: page + 1 })}
-                        hx-target={TARGET}
-                        hx-swap="outerHTML"
-                    >
-                        {t('industry.loyalty.history.next')}
-                    </Button>
-                </FlexInline>
-            </FlexInline>
+                <small slot="status" class="[ loyalty-history__page-status ]">{page_status}</small>
+            </HtmxPager>
         )}
     </Flexblock>
 </section>
@@ -150,10 +129,6 @@ const rows = orders
     }
 
     .loyalty-history__filters {
-        align-items: center;
-    }
-
-    .loyalty-history__pager {
         align-items: center;
     }
 

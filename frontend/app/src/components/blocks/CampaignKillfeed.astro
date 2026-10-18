@@ -60,7 +60,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
-import CampaignPager from '@components/blocks/CampaignPager.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
 import AmarrLogo from '@components/logos/AmarrLogo.astro'
 ---
@@ -158,7 +158,7 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
         </DataGrid>
     }
 
-    <CampaignPager page={page} has_more={has_more} url_for={next => partial_url(outcome, next)} target='#campaign-killfeed' />
+    <HtmxPager page={page} has_more={has_more} url_for={next => partial_url(outcome, next)} target='#campaign-killfeed' />
 </Flexblock>
 
 <style lang="scss">
