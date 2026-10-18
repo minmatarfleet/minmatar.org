@@ -1,4 +1,4 @@
-import { parse_response_error } from '@helpers/string'
+import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 import type { OnboardingStatusResponse } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/onboarding`
@@ -21,41 +21,15 @@ export async function get_onboarding_status(
     access_token: string,
     slug: string,
 ): Promise<OnboardingStatusResponse> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${encodeURIComponent(slug)}`
-    const METHOD = 'GET'
-
-    const response = await fetch(ENDPOINT, { headers, method: METHOD })
-
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
-
-    return (await response.json()) as OnboardingStatusResponse
+    return await api_request<OnboardingStatusResponse>(`${API_ENDPOINT}/${encodeURIComponent(slug)}`, {
+        token: access_token,
+    })
 }
 
 export async function post_onboarding_ack(access_token: string, slug: string): Promise<void> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${encodeURIComponent(slug)}/ack`
-    const METHOD = 'POST'
-
-    const response = await fetch(ENDPOINT, {
-        headers,
-        method: METHOD,
-        body: '{}',
+    await api_response(`${API_ENDPOINT}/${encodeURIComponent(slug)}/ack`, {
+        method: 'POST',
+        token: access_token,
+        body: {},
     })
-
-    if (!response.ok)
-        throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-            cause: response.status,
-        })
 }

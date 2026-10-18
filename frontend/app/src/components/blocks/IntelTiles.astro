@@ -6,14 +6,12 @@ interface Props {
     can_view_timers?:           boolean;
     can_view_moons?:            boolean;
     can_add_moons?:             boolean;
-    is_superuser?:              boolean;
 }
 
 const {
     can_view_timers = false,
     can_view_moons = false,
     can_add_moons = false,
-    is_superuser = false,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';

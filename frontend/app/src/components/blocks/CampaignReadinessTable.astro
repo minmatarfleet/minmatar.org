@@ -4,8 +4,9 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { CampaignReadiness } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
+import { get_request_user } from '@helpers/request_user'
 import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
 
 interface Props {
@@ -34,7 +35,7 @@ const {
 
 delete attributes.class
 
-const account_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const account_query = account_user_id_query(get_request_user(Astro).auth_token)
 const RETURN_URL = get_app_url(return_url || translatePath('/account/campaigns/'))
 const show_inclusion = mode === 'account'
 
@@ -46,7 +47,7 @@ const include_on_return = (character_id:number) => {
 }
 
 const build_action_url = (action_url:string, redirect_to:string) => {
-    const url = new URL(action_url, get_api_url())
+    const url = new URL(action_url, get_public_api_url())
     url.searchParams.set('redirect_url', redirect_to)
 
     return `${url.toString()}${account_query}`

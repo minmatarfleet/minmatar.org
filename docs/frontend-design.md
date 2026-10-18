@@ -210,6 +210,7 @@ Conventions:
   - Empty: `<EmptyState title={t('x.empty')} />` renders one muted line (`--faded`, `--step--1`). For a panel whose whole body is empty, pass `hint` (or `prominent`) for a highlighted title with a hint, and an optional `action` slot. Its styles live in `src/styles/components/_empty-state.scss`, loaded on every page, because htmx drops a partial's own `<style>` blocks. Don't style new `__empty` classes (the `bespoke_empty_state` ratchet).
   - Error: a partial that fetches from the API catches the failure and renders `<ErrorRefetch args={{ partial: PARTIAL_URL, error, delay }} />` (retry with backoff). Form/mutation partials keep inline errors (`InputError`) and say so with a `no-error-refetch: <reason>` comment (the `partial_error_state` ratchet).
 - Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
+- Session: `const { auth_token, user } = get_request_user(Astro)` from `@helpers/request_user` (decoded once per request; never read the `auth_token` cookie or import `jose` yourself). Pages and partials that need a login `return login_redirect(Astro)`; login links use `login_url(Astro)` (both in `@helpers/http_responses`). `testing/helpers/request_user.test.ts` enforces this.
 
 ## 6. Accessibility & behavior
 

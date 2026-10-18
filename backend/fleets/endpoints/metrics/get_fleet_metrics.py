@@ -1,7 +1,7 @@
 """GET /metrics — aggregate fleet stats for analytics."""
 
 from datetime import timedelta
-from typing import List
+from typing import List, Optional
 
 from django.db.models import Count, F, OuterRef, Subquery
 from django.utils import timezone
@@ -22,12 +22,15 @@ ROUTE_SPEC = {
 }
 
 
-def get_fleet_metrics(request):
+def get_fleet_metrics(request, fleet_id: Optional[int] = None):
+    """All fleets of the last year, or just ``fleet_id`` (same filters)."""
     metrics = []
     one_year_ago = timezone.now() - timedelta(days=365)
+    fleets = EveFleet.objects.filter(start_time__gte=one_year_ago)
+    if fleet_id is not None:
+        fleets = fleets.filter(id=fleet_id)
     fleets = (
-        EveFleet.objects.filter(start_time__gte=one_year_ago)
-        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
+        fleets.exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .annotate(instances=Count("evefleetinstance"))
         .annotate(members=Count("evefleetinstance__evefleetinstancemember"))
         .annotate(

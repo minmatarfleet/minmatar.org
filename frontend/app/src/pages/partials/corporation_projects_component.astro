@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 import type { CorporationProject, CorporationProjects } from '@dtypes/api.minmatar.org'
@@ -25,7 +26,7 @@ type UiKey = keyof typeof ui['en']
 
 const ROOT_ID = 'corporation-projects'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const params = Astro.url.searchParams

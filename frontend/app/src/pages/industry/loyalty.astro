@@ -1,14 +1,12 @@
 ---
+import { login_url } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 const is_logged_in = Boolean(auth_token && user)
-const user_is_staff = Boolean(user && user.is_staff)
 
 import type {
     LoyaltyCurrency,
@@ -117,7 +115,7 @@ const my_orders = current_user_id
     ? orders.filter((order) => order.created_by_user_id === current_user_id)
     : []
 const week_median_seconds = week_stats?.median_close_seconds ?? null
-const login_url = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+const loyalty_login_url = login_url(Astro)
 const default_tab = orders.length > 0 || highlight_order_id ? 'open' : 'history'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -133,15 +131,12 @@ import LoyaltyMyOrders from '@components/blocks/LoyaltyMyOrders.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
 import Button from '@components/blocks/Button.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const page_title = t('industry.loyalty.page_title')
 const breadcrumbs = [
     { page_title: t('market.page_title'), accumulated_path: '/market/' },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
-const api_base = import.meta.env.API_URL || ''
-const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
 ---
 
 <Viewport
@@ -192,18 +187,6 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         {t('industry.loyalty.desk_link')}
                     </Button>
                 )}
-                {user_is_staff && (
-                    <Button
-                        href={admin_loyalty_url}
-                        color="transparent"
-                        narrow={true}
-                        new_tab={true}
-                        aria-label={t('industry.loyalty.edit_in_admin')}
-                        title={t('industry.loyalty.edit_in_admin')}
-                    >
-                        <CogIcon slot="icon" />
-                    </Button>
-                )}
             </PageActions>
         </FlexInline>
 
@@ -227,7 +210,7 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         stats={stats}
                         week_stats={week_stats}
                         is_logged_in={is_logged_in}
-                        login_url={login_url}
+                        login_url={loyalty_login_url}
                     />
 
                     <LoyaltyMyOrders orders={my_orders} current_user_id={current_user_id} />

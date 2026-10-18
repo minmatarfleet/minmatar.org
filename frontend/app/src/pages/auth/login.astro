@@ -3,7 +3,7 @@ import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { decode_user } from '@helpers/request_user'
 
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
@@ -27,7 +27,7 @@ try {
     if (!token)
         throw new Error(t('invalid_token'))
     
-    user = jose.decodeJwt(token)
+    user = decode_user(token)
     await get_characters(token)
 } catch (error) {
     Astro.cookies.set('auth_error', error.message, { path: '/' })

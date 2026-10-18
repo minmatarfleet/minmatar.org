@@ -1,13 +1,11 @@
 ---
-import { login_redirect } from '@helpers/http_responses'
 import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
+import { login_redirect } from '@helpers/http_responses'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
-const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 

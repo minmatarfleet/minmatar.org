@@ -19,9 +19,8 @@ import LearningCertificateDetail from '@components/blocks/LearningCertificateDet
 
 const { slug } = Astro.params
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? Astro.cookies.get('auth_token')!.value
-    : ''
+import { get_request_user } from '@helpers/request_user'
+const auth_token = get_request_user(Astro).auth_token || ''
 
 let certificate: LearningCertificate | null = null
 let certificate_fetch_failed = false

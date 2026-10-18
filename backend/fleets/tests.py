@@ -402,6 +402,29 @@ class FleetRouterTestCase(TestCase):
         fleet.refresh_from_db()
         self.assertEqual("Updated tagline", fleet.objective)
 
+    def test_fleet_metrics_for_one_fleet(self):
+        setup_fc(self.user)
+        first = make_test_fleet("First", self.user)
+        second = make_test_fleet("Second", self.user)
+
+        everything = self.client.get(
+            f"{BASE_URL}/metrics",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+        response = self.client.get(
+            f"{BASE_URL}/metrics?fleet_id={second.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {first.id, second.id}, {row["fleet_id"] for row in everything}
+        )
+        self.assertEqual(
+            [row for row in everything if row["fleet_id"] == second.id],
+            response.json(),
+        )
+
     def test_commander_metrics_available_without_privilege(self):
         response = self.client.get(
             f"{BASE_URL}/commander-metrics",

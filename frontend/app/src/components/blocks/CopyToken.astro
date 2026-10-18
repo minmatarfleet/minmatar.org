@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
@@ -10,7 +11,7 @@ const {
     position = 'right',
 } = Astro.props
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const { auth_token } = get_request_user(Astro)
 
 const COPIED_LABEL_TIME_MS = 2000
 

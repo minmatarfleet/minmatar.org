@@ -1,27 +1,11 @@
 import type { CorporationEvE } from '@dtypes/api.eveonline'
+import { esi_request } from '@helpers/api.eveonline/client'
 
-const API_ENDPOINT =  `${import.meta.env.EVE_API_URL ?? 'https://esi.evetech.net/latest'}/corporations`
+const ONE_HOUR_MS = 60 * 60 * 1000
 
 export async function get_corporation_by_id(id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    console.log(`Requesting: ${API_ENDPOINT}/${id}`)
-
-    try {
-        const response = await fetch(`${API_ENDPOINT}/${id}`, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        return await response.json() as CorporationEvE;
-    } catch (error) {
-        throw new Error(`Error fetching corporation: ${error.message}`);
-    }
+    return await esi_request<CorporationEvE>(`/corporations/${id}`, {
+        error: 'Error fetching corporation',
+        cache_ms: ONE_HOUR_MS,
+    })
 }

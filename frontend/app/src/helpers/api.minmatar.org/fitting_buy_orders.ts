@@ -1,4 +1,4 @@
-import { get_error_message, parse_response_error } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/market`
 
@@ -212,31 +212,6 @@ export interface FittingBuyOrderDetail {
     shopping_landed_complete: boolean
 }
 
-function auth_headers(access_token: string) {
-    return {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-}
-
-async function parse_json_or_throw(response: Response, method: string, endpoint: string) {
-    if (!response.ok) {
-        const message = await parse_response_error(response, `${method} ${endpoint}`)
-        throw new Error(
-            typeof message === 'string' && message
-                ? message
-                : get_error_message(response.status, `${method} ${endpoint}`),
-            { cause: response.status },
-        )
-    }
-    if (response.status === 204 || response.status === 205)
-        return null
-    const text = await response.text()
-    if (!text)
-        return null
-    return JSON.parse(text)
-}
-
 export async function list_fitting_buy_orders(
     access_token: string,
     options: { status?: string; mine?: boolean; include_completed?: boolean } = {},
@@ -250,14 +225,12 @@ export async function list_fitting_buy_orders(
         params.set('include_completed', 'true')
     const qs = params.toString()
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders${qs ? `?${qs}` : ''}`
-    const response = await fetch(endpoint, { headers: auth_headers(access_token) })
-    return await parse_json_or_throw(response, 'GET', endpoint) as FittingBuyOrderListItem[]
+    return await api_request<FittingBuyOrderListItem[]>(endpoint, { token: access_token })
 }
 
 export async function get_fitting_buy_order(access_token: string, order_id: number) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`
-    const response = await fetch(endpoint, { headers: auth_headers(access_token) })
-    return await parse_json_or_throw(response, 'GET', endpoint) as FittingBuyOrderDetail
+    return await api_request<FittingBuyOrderDetail>(endpoint, { token: access_token })
 }
 
 export async function create_fitting_buy_order(
@@ -269,12 +242,11 @@ export async function create_fitting_buy_order(
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders`
-    const response = await fetch(endpoint, {
+    return await api_request<FittingBuyOrderDetail>(endpoint, {
         method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    return await parse_json_or_throw(response, 'POST', endpoint) as FittingBuyOrderDetail
 }
 
 export async function patch_fitting_buy_order(
@@ -292,12 +264,11 @@ export async function patch_fitting_buy_order(
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`
-    const response = await fetch(endpoint, {
+    return await api_request<FittingBuyOrderDetail>(endpoint, {
         method: 'PATCH',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    return await parse_json_or_throw(response, 'PATCH', endpoint) as FittingBuyOrderDetail
 }
 
 export async function delete_fitting_buy_order(
@@ -305,11 +276,10 @@ export async function delete_fitting_buy_order(
     order_id: number,
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`
-    const response = await fetch(endpoint, {
+    return await api_request<any>(endpoint, {
         method: 'DELETE',
-        headers: auth_headers(access_token),
+        token: access_token,
     })
-    return await parse_json_or_throw(response, 'DELETE', endpoint)
 }
 
 export async function apply_fitting_buy_swap(
@@ -319,12 +289,11 @@ export async function apply_fitting_buy_swap(
     payload: { preferred_type_id: number; substitute_type_id: number; notes?: string },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/lines/${line_id}/swaps`
-    const response = await fetch(endpoint, {
+    return await api_request<FittingBuyOrderDetail>(endpoint, {
         method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    return await parse_json_or_throw(response, 'POST', endpoint) as FittingBuyOrderDetail
 }
 
 export async function put_fitting_buy_allocations(
@@ -336,12 +305,11 @@ export async function put_fitting_buy_allocations(
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/allocations`
-    const response = await fetch(endpoint, {
+    return await api_request<FittingBuyOrderDetail>(endpoint, {
         method: 'PUT',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    return await parse_json_or_throw(response, 'PUT', endpoint) as FittingBuyOrderDetail
 }
 
 export async function start_fitting_buy_jita_check(
@@ -350,12 +318,11 @@ export async function start_fitting_buy_jita_check(
     payload: { force_refresh?: boolean; type_ids?: number[] } = {},
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/check-jita`
-    const response = await fetch(endpoint, {
+    return await api_request<FittingBuyJitaCheck>(endpoint, {
         method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify(payload),
+        token: access_token,
+        body: payload,
     })
-    return await parse_json_or_throw(response, 'POST', endpoint) as FittingBuyJitaCheck
 }
 
 export async function poll_fitting_buy_jita_check(
@@ -364,11 +331,10 @@ export async function poll_fitting_buy_jita_check(
     check_id: number,
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/check-jita/${check_id}`
-    const response = await fetch(endpoint, { headers: auth_headers(access_token) })
-    return await parse_json_or_throw(response, 'GET', endpoint) as {
+    return await api_request<{
         check: FittingBuyJitaCheck
         order: FittingBuyOrderDetail | null
-    }
+    }>(endpoint, { token: access_token })
 }
 
 export async function paste_fitting_buy_landed_prices(
@@ -377,14 +343,13 @@ export async function paste_fitting_buy_landed_prices(
     paste: string,
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}/landed-prices`
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: auth_headers(access_token),
-        body: JSON.stringify({ paste }),
-    })
-    return await parse_json_or_throw(response, 'POST', endpoint) as {
+    return await api_request<{
         updated: number
         unresolved: string[]
         order: FittingBuyOrderDetail
-    }
+    }>(endpoint, {
+        method: 'POST',
+        token: access_token,
+        body: { paste },
+    })
 }

@@ -1,4 +1,5 @@
 import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { can_custom, type GateContext } from '@helpers/gates'
 
 export const THINKSPEAK_GROUP_CODE = 'pulse.thinkspeak'
 export const THINKSPEAK_GROUP_NAME = 'Thinkspeak'
@@ -25,4 +26,16 @@ export async function is_thinkspeak_member(access_token: string): Promise<boolea
     } catch {
         return false
     }
+}
+
+/**
+ * The content.manage gate. Its legacy expression (gate_source legacy and
+ * shadow) is the JWT superuser claim or an active Thinkspeak membership.
+ */
+export async function can_manage_content(gates: GateContext, auth_token: string | false): Promise<boolean> {
+    if (!auth_token) return false
+
+    return can_custom(gates, 'content.manage', async () =>
+        gates.is_superuser || await is_thinkspeak_member(auth_token)
+    )
 }

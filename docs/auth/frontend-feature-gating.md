@@ -58,6 +58,8 @@ If the gates fetch fails, the user has no permissions and no features. Legacy ex
 2. Add the gate to `feature_gates.json`. New gates don't need a legacy expression once the site runs on features. Until then, give the legacy expression the old check would have been.
 3. In the page: `const gates = await get_gates(Astro)` and `can(gates, '<gate>')`.
 
+The session itself comes from `get_request_user(Astro)` (`helpers/request_user.ts`), decoded once per request; `get_gates` builds on it. A page that needs a login returns `login_redirect(Astro)` (`helpers/http_responses.ts`), which keeps the full return URL, query string included.
+
 Never check permission strings or `is_superuser` for access. Per-object rights come from the resource API (`can_manage`, `can_view_members`, and so on), not from a gate.
 
 ## Parity guarantees
@@ -70,7 +72,7 @@ Never check permission strings or `is_superuser` for access. Per-object rights c
     - `structures.timers.add_button`: it checked `fleets.add_evefleet`, but the page it opens needs `structures.timers.manage`.
 - **New codes keep today's audience.** They ship unwired, with the replaced permission as `legacy_permission`:
   - `fleets.manage_any`, `tribes.roster.view`, `industry.industrialists.view`, `characters.readiness`, `corporations.members.view_all`, `notifications.push`, `learning.admin`, `skillsets.admin`
-  - Superuser-only codes use `auth_group` scope with no wiring: `surveys.results.view`, `site.debug_pages`, `characters.lookup`.
+  - Superuser-only codes use `auth_group` scope with no wiring: `surveys.results.view`, `site.debug_pages`, `characters.lookup`, `site.all_pages` (the page finder and breadcrumbs list every page as available).
   - `content.manage` is wired to `pulse.thinkspeak` with no on-leave deny, matching `is_thinkspeak_member`.
 - **Superusers see no change.** Django lists every permission for an active superuser, so even the `#strict` gates (old checks with no superuser OR) already let them in.
 - **Remaining differences are wider audiences.** Wiring is sometimes wider than the permission held by auth groups, for example `fleets.view` wired to Militia and Associate. Features mode then shows the frontend what the API already serves. The audit below counts these per gate.
@@ -98,4 +100,4 @@ Step 5 cleanup:
 - **Corporation member pages:** move from `corporations.members.view_all` to the per-corporation `can_view_members` flag the API already returns.
 - **Push notifications:** the subscriptions API only needs a login. Decide whether to open the block to everyone.
 - **Debug pages:** optionally wire `site.debug_pages` to the Technology Team.
-- **Dead `is_staff` checks:** the JWT never carries `is_staff`, so the `user_is_staff` checks (campaigns admin cog, loyalty admin link) never fire. Remove them, or gate the links on features.
+- **Loyalty admin link:** the JWT never carries `is_staff`, so the `user_is_staff` checks never fired. The campaigns admin cog now follows `campaigns.manage` alone (same audience); the loyalty "edit in admin" link, which nobody could see, was removed. Decide whether to bring it back behind a gate.

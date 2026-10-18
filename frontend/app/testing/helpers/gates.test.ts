@@ -99,6 +99,8 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'notifications.push#strict': (_is_superuser, user_permissions) => user_permissions.includes('subscriptions.add_usersubscription'),
     'site.debug_pages': (is_superuser) => is_superuser,
     'characters.lookup': (is_superuser) => is_superuser,
+    // PageFinder / PageBreadcrumbs: `if (user && user?.is_superuser)` showed every page.
+    'site.all_pages': (is_superuser) => is_superuser,
 }
 
 const ALL_LEGACY_PERMISSIONS = [...new Set(Object.values(GATES).flatMap((gate) => gate.legacy.perms ?? []))]
@@ -266,7 +268,7 @@ describe('get_gates()', () => {
 
     it('falls back to legacy for an unknown gate source', () => {
         const ctx = gate_context_from(
-            { user_id: 1, username: 'x', avatar: '', is_staff: false, is_superuser: false, permissions: [] },
+            { user_id: 1, username: 'x', avatar: '', is_superuser: false, permissions: [] },
             { features: [], legacy: { permissions: [], is_superuser: false }, gate_source: 'nonsense' as any },
         )
         expect(ctx.gate_source).toBe('legacy')

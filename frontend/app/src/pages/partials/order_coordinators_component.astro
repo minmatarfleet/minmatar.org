@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
 import {
@@ -20,9 +21,7 @@ import OrderCoordinators from '@components/blocks/OrderCoordinators.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+const { auth_token } = get_request_user(Astro)
 
 let order: IndustrySingleOrder | null = null
 let mineral_options: OrderBlueprintCoordinatorEveType[] = []

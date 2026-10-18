@@ -8,8 +8,9 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetFittingAccess } from '@helpers/api.minmatar.org/fleets'
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
+import { get_request_user } from '@helpers/request_user'
 
 interface Props {
     fleet_id:       number;
@@ -21,8 +22,8 @@ interface Props {
 const { fleet_id, access, reload_url } = Astro.props
 
 const redirect_url = get_app_url(translatePath(`/fleets/upcoming/${fleet_id}`))
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
-const ADD_SCOPE_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=${access.token_type}${access.character_id ? `&character_id=${access.character_id}` : ''}${account_user_query}`
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
+const ADD_SCOPE_URL = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${redirect_url}&token_type=${access.token_type}${access.character_id ? `&character_id=${access.character_id}` : ''}${account_user_query}`
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'

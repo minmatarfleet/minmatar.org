@@ -1,4 +1,5 @@
 ---
+import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -28,7 +29,7 @@ const page_title = t('staging_supply.ops.page_title')
 const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
 const MONITOR_PARTIAL = translatePath(`/partials/market_health_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
-const api_base = import.meta.env.API_URL || ''
+const api_base = get_public_api_url()
 const admin_hub = `${api_base}/admin/market/locations/`
 ---
 

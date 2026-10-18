@@ -1,17 +1,16 @@
 ---
+import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!auth_token || !user)
-    return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+    return login_redirect(Astro)
 
 import type {
     LoyaltyCurrency,
@@ -118,7 +117,7 @@ const breadcrumbs = [
     { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
-const api_base = import.meta.env.API_URL || ''
+const api_base = get_public_api_url()
 const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
 const rates_label = currency
     ? t('industry.loyalty.desk.rates')
