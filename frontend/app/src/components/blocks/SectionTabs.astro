@@ -8,6 +8,11 @@ interface Props {
     tabs: SectionTab[]
     aria_label: string
     id_prefix: string
+    /**
+     * Hash prefixes that open a tab, e.g. `{ 'campaign-system-': 'systems' }`
+     * so `#campaign-system-42` opens Systems and scrolls to that element.
+     */
+    hash_aliases?: Record<string, string>
     [propName: string]: any
 }
 
@@ -15,6 +20,7 @@ const {
     tabs,
     aria_label,
     id_prefix,
+    hash_aliases = {},
     ...attributes
 } = Astro.props
 
@@ -28,21 +34,33 @@ const default_tab = tab_ids[0] ?? ''
     <div
         {...attributes}
         class:list={['[ section-tabs ]', Astro.props.class]}
-        x-on:hashchange.window="if (tabs.includes(window.location.hash.slice(1))) select(window.location.hash.slice(1))"
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
+            aliases: ${JSON.stringify(hash_aliases)},
             init() {
-                const hash = window.location.hash.replace('#', '')
-                if (this.tabs.includes(hash)) this.tab = hash
+                const next = this.tab_for(window.location.hash.replace('#', ''))
+                if (next) this.tab = next
                 this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
+            },
+            // A tab id, or the tab an aliased hash (a prefix) belongs to.
+            tab_for(hash) {
+                if (this.tabs.includes(hash)) return hash
+                const prefix = Object.keys(this.aliases).find((key) => hash.startsWith(key))
+                return prefix && this.tabs.includes(this.aliases[prefix]) ? this.aliases[prefix] : null
             },
             // In-page links such as href="#apply" open their tab.
             follow_hash() {
                 const hash = window.location.hash.replace('#', '')
-                if (!this.tabs.includes(hash) || hash === this.tab) return
-                this.tab = hash
-                this.$nextTick(() => this.$el.scrollIntoView({ block: 'start' }))
+                const next = this.tab_for(hash)
+                if (!next) return
+                const aliased = next !== hash
+                if (next === this.tab && !aliased) return
+                this.tab = next
+                this.$nextTick(() => {
+                    const target = aliased ? document.getElementById(hash) : null
+                    ;(target ?? this.$el).scrollIntoView({ block: 'start' })
+                })
             },
             refresh_panel() {
                 const panel = this.$refs['panel-' + this.tab]
@@ -141,9 +159,13 @@ const default_tab = tab_ids[0] ?? ''
     @media screen and (max-width: 767px) {
         // Tabs share the width while they fit; past that the strip scrolls
         // sideways instead of widening the page.
+        // overflow-y: the -1px tab margin would otherwise make the strip
+        // scroll vertically by a pixel once overflow-x is auto.
         .section-tabs-list {
             gap: 0;
             overflow-x: auto;
+            overflow-y: hidden;
+            overscroll-behavior-x: contain;
             scrollbar-width: none;
         }
 
@@ -153,6 +175,7 @@ const default_tab = tab_ids[0] ?? ''
             white-space: nowrap;
             padding-inline: var(--space-2xs);
             font-size: var(--step-0);
+            margin-block-end: 0;
         }
     }
 </style>
