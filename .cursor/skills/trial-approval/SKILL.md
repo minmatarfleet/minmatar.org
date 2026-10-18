@@ -45,7 +45,7 @@ OPSEC). Trial approval is co-equal participation paths.
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/trial-approval/scripts/fetch_trial_activity.py --json
+pipenv run python ../.claude/skills/trial-approval/scripts/fetch_trial_activity.py --json
 ```
 
 Defaults: **90d** window + **30d** recent slice; affiliation **Alliance**;

@@ -51,7 +51,7 @@ Treat output as **sensitive**. Date it; keep it off public channels.
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/spy-catch/scripts/fetch_fleet_behavior.py --json
+pipenv run python ../.claude/skills/spy-catch/scripts/fetch_fleet_behavior.py --json
 ```
 
 Defaults from [config.json](config.json): 90d, min 5 fleets, prefilter cutoffs.

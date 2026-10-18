@@ -69,6 +69,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Login notice is a native GET form with a required checkbox. Keep `redirect_url` in a hidden field. `HelpTicket.opener` stays null until that login completes.
 **Skill update:** added the Discord login notice row.
 
+## 2026-10-13 — Grade ore stock ignored on the build planner
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Pasting on-hand ore into the build planner only exact-matched names. II/III/IV-Grade and Brimful/Glistening stacks are not the compressed base the shopping list buys, so their minerals stayed on the buyback purchase. Fill also refined grade ore as the base family.
+**Durable rule:** Credit variant ore from TypeMaterials before sizing the compressed buy. Fallback scale is 1.05/1.10/1.15 and Brimful 1.15 / Glistening 2. Leave exact `Compressed {base}` for the 1:1 pass.
+**Skill update:** added the planner grade-ore row.
+
 ## 2026-10-13 — Fleet MOTD reload steps and guide link
 
 **Category:** pulse.technology
@@ -98,16 +108,6 @@ do not duplicate it — one clarifying clause at most.
 **Symptom vs cause:** Group chief got a cleanup-failed DM every reconcile. An unentitled seat kick returned 403 (member still in the guild; bot cannot kick). The alert channel post also 403s, so the fallback is a chief DM. `failure_count >= 3` alerted again on every later run.
 **Durable rule:** Alert once when status first becomes `cleanup_failed`. Kick 403 is still-in-guild plus missing permission, not a leave. 404 marks `removed`. Channel 403 falls back to the chief DM.
 **Skill update:** added the repeating-cleanup-DM row.
-
-## 2026-10-14 — Discord login notice Continue does nothing
-
-**Category:** pulse.technology
-**Verdict:** bug
-**Discord:** fix + PR URL
-**PR:** fix+skill
-**Symptom vs cause:** Continue on the Discord account notice did nothing after the checkbox was clicked, on several browsers. The button stayed disabled until Alpine loaded from jsDelivr, and the click handler returned silently when the checkbox model was false.
-**Durable rule:** Login notice is a native GET form with a required checkbox. Keep `redirect_url` in a hidden field. `HelpTicket.opener` stays null until that login completes.
-**Skill update:** added the Discord login notice row.
 
 ## 2026-10-10 — No Discord roles, site account never created
 

@@ -36,7 +36,7 @@ FOSFO replaced Administrative Atrocities as the EUTZ graduate path. Verify corps
 
 `config.json` — academy corp ID, behavior window, graduate days, corp ticker reference.
 
-## Claude Code usage
+## Agent usage (Claude Code or Cursor)
 
 ```
 Run the academy graduation report

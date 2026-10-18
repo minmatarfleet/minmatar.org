@@ -1,6 +1,6 @@
 # EVE Alliance Recruitment Scout
 
-A Cursor Agent Skill for finding pilots who are **looking for a corporation**,
+An agent skill (Claude Code or Cursor) for finding pilots who are **looking for a corporation**,
 routing them to the right corp, and drafting short, human outreach replies.
 
 **The skill is the product.** `SKILL.md` defines workflow and judgment.
@@ -40,7 +40,7 @@ Shared helpers live in `scout_lib.py` (not invoked directly).
 ## Quick start
 
 ```bash
-cd .cursor/skills/fl33t-recruitment-scout
+cd .claude/skills/fl33t-recruitment-scout
 pip install -r requirements.txt
 
 # Load Reddit credentials from backend/.env (local only — never commit)
@@ -119,7 +119,7 @@ python scripts/track_outreach.py stats --days 30
 
 Click counts per reply are also in Django admin under Recruitment → Scout outreach.
 
-## Cursor usage
+## Agent usage (Claude Code or Cursor)
 
 ```
 Run the alliance recruitment scout for the past 7 days

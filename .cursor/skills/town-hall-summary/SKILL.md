@@ -147,19 +147,8 @@ Top 5: …
 - **Fleet Commanders tribe**: town hall works alliance-wide; member view needs roster members in prod.
 - **Capitals losses**: counted from victim killmails (lost qualifying hull). Requires deployed `capitals.py` fix.
 
-## Production writes (not for summaries)
-
-Read-only summaries use **`production_readonly`** or the report API on prod. Do **not** use `production_readonly` for backfills.
-
-Backfill member activity event times on prod host:
-
-```bash
-docker compose -f docker-compose-prod.yml exec app \
-  python3 manage.py backfill_tribe_activity_occurred_at --dry-run
-```
-
 ## Reference
 
 - Bindings and CLI docs: `backend/tribes/reports/README.md`
 - Query implementations: `backend/tribes/reports/queries/`
-- Read-only DB rules: `.cursor/skills/debug-production-readonly-db/SKILL.md`
+- Read-only DB rules: `.claude/skills/debug-production-readonly-db/SKILL.md`
