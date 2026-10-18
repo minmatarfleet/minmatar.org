@@ -24,9 +24,11 @@ class EveFleetShipReimbursement(models.Model):
         ("capital", "Capital"),
         ("other", "Other"),
     )
+    # PROTECT: an SRP claim is a financial record. A fleet with claims is
+    # cancelled, never deleted (fleets.helpers.removal).
     fleet = models.ForeignKey(
         EveFleet,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="reimbursements",
         null=True,
     )

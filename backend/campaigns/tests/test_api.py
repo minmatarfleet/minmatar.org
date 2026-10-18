@@ -561,6 +561,9 @@ class CampaignApiTests(TestCase):
             self.assertIsInstance(response.json(), list)
 
     def test_forming_a_gang_puts_it_on_the_right_now_strip(self):
+        EvePlayer.objects.create(
+            user=self.user, nickname="pilot", primary_character=self.character
+        )
         response = self.client.post(
             f"{BASE}/{self.campaign.slug}/gangs",
             data={"ships": "Thrashers", "note": "Kamela roam"},
@@ -576,7 +579,8 @@ class CampaignApiTests(TestCase):
         gangs = response.json()["gangs_forming"]
         self.assertEqual(len(gangs), 1)
         self.assertEqual(gangs[0]["ships"], "Thrashers")
-        self.assertEqual(gangs[0]["started_by"], "pilot")
+        # The main's in-game name, never the web login.
+        self.assertEqual(gangs[0]["started_by"], "Pilot")
 
     def test_a_stale_gang_drops_off_the_strip(self):
         CampaignEvent.objects.create(

@@ -90,7 +90,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             alt=''
                         />
                     }
-                    <span>{site.character_name || site.username || '—'}</span>
+                    <span>{site.character_name || t('unknown_pilot')}</span>
                 </div>
                 <span role="cell" title={detail(site)}>{what(site)}</span>
             </div>

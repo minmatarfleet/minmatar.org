@@ -260,7 +260,6 @@ class OrderOut(Schema):
 class LeaderboardRow(Schema):
     rank: int
     user_id: int
-    username: str
     character_id: int | None = None
     character_name: str = ""
     value: float
@@ -302,7 +301,6 @@ class SiteOut(Schema):
     site_kind: str
     amount_lp: int
     system: str
-    username: str | None = None
     character_id: int | None = None
     character_name: str = ""
     plex_class: str = ""
@@ -317,7 +315,8 @@ class AwardOut(Schema):
     scope: str
     week_start: date | None = None
     awarded_at: datetime
-    username: str
+    character_id: int | None = None
+    character_name: str = ""
     value: float | None = None
     metric: str = ""
 
@@ -336,7 +335,6 @@ class TimelineEvent(Schema):
 
 class RosterRow(Schema):
     user_id: int
-    username: str
     primary_character: str = ""
     character_id: int | None = None
     corporation_id: int | None = None
