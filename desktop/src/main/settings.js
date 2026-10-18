@@ -8,7 +8,8 @@
 //   - when the account's copy arrives late, keys changed here in the meantime win; the rest are applied
 //     and announced with a 'change' event so windows can move to where the pilot left them
 //
-// Session keys live in memory only and never reach the API (e.g. "pinned", which resets every launch).
+// Session keys (optional) live in memory only and never reach the API. Which keys exist and what each may
+// hold is settings_schema.js: every installed version shares them.
 const { EventEmitter } = require('events')
 
 const SAVE_DELAY_MS = 1000

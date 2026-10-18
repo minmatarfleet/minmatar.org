@@ -18,7 +18,7 @@
             <button role="tab" id="tab-recent" data-tab="recent" aria-selected="false">Recent<span class="fw-tabs__owed" id="tab-recent-dot" title="SRP to file" hidden></span></button>
         </nav>
         <nav class="eve-window__controls">
-            <button class="eve-icon-button" id="refresh" data-command="fleets:refresh" aria-label="Refresh" title="Refresh">
+            <button class="eve-icon-button" id="refresh" data-command="app:refresh" aria-label="Refresh" title="Refresh">
                 <svg viewBox="0 0 12 12"><path d="M10 6a4 4 0 1 1-1.2-2.85M10 1.5v2.5H7.5"/></svg>
             </button>
             <button class="eve-icon-button" id="lock" data-command="lock:toggle" aria-label="Pin in place" aria-pressed="true" title="Pinned in place. Click to move and resize">
@@ -41,6 +41,7 @@
     <div class="eve-resize" id="resize" data-interactive aria-hidden="true"></div>
 </section>
 <script src="eve_window.js"></script>
+<script src="ui_helpers.js"></script>
 <script src="fleet_format.js"></script>
 <script src="fleet_view.js"></script>
 <script src="fleets.js"></script>

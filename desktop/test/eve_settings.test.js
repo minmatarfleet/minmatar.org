@@ -119,11 +119,22 @@ test('picks up a moved notification badge as soon as EVE rewrites the file', asy
     const badge = (x, y) => setting('notification_badge_offset', Buffer.from([0x2c, 0x06, x, 0x06, y]))
     fs.writeFileSync(file, settings_file(badge(16, 16)))
     const watcher = new EveWindowSettings({ local_app_data: root, poll_ms: 1e9 })   // no interval: only the folder watch
-    watcher.start()
-    assert.deepEqual(watcher.current.badge_offset, [16, 16])
-    const moved = new Promise(resolve => watcher.on('change', resolve))
-    fs.writeFileSync(file, settings_file(badge(16, 10)))
-    const value = await Promise.race([moved, new Promise((_, reject) => setTimeout(() => reject(new Error('no change within 3 s')), 3000))])
-    watcher.stop()
-    assert.deepEqual(value.badge_offset, [16, 10])
+    let timeout
+    try {
+        watcher.start()
+        assert.deepEqual(watcher.current.badge_offset, [16, 16])
+        const moved = new Promise(resolve => watcher.on('change', resolve))
+        fs.writeFileSync(file, settings_file(badge(16, 10)))
+        // poll() only rereads a file whose mtime moved. Linux file systems stamp mtimes at kernel-tick
+        // granularity, so a rewrite within a few ms of the first write can keep the same mtime; EVE's real
+        // saves are seconds apart. Move it forward so the test checks the watch, not the clock.
+        const later = new Date(Date.now() + 2000)
+        fs.utimesSync(file, later, later)
+        const value = await Promise.race([moved, new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('no change within 3 s')), 3000) })])
+        assert.deepEqual(value.badge_offset, [16, 10])
+    } finally {
+        // An open fs.watch keeps node alive: always close it, or a failure hangs the whole test run.
+        clearTimeout(timeout)
+        watcher.stop()
+    }
 })
