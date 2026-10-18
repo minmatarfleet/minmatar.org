@@ -33,6 +33,8 @@ const { rows = 5 } = Astro.props
 </div>
 
 <style lang="scss">
+    @use '../../../styles/mixins/skeleton';
+
     .mk-volume-skeleton {
         display: flex;
         flex-direction: column;
@@ -53,14 +55,10 @@ const { rows = 5 } = Astro.props
     .mk-volume-skeleton__bar,
     .mk-volume-skeleton__num {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            color-mix(in srgb, var(--foreground) 6%, transparent) 0%,
-            color-mix(in srgb, var(--foreground) 12%, transparent) 50%,
-            color-mix(in srgb, var(--foreground) 6%, transparent) 100%
+        @include skeleton.shimmer(
+            color-mix(in srgb, var(--foreground) 6%, transparent),
+            color-mix(in srgb, var(--foreground) 12%, transparent)
         );
-        background-size: 200% 100%;
-        animation: mk-volume-skel 1.1s ease-in-out infinite;
     }
 
     .mk-volume-skeleton__chip {
@@ -107,14 +105,5 @@ const { rows = 5 } = Astro.props
     .mk-volume-skeleton__num {
         height: var(--space-m);
         width: 100%;
-    }
-
-    @keyframes mk-volume-skel {
-        0% {
-            background-position: 100% 0;
-        }
-        100% {
-            background-position: -100% 0;
-        }
     }
 </style>

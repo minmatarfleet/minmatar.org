@@ -1,17 +1,17 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
 const { translatePath } = i18n(Astro.url)
 
-import { get_api_url, get_app_url, get_auth_url } from '@helpers/env'
+import { get_public_api_url, get_app_url } from '@helpers/env'
 import { reddit_connect_url } from '@helpers/api.minmatar.org/reddit'
 import { is_corporation_slug } from '@helpers/corporations/reddit_settings'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+const { auth_token } = get_request_user(Astro)
 
 if (!auth_token)
-    return Astro.redirect(get_auth_url(Astro.url.toString()))
+    return login_redirect(Astro)
 
 // Reddit sends the CEO back to their corporation's Settings tab.
 const slug = Astro.url.searchParams.get('corporation')
@@ -20,5 +20,5 @@ const return_path = is_corporation_slug(slug)
     : '/alliance/corporations/'
 const return_url = `${get_app_url(translatePath(return_path))}#settings`
 
-return Astro.redirect(reddit_connect_url(get_api_url(), return_url, auth_token))
+return Astro.redirect(reddit_connect_url(get_public_api_url(), return_url, auth_token))
 ---

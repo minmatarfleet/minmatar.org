@@ -1,0 +1,202 @@
+{
+        introduction: '',
+        activity_region: '',
+        activity_period: '',
+        timezone: '',
+        user_timezone: '',
+        roles: [],
+        doctrines: '',
+        how_found: '',
+        how_found_other: '',
+        is_existing_player_alt: false,
+        is_other_alliance_member: false,
+        main_character_name: '',
+        other_alliance_affiliation: '',
+        agree_tenets: false,
+        confirm_auth_chars: false,
+        error: true,
+        detectActivityRegion() {
+            try {
+                const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (
+                    timeZone.startsWith('America/')
+                    || timeZone === 'Pacific/Honolulu'
+                    || timeZone === 'Pacific/Pago_Pago'
+                    || timeZone === 'Pacific/Midway'
+                ) {
+                    return 'US';
+                }
+                if (
+                    timeZone.startsWith('Asia/')
+                    || timeZone.startsWith('Australia/')
+                    || (
+                        timeZone.startsWith('Pacific/')
+                        && timeZone !== 'Pacific/Honolulu'
+                        && timeZone !== 'Pacific/Pago_Pago'
+                        && timeZone !== 'Pacific/Midway'
+                    )
+                ) {
+                    return 'AP';
+                }
+                return 'EU';
+            } catch (error) {
+                const utcOffsetHours = -new Date().getTimezoneOffset() / 60;
+                if (utcOffsetHours <= -2) {
+                    return 'US';
+                }
+                if (utcOffsetHours >= 5) {
+                    return 'AP';
+                }
+                return 'EU';
+            }
+        },
+        detectUserTimezone() {
+            try {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            } catch (error) {
+                return '';
+            }
+        },
+        userTimezoneLabel() {
+            if (!this.user_timezone) {
+                return '';
+            }
+            try {
+                const offsetLabel = new Intl.DateTimeFormat('en-US', {
+                    timeZone: this.user_timezone,
+                    timeZoneName: 'short',
+                })
+                    .formatToParts(new Date())
+                    .find((part) => part.type === 'timeZoneName')?.value;
+                return offsetLabel
+                    ? `${this.user_timezone} (${offsetLabel})`
+                    : this.user_timezone;
+            } catch (error) {
+                return this.user_timezone;
+            }
+        },
+        syncTimezoneFromActivity() {
+            const mapping = {"US":{"early_morning":"US_AP","morning":"AP_EU","afternoon":"EU_US","evening":"US"},"EU":{"early_morning":"US","morning":"US_AP","afternoon":"AP_EU","evening":"EU"},"AP":{"early_morning":"EU","morning":"EU_US","afternoon":"US_AP","evening":"AP"}};
+            if (
+                ['US', 'AP', 'EU'].includes(this.activity_region)
+                && ['early_morning', 'morning', 'afternoon', 'evening'].includes(this.activity_period)
+            ) {
+                this.timezone = mapping[this.activity_region][this.activity_period];
+            } else {
+                this.timezone = '';
+            }
+        },
+        activityRegionLabel() {
+            const labels = {"US":"US","AP":"Asia-Pacific","EU":"Europe"};
+            return labels[this.activity_region] || '';
+        },
+        timezoneBucketLabel() {
+            const labels = {"US":"USTZ","US_AP":"USTZ - AUTZ","AP":"AUTZ","AP_EU":"AUTZ - EUTZ","EU":"EUTZ","EU_US":"EUTZ - USTZ"};
+            return this.timezone ? (labels[this.timezone] || '') : '';
+        },
+        timezoneEveWindow() {
+            const windows = {"US":"EVE prime time: roughly 22:00–04:59 UTC","US_AP":"EVE prime time: roughly 05:00–09:59 UTC","AP":"EVE prime time: roughly 10:00–14:59 UTC","AP_EU":"EVE prime time: roughly 10:00–19:59 UTC (AUTZ–EUTZ overlap)","EU":"EVE prime time: roughly 15:00–19:59 UTC","EU_US":"EVE prime time: roughly 20:00–21:59 UTC"};
+            return this.timezone ? (windows[this.timezone] || '') : '';
+        },
+        fieldWithinLimit(field) {
+            const limits = {"introduction":300,"doctrines":250,"how_found_other":80,"main_character_name":37,"other_alliance_affiliation":40};
+            return (this[field]?.length ?? 0) <= limits[field];
+        },
+        fieldsWithinLimits() {
+            const limits = {"introduction":300,"doctrines":250,"how_found_other":80,"main_character_name":37,"other_alliance_affiliation":40};
+            return Object.keys(limits).every(
+                (field) => (this[field]?.length ?? 0) <= limits[field],
+            );
+        },
+        descriptionWithinLimit() {
+            const limits = {"introduction":300,"doctrines":250,"how_found_other":80,"main_character_name":37,"other_alliance_affiliation":40};
+            const userTextLength = Object.keys(limits).reduce(
+                (total, field) => total + (this[field]?.length ?? 0),
+                0,
+            );
+            return (
+                620 + userTextLength
+                <= 1700
+            );
+        },
+        answersReady() {
+            this.syncTimezoneFromActivity();
+            return Boolean(
+                this.introduction?.trim()
+                && this.user_timezone
+                && ['US', 'AP', 'EU'].includes(this.activity_region)
+                && ['early_morning', 'morning', 'afternoon', 'evening'].includes(this.activity_period)
+                && this.timezone
+                && this.roles?.some((role) => ['fleet_damage', 'fleet_logistics', 'fleet_support', 'solo_combat', 'small_gang_combat', 'resource_harvesting', 'production'].includes(role))
+                && this.doctrines?.trim()
+                && ['reddit_post_seen', 'forum_post_seen', 'reddit_post_made', 'forum_post_made', 'other'].includes(this.how_found)
+                && (this.how_found !== 'other' || this.how_found_other?.trim())
+                && this.agree_tenets
+                && this.confirm_auth_chars
+                && this.fieldsWithinLimits()
+                && this.descriptionWithinLimit()
+            );
+        },
+        buildDescriptionPayload() {
+            this.syncTimezoneFromActivity();
+            return {
+                corp_application: true,
+                introduction: this.introduction,
+                activity_region: this.activity_region,
+                activity_period: this.activity_period,
+                timezone: this.timezone,
+                user_timezone: this.user_timezone,
+                roles: this.roles,
+                doctrines: this.doctrines,
+                how_found: this.how_found,
+                how_found_other: this.how_found_other,
+                is_existing_player_alt: this.is_existing_player_alt,
+                is_other_alliance_member: this.is_other_alliance_member,
+                main_character_name: this.main_character_name,
+                other_alliance_affiliation: this.other_alliance_affiliation,
+                agree_tenets: this.agree_tenets,
+                confirm_auth_chars: this.confirm_auth_chars,
+            };
+        },
+        initCorpApplicationForm() {
+            this.user_timezone = this.detectUserTimezone();
+            this.activity_region = this.detectActivityRegion();
+            this.syncTimezoneFromActivity();
+            this.updateApplicationStatus();
+        },
+        onExistingPlayerAltChange() {
+            if (!this.is_existing_player_alt) {
+                this.main_character_name = '';
+            }
+            this.updateApplicationStatus();
+        },
+        onOtherAllianceMemberChange() {
+            if (!this.is_other_alliance_member) {
+                this.other_alliance_affiliation = '';
+            }
+            this.updateApplicationStatus();
+        },
+        updateApplicationStatus() {
+            this.syncTimezoneFromActivity();
+            this.error = !this.answersReady();
+            
+        },
+        clearCorpApplicationForm() {
+            this.introduction = '';
+            this.activity_region = this.detectActivityRegion();
+            this.activity_period = '';
+            this.timezone = '';
+            this.user_timezone = this.detectUserTimezone();
+            this.roles = [];
+            this.doctrines = '';
+            this.how_found = '';
+            this.how_found_other = '';
+            this.is_existing_player_alt = false;
+            this.is_other_alliance_member = false;
+            this.main_character_name = '';
+            this.other_alliance_affiliation = '';
+            this.agree_tenets = false;
+            this.confirm_auth_chars = false;
+            this.updateApplicationStatus();
+        }
+    }

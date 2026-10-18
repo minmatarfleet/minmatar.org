@@ -33,23 +33,24 @@ const columns = [
     t('campaigns.roster.last_active'),
 ]
 
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 {corporations.length === 0 ?
     <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.roster.none')}</small>
     :
-    <CampaignTable
+    <DataGrid
         class:list={['[ campaign-corporations ]', Astro.props.class]}
         min_width='56rem'
+        stack={true}
         template='minmax(12rem, 1fr) 4rem 4rem 6rem 4rem 4rem 6rem 6rem 4rem 7rem'
         numeric={[ 1, 2, 3, 4, 5, 6, 7, 8 ]}
         columns={columns}
         {...attributes}
     >
         {corporations.map(corporation =>
-            <div class="[ campaign-table-row ]" role="row">
-                <div class="[ campaign-cell-media ]" role="cell">
+            <div class="[ data-grid-row ]" role="row">
+                <div class="[ data-grid-media ]" role="cell">
                     {corporation.corporation_id &&
                         <img
                             loading='lazy'
@@ -61,33 +62,25 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                     }
                     <span>{corporation.corporation_name || t('campaigns.corporations.unknown')}</span>
                 </div>
-                <span data-label={columns[1]} role="cell" class="[ campaign-table-numeric ]">{corporation.pilots}</span>
-                <span data-label={columns[2]} role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.active_hint')}>{corporation.active_pilots}</span>
-                <span data-label={columns[3]} role="cell" class="[ campaign-table-numeric ]">{corporation.characters_included}</span>
-                <span data-label={columns[4]} role="cell" class="[ campaign-table-numeric ]">{corporation.kills}</span>
-                <span data-label={columns[5]} role="cell" class="[ campaign-table-numeric ]">{corporation.losses}</span>
-                <span data-label={columns[6]} role="cell" class="[ campaign-table-numeric ]">{format_isk(corporation.isk_destroyed)}</span>
-                <span data-label={columns[7]} role="cell" class="[ campaign-table-numeric ]">{corporation.complexes}</span>
-                <span data-label={columns[8]} role="cell" class="[ campaign-table-numeric ]">{corporation.fleets_attended}</span>
-                <small data-label={columns[9]} role="cell" class="[ campaign-table-muted ]">
+                <span data-label={columns[1]} role="cell" class="[ data-grid-numeric ]">{corporation.pilots}</span>
+                <span data-label={columns[2]} role="cell" class="[ data-grid-numeric ]" title={t('campaigns.corporations.active_hint')}>{corporation.active_pilots}</span>
+                <span data-label={columns[3]} role="cell" class="[ data-grid-numeric ]">{corporation.characters_included}</span>
+                <span data-label={columns[4]} role="cell" class="[ data-grid-numeric ]">{corporation.kills}</span>
+                <span data-label={columns[5]} role="cell" class="[ data-grid-numeric ]">{corporation.losses}</span>
+                <span data-label={columns[6]} role="cell" class="[ data-grid-numeric ]">{format_isk(corporation.isk_destroyed)}</span>
+                <span data-label={columns[7]} role="cell" class="[ data-grid-numeric ]">{corporation.complexes}</span>
+                <span data-label={columns[8]} role="cell" class="[ data-grid-numeric ]">{corporation.fleets_attended}</span>
+                <small data-label={columns[9]} role="cell" class="[ data-grid-muted ]">
                     {corporation.last_active_day ? format_date_short(lang, corporation.last_active_day) : '—'}
                 </small>
             </div>
         )}
-    </CampaignTable>
+    </DataGrid>
 }
 
 <style lang="scss">
     @media (max-width: 48rem) {
-        :global(.campaign-corporations.campaign-table) {
-            min-width: 0 !important;
-        }
-
-        :global(.campaign-corporations .campaign-table-head) {
-            display: none;
-        }
-
-        .campaign-table-row {
+        .data-grid-row {
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: var(--space-2xs) var(--space-s);
             align-items: start;
@@ -95,22 +88,12 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             padding-block: var(--space-xs);
         }
 
-        .campaign-table-row > :first-child {
+        .data-grid-row > :first-child {
             grid-column: 1 / -1;
         }
 
-        .campaign-table-row > .campaign-table-numeric {
+        .data-grid-row > .data-grid-numeric {
             text-align: left;
-        }
-
-        .campaign-table-row > [data-label]::before {
-            content: attr(data-label);
-            display: block;
-            font-family: var(--heading-font);
-            font-size: var(--step--2);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--faded);
         }
     }
 </style>

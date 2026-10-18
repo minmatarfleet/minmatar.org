@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
@@ -16,7 +17,6 @@ interface Props {
     corporation_name?:      string;
     fleet_count?:           number;
     members_count?:         number;
-    init_tooltips?:         boolean;
 }
 
 const {
@@ -26,7 +26,6 @@ const {
     corporation_name = '',
     fleet_count,
     members_count,
-    init_tooltips = true,
 } = Astro.props
 
 const live = !history && Boolean(fleet.tracking?.start_time) && !fleet.tracking?.end_time
@@ -34,7 +33,7 @@ const cancelled = fleet.status === 'cancelled'
 const counted_from = live && fleet.tracking?.start_time ? fleet.tracking.start_time : fleet.start_time
 const [ system, station ] = fleet.location?.split(' - ') ?? []
 
-const day = new Date(fleet.start_time).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+const day = eve_day_short(lang, fleet.start_time, { weekday: true })
 
 const length_minutes = fleet.tracking?.start_time && fleet.tracking?.end_time ?
     Math.round((new Date(fleet.tracking.end_time).getTime() - new Date(fleet.tracking.start_time).getTime()) / 60000) :
@@ -117,7 +116,6 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
                 size={64}
-                init_tooltips={init_tooltips}
             />
             <span class="[ fleet-facts__fc-text ]">
                 <b>{fleet.fleet_commander_name}</b>
@@ -132,7 +130,6 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
                         <span
                             class="[ fleet-facts__count ]"
                             data-tippy-content={t('fleet_commander_fleets')}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
                             <FleetIcon size={16} />
                             {fleet_count}

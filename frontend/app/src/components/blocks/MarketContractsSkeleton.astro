@@ -26,16 +26,11 @@ const { rows = 8 } = Astro.props
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .market-contracts-skeleton .skel {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.06) 100%
-        );
-        background-size: 200% 100%;
-        animation: market-contracts-skel 1.1s ease-in-out infinite;
+        @include skeleton.shimmer;
     }
 
     .market-contracts-skeleton__row {
@@ -63,10 +58,5 @@ const { rows = 8 } = Astro.props
 
     .skel-progress {
         height: 0.75rem;
-    }
-
-    @keyframes market-contracts-skel {
-        0% { background-position: 100% 0; }
-        100% { background-position: -100% 0; }
     }
 </style>

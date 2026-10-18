@@ -11,13 +11,14 @@ import math
 import re
 from typing import Literal
 
-from django.core.cache import cache
 from django.utils import timezone
 from eveuniverse.models import EveType
 
+from app.cache import CachedRollup
 from market.helpers.inferred_sales_monthly import (
     CACHE_TTL_CLOSED_MONTH,
     CACHE_TTL_OPEN_MONTH,
+    COMPUTE_LOCK_SECONDS,
     build_monthly_response,
     month_bounds,
 )
@@ -68,6 +69,12 @@ _SKIN_OR_BP = re.compile(r"\bSKIN\b|blueprint", re.IGNORECASE)
 
 VOLUME_CACHE_KEY = (
     "market:inferred_sales_monthly_volume:{location_id}:{year}-{month:02d}"
+)
+VOLUME = CachedRollup(
+    key=VOLUME_CACHE_KEY + "{using_suffix}",
+    ttl=CACHE_TTL_OPEN_MONTH,
+    lock_key=VOLUME_CACHE_KEY + "{using_suffix}:computing",
+    lock_ttl=COMPUTE_LOCK_SECONDS,
 )
 
 CLASS_SLUG_LABELS: dict[str, str] = {
@@ -201,26 +208,25 @@ def build_enriched_volume_rows(
     using: str | None = None,
 ) -> list[dict]:
     """Full enriched type list for a month (cached)."""
-    key = VOLUME_CACHE_KEY.format(
-        location_id=location_id, year=year, month=month
-    )
-    if using:
-        key = f"{key}:using:{using}"
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
-
-    monthly = build_monthly_response(location_id, year, month, using=using)
-    rows = _enrich_rows(monthly.get("by_type") or [])
-
     _, end = month_bounds(year, month)
     ttl = (
         CACHE_TTL_CLOSED_MONTH
         if end <= timezone.now()
         else CACHE_TTL_OPEN_MONTH
     )
-    cache.set(key, rows, ttl)
-    return rows
+
+    def compute() -> list[dict]:
+        monthly = build_monthly_response(location_id, year, month, using=using)
+        return _enrich_rows(monthly.get("by_type") or [])
+
+    return VOLUME.get_or_compute(
+        compute,
+        ttl=ttl,
+        location_id=location_id,
+        year=year,
+        month=month,
+        using_suffix=f":using:{using}" if using else "",
+    )
 
 
 def _class_counts(rows: list[dict]) -> dict[str, int]:

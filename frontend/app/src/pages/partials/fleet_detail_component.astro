@@ -4,12 +4,9 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
@@ -63,53 +60,94 @@ let fleet_commander_metrics: FleetCommanderMetrics | undefined
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+import type { FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import { settled_value } from '@helpers/settled'
+// fetch_fleet_supply never rejects; it falls back to EMPTY_SUPPLY.
+let supply_promise:Promise<FleetSupply> | null = null
+
+// Two rounds of backend calls: the fleet and the viewer's character, then
+// everything that needs the fleet. Results are read in the order the partial
+// used to await them one by one, so a failure still lands where it did.
 try {
-    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
-    user_character = await get_user_character(user.user_id)
+    const [fleet_result, user_character_result] = await Promise.allSettled([
+        fetch_fleet_by_id(auth_token as string, fleet_id),
+        get_user_character(user.user_id),
+    ])
+    fleet = settled_value(fleet_result)
+    user_character = settled_value(user_character_result)
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
     const is_strategic_fc = can(gates, 'fleets.manage_any')
     can_manage_fleet = is_fleet_commander || is_strategic_fc
 
-    if (is_fleet_commander && upcoming) {
-        const staging_solar_system = fleet.location.split(' - ')[0]
+    const loaded_fleet = fleet
+    const load_fc_view = async () => {
+        const staging_solar_system = loaded_fleet.location.split(' - ')[0]
         const staging_solar_system_id = await get_system_id(staging_solar_system)
 
         if (!staging_solar_system_id)
             throw new Error(t('invalid_staging_solar_system'), { cause: 400 })
 
         const members = await get_fleet_members(auth_token as string, fleet_id)
-        fleet_composition = await group_members_by_ship(members)
-        fleet_radar = await group_members_by_location(members, staging_solar_system_id)
+        return {
+            composition: await group_members_by_ship(members),
+            radar: await group_members_by_location(members, staging_solar_system_id),
+        }
     }
 
-    const summary = await get_characters_summary_sorted(auth_token as string)
-    roles = await get_fleet_roles(auth_token as string, fleet_id)
+    if (upcoming)
+        supply_promise = fetch_fleet_supply(auth_token as string, fleet_id)
+
+    const [
+        fc_view_result,
+        summary_result,
+        roles_result,
+        composition_result,
+        ship_volunteers_result,
+        refits_result,
+        fleets_metrics_result,
+        fleet_commanders_metrics_result,
+    ] = await Promise.allSettled([
+        is_fleet_commander && upcoming ? load_fc_view() : null,
+        get_characters_summary_sorted(auth_token as string),
+        get_fleet_roles(auth_token as string, fleet_id),
+        upcoming ? get_fleet_composition(auth_token as string, fleet_id) : [],
+        upcoming ? get_fleet_ship_volunteers(auth_token as string, fleet_id) : [],
+        upcoming ? get_fleet_refits(auth_token as string, fleet_id) : [],
+        get_fleets_metrics(auth_token as string, fleet_id),
+        get_fleet_commander_metrics(auth_token as string),
+    ])
+
+    const fc_view = settled_value(fc_view_result)
+    if (fc_view) {
+        fleet_composition = fc_view.composition
+        fleet_radar = fc_view.radar
+    }
+
+    const summary = settled_value(summary_result)
+    roles = settled_value(roles_result)
     pilots = summary.characters ?? []
 
     if (upcoming) {
-        const [fetched_composition, fetched_ship_volunteers, fetched_refits] = await Promise.all([
-            get_fleet_composition(auth_token as string, fleet_id),
-            get_fleet_ship_volunteers(auth_token as string, fleet_id),
-            get_fleet_refits(auth_token as string, fleet_id),
-        ])
-        composition = fetched_composition
-        ship_volunteers = fetched_ship_volunteers
-        refits = fetched_refits
+        composition = settled_value(composition_result)
+        ship_volunteers = settled_value(ship_volunteers_result)
+        refits = settled_value(refits_result)
     }
 
-    const fleets_metrics = await get_fleets_metrics(auth_token as string)
+    // Filtered to this fleet by the API; find() keeps working against an
+    // API that still returns every fleet.
+    const fleets_metrics = settled_value(fleets_metrics_result)
     fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
-    const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
+    const fleet_commanders_metrics = settled_value(fleet_commanders_metrics_result)
     fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+    if (error?.cause === 403)
         return HTTP_403_Forbidden()
     
     fetch_fleets_error = error
 }
 
-import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
-const supply = fleet && upcoming ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
+const supply = fleet && upcoming ? await (supply_promise ?? fetch_fleet_supply(auth_token as string, fleet_id)) : EMPTY_SUPPLY
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
 
@@ -146,7 +184,6 @@ import Button from '@components/blocks/Button.astro';
         update_cover={true}
         fleet_metrics={fleet_metrics}
         fleet_commander_metrics={fleet_commander_metrics}
-        init_tooltips={true}
         ship_volunteers={ship_volunteers}
         refits={refits}
         composition={composition}

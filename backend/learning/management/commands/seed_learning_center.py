@@ -42,6 +42,94 @@ def upsert_certificate(
 
 LEARNINGS = [
     {
+        "slug": "onboarding-home-base",
+        "title": "Home Base: Three Discords and Amamake",
+        "summary": (
+            "Day one: which Discord is which, how roles work, and why "
+            "Amamake is home."
+        ),
+        "url": "/learning/guides/onboarding-home-base/",
+        "content_kind": "guide",
+        "estimated_minutes": 5,
+    },
+    {
+        "slug": "onboarding-first-fleet",
+        "title": "Your First Fleet",
+        "summary": (
+            "Day one: find tonight's fleet, bring what you have, and undock "
+            "without panic."
+        ),
+        "url": "/learning/guides/onboarding-first-fleet/",
+        "content_kind": "guide",
+        "estimated_minutes": 8,
+    },
+    {
+        "slug": "onboarding-fleet-types-and-hangar",
+        "title": "Fleet Types and Your Hangar",
+        "summary": (
+            "Week one: strategic versus everything else, what to keep in "
+            "your hangar, and where fits live."
+        ),
+        "url": "/learning/guides/onboarding-fleet-types-and-hangar/",
+        "content_kind": "guide",
+        "estimated_minutes": 8,
+    },
+    {
+        "slug": "onboarding-faction-warfare-essentials",
+        "title": "Faction Warfare Essentials",
+        "summary": (
+            "Week one: the faction warfare you need to not be lost, written "
+            "for returning players."
+        ),
+        "url": "/learning/guides/onboarding-faction-warfare-essentials/",
+        "content_kind": "guide",
+        "estimated_minutes": 8,
+    },
+    {
+        "slug": "onboarding-first-billion",
+        "title": "Your First Billion ISK",
+        "summary": (
+            "Month one: plex frontlines, sell LP on the loyalty desk, and "
+            "pay for your own ships."
+        ),
+        "url": "/learning/guides/onboarding-first-billion/",
+        "content_kind": "guide",
+        "estimated_minutes": 5,
+    },
+    {
+        "slug": "onboarding-make-content",
+        "title": "You're Allowed to Make Content",
+        "summary": (
+            "Month one: form standing fleet, run a battlefield, and schedule "
+            "fleets without being a famous FC."
+        ),
+        "url": "/learning/guides/onboarding-make-content/",
+        "content_kind": "guide",
+        "estimated_minutes": 5,
+    },
+    {
+        "slug": "onboarding-trial-srp-help",
+        "title": "Trial, SRP, and Getting Help",
+        "summary": (
+            "Trial: what trial means, how ship replacement works, and where "
+            "to take problems."
+        ),
+        "url": "/learning/guides/onboarding-trial-srp-help/",
+        "content_kind": "guide",
+        "estimated_minutes": 5,
+    },
+    {
+        "slug": "onboarding-culture-map",
+        "title": "The Culture Map",
+        "summary": (
+            "Trial: town hall, values, tribes, and where the rest of the "
+            "alliance lives once you are fleeting."
+        ),
+        "url": "/learning/guides/onboarding-culture-map/",
+        "content_kind": "guide",
+        "estimated_minutes": 4,
+    },
+    {
         "slug": "new-player-fleet-guide",
         "title": "New Player Fleet Guide",
         "summary": (
@@ -147,17 +235,24 @@ CERTIFICATES = [
         "slug": "alliance-onboarding",
         "title": "Alliance Onboarding",
         "summary": (
-            "Get oriented with our alliance, Minmatar Fleet. Learn about our "
-            "values, playstyles, and history."
+            "Start here. Eight short guides in the order you need them: day "
+            "one gets you on a fleet, week one sets up your hangar and the "
+            "warzone, month one pays for your ships and has you making "
+            "content, and trial covers SRP, help, and the rest of the "
+            "alliance."
         ),
         "personas": ["alliance"],
         "sort_order": 1,
-        # Hidden from Learning Center hub / persona flows for now.
-        "published": False,
+        # Kept in step with migration 0003_seed_alliance_onboarding_lesson.
         "learning_slugs": [
-            "alliance-values",
-            "alliance-playstyle",
-            "new-player-fleet-guide",
+            "onboarding-home-base",
+            "onboarding-first-fleet",
+            "onboarding-fleet-types-and-hangar",
+            "onboarding-faction-warfare-essentials",
+            "onboarding-first-billion",
+            "onboarding-make-content",
+            "onboarding-trial-srp-help",
+            "onboarding-culture-map",
         ],
     },
     {

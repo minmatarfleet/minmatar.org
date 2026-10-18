@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { PrimeTime } from '@dtypes/api.minmatar.org'
@@ -39,7 +39,7 @@ import Select from '@components/blocks/Select.astro';
         >
             <option value="-1" selected={!prime_time ? 'selected' : undefined}>{t('select_timezone')}</option>
             {prime_times.map(timezone =>
-                <option value={timezone} selected={timezone === prime_time ? 'selected' : undefined}>{t(timezone as any) ?? timezone}</option>
+                <option value={timezone} selected={timezone === prime_time ? 'selected' : undefined}>{t(dynamic_key(timezone)) ?? timezone}</option>
             )}
         </Select>
     </FlexInline>

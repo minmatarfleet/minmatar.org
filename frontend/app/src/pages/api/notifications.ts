@@ -1,11 +1,10 @@
+import { get_request_user } from '@helpers/request_user'
 import { i18n } from '@helpers/i18n'
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden, HTTP_200_Success, HTTP_500_Server_Error } from '@helpers/http_responses'
 import { create_subscription, remove_subscription } from '@helpers/api.minmatar.org/notifications'
 
-export async function POST({ request, cookies, redirect }) {
+export async function POST({ request, cookies, redirect, locals }) {
     if (request.headers.get("Content-Type") !== "application/json")
         return HTTP_404_Not_Found()
 
@@ -13,8 +12,7 @@ export async function POST({ request, cookies, redirect }) {
 
     const subscription = await request.json()
 
-    const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
-    const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+    const { auth_token, user } = get_request_user({ cookies, locals })
 
     if (!auth_token || !user) {
         return HTTP_403_Forbidden()
@@ -38,9 +36,8 @@ export async function POST({ request, cookies, redirect }) {
     }))
 }
 
-export async function DELETE({ request, cookies }) {    
-    const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
-    const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+export async function DELETE({ request, cookies, locals }) {    
+    const { auth_token, user } = get_request_user({ cookies, locals })
     
     if (!auth_token || !user) {
         return HTTP_403_Forbidden()

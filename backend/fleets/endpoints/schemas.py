@@ -47,7 +47,13 @@ class EveFleetResponse(BaseModel):
     objective: Optional[str] = None
     start_time: Optional[datetime] = None
     fleet_commander: int
+    # The FC's primary character and the doctrine's name, so a schedule
+    # needs no profile or doctrine lookups. None when the FC has no primary
+    # character or the fleet has no doctrine.
+    fleet_commander_character_id: Optional[int] = None
+    fleet_commander_name: Optional[str] = None
     doctrine_id: Optional[int] = None
+    doctrine_name: Optional[str] = None
     location: str
     disable_motd: bool = False
     hide_volunteers: bool = False

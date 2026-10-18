@@ -505,7 +505,13 @@ class ScheduleTestCase(TestCase):
         )
         post.template = taker
         post.save()
-        schedule.move_slot(post, taker, when, giver, when)
+        # The admin request only queues the DMs; a worker sends them.
+        with patch("discord.outbox.DiscordClient", discord):
+            with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                schedule.move_slot(post, taker, when, giver, when)
+            self.assertEqual([], self.dm_texts(discord))
+            for callback in callbacks:
+                callback()
         texts = self.dm_texts(discord)
         self.assertEqual(2, len(texts))
         self.assertIn("moved your", texts[0])

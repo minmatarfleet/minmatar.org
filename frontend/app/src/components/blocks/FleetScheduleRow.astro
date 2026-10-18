@@ -12,14 +12,12 @@ import { marked } from 'marked'
 interface Props {
     fleet:          FleetItem;
     doctrine?:      FleetScheduleDoctrine | null;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
 const {
     fleet,
     doctrine = null,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -43,7 +41,6 @@ import LocalTime from '@components/blocks/LocalTime.astro'
         character_name={fleet.fleet_commander_name}
         type={fleet.type}
         size={72}
-        init_tooltips={init_tooltips}
     />
 
     <span class="[ fleet-schedule-row__time ]">

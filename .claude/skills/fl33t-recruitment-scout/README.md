@@ -1,6 +1,6 @@
 # EVE Alliance Recruitment Scout
 
-A Claude Code skill for finding pilots who are **looking for a corporation**,
+An agent skill (Claude Code or Cursor) for finding pilots who are **looking for a corporation**,
 routing them to the right corp, and drafting short, human outreach replies.
 
 **The skill is the product.** `SKILL.md` defines workflow and judgment.
@@ -119,7 +119,7 @@ python scripts/track_outreach.py stats --days 30
 
 Click counts per reply are also in Django admin under Recruitment → Scout outreach.
 
-## Claude Code usage
+## Agent usage (Claude Code or Cursor)
 
 ```
 Run the alliance recruitment scout for the past 7 days

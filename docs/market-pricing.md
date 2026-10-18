@@ -1,6 +1,6 @@
 # Market pricing
 
-How we store and choose EVE market prices. Agents and developers should use this when implementing appraisals, LP economics, industry costs, or market UI.
+How we store and choose EVE market prices. Agents and developers should use this when implementing appraisals, LP economics, industry costs, or market UI. LP buyback orders (standard and express tiers, reminders, auto-cancel) are described in [industry/lp-buyback.md](industry/lp-buyback.md).
 
 ## Naming cheat sheet
 

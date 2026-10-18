@@ -1,12 +1,10 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
-const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return new Response(null, { status: 403 })
 
@@ -55,7 +53,7 @@ const base_params = {
 const add_url = (fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, add_fitting_id: fitting_id })}`
 const eft_url = `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, action: 'add_eft' })}`
 const remove_url = (fleet_fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, remove_fleet_fitting_id: fleet_fitting_id })}`
-const role_label = (role:string) => t(`fitting_role_${role}` as any)
+const role_label = (role:string) => t(t_key('fitting_role_', role))
 
 const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
 

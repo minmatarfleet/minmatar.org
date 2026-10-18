@@ -7,6 +7,7 @@ from notifications.discord_format import (
 )
 from notifications.service import _render_payload
 from notifications.types.industry import ORDER_CREATED
+from notifications.types.tribes import TRIBE_MEMBERSHIP_REQUESTED
 
 
 class DiscordFormatTestCase(SimpleTestCase):
@@ -50,3 +51,23 @@ class DiscordFormatTestCase(SimpleTestCase):
         self.assertEqual(payload["feature"], "industry")
         self.assertEqual(payload["feature_label"], "Industry")
         self.assertIn("discord_message", payload)
+
+    def test_tribe_application_embed_keeps_old_wording_once(self):
+        payload = _render_payload(
+            TRIBE_MEMBERSHIP_REQUESTED,
+            {
+                "group_name": "Mining",
+                "tribe_name": "Industry",
+                "applicant": "miner",
+            },
+        )
+        embed = discord_embed_from_payload(payload)
+        self.assertEqual(embed["author"]["name"], "Tribes")
+        self.assertEqual(
+            embed["description"],
+            "**New tribe membership application** for **Mining** "
+            "(Industry): miner has applied. Please review in the admin "
+            "panel.",
+        )
+        # The bold first line already says it; no repeated embed title.
+        self.assertNotIn("title", embed)

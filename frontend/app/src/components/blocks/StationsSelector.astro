@@ -13,30 +13,14 @@ const {
     selected
 } = Astro.props
 
-const current_staging = selected ? stagings.find(stagings => stagings.includes(selected)) : null
-const staging_to_filter = current_staging !== undefined ? current_staging : 'random'
+const current_staging = selected && stagings.includes(selected) ? selected : null
+
+import { STAGING_SWITCHER_OPTIONS } from '@/data/stagings'
+
+// List every option except the current staging; with no staging picked, "Random" is the current one.
+const staging_list = STAGING_SWITCHER_OPTIONS.filter(staging => staging.slug !== (current_staging ?? 'random'))
 
 import { get_item_icon } from '@helpers/eve_image_server'
-
-const STAGINGS = [{
-        title: 'Amamake - 5 times nearly AT winners',
-        subtitle: t('fw_hq_description'),
-        type_id: 35834,
-        slug: 'amamake',
-    }, {
-        title: 'Sosala - WATERMELLON',
-        subtitle: t('watermellon_description'),
-        type_id: 35833,
-        slug: 'watermellon',
-    }, {
-        title: 'Random',
-        subtitle: t('random_staging'),
-        type_id: 76312,
-        slug: 'random',
-    }
-]
-
-const staging_list = current_staging ? STAGINGS.filter(staging => staging.slug !== staging_to_filter) : STAGINGS.filter(staging => staging.slug !== 'random')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Badge from '@components/blocks/Badge.astro';
@@ -52,7 +36,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         >
             <Badge
                 title={staging.title}
-                subtitle={staging.subtitle}
+                subtitle={t(staging.description_key)}
                 image={get_item_icon(staging.type_id)}
             />
         </StylessButton>

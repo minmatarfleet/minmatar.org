@@ -22,7 +22,7 @@
     --tw-prose-pre-code: var(--highlight);
     --tw-prose-pre-bg: var(--background);
     --tw-prose-th-borders: rgb(255, 255, 255, 0.15);
-    --tw-prose-td-borders: rgb(255, 255, 255, 0.12);
+    --tw-prose-td-borders: var(--hairline-strong);
 
     h1 {
         font-weight: 500;
@@ -108,7 +108,7 @@
 
     th,
     td {
-        border: solid 1px rgb(255, 255, 255, 0.12);
+        border: solid 1px var(--hairline-strong);
         padding: 0.6em 0.85em;
     }
 }

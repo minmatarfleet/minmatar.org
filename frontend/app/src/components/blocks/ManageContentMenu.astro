@@ -1,13 +1,12 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CreatorAccount } from '@dtypes/api.minmatar.org'
 import { get_my_creator_accounts } from '@helpers/api.minmatar.org/creators'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+const { auth_token } = get_request_user(Astro)
 
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
@@ -32,161 +31,72 @@ const twitch = by_provider.twitch
 const youtube = by_provider.youtube
 const reddit = by_provider.reddit
 
-import Dropdown from '@components/blocks/Dropdown.astro'
+import ActionMenu from '@components/blocks/ActionMenu.astro'
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
 ---
 
-<Dropdown
+<ActionMenu
     class="[ manage-content-menu ]"
+    label={t('content.manage_my_content')}
     variant="button"
     color="fleet-red"
     size="sm"
+    hover="fill"
+    fit_trigger={true}
 >
-    <span slot="button" class="[ manage-content-menu__label ]">
-        {t('content.manage_my_content')}
-    </span>
+    {can_create_posts && <>
+        <ActionMenuItem variant="success" href={translatePath('/alliance/propaganda/new/editor')}>
+            {t('create_post')}
+        </ActionMenuItem>
+        <ActionMenuItem href={translatePath('/alliance/propaganda/my_posts/')}>
+            {t('my_posts')}
+        </ActionMenuItem>
+        <ActionMenuItem href={translatePath('/alliance/propaganda/trash/')}>
+            {t('trash')}
+        </ActionMenuItem>
+    </>}
 
-    <nav class="[ manage-content-menu__list ]" aria-label={t('content.manage_my_content')}>
-        {can_create_posts && <>
-            <a
-                class="[ manage-content-menu__item manage-content-menu__item--create ]"
-                href={translatePath('/alliance/propaganda/new/editor')}
-            >
-                {t('create_post')}
-            </a>
-            <a
-                class="[ manage-content-menu__item ]"
-                href={translatePath('/alliance/propaganda/my_posts/')}
-            >
-                {t('my_posts')}
-            </a>
-            <a
-                class="[ manage-content-menu__item ]"
-                href={translatePath('/alliance/propaganda/trash/')}
-            >
-                {t('trash')}
-            </a>
-        </>}
-
-        {twitch ?
-            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
-                {t('content.connect.twitch_connected').replace(
-                    'USERNAME',
-                    twitch.platform_username || twitch.platform_user_id,
-                )}
-            </span>
-            :
-            <a
-                class="[ manage-content-menu__item ]"
-                href={translatePath('/alliance/content/connect/twitch')}
-            >
-                {t('content.connect.twitch')}
-            </a>
-        }
-
-        {youtube ?
-            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
-                {t('content.connect.youtube_connected').replace(
-                    'USERNAME',
-                    youtube.platform_username || youtube.platform_user_id,
-                )}
-            </span>
-            :
-            <a
-                class="[ manage-content-menu__item ]"
-                href={translatePath('/alliance/content/connect/youtube')}
-            >
-                {t('content.connect.youtube')}
-            </a>
-        }
-
-        {reddit ?
-            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
-                {t('content.connect.reddit_connected').replace(
-                    'USERNAME',
-                    reddit.platform_username || reddit.platform_user_id,
-                )}
-            </span>
-            :
-            <button
-                type="button"
-                class="[ manage-content-menu__item ]"
-                x-data
-                x-on:click={`show_modal({
-                    partial: '${translatePath('/partials/link_reddit_modal_component')}',
-                })`}
-            >
-                {t('content.connect.reddit')}
-            </button>
-        }
-    </nav>
-</Dropdown>
-
-<style lang="scss">
-    :global(.manage-content-menu.button-dropdown) {
-        display: inline-block;
+    {twitch ?
+        <ActionMenuItem variant="success" text_only={true}>
+            {t('content.connect.twitch_connected').replace(
+                'USERNAME',
+                twitch.platform_username || twitch.platform_user_id,
+            )}
+        </ActionMenuItem>
+        :
+        <ActionMenuItem href={translatePath('/alliance/content/connect/twitch')}>
+            {t('content.connect.twitch')}
+        </ActionMenuItem>
     }
 
-    :global(.manage-content-menu.button-dropdown-panel),
-    :global(.manage-content-menu .button-dropdown-panel) {
-        width: var(--button-dropdown-min-width, max-content);
-        min-width: var(--button-dropdown-min-width, 12rem);
-        padding: var(--space-3xs);
-        background: var(--background);
+    {youtube ?
+        <ActionMenuItem variant="success" text_only={true}>
+            {t('content.connect.youtube_connected').replace(
+                'USERNAME',
+                youtube.platform_username || youtube.platform_user_id,
+            )}
+        </ActionMenuItem>
+        :
+        <ActionMenuItem href={translatePath('/alliance/content/connect/youtube')}>
+            {t('content.connect.youtube')}
+        </ActionMenuItem>
     }
 
-    .manage-content-menu__label {
-        white-space: nowrap;
+    {reddit ?
+        <ActionMenuItem variant="success" text_only={true}>
+            {t('content.connect.reddit_connected').replace(
+                'USERNAME',
+                reddit.platform_username || reddit.platform_user_id,
+            )}
+        </ActionMenuItem>
+        :
+        <ActionMenuItem
+            x-data
+            x-on:click={`show_modal({
+                partial: '${translatePath('/partials/link_reddit_modal_component')}',
+            })`}
+        >
+            {t('content.connect.reddit')}
+        </ActionMenuItem>
     }
-
-    .manage-content-menu__list {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        width: 100%;
-    }
-
-    .manage-content-menu__item {
-        display: block;
-        width: 100%;
-        box-sizing: border-box;
-        padding: var(--space-2xs) var(--space-s);
-        color: var(--highlight);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-decoration: none;
-        text-align: left;
-        border: none;
-        background: transparent;
-        transition: var(--fast-transition);
-
-        &:hover,
-        &:focus-visible {
-            background: color-mix(in srgb, var(--fleet-red) 35%, transparent);
-            color: var(--button-color);
-            outline: none;
-        }
-
-        &--create {
-            color: var(--green);
-        }
-
-        &--create:hover,
-        &--create:focus-visible {
-            background: color-mix(in srgb, var(--green) 25%, transparent);
-            color: var(--highlight);
-        }
-
-        &--connected {
-            color: var(--green);
-            font-weight: 500;
-            cursor: default;
-            pointer-events: none;
-        }
-
-        &:is(button) {
-            cursor: pointer;
-            font: inherit;
-        }
-    }
-</style>
+</ActionMenu>

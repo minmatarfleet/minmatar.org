@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from eveonline.models import EvePlayer
+from eveonline.helpers.characters.identity import primary_refs_for_users
 from industry.models import IndustryOrderItemAssignment
 from tribes.constants import MANUFACTURING_PRODUCTION_GROUP_CODES
 from tribes.models import TribeGroupMembership
@@ -74,16 +74,11 @@ def build_orders_character_statistics() -> list[dict]:
     if not totals:
         return []
 
-    players = EvePlayer.objects.filter(
-        user_id__in=totals.keys()
-    ).select_related("primary_character")
     primary_by_user = {
-        player.user_id: (
-            player.primary_character.character_id,
-            player.primary_character.character_name or None,
-        )
-        for player in players
-        if player.primary_character_id
+        user_id: (character_id, name or None)
+        for user_id, (character_id, name) in primary_refs_for_users(
+            totals
+        ).items()
     }
 
     result = []

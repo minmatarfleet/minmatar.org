@@ -45,7 +45,7 @@ export async function fetch_freight_routes() {
 
 export async function fetch_freight_contracts(history: boolean = false): Promise<FreightContract[]> {
     const contracts = await get_contracts(history)
-    const valid_contracts = contracts.filter(contract => contract.issuer_id > 0)
+    const valid_contracts = contracts.filter(contract => (contract.issuer_id ?? 0) > 0)
 
     return valid_contracts.sort((a, b) => {
         const status_diff = (STATUS_SORT_ORDER[a.status] ?? 99) - (STATUS_SORT_ORDER[b.status] ?? 99)

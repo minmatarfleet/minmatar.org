@@ -1,0 +1,99 @@
+{
+    "source": "backend industry.endpoints.loyalty.serialization.offer_economics_row_response (plan_costing defaults)",
+    "offers": [
+        {
+            "lp_cost": 100000,
+            "quantity": 1,
+            "jita_sell": 200000000,
+            "jita_buy": 180000000,
+            "jita_avg_7d": 190000001,
+            "input_freight_isk": 1500000,
+            "conversion_costs": {
+                "sell": {
+                    "sales_tax_isk_per_lp": 67.4,
+                    "input_freight_isk_per_lp": 15.0,
+                    "output_freight_isk_per_lp": 60.0
+                },
+                "buy": {
+                    "sales_tax_isk_per_lp": 60.66,
+                    "input_freight_isk_per_lp": 15.0,
+                    "output_freight_isk_per_lp": 54.0
+                },
+                "avg_7d": {
+                    "sales_tax_isk_per_lp": 64.03001,
+                    "input_freight_isk_per_lp": 15.0,
+                    "output_freight_isk_per_lp": 57.00001
+                }
+            }
+        },
+        {
+            "lp_cost": 2000,
+            "quantity": 3,
+            "jita_sell": 1234567,
+            "jita_buy": 1000001,
+            "jita_avg_7d": null,
+            "input_freight_isk": 15000,
+            "conversion_costs": {
+                "sell": {
+                    "sales_tax_isk_per_lp": 62.4075,
+                    "input_freight_isk_per_lp": 7.5,
+                    "output_freight_isk_per_lp": 55.556
+                },
+                "buy": {
+                    "sales_tax_isk_per_lp": 50.5505,
+                    "input_freight_isk_per_lp": 7.5,
+                    "output_freight_isk_per_lp": 45.0005
+                }
+            }
+        },
+        {
+            "lp_cost": 37500,
+            "quantity": 10,
+            "jita_sell": 987654,
+            "jita_buy": null,
+            "jita_avg_7d": 777777,
+            "input_freight_isk": 0,
+            "conversion_costs": {
+                "sell": {
+                    "sales_tax_isk_per_lp": 8.875733333333333,
+                    "input_freight_isk_per_lp": 0.0,
+                    "output_freight_isk_per_lp": 7.901253333333333
+                },
+                "avg_7d": {
+                    "sales_tax_isk_per_lp": 6.989626666666667,
+                    "input_freight_isk_per_lp": 0.0,
+                    "output_freight_isk_per_lp": 6.22224
+                }
+            }
+        },
+        {
+            "lp_cost": 1000,
+            "quantity": 1,
+            "jita_sell": null,
+            "jita_buy": null,
+            "jita_avg_7d": null,
+            "input_freight_isk": null,
+            "conversion_costs": {}
+        },
+        {
+            "lp_cost": 500,
+            "quantity": 0,
+            "jita_sell": 12345,
+            "jita_buy": 11111,
+            "jita_avg_7d": null,
+            "input_freight_isk": null,
+            "conversion_costs": {
+                "sell": {
+                    "sales_tax_isk_per_lp": 0.834,
+                    "input_freight_isk_per_lp": null,
+                    "output_freight_isk_per_lp": 0.742
+                },
+                "buy": {
+                    "sales_tax_isk_per_lp": 0.75,
+                    "input_freight_isk_per_lp": null,
+                    "output_freight_isk_per_lp": 0.668
+                }
+            }
+        }
+    ]
+}

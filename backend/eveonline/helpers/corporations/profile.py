@@ -5,15 +5,17 @@ from __future__ import annotations
 import re
 
 from django.conf import settings
-from esi.models import Token
 
 from alliance.models import AllianceHealthSnapshot
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_characters_for_users,
+)
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
     EveCorporationMedia,
-    EvePlayer,
 )
 
 _YOUTUBE_ID = re.compile(
@@ -181,13 +183,13 @@ def split_requirements(value: str | None) -> list[str]:
 def _collapse_leadership_to_mains(
     entries: list[tuple[EveCharacter, str]],
 ) -> list[dict]:
-    characters = [entry[0] for entry in entries]
-    primaries, token_user_ids = _primary_characters_by_user(characters)
+    owners = owner_user_ids(entry[0].character_id for entry in entries)
+    primaries = primary_characters_for_users(owners.values())
     seen_users: set[int] = set()
     seen_characters: set[int] = set()
     rows = []
     for character, role in entries:
-        user_id = _owning_user_id(character, token_user_ids)
+        user_id = owners.get(character.character_id)
         display = primaries.get(user_id) if user_id else None
         if display is None:
             display = character
@@ -200,50 +202,6 @@ def _collapse_leadership_to_mains(
         seen_characters.add(display.character_id)
         rows.append(_leader(display, role, user_id=user_id))
     return rows
-
-
-def _primary_characters_by_user(
-    characters: list[EveCharacter],
-) -> tuple[dict[int, EveCharacter], dict[int, int]]:
-    token_ids = [
-        character.token_id
-        for character in characters
-        if not character.user_id and character.token_id
-    ]
-    token_user_ids: dict[int, int] = {}
-    if token_ids:
-        token_user_ids = {
-            token_id: user_id
-            for token_id, user_id in Token.objects.filter(
-                id__in=token_ids
-            ).values_list("id", "user_id")
-            if user_id
-        }
-    user_ids = {
-        character.user_id for character in characters if character.user_id
-    }
-    user_ids.update(token_user_ids.values())
-    primaries: dict[int, EveCharacter] = {}
-    if not user_ids:
-        return primaries, token_user_ids
-    players = EvePlayer.objects.filter(
-        user_id__in=user_ids,
-        primary_character__isnull=False,
-    ).select_related("primary_character")
-    for player in players:
-        if player.primary_character is not None:
-            primaries[player.user_id] = player.primary_character
-    return primaries, token_user_ids
-
-
-def _owning_user_id(
-    character: EveCharacter, token_user_ids: dict[int, int]
-) -> int | None:
-    if character.user_id:
-        return character.user_id
-    if character.token_id:
-        return token_user_ids.get(character.token_id)
-    return None
 
 
 def _leader(

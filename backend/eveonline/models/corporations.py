@@ -4,6 +4,11 @@ from django.db import models
 from eveuniverse.models import EveFaction
 
 from eveonline.client import EsiClient
+from eveonline.constants import (
+    MINMATAR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+)
 from eveonline.helpers.esi import parse_esi_date
 from eveonline.models.alliances import EveAlliance
 from eveonline.models.characters import EveCharacter
@@ -68,11 +73,12 @@ class EveCorporation(models.Model):
 
     @property
     def type(self):
-        if self.alliance and self.alliance.alliance_id == 99011978:
+        alliance_id = self.alliance.alliance_id if self.alliance else None
+        if alliance_id == MINMATAR_FLEET_ALLIANCE_ID:
             return "alliance"
-        if self.alliance and self.alliance.alliance_id == 99012009:
+        if alliance_id == MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID:
             return "associate"
-        if self.faction and self.faction.id == 500002:
+        if self.faction and self.faction.id == MINMATAR_FACTION_ID:
             return "militia"
         return "public"
 

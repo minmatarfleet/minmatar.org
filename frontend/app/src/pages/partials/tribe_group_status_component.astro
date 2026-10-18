@@ -1,15 +1,11 @@
 ---
-import { login_redirect } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!auth_token || !user) return login_redirect(Astro)
 
@@ -117,7 +113,6 @@ let is_member = false
 let is_pending = false
 let fetch_group_error: Error | false = false
 let is_leader = false
-let is_superuser = Boolean(user?.is_superuser)
 let user_on_trial = false
 
 try {
@@ -211,7 +206,6 @@ import DebugTag from '@components/blocks/DebugTag.astro'
                     group_id={tribe_group.id}
                     is_auth={!!user}
                     is_leader={is_leader}
-                    is_superuser={is_superuser}
                     user_on_trial={user_on_trial}
                     user_characters={user_characters}
                     available_characters={available_characters}

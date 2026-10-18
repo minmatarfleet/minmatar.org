@@ -2,24 +2,15 @@
 
 from typing import List
 
-from django.utils import timezone
-
+from app.eve_time import month_bounds
 from authentication import AuthBearer
-from eveonline.models import EveCorporation, EvePlayer
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
+from eveonline.models import EveCorporation
 
 from fleets.endpoints.schemas import EveFleetCommanderMetric
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
-
-
-def _calendar_month_bounds():
-    now = timezone.now()
-    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if start.month == 12:
-        end = start.replace(year=start.year + 1, month=1)
-    else:
-        end = start.replace(month=start.month + 1)
-    return start, end
-
 
 PATH = "/commander-metrics"
 METHOD = "get"
@@ -31,23 +22,16 @@ ROUTE_SPEC = {
 
 
 def get_fleet_commander_metrics(request):
-    month_start, month_end = _calendar_month_bounds()
+    month_start, month_end = month_bounds()
     rows = fleets_led_by_user(led_fleets(month_start, month_end))
 
     user_ids = [r["created_by_id"] for r in rows]
-    players = {
-        p.user_id: p
-        for p in EvePlayer.objects.filter(user_id__in=user_ids).select_related(
-            "primary_character"
-        )
-    }
+    mains = primary_characters_for_users(user_ids)
 
     corp_ids = {
-        int(p.primary_character.corporation_id)
-        for p in players.values()
-        if p
-        and p.primary_character
-        and p.primary_character.corporation_id is not None
+        int(main.corporation_id)
+        for main in mains.values()
+        if main.corporation_id is not None
     }
     corp_names = {
         c.corporation_id: c.name
@@ -57,8 +41,7 @@ def get_fleet_commander_metrics(request):
     out: List[EveFleetCommanderMetric] = []
     for row in rows:
         uid = row["created_by_id"]
-        player = players.get(uid)
-        char = player.primary_character if player else None
+        char = mains.get(uid)
         corp_id = (
             int(char.corporation_id)
             if char and char.corporation_id is not None

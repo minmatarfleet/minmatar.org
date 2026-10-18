@@ -1,4 +1,5 @@
-import { parse_response_error, query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 import type {
     AllianceHealthAttention,
     AllianceHealthAttentionBucket,
@@ -15,30 +16,10 @@ import type {
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/alliance/health`
 
 async function get_json<T>(access_token: string, path: string): Promise<T> {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}${path}`
-    const METHOD = 'GET'
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers,
-            method: METHOD,
-        })
-        if (!response.ok) {
-            throw new Error(
-                await parse_response_error(response, `${METHOD} ${ENDPOINT}`),
-                { cause: response.status },
-            )
-        }
-        return (await response.json()) as T
-    } catch (error) {
-        throw new Error(`Error fetching alliance health${path}: ${error.message}`, {
-            cause: error.cause,
-        })
-    }
+    return await api_request<T>(`${API_ENDPOINT}${path}`, {
+        token: access_token,
+        error: `Error fetching alliance health${path}`,
+    })
 }
 
 export async function get_alliance_health_overview(access_token: string) {
@@ -99,23 +80,11 @@ export async function post_alliance_health_status(
     action: 'promote' | 'leave' | 'restore',
     reason = '',
 ) {
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-    const ENDPOINT = `${API_ENDPOINT}/status`
-    const response = await fetch(ENDPOINT, {
-        headers,
+    return await api_request<any>(`${API_ENDPOINT}/status`, {
         method: 'POST',
-        body: JSON.stringify({ user_id, action, reason }),
+        token: access_token,
+        body: { user_id, action, reason },
     })
-    if (!response.ok) {
-        throw new Error(
-            await parse_response_error(response, `POST ${ENDPOINT}`),
-            { cause: response.status },
-        )
-    }
-    return await response.json()
 }
 
 export function alliance_health_counts_for_corp<T extends Record<string, number>>(

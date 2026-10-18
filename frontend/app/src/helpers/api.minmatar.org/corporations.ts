@@ -1,169 +1,80 @@
 import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects } from '@dtypes/api.minmatar.org'
-import { get_error_message } from '@helpers/string'
+import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
 
 export async function get_all_corporations(corporation_type:CorporationType) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as Corporation[];
-    } catch (error) {
-        throw new Error(`Error fetching corporations: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Corporation[]>(`${API_ENDPOINT}/corporations?corporation_type=${corporation_type}`, {
+        error: 'Error fetching corporations',
+    })
 }
 
 export async function get_corporation_by_id(access_token:string, id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/corporations/${id}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as Corporation;
-    } catch (error) {
-        throw new Error(`Error fetching corporation: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<Corporation>(`${API_ENDPOINT}/corporations/${id}`, {
+        token: access_token,
+        error: 'Error fetching corporation',
+    })
 }
 
 export async function get_corporation_info(id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/corporations/${id}/info`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
-        }
-
-        return await response.json() as CorporationInfo;
-    } catch (error) {
-        throw new Error(`Error fetching corporation: ${error.message}`);
-    }
-}
-
-async function authorized_get<T>(access_token: string, endpoint: string): Promise<T | null> {
-    const response = await fetch(endpoint, {
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${access_token}`,
-        },
+    return await api_request<CorporationInfo>(`${API_ENDPOINT}/corporations/${id}/info`, {
+        error: 'Error fetching corporation',
     })
-    if (response.status === 403 || response.status === 404) {
-        return null
-    }
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${endpoint}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as T
 }
 
 export async function get_corporation_members(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/members`
-    return await authorized_get<CorporationMemberDetails[]>(access_token, endpoint)
+    return await api_request<CorporationMemberDetails[] | null>(endpoint, {
+        token: access_token,
+        allow: [403, 404],
+    })
 }
 
 export async function get_corporation_id_by_slug(slug: string) {
-    const response = await fetch(`${API_ENDPOINT}/corporations/by-slug/${encodeURIComponent(slug)}`)
-    if (response.status === 404)
-        return null
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET corporations/by-slug/${slug}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as { corporation_id: number, slug: string }
+    return await api_request<{ corporation_id: number, slug: string } | null>(`${API_ENDPOINT}/corporations/by-slug/${encodeURIComponent(slug)}`, {
+        allow: [404],
+    })
 }
 
 export async function get_corporation_member_access(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/members/access`
-    return await authorized_get<{
+    return await api_request<{
         can_view_members: boolean,
         can_view_characters: boolean,
         can_edit_settings?: boolean,
         can_view_projects?: boolean,
         can_manage_projects?: boolean,
-    }>(access_token, endpoint)
+    } | null>(endpoint, {
+        token: access_token,
+        allow: [403, 404],
+    })
 }
 
 export async function get_corporation_open_applications(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/applications/open`
-    return await authorized_get<CorporationOpenApplication[]>(access_token, endpoint)
+    return await api_request<CorporationOpenApplication[] | null>(endpoint, {
+        token: access_token,
+        allow: [403, 404],
+    })
 }
 export async function get_corporation_projects(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/projects`
-    return await authorized_get<CorporationProjects>(access_token, endpoint)
+    return await api_request<CorporationProjects | null>(endpoint, {
+        token: access_token,
+        allow: [403, 404],
+    })
 }
 
 /** Queue a sync from ESI. Resolves to the API status: 202 queued, 409 no token, 429 already pending. */
 export async function refresh_corporation_projects(access_token: string, id: number) {
     const endpoint = `${API_ENDPOINT}/corporations/${id}/projects/refresh`
-    const response = await fetch(endpoint, {
+    const response = await api_response(endpoint, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${access_token}`,
-        },
+        token: access_token,
+        allow: [409, 429],
     })
     if (![202, 409, 429].includes(response.status)) {
-        throw new Error(get_error_message(response.status, `POST ${endpoint}`), {
+        throw new Error(`HTTP error! Status — ${response.status}`, {
             cause: response.status,
         })
     }

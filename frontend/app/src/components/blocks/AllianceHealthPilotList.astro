@@ -20,6 +20,7 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import AllianceHealthPilotCard from '@components/blocks/AllianceHealthPilotCard.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     rows: AllianceHealthPilotListRow[]
@@ -214,7 +215,7 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
         </div>
 
         {rows.length === 0 ? (
-            <p class="[ alliance-health-pilot-list__empty ]">{empty_label}</p>
+            <EmptyState title={empty_label} />
         ) : (
             <FlexInline gap="var(--space-xs)" class="[ alliance-health-pilot-list__pager ]">
                 <small>
@@ -313,7 +314,6 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
         display: none !important;
     }
 
-    .alliance-health-pilot-list__empty,
     .alliance-health-pilot-list__pager {
         color: var(--faded);
         font-size: var(--step--1);

@@ -6,12 +6,9 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 const is_friend = JSON.parse(Astro.url.searchParams.get('is_friend') ?? 'false') as boolean
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_guest_user, get_request_user } from '@helpers/request_user'
 
-const token_name = is_friend ? 'guest_auth_token' : 'auth_token'
-const auth_token = Astro.cookies.has(token_name) ? (Astro.cookies.get(token_name)?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = is_friend ? get_guest_user(Astro) : get_request_user(Astro)
 
 if (!user)
     return HTTP_403_Forbidden()
@@ -52,8 +49,7 @@ import Button from '@components/blocks/Button.astro';
     type="button"
     hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
     hx-swap="outerHTML transition:true"
-    hx-on--before-request="this.setAttribute('disabled','');"
-    hx-on--after-request="this.removeAttribute('disabled')"
+    hx-disabled-elt="this"
     x-data={`{
         button_label: '${updated ? t('discord_roles_updated') : t('refresh_discord_roles')}',
         init() {

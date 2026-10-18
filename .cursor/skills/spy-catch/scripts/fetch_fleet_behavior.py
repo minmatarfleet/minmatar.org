@@ -3,7 +3,7 @@
 Fetch Alliance fleet-behavior scorecards for spy-catch playbook.
 
 Usage (from repo root):
-  cd backend && pipenv run python ../.cursor/skills/spy-catch/scripts/fetch_fleet_behavior.py --json
+  cd backend && pipenv run python ../.claude/skills/spy-catch/scripts/fetch_fleet_behavior.py --json
 """
 
 from __future__ import annotations

@@ -4,15 +4,12 @@ Import these instead of re-implementing them per test module, so a change
 to how the site signs its tokens is made once.
 """
 
-import jwt
-from django.conf import settings
+from users.jwt_auth import encode_jwt
 
 
 def make_token(user) -> str:
     """A bearer JWT for user, signed the way the site signs its own."""
-    return jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
+    return encode_jwt({"user_id": user.pk})
 
 
 def auth_headers(user) -> dict:

@@ -8,14 +8,12 @@ interface Props {
     active_orders_locations:        OrderLocation;
     non_active_orders_locations:    OrderLocation[];
     is_history:                     boolean;
-    init_tooltips:                  boolean;
 }
 
 const {
     active_orders_locations,
     non_active_orders_locations,
     is_history,
-    init_tooltips,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -63,7 +61,6 @@ import Table from '@components/blocks/Table.astro';
                 <OrderItem
                     order={order}
                     location_name={active_orders_locations.location_name}
-                    init_tooltips={init_tooltips}
                 />
             </div>
         )}

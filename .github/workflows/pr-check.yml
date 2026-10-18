@@ -32,6 +32,34 @@ jobs:
       - name: Lint with black
         run: |
           black --check .
+  bot-check:
+    # The Discord bot (bot/) is a separate deployable; lint it and run its
+    # stdlib unittest suite (button custom_id contract, /timer off the loop).
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: bot
+    env:
+      DISCORD_BOT_TOKEN: ci-placeholder
+      MINMATAR_API_TOKEN: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pipenv
+          cache-dependency-path: bot/Pipfile.lock
+      - name: Install dependencies
+        run: |
+          pip install pipenv flake8
+          pipenv sync
+      - name: Lint with flake8
+        run: |
+          flake8 .
+      - name: Run tests
+        run: |
+          pipenv run python -m unittest discover -s tests -t .
   backend-check:
     runs-on: ubuntu-22.04
     defaults:

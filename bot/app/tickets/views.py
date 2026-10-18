@@ -2,6 +2,14 @@ import re
 
 import discord
 
+from app.custom_ids import (
+    HELP_TICKET_CLOSE_PREFIX,
+    HELP_TICKET_CLOSE_REASON_PREFIX,
+    HELP_TICKET_CLOSE_REASON_TEMPLATE,
+    HELP_TICKET_CLOSE_TEMPLATE,
+    custom_id,
+)
+
 from .close_flow import close_ticket
 
 
@@ -28,7 +36,7 @@ class CloseWithReasonModal(discord.ui.Modal, title="Close ticket"):
 
 class CloseTicketButton(
     discord.ui.DynamicItem[discord.ui.Button],
-    template=r"help_ticket_close:(?P<ticket_id>[0-9]+)",
+    template=HELP_TICKET_CLOSE_TEMPLATE,
 ):
     def __init__(self, ticket_id: int):
         super().__init__(
@@ -36,7 +44,7 @@ class CloseTicketButton(
                 label="Close",
                 style=discord.ButtonStyle.danger,
                 emoji="🔒",
-                custom_id=f"help_ticket_close:{ticket_id}",
+                custom_id=custom_id(HELP_TICKET_CLOSE_PREFIX, ticket_id),
             )
         )
         self.ticket_id = ticket_id
@@ -57,7 +65,7 @@ class CloseTicketButton(
 
 class CloseWithReasonButton(
     discord.ui.DynamicItem[discord.ui.Button],
-    template=r"help_ticket_close_reason:(?P<ticket_id>[0-9]+)",
+    template=HELP_TICKET_CLOSE_REASON_TEMPLATE,
 ):
     def __init__(self, ticket_id: int):
         super().__init__(
@@ -65,7 +73,7 @@ class CloseWithReasonButton(
                 label="Close With Reason",
                 style=discord.ButtonStyle.danger,
                 emoji="🔒",
-                custom_id=f"help_ticket_close_reason:{ticket_id}",
+                custom_id=custom_id(HELP_TICKET_CLOSE_REASON_PREFIX, ticket_id),
             )
         )
         self.ticket_id = ticket_id

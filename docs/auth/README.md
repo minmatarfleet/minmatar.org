@@ -4,7 +4,7 @@ How authentication and authorization work on minmatar.org.
 
 | Doc | Covers |
 |-----|--------|
-| [authentication.md](authentication.md) | Discord OAuth login, JWT issuance, `AuthBearer` |
+| [authentication.md](authentication.md) | Login entry points (Discord, EVE SSO), redirect allowlist, JWTs, `AuthBearer`, the bot service account |
 | [authorization.md](authorization.md) | PilotFeature evaluation, scopes, `can_use_feature()`, gating endpoints |
 | [discord-groups.md](discord-groups.md) | Fail-closed `auth.Group` ↔ Discord roles; source/reconcile rules |
 | [discord-groups-verification.md](discord-groups-verification.md) | Live test-guild OPSEC verification playbook + how to run |
@@ -16,7 +16,7 @@ How authentication and authorization work on minmatar.org.
 
 Two questions, two systems:
 
-1. **Who are you?** — Authentication. Discord OAuth produces a Django user and a JWT. Every API request carries that JWT.
+1. **Who are you?** — Authentication. Discord OAuth (website, desktop) or EVE SSO (mobile) produces a JWT. Every API request carries that JWT.
 2. **What can you do?** — Authorization. A single evaluator, `can_use_feature(user, code, **context)`, decides access per capability.
 
 Identity (affiliation, community status, Discord roles) and product capabilities (view fleets, apply to tribes) are separate. Capabilities are **PilotFeatures**: stable codes defined in a code registry and wired in the admin to affiliations, tribe groups, or auth groups.

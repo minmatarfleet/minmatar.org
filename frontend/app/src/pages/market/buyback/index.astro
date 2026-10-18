@@ -100,28 +100,28 @@ const leading_text = settings?.leading_text?.trim() || ''
                 >
                     <Steps
                         step={1}
-                        title='Copy items from your inventory (CTRL+A, CTRL+C)'
-                        subtitle='In-game'
+                        title={t('buyback.steps.copy')}
+                        subtitle={t('buyback.steps.in_game')}
                     />
 
                     <Steps
                         step={2}
-                        title='Paste on the text box below'
+                        title={t('buyback.steps.paste')}
                     />
 
                     <Steps
                         step={3}
-                        title='Click on the **Appraise** button'
+                        title={t('buyback.steps.appraise')}
                     />
 
                     <Steps
                         step={4}
-                        title='Wait for appraisal then click on **Create contract walkthrough**'
+                        title={t('buyback.steps.walkthrough')}
                     />
                     <Steps
                         step={5}
-                        title='Follow the instructions and create the contract'
-                        subtitle='In-game'
+                        title={t('buyback.steps.contract')}
+                        subtitle={t('buyback.steps.in_game')}
                     />
                 </Grid>
 

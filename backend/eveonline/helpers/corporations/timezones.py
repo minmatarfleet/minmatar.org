@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 
+from app.eve_time import as_eve_time
+from eveonline.helpers.characters.identity import character_ids_for_users
 from eveonline.helpers.corporations.kills import RecentKills
 from eveonline.models import EveCharacter, EvePlayer
 from fleets.endpoints.helpers import time_region
@@ -43,13 +45,7 @@ def observed_prime_buckets_for_users(
     ids = sorted({int(uid) for uid in user_ids if uid})
     if not ids:
         return {}
-    char_to_user = {
-        character_id: user_id
-        for character_id, user_id in EveCharacter.objects.filter(
-            user_id__in=ids
-        ).values_list("character_id", "user_id")
-        if character_id and user_id
-    }
+    char_to_user = character_ids_for_users(ids)
     if not char_to_user:
         return {}
     cutoff = timezone.now() - timedelta(days=days)
@@ -102,11 +98,7 @@ def weekday_distribution(
     ids = sorted({int(uid) for uid in user_ids if uid})
     members = {day: set() for day in range(7)}
     if ids:
-        char_to_user = dict(
-            EveCharacter.objects.filter(user_id__in=ids).values_list(
-                "character_id", "user_id"
-            )
-        )
+        char_to_user = character_ids_for_users(ids)
         cutoff = timezone.now() - timedelta(days=days)
         rows = EveFleetInstanceMember.objects.filter(
             character_id__in=list(char_to_user),
@@ -116,7 +108,7 @@ def weekday_distribution(
             user_id = char_to_user.get(character_id)
             if not user_id or join_time is None:
                 continue
-            members[_eve_time(join_time).weekday()].add(user_id)
+            members[as_eve_time(join_time).weekday()].add(user_id)
     return [
         {"day": day, "members": len(members[day]), "kills": kill_days[day]}
         for day in range(7)
@@ -141,7 +133,7 @@ def _kills_by_weekday(
     for killmail_id in kills.killmails_for(character_ids):
         killmail_time = kills.times.get(killmail_id)
         if killmail_time is not None:
-            counts[_eve_time(killmail_time).weekday()] += 1
+            counts[as_eve_time(killmail_time).weekday()] += 1
     return counts
 
 
@@ -170,17 +162,8 @@ def timezone_distribution(
     ]
 
 
-def _eve_time(join_time: datetime) -> datetime:
-    aware = (
-        timezone.make_aware(join_time)
-        if timezone.is_naive(join_time)
-        else join_time
-    )
-    return aware.astimezone(dt_timezone.utc)
-
-
 def _bucket_for(join_time: datetime) -> str | None:
-    bucket = time_region(_eve_time(join_time))
+    bucket = time_region(as_eve_time(join_time))
     if bucket not in PRIME_BUCKETS:
         return None
     return bucket

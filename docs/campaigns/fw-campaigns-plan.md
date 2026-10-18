@@ -1,6 +1,16 @@
 # Faction Warfare Campaigns — v1.2 Specification (implementation-ready)
 
-Status: final pre-implementation revision, 2026-09-19. Supersedes every earlier draft in this file. Owner: TBD.
+> **Historical plan.** Built in #2787 (September 2026). The current description of the code is `backend/campaigns/README.md`; where the two disagree, the README and the code are right. Changed since this plan:
+>
+> - Day streaks, shields and the streak-at-risk notification flag (`notify_streak_at_risk`) were dropped (#2805). The leaderboard gained an FCs tab.
+> - The `/campaigns/[slug]/roster` pilot list became corporation statistics (#2808); the roster endpoint still returns the pilots.
+> - Event codes 516, 359 and 373 are confirmed alongside 371 and 367 (#2801).
+> - A kill counts once per pilot and once per corporation (#2851).
+> - Objective rows show the move since the week opened (#2839).
+> - Corporation projects can be attached to a campaign (#2840).
+> - The ESI budget gate is shared with the structure notification poller (#2792).
+
+Status when written: final pre-implementation revision, 2026-09-19. Supersedes every earlier draft in this file.
 Companion page with mockups: https://claude.ai/artifact/Uxe9hGat5o7B5bokhmPFxG
 
 ---

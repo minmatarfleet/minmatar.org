@@ -17,8 +17,10 @@ import {
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
-import FactionWarfareCruiserGuideMatchupChart from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideMatchupChart.astro'
-import FactionWarfareCruiserGuideShipSection from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideShipSection.astro'
+import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
+import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
+import { getGuideFittingsForShip } from '@/data/faction-warfare-cruiser-guide'
+import { resolveMatchupOpponentShip } from '@/data/faction-warfare-cruiser-guide/opponent-ships'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 
@@ -111,7 +113,7 @@ try {
                     <div class="fwc-charts-grid">
                         {
                             matchupCharts.map((chart) => (
-                                <FactionWarfareCruiserGuideMatchupChart chart={chart} />
+                                <GuideMatchupChart chart={chart} />
                             ))
                         }
                     </div>
@@ -121,7 +123,15 @@ try {
             <div class="fwc-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <FactionWarfareCruiserGuideShipSection ship={ship} fittingLibrary={fittingLibrary} />
+                        <GuideShipSection
+                            ship={ship}
+                            fittings={getGuideFittingsForShip(ship.id)}
+                            fitting_library={fittingLibrary}
+                            hull_class="Cruiser"
+                            id_prefix="fwc"
+                            resolve_opponent={resolveMatchupOpponentShip}
+                            fits_lead="Example fittings for each role above. Copy into Pyfa / EFT, then tune for your skills and contracts."
+                        />
                     ))
                 }
             </div>
@@ -170,10 +180,9 @@ try {
 <style lang="scss">
     .fwc-guide {
         --fwc-display-font: 'Orbitron', var(--heading-font);
-        --fwc-body-font: 'Source Sans 3', var(--body-font);
         --fwc-panel-padding-block: var(--component-padding-block);
         --fwc-panel-padding-inline: var(--space-l-xl);
-        font-family: var(--fwc-body-font);
+        font-family: inherit;
     }
 
     .fwc-panel {

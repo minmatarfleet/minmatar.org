@@ -8,7 +8,6 @@ import type { FleetItem, DoctrineType, HeroFittings } from '@dtypes/layout_compo
 interface Props {
     fleet:                  FleetItem;
     doctrine?:              DoctrineType | null;
-    init_tooltips:          boolean;
     supply_contracts?:      Contract[];
     /** Render the scrolling fittings/contracts strip under the hero. */
     show_fittings?:         boolean;
@@ -17,7 +16,6 @@ interface Props {
 const {
     fleet,
     doctrine,
-    init_tooltips,
     supply_contracts = [],
     show_fittings = true,
 } = Astro.props
@@ -96,7 +94,6 @@ import TextBox from '@components/layout/TextBox.astro';
                                     <div
                                         class="[ text-highlight h-[16px] ]"
                                         data-tippy-content={t('fleet_commander_fleets')}
-                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                     >
                                         <FleetIcon size={16} />
                                     </div>

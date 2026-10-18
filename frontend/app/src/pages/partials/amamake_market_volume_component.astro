@@ -4,6 +4,7 @@ import {
     get_latest_issue,
     SOLD_CLASS_ALL,
 } from '@/data/amamake-market'
+import { get_request_user } from '@helpers/request_user'
 import AmamakeMarketVolume from '@components/blocks/amamake-market/AmamakeMarketVolume.astro'
 
 const issue_slug = Astro.url.searchParams.get('issue') ?? ''
@@ -11,9 +12,7 @@ const page = Number(Astro.url.searchParams.get('page') ?? '1') || 1
 const sold_class = Astro.url.searchParams.get('sold_class') ?? SOLD_CLASS_ALL
 const q = Astro.url.searchParams.get('q') ?? ''
 const issue = get_issue(issue_slug) ?? get_latest_issue()
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+const { auth_token } = get_request_user(Astro)
 ---
 
 <AmamakeMarketVolume

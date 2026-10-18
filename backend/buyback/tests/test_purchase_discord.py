@@ -13,6 +13,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from buyback.discord_tasks import close_buyback_purchase_thread_task
 from buyback.helpers.purchase_discord import (
     format_isk_compact,
     notify_purchase_created,
@@ -140,10 +141,14 @@ class PurchaseDiscordTestCase(TestCase):
         self.assertIsNone(self.order.discord_thread_id)
         discord_mock.create_forum_thread.assert_not_called()
 
-    @patch("buyback.helpers.purchase_discord.time.sleep")
+    @patch.object(
+        close_buyback_purchase_thread_task,
+        "apply_async",
+        wraps=close_buyback_purchase_thread_task.apply_async,
+    )
     @patch("buyback.helpers.purchase_discord.discord")
     def test_completed_posts_then_closes_thread(
-        self, discord_mock, sleep_mock
+        self, discord_mock, close_later
     ):
         self.order.status = BuybackPurchaseOrder.Status.COMPLETED
         self.order.discord_thread_id = 555
@@ -152,13 +157,17 @@ class PurchaseDiscordTestCase(TestCase):
         discord_mock.create_message.assert_called_once()
         payload = discord_mock.create_message.call_args.kwargs["payload"]
         self.assertIn("Sale completed", payload["content"])
-        sleep_mock.assert_called_once()
+        close_later.assert_called_once_with(args=[555], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=555)
 
-    @patch("buyback.helpers.purchase_discord.time.sleep")
+    @patch.object(
+        close_buyback_purchase_thread_task,
+        "apply_async",
+        wraps=close_buyback_purchase_thread_task.apply_async,
+    )
     @patch("buyback.helpers.purchase_discord.discord")
     def test_cancelled_posts_then_closes_thread(
-        self, discord_mock, sleep_mock
+        self, discord_mock, close_later
     ):
         self.order.status = BuybackPurchaseOrder.Status.CANCELLED
         self.order.discord_thread_id = 777
@@ -167,7 +176,7 @@ class PurchaseDiscordTestCase(TestCase):
         discord_mock.create_message.assert_called_once()
         payload = discord_mock.create_message.call_args.kwargs["payload"]
         self.assertIn("Sale cancelled", payload["content"])
-        sleep_mock.assert_called_once()
+        close_later.assert_called_once_with(args=[777], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
 
 

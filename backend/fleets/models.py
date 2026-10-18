@@ -1,12 +1,12 @@
 import logging
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from app.links import fitting_url, fleet_edit_url
+from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
@@ -16,7 +16,6 @@ from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 
-discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 # ESI rejects fleet MOTDs longer than this (characters).
@@ -186,8 +185,9 @@ class EveFleet(models.Model):
             self.id,
             self.audience.discord_channel_id,
         )
-        discord.create_message(
+        queue_channel_message(
             self.audience.discord_channel_id,
+            context=f"fleet {self.id} start ping",
             payload=get_fleet_discord_notification(
                 fleet_id=self.id,
                 fleet_type=self.get_type_display(),
@@ -1025,8 +1025,7 @@ def _fitting_web_url(fitting_id):
     """Public fitting page for a catalog fit; None for manual fits."""
     if not fitting_id:
         return None
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/ships/fittings/{fitting_id}"
+    return fitting_url(fitting_id)
 
 
 def _motd_composition(eve_fleet, in_game=True):
@@ -1053,8 +1052,7 @@ def _motd_composition(eve_fleet, in_game=True):
 
 def _motd_fleet_edit_url(eve_fleet):
     """URL to the fleet edit page for MOTD."""
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/edit/{eve_fleet.id}"
+    return fleet_edit_url(eve_fleet.id)
 
 
 class EveFleetAudience(models.Model):

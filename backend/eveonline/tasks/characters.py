@@ -19,11 +19,12 @@ from eveonline.helpers.characters import (
     update_character_planets as refresh_character_planets,
     update_character_skills as refresh_character_skills,
 )
+from eveonline.helpers.alliances import tracked_alliance_ids
 from eveonline.helpers.characters.corporation_history import (
     CORPORATION_HISTORY_TTL,
     sync_character_corporation_history,
 )
-from eveonline.models import EveCharacter, EveAlliance
+from eveonline.models import EveCharacter
 from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
@@ -204,10 +205,9 @@ def queue_stale_character_corporation_history(
 @app.task
 def update_alliance_characters():
     """Queue update_character for each alliance character (assets, skills, killmails)."""
+    # Tracked scope: characters in any alliance we sync, not only FL33T/BUILD.
     alliance_characters = EveCharacter.objects.filter(
-        alliance_id__in=EveAlliance.objects.all().values_list(
-            "alliance_id", flat=True
-        )
+        alliance_id__in=tracked_alliance_ids()
     )
     users_with_alliance_chars = User.objects.filter(
         evecharacter__in=alliance_characters

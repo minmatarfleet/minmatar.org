@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetItem } from '@dtypes/layout_components'
@@ -14,7 +15,6 @@ interface Props {
     fleet:          FleetItem;
     doctrine?:      FleetScheduleDoctrine | null;
     result?:        FleetResult | null;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
@@ -22,7 +22,6 @@ const {
     fleet,
     doctrine = null,
     result = null,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -39,7 +38,7 @@ const length_text = length_minutes === null ? '—' :
     `${Math.floor(length_minutes / 60)}h ${(length_minutes % 60).toString().padStart(2, '0')}m`
 const left_on = length_minutes !== null && length_minutes > LEFT_ON_HOURS * 60
 
-const day = new Date(started).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+const day = eve_day_short(lang, started, { weekday: true })
 const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
 const fc_line = [ fleet.fleet_commander_name, doctrine?.name ].filter(Boolean).join(' · ')
 
@@ -76,7 +75,6 @@ import FleetPortrait from '@components/blocks/FleetPortrait.astro'
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
                 size={28}
-                init_tooltips={init_tooltips}
             />
             <small>{fc_line}</small>
         </span>

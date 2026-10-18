@@ -18,13 +18,14 @@ from eveuniverse.models import (
 )
 
 from eveonline.models import (
-    EveCharacter,
     EveCharacterIndustryJob,
     EveCharacterMiningEntry,
     EveCharacterPlanetOutput,
     EveCorporationIndustryJob,
 )
-from eveonline.helpers.characters import character_primary
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_characters,
+)
 from market.helpers.pricing import get_history_averages_by_type_id
 
 ACTIVITY_MANUFACTURING = 1
@@ -70,24 +71,16 @@ def _resolve_to_primary_producers(character_refs):
     """
     if not character_refs:
         return []
-    ids = [c["id"] for c in character_refs]
-    characters = {
-        c.character_id: c
-        for c in EveCharacter.objects.filter(character_id__in=ids)
-    }
+    primaries = primary_characters_for_characters(
+        c["id"] for c in character_refs
+    )
     # primary_id -> (name, total_value_isk)
     merged: dict[int, tuple[str, float]] = {}
     for ref in character_refs:
         cid = ref["id"]
         cname = ref["name"] or ""
         value = ref.get("total_value_isk") or 0.0
-        char = characters.get(cid)
-        primary = None
-        if char:
-            try:
-                primary = character_primary(char)
-            except (AttributeError, TypeError):
-                pass
+        primary = primaries.get(cid)
         if primary:
             pid, pname = primary.character_id, primary.character_name or ""
             if pid not in merged:

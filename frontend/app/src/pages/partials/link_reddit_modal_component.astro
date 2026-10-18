@@ -1,12 +1,12 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
-import { get_api_url } from '@helpers/env'
+import { set_reddit_username } from '@helpers/api.minmatar.org/creators'
+// no-error-refetch: mutation form; a failed save shows inline in the form.
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+const { auth_token } = get_request_user(Astro)
 
 const PARTIAL_URL = translatePath('/partials/link_reddit_modal_component')
 
@@ -24,18 +24,7 @@ if (Astro.request.method === 'POST') {
             form_error = t('content.connect.reddit_username_required')
         } else {
             try {
-                const response = await fetch(`${get_api_url()}/api/creators/reddit`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${auth_token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username }),
-                })
-                if (!response.ok) {
-                    const body = await response.json().catch(() => ({}))
-                    throw new Error(body.detail || `HTTP ${response.status}`)
-                }
+                await set_reddit_username(auth_token as string, username)
                 saved = true
             } catch (error) {
                 form_error = (error as Error).message

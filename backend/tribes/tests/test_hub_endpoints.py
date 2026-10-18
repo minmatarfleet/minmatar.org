@@ -258,9 +258,7 @@ class TribeGroupShowcaseTestCase(TestCase):
         self.assertTrue(data["manual"])
         self.assertEqual(data["contributors"], [])
 
-    @patch(
-        "tribes.endpoints.groups.get_tribe_group_showcase.build_group_showcase"
-    )
+    @patch("tribes.endpoints.groups.get_tribe_group_showcase.group_showcase")
     def test_hidden_roster_strips_contributor_names(self, mock_build):
         self.group.roster_hidden = True
         self.group.save(update_fields=["roster_hidden"])

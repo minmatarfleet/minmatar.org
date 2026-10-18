@@ -31,16 +31,11 @@ const { rows = 6 } = Astro.props
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .ops-sell-gaps-skeleton .skel {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.06) 100%
-        );
-        background-size: 200% 100%;
-        animation: ops-sell-gaps-skel 1.1s ease-in-out infinite;
+        @include skeleton.shimmer;
     }
 
     .ops-sell-gaps-skeleton__card {
@@ -53,7 +48,7 @@ const { rows = 6 } = Astro.props
         align-items: center;
         gap: var(--space-s);
         padding: var(--space-2xs) var(--space-s);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--hairline-medium);
         background: rgba(0, 0, 0, 0.16);
     }
 
@@ -91,16 +86,7 @@ const { rows = 6 } = Astro.props
     .skel-metrics {
         width: 100%;
         height: 1.4rem;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--hairline);
         border-top: none;
-    }
-
-    @keyframes ops-sell-gaps-skel {
-        0% {
-            background-position: 100% 0;
-        }
-        100% {
-            background-position: -100% 0;
-        }
     }
 </style>

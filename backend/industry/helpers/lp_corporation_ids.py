@@ -78,6 +78,8 @@ def corporation_ids(names) -> dict[str, int]:
 
 def _queue_esi_lookup(names: list[str]) -> None:
     names = sorted(names)
+    # Queue dedupe, not a lock: never released, it lapses after
+    # QUEUE_LOCK_TTL (see app.locks).
     lock = CACHE_PREFIX + "queued:" + _key("|".join(names))
     if not cache.add(lock, 1, QUEUE_LOCK_TTL):
         return

@@ -1,19 +1,21 @@
 # Minmatar Fleet desktop app
 
-An Electron app for Windows that signs you in with Discord, the same way my.minmatar.org does, and shows **Upcoming Fleets** in an EVE-styled window. You can pin that window as a glass overlay over the EVE client.
+An Electron app for Windows that signs you in with Discord, the same way my.minmatar.org does, and shows your fleets in an EVE-styled **Fleet** window, with optional **Campaigns** and **Intel** windows. They sit as glass overlays on the EVE client.
 
 ## What it does
 
 - **Discord sign-in.** The app calls the backend's existing `GET /api/users/login?redirect_url=…`. The backend sends your browser to Discord, then redirects back to `redirect_url?token=<JWT>`, exactly as it does for the website. The desktop app's `redirect_url` is a one-shot listener on `http://127.0.0.1:<random port>/callback/<random nonce>`, so the token goes straight to the app. No backend changes were needed.
 - **Token storage.** The JWT is encrypted with Electron `safeStorage` (Windows DPAPI, tied to your Windows account) in `%APPDATA%\Minmatar Fleet\session.bin`. It is only ever used from the main process as `Authorization: Bearer …`; the windows never see it. **Sign out** deletes it.
-- **Upcoming Fleets.** Shows the same list as the website's Upcoming Fleets page (`GET /api/fleets/v3?fleet_filter=active`), with FC names from `/api/users/profiles`, doctrine names from `/api/doctrines/{id}`, EVE-time start, and a live countdown. It refreshes every minute while it's on screen. Click a fleet to open it in the window.
-- **Fleet view.** When you're in a fleet (or open one from the list), the same window shows that fleet, from one call: `GET /api/fleets/window/current` (or `/api/fleets/{id}/window` for a fleet you opened). What you see depends on who you are:
-  - **FC** (you created the fleet, or one of your characters is the in-game boss): pilots in fleet, how many are with you, kills and losses, each doctrine ship flying vs signed up, roles nobody covers, and the pilots who need a nudge (in a pod, off doctrine, docked, not with the fleet). The **Pilots** tab is the roster; only the FC gets it. **Refresh MOTD** pushes the in-game MOTD. At the window's minimum size this becomes a glance strip.
-  - **Member**: your ship (doctrine ship or not), how many jumps you are behind the fleet, what the fleet is short of, and the doctrine fits to copy as EFT. No roster.
-  - **Not in it yet**: countdown, form-up place and jumps, and the ships to pick from; picking one signs you up (`PUT /my-ship-volunteers`).
-  - **Ship lost**: shown once per loss, with SRP (the killmail link goes on your clipboard) and where to reship. **After-action** (FC, once the fleet closes): ISK killed vs lost and what's still open (AAR link, unfiled SRP).
+- **Fleet window** (listed as "Upcoming Fleets" in Settings). Three tabs in the title bar, always reachable:
+  - **Fleet**: the fleet you're in, from one call: `GET /api/fleets/window/current`. What you see depends on who you are:
+    - **FC** (you created the fleet, or one of your characters is the in-game boss): Overview, Pilots and Kills views. Pilots in fleet, how many are with you, kills and losses, each doctrine ship flying vs signed up, roles nobody covers, pilots who signed up but aren't in fleet, and the pilots who need a nudge (in a pod, off doctrine, docked, not with the fleet). Only the FC gets the roster. **Refresh MOTD** pushes the in-game MOTD. At the window's minimum size this becomes a glance strip. When the fleet ends, a wrap-up card shows ISK killed vs lost and what's still open (AAR link, unfiled SRP) until you press Done.
+    - **Member**: your ship (doctrine ship or not), how many jumps you are behind the fleet, what the fleet is short of, and the doctrine fits to copy as EFT. No roster.
+    - **Ship lost**: a card on top of the Fleet tab with **File SRP** (the killmail link goes on your clipboard) and **Reship**. Closing the card hides it; you never lose the fleet behind it.
+    - **Not in a fleet**: your sign-up that formed without you (three form-up steps), the fleet you FC within 3 hours (pre-flight checklist, pre-ping, **Start fleet**), or else your next fleet. Each of these is one `GET /api/fleets/{id}/window` call.
+  - **Upcoming**: the same list as the website's Upcoming Fleets page (`GET /api/fleets/v3?fleet_filter=active`), with FC names from `/api/users/profiles`, doctrine names from `/api/doctrines/{id}`, EVE and local start times and a live countdown; rows you're in or signed up for are marked. Open a fleet to pick a ship (`PUT /api/fleets/{id}/my-ship-volunteers` signs you up) or ask for a **Remind me** desktop notification 15 minutes before it starts.
+  - **Recent**: SRP you still owe, then your fleets from the last 30 days (`GET /api/fleets/window/mine`, which also carries your sign-ups).
 
-  "You" is always the character whose EVE client is in front. Jumps come from ESI's public route API, asked once per pair of systems.
+  While you're in a live fleet, the other tabs show a strip back to it. The fleet calls send ETags, so an unchanged fleet costs a 304. **Set destination** on a system the window shows is one ESI write per click (`POST /api/eveonline/characters/{id}/waypoint`); it needs the optional **Desktop** ESI scope group, which the website's add-character dialog turns on by default (waypoint and open window, location, ship, online status, jump fatigue). "You" is always the character whose EVE client is in front. Jumps come from ESI's public route API, asked once per pair of systems.
 - **Overlay windows** live on EVE: they sit directly on top of the client, never take focus from the game, and let clicks pass through everywhere except their buttons and rows. They show while a logged-in EVE client is on screen (an app brought in front of EVE covers them like it covers EVE) and hide otherwise. A client still at character select doesn't count. The pin button pins them in place; unpin to drag a window by its header and resize it from the corner. The background is a live blur of the game behind it.
 - **Matches your EVE transparency.** The window background follows the **Settings → Windows** transparency (`windowTransparency`) of the character whose client is in front. That character is identified from its window title (`EVE - <name>`, resolved to an ID with ESI's public name lookup). The app reads it, read-only, from EVE's own `%LOCALAPPDATA%\CCP\EVE\*_tq_tranquility\settings_*\core_char_<id>.dat`. With no client in front it uses the last character that saved settings, and it picks up a changed value when EVE next saves the file. Only the background changes; text stays fully opaque.
 
@@ -21,6 +23,9 @@ An Electron app for Windows that signs you in with Discord, the same way my.minm
 - **Intel** (off by default; turn it on in Settings). Copy a d-scan or Local member list in EVE, click **Paste** (or Ctrl+V while the window has focus), check the preview (ship counts, or for Local the militia, alliance and standing breakdown) and click **Share**: the report goes to the alliance intel sheet (`POST /api/intel/reports`) and its my.minmatar.org link is copied for fleet chat. The window lists the last two hours of reports and the feed's capital and Amarr fleet pings (`GET /api/intel/recent`, every 30 s while the window is on screen), biggest hulls first with the rest behind "+N". Jumps are counted on the PC from the SDE gate graph (`GET /api/intel/map`), so your location never leaves it.
 - **Settings and Sneak.** Settings lists the overlay windows from `src/main/windows.js` so pilots pick which ones they use (Upcoming Fleets, Campaigns and Intel), plus the overlay toggles, account, version and updates. Open it by clicking **Sneak**, who peeks over EVE's notification badge, or from the gear button or the tray. Sneak's spot is computed from EVE's own settings: `notification_badge_offset` in `core_char_<id>.dat` (from the client's bottom-right corner, default 16,16) and the UI scale in `core_public__.yaml`. He only shows on a logged-in client, including while it's on screen under another app.
 - **Version** is shown in every window's footer and in Settings.
+- **Fade on right-click** (Settings, on by default). EVE draws its context menus inside the client, under our windows, so the windows near a right-click in EVE are hidden (page and glass) until the click that picks or dismisses the menu, or 20 seconds for Esc. The helper reads mouse button state only while the setting is on and a client is in front: no input hook, nothing sent to EVE (`src/main/menu_fade.js`).
+- **Taskbar stays down.** Overlay, Sneak and Settings windows are tool windows with no taskbar button, so showing them over a Fixed Window client doesn't bring the Windows taskbar up.
+- **Settings follow your account.** Window positions, sizes and toggles are saved on your my.minmatar.org account (`GET`/`PATCH /api/users/me/desktop-settings`, sent as a merge of the keys that changed), so they follow you to any PC. Only the session token is stored on disk. If the API is down the app runs on defaults and keeps retrying (`src/main/settings.js`).
 
 It never reads EVE's memory, injects into the client, reads the screen, or sends input to the game. It only looks at which window is in front and where the EVE windows are.
 
@@ -43,6 +48,8 @@ npm run dist              # dist/MinmatarFleet-<version>-x64.exe (installer) + -
 npx electron-builder --win portable --publish never "-c.extraMetadata.version=0.4.0-dev.1"   # local test build, labelled as dev
 ```
 
+`test/contracts/*.json` are API payloads the backend's tests write from its real endpoints; `test/contracts.test.js` renders them through the app. Don't edit them by hand: regenerate them from `backend/` with `UPDATE_CONTRACTS=1`.
+
 Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`), `--diag=<file>` for a JSON-lines event log, `--client-procs=exefile,powershell` to treat a stand-in window titled `EVE - <Name>` as a client while testing without the game.
 
 | Path | |
@@ -56,13 +63,25 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 | `src/main/eve_logs/` | Chat/game log engine (below) |
 | `src/main/overlay_rules.js` | When the windows show (on a logged-in client, under apps brought in front of it; screenshot tools and the taskbar don't hide them) |
 | `src/main/main.js` | Windows, overlay mode, tray, refresh loop |
+| `src/main/windows.js` | The overlay windows Settings offers (id, title, page, sizes, default on/off) |
+| `src/main/settings.js` | Account-saved settings: load with retry, merge writes with backoff |
+| `src/main/config.js` | API and website URLs (`--api` / `--web`, defaults to production) |
+| `src/main/intel.js` + `src/main/intel_map.js` | Intel window data and share flow; jump counts from the SDE gate graph on this PC |
+| `src/main/menu_fade.js` | Fade on right-click: which windows to hide around a context menu, and when to bring them back |
+| `src/main/mascot.js` | Where Sneak sits, from EVE's notification badge offset and UI scale |
+| `src/main/updater.js` | Auto-update from GitHub Releases |
+| `src/main/esi.js` | The public ESI calls the app makes itself (name lookups, jump counts): one User-Agent, pinned API version, session cache |
+| `src/main/ipc_commands.js` | Every command a window may send to the main process, and the checks on its values (`preload.js` keeps a tested copy) |
+| `src/main/poller.js` | One polling policy for every window: runs only while the window can show, refetches when stale, backs off on failure |
+| `src/main/settings_schema.js` | The account-saved settings keys, their shapes and defaults: a contract between app versions |
+| `src/main/web_routes.js` | Every website page the app opens, built from the configured website URL (the backend's are in `backend/app/links.py`) |
 | `src/renderer/` | EVE-styled windows (`eve-window.css`, shared chrome in `eve_window.js`), sign-in, fleets and campaigns UI |
 
 ## Updates and releases
 
 The **installer** build updates itself from this repo's GitHub Releases ([electron-updater](https://www.electron.build/auto-update), `src/main/updater.js`). It checks at start-up and every 4 hours and downloads new versions in the background. When an update is ready, the footer of every overlay window (Fleets, Campaigns, Intel) and the tray menu show **Restart to update**; otherwise the update installs the next time the app quits. The **portable** exe can't replace itself: the same footers show "v… available" and link to the release.
 
-To release, bump the version and merge. It uses semantic versioning: **patch** for fixes, **minor** for features, **major** for breaking changes. The full rules are in [.claude/rules/desktop-release.md](../.claude/rules/desktop-release.md).
+To release, bump the version and merge. It uses semantic versioning: **patch** for fixes, **minor** for features, **major** for breaking changes. The full rules are in [.claude/rules/desktop-release.md](../.claude/rules/desktop-release.md), including the backend contract: desktop endpoints change additively, and every request names its version in `X-Minmatar-Client` so the backend can tell when an old release has stopped calling before a field it reads is removed.
 
 ```
 npm version minor --no-git-tag-version   # updates package.json + package-lock.json

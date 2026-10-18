@@ -42,7 +42,7 @@ const format_value = (value:number) => value.toFixed(0)
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 <Flexblock
@@ -88,7 +88,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     {rows.length === 0 ?
         <small>{t('campaigns.corporations.board_none')}</small>
         :
-        <CampaignTable
+        <DataGrid
             min_width='17rem'
             template='2.5rem minmax(6rem, 1fr) 3.5rem 5.5rem'
             numeric={[ 0, 2, 3 ]}
@@ -100,9 +100,9 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             ]}
         >
             {rows.map(row =>
-                <div class="[ campaign-table-row ]" role="row">
-                    <span role="cell" class="[ campaign-table-numeric ]">{row.rank}</span>
-                    <div class="[ campaign-cell-media ]" role="cell">
+                <div class="[ data-grid-row ]" role="row">
+                    <span role="cell" class="[ data-grid-numeric ]">{row.rank}</span>
+                    <div class="[ data-grid-media ]" role="cell">
                         {row.corporation_id &&
                             <img
                                 loading='lazy'
@@ -114,11 +114,11 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         }
                         <span>{row.corporation_name || t('campaigns.corporations.unknown')}</span>
                     </div>
-                    <span role="cell" class="[ campaign-table-numeric ]" title={t('campaigns.corporations.board_pilots_hint')}>{row.pilots}</span>
-                    <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
+                    <span role="cell" class="[ data-grid-numeric ]" title={t('campaigns.corporations.board_pilots_hint')}>{row.pilots}</span>
+                    <span role="cell" class="[ data-grid-numeric ]">{format_value(row.value)}</span>
                 </div>
             )}
-        </CampaignTable>
+        </DataGrid>
     }
 </Flexblock>
 

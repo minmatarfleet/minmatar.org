@@ -1,11 +1,19 @@
 """Tests for tribes router endpoints."""
 
+from unittest.mock import patch
+
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
 
+from discord.models import DiscordUser
 from eveonline.models import EveCharacter
+from notifications.models import (
+    NotificationChannel,
+    NotificationDelivery,
+    NotificationPreference,
+)
 from tribes.models import (
     Tribe,
     TribeGroup,
@@ -118,6 +126,60 @@ class MembershipApplyTestCase(TestCase):
         data = response.json()
         self.assertEqual(data["status"], "pending")
         self.assertEqual(data["user_id"], self.user.pk)
+
+    def _apply(self):
+        return self.client.post(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships",
+            data={"character_ids": [self.character.pk]},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def _make_chief(self):
+        chief = User.objects.create_user(username="chief")
+        DiscordUser.objects.create(id=777, discord_tag="chief#1", user=chief)
+        self.tribe_group.chief = chief
+        self.tribe_group.save()
+        return chief
+
+    @patch("notifications.service.deliver_notification")
+    @patch("notifications.channels.DiscordClient")
+    def test_apply_notifies_chief_after_commit(self, discord_cls, deliver):
+        chief = self._make_chief()
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self._apply()
+        self.assertEqual(response.status_code, 200)
+        # Nothing is sent to Discord inside the request.
+        discord_cls.assert_not_called()
+        deliver.delay.assert_not_called()
+
+        delivery = NotificationDelivery.objects.get(
+            user=chief, notification_type="tribes.membership_requested"
+        )
+        self.assertEqual(NotificationChannel.DISCORD, delivery.channel)
+        # Same words as the old plain DM.
+        self.assertEqual(
+            "**New tribe membership application** for **Mining** "
+            "(Mining): miner has applied. Please review in the admin "
+            "panel.",
+            delivery.payload["discord_message"],
+        )
+        for callback in callbacks:
+            callback()
+        deliver.delay.assert_called_once_with(delivery.id)
+
+    def test_chief_can_mute_application_pings(self):
+        chief = self._make_chief()
+        NotificationPreference.objects.create(
+            user=chief,
+            notification_type="tribes.membership_requested",
+            channel=NotificationChannel.DISCORD,
+            enabled=False,
+        )
+        response = self._apply()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(NotificationDelivery.objects.exists())
 
     def test_apply_twice_returns_400(self):
         self.client.post(

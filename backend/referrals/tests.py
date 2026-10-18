@@ -60,3 +60,53 @@ class ReferralRouterTestCase(TestCase):
         response = self.record(**{"X-Shared-Secret": ""})
         self.assertEqual(403, response.status_code)
         self.assertFalse(ReferralClick.objects.exists())
+
+    def test_redirect_counts_one_click_per_proxied_address(self):
+        code = f"Q{self.user.id * 83 + 7}"
+        for n in range(3):
+            response = self.client.get(
+                BASE_URL,
+                {"code": code, "page": "Corps"},
+                HTTP_X_FORWARDED_FOR=f"198.51.100.{n}, 203.0.113.7",
+            )
+            self.assertEqual(302, response.status_code)
+
+        self.assertEqual(
+            1, ReferralClick.objects.filter(user_id=self.user.id).count()
+        )
+
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
+    def test_redirect_targets_in_production(self):
+        response = self.client.get(f"{BASE_URL}?page=corps&code=Q90")
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(
+            "https://my.minmatar.org/alliance/corporations/list/",
+            response["Location"],
+        )
+        response = self.client.get(f"{BASE_URL}?page=nope&code=Q90")
+        self.assertEqual(
+            "https://my.minmatar.org/badreferral", response["Location"]
+        )
+
+    @override_settings(WEB_LINK_URL="http://localhost:4321")
+    def test_redirect_targets_follow_web_link_url(self):
+        response = self.client.get(f"{BASE_URL}?page=Freight&code=Q90")
+        self.assertEqual(
+            "http://localhost:4321/market/freight/standard/",
+            response["Location"],
+        )
+        response = self.client.get(
+            f"{BASE_URL}/links",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(
+            {
+                "http://localhost:4321/alliance/corporations/list/",
+                "http://localhost:4321/market/freight/standard/",
+                "http://localhost:4321/learning/guides/"
+                "faction-warfare-plexing/",
+                "http://localhost:4321/learning/guides/"
+                "faction-warfare-advantage/",
+            },
+            {link["target"] for link in response.json()},
+        )

@@ -1,8 +1,7 @@
-import * as jose from 'jose'
-
 import type { User } from '@dtypes/jwt'
 import type { GateSource, UserGates } from '@dtypes/api.minmatar.org'
 import { get_user_gates } from '@helpers/api.minmatar.org/gates'
+import { get_request_user } from '@helpers/request_user'
 import feature_gates from '@json/feature_gates.json'
 
 /**
@@ -80,15 +79,8 @@ export function get_gates(astro: AstroLike): Promise<GateContext> {
 }
 
 async function load_gates(astro: AstroLike): Promise<GateContext> {
-    const auth_token = astro.cookies.has('auth_token') ? astro.cookies.get('auth_token')?.value : undefined
-    if (!auth_token) return ANONYMOUS_GATES
-
-    let user: User | false = false
-    try {
-        user = jose.decodeJwt(auth_token) as User
-    } catch (error) {
-        return ANONYMOUS_GATES
-    }
+    const { auth_token, user } = get_request_user(astro)
+    if (!auth_token || !user) return ANONYMOUS_GATES
 
     let gates: UserGates | null = null
     try {
@@ -106,6 +98,15 @@ export function legacy_allows(ctx: GateContext, gate: GateKey): boolean {
     const legacy = GATES[gate].legacy
     if (legacy.superuser && ctx.is_superuser) return true
     return (legacy.perms ?? []).some((perm) => ctx.legacy_permissions.includes(perm))
+}
+
+/**
+ * The JWT superuser claim, for custom legacy checks (can_custom) whose old
+ * rule included it. Read it through here so gates.ts stays the one place
+ * that maps the claim.
+ */
+export function legacy_superuser(ctx: GateContext): boolean {
+    return ctx.is_superuser
 }
 
 export function feature_allows(ctx: GateContext, gate: GateKey): boolean {

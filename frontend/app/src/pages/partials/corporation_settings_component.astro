@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath, lang } = i18n(Astro.url)
 
 import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
@@ -42,7 +43,7 @@ const WRITE_ID = 'corp-settings-write'
 // Lives in the accordion header on the corporation page; refreshed out of band.
 const SUMMARY_ID = 'corporation-settings-reddit-summary'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const params = Astro.url.searchParams

@@ -17,8 +17,10 @@ import {
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
-import NavyDestroyerMetagameMatchupChart from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameMatchupChart.astro'
-import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameShipSection.astro'
+import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
+import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
+import { getGuideFittingsForShip } from '@/data/navy-destroyer-metagame'
+import { resolveMatchupOpponentShip } from '@/data/navy-destroyer-metagame/opponent-ships'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 
@@ -111,7 +113,7 @@ try {
                     <div class="ndm-charts-grid">
                         {
                             matchupCharts.map((chart) => (
-                                <NavyDestroyerMetagameMatchupChart chart={chart} />
+                                <GuideMatchupChart chart={chart} />
                             ))
                         }
                     </div>
@@ -121,7 +123,14 @@ try {
             <div class="ndm-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <NavyDestroyerMetagameShipSection ship={ship} fittingLibrary={fittingLibrary} />
+                        <GuideShipSection
+                            ship={ship}
+                            fittings={getGuideFittingsForShip(ship.id)}
+                            fitting_library={fittingLibrary}
+                            hull_class="Destroyer"
+                            id_prefix="ndm"
+                            resolve_opponent={resolveMatchupOpponentShip}
+                        />
                     ))
                 }
             </div>
@@ -193,10 +202,9 @@ try {
 <style lang="scss">
     .ndm-guide {
         --ndm-display-font: 'Orbitron', var(--heading-font);
-        --ndm-body-font: 'Source Sans 3', var(--body-font);
         --ndm-panel-padding-block: var(--component-padding-block);
         --ndm-panel-padding-inline: var(--space-l-xl);
-        font-family: var(--ndm-body-font);
+        font-family: inherit;
     }
 
     .ndm-panel {

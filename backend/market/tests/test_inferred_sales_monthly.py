@@ -318,6 +318,18 @@ class InferredSalesMonthlyVolumeTestCase(TestCase):
         self.assertEqual(response.json()["detail"], "login_required")
         self.assertIn("Retry-After", response.headers)
 
+    def test_endpoint_anon_budget_ignores_spoofed_forwarded_for(self):
+        # A new made-up address each request still lands in the bucket of
+        # the address the proxy appended.
+        for n in range(10):
+            response = self.client.get(
+                f"{BASE_URL}/inferred-sales/monthly/types",
+                {"location_id": AMAMAKE, "year": 2026, "month": 8},
+                HTTP_X_FORWARDED_FOR=f"198.51.100.{n}, 203.0.113.7",
+            )
+        self.assertEqual(401, response.status_code)
+        self.assertEqual(response.json()["detail"], "login_required")
+
     def test_endpoint_authed_rate_limit(self):
         # Exhaust the user bucket (capacity 20).
         for _ in range(22):

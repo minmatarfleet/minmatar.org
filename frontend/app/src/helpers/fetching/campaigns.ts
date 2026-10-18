@@ -7,7 +7,8 @@ import type {
     CampaignStatusChip,
     CampaignTotals,
     CampaignWeek,
-    CampaignWeekProgress,
+    CampaignWeekObjectiveRow,
+    CampaignObjectiveCode,
 } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
 import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
@@ -262,91 +263,6 @@ export type CampaignActionErrorKey =
     | 'campaigns.not_live_error'
     | 'campaigns.action_failed'
 
-/** A week's move on one system: did it help the goal, hurt it, or hold. */
-export type CampaignWeekMove = 'ahead' | 'behind' | 'holding' | 'slipping'
-
-/** Smaller than this is noise, same band the status chip uses. */
-const WEEK_MOVE_POINT = 0.5
-/** A hold is in a good place while contested stays at or under this line. */
-const HOLD_LOW_PERCENT = 10
-/** A push is holding once contested is this close to the flip threshold. */
-const PUSH_THRESHOLD_PERCENT = 80
-
-const contest_delta = (start:number | null, now:number | null):number | null => {
-    if (start === null || now === null) return null
-
-    return now - start
-}
-
-/**
- * Good and bad follow the system's goal.
- *
- * Hold: contested falling, or staying at or under the line, helped.
- * Take, pressure, and disrupt: contested rising toward the flip threshold
- * helped. While we are pushing, our advantage rising helped too; a contest
- * move wins when the two disagree.
- */
-export const week_contest_move = (
-    goal:string,
-    contested_start:number | null,
-    contested_now:number | null,
-    advantage_our_start:number | null = null,
-    advantage_our_now:number | null = null,
-):CampaignWeekMove => {
-    const normalized = normalize_campaign_goal(goal)
-    const pushing = normalized === 'take' || normalized === 'pressure' || normalized === 'disrupt'
-    const contest = contest_delta(contested_start, contested_now)
-    const contest_up = contest !== null && contest > WEEK_MOVE_POINT
-    const contest_down = contest !== null && contest < -WEEK_MOVE_POINT
-    const advantage = pushing ? contest_delta(advantage_our_start, advantage_our_now) : null
-    const advantage_up = advantage !== null && advantage > WEEK_MOVE_POINT
-    const advantage_down = advantage !== null && advantage < -WEEK_MOVE_POINT
-
-    if (normalized === 'hold') {
-        if (contest_down) return 'ahead'
-        if (contest_up) return 'slipping'
-        if (contested_now === null) return 'holding'
-
-        return contested_now <= HOLD_LOW_PERCENT ? 'holding' : 'behind'
-    }
-
-    if (pushing) {
-        if (contest_up) return 'ahead'
-        if (contest_down) return 'slipping'
-        if (advantage_up) return 'ahead'
-        if (advantage_down) return 'slipping'
-        if (contested_now === null) return 'holding'
-
-        return contested_now >= PUSH_THRESHOLD_PERCENT ? 'holding' : 'behind'
-    }
-
-    return 'holding'
-}
-
-export const week_move_color = (move:CampaignWeekMove):TagColors => {
-    switch (move) {
-        case 'ahead': return 'green'
-        case 'behind': return 'fleet-red'
-        case 'holding': return 'fleet-yellow'
-        case 'slipping': return 'fleet-red'
-        default: {
-            const _exhaustive: never = move
-            return _exhaustive
-        }
-    }
-}
-
-/** Where the meter ticks the line that matters for this goal. */
-export const week_contest_marker = (goal:string):number | null => {
-    const normalized = normalize_campaign_goal(goal)
-
-    if (normalized === 'hold') return HOLD_LOW_PERCENT
-    if (normalized === 'take' || normalized === 'pressure' || normalized === 'disrupt')
-        return PUSH_THRESHOLD_PERCENT
-
-    return null
-}
-
 export const status_chip_i18n_key = (chip:CampaignStatusChip):CampaignStatusChipKey => {
     switch (chip) {
         case 'gaining': return 'campaigns.chip.gaining'
@@ -456,18 +372,14 @@ export interface CampaignObjectiveRow {
 
 type ObjectiveT = (key:string) => string
 
-const objective_kind = (metric:string, goal:string):CampaignObjectiveKind => {
-    if (metric === 'advantage_gain') return 'advantage_gain'
-    if (metric === 'advantage_destroy') return 'advantage_destroy'
-    if (metric === 'advantage_maintain') return 'advantage_maintain'
-    if (metric === 'structures_reported') return 'structures_reported'
-    if (metric === 'days_under_line') return 'defense'
-    if (metric === 'victory_points') return 'offense'
-    if (goal === 'recon' || goal === 'scout') return 'structures_reported'
-    return goal === 'take' || goal === 'pressure' || goal === 'disrupt'
-        || goal === 'capture' || goal === 'contest'
-        ? 'offense'
-        : 'defense'
+/** The backend's objective codes (campaigns/services/objectives.py) as the table's kinds. */
+const OBJECTIVE_KINDS:Record<CampaignObjectiveCode, CampaignObjectiveKind> = {
+    capture_complexes: 'offense',
+    defend_complexes: 'defense',
+    gain_advantage: 'advantage_gain',
+    hold_advantage: 'advantage_maintain',
+    destroy_advantage: 'advantage_destroy',
+    report_structures: 'structures_reported',
 }
 
 const objective_label = (kind:CampaignObjectiveKind, t:ObjectiveT):string => {
@@ -513,58 +425,12 @@ const progress_text = (value:number):string => {
 }
 
 /** "266 of 75,000 victory points", or nothing before the system has a threshold. */
-const victory_points_text = (system:CampaignSystemSummary | null, t:ObjectiveT):string => {
-    if (!system?.victory_points_threshold) return ''
+const victory_points_text = (row:CampaignWeekObjectiveRow, t:ObjectiveT):string => {
+    if (!row.victory_points_threshold) return ''
 
     return t('campaigns.objective.victory_points_of')
-        .replace('{value}', (system.victory_points ?? 0).toLocaleString('en-US'))
-        .replace('{threshold}', system.victory_points_threshold.toLocaleString('en-US'))
-}
-
-/**
- * The bar is progress in victory points against the flip threshold. Capturing,
- * it fills as ours climb; defending, it is how far the attackers are from
- * flipping it, so a quiet system is full and their victory points drain it.
- *
- * The move is the week's, from the last reading before the week opened, as
- * the row is a weekly objective; the last day's move rides along for the
- * hover. Without a week reading the row falls back to the day. A system that
- * changed hands this week shows the flip instead of a move.
- */
-const contest_progress = (
-    kind:CampaignObjectiveKind,
-    goal:string,
-    system:CampaignSystemSummary | null,
-    week_progress:CampaignWeekProgress | null,
-    t:ObjectiveT,
-) => {
-    const contested = clamp_percent(system?.contested_percent)
-    const contest_goal = kind === 'defense' ? 'hold' : goal
-    const meter_percent = contest_bar_percent(contest_goal, contested)
-    const from = (change:number | null) => change === null ? null : contest_bar_percent(contest_goal, contested - change)
-
-    const day_change = system?.contested_change_24h ?? null
-    const day_from = from(day_change)
-    const day_text = day_from === null ? '' : bar_change(meter_percent - day_from).change_text
-    const flipped = week_progress?.flipped ?? null
-    const week_start = week_progress?.contested_start ?? null
-    const weekly = week_progress !== null && (flipped !== null || week_start !== null)
-    const delta_from_percent = flipped !== null ? null
-        : weekly ? from(contested - (week_start as number))
-        : day_from
-
-    return {
-        meter_percent,
-        delta_from_percent,
-        now_text: progress_text(meter_percent),
-        detail_text: victory_points_text(system, t),
-        change_label: (weekly ? 'week' : '24h') as '24h' | 'week',
-        change_24h_text: weekly ? day_text : '',
-        flipped,
-        ...(delta_from_percent === null
-            ? { change_text: '', change_direction: 'flat' as const }
-            : bar_change(meter_percent - delta_from_percent)),
-    }
+        .replace('{value}', (row.victory_points ?? 0).toLocaleString('en-US'))
+        .replace('{threshold}', row.victory_points_threshold.toLocaleString('en-US'))
 }
 
 /**
@@ -572,164 +438,110 @@ const contest_progress = (
  * offensive system is on pace while it gains, a defensive one while it is
  * not losing.
  */
-const fallback_pace = (kind:CampaignObjectiveKind, system:CampaignSystemSummary):CampaignPace => {
+const fallback_pace = (kind:CampaignObjectiveKind, system:CampaignSystemSummary | null):CampaignPace => {
+    if (!system) return 'on_pace'
     if (kind === 'offense') return system.status_chip === 'gaining' ? 'on_pace' : 'behind'
     return system.status_chip === 'losing' ? 'behind' : 'on_pace'
 }
 
 /**
- * The rows of the weekly progress table. One per week target, losing rows
- * first. Contest rows show progress, with no target tick: offense fills as
- * the system is captured, defense is the inverse so a stable 0% contested
- * reads 100%. A defensive caption says "stable", or how contested it is.
- * Advantage and structure rows still measure their own level.
+ * The rows of the weekly progress table. The backend builds them, in their
+ * order, for the website and the desktop window alike
+ * (campaigns/services/objectives.py: week.objective_rows); this only words
+ * and draws them.
  *
- * With no targets yet, one row per system falls back to the system's own
- * goal so the table never asks for nothing.
+ * Every bar reads higher is better. A complex row's move is the week's, from
+ * where it opened, with the last day's for the hover; without a week reading
+ * it falls back to the day, and a system that changed hands this week shows
+ * the flip instead. Advantage rows move from the target's baseline.
  */
 export const campaign_objective_rows = (
     week:CampaignWeek | null,
     systems:CampaignSystemSummary[],
     t:ObjectiveT,
 ):CampaignObjectiveRow[] => {
-    const by_name = new Map(systems.map(system => [system.name, system]))
-    const week_by_name = new Map((week?.progress ?? []).map(row => [row.system, row]))
-    const targets = week?.targets ?? []
+    const by_id = new Map(systems.map(system => [system.id, system]))
+    const targets = new Map((week?.targets ?? []).map(target => [target.id, target]))
 
-    if (targets.length === 0) {
-        // Fallback rows only for FW objectives; ops theaters wait for
-        // structures_reported targets from propose_week.
-        return sort_systems_by_contest(fw_objective_systems(systems))
-            .map(system => {
-                const kind:CampaignObjectiveKind = objective_kind('', system.goal)
-                const pace = fallback_pace(kind, system)
-                const progress = contest_progress(kind, system.goal, system, week_by_name.get(system.name) ?? null, t)
+    return (week?.objective_rows ?? []).map(row => {
+        const system = by_id.get(row.system_id) ?? null
+        const target = row.target_id === null ? null : targets.get(row.target_id) ?? null
+        const kind = OBJECTIVE_KINDS[row.objective]
+        const meter_percent = row.progress_percent ?? 0
+        const has_progress = row.progress_percent !== null
 
-                return {
-                    key: `system-${system.id}`,
-                    kind,
-                    label: objective_label(kind, t),
-                    system,
-                    system_name: system.name,
-                    meter_percent: progress.meter_percent,
-                    marker_percent: null,
-                    delta_from_percent: progress.delta_from_percent,
-                    now_text: progress.now_text,
-                    detail_text: progress.detail_text,
-                    change_label: progress.change_label,
-                    change_text: progress.change_text,
-                    change_direction: progress.change_direction,
-                    change_24h_text: progress.change_24h_text,
-                    flipped: progress.flipped,
-                    target_text: '',
-                    yours_text: t('campaigns.objective.yours_none'),
-                    pace,
-                    status: objective_status(pace),
-                    proposed: false,
-                }
-            })
-    }
+        let delta_from_percent:number | null = null
+        let detail_text = ''
+        let change_label:'24h' | 'week' = 'week'
+        let change_24h_text = ''
+        let now_text = has_progress ? progress_text(meter_percent) : ''
+        let yours_text = t('campaigns.objective.yours_none')
 
-    // The operator's priority orders the table; within a priority the losing rows come first.
-    const rank:Record<CampaignPace, number> = { behind: 0, on_pace: 1, ahead: 2 }
-    const system_priority = (name:string) => priority_rank(by_name.get(name)?.priority)
-
-    return [ ...targets ]
-        .sort((a, b) => system_priority(a.system) - system_priority(b.system) || rank[a.pace] - rank[b.pace])
-        .map(target => {
-            const system = by_name.get(target.system) ?? null
-            const kind = objective_kind(target.metric, target.goal)
-            const goal = target.target || 1
-
-            let meter_percent = 0
-            let marker_percent:number | null = null
-            let delta_from_percent:number | null = null
-            let now_text = ''
-            let detail_text = ''
-            let change_label:'24h' | 'week' = '24h'
-            let change_text = ''
-            let change_24h_text = ''
-            let flipped:'captured' | 'lost' | null = null
-            let direction:'up' | 'down' | 'flat' = 'flat'
-            let target_text = ''
-            let yours_text = t('campaigns.objective.yours_none')
-
-            if (kind === 'offense' || kind === 'defense') {
-                const progress = contest_progress(kind, target.goal || system?.goal || 'take', system, week_by_name.get(target.system) ?? null, t)
-                meter_percent = progress.meter_percent
-                delta_from_percent = progress.delta_from_percent
-                now_text = progress.now_text
-                detail_text = progress.detail_text
-                change_label = progress.change_label
-                change_text = progress.change_text
-                change_24h_text = progress.change_24h_text
-                flipped = progress.flipped
-                direction = progress.change_direction
-                if (target.my_complexes > 0)
-                    yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
-            } else if (kind === 'structures_reported') {
-                meter_percent = clamp_percent((target.progress / goal) * 100)
-                now_text = count_text(
-                    Math.round(target.progress),
-                    'campaigns.objective.value_structure',
-                    'campaigns.objective.value_structures',
+        if (kind === 'offense' || kind === 'defense') {
+            const weekly = row.flipped !== null || row.change_week !== null
+            const change = weekly ? row.change_week : row.change_24h
+            delta_from_percent = change === null ? null : meter_percent - change
+            detail_text = victory_points_text(row, t)
+            change_label = weekly ? 'week' : '24h'
+            change_24h_text = weekly && row.change_24h !== null ? bar_change(row.change_24h).change_text : ''
+            if (target && target.my_complexes > 0)
+                yours_text = count_text(target.my_complexes, 'campaigns.objective.yours_complex', 'campaigns.objective.yours_complexes', t)
+        } else if (kind === 'structures_reported') {
+            now_text = row.structures_reported === null ? '' : count_text(
+                Math.round(row.structures_reported),
+                'campaigns.objective.value_structure',
+                'campaigns.objective.value_structures',
+                t,
+            )
+            if ((target?.my_structures_reported ?? 0) > 0)
+                yours_text = count_text(
+                    target?.my_structures_reported ?? 0,
+                    'campaigns.objective.yours_structure',
+                    'campaigns.objective.yours_structures',
                     t,
                 )
-                change_label = 'week'
-                if ((target.my_structures_reported ?? 0) > 0)
-                    yours_text = count_text(
-                        target.my_structures_reported,
-                        'campaigns.objective.yours_structure',
-                        'campaigns.objective.yours_structures',
-                        t,
-                    )
-            } else {
-                // Levels on the 0-100 advantage scale: ours for gain and
-                // maintain, theirs for destroy. Destroy is inverted so the bar
-                // fills as their advantage falls, and every bar reads higher
-                // is better. The change is the week's move.
-                const destroy = kind === 'advantage_destroy'
-                const level = destroy
-                    ? (system?.advantage_enemy_pct ?? target.progress)
-                    : (system?.advantage_our_pct ?? target.progress)
-                const bar = (value:number) => clamp_percent(destroy ? 100 - value : value)
-                meter_percent = bar(level)
-                delta_from_percent = bar(target.baseline)
-                now_text = progress_text(meter_percent)
-                detail_text = t(destroy ? 'campaigns.objective.level_theirs' : 'campaigns.objective.level_ours').replace('{level}', level.toFixed(0))
-                change_label = 'week'
-                const moved = bar_change(meter_percent - delta_from_percent)
-                change_text = moved.change_text
-                direction = moved.change_direction
-                if (target.my_advantage_sites > 0)
-                    yours_text = count_text(target.my_advantage_sites, 'campaigns.objective.yours_site', 'campaigns.objective.yours_sites', t)
-                else if (target.my_readings > 0)
-                    yours_text = count_text(target.my_readings, 'campaigns.objective.yours_reading', 'campaigns.objective.yours_readings', t)
-            }
+        } else {
+            // Levels on the 0-100 advantage scale: ours for gain and
+            // maintain, theirs for destroy (inverted, so the bar fills as
+            // theirs falls). The move is the week's.
+            delta_from_percent = row.change_week === null ? null : meter_percent - row.change_week
+            if (row.advantage_level !== null)
+                detail_text = t(kind === 'advantage_destroy' ? 'campaigns.objective.level_theirs' : 'campaigns.objective.level_ours')
+                    .replace('{level}', row.advantage_level.toFixed(0))
+            if (target && target.my_advantage_sites > 0)
+                yours_text = count_text(target.my_advantage_sites, 'campaigns.objective.yours_site', 'campaigns.objective.yours_sites', t)
+            else if (target && target.my_readings > 0)
+                yours_text = count_text(target.my_readings, 'campaigns.objective.yours_reading', 'campaigns.objective.yours_readings', t)
+        }
 
-            return {
-                key: `target-${target.id}`,
-                kind,
-                label: objective_label(kind, t),
-                system,
-                system_name: target.system,
-                meter_percent,
-                marker_percent,
-                delta_from_percent,
-                now_text,
-                detail_text,
-                change_label,
-                change_text,
-                change_direction: direction,
-                change_24h_text,
-                flipped,
-                target_text,
-                yours_text,
-                pace: target.pace,
-                status: objective_status(target.pace),
-                proposed: target.proposed,
-            }
-        })
+        const moved = delta_from_percent === null
+            ? { change_text: '', change_direction: 'flat' as const }
+            : bar_change(meter_percent - delta_from_percent)
+        const pace = row.pace ?? fallback_pace(kind, system)
+
+        return {
+            key: row.target_id === null ? `system-${row.system_id}` : `target-${row.target_id}`,
+            kind,
+            label: objective_label(kind, t),
+            system,
+            system_name: row.name,
+            meter_percent,
+            marker_percent: null,
+            delta_from_percent,
+            now_text,
+            detail_text,
+            change_label,
+            change_text: moved.change_text,
+            change_direction: moved.change_direction,
+            change_24h_text,
+            flipped: row.flipped,
+            target_text: '',
+            yours_text,
+            pace,
+            status: objective_status(pace),
+            proposed: row.proposed,
+        }
+    })
 }
 
 export type CampaignFleetTypeKey =

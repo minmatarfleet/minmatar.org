@@ -1,5 +1,6 @@
 import type { FleetCompositionEntry, FleetRefit, FleetShipVolunteer, FleetSupply, FleetSupplyEntry } from '@helpers/api.minmatar.org/fleets'
 import { volunteer_matches_entry, get_fleet_supply } from '@helpers/api.minmatar.org/fleets'
+import { is_capital_group } from '@helpers/ship_groups'
 
 export const EMPTY_SUPPLY:FleetSupply = { entries: [] }
 
@@ -27,20 +28,4 @@ export function volunteers_for(entry:FleetCompositionEntry, volunteers:FleetShip
 
 export const ship_row_id = (entry:FleetCompositionEntry) => `fleet-ship-${entry.key.replace(':', '-')}`
 
-const CAPITAL_SHIP_GROUPS = new Set([
-    'Capital',
-    'Dreadnought',
-    'Lancer Dreadnought',
-    'Carrier',
-    'Force Auxiliary',
-    'Super Capital',
-    'Super Carrier',
-    'Supercarrier',
-    'Titan',
-    'Capital Industrial Ship',
-    'Freighter',
-    'Jump Freighter',
-    'Jump Freighters',
-])
-
-export const is_capital_entry = (entry:FleetCompositionEntry) => CAPITAL_SHIP_GROUPS.has(entry.ship_group ?? '')
+export const is_capital_entry = (entry:FleetCompositionEntry) => is_capital_group(entry.ship_group)

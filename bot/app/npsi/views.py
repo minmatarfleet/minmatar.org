@@ -8,6 +8,19 @@ import re
 
 import discord
 
+from app.custom_ids import (
+    NPSI_POST_ALIAS_PREFIX,
+    NPSI_POST_ALIAS_TEMPLATE,
+    NPSI_POST_PREFIX,
+    NPSI_POST_TEMPLATE,
+    NPSI_PREPING_PREFIX,
+    NPSI_PREPING_TEMPLATE,
+    NPSI_TRACK_PREFIX,
+    NPSI_TRACK_TEMPLATE,
+    custom_id,
+)
+from app.settings import settings
+
 from .service import (
     NpsiDiscordActionError,
     post_to_schedule,
@@ -17,10 +30,10 @@ from .service import (
 
 logger = logging.getLogger(__name__)
 
-POST_TEMPLATE = r"npsi:create:(?P<event_id>[0-9]+)"
-POST_ALIAS_TEMPLATE = r"npsi:post:(?P<event_id>[0-9]+)"
-PREPING_TEMPLATE = r"npsi:preping:(?P<event_id>[0-9]+)"
-TRACK_TEMPLATE = r"npsi:track:(?P<event_id>[0-9]+)"
+POST_TEMPLATE = NPSI_POST_TEMPLATE
+POST_ALIAS_TEMPLATE = NPSI_POST_ALIAS_TEMPLATE
+PREPING_TEMPLATE = NPSI_PREPING_TEMPLATE
+TRACK_TEMPLATE = NPSI_TRACK_TEMPLATE
 
 
 def _posted_view(event_id: int, fleet_id: int | None) -> discord.ui.View:
@@ -29,14 +42,14 @@ def _posted_view(event_id: int, fleet_id: int | None) -> discord.ui.View:
         discord.ui.Button(
             label="Pre-ping",
             style=discord.ButtonStyle.secondary,
-            custom_id=f"npsi:preping:{event_id}",
+            custom_id=custom_id(NPSI_PREPING_PREFIX, event_id),
         )
     )
     view.add_item(
         discord.ui.Button(
             label="Track",
             style=discord.ButtonStyle.success,
-            custom_id=f"npsi:track:{event_id}",
+            custom_id=custom_id(NPSI_TRACK_PREFIX, event_id),
         )
     )
     if fleet_id:
@@ -44,7 +57,7 @@ def _posted_view(event_id: int, fleet_id: int | None) -> discord.ui.View:
             discord.ui.Button(
                 label="Open schedule",
                 style=discord.ButtonStyle.link,
-                url="https://my.minmatar.org/fleets/upcoming/",
+                url=f"{settings.WEB_URL.rstrip('/')}/fleets/upcoming/",
             )
         )
     return view
@@ -131,7 +144,7 @@ class PostToScheduleButton(
             discord.ui.Button(
                 label="Post to schedule",
                 style=discord.ButtonStyle.primary,
-                custom_id=f"npsi:create:{event_id}",
+                custom_id=custom_id(NPSI_POST_PREFIX, event_id),
             )
         )
         self.event_id = event_id
@@ -161,7 +174,7 @@ class PrepingButton(
             discord.ui.Button(
                 label="Pre-ping",
                 style=discord.ButtonStyle.secondary,
-                custom_id=f"npsi:preping:{event_id}",
+                custom_id=custom_id(NPSI_PREPING_PREFIX, event_id),
             )
         )
         self.event_id = event_id
@@ -191,7 +204,7 @@ class TrackButton(
             discord.ui.Button(
                 label="Track",
                 style=discord.ButtonStyle.success,
-                custom_id=f"npsi:track:{event_id}",
+                custom_id=custom_id(NPSI_TRACK_PREFIX, event_id),
             )
         )
         self.event_id = event_id
@@ -230,7 +243,7 @@ class PostToScheduleAliasButton(
             discord.ui.Button(
                 label="Post to schedule",
                 style=discord.ButtonStyle.primary,
-                custom_id=f"npsi:post:{event_id}",
+                custom_id=custom_id(NPSI_POST_ALIAS_PREFIX, event_id),
             )
         )
         self.event_id = event_id

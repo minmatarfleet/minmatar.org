@@ -287,9 +287,11 @@ ul {
         }
     }
 
-    &:hover {
-        picture.animated img {
-            transform: scale(1.1);
+    @media (hover: hover) {
+        &:hover {
+            picture.animated img {
+                transform: scale(1.1);
+            }
         }
     }
 }

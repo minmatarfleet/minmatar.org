@@ -1,3 +1,23 @@
+import type { components } from './generated/api'
+
+/**
+ * Backend schemas, generated from the API's OpenAPI document (npm run gen:api).
+ * New API types come from here, never as a hand-written copy:
+ *     export type Thing = ApiResponse<'ThingResponse'>
+ */
+type Schemas = components['schemas']
+
+/** Every field present, all the way down: Ninja serializes the whole model, sending null for an unset field. */
+type Complete<T> = T extends (infer Item)[] ? Complete<Item>[]
+    : T extends object ? { [Key in keyof T]-?: Complete<T[Key]> }
+    : T
+
+/** A response body. The API sends every field (null when unset), so none is optional. */
+export type ApiResponse<Name extends keyof Schemas> = Complete<Schemas[Name]>
+
+/** A request body: fields with a default may be left out. */
+export type ApiRequest<Name extends keyof Schemas> = Schemas[Name]
+
 export interface Skill {
     active_skill_level:   number;
     skill_id:             number;
@@ -23,12 +43,7 @@ export interface TribeCharacterRef {
     character_name: string;
 }
 
-export interface TribeQualifyingAssetType {
-    type_id:        number;
-    type_name:      string;
-    minimum_count:  number;
-    location_id:    number | null;
-}
+export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
 
 export interface TribeQualifyingSkill {
     skill_type_id:  number;
@@ -54,29 +69,7 @@ export interface TribeAffiliationRef {
     name: string;
 }
 
-export interface TribeGroup {
-    id:                     number;
-    tribe_id:               number;
-    tribe_name:             string;
-    code?:                  string;
-    name:                   string;
-    description:            string;
-    content?:               string;
-    discord_channel_id:     number | null;
-    chief:                  TribeCharacterRef | null;
-    ship_type_ids:          number[];
-    blueprint_type_ids:     number[];
-    is_active:              boolean;
-    member_count:           number;
-    requirements:           TribeRequirement[];
-    ranks?:                 TribeGroupRank[];
-    required_token_type?:   string | null;
-    require_off_trial?:     boolean;
-    allowed_affiliations?:  TribeAffiliationRef[];
-        can_apply?:             boolean;
-        can_manage?:            boolean;
-        roster_hidden?:         boolean;
-    }
+export type TribeGroup = ApiResponse<'TribeGroupSchema'>
 
 export interface Tribe {
     id:                     number;
@@ -186,6 +179,7 @@ export interface TribeGroupShowcase {
     period_start:       string | null;
     period_end:         string | null;
     manual:             boolean;
+    warming?:           boolean;
     message:            string;
     totals:             Record<string, number | string>;
     columns:            string[];
@@ -350,24 +344,6 @@ export interface TribeExternalGuildJoin {
     authorize_url: string;
     group_id: number;
     status: TribeExternalGuildSeatStatus;
-}
-
-export interface SigRequest {
-    id:             number;
-    user:           number;
-    sig_id:         number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
-}
-
-export interface TeamRequest {
-    id:             number;
-    user:           number;
-    team_id:        number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
 }
 
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
@@ -596,12 +572,7 @@ export interface CorporationPublicSummary {
     };
 }
 
-export interface CorporationPrimeWindow {
-    zone:       'AU' | 'EU' | 'US';
-    start_hour: number;
-    end_hour:   number;
-    pilots:     number;
-}
+export type CorporationPrimeWindow = ApiResponse<'CorporationPrimeWindow'>
 
 export interface CorporationTenureBand {
     key:    'two_years' | 'one_year' | 'three_months' | 'new';
@@ -639,65 +610,9 @@ export interface CorporationAbout {
     tribe_groups?:  { name: string; members: number }[];
 }
 
-export interface Corporation {
-    corporation_id:     number;
-    corporation_name:   string;
-    alliance_id:        number;
-    alliance_name:      string;
-    faction_id:         number;
-    faction_name:       string;
-    type:               CorporationType;
-    introduction:       string;
-    biography:          string;
-    executor_notes?:    string;
-    timezones:          string[];
-    requirements:       string[];
-    members:            CharacterCorp[];
-    active:             boolean;
-    trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
-}
+export type Corporation = ApiResponse<'CorporationResponse'>
 
-export interface CorporationInfo {
-    corporation_id:     number;
-    corporation_name:   string;
-    alliance_id:        number;
-    alliance_name:      string;
-    faction_id:         number;
-    faction_name:       string;
-    type:               CorporationType;
-    introduction:       string;
-    biography:          string;
-    executor_notes?:    string;
-    timezones:          string[];
-    requirements:       string[];
-    active:             boolean;
-    trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
-    public_summary?:    CorporationPublicSummary | null;
-    application_process?: CorporationApplicationProcess | null;
-    about?:             CorporationAbout | null;
-}
+export type CorporationInfo = ApiResponse<'CorporationInfoResponse'>
 
 export interface CorporationMemberDetails {
     character_id:           number;
@@ -733,14 +648,7 @@ export interface CorporationMemberDetails {
     hidden_character_count?: number;
 }
 
-export interface CharacterCorp {
-    character_id:           number;
-    character_name:         string;
-    primary_character_id:   number;
-    primary_character_name: string;
-    registered:             boolean;
-    exempt:                 boolean;
-}
+export type CharacterCorp = ApiResponse<'CorporationMemberResponse'>
 
 export interface CorporationApplication {
     status:         string;
@@ -938,30 +846,7 @@ export type FleetStatus = typeof fleet_status[number]
 export const fleet_types = ['strategic', 'non_strategic', 'training', 'npsi'] as const
 export type FleetTypes = typeof fleet_types[number]
 
-export interface Fleet {
-    id:                 number;
-    type:               FleetTypes;
-    audience?:          string;
-    description:        string;
-    objective?:         string;
-    start_time:         Date;
-    fleet_commander?:   number;
-    doctrine_id:        number;
-    location:           string;
-    disable_motd:       boolean;
-    hide_volunteers:    boolean;
-    tracking?:          Tracking;
-    status?:            TrackingStatus;
-    aar_link:           string;
-    roam_report_url?:   string | null;
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-}
-
-export interface FleetBasic {
-    id:                 number;
-    audience:           string;
-}
+export type Fleet = ApiResponse<'EveFleetResponse'>
 
 export interface Tracking {
     id:             number;
@@ -986,32 +871,12 @@ export interface FleetRequest {
     campaign_id?:       number | null;
 }
 
-export interface FleetPatchRequest {
-    type?:              FleetTypes;
-    description?:       string;
-    objective?:         string;
-    start_time?:        Date;
-    doctrine_id?:       number | null;
-    location_id?:       number;
-    audience_id?:       number;
-    disable_motd?:      boolean;
-    hide_volunteers?:   boolean;
-    immediate_ping?:    boolean;
-    status?:            TrackingStatus;
-    aar_link?:          string;
-    roam_report_url?:   string | null;
-    campaign_id?:       number | null;
-}
+export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
 
-export interface Audience {
-    id:                     number;
-    display_name:           string;
-    display_channel_name:   string;
-    image_url:              string | null;
-}
+export type Audience = ApiResponse<'EveFleetChannelResponse'>
 
 export interface FleetMember {
     character_id:       number;
@@ -1044,23 +909,7 @@ export interface FleetUsers {
     user_ids: number[];
 }
 
-export interface StructureTimer {
-    id:                 number;
-    name:               string;
-    state:              string;
-    type:               string;
-    timer:              Date;
-    created_at:         Date;
-    updated_at:         Date;
-    created_by:         number;
-    updated_by:         number;
-    system_name:        string;
-    corporation_name:   string;
-    alliance_name:      string;
-    structure_id:       number;
-    campaign_id:        number | null;
-    fitting?:           string | null;
-}
+export type StructureTimer = ApiResponse<'EveStructureTimerResponse'>
 
 export const structure_states = [ 'anchoring', 'armor', 'hull', 'unanchoring' ] as const
 export type StructureState = typeof structure_states[number]
@@ -1118,29 +967,9 @@ export interface CampaignStructureAttachRequest {
     selected_item_window?:  string;
 }
 
-export interface VerifyStructureTimerRequest {
-    corporation_name:   string;
-    alliance_name:      string;
-}
+export type VerifyStructureTimerRequest = ApiRequest<'EveStructureTimerVerificationRequest'>
 
-export interface Post {
-    post_id:            number;
-    state:              PostStates;
-    title:              string;
-    seo_description:    string;
-    slug:               string;
-    content?:           string;
-    image?:             string;
-    date_posted:        Date;
-    user_id:            number;
-    author_character_id: number;
-    author_character_name: string;
-    tag_ids:            number[];
-    tribe_group_ids?:   number[];
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type Post = ApiResponse<'EvePostResponse'>
 
 export interface PostParams {
     title?:             string;
@@ -1184,13 +1013,7 @@ export interface RouteCost {
 }
 
 
-export interface SystemMoon {
-    id:         number;
-    system:     string;
-    planet:     string;
-    moon:       number;
-    detail:     SystemMoonDetails;
-}
+export type SystemMoon = ApiResponse<'MoonViewResponse'>
 
 export interface SystemMoonDetails {
     monthly_revenue?:   number;
@@ -1338,71 +1161,16 @@ export interface History {
     quantity:   number;
 }
 
-export interface MarketCorporation {
-    corporation_id:     number;
-    corporation_name:   string;
-}
-
-export interface MarketExpectation {
-    expectation_id:     number;
-    fitting_id:         number;
-    fitting_name:       string;
-    location_id:        number;
-    location_name:      string;
-    quantity:           number;
-}
-
-export interface MarketLocation {
-    id:             number;
-    name:           string;
-    system_name:    string;
-    contracts:      number;
-    expectations:   number;
-    structure_id:   number;
-}
-
 export interface DoctrineFitting {
     fitting_id:         number;
     fitting_name:       string;
     role:               string;
 }
 
-export interface MarketDoctrine {
-    doctrine_id:        number;
-    doctrine_name:      string;
-    fittings:           DoctrineFitting[];
-}
-
-export interface MarketLocationDoctrine {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    doctrines:          MarketDoctrine[];
-}
-
 export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const
 export type SRPStatus = typeof srp_status[number]
 
-export interface SRP {
-    id:                         number;
-    fleet_id:                   number;
-    external_killmail_link:     string;
-    status:                     SRPStatus;
-    character_id:               number;
-    character_name:             string;
-    primary_character_id:       number;
-    primary_character_name:     string;
-    ship_type_id:               number;
-    ship_name:                  string;
-    killmail_id:                number;
-    amount:                     number;
-    is_corp_ship:               boolean;
-    corp_id:                    number;
-    comments:                   string;
-    category:                   SRPCategory;
-    combat_log_id:              number;
-}
+export type SRP = ApiResponse<'SrpRequestResponse'>
 
 export interface SRPFilter {
     fleet_id?:  number;
@@ -1461,44 +1229,15 @@ export type ESITokenStatus = typeof esi_token_status[number]
 
 export const character_errors = [ 'MAIN_NOT_IN_FL33T', 'NO_TOKEN_LEVEL', 'ESI_SUSPENDED', 'NO_MAIN_SET', 'NO_TAGS' ] as const
 export type CharacterErrors = typeof character_errors[number]
-export interface SummaryCharacter {
-    character_id:       number;
-    character_name:     string;
-    is_primary:         boolean;
-    corp_id:            number;
-    corp_name:          string;
-    alliance_id:        number;
-    alliance_name:      string;
-    esi_token:          string;
-    token_status:       ESITokenStatus;
-    flags:              CharacterErrors[];
-    requested_groups:   string[];
-    actual_groups:      string[];
+/** UserCharacter, plus the ESI scope groups get_characters_summary_sorted (fetching/characters.ts) adds from the token info. */
+export type SummaryCharacter = ApiResponse<'UserCharacter'> & {
+    requested_groups?:  string[];
+    actual_groups?:     string[];
 }
 
-export interface CharacterESITokens {
-    id:                 number;
-    created:            Date;
-    expires:            Date;
-    can_refresh:        boolean;
-    owner_hash:         string;
-    scopes:             string[];
-    level:              string;
-    requested_groups:   string[];
-    actual_groups:      string[];
-    requested_count:    number;
-    actual_count:       number;
-    token_state:        string;
-    requested_level:    string;
-    actual_level:       string;
-}
+export type CharacterESITokens = ApiResponse<'CharacterTokenInfo'>
 
-export interface CharacterTag {
-    id:             number;
-    title:          string;
-    description:    string;
-    image_name:     string;
-}
+export type CharacterTag = ApiResponse<'CharacterTagResponse'>
 
 export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor', 'FleetCommander' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
@@ -1506,13 +1245,7 @@ export type ESITokenRoles = typeof esi_token_roles[number]
 export const prime_times = [ 'US', 'AP', 'EU' ] as const
 export type PrimeTime = typeof prime_times[number]
 
-export interface Player {
-    id:                     number;
-    nickname:               string;
-    user_id:                number;
-    primary_character_id:   number;
-    prime_time:             PrimeTime | null;
-}
+export type Player = ApiResponse<'EvePlayerResponse'>
 
 export const srp_categories = [ 'logistics', 'support', 'dps', 'capital' ] as const
 export type SRPCategory = typeof srp_categories[number]
@@ -1550,16 +1283,7 @@ export interface ProductBase {
     name:       string;
 }
 
-export interface Product extends ProductBase {
-    strategy:                       string;
-    volume:                         number;
-    blueprint_or_reaction_type_id:  number;
-    supplied_for:                   ProductBase[];
-    supplies:                       ProductBase[];
-    /** Present on GET /products/{id}; omitted from list responses. */
-    character_producers?:           Producer[];
-    corporation_producers?:         Producer[];
-}
+export type Product = ApiResponse<'IndustryProductDetail'>
 
 export interface ProductBuilder {
     character_id:       number;
@@ -1725,21 +1449,7 @@ export interface RootItem {
     estimated_profit_per_unit?: number | null;
 }
 
-export interface IndustryOrder {
-    id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
-    public_short_code:  string;
-    character_id:       number | null;
-    character_name:     string;
-    location:           BaseLocation;
-    items:              RootItem[];
-    assigned_to:        Character[];
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type IndustryOrder = ApiResponse<'OrderListItemResponse'>
 
 export interface OrderCapabilities {
     can_submit:     boolean;
@@ -1814,28 +1524,9 @@ export interface OrdersProfitSummary {
 export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
 export type FreightContractStatus = typeof freight_contract_statuses[number]
 
-export interface FreightContract {
-    contract_id:                    number;
-    status:                         FreightContractStatus;
-    start_location_name:            string;
-    end_location_name:              string;
-    volume:                         number;
-    collateral:                     number;
-    reward:                         number;
-    date_issued:                    Date;
-    date_completed:                 Date | null;
-    issuer_id:                      number;
-    issuer_character_name:          string;
-    completed_by_id:                number;
-    completed_by_character_name:    string | null;
-    updated_at:                     Date | null;
-}
+export type FreightContract = ApiResponse<'FreightContractResponse'>
 
-export interface SpaceTruckerStatistics {
-    primary_character_id:       number;
-    primary_character_name:     string;
-    completed_contracts_count:  number;
-}
+export type SpaceTruckerStatistics = ApiResponse<'FreightCharacterStatResponse'>
 
 export interface MarketOperatorStatistics {
     primary_character_id:       number | null;
@@ -2074,11 +1765,7 @@ export type BlueprintOwnerEntity = typeof blueprint_owner_entity[number]
 export const blueprint_location_flag = [ 'Hangar', 'Cargo', 'AssetSafety', 'FleetHangar', 'Deliveries', 'CorpSAG'  ] as const
 export type BlueprintLocationFlag = typeof blueprint_location_flag[number]
 
-export interface BlueprintOwner {
-    entity_id:              number;
-    entity_type:            BlueprintOwnerEntity;
-    primary_character_id:   number;
-}
+export type BlueprintOwner = ApiResponse<'BlueprintOwnerResponse'>
 
 export interface Blueprint {
     item_id:                number;
@@ -2093,27 +1780,6 @@ export interface Blueprint {
     owner:                  BlueprintOwner;
     in_job:                 boolean;
     activity_id:            number | null;
-}
-
-export interface ContractHealthProblem {
-    location_id:        number;
-    location_name:      string;
-    short_name:         string;
-    fitting_id:         number;
-    fitting_name:       string;
-    ship_id:            number;
-    current_quantity:   number;
-    viable_quantity:    number;
-    expected_quantity:  number;
-    shortfall:          number;
-    readiness:          string;
-    expectation_id:     number;
-    units_1d:           number;
-    units_3d:           number;
-    weekly_units:       number;
-    units_30d:          number;
-    units_90d:          number;
-    days_of_stock:      number | null;
 }
 
 export interface SellOrderHealthGap {
@@ -2246,29 +1912,9 @@ export interface InferredSalesMonthlyVolumePage {
     rows: InferredSalesMonthlyVolumeRow[]
 }
 
-export interface OrderAssignment {
-    id:                         number;
-    character_id:               number;
-    character_name:             string;
-    quantity:                   number;
-    target_unit_price:          number | null;
-    delivered_quantity:         number;
-    delivered_at:               Date | null;
-    has_blueprints:             boolean;
-}
+export type OrderAssignment = ApiResponse<'AssignmentResponse'>
 
-export interface RootSingleItem {
-    id:                             number;
-    eve_type_id:                    number;
-    eve_type_name:                  string;
-    quantity:                       number;
-    unassigned_quantity:            number;
-    self_assign_maximum:            number | null;
-    self_assign_window_ends_at:     Date;
-    target_unit_price:              string | null,
-    estimated_profit_per_unit:      number | null,
-    assignments:                    OrderAssignment[];
-}
+export type RootSingleItem = ApiResponse<'OrderItemResponse'>
 
 export interface BuildPack {
     title:          string;
@@ -2277,29 +1923,7 @@ export interface BuildPack {
     location_name:  string | null;
 }
 
-export interface IndustrySingleOrder {
-    id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
-    public_short_code:  string;
-    contract_to:        string;
-    character_id:       number | null;
-    character_name:     string;
-    location:           BaseLocation;
-    items:              RootSingleItem[];
-    lp_stockpiles:      OrderLpStockpile[];
-    blueprint_coordinators: OrderBlueprintCoordinator[];
-    mineral_coordinators?: OrderBlueprintCoordinator[];
-    pi_coordinators?: OrderBlueprintCoordinator[];
-    mineral_options?: OrderBlueprintCoordinatorEveType[];
-    pi_options?: OrderBlueprintCoordinatorEveType[];
-    profit_breakdown_computed_at?: Date | string | null;
-    can_refresh_profit_breakdown?: boolean;
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
 
 export interface OrderLpStockpileContact {
     character_name:     string;
@@ -2451,12 +2075,16 @@ export interface LoyaltyOffer {
     conversion_isk_per_lp_sell:     number | null;
     conversion_isk_per_lp_buy:      number | null;
     conversion_isk_per_lp_avg_7d:   number | null;
+    /** Per-LP tax and freight inside each side's net, keyed by side (backend plan_costing). */
+    conversion_costs?:              Partial<Record<'sell' | 'buy' | 'avg_7d', LoyaltyOfferConversionCosts>>;
     volume_1d:                      number | null;
     volume_7d:                      number | null;
     volume_30d:                     number | null;
     kind:                           string;
     updated_at:                     Date | string;
 }
+
+export type LoyaltyOfferConversionCosts = ApiResponse<'LoyaltyOfferConversionCosts'>
 
 export interface LoyaltyOffersList {
     items:  LoyaltyOffer[];
@@ -2490,14 +2118,7 @@ export interface FleetMetrics {
     audience_name:      string;
 }
 
-export interface FleetCommanderMetrics {
-    user_id:                    number;
-    primary_character_id:       number;
-    primary_character_name:     string;
-    corporation_id:             number | null;
-    corporation_name:           string | null;
-    fleet_count:                number;
-}
+export type FleetCommanderMetrics = ApiResponse<'EveFleetCommanderMetric'>
 
 export interface CandidateFleetCommander {
     character_id:           number;
@@ -2506,14 +2127,7 @@ export interface CandidateFleetCommander {
     corporation_name:       string;
 }
 
-export interface CandidateFleet {
-    id:                         number;
-    type:                       string;
-    start_time:                 Date;
-    objective:                  string;
-    audience:                   string;
-    fleet_commander:            CandidateFleetCommander;
-}
+export type CandidateFleet = ApiResponse<'CandidateFleetResponse'>
 
 export interface EVEType {
     id:     number;
@@ -2537,13 +2151,7 @@ export interface SRPCurrentAmount {
     created_at:     string;
 }
 
-export interface SRPProgram {
-    id:                 number;
-    eve_type:           EVEType;
-    eve_group:          EVEGroup;
-    eve_category:       EVECAtegory;
-    current_amount:     SRPCurrentAmount;
-}
+export type SRPProgram = ApiResponse<'ShipReimbursementProgramResponse'>
 
 export interface KillmailResolve {
     killmail_time:                  Date;
@@ -2555,11 +2163,7 @@ export interface KillmailResolve {
     candidate_fleets:               CandidateFleet[];
 }
 
-export interface SRPStatsOverview {
-    pending_requests:           number;
-    pending_total:              number;
-    average_response_days:      number;
-}
+export type SRPStatsOverview = ApiResponse<'SrpStatsOverviewResponse'>
 
 export interface SRPStatsHistoryRequests {
     total:      number;
@@ -2659,16 +2263,7 @@ export interface PageProgressImportResponse {
     skipped:            number;
 }
 
-export interface CharacterMembership {
-    id:                 number;
-    character_id:       number;
-    character_name:     string;
-    committed_at:       string;
-    left_at:            string;
-    qualifies:          boolean;
-    missing_skills:     boolean;
-    missing_assets:     boolean;
-}
+export type CharacterMembership = ApiResponse<'MembershipCharacterSchema'>
 
 export type LearningPersona = 'alliance' | 'militia' | 'other'
 
@@ -2999,11 +2594,6 @@ export interface AllianceHealthCohortRow {
     fleet_3_30d_pct:        number;
 }
 
-export interface AllianceHealthCohorts {
-    computed_at:    string;
-    cohorts:        AllianceHealthCohortRow[];
-}
-
 export interface CreatorAccount {
     provider:           string;
     platform_user_id:   string;
@@ -3214,6 +2804,10 @@ export interface CampaignWeekTarget {
     my_structures_reported?: number;
 }
 
+export type CampaignObjectiveCode = CampaignWeekObjectiveRow['objective']
+
+export type CampaignWeekObjectiveRow = ApiResponse<'WeekObjectiveRowOut'>
+
 export interface CampaignWeekProgress {
     system:                 string;
     system_id:              number;
@@ -3242,6 +2836,8 @@ export interface CampaignWeek {
     day_index:              number;
     targets:                CampaignWeekTarget[];
     progress?:              CampaignWeekProgress[];
+    /** The week's objective rows, built and ordered by the backend for the website and the desktop window. */
+    objective_rows?:        CampaignWeekObjectiveRow[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
 }
@@ -3267,7 +2863,6 @@ export interface CampaignFleet {
 export interface CampaignLeaderboardRow {
     rank:           number;
     user_id:        number;
-    username:       string;
     character_id:   number | null;
     character_name: string;
     value:          number;
@@ -3310,7 +2905,6 @@ export interface CampaignSite {
     site_kind:      string;
     amount_lp:      number;
     system:         string;
-    username:       string | null;
     character_id:   number | null;
     character_name: string;
     plex_class:     string;
@@ -3332,7 +2926,6 @@ export interface CampaignTimelineEvent {
 
 export interface CampaignRosterPilot {
     user_id:                number;
-    username:               string;
     primary_character:      string;
     character_id:           number | null;
     corporation_id:         number | null;

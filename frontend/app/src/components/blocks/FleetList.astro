@@ -10,7 +10,6 @@ interface Props {
     active_fleets?:     FleetItem[];
     active_doctrines?:  (DoctrineType | null)[];
     history?:           boolean;
-    init_tooltips:      boolean;
     supply_contracts?:  Contract[][];
     fc_metrics?:        FleetCommanderMetrics[] | null;
 }
@@ -20,7 +19,6 @@ const {
     active_fleets = [],
     active_doctrines = [],
     history = false,
-    init_tooltips,
     supply_contracts = [],
     fc_metrics,
 } = Astro.props
@@ -37,19 +35,6 @@ const fleet_cover_url = (location_name: string | undefined) => {
     return translatePath('/partials/fleet_cover?location_name=' + encodeURIComponent(location_name))
 }
 
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
-
-const is_video_cover = active_fleets.length > 0 ?
-    Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
-    false
-
-import PageCover from '@components/page/partials/PageCover.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
@@ -62,7 +47,8 @@ import FleetHero from '@components/blocks/FleetHero.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import Tag from '@components/blocks/Tag.astro';
 import Button from '@components/blocks/Button.astro';
-import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
+import RankingReel from '@components/blocks/RankingReel.astro';
+import { fleet_commanders_reel } from '@helpers/ranking_reels';
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 ---
 
@@ -99,7 +85,6 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                                         fleet={fleet}
                                         doctrine={active_doctrines[index] ?? null}
                                         supply_contracts={supply_contracts[index]}
-                                        init_tooltips={init_tooltips}
                                     >
                                         {fleet &&
                                             <Tag
@@ -150,31 +135,8 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                 </FlexInline>
             }
         </Flexblock>
-        
-        <>{init_tooltips &&
-            <PageCover
-                video={get_location_video_cover(active_fleets[0].location ?? '') ?? undefined}
-                video_thumb={get_location_video_cover_thumb(active_fleets[0].location ?? '') ?? undefined}
-                image={get_location_cover(active_fleets[0].location ?? '') ?? '/images/fleets-cover.jpg'}
-                image_990={get_location_cover_990(active_fleets[0].location ?? '') ?? '/images/fleets-cover.jpg'}
-                animated={false}
-                scrollable={true}
-                overlay={true}
-                oob_swap={true}
-                align={is_video_cover ? 'right' : 'left'}
-            />
-        }</>
         :
-        <>{init_tooltips &&
-            <PageCover
-                image="/images/fleets-cover.jpg"
-                image_990="/images/fleets-cover.jpg"
-                scrollable={true}
-                overlay={true}
-                oob_swap={true}
-                align={is_video_cover ? 'right' : 'left'}
-            />
-        }</>
+        null
     }
 
     <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': active_fleets.length > 0 } ]}>
@@ -204,7 +166,6 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                     role="listitem"
                     fleet={fleet}
                     history={history}
-                    init_tooltips={init_tooltips}
                 />
             )}
         </Grid>
@@ -225,9 +186,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         x-show={skip_hero ? "show_fc_ranking || !initialized" : undefined}
         x-on:marquee-started={skip_hero ? "$nextTick(() => { initialized = true; })" : undefined}
     >
-        <FleetCommandersReel
-            fc_metrics={fc_metrics}
-        />
+        <RankingReel {...fleet_commanders_reel(fc_metrics, t)} />
     </div>
 }
 

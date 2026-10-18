@@ -24,7 +24,7 @@ Reference alliance: [Minmatar Fleet Alliance](https://my.minmatar.org/).
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
+pipenv run python ../.claude/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
 ```
 
 Also read [debug-production-readonly-db](../debug-production-readonly-db/SKILL.md) if DB access fails.
@@ -149,7 +149,7 @@ Header row required. No markdown table pipes — tabs only.
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
+pipenv run python ../.claude/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
 ```
 
 You interpret the JSON, apply gates, route, summarize.

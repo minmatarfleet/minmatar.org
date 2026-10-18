@@ -31,43 +31,6 @@ export const remove_line_breaks = (text:string):string => {
     return text.replace(/(\r\n|\n|\r)/gm, "")
 }
 
-function format_response_detail(detail: unknown): string | null {
-    if (typeof detail === 'string') {
-        const error_msg = parse_error_message(detail)
-        return error_msg ? error_msg : detail
-    }
-    if (Array.isArray(detail)) {
-        const parts = detail.map((item) => {
-            if (typeof item === 'string')
-                return item
-            if (item && typeof item === 'object' && 'msg' in item)
-                return String((item as { msg: unknown }).msg)
-            return null
-        }).filter((part): part is string => !!part)
-        return parts.length > 0 ? parts.join('; ') : null
-    }
-    if (detail == null)
-        return null
-    return String(detail)
-}
-
-export async function parse_response_error(response:Response, endpoint:string) {
-    try {
-        const parsed_error = await response.json()
-        const detail = format_response_detail(parsed_error?.detail)
-        return detail || get_error_message(response.status, endpoint)
-    } catch (e) {
-        return get_error_message(
-            response.status,
-            endpoint
-        )
-    }
-}
-
-export function get_error_message(status:number, endpoint:string) {
-    return `HTTP error! Status — ${status}\n\`${endpoint}\``
-}
-
 export function decode_unicode_escapes(text) {
     return text.replace(/\\u([0-9A-Fa-f]{4})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
 }
@@ -115,4 +78,17 @@ export const b64_to_Uint8Array = (b64encoded_string:string):Uint8Array => {
 
 export const remove_trailing_slash = (str:string) => {
     return str.replace(/\/$/, '')
+}
+
+const HTML_ESCAPES: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+}
+
+/** Escape text for an HTML string (tippy allowHTML content, set:html). */
+export function escape_html(text: string): string {
+    return text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char])
 }

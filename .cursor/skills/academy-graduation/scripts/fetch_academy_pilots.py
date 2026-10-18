@@ -5,11 +5,11 @@ Fetch Minmatar Fleet Academy pilot roster with behavioral metrics (JSON).
 Does NOT decide graduation or corp routing — the agent applies SKILL.md.
 
 Usage (from repo root):
-  cd backend && pipenv run python ../.cursor/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
+  cd backend && pipenv run python ../.claude/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
 
 Or from this skill directory:
   cd backend && pipenv run python manage.py shell < /dev/null  # ensure venv
-  pipenv run python ../.cursor/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
+  pipenv run python ../.claude/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
 """
 
 from __future__ import annotations

@@ -20,13 +20,13 @@ import {
     get_fleet_commander_metrics,
 } from '@helpers/api.minmatar.org/fleets'
 import { get_route } from '@helpers/api.eveonline/routes'
-import { get_user_character, get_users_character } from '@helpers/fetching/characters'
+import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import { get_campaign } from '@helpers/api.minmatar.org/campaigns'
 import { get_system_sun_type_id } from '@helpers/sde/map'
 import { get_fleet_users } from '@helpers/api.minmatar.org/fleets'
-import { unique_values } from '@helpers/array'
 import { time_diff_text } from '@helpers/date'
+import { settled_value } from '@helpers/settled'
 
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
@@ -42,12 +42,10 @@ export async function fetch_fleets_auth(
     api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
     if (!upcoming)
-        api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time) < new Date())
+        api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time ?? 0) < new Date())
     
     const fleet_ids = api_fleets.map(api_fleet =>  api_fleet.id)
-    const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
-    const fleet_commanders_profiles = await get_users_character(fleet_commanders)
-    
+
     if (!simplified) {
         const fleets_metrics = await get_fleets_metrics(access_token)
         const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
@@ -55,26 +53,22 @@ export async function fetch_fleets_auth(
 
         return api_fleets.map( fleet => add_fleet_info(
             fleet,
-            fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander),
             fleets_metrics_filtered,
             fleet_commander_metrics,
         ))
     }
 
-    return api_fleets.map( fleet => add_fleet_info(
-        fleet,
-        fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander),
-        [],
-        [],
-    ))
+    return api_fleets.map( fleet => add_fleet_info(fleet, [], []))
 }
 
+/** The FC's primary character comes with the fleet (fleet_commander_character_id / _name). */
 export function add_fleet_info(
     fleet:Fleet,
-    fc_profile:EveCharacterProfile | undefined,
     fleets_metrics:FleetMetrics[],
     fleet_commander_metrics:FleetCommanderMetrics[],
 ) {
+    const fc_character_id = fleet.fleet_commander_character_id ?? null
+
     return {
         id: fleet.id,
         description: fleet.description,
@@ -82,41 +76,44 @@ export function add_fleet_info(
         audience: fleet.audience,
         doctrine_id: fleet.doctrine_id,
         members_count: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.members,
-        fleet_commander_id: fc_profile?.character_id ?? 0,
-        fleet_commander_name: fc_profile?.character_name ?? t('not_available'),
-        fleet_commander_fleet_count: fleet_commander_metrics.find(metric => metric.primary_character_id === fc_profile?.character_id)?.fleet_count,
+        fleet_commander_id: fc_character_id ?? 0,
+        fleet_commander_name: fleet.fleet_commander_name ?? t('not_available'),
+        fleet_commander_fleet_count: fc_character_id === null ? undefined : fleet_commander_metrics.find(metric => metric.primary_character_id === fc_character_id)?.fleet_count,
         corporation_id: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_id,
         corporation_name: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_name,
         location: fleet.location,
-        start_time: fleet.start_time,
+        // FleetItem and FleetUI (layout_components) still call this a Date; it is the API's ISO string.
+        start_time: fleet.start_time as unknown as Date,
         type: fleet.type,
-        tracking: fleet.tracking,
+        tracking: fleet.tracking as unknown as FleetItem['tracking'],  // same: the view-model's Dates are ISO strings
         status: fleet.status,
         aar_link: fleet.aar_link ?? null,
     } as FleetItem
 }
 
-export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
-    const fleet = await get_fleet_by_id(access_token, fleet_id)
-        
-    let character_profile:EveCharacterProfile | null = null
-    if (fleet?.fleet_commander)
-        character_profile = await get_user_character(fleet.fleet_commander)
-
-    let doctrine:DoctrineType | null = null
-    if (fleet?.doctrine_id)
-        doctrine = await fetch_doctrine_by_id(fleet.doctrine_id)
-
+async function fetch_campaign_name(access_token:string, campaign_slug:string):Promise<string | null> {
     // The fleet payload only carries the slug. The readable name is a bonus:
     // a viewer without the campaigns feature gets a 403 and keeps the slug.
-    let campaign_name:string | null = null
-    if (fleet?.campaign_slug) {
-        try {
-            campaign_name = (await get_campaign(fleet.campaign_slug, access_token))?.name ?? null
-        } catch (error) {
-            console.log(`Skipping campaign name: ${error.message}`)
-        }
+    try {
+        return (await get_campaign(campaign_slug, access_token))?.name ?? null
+    } catch (error) {
+        console.log(`Skipping campaign name: ${error.message}`)
+        return null
     }
+}
+
+export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
+    const fleet = await get_fleet_by_id(access_token, fleet_id)
+
+    // FC, doctrine and campaign only need the fleet, so fetch them together.
+    const [profile_result, doctrine_result, campaign_name_result] = await Promise.allSettled([
+        fleet?.fleet_commander ? get_user_character(fleet.fleet_commander) : null,
+        fleet?.doctrine_id ? fetch_doctrine_by_id(fleet.doctrine_id) : null,
+        fleet?.campaign_slug ? fetch_campaign_name(access_token, fleet.campaign_slug) : null,
+    ])
+    const character_profile:EveCharacterProfile | null = settled_value(profile_result)
+    const doctrine:DoctrineType | null = settled_value(doctrine_result)
+    const campaign_name:string | null = settled_value(campaign_name_result)
 
     return {
         id: fleet.id,
@@ -125,10 +122,11 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('unknown_character'),
         location: fleet.location,
-        start_time: fleet.start_time,
+        // FleetItem and FleetUI (layout_components) still call this a Date; it is the API's ISO string.
+        start_time: fleet.start_time as unknown as Date,
         type: fleet.type,
         doctrine: fleet?.doctrine_id ? doctrine : null,
-        tracking: fleet.tracking,
+        tracking: fleet.tracking as unknown as FleetItem['tracking'],  // same: the view-model's Dates are ISO strings
         audience: fleet.audience,
         disable_motd: fleet.disable_motd,
         hide_volunteers: fleet.hide_volunteers,

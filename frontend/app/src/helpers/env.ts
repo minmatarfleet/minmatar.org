@@ -28,11 +28,17 @@ export const get_discord_oauth_start_url = () => {
 }
 
 export const get_friend_auth_url = () => {
-    return `${API_URL}/api/users/login?redirect_url=${APP_URL}/friend/login`
+    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${APP_URL}/friend/login`
 }
 
-export const get_api_url = () => {
+/** Backend base URL for server-side requests only. Never hand it to the browser. */
+export const get_internal_api_url = () => {
     return API_URL
+}
+
+/** Backend base URL the browser can reach: links, redirects, form actions, client scripts. */
+export const get_public_api_url = () => {
+    return API_PUBLIC_URL
 }
 
 export const get_app_url = (path:string = '') => {

@@ -386,7 +386,10 @@ def move_slot(
     old_template: RedditPostTemplate,
     old_scheduled_for: datetime,
 ):
-    """An admin moved a confirmed slot: log it and tell whoever it affects."""
+    """An admin moved a confirmed slot: log it and tell whoever it affects.
+
+    Runs in the admin request, so the DMs are queued for a worker.
+    """
     post.heads_up_sent_at = None
     post.save(update_fields=["heads_up_sent_at"])
     if post.schedule_id:
@@ -399,15 +402,15 @@ def move_slot(
             RedditScheduleChange.ADMIN,
         )
     if old_template.pk != template.pk:
-        scheduling.dm_ceo(
+        scheduling.dm_ceo_later(
             old_template,
             [scheduling.slot_removed_message(old_template, old_scheduled_for)],
         )
-        scheduling.dm_ceo(
+        scheduling.dm_ceo_later(
             template, [scheduling.extra_slot_message(template, scheduled_for)]
         )
     elif old_scheduled_for != scheduled_for:
-        scheduling.dm_ceo(
+        scheduling.dm_ceo_later(
             template,
             [
                 scheduling.slot_moved_message(

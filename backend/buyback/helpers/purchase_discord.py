@@ -3,28 +3,41 @@
 from __future__ import annotations
 
 import logging
-import time
 
 from django.conf import settings
 
+from app.links import site_url
 from buyback.helpers.purchase_discord_buttons import order_action_components
 from buyback.models import BuybackPurchaseOrder
 from discord.client import DiscordClient
-from discord.models import DiscordChannel
+from discord.forum_threads import ForumThreadMirror
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
-# Match LP buyback / help tickets: settle message traffic before archive so
-# Discord does not reopen the thread when a post lands after close.
-THREAD_ARCHIVE_DELAY_SECONDS = 5
 STARTER_CONTENT_LIMIT = 1800
 
 
+def _close_task():
+    # pylint: disable=import-outside-toplevel
+    from buyback.discord_tasks import close_buyback_purchase_thread_task
+
+    return close_buyback_purchase_thread_task
+
+
+MIRROR = ForumThreadMirror(
+    label="hangar buyback",
+    channel_flag="receive_buyback",
+    preferred_tags=frozenset(
+        {"open", "purchase-order", "buyback", "order", "new"}
+    ),
+    client=lambda: discord,
+    close_task=_close_task,
+)
+
+
 def order_site_url(order: BuybackPurchaseOrder) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     return f"{base}/market/buyback/orders/?order={int(order.pk)}"
 
 
@@ -71,15 +84,7 @@ def format_isk_compact(isk: int) -> str:
 
 
 def buyback_channel_id() -> int | None:
-    channel_id = (
-        DiscordChannel.objects.filter(
-            receive_buyback=True,
-            guild__is_active=True,
-        )
-        .values_list("channel_id", flat=True)
-        .first()
-    )
-    return int(channel_id) if channel_id else None
+    return MIRROR.channel_id()
 
 
 def order_thread_title(order: BuybackPurchaseOrder) -> str:
@@ -131,66 +136,22 @@ def order_starter_message(order: BuybackPurchaseOrder) -> str:
     return _starter_with_items(header, kept, 0, url)
 
 
-def _default_forum_tag_ids(channel_id: int) -> list[str]:
-    try:
-        channel = discord.get_channel(channel_id).json()
-    except Exception as exc:
-        logger.warning(
-            "Could not fetch buyback forum channel %s for tags: %s",
-            channel_id,
-            exc,
-        )
-        return []
-
-    tags = channel.get("available_tags") or []
-    if not tags:
-        return []
-
-    preferred_names = {
-        "open",
-        "purchase-order",
-        "buyback",
-        "order",
-        "new",
-    }
-    for tag in tags:
-        name = str(tag.get("name") or "").strip().lower()
-        if name in preferred_names:
-            return [str(tag["id"])]
-    return [str(tags[0]["id"])]
-
-
 def create_order_thread(order: BuybackPurchaseOrder) -> int | None:
-    channel_id = buyback_channel_id()
-    if not channel_id:
-        logger.warning("No DiscordChannel with receive_buyback; skip thread")
-        return None
-    try:
-        response = discord.create_forum_thread(
-            channel_id=channel_id,
-            title=order_thread_title(order)[:100],
-            message=order_starter_message(order),
-            applied_tags=_default_forum_tag_ids(channel_id),
-            components=order_action_components(order.pk),
-        )
-        return int(response.json()["id"])
-    except Exception as exc:
-        logger.error(
-            "Failed creating hangar buyback Discord thread (channel=%s): %s",
-            channel_id,
-            exc,
-        )
-        return None
+    return MIRROR.create_thread(
+        order_thread_title(order),
+        order_starter_message(order),
+        components=order_action_components(order.pk),
+    )
+
+
+def close_thread_id(thread_id: int | None) -> bool:
+    """Archive/lock a purchase-order thread by Discord channel id."""
+    return MIRROR.close(thread_id)
 
 
 def close_order_thread(order: BuybackPurchaseOrder) -> None:
     """Archive/lock the order thread without posting (avoids Discord reopen race)."""
-    if not order.discord_thread_id:
-        return
-    try:
-        discord.close_thread(channel_id=order.discord_thread_id)
-    except Exception as exc:
-        logger.error("Failed closing hangar buyback Discord thread: %s", exc)
+    MIRROR.close(order.discord_thread_id)
 
 
 def post_order_status_update(
@@ -198,14 +159,7 @@ def post_order_status_update(
     *,
     message: str,
 ) -> None:
-    if not order.discord_thread_id:
-        return
-    try:
-        discord.create_message(
-            channel_id=order.discord_thread_id, payload={"content": message}
-        )
-    except Exception as exc:
-        logger.error("Failed posting hangar buyback Discord update: %s", exc)
+    MIRROR.post(order.discord_thread_id, message)
 
 
 def notify_purchase_created(order: BuybackPurchaseOrder) -> None:
@@ -253,16 +207,14 @@ def _cancelled_message(order: BuybackPurchaseOrder) -> str:
     return "\n".join(lines)
 
 
-def _post_then_archive(order: BuybackPurchaseOrder, message: str) -> None:
-    post_order_status_update(order, message=message)
-    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
-    close_order_thread(order)
-
-
 def notify_purchase_status_changed(order: BuybackPurchaseOrder) -> None:
     if not order.discord_thread_id:
         return
     if order.status == BuybackPurchaseOrder.Status.COMPLETED:
-        _post_then_archive(order, _completed_message(order))
+        MIRROR.post_then_close(
+            order.discord_thread_id, _completed_message(order)
+        )
     elif order.status == BuybackPurchaseOrder.Status.CANCELLED:
-        _post_then_archive(order, _cancelled_message(order))
+        MIRROR.post_then_close(
+            order.discord_thread_id, _cancelled_message(order)
+        )

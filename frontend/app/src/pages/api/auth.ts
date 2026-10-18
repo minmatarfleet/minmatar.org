@@ -1,15 +1,13 @@
+import { get_request_user } from '@helpers/request_user'
 import { i18n } from '@helpers/i18n'
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_200_Success, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { delete_account } from '@helpers/api.minmatar.org/authentication'
 
-export async function DELETE({ request, params, cookies }) {
+export async function DELETE({ request, params, cookies, locals }) {
     const { t, translatePath } = i18n(new URL(request.url))
 
-    const auth_token = cookies.has('auth_token') ? cookies.get('auth_token').value : false
-    const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+    const { auth_token, user } = get_request_user({ cookies, locals })
 
     if (!auth_token || !user) {
         return HTTP_403_Forbidden()

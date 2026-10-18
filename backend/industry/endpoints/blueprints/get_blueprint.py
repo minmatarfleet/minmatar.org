@@ -8,13 +8,15 @@ from django.db.models import QuerySet
 from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_characters,
+)
 from eveonline.models import (
     EveCharacter,
     EveCharacterBlueprint,
     EveCharacterIndustryJob,
     EveCorporationBlueprint,
     EveCorporationIndustryJob,
-    EvePlayer,
 )
 from industry.endpoints.blueprints.job_status import CURRENT_JOB_STATUSES
 from industry.endpoints.blueprints.schemas import (
@@ -37,21 +39,14 @@ ROUTE_SPEC = {
 }
 
 
-def _primary_eve_character_id(user_id: int | None) -> int | None:
-    if user_id is None:
+def _primary_eve_character_id(character: EveCharacter | None) -> int | None:
+    """EVE id of the main of whoever owns ``character``."""
+    if character is None:
         return None
-    primary_pk = (
-        EvePlayer.objects.filter(user_id=user_id)
-        .values_list("primary_character_id", flat=True)
-        .first()
+    main = primary_characters_for_characters([character.character_id]).get(
+        character.character_id
     )
-    if not primary_pk:
-        return None
-    return (
-        EveCharacter.objects.filter(pk=primary_pk)
-        .values_list("character_id", flat=True)
-        .first()
-    )
+    return main.character_id if main else None
 
 
 def _char_job_to_response(
@@ -175,7 +170,7 @@ def get_blueprint(request, item_id: int):
         owner = BlueprintOwnerResponse(
             entity_id=ch.character_id,
             entity_type="character",
-            primary_character_id=_primary_eve_character_id(ch.user_id),
+            primary_character_id=_primary_eve_character_id(ch),
         )
         bp = char_bp
     else:
@@ -190,9 +185,7 @@ def get_blueprint(request, item_id: int):
         owner = BlueprintOwnerResponse(
             entity_id=corp.corporation_id,
             entity_type="corporation",
-            primary_character_id=_primary_eve_character_id(
-                ceo.user_id if ceo else None
-            ),
+            primary_character_id=_primary_eve_character_id(ceo),
         )
         bp = corp_bp
 

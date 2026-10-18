@@ -2,10 +2,8 @@
 
 The window is glanced at over the game, so it carries one progress figure
 per objective and its move, never the contest breakdown. The rows are the
-week's targets, so the move is measured from when the week opened; the 24h
-move rides along for the hover. Complex objectives are measured in victory
-points; advantage objectives in the advantage level. Every progress figure reads "higher is better", so a
-defensive or destroy objective is inverted before it gets here.
+ones the website's objectives table draws (campaigns/services/objectives.py),
+rounded to a tenth and in the shape released desktop versions read.
 
 Every desktop app polls this once a minute, so it is built from a handful
 of queries and served from the cache: one build per campaign per minute,
@@ -17,33 +15,30 @@ from __future__ import annotations
 import time
 from datetime import timedelta
 
-from django.db.models import OuterRef, Q, Subquery
-from django.db.models.functions import Coalesce
+from django.db.models import Q
 from django.utils import timezone
 
-from campaigns.helpers import campaign_week_start, week_bounds
 from campaigns.models import (
     ADVANTAGE_SITE_KINDS,
     Campaign,
-    CampaignAdvantageReading,
     CampaignKillmailParticipant,
     CampaignSiteCompletion,
     CampaignStatus,
-    CampaignSystemSnapshot,
-    CampaignWeekTarget,
     KillmailOutcome,
     SiteKind,
-    SystemGoal,
 )
-from campaigns.services import advantage, plan
+from campaigns.services import objectives, plan
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_refs_for_users,
+)
 from eveonline.helpers.corporations.safe_cache import (
     cache_add,
     cache_delete,
     cache_get,
     cache_set,
 )
-from eveonline.models import EveCharacter, EvePlayer
-from feed.constants import FACTION_AMARR, FACTION_MINMATAR
+from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstanceMember
 
 ACTIVE_WINDOW_MINUTES = 60
@@ -55,9 +50,6 @@ REBUILD_LOCK_SECONDS = 30
 CACHE_KEY = "campaigns:overlay:{campaign_id}"
 LOCK_KEY = "campaigns:overlay:{campaign_id}:rebuilding"
 
-FACTIONS = {FACTION_MINMATAR: "minmatar", FACTION_AMARR: "amarr"}
-PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
-
 OBJECTIVE_LABELS = {
     "capture_complexes": "Capture complexes",
     "defend_complexes": "Defend complexes",
@@ -65,16 +57,6 @@ OBJECTIVE_LABELS = {
     "hold_advantage": "Hold advantage",
     "destroy_advantage": "Destroy advantage",
 }
-METRIC_OBJECTIVES = {
-    CampaignWeekTarget.Metric.VICTORY_POINTS: "capture_complexes",
-    CampaignWeekTarget.Metric.DAYS_UNDER_LINE: "defend_complexes",
-    CampaignWeekTarget.Metric.ADVANTAGE: "gain_advantage",
-    CampaignWeekTarget.Metric.ADVANTAGE_GAIN: "gain_advantage",
-    CampaignWeekTarget.Metric.ADVANTAGE_MAINTAIN: "hold_advantage",
-    CampaignWeekTarget.Metric.ADVANTAGE_DESTROY: "destroy_advantage",
-}
-COMPLEX_OBJECTIVES = ("capture_complexes", "defend_complexes")
-OFFENSIVE_GOALS = (SystemGoal.TAKE, SystemGoal.PRESSURE, SystemGoal.DISRUPT)
 
 
 def pick_campaign(user) -> Campaign | None:
@@ -89,7 +71,12 @@ def pick_campaign(user) -> Campaign | None:
 
 
 def overlay(campaign: Campaign) -> dict:
-    """Nothing in here depends on who asks, so one copy serves every window."""
+    """Nothing in here depends on who asks, so one copy serves every window.
+
+    Stale-while-revalidate, unlike app.cache.CachedRollup: the build is
+    cheap enough to run in a request, so one request rebuilds under a short
+    lock while the others get the stale copy.
+    """
     key = CACHE_KEY.format(campaign_id=campaign.id)
     lock = LOCK_KEY.format(campaign_id=campaign.id)
     cached = cache_get(key)
@@ -125,213 +112,49 @@ def build(campaign: Campaign) -> dict:
 
 
 def objective_rows(campaign: Campaign) -> list[dict]:
-    """One row per objective this week, highest priority first.
-
-    Rows follow the week's targets, as the website's objectives table does.
-    Before targets exist, each FW system gets one row from its own goal.
-    """
-    systems = {
-        system.id: system for system in _systems_with_readings(campaign)
-    }
-    targets = CampaignWeekTarget.objects.filter(
-        campaign_system_id__in=systems.keys(),
-        week_start=campaign_week_start(),
-        metric__in=METRIC_OBJECTIVES.keys(),
-    ).values_list("campaign_system_id", "metric", "baseline")
-    # Advantage rows measure the week from the target's baseline, the level
-    # it opened at, as the website does.
-    pairs = [
-        (systems[system_id], METRIC_OBJECTIVES[metric], baseline)
-        for system_id, metric, baseline in targets
+    """The week's objective rows (campaigns/services/objectives.py), in the
+    shape installed desktop versions read. Structure objectives have no
+    place in the window."""
+    return [
+        _overlay_row(row)
+        for row in objectives.weekly_rows(campaign)
+        if row["objective"] in OBJECTIVE_LABELS
     ]
-    if not pairs:
-        pairs = [
-            (system, _goal_objective(system.goal), None)
-            for system in systems.values()
-            if system.is_fw_objective
-        ]
-
-    snapshots = CampaignSystemSnapshot.objects.in_bulk(
-        [
-            snapshot_id
-            for system, _, _ in pairs
-            for snapshot_id in (
-                system.latest_snapshot,
-                system.day_ago_snapshot,
-                system.week_open_snapshot,
-            )
-            if snapshot_id
-        ]
-    )
-    readings = CampaignAdvantageReading.objects.in_bulk(
-        [
-            system.day_ago_reading
-            for system, objective, _ in pairs
-            if objective not in COMPLEX_OBJECTIVES and system.day_ago_reading
-        ]
-    )
-    rows = [
-        _row(system, objective, baseline, snapshots, readings)
-        for system, objective, baseline in pairs
-    ]
-    return sorted(
-        rows,
-        key=lambda row: (PRIORITY_RANK.get(row["priority"], 1), row["name"]),
-    )
 
 
-def _systems_with_readings(campaign: Campaign):
-    """Live systems, each with the ids of its latest, 24h-old and week-open
-    snapshot and its 24h-old advantage reading, in one query.
-
-    The week opens on the last snapshot before it began; with none, on the
-    first inside it, as the website's weekly progress does.
-    """
-    day_ago = timezone.now() - timedelta(hours=24)
-    week_open = week_bounds(campaign_week_start())[0]
-    snapshots = CampaignSystemSnapshot.objects.filter(
-        campaign_system=OuterRef("pk")
-    ).order_by("-captured_at")
-    readings = CampaignAdvantageReading.objects.filter(
-        campaign_system=OuterRef("pk"),
-        status="accepted",
-        reported_at__lte=day_ago,
-    ).order_by("-reported_at")
-    return (
-        campaign.systems.filter(retired_at__isnull=True)
-        .select_related("advantage_state")
-        .annotate(
-            latest_snapshot=Subquery(snapshots.values("id")[:1]),
-            day_ago_snapshot=Subquery(
-                snapshots.filter(captured_at__lte=day_ago).values("id")[:1]
-            ),
-            day_ago_reading=Subquery(readings.values("id")[:1]),
-            week_open_snapshot=Coalesce(
-                Subquery(
-                    snapshots.filter(captured_at__lt=week_open).values("id")[
-                        :1
-                    ]
-                ),
-                Subquery(
-                    snapshots.filter(captured_at__gte=week_open)
-                    .order_by("captured_at")
-                    .values("id")[:1]
-                ),
-            ),
-        )
-    )
-
-
-def _goal_objective(goal: str) -> str:
-    return (
-        "capture_complexes" if goal in OFFENSIVE_GOALS else "defend_complexes"
-    )
-
-
-def _row(
-    system, objective: str, baseline, snapshots: dict, readings: dict
-) -> dict:
-    latest = snapshots.get(system.latest_snapshot)
-    flipped = None
-    if objective in COMPLEX_OBJECTIVES:
-        week_open = snapshots.get(system.week_open_snapshot)
-        progress, change, detail = _complex_progress(
-            objective, latest, snapshots.get(system.day_ago_snapshot)
-        )
-        _, change_week, _ = _complex_progress(objective, latest, week_open)
-        if latest and week_open:
-            flipped = plan.flip_outcome(
-                week_open.occupier_faction_id, latest.occupier_faction_id
-            )
-        if flipped:
-            # The contest reset when it changed hands; the flip is the move.
-            change_week = None
-    else:
-        card = advantage.card_for(system)
-        progress, change, detail = _advantage_progress(
-            objective, card, readings.get(system.day_ago_reading)
-        )
-        change_week = _advantage_week_change(objective, card, baseline)
+def _overlay_row(row: dict) -> dict:
     return {
-        "system_id": system.id,
-        "name": system.name,
-        "solar_system_id": system.solar_system_id,
-        "priority": system.priority,
-        "holder": FACTIONS.get(latest.occupier_faction_id) if latest else None,
-        "objective": objective,
-        "objective_label": OBJECTIVE_LABELS[objective],
-        "progress_percent": progress,
-        "change_week": change_week,
-        "change_24h": change,
-        "flipped": flipped,
-        "detail": detail,
+        "system_id": row["system_id"],
+        "name": row["name"],
+        "solar_system_id": row["solar_system_id"],
+        "priority": row["priority"],
+        "holder": row["holder"],
+        "objective": row["objective"],
+        "objective_label": OBJECTIVE_LABELS[row["objective"]],
+        "progress_percent": _round(row["progress_percent"]),
+        "change_week": _round(row["change_week"]),
+        "change_24h": _round(row["change_24h"]),
+        "flipped": row["flipped"],
+        "detail": _detail(row),
     }
 
 
-def _complex_progress(objective: str, latest, day_ago):
-    """Victory points against the system's flip threshold.
-
-    Capturing, the bar fills as our side's victory points climb. Defending,
-    it is how far the attackers are from flipping it, so a quiet system is
-    full and their victory points drain it.
-    """
-    if latest is None:
-        return None, None, ""
-    detail = (
-        f"{latest.victory_points:,} of "
-        f"{latest.victory_points_threshold:,} victory points"
-        if latest.victory_points_threshold
-        else ""
-    )
-    vp_percent = latest.contested_percent
-    vp_change = (
-        latest.contested_percent - day_ago.contested_percent
-        if day_ago
-        else None
-    )
-    if objective == "capture_complexes":
-        return _round(vp_percent), _round(vp_change), detail
-    return (
-        _round(100 - vp_percent),
-        _round(-vp_change) if vp_change is not None else None,
-        detail,
-    )
-
-
-def _advantage_progress(objective: str, card: dict, day_ago):
-    """Our advantage level, or for destroy, how far theirs has fallen."""
-    destroy = objective == "destroy_advantage"
-    level = card["enemy_pct" if destroy else "our_pct"]
-    if level is None:
-        return None, None, ""
-    detail = f"{'Their' if destroy else 'Our'} advantage {level:.0f}%"
-    was = (
-        (day_ago.enemy_pct if destroy else day_ago.our_pct)
-        if day_ago
-        else None
-    )
-    change = level - was if was is not None else None
-    if destroy:
+def _detail(row: dict) -> str:
+    """The figure behind the bar: victory points, or the advantage level."""
+    if row["objective"] in objectives.COMPLEX_OBJECTIVES:
+        if (
+            row["progress_percent"] is None
+            or not row["victory_points_threshold"]
+        ):
+            return ""
         return (
-            _round(100 - level),
-            _round(-change) if change is not None else None,
-            detail,
+            f"{row['victory_points']:,} of "
+            f"{row['victory_points_threshold']:,} victory points"
         )
-    return _round(level), _round(change), detail
-
-
-def _advantage_week_change(objective: str, card: dict, baseline):
-    """The level's move since the week opened, inverted for destroy.
-
-    The baseline is the target's own level at week open: ours for gain and
-    hold, theirs for destroy.
-    """
-    destroy = objective == "destroy_advantage"
-    level = card["enemy_pct" if destroy else "our_pct"]
-    if level is None or baseline is None:
-        return None
-    change = level - baseline
-    return _round(-change if destroy else change)
+    if row["advantage_level"] is None:
+        return ""
+    whose = "Their" if row["objective"] == "destroy_advantage" else "Our"
+    return f"{whose} advantage {row['advantage_level']:.0f}%"
 
 
 def _round(value):
@@ -482,11 +305,7 @@ def _note_fleet_members(campaign, since, by_solar_system, note) -> None:
             "character_id", "character_name", "updated_at", "solar_system_id"
         )
     )
-    owners = dict(
-        EveCharacter.objects.filter(
-            character_id__in={member[0] for member in members}
-        ).values_list("character_id", "user_id")
-    )
+    owners = owner_user_ids(member[0] for member in members)
     for character_id, character_name, at, system_id in members:
         user_id = owners.get(character_id)
         if user_id in enlisted:
@@ -503,16 +322,7 @@ def _note_fleet_members(campaign, since, by_solar_system, note) -> None:
 def _as_rows(pilots: dict[int, _Activity]) -> list[dict]:
     """Each pilot as their primary character; without one, the character
     that did the thing stands in."""
-    primaries = {
-        user_id: (character_id, name)
-        for user_id, character_id, name in EvePlayer.objects.filter(
-            user_id__in=pilots.keys(), primary_character__isnull=False
-        ).values_list(
-            "user_id",
-            "primary_character__character_id",
-            "primary_character__character_name",
-        )
-    }
+    primaries = primary_refs_for_users(pilots.keys())
     fallback_names = dict(
         EveCharacter.objects.filter(
             character_id__in=[

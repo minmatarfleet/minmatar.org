@@ -1,7 +1,7 @@
 .fluid-fixed-l {
     --fluid-fixed--width: 20rem;
     --fluid-fixed--breakpoint: 50%;
-    --fluid-fixed--gap: var(--space-400);
+    --fluid-fixed--gap: normal;
 
     display: flex;
     flex-wrap: wrap;

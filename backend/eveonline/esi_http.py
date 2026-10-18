@@ -49,6 +49,7 @@ def user_agent() -> str:
 
         return _build_user_agent(UA_APPNAME, UA_VERSION, UA_URL)
     except Exception:  # pragma: no cover - django-esi internals moved
+        # expected: fall back to the same UA string built by hand
         return f"{UA_APPNAME}/{UA_VERSION} (+{UA_URL})"
 
 

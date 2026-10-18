@@ -11,6 +11,7 @@ from fittings.models import FittingTag
 
 from esi.models import CallbackRedirect, Scope, Token
 
+from .constants import MINMATAR_FLEET_ALLIANCE_ID
 from .models import (
     EveCharacterFwLpPayout,
     FwPayoutEventCode,
@@ -89,9 +90,6 @@ def _format_corp_label(name, ticker, corp_id):
     if name:
         return name
     return str(corp_id)
-
-
-MINMATAR_FLEET_ALLIANCE_ID = 99011978
 
 
 def _minmatar_fleet_corporations():

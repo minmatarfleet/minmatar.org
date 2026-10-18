@@ -5,10 +5,10 @@ from __future__ import annotations
 from datetime import timedelta
 
 import requests
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.utils import timezone
 
+from app.links import fleet_url
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from fleets.helpers.npsi_actions import NpsiActionError, post_event_to_schedule
@@ -18,6 +18,7 @@ from fleets.helpers.npsi_ingest import (
     resolve_fc_user,
     upsert_feed_item,
 )
+from fleets.helpers.removal import remove_fleet
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -294,7 +295,9 @@ def post_local_unaligned_event(
         event.eve_fleet = None
         event.status = NpsiExternalEvent.Status.NOTIFIED
         event.save(update_fields=["eve_fleet", "status", "updated_at"])
-        EveFleet.objects.filter(id=old_fleet_id).delete()
+        old_fleet = EveFleet.objects.filter(id=old_fleet_id).first()
+        if old_fleet:
+            remove_fleet(old_fleet)
 
     try:
         post_event_to_schedule(event)
@@ -308,7 +311,4 @@ def post_local_unaligned_event(
 
 
 def local_fleet_schedule_url(fleet_id: int) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
-    return f"{base}/fleets/upcoming/{fleet_id}"
+    return fleet_url(fleet_id)

@@ -1,14 +1,10 @@
 import type { CombatLog, SavedCombatLog, SavedLogsRequest, CombatLogStoreOptions } from '@dtypes/api.minmatar.org'
-import { get_error_message, query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+import { api_request, api_status_is } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/combatlog`
 
 export async function get_saved_logs(access_token:string, saved_logs_request:SavedLogsRequest) {
-    const headers = {
-        'Content-Type': 'text/plain',
-        'Authorization': `Bearer ${access_token}`
-    }
-
     const { user_id, fleet_id, fitting_id } = saved_logs_request
 
     const query_params = {
@@ -21,70 +17,24 @@ export async function get_saved_logs(access_token:string, saved_logs_request:Sav
 
     const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : '/'}`
 
-    console.log(`Requesting GET: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'GET'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as SavedCombatLog[];
-    } catch (error) {
-        throw new Error(`Error analizing log: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<SavedCombatLog[]>(ENDPOINT, {
+        token: access_token,
+        content_type: 'text/plain',
+        error: 'Error analizing log',
+    })
 }
 
 export async function get_log_by_id(access_token:string, log_id:number) {
-    const headers = {
-        'Content-Type': 'text/plain',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${log_id}`
-
-    console.log(`Requesting GET: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'GET'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as CombatLog;
-    } catch (error) {
-        throw new Error(`Error fetching log: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CombatLog>(`${API_ENDPOINT}/${log_id}`, {
+        token: access_token,
+        content_type: 'text/plain',
+        error: 'Error fetching log',
+    })
 }
 
 export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean = false, store_options?:CombatLogStoreOptions) {
-    const headers = {
-        'Content-Type': gzipped ? 'application/gzip' : 'text/plain'
-    }
-
     let query = ''
+    let token:string | undefined = undefined
 
     if (store_options) {
         const {
@@ -93,7 +43,7 @@ export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean
             fleet_id,
         } = store_options
 
-        headers['Authorization'] = `Bearer ${access_token}`
+        token = access_token
 
         const optional_attributes = {
             ...((fitting_id !== undefined && fitting_id > 0) && { "fitting_id": fitting_id }),
@@ -106,63 +56,21 @@ export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean
 
     const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : query}`
 
-    console.log(`Requesting POST: ${ENDPOINT}`)
+    const body = combatlog instanceof Uint8Array ? new Blob([new Uint8Array(combatlog)]) : combatlog
 
-    try {
-        const body = combatlog instanceof Uint8Array ? new Blob([new Uint8Array(combatlog)]) : combatlog
-
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            body: body,
-            method: 'POST'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as CombatLog;
-    } catch (error) {
-        throw new Error(`Error analizing log: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<CombatLog>(ENDPOINT, {
+        method: 'POST',
+        token: token,
+        raw_body: body,
+        content_type: gzipped ? 'application/gzip' : 'text/plain',
+        error: 'Error analizing log',
+    })
 }
 
 export async function delete_log(access_token:string, log_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${log_id}`
-
-    console.log(`Requesting DELETE: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: 'DELETE'
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `PUT ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error deleting combat log: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/${log_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting combat log',
+    })
 }

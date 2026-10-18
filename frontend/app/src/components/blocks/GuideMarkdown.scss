@@ -6,7 +6,6 @@
 
 .guide-md {
     --guide-md-display-font: 'Orbitron', var(--heading-font);
-    --guide-md-body-font: 'Source Sans 3', var(--body-font);
     --guide-md-panel-padding-block: var(--component-padding-block);
     --guide-md-panel-padding-inline: var(--space-l-xl);
     display: flex;
@@ -14,7 +13,7 @@
     gap: var(--space-l);
     width: 100%;
     min-width: 0;
-    font-family: var(--guide-md-body-font);
+    font-family: inherit;
 }
 
 .guide-md-preamble {

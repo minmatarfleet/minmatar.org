@@ -208,6 +208,10 @@ class LearningApiTestCase(TestCase):
         self.token = make_token(self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
 
+        # Migrations seed the Alliance Onboarding lesson; start from empty.
+        Certificate.objects.all().delete()
+        Learning.objects.all().delete()
+
         self.l1 = Learning.objects.create(
             slug="fw-basics",
             title="FW Basics",

@@ -4,6 +4,7 @@ import logging
 
 from django.conf import settings
 
+from app.links import site_url
 from discord.client import DiscordClient
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation
@@ -33,7 +34,7 @@ def _recruiter_role_mention(corporation) -> str:
         return ""
     try:
         discord_group = group.group.discord_group
-    except Exception:
+    except Exception:  # expected: group has no linked Discord role
         return ""
     if not discord_group or not discord_group.role_id:
         return ""
@@ -41,8 +42,8 @@ def _recruiter_role_mention(corporation) -> str:
 
 
 def application_url(application) -> str:
-    return (
-        "https://my.minmatar.org/alliance/corporations/application/"
+    return site_url(
+        "/alliance/corporations/application/"
         f"{application.corporation_id}/{application.id}"
     )
 
@@ -107,9 +108,9 @@ def create_application_thread(application) -> int:
 def application_accepted_message() -> str:
     return (
         ":tada: Your application has been accepted!\n"
-        "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
+        f"- Read our [alliance values]({site_url('/alliance/values/')})\n"
         "- Apply in-game\n"
-        "- Start with the [Learning Center](https://my.minmatar.org/learning/) "
+        f"- Start with the [Learning Center]({site_url('/learning/')}) "
         "for guides and certificates\n"
         "- [We are Minmatar (FL33T Alliance)]"
         "(https://www.youtube.com/watch?v=JMddiOzaDsA)"
@@ -136,11 +137,14 @@ def notify_application_rejected(application) -> None:
 
 
 def notify_application_deleted(application) -> None:
+    notify_application_thread_deleted(application.discord_thread_id)
+
+
+def notify_application_thread_deleted(discord_thread_id: int) -> None:
+    """Deleted notice by thread id, for when the application row is gone."""
     message = ":bangbang: This application has been deleted"
-    discord.create_message(
-        channel_id=application.discord_thread_id, message=message
-    )
-    discord.close_thread(channel_id=application.discord_thread_id)
+    discord.create_message(channel_id=discord_thread_id, message=message)
+    discord.close_thread(channel_id=discord_thread_id)
 
 
 def notify_application_transferred(

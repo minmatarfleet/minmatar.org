@@ -4,6 +4,7 @@ Roll up open (or filtered) industry orders into canvas-style profit rows.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -21,6 +22,8 @@ from industry.helpers.product_unit_cost import (
     plan_product_unit_cost,
 )
 from industry.models import IndustryOrder, IndustryOrderItem
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -231,7 +234,13 @@ def build_orders_profit_summary(  # noqa: C901
             isk_per_lp = unit.isk_per_lp
             name = unit.name or name_by_type.get(tid, str(tid))
             note = unit.note
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            # Shown on the row as "Plan failed"; log it so it gets fixed.
+            logger.warning(
+                "Profit summary: build plan failed for type %s",
+                tid,
+                exc_info=True,
+            )
             cost_per = 0
             kind = "T1"
             isk_per_lp = None

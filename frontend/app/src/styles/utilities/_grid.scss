@@ -1,6 +1,6 @@
 .grid-l {
-    --grid--row-gap: var(--space-400);
-    --grid--column-gap: var(--space-400);
+    --grid--row-gap: normal;
+    --grid--column-gap: normal;
     --grid--min-item-width: 10rem;
 
     display: grid;

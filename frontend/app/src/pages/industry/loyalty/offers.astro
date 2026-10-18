@@ -16,6 +16,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import LoyaltyOffersSkeleton from '@components/blocks/LoyaltyOffersSkeleton.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = t('industry.loyalty.offers.page_title')
 const breadcrumbs = [
@@ -73,18 +74,13 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
             </Flexblock>
         </FlexInline>
 
-        <div
+        <LazyPartial
             id="loyalty-offers-slot"
             data-loyalty-offers-deferred="1"
-            hx-get={LOYALTY_OFFERS_PARTIAL_URL}
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            hx-indicator=".loader"
-            aria-busy="true"
-            aria-live="polite"
+            url={LOYALTY_OFFERS_PARTIAL_URL}
         >
             <LoyaltyOffersSkeleton />
-        </div>
+        </LazyPartial>
     </PageWide>
 </Viewport>
 
@@ -114,60 +110,3 @@ const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{
         color: var(--faded);
     }
 </style>
-
-<script>
-    function refreshLoyaltyOffersSlot() {
-        const slot = document.getElementById('loyalty-offers-slot')
-        if (!slot)
-            return
-
-        // htmx already processed the swapped content. Processing the slot again
-        // re-fires its hx-trigger="load" and fetches the partial a second time.
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#loyalty-offers-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-                maxWidth: 320,
-                allowHTML: true,
-            })
-        }
-    }
-
-    function isLoyaltyOffersRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('loyalty_offers_component')
-    }
-
-    function bindLoyaltyOffersDeferred() {
-        const slot = document.getElementById('loyalty-offers-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isLoyaltyOffersRequest(event))
-                return
-            refreshLoyaltyOffersSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isLoyaltyOffersRequest(event))
-                return
-            if (!event.detail?.successful) {
-                const root = document.getElementById('loyalty-offers-slot')
-                root?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindLoyaltyOffersDeferred()
-    document.addEventListener('astro:page-load', bindLoyaltyOffersDeferred)
-</script>

@@ -5,6 +5,11 @@ from typing import List, Optional
 
 from ninja import Router
 
+from eveonline.constants import (
+    MINMATAR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+)
 from eveonline.endpoints.corporations.schemas import (
     CorporationResponse,
     CorporationType,
@@ -29,14 +34,16 @@ def get_corporations(
     match corporation_type:
         case CorporationType.ALLIANCE:
             corporations = EveCorporation.objects.filter(
-                alliance__alliance_id=99011978
+                alliance__alliance_id=MINMATAR_FLEET_ALLIANCE_ID
             )
         case CorporationType.ASSOCIATE:
             corporations = EveCorporation.objects.filter(
-                alliance__alliance_id=99012009
+                alliance__alliance_id=MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID
             )
         case CorporationType.MILITIA:
-            corporations = EveCorporation.objects.filter(faction__id=500002)
+            corporations = EveCorporation.objects.filter(
+                faction__id=MINMATAR_FACTION_ID
+            )
         case _:
             corporations = EveCorporation.objects.all()
     response = []
@@ -56,7 +63,6 @@ def get_corporations(
             payload["faction_name"] = corporation.faction.name
         payload["introduction"] = corporation.introduction
         payload["biography"] = corporation.biography
-        payload["executor_notes"] = corporation.executor_notes
         payload["timezones"] = (
             corporation.timezones.strip().split(",")
             if corporation.timezones

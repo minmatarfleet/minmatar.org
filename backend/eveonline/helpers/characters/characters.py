@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from audit.models import AuditEntry
 from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
+from eveonline.helpers.characters.identity import primary_character_for_user
 from eveonline.scopes import (
     NEW_CHARACTER_SCOPE_GROUPS,
     TokenType,
@@ -33,15 +34,21 @@ class CharacterResponse(BaseModel):
 
 
 def user_primary_character(user: User) -> EveCharacter | None:
-    """Returns the primary character for a particular User"""
-    player = user_player(user)
-    if player and player.primary_character:
-        return player.primary_character
-    return None
+    """Returns the primary character for a particular User.
+
+    One query per call; for many users use
+    :func:`eveonline.helpers.characters.identity.primary_characters_for_users`.
+    """
+    return primary_character_for_user(user)
 
 
 def user_characters(user: User) -> List[EveCharacter]:
-    """Returns all the EveCharacters for a particular User"""
+    """Returns all the EveCharacters for a particular User.
+
+    Only characters whose ``EveCharacter.user`` is this user: legacy
+    characters linked through their token alone are not listed here (they
+    still count as the user's in the batch helpers in ``identity``).
+    """
     return EveCharacter.objects.filter(user=user).all()
 
 
@@ -60,9 +67,12 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
     """Returns the primary character for a character"""
     if not character:
         return None
-    if character.user:
+    if character.user_id:
         return user_primary_character(character.user)
-    return user_primary_character(character.token.user)
+    token = character.token
+    if token is not None and token.user_id:
+        return user_primary_character(token.user)
+    return None
 
 
 def set_primary_character(user: User, character: EveCharacter):

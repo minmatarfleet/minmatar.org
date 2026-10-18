@@ -15,7 +15,7 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <script is:inline src="/js/numbers.js"></script>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-<script is:inline src="https://cdn.jsdelivr.net/npm/tsparticles/dist/tsparticles.min.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/tsparticles@1.29.2/dist/tsparticles.min.js"></script>
 
 <script is:inline>
     window.__footer_confetti_canvas = window.__footer_confetti_canvas
@@ -75,23 +75,15 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
     }
 </script>
 
+<script>
+    // Alpine + tooltips for content htmx swaps in (see helpers/swap_init.ts).
+    import { bind_swap_init } from '@helpers/swap_init'
+
+    bind_swap_init(window as any)
+</script>
+
 <script is:inline>
     window.ccpwgl_context = window.ccpwgl_context ?? null
-
-    // After an outerHTML htmx swap the old target is detached, so body
-    // afterSwap listeners never see it. The dying node calls this; look up
-    // the replacement by id and re-bind htmx/Alpine (dropdown teleport, etc.).
-    window.minmatar_after_outer_html_swap = function () {
-        const next = this && this.id ? document.getElementById(this.id) : null
-        if (!next) return
-        if (typeof htmx !== 'undefined') htmx.process(next)
-        if (typeof Alpine !== 'undefined') Alpine.initTree(next)
-    }
-
-    window.minmatar_after_inner_html_swap = function () {
-        if (typeof htmx !== 'undefined') htmx.process(this)
-        if (typeof Alpine !== 'undefined') Alpine.initTree(this)
-    }
 
     if (!window.__footer_scripts_bound) {
         window.__footer_scripts_bound = true
@@ -181,11 +173,11 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
     <script is:inline type="text/javascript" src="/js/ccpwgl/minmatar.js"></script>
 }
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1/lite-youtube.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1.9.0/lite-youtube.min.js"></script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 

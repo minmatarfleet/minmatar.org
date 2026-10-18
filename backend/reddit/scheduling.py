@@ -15,6 +15,7 @@ from django.utils import timezone
 from app.errors import create_error_id
 from discord.client import DiscordClient
 from discord.models import DiscordUser
+from discord.outbox import queue_dm
 from eveonline.helpers.corporations.permissions import ceo_user
 from eveonline.helpers.corporations.slugs import corporation_slug
 from reddit.client import RedditClient, normalize_subreddit
@@ -262,8 +263,7 @@ def send_reminder(
     return dm_ceo(template, reminder_messages(template, reason))
 
 
-def dm_ceo(template: RedditPostTemplate, messages: list[str]) -> bool:
-    """DM the corporation's CEO. False if they have no Discord or it fails."""
+def _ceo_discord_user(template: RedditPostTemplate) -> DiscordUser | None:
     user = ceo_user(template.corporation)
     discord_user = (
         DiscordUser.objects.filter(user=user).first() if user else None
@@ -272,6 +272,17 @@ def dm_ceo(template: RedditPostTemplate, messages: list[str]) -> bool:
         logger.warning(
             "No Discord-linked CEO to DM for Reddit post %s", template.pk
         )
+    return discord_user
+
+
+def dm_ceo(template: RedditPostTemplate, messages: list[str]) -> bool:
+    """DM the corporation's CEO. False if they have no Discord or it fails.
+
+    Sends inline: callers run in Celery and record whether it worked. From a
+    web request (the admin), use dm_ceo_later.
+    """
+    discord_user = _ceo_discord_user(template)
+    if discord_user is None:
         return False
     client = DiscordClient()
     try:
@@ -282,6 +293,20 @@ def dm_ceo(template: RedditPostTemplate, messages: list[str]) -> bool:
             "Failed to DM about Reddit post %s", template.pk, exc_info=True
         )
         return False
+    return True
+
+
+def dm_ceo_later(template: RedditPostTemplate, messages: list[str]) -> bool:
+    """Queue the same DMs as dm_ceo for a worker; False if there is no CEO
+    on Discord to send them to."""
+    discord_user = _ceo_discord_user(template)
+    if discord_user is None:
+        return False
+    queue_dm(
+        discord_user.id,
+        messages=messages,
+        context=f"Reddit post {template.pk} CEO DM",
+    )
     return True
 
 

@@ -13,6 +13,7 @@ from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from industry.helpers.lp_buyback_sweep import sweep_lp_buyback_orders
 from industry.helpers.lp_market_orders import auto_cancel_stalled_order
+from industry.tasks import close_lp_buyback_discord_thread_task
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointMarketOrder,
@@ -25,7 +26,11 @@ CONVERSION_CHANNEL_ID = 1174103016161427556
 Status = IndustryLoyaltyPointMarketOrder.Status
 
 
-@patch("industry.helpers.lp_buyback_discord.time.sleep")
+@patch.object(
+    close_lp_buyback_discord_thread_task,
+    "apply_async",
+    wraps=close_lp_buyback_discord_thread_task.apply_async,
+)
 @patch("industry.helpers.lp_buyback_discord.DiscordClient")
 @patch("industry.helpers.lp_buyback_discord.discord")
 class LpBuybackSweepTestCase(AppTestCase):
@@ -143,7 +148,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         ]
 
     def test_creates_missing_thread_for_active_order(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.OPEN, waited_hours=1, thread_id=None)
         response = MagicMock()
@@ -155,7 +160,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.discord_thread_id, 123456)
 
     def test_brand_new_order_gets_grace_before_retry(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.OPEN, waited_hours=0, thread_id=None)
         self._sweep(discord_mock, client_cls)
@@ -164,7 +169,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertIsNone(order.discord_thread_id)
 
     def test_closes_threads_left_open_for_finished_orders(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         self._order(Status.COMPLETED, waited_hours=1, thread_id=901)
         self._order(Status.OPEN, waited_hours=1, thread_id=902)
@@ -176,7 +181,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         discord_mock.close_thread.assert_called_once_with(channel_id=901)
 
     def test_open_orders_are_never_reminded_or_cancelled(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.OPEN, waited_hours=200)
         stats = self._sweep(discord_mock, client_cls)
@@ -185,7 +190,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.OPEN)
 
     def test_no_reminder_before_24h(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         self._order(Status.AWAITING_LP, waited_hours=23)
         stats = self._sweep(discord_mock, client_cls)
@@ -193,7 +198,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         discord_mock.create_message.assert_not_called()
 
     def test_awaiting_lp_reminds_seller_at_24h(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.AWAITING_LP, waited_hours=25)
         stats = self._sweep(discord_mock, client_cls)
@@ -218,7 +223,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         discord_mock.create_message.assert_not_called()
 
     def test_auto_cancels_after_48h_and_announces_reason(
-        self, discord_mock, client_cls, sleep_mock
+        self, discord_mock, client_cls, close_later
     ):
         order = self._order(
             Status.AWAITING_LP,
@@ -237,11 +242,12 @@ class LpBuybackSweepTestCase(AppTestCase):
             "send LP to **Alliance Buyer**",
             content,
         )
-        sleep_mock.assert_called_once_with(5)
+        # Archived a few seconds later by a task, not a time.sleep.
+        close_later.assert_called_once_with(args=[777], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
 
     def test_long_stalled_order_gets_a_days_warning_first(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         # Orders already stalled for days when the sweep first ships are
         # warned, not cancelled outright.
@@ -259,7 +265,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.CANCELLED)
 
     def test_awaiting_isk_is_reminded_daily_never_cancelled(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(
             Status.AWAITING_ISK,
@@ -283,7 +289,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.AWAITING_ISK)
 
     def test_progress_resets_the_clock(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(
             Status.AWAITING_LP,
@@ -297,7 +303,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(self._sweep(discord_mock, client_cls)["reminded"], 0)
 
     def test_auto_cancel_skips_order_that_moved_on(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.AWAITING_ISK, waited_hours=60)
         self.assertFalse(
@@ -311,7 +317,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.AWAITING_ISK)
 
     def test_claimer_stalling_lp_is_pestered_daily_never_cancelled(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         # WTB awaiting LP: the claiming pilot owes the LP, not the poster.
         order = self._order(
@@ -333,7 +339,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.AWAITING_LP)
 
     def test_claimed_waiting_on_claimer_is_never_cancelled(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(
             Status.CLAIMED,
@@ -365,7 +371,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         ]
 
     def test_week_old_open_orders_flagged_weekly(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         self._enable_conversion_alerts()
         self._order(Status.OPEN, waited_hours=24 * 8, thread_id=901)
@@ -395,7 +401,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertIn("<#901>", self._digests(discord_mock)[-1])
 
     def test_failed_digest_retries_next_sweep(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         self._enable_conversion_alerts()
         order = self._order(Status.OPEN, waited_hours=24 * 8)
@@ -411,7 +417,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         )
 
     def test_undelivered_reminder_does_not_arm_auto_cancel(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         order = self._order(Status.AWAITING_LP, waited_hours=30)
         discord_mock.create_message.side_effect = RuntimeError("discord 503")
@@ -429,7 +435,7 @@ class LpBuybackSweepTestCase(AppTestCase):
         self.assertEqual(order.status, Status.AWAITING_LP)
 
     def test_order_without_thread_is_not_reminded_or_cancelled(
-        self, discord_mock, client_cls, unused_sleep
+        self, discord_mock, client_cls, unused_close_later
     ):
         discord_mock.create_forum_thread.side_effect = RuntimeError("down")
         order = self._order(

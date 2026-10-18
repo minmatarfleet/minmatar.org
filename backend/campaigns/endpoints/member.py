@@ -20,7 +20,7 @@ from campaigns.models import (
     CampaignStatus,
     CampaignSystem,
 )
-from campaigns.services import advantage
+from campaigns.services import advantage, stats
 from eveonline.models import EveCharacter, EvePlayer
 from eveonline.scopes import CAMPAIGN_SCOPES
 from groups.helpers.feature_access import require_feature
@@ -192,9 +192,6 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
         defaults={
             "status": "active",
             "source": payload.source,
-            "notify_gang_forming": payload.notify_gang_forming,
-            "notify_standing_fleet": payload.notify_standing_fleet,
-            "notify_activity_nearby": payload.notify_activity_nearby,
             "digest_hour": payload.digest_hour,
         },
     )
@@ -383,7 +380,8 @@ def form_gang(request, slug: str, payload: schemas.GangRequest):
         campaign=campaign,
         kind=CampaignEvent.Kind.GANG_FORMED,
         occurred_at=timezone.now(),
-        title=f"{request.user.username} is forming {payload.ships}",
+        title=f"{stats.pilot_name(request.user.id)} is forming "
+        f"{payload.ships}",
         body=payload.note,
         campaign_system=system,
         user=request.user,

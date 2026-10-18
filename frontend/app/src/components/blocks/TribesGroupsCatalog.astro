@@ -15,14 +15,12 @@ interface Props {
     directory_groups: DirectoryGroup[]
     tribes: Tribe[]
     initial_tribe_slug?: string
-    init_tooltips?: boolean
 }
 
 const {
     directory_groups,
     tribes,
     initial_tribe_slug = 'all',
-    init_tooltips = false,
 } = Astro.props
 
 const filters = [
@@ -182,7 +180,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                         gap="var(--space-3xs)"
                                         class="[ tribes-groups-catalog__count items-center! ]"
                                         data-tippy-content={t('group_members')}
-                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                     >
                                         <span class="[ text-highlight h-[16px] ]" aria-hidden="true">
                                             <MemberIcon size={16} />

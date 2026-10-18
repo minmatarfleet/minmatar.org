@@ -45,7 +45,7 @@ OPSEC). Trial approval is co-equal participation paths.
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/trial-approval/scripts/fetch_trial_activity.py --json
+pipenv run python ../.claude/skills/trial-approval/scripts/fetch_trial_activity.py --json
 ```
 
 Defaults: **90d** window + **30d** recent slice; affiliation **Alliance**;
@@ -76,7 +76,7 @@ Task Progress:
 | Signal | Model | Roll-up |
 |--------|--------|---------|
 | Fleets | `EveFleetInstanceMember` | Distinct instances across linked EVE IDs |
-| Kills | `EveCharacterKillmailAttacker` | Attackers; exclude self-victim; gang buckets |
+| Kills | `EveCharacterKillmailAttacker` | Attackers; exclude self-victim; one per distinct mail per person (alts on the same mail count once); gang buckets |
 | Voice | `DiscordChannelActivityRecord` | `voice_minute` by Django `username` → hours |
 
 **Gang buckets** (attacker count on the killmail): small ≤10, medium 11–24,

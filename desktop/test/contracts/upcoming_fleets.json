@@ -1,0 +1,53 @@
+[
+  {
+    "aar_link": null,
+    "audience": "Test Audience",
+    "campaign_id": null,
+    "campaign_slug": null,
+    "description": "Logi class",
+    "disable_motd": false,
+    "doctrine_id": null,
+    "doctrine_name": null,
+    "fleet_commander": 7002,
+    "fleet_commander_character_id": 5000,
+    "fleet_commander_name": "The FC",
+    "hide_volunteers": false,
+    "id": 502,
+    "location": "Test Location",
+    "objective": null,
+    "roam_report_url": null,
+    "start_time": "2026-01-17T20:00:00Z",
+    "status": "pending",
+    "tracking": null,
+    "type": "training"
+  },
+  {
+    "aar_link": null,
+    "audience": "Test Audience",
+    "campaign_id": null,
+    "campaign_slug": null,
+    "description": "Armor roam",
+    "disable_motd": false,
+    "doctrine_id": 301,
+    "doctrine_name": "Armor Damnations",
+    "fleet_commander": 7002,
+    "fleet_commander_character_id": 5000,
+    "fleet_commander_name": "The FC",
+    "hide_volunteers": false,
+    "id": 501,
+    "location": "Test Location",
+    "objective": null,
+    "roam_report_url": null,
+    "start_time": "2026-01-17T17:30:00Z",
+    "status": "active",
+    "tracking": {
+      "end_time": null,
+      "has_motd": false,
+      "id": 900,
+      "is_free_move": false,
+      "is_registered": false,
+      "start_time": "2026-01-17T17:35:00Z"
+    },
+    "type": "non_strategic"
+  }
+]

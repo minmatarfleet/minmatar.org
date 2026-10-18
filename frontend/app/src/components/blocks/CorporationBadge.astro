@@ -3,10 +3,16 @@ import { corporation_path } from '@helpers/corporations/detail'
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import type { CorporationBadgeProps, EvEImageServiceSize } from '@dtypes/layout_components'
+import type { CorporationBadgeProps } from '@dtypes/layout_components'
 import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
 import type { CorporationEvE } from '@dtypes/api.eveonline'
+import { entity_badge_size } from '@helpers/entity_badge'
 
+/**
+ * Corporation logo + name. The default slot renders under the name at every
+ * size (for `lg` it replaces the description). With `show_modal` the whole
+ * badge is one link to the corporation page.
+ */
 interface Props {
     corporation:    CorporationBadgeProps;
     border?:        boolean;
@@ -31,32 +37,15 @@ if (!corporation?.name) {
     }
 }
 
-const LOGO_SIZES = {
-    'xs': 24,
-    'sm': 32,
-    'lg': 64,
-}
-
-const LOGO_QLTY = {
-    'xs': 32,
-    'sm': 32,
-    'lg': 64,
-}
-
-const GAPS = {
-    'xs': 'var(--space-3xs)',
-    'sm': 'var(--space-2xs)',
-    'lg': 'var(--space-s)',
-}
-
 const corporation_name = corporation?.name ?? (corporation_eve?.name ?? get_eve_corporation_error)
 const size = corporation?.size ?? 'sm'
-const logo_size = LOGO_SIZES[size] ?? 32
-const logo_qlty = LOGO_QLTY[size] ?? 32
+const { logo: logo_size, quality: logo_qlty, gap } = entity_badge_size(size)
 const description:string | false = corporation?.description ?? false
-const gap = GAPS[size] ?? 'var(--space-2xs)'
 
-const Element = show_modal ? 'a' : 'div'
+const href = show_modal
+    ? translatePath(corporation_path(corporation.id, corporation.name ?? corporation_eve?.name))
+    : undefined
+const Element = href ? 'a' : 'div'
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 
@@ -64,16 +53,14 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
-<Element
-    href={show_modal ? translatePath(corporation_path(corporation.id, corporation.name ?? corporation_eve?.name)) : undefined}
->
+<Element href={href}>
     <FixedFluid
         width={`${logo_size}px`}
         gap={gap}
         class="[ items-center ]"
     >
         <picture class:list={{ border: border }}>
-            <img loading="lazy" src={get_corporation_logo(corporation.id, logo_qlty as EvEImageServiceSize)} width={logo_size} height={logo_size} />
+            <img loading="lazy" src={get_corporation_logo(corporation.id, logo_qlty)} width={logo_size} height={logo_size} />
         </picture>
         <Flexblock gap='0' class="[ w-full ]">
             {size == 'lg' ?
@@ -85,8 +72,9 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                 </slot>
                 :
                 <small class="[ max-w-fit ]">
-                    <a class:list={{ 'text-[var(--highlight)]': highlight }}>{corporation_name}</a>
+                    <span class:list={{ 'text-[var(--highlight)]': highlight }}>{corporation_name}</span>
                 </small>
+                <slot />
             }
         </Flexblock>
     </FixedFluid>

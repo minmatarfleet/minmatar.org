@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 
-from eveuniverse.models import EveType
+from eveonline.helpers.universe import type_ids_by_name
 
 from buyback.models import BuybackAcceptedItem
 from industry.helpers.compressed_ore import ore_materials_per_portion
+
+logger = logging.getLogger(__name__)
 
 RATE_REASON_SUPPLY_CHAIN = "supply_chain_import"
 RATE_REASON_SURPLUS = "accepted_surplus"
@@ -18,15 +21,16 @@ def mineral_name_to_id_for_ores(ore_names: list[str]) -> dict[str, int]:
     for ore_name in ore_names:
         try:
             mineral_names.update(ore_materials_per_portion(ore_name).keys())
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Buyback demand: no ore materials for %s",
+                ore_name,
+                exc_info=True,
+            )
             continue
     if not mineral_names:
         return {}
-    return dict(
-        EveType.objects.filter(name__in=mineral_names).values_list(
-            "name", "id"
-        )
-    )
+    return type_ids_by_name(mineral_names)
 
 
 def rate_reason_for_in_demand(in_demand: bool) -> str:

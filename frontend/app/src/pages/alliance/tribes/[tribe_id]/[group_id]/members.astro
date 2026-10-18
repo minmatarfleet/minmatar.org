@@ -2,20 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
-import { get_auth_url } from '@helpers/env'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+if (!auth_token || !user)
+    return login_redirect(Astro)
 
 const tribe_id = parseInt(Astro?.params?.tribe_id ?? '')
 const group_id = parseInt(Astro?.params?.group_id ?? '')
@@ -49,7 +43,6 @@ try {
     const can_manage = tribe_group_can_manage({
         group: tribe_group,
         is_leader: is_chief,
-        is_superuser,
     })
     
     if (!can_manage)
@@ -182,8 +175,8 @@ const breadcrumbs = [
                             tribe_group={tribe_group}
                             chief_membership={chief_membership}
                         />
-                        <MembershipRequests requests={pending} init_tooltips={false} />
-                        <MembershipTable memberships={approved} init_tooltips={false} />
+                        <MembershipRequests requests={pending} />
+                        <MembershipTable memberships={approved} />
                         :
                         <p>{t('no_request_no_members')}</p>
                     }

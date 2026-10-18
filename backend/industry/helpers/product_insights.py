@@ -16,20 +16,18 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from django.db.models import Q
 from django.utils import timezone
 
-from eveonline.helpers.corporations.safe_cache import (
-    cache_add,
-    cache_delete,
-    cache_get,
-    cache_set,
+from app.cache import CachedRollup
+from eveonline.helpers.alliances import tracked_alliance_ids
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_refs_for_users,
 )
 from eveonline.models import (
-    EveAlliance,
     EveCharacter,
     EveCharacterAsset,
     EveCharacterIndustryJob,
     EveCharacterKillmail,
     EveCorporationIndustryJob,
-    EvePlayer,
 )
 from eveuniverse.models import (
     EveIndustryActivityProduct,
@@ -155,26 +153,17 @@ def _empty_insights(product: IndustryProduct, weeks: _Weeks) -> dict:
 
 def _primary_by_character(character_ids) -> dict[int, tuple[int, str]]:
     """character_id -> (primary character_id, primary name), for known pilots."""
-    rows = list(
+    names = dict(
         EveCharacter.objects.filter(
             character_id__in=character_ids
-        ).values_list("character_id", "character_name", "user_id")
+        ).values_list("character_id", "character_name")
     )
-    primaries = {
-        user_id: (cid, name or "")
-        for user_id, cid, name in EvePlayer.objects.filter(
-            user_id__in={r[2] for r in rows if r[2]},
-            primary_character__isnull=False,
-        ).values_list(
-            "user_id",
-            "primary_character__character_id",
-            "primary_character__character_name",
-        )
+    owners = owner_user_ids(names)
+    primaries = primary_refs_for_users(owners.values())
+    return {
+        cid: primaries.get(owners.get(cid)) or (cid, name or "")
+        for cid, name in names.items()
     }
-    out = {}
-    for cid, name, user_id in rows:
-        out[cid] = primaries.get(user_id) or (cid, name or "")
-    return out
 
 
 def _blueprints_by_product(type_ids) -> dict[tuple[int, int], list]:
@@ -428,9 +417,8 @@ def _fill_sales(insights, type_ids, now, weeks):
 def _fill_hangars(insights, ship_type_ids):
     if not ship_type_ids:
         return
-    alliance_ids = list(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
+    # Tracked scope: hangars of pilots in any alliance we sync.
+    alliance_ids = tracked_alliance_ids()
     rows = EveCharacterAsset.objects.filter(
         type_id__in=ship_type_ids,
         character__alliance_id__in=alliance_ids,
@@ -457,9 +445,8 @@ def _fill_losses(insights, ship_type_ids, now, weeks):
         return
     since = min(now - timedelta(days=WINDOW_DAYS), weeks.first)
     recent_since = now - timedelta(days=RECENT_DAYS)
-    alliance_ids = list(
-        EveAlliance.objects.values_list("alliance_id", flat=True)
-    )
+    # Tracked scope: losses of pilots in any alliance we sync.
+    alliance_ids = tracked_alliance_ids()
     # Several of our pilots can hold the same killmail; count each kill once.
     seen = set()
     rows = (
@@ -599,28 +586,31 @@ def compute_product_insights(now: datetime | None = None) -> dict[int, dict]:
 def refresh_product_insights() -> int:
     insights = compute_product_insights()
     for product_id, data in insights.items():
-        cache_set(
-            _INSIGHTS_KEY.format(product_id=product_id),
-            data,
-            INSIGHTS_TTL_SECONDS,
-        )
-    cache_delete(_LOCK_KEY)
+        INSIGHTS.store(data, release=False, product_id=product_id)
+    # One lock covers the whole pass.
+    INSIGHTS.release()
     return len(insights)
 
 
 def product_insights(product_id: int) -> dict | None:
     """Cached insights, or None after queueing a refresh. Never computes inline."""
-    key = _INSIGHTS_KEY.format(product_id=product_id)
-    data = cache_get(key)
-    if data is not None:
-        return data
-    # cache.add is atomic, so only one request per window queues the work.
-    if cache_add(_LOCK_KEY, True, REFRESH_LOCK_SECONDS):
-        # Imported here: the task module imports this helper.
-        from industry.tasks import (  # pylint: disable=import-outside-toplevel
-            refresh_product_insights_task,
-        )
+    return INSIGHTS.get_or_queue(product_id=product_id)
 
-        refresh_product_insights_task.delay()
-    # Eager Celery (tests) fills the cache during the call above.
-    return cache_get(key)
+
+def _queue_refresh(**_params) -> None:
+    # Imported here: the task module imports this helper.
+    from industry.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_product_insights_task,
+    )
+
+    refresh_product_insights_task.delay()
+
+
+INSIGHTS = CachedRollup(
+    key=_INSIGHTS_KEY,
+    ttl=INSIGHTS_TTL_SECONDS,
+    # One pass refreshes every product, so one lock covers them all.
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    enqueue=_queue_refresh,
+)

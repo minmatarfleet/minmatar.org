@@ -12,8 +12,10 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 from tribes.helpers import (
     check_character_meets_requirements,
     user_can_manage_group,
+    user_can_view_alliance_rosters,
     user_in_tribe_group,
     user_is_active_tribe_member,
+    user_is_alliance_member,
     user_is_tribe_chief,
 )
 from tribes.models import (
@@ -163,6 +165,15 @@ class UserPermissionHelpersTestCase(TestCase):
         self.regular.is_superuser = True
         self.regular.save()
         self.assertTrue(user_can_manage_group(self.regular, self.tribe_group))
+
+    def test_alliance_roster_view_follows_roster_feature(self):
+        self.assertFalse(user_can_view_alliance_rosters(self.regular))
+        self.regular.is_superuser = True
+        self.regular.save()
+        self.assertTrue(user_can_view_alliance_rosters(self.regular))
+
+    def test_old_alliance_member_name_is_an_alias(self):
+        self.assertIs(user_can_view_alliance_rosters, user_is_alliance_member)
 
     def test_user_is_tribe_chief(self):
         self.assertTrue(user_is_tribe_chief(self.chief, self.tribe))

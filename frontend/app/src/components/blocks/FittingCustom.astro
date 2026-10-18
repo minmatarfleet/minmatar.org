@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { ShipFitting, Module } from '@dtypes/layout_components';
-import { SHIP_WEIGHT } from '@helpers/eve'
+import { ship_weight } from '@helpers/ship_groups'
 
 import { is_disabled_ccpwgl } from '@helpers/env';
 
@@ -23,7 +23,7 @@ const {
     text,
 } = Astro.props
 
-const interpolation_decay = ship_type ? SHIP_WEIGHT[ship_type] : 50
+const interpolation_decay = ship_weight(ship_type)
 
 const CAMERA_DELAY_TIME_MS = 15000
 const TRANSITION_TIME_MS = (interpolation_decay * 0.0076 + 0.12) * 1000

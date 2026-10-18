@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { ButtonColors } from '@dtypes/layout_components';
@@ -72,8 +72,8 @@ function term_parts(
     fulfilled: number,
     targets: number,
 ): { before: string; word: string; after: string } {
-    const word = t(word_key as any)
-    const label = t(template_key as any)
+    const word = t(dynamic_key(word_key))
+    const label = t(dynamic_key(template_key))
         .replace('{fulfilled}', String(fulfilled))
         .replace('{targets}', String(targets))
     const [before, after = ''] = label.split(placeholder)
@@ -101,7 +101,7 @@ function listed_viable_parts(fulfilled: number, listed: number) {
 }
 
 function isk_label(template_key: string, isk: number): string {
-    return (t(template_key as any)  ?? template_key).replace('{isk}', format_isk(isk))
+    return (t(dynamic_key(template_key))  ?? template_key).replace('{isk}', format_isk(isk))
 }
 
 function sync_age_label(iso: string | null | undefined): string {

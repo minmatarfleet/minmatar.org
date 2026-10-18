@@ -467,4 +467,14 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         deny_community_statuses=(),
     ),
+    "site.all_pages": FeatureDefinition(
+        code="site.all_pages",
+        label="See every page",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "The page finder and breadcrumbs list every page as available, "
+            "whatever its own gate. Unwired, so only superusers pass."
+        ),
+        deny_community_statuses=(),
+    ),
 }

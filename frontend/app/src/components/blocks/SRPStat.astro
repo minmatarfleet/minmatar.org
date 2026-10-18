@@ -5,13 +5,11 @@ const { lang, t } = i18n(Astro.url)
 interface Props {
     value:          number;
     type:           'approved' | 'rejected';
-    init_tooltips:  boolean;
 }
 
 const {
     value,
     type,
-    init_tooltips,
 } = Astro.props
 
 import { number_thousand_separator, number_name } from '@helpers/numbers'
@@ -24,14 +22,12 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         class:list={[ 'membership-status', type === 'approved' ? 'text-green' : 'text-red' ]}
         color={type === 'approved' ? 'green' : 'fleet-red'}
         data-tippy-content={t(`${type}_last_90_days`)}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         {type === 'approved' ? '▲' : '▼'}
     </span>
     <h3>
         <span
             data-tippy-content={number_name(value, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{number_thousand_separator(value)}</span>&nbsp;ISK
     </h3>
 </FlexInline>

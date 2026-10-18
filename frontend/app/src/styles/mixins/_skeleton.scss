@@ -1,0 +1,36 @@
+// Loading-skeleton fills. The keyframes live once in styles/_animations.scss
+// (loaded on every page by base.scss); this file only holds mixins, so it can
+// be @use'd from any component's scoped <style lang="scss"> without emitting CSS.
+//
+//     @use '../../styles/mixins/skeleton';
+//     .my-skeleton .skel { border-radius: 2px; @include skeleton.shimmer; }
+//
+// Both mixins stop moving under prefers-reduced-motion. Keep the layout (sizes,
+// grids, borders) in the component; only the fill and motion come from here.
+
+// Sweeping highlight: $base -> $peak -> $base, travelling right to left.
+// $fill is an optional solid colour under the gradient.
+@mixin shimmer($base: var(--hairline), $peak: var(--hairline-strong), $fill: null, $duration: 1.1s) {
+    background: linear-gradient(90deg, $base 0%, $peak 50%, $base 100%);
+    @if $fill {
+        background-color: $fill;
+    }
+    background-size: 200% 100%;
+    animation: skeleton-shimmer $duration ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+    }
+}
+
+// Breathing block: a flat $fill whose opacity eases between 0.45 and 0.85.
+// Reduced motion holds it at the midpoint.
+@mixin pulse($fill, $duration: 1.2s) {
+    background: $fill;
+    animation: skeleton-pulse $duration ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        opacity: 0.65;
+    }
+}

@@ -40,9 +40,7 @@ def get_external_guild_callback(
 ):
     payload = decode_oauth_state(state or "")
     redirect_url = (
-        payload["redirect_url"]
-        if payload
-        else getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
+        payload["redirect_url"] if payload else settings.WEB_LINK_URL
     )
 
     if error or not code or payload is None:

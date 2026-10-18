@@ -22,6 +22,7 @@ from campaigns.models import (
     CampaignParticipantDay,
     CampaignParticipantStat,
 )
+from campaigns.services.stats import pilot_name
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ def close_campaign(campaign: Campaign) -> int:
 def _top(rows, metric: str) -> dict | None:
     """The pilot with the most of one metric, ignoring everyone on zero."""
     best = (
-        rows.values("user_id", "user__username")
+        rows.values("user_id")
         .annotate(value=Sum(metric))
         .filter(value__gt=0)
         .order_by("-value")
@@ -108,7 +109,7 @@ def _announce(campaign, label, winner, metric, week_start) -> None:
         campaign=campaign,
         kind=CampaignEvent.Kind.AWARD,
         occurred_at=timezone.now(),
-        title=f"{label}: {winner['user__username']}",
+        title=f"{label}: {pilot_name(winner['user_id'])}",
         body=f"{winner['value']:g} {metric.replace('_', ' ')} this week.",
         user_id=winner["user_id"],
         side="friendly",

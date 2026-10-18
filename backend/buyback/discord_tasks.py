@@ -7,6 +7,7 @@ import logging
 from celery import shared_task
 
 from buyback.helpers.purchase_discord import (
+    close_thread_id,
     notify_purchase_created,
     notify_purchase_status_changed,
 )
@@ -65,3 +66,9 @@ def notify_buyback_purchase_status_changed_task(order_id: int) -> None:
             "Failed Discord status notify for hangar purchase %s", order_id
         )
         raise
+
+
+@shared_task
+def close_buyback_purchase_thread_task(thread_id: int) -> None:
+    """Archive a hangar purchase-order thread (scheduled after a post)."""
+    close_thread_id(thread_id)

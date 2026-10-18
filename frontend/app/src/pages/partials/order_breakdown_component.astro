@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
@@ -12,7 +13,7 @@ import {
     type PrimaryClaimAvailability,
 } from '@helpers/api.minmatar.org/characters'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const { auth_token } = get_request_user(Astro)
 
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
@@ -70,7 +71,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             claim_disabled_reason={claim_disabled_reason}
             order_breakdown={order_breakdown}
             location_name={location_name ?? undefined}
-            init_tooltips={true}
             swap_target_id={`order-breakdown-${order_id}-inner`}
             claim_render="breakdown"
         />

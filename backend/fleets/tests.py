@@ -2,14 +2,17 @@ import ast
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 
 import factory
 import jwt
 
 from django.conf import settings
+from django.core.cache import cache
+from django.db import connection
 from django.db.models import signals
-from django.test import Client, SimpleTestCase
+from django.test import Client, SimpleTestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.contrib.auth.models import User, Permission
 from django.utils import timezone
 
@@ -46,6 +49,7 @@ from fleets.helpers.fleet_location import backfill_missing_fleet_locations
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import (
+    SCHEDULE_REFRESH_DELAY_SECONDS,
     get_fleet_emoji,
     update_fleet_schedule,
     update_fleet_instances,
@@ -144,6 +148,7 @@ def make_test_fleet(
 class FleetHelperTestCase(SimpleTestCase):
     """Tests for Fleet helper code"""
 
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_get_motd_is_compact(self):
         """No role nag or quote: MOTD real estate is for fleet info."""
         motd = get_motd(
@@ -241,15 +246,23 @@ class FleetSignalsTestCase(TestCase):
 
         instance.audience.add_to_schedule = False
 
-        update_fleet_schedule_on_save(None, instance, False)
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            update_fleet_schedule_on_save(None, instance, False)
 
         # Should not be called when add_to_schedule is False
+        self.assertEqual([], callbacks)
         discord_mock.get_messages.assert_not_called()
 
         instance.audience.add_to_schedule = True
         discord_mock.get_messages.return_value = []
 
-        update_fleet_schedule_on_save(None, instance, False)
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            update_fleet_schedule_on_save(None, instance, False)
+
+        # The save only queues the refresh; a worker talks to Discord.
+        discord_mock.get_messages.assert_not_called()
+        for callback in callbacks:
+            callback()
 
         # Should be called when add_to_schedule is True
         discord_mock.get_messages.assert_called_once()
@@ -262,10 +275,31 @@ class FleetSignalsTestCase(TestCase):
         instance.audience.add_to_schedule = True
         discord_mock.get_messages.return_value = []
 
-        update_fleet_schedule_on_delete(None, instance)
+        with self.captureOnCommitCallbacks(execute=True):
+            update_fleet_schedule_on_delete(None, instance)
 
         discord_mock.get_messages.assert_called_once()
         discord_mock.create_message.assert_called_once()
+
+    @patch("celery.app.task.Task.apply_async")
+    def test_saves_share_one_queued_schedule_refresh(self, apply_async):
+        """Saves made before the refresh runs queue it once, after a short
+        delay, so Discord sees one delete-and-repost."""
+        instance = MagicMock(spec=EveFleet)
+        instance.audience.add_to_schedule = True
+        lock_key = update_fleet_schedule.get_key()
+        cache.delete(lock_key)
+        self.addCleanup(cache.delete, lock_key)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            update_fleet_schedule_on_save(None, instance, False)
+            update_fleet_schedule_on_save(None, instance, False)
+
+        apply_async.assert_called_once()
+        self.assertEqual(
+            SCHEDULE_REFRESH_DELAY_SECONDS,
+            apply_async.call_args.kwargs["countdown"],
+        )
 
 
 class FleetRouterTestCase(TestCase):
@@ -331,6 +365,72 @@ class FleetRouterTestCase(TestCase):
         fleets = response.json()
         self.assertEqual(1, len(fleets))
         self.assertEqual(doctrine.id, fleets[0]["doctrine_id"])
+
+    def test_get_fleets_v3_names_fc_and_doctrine(self):
+        """The schedule carries the FC's primary character and the doctrine
+        name, so clients need no profile or doctrine lookups."""
+        doctrine = EveDoctrine.objects.create(
+            name="Hurricanes", type="non_strategic", description=""
+        )
+        fc = User.objects.create(username="fc_with_main")
+        character = EveCharacter.objects.create(
+            character_id=9001, character_name="FC Main", user=fc
+        )
+        EvePlayer.objects.create(
+            user=fc, primary_character=character, nickname="fc_with_main"
+        )
+        named = make_test_fleet("With FC", fc)
+        named.doctrine = doctrine
+        named.save()
+        no_main = make_test_fleet("No main", User.objects.create(username="x"))
+
+        response = self.client.get(
+            f"{BASE_URL}/v3?fleet_filter=upcoming",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        by_id = {fleet["id"]: fleet for fleet in response.json()}
+        self.assertEqual(9001, by_id[named.id]["fleet_commander_character_id"])
+        self.assertEqual("FC Main", by_id[named.id]["fleet_commander_name"])
+        self.assertEqual("Hurricanes", by_id[named.id]["doctrine_name"])
+        self.assertEqual(fc.id, by_id[named.id]["fleet_commander"])
+        self.assertIsNone(by_id[no_main.id]["fleet_commander_character_id"])
+        self.assertIsNone(by_id[no_main.id]["fleet_commander_name"])
+        self.assertIsNone(by_id[no_main.id]["doctrine_name"])
+
+    def test_get_fleets_v3_names_cost_no_query_per_fleet(self):
+        """FC and doctrine names come from the list query (select_related),
+        so only tracking still costs queries per fleet."""
+        doctrine = EveDoctrine.objects.create(
+            name="Hurricanes", type="non_strategic", description=""
+        )
+
+        def count_queries(fleets):
+            for n in range(fleets):
+                fc = User.objects.create(username=f"fc{fleets}_{n}")
+                character = EveCharacter.objects.create(
+                    character_id=1000 * fleets + n,
+                    character_name=f"FC {n}",
+                    user=fc,
+                )
+                EvePlayer.objects.create(
+                    user=fc, primary_character=character, nickname=fc.username
+                )
+                fleet = make_test_fleet(f"Fleet {n}", fc)
+                fleet.doctrine = doctrine
+                fleet.save()
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.get(
+                    f"{BASE_URL}/v3?fleet_filter=upcoming",
+                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
+                )
+            EveFleet.objects.all().delete()
+            self.assertEqual(fleets, len(response.json()))
+            return len(queries)
+
+        one, three = count_queries(1), count_queries(3)
+        # Each fleet still checks for a tracking instance (exists()).
+        self.assertLessEqual(three - one, 2 * 1)
 
     def test_get_fleet(self):
         fleet = make_test_fleet("Test fleet", self.user)
@@ -409,6 +509,29 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual("Updated tagline", response.json()["objective"])
         fleet.refresh_from_db()
         self.assertEqual("Updated tagline", fleet.objective)
+
+    def test_fleet_metrics_for_one_fleet(self):
+        setup_fc(self.user)
+        first = make_test_fleet("First", self.user)
+        second = make_test_fleet("Second", self.user)
+
+        everything = self.client.get(
+            f"{BASE_URL}/metrics",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+        response = self.client.get(
+            f"{BASE_URL}/metrics?fleet_id={second.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {first.id, second.id}, {row["fleet_id"] for row in everything}
+        )
+        self.assertEqual(
+            [row for row in everything if row["fleet_id"] == second.id],
+            response.json(),
+        )
 
     def test_commander_metrics_available_without_privilege(self):
         response = self.client.get(
@@ -630,12 +753,14 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(fleet.location_id, staging.location_id)
 
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_endpoint(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
         fleet.disable_motd = True
         fleet.save()
+        fleet.audience.discord_channel_id = 4242
+        fleet.audience.save()
 
         esi_mock_instance = esi_mock.return_value
         esi_mock_instance.get_active_fleet.return_value = EsiResponse(
@@ -649,16 +774,30 @@ class FleetRouterTestCase(TestCase):
             response_code=204, data={}
         )
 
-        response = self.client.post(
-            f"{BASE_URL}/{fleet.id}/tracking",
-            data=None,
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.client.post(
+                f"{BASE_URL}/{fleet.id}/tracking",
+                data=None,
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
         self.assertEqual(200, response.status_code)
 
+        # Starting the fleet queues the audience ping; a worker posts it,
+        # so a slow Discord can neither delay nor fail the start.
+        discord_mock.assert_not_called()
+        for callback in callbacks:
+            callback()
+        discord_mock.return_value.create_message.assert_called_once()
+        call = discord_mock.return_value.create_message.call_args
+        self.assertEqual(4242, call.kwargs["channel_id"])
+        self.assertEqual(
+            "INCOMING PING TRANSMISSION...",
+            call.kwargs["payload"]["embeds"][0]["title"],
+        )
+
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_when_not_in_fleet(self, discord_mock, esi_mock):
         setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -687,7 +826,7 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual("Not currently in a fleet", error["detail"])
 
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_rejects_non_commander(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -730,7 +869,7 @@ class FleetRouterTestCase(TestCase):
         self.assertNotEqual(char_id, existing.boss_id)
 
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_now_as_commander(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
 
@@ -760,7 +899,7 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(char_id, instance.boss_id)
 
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_now_rejects_non_commander(
         self, discord_mock, esi_mock
     ):
@@ -802,7 +941,7 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
 
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_start_fleet_with_char(self, discord_mock, esi_mock):
         fc_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -878,24 +1017,66 @@ class FleetRouterTestCase(TestCase):
     #         ],
     #     )
 
-    @patch("fleets.endpoints.helpers.DiscordClient")
+    @patch("discord.outbox.DiscordClient")
     def test_fleet_preping(self, discord_mock):
         mock_client = MagicMock()
         discord_mock.return_value = mock_client
         self.make_superuser()
         setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
-        response = self.client.post(
-            f"{BASE_URL}/{fleet.id}/preping",
-            "",
-            "application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+        fleet.audience.discord_channel_id = 4242
+        fleet.audience.save()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.client.post(
+                f"{BASE_URL}/{fleet.id}/preping",
+                "",
+                "application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
         self.assertEqual(202, response.status_code)
 
-        mock_client.create_message.assert_called_with(
-            channel_id=ANY, payload=ANY
+        # The request only queues the ping; a worker posts it.
+        discord_mock.assert_not_called()
+        for callback in callbacks:
+            callback()
+
+        mock_client.create_message.assert_called_once_with(
+            channel_id=fleet.audience.discord_channel_id,
+            payload=get_fleet_discord_notification(
+                is_pre_ping=True,
+                fleet_id=fleet.id,
+                fleet_type=fleet.get_type_display(),
+                fleet_location=(
+                    fleet.formup_location.location_name
+                    if fleet.formup_location
+                    else "Ask FC"
+                ),
+                fleet_audience=fleet.audience.name,
+                fleet_commander_name=fleet.fleet_commander.character_name,
+                fleet_commander_id=fleet.fleet_commander.character_id,
+                fleet_description=fleet.description,
+                fleet_voice_channel=None,
+                fleet_voice_channel_link=None,
+                fleet_start_time=fleet.start_time,
+            ),
         )
+
+    def test_fleet_preping_without_audience_channel_fails(self):
+        """Same answer as before: no channel to ping is an error."""
+        self.make_superuser()
+        setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.audience.discord_channel_id = None
+        fleet.audience.save()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.client.post(
+                f"{BASE_URL}/{fleet.id}/preping",
+                "",
+                "application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(500, response.status_code)
+        self.assertEqual([], callbacks)
 
     @patch("fleets.endpoints.active.current_fleets.EsiClient")
     def test_user_active_fleets(self, esi_client_class):
@@ -1097,7 +1278,7 @@ class FleetTaskTests(TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_fleet_member_update(self, discord, esi):
         esi_mock = esi.return_value
 
@@ -1187,7 +1368,7 @@ class FleetTaskTests(TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_update_fleet_instances(self, discord, esi):
         esi_mock = esi.return_value
 
@@ -1258,7 +1439,7 @@ class FleetTaskTests(TestCase):
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")
-    @patch("fleets.models.discord")
+    @patch("discord.outbox.DiscordClient")
     def test_esi_failure_does_not_auto_close_within_one_hour(
         self, discord_mock, esi
     ):

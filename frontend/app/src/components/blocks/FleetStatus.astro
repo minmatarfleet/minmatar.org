@@ -14,7 +14,6 @@ interface Props {
     alert?:                     false | Alert;
     start_tracking?:            boolean;
     fleet_tracking_texts?:      FleetTrackingTexts | false;
-    init_tooltips:              boolean;
     disable_motd?:              boolean;
 }
 
@@ -27,11 +26,13 @@ const {
     alert = false,
     start_tracking = false,
     fleet_tracking_texts = false,
-    init_tooltips,
     disable_motd = false,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
+import { fleet_phase } from '@helpers/fleet_phase'
+
+const phase = fleet_phase({ status: fleet_status, tracking: fleet_tracking })
 
 const diff_time = minutes_to(start_time)
 const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
@@ -44,7 +45,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
-import CompletedStatus from '@components/blocks/CompletedStatus.astro';
+import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
 import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
 ---
 
@@ -65,30 +66,22 @@ import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
     <Flexblock>
         {/* The countdown sits in the fleet facts above. */}
 
-        {fleet_status === 'cancelled' &&
-            <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p>
-        }
-
-        {fleet_status !== 'cancelled' && fleet_tracking && !fleet_tracking?.end_time &&
+        {phase === 'active' ?
             <Flexblock>
-                <p class="[ fleet-status-text blink-animation ]">{t('active')}</p>
+                <FleetPhaseLabel phase={phase} />
 
                 {is_fleet_commander &&
                     <EndFleetButton id={fleet_id} />
                 }
-            </Flexblock>
-
+            </Flexblock> :
+            <FleetPhaseLabel phase={phase} completed_detail={fleet_tracking_texts} />
         }
 
-        {fleet_status !== 'cancelled' && fleet_tracking && fleet_tracking?.end_time &&
-            <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} init_tooltips={init_tooltips} />
-        }
-
-        {is_fleet_commander && is_fleet_time && !fleet_tracking && fleet_status !== 'cancelled' &&
+        {is_fleet_commander && is_fleet_time && phase === 'upcoming' &&
             <StartFleetButton id={fleet_id} />
         }
 
-        {is_fleet_commander && !is_fleet_time && !fleet_tracking && fleet_status !== 'cancelled' &&
+        {is_fleet_commander && !is_fleet_time && phase === 'upcoming' &&
             <template
                 id="fleet-tick"
                 x-if="is_fleet_time"
@@ -118,7 +111,7 @@ import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
             </template>
         }
 
-        {is_fleet_commander && fleet_tracking && !fleet_tracking?.end_time && fleet_status !== 'cancelled' &&
+        {is_fleet_commander && fleet_tracking && phase === 'active' &&
             <FleetSetupSteps
                 start_time={start_time}
                 tracking={fleet_tracking}
@@ -126,23 +119,4 @@ import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
             />
         }
     </Flexblock>
-</ComponentBlock>
-
-<style lang="scss">
-    .fleet-status-text {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        margin-left: -10px;
-        margin-right: -10px;
-        color: var(--highlight);
-		letter-spacing: 12px;
-        text-indent: 12px;
-		line-height: 1;
-        white-space: nowrap;
-        text-transform: uppercase;
-
-        &.cancelled {
-            color: var(--fleet-red);
-        }
-    }
-</style>
+</div>

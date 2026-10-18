@@ -5,13 +5,13 @@ const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
 const { start_login, decode_token_payload, TokenStore, LoginCancelled, LoginFailed } = require('./auth')
-const { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign } = require('./api')
+const { ApiClient, ApiError, client_id, is_unauthorized, load_upcoming_fleets, load_campaign } = require('./api')
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
 const { overlay_should_show, mascot_should_show, is_logged_in_client, client_on_screen, hide_instantly } = require('./overlay_rules')
 const { EveLogEngine } = require('./eve_logs')
-const { Updater, RELEASES_URL } = require('./updater')
+const { Updater, RELEASES_URL, is_portable } = require('./updater')
 const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
@@ -958,7 +958,11 @@ app.whenReady().then(async () => {
     const user_data = app.getPath('userData')
     LEGACY_SETTINGS_FILE = path.join(user_data, 'settings.json')
     tokens = new TokenStore(path.join(user_data, 'session.bin'), safeStorage)
-    api = new ApiClient({ api_url: config.api_url, get_token: () => tokens.load() })
+    api = new ApiClient({
+        api_url: config.api_url,
+        get_token: () => tokens.load(),
+        client: client_id({ version: app.getVersion(), portable: is_portable() }),
+    })
     fleet_window = new FleetWindow({
         api,
         routes: new RouteFinder(),

@@ -2,8 +2,20 @@
 
 from django.contrib.auth.models import User
 
-from eveonline.models import EveCorporation
+from eveonline.helpers.characters.identity import owned_by_q
+from eveonline.models import EveCharacter, EveCorporation
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
+
+
+def _owns(user: User, character: EveCharacter | None) -> bool:
+    """Ownership rule from eveonline.helpers.characters.identity: the
+    character's user, or its token's user only when it has no user."""
+    if character is None:
+        return False
+    if character.user_id:
+        return character.user_id == user.id
+    token = character.token
+    return bool(token and token.user_id == user.id)
 
 
 def ceo_user(corporation: EveCorporation) -> User | None:
@@ -18,13 +30,7 @@ def ceo_user(corporation: EveCorporation) -> User | None:
 
 
 def user_is_ceo(user: User, corporation: EveCorporation) -> bool:
-    ceo = corporation.ceo
-    if ceo is None:
-        return False
-    if ceo.user_id == user.id:
-        return True
-    token = ceo.token
-    return bool(token and token.user_id == user.id)
+    return _owns(user, corporation.ceo)
 
 
 def can_manage_corporation(user: User, corporation: EveCorporation) -> bool:
@@ -32,9 +38,7 @@ def can_manage_corporation(user: User, corporation: EveCorporation) -> bool:
         return False
     if user_is_ceo(user, corporation):
         return True
-    if any(
-        director.user_id == user.id for director in corporation.directors.all()
-    ):
+    if any(_owns(user, director) for director in corporation.directors.all()):
         return True
     if user_in_team(user, PEOPLE_TEAM) or user_in_team(user, TECH_TEAM):
         return True
@@ -42,10 +46,7 @@ def can_manage_corporation(user: User, corporation: EveCorporation) -> bool:
 
 
 def _holds_role(user: User, characters) -> bool:
-    return (
-        characters.filter(user_id=user.id).exists()
-        or characters.filter(token__user_id=user.id).exists()
-    )
+    return characters.filter(owned_by_q(user.id)).exists()
 
 
 def user_is_recruiter(user: User, corporation: EveCorporation) -> bool:

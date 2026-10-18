@@ -114,6 +114,8 @@ class TribeGroupShowcaseSchema(BaseModel):
     period_start: Optional[str] = None
     period_end: Optional[str] = None
     manual: bool = False
+    # True while the first refresh is still running (manual is True too).
+    warming: bool = False
     message: str = ""
     totals: dict = {}
     columns: List[str] = []

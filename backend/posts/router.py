@@ -12,14 +12,19 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from campaigns.helpers import resolve_attachable_campaign
 
-from .authors import post_author_fields
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
+
+from .authors import author_fields_for_main, post_author_fields
 from .models import EvePost, EveTag
 from groups.helpers.feature_access import can_use_feature
 from tribes.models import TribeGroup
 
 
 def _tribe_group_ids(post: EvePost) -> List[int]:
-    return list(post.tribe_groups.values_list("id", flat=True))
+    # .all() reuses prefetch_related("tribe_groups") on list endpoints.
+    return [group.id for group in post.tribe_groups.all()]
 
 
 def _set_tribe_groups(
@@ -174,12 +179,14 @@ def get_posts(
         posts = paginator.get_page(page_num)
         response["x-total-count"] = EvePost.objects.count()
 
+    posts = list(posts)
+    mains = primary_characters_for_users(post.user_id for post in posts)
     response = []
     for post in posts:
         # Extract the first image link from the content
         image_link = extract_first_image_link(post.content)
-        author_character_id, author_character_name = post_author_fields(
-            post.user
+        author_character_id, author_character_name = author_fields_for_main(
+            mains.get(post.user_id)
         )
 
         response.append(

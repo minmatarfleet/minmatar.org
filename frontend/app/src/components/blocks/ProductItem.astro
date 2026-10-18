@@ -1,17 +1,15 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Product } from '@dtypes/api.minmatar.org'
 
 interface Props {
     product:            Product;
-    init_tooltips:      boolean;
 }
 
 const {
     product,
-    init_tooltips,
 } = Astro.props
 
 // Keep the row scannable: a few parent icons, the rest on the detail page.
@@ -49,7 +47,7 @@ import Picture from '@components/blocks/Picture.astro';
             }
 
             <small class:list={[ { 'text-red': product.strategy === 'imported' } ]}>
-                {t(product.strategy as any) ?? product.strategy}
+                {t(dynamic_key(product.strategy)) ?? product.strategy}
             </small>
         </FlexInline>
     </ItemBadge>
@@ -62,7 +60,6 @@ import Picture from '@components/blocks/Picture.astro';
                     {used_in.map(parent =>
                         <span
                             data-tippy-content={parent.name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
                             <ItemPicture
                                 item_id={parent.type_id}

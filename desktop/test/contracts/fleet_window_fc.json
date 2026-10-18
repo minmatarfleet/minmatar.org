@@ -1,0 +1,150 @@
+{
+  "after_action": null,
+  "attention": [
+    {
+      "names": [
+        "Pilot 3001"
+      ],
+      "reason": "off_doctrine"
+    }
+  ],
+  "counts": {
+    "in_fleet": 3,
+    "isk_destroyed": 0,
+    "isk_lost": 0,
+    "kills": 0,
+    "losses": 0,
+    "with_fc": 3
+  },
+  "feed": [],
+  "fleet": {
+    "description": "Armor roam",
+    "doctrine_name": "Armor Damnations",
+    "ended_at": null,
+    "fc_character_id": 5000,
+    "fc_name": "The FC",
+    "fc_system_id": 30002537,
+    "fc_system_name": "Amamake",
+    "id": 501,
+    "live": true,
+    "location_name": "Test Location",
+    "location_system_id": 234,
+    "location_system_name": "Somewhere",
+    "start_time": "2026-01-17T17:30:00Z",
+    "started_at": "2026-01-17T17:35:00Z",
+    "status": "active",
+    "title": "Armor Damnations",
+    "type": "non_strategic",
+    "type_label": "Non-Strategic"
+  },
+  "me": {
+    "character_ids": [
+      5000
+    ],
+    "characters": [
+      {
+        "capsule": false,
+        "character_id": 5000,
+        "character_name": "Pilot 5000",
+        "docked": false,
+        "doctrine": true,
+        "ship_name": "Ship 22474",
+        "ship_type_id": 22474,
+        "solar_system_id": 30002537,
+        "solar_system_name": "Amamake"
+      }
+    ],
+    "last_loss": null,
+    "ship_volunteers": {}
+  },
+  "mode": "fc",
+  "needs": [
+    {
+      "count": 1,
+      "kind": "role",
+      "label": "cyno",
+      "ship_type_id": null
+    }
+  ],
+  "pilots": [
+    {
+      "capsule": false,
+      "character_id": 1001,
+      "character_name": "Pilot 1001",
+      "docked": false,
+      "doctrine": true,
+      "ship_name": "Ship 11987",
+      "ship_type_id": 11987,
+      "solar_system_id": 30002537,
+      "solar_system_name": "Amamake"
+    },
+    {
+      "capsule": false,
+      "character_id": 3001,
+      "character_name": "Pilot 3001",
+      "docked": false,
+      "doctrine": false,
+      "ship_name": "Ship 587",
+      "ship_type_id": 587,
+      "solar_system_id": 30002537,
+      "solar_system_name": "Amamake"
+    },
+    {
+      "capsule": false,
+      "character_id": 5000,
+      "character_name": "Pilot 5000",
+      "docked": false,
+      "doctrine": true,
+      "ship_name": "Ship 22474",
+      "ship_type_id": 22474,
+      "solar_system_id": 30002537,
+      "solar_system_name": "Amamake"
+    }
+  ],
+  "roles": [
+    {
+      "covered": true,
+      "role": "logi"
+    },
+    {
+      "covered": true,
+      "role": "links"
+    },
+    {
+      "covered": false,
+      "role": "cyno"
+    }
+  ],
+  "ships": [
+    {
+      "flying": 0,
+      "key": "f:403",
+      "name": "Devoter",
+      "role": "primary",
+      "role_label": "Cyno",
+      "ship_name": "Devoter",
+      "ship_type_id": 12017,
+      "signed_up": 0
+    },
+    {
+      "flying": 1,
+      "key": "f:401",
+      "name": "[FL33T] 3X/4X Damnation",
+      "role": "primary",
+      "role_label": "Links",
+      "ship_name": "Damnation",
+      "ship_type_id": 22474,
+      "signed_up": 0
+    },
+    {
+      "flying": 1,
+      "key": "f:402",
+      "name": "[FL33T] Guardian",
+      "role": "primary",
+      "role_label": "Logi",
+      "ship_name": "Guardian",
+      "ship_type_id": 11987,
+      "signed_up": 1
+    }
+  ]
+}

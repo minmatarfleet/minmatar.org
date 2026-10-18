@@ -1,15 +1,12 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!auth_token || !user)
     return HTTP_403_Forbidden()
@@ -118,7 +115,7 @@ import Tag from '@components/blocks/Tag.astro';
         <Tag
             hx-swap-oob="true"
             id={`post-tag-${(post as PostListUI).post_id}`}
-            text={t((post as PostListUI).state as any) ?? (post as PostListUI).state}
+            text={t(dynamic_key((post as PostListUI).state)) ?? (post as PostListUI).state}
             color={(post as PostListUI).state === 'published' ? 'green' : undefined}
         />
     }

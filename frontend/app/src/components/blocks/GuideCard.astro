@@ -4,8 +4,7 @@ import type { GuideMeta } from '@/data/guides/types'
 import { getGuideCoverImage } from '@/data/guides/covers'
 import { guidePath as guide_path_for_slug } from '@/data/guides/urls'
 import { get_app_url } from '@helpers/env'
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -32,8 +31,7 @@ const author = !is_multiple_authors ? guide.authors[0] : undefined
 const author_names = guide.authors.map((entry) => entry.name).join(', ')
 const cover = getGuideCoverImage(guide)
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { user } = get_request_user(Astro)
 const share_url = user
     ? `${get_app_url(guide_href)}?ref=${user.user_id}`
     : get_app_url(guide_href)
@@ -223,7 +221,7 @@ const share_url = user
 
     .guide-card__excerpt {
         margin: 0;
-        color: var(--muted-color);
+        color: inherit;
         font-size: var(--step--1);
         line-height: 1.4;
     }

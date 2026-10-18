@@ -4,9 +4,10 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from django.contrib.auth.models import User
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from discord.outbox import queue_channel_message
 from eveonline.helpers.characters import user_characters
 from eveonline.helpers.prime_time import prime_bucket
 from fittings.models import EveDoctrine
@@ -42,6 +43,25 @@ def fixup_fleet_status(
     return fleet.status
 
 
+# What make_fleet_response reads, for list endpoints to select_related.
+FLEET_RESPONSE_RELATED = (
+    "created_by__eveplayer__primary_character",
+    "doctrine",
+    "location",
+    "audience",
+)
+
+
+def _primary_character(user):
+    """The user's primary character, or None (no user, player or primary)."""
+    if user is None:
+        return None
+    try:
+        return user.eveplayer.primary_character
+    except User.eveplayer.RelatedObjectDoesNotExist:
+        return None
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
     tracking = None
     if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
@@ -49,6 +69,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
             EveFleetInstance.objects.get(eve_fleet=fleet)
         )
 
+    fc_character = _primary_character(fleet.created_by)
     return {
         "id": fleet.id,
         "type": fleet.type,
@@ -56,6 +77,12 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
+        "fleet_commander_character_id": (
+            fc_character.character_id if fc_character else None
+        ),
+        "fleet_commander_name": (
+            fc_character.character_name if fc_character else None
+        ),
         "location": (
             fleet.formup_location.location_name
             if fleet.formup_location
@@ -67,6 +94,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "hide_volunteers": fleet.hide_volunteers,
         "status": fixup_fleet_status(fleet, tracking),
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
+        "doctrine_name": fleet.doctrine.name if fleet.doctrine else None,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
     }
@@ -86,8 +114,17 @@ def _fleet_authorized(request, fleet: EveFleet) -> bool:
 
 
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
-    """Send a Discord pre-ping for a fleet."""
+    """Queue a Discord pre-ping for a fleet; a worker posts it.
+
+    Returns False when the fleet has no audience channel to ping.
+    """
     if not fleet.audience:
+        return False
+    if not fleet.audience.discord_channel_id:
+        logger.error(
+            "Error sending Discord pre-ping for fleet %d : no channel",
+            fleet.id,
+        )
         return False
 
     notification = get_fleet_discord_notification(
@@ -108,19 +145,12 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
         fleet_start_time=fleet.start_time,
     )
 
-    try:
-        DiscordClient().create_message(
-            channel_id=fleet.audience.discord_channel_id,
-            payload=notification,
-        )
-        return True
-    except Exception as e:
-        logger.error(
-            "Error sending Discord pre-ping for fleet %d : %s",
-            fleet.id,
-            str(e),
-        )
-        return False
+    queue_channel_message(
+        fleet.audience.discord_channel_id,
+        payload=notification,
+        context=f"pre-ping for fleet {fleet.id}",
+    )
+    return True
 
 
 def _fleet_patch_audience_location_errors(

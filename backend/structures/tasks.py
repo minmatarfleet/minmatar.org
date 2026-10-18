@@ -38,6 +38,8 @@ SCOPE_STRUCTURES = ["esi-corporations.read_structures.v1"]
 
 @app.task
 def update_structures():
+    # Tracked scope (every EveAlliance row), not just FL33T + BUILD: we keep
+    # structures for every alliance an admin has added to the site.
     allied_alliances = EveAlliance.objects.all()
     EveStructure.objects.exclude(
         corporation__alliance__in=allied_alliances,

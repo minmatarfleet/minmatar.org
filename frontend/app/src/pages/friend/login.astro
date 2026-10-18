@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import * as jose from 'jose'
+import { decode_user } from '@helpers/request_user'
 
 if (Astro.request.method !== "GET") Astro.redirect(translatePath('/friend/welcome'))
 
@@ -10,7 +10,7 @@ let token:string | null = null
 
 try {
     token = Astro.url.searchParams.get('token')
-    jose.decodeJwt(token as string)
+    decode_user(token as string)
 } catch (error) {
     throw new Error(`Error during token exchange: ${error.message}`)
 }

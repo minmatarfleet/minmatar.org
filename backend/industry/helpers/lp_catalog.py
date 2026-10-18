@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Dict, Iterable, List, Set
 
 from django.db.models import Q
 from eveuniverse.models import EveType
 
-from eveonline.client import live_esi_allowed
+# Re-exported for loyalty_store / lp_store_economics; the shared loader
+# honours live_esi_allowed() and logs per-type ESI failures.
+from eveonline.helpers.universe import (  # noqa: F401 pylint: disable=W0611
+    ensure_eve_types,
+)
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
 from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
 from industry.models import (
@@ -16,8 +19,6 @@ from industry.models import (
     IndustryLpStoreOfferRequiredItem,
     IndustryProduct,
 )
-
-logger = logging.getLogger(__name__)
 
 # Eve SDE: Criminal Tags (Angel/Blood/Domination/Navy tags, etc.)
 CRIMINAL_TAGS_GROUP_ID = 370
@@ -79,48 +80,6 @@ def expand_with_navy_hull_type_ids(type_ids: Iterable[int]) -> Set[int]:
 def lp_market_history_type_ids() -> List[int]:
     """Type IDs that need Forge market history for LP store economics."""
     return sorted(expand_with_navy_hull_type_ids(lp_catalog_type_ids()))
-
-
-def ensure_eve_types(type_ids: Iterable[int]) -> Set[int]:
-    """
-    Load missing EveType rows from ESI.
-
-    Batch-checks local existence, then calls get_or_create_esi only for
-    missing IDs (no admin N+1). Returns the set of type IDs that were
-    fetched (or attempted). Failures are logged and skipped so one bad
-    type does not break sync / economics. Unit tests never call ESI.
-    """
-    unique = sorted({int(t) for t in type_ids if int(t) > 0})
-    if not unique:
-        return set()
-    existing = set(
-        EveType.objects.filter(id__in=unique).values_list("id", flat=True)
-    )
-    missing = [tid for tid in unique if tid not in existing]
-    if not missing:
-        return set()
-    if not live_esi_allowed():
-        logger.info(
-            "Skipping ESI ensure for %s missing EveType(s) during tests",
-            len(missing),
-        )
-        return set()
-    fetched: Set[int] = set()
-    for type_id in missing:
-        try:
-            EveType.objects.get_or_create_esi(id=type_id)
-            fetched.add(type_id)
-        except Exception:  # noqa: BLE001 — ESI / SDE edge cases
-            logger.warning(
-                "Failed to ensure EveType %s for LP catalog",
-                type_id,
-                exc_info=True,
-            )
-    if fetched:
-        logger.info(
-            "Loaded %s missing EveType(s) for LP catalog", len(fetched)
-        )
-    return fetched
 
 
 def tag_type_ids() -> List[int]:

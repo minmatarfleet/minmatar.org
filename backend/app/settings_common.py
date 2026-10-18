@@ -7,27 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
 CACHE_URL = "redis://localhost:6379/2"
-CELERY_IMPORTS = (
-    "eveonline.tasks",
-    "structures.tasks",
-    "groups.tasks",
-    "discord.tasks",
-    "fleets.tasks",
-    "reminders.tasks",
-    "moons.tasks",
-    "market.tasks",
-    "industry.tasks",
-    "reddit.tasks",
-    "creators.tasks",
-    "tribes.tasks",
-    "feed.tasks",
-    "notifications.tasks",
-    "buyback.tasks",
-    "alliance.tasks",
-    "fittings.tasks",
-    "surveys.tasks",
-    "campaigns.tasks",
-)
 
 
 # ESI
@@ -120,6 +99,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # Answer browser CORS preflight (OPTIONS) before URL routing → 405.
     "app.cors.SimpleCorsMiddleware",
+    # Count which desktop versions call the API (X-Minmatar-Client).
+    "app.client_versions.ClientVersionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -240,3 +221,15 @@ DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
 # SDE sqlite for campaign area names; defaults to the newest
 # frontend/app/src/data/sde-*.sqlite.
 EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")
+
+# Reverse proxies in front of the app that each append the address they saw
+# to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
+# if the app is reached directly, or add one per extra hop (e.g. a CDN).
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+
+# The daily alliance health snapshot prune deletes rows (older than 35 days,
+# down to one per day), so it only runs when this is turned on. Off by
+# default: no snapshot history is deleted without sign-off.
+ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED = os.environ.get(
+    "ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED", ""
+).strip().lower() in {"1", "true", "yes", "on"}

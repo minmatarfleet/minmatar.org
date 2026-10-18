@@ -1,18 +1,12 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import { is_prod_mode } from '@helpers/env'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
+const { auth_token, user } = get_request_user(Astro)
 
 import { get_gates, can, type GateKey } from '@helpers/gates'
 const gates = await get_gates(Astro)
@@ -30,7 +24,7 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (!page.publish && is_prod_mode())
         return false
 
-    if (user && user?.is_superuser)
+    if (can(gates, 'site.all_pages'))
         return true
 
     if (!page?.permissions)
@@ -39,10 +33,8 @@ const pages = sitemap.filter( (page:PageFinderUI) => {
     if (page.permissions?.auth && !user)
         return false
 
-    if (page.permissions?.group_officer && !user_is_officer)
-        return false
-
-    if (page.permissions?.team_director && !user_is_director)
+    // No officer/director roles exist any more; only superusers (above) see these.
+    if (page.permissions?.group_officer || page.permissions?.team_director)
         return false
 
     if (page.permissions?.gate && (!user || !can(gates, page.permissions.gate as GateKey)))
@@ -55,7 +47,7 @@ const filter_pages = pages.map( (page) => {
     return {
         slug: page.slug,
         keywords: page?.keywords ?? [],
-        title: t(`${page.slug}.page_title` as any) ?? page.slug
+        title: t(t_key('', page.slug, '.page_title')) ?? page.slug
     }
 })
 
@@ -178,17 +170,17 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                                 >
                                     <picture>
                                         {page.icon &&
-                                            <img loading="lazy" src={page.icon} height="48" width="48" alt={t(page.alt as any) ?? page.alt} />
+                                            <img loading="lazy" src={page.icon} height="48" width="48" alt={t(dynamic_key(page.alt)) ?? page.alt} />
                                         }
                                     </picture>
                                     <FluidFixed width='32px' class="[ items-center grow ]">
                                         <Flexblock gap='0' class="[ items-start ]">
                                             <span class="[ truncate ]">
-                                                {t(`${page.slug}.page_title` as any) ?? page.slug}
+                                                {t(t_key('', page.slug, '.page_title')) ?? page.slug}
                                                 <div class="[ visually-hidden ]">{page.keywords && page.keywords.join(' ')}</div>
                                             </span>
                                             {page?.description &&
-                                                <small>{t(page.description as any) ?? page.description}</small>
+                                                <small>{t(dynamic_key(page.description)) ?? page.description}</small>
                                             }
                                             {page.path && page.path !== '/' &&
                                                 <small><code class="[ p-0 ]">{page.path}</code></small>

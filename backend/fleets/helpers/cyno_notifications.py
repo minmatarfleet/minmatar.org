@@ -7,10 +7,9 @@ public API; the cyno pilot learns about it through a direct message.
 
 import logging
 
-from django.conf import settings
-
-from discord.client import DiscordClient
+from app.links import fleet_url
 from discord.models import DiscordUser
+from discord.outbox import queue_dm
 from eveonline.models import EveCharacter
 
 logger = logging.getLogger(__name__)
@@ -31,8 +30,7 @@ def _discord_id_for_character(character_id: int) -> str | None:
 
 
 def _fleet_url(fleet) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/{fleet.id}"
+    return fleet_url(fleet.id)
 
 
 def build_cyno_assignment_message(fleet, volunteer) -> str:
@@ -69,7 +67,11 @@ def build_cyno_cleared_message(fleet, volunteer) -> str:
 def notify_cyno_system_assignment(
     fleet, volunteer, cleared: bool = False
 ) -> bool:
-    """DM the cyno volunteer's Discord account. Returns True if a DM was sent."""
+    """Queue a DM to the cyno volunteer's Discord account.
+
+    Returns True if a DM was queued. The message is built now, so it shows
+    the assignment as it was when the FC saved it; a worker sends it.
+    """
     discord_id = _discord_id_for_character(volunteer.character_id)
     if not discord_id:
         logger.info(
@@ -82,13 +84,9 @@ def notify_cyno_system_assignment(
         if cleared
         else build_cyno_assignment_message(fleet, volunteer)
     )
-    try:
-        DiscordClient().send_dm(discord_id, message=message)
-        return True
-    except Exception:  # pylint: disable=broad-exception-caught
-        logger.warning(
-            "Failed to send cyno assignment DM to %s",
-            volunteer.character_name,
-            exc_info=True,
-        )
-        return False
+    queue_dm(
+        discord_id,
+        message=message,
+        context=f"cyno assignment for {volunteer.character_name}",
+    )
+    return True

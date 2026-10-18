@@ -3,10 +3,6 @@
 from collections import defaultdict
 from decimal import Decimal
 
-from datetime import datetime
-
-from django.utils import timezone
-
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EvePlayer
 from industry.helpers.order_profit_breakdown import (
@@ -17,6 +13,7 @@ from industry.helpers.orders_character_statistics import (
     assignment_unit_price,
 )
 from industry.models import IndustryOrderItemAssignment
+from tribes.reports.queries.common import period_window
 from tribes.reports.roster import roster_character_pks, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -39,12 +36,7 @@ def run_industry_orders_report(
     if not char_pks:
         return [], _empty_totals(), COLUMNS
 
-    period_start_dt = timezone.make_aware(
-        datetime.combine(period.start, datetime.min.time())
-    )
-    period_end_dt = timezone.make_aware(
-        datetime.combine(period.end, datetime.max.time())
-    )
+    period_start_dt, period_end_dt = period_window(period)
 
     assignments = IndustryOrderItemAssignment.objects.filter(
         character_id__in=char_pks,

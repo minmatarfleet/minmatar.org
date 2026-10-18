@@ -4,14 +4,32 @@ const { t } = i18n(Astro.url)
 
 import Dropdown from '@components/blocks/Dropdown.astro'
 
+/**
+ * Action dropdown: a Dropdown whose panel lists ActionMenuItem children.
+ * `variant`, `color` and `size` pass through to Dropdown (variant="button"
+ * gives the solid button trigger).
+ *
+ * A component that renders its own trigger button (a DialogButton such as
+ * ButtonApplyTribe) goes inside `<div class="action-menu-item-host">`, which
+ * styles that button like an item.
+ */
 interface Props {
     /** Trigger text and the list's accessible name. Defaults to "Actions". */
     label?:             string;
+    /**
+     * Item hover: 'tint' (default) shades the row with the foreground color,
+     * 'fill' fills it with the fleet red of a red button trigger.
+     */
+    hover?:             'tint' | 'fill';
+    /** Panel as wide as the trigger (at least 12rem); long items wrap. */
+    fit_trigger?:       boolean;
     [propName: string]: any;
 }
 
 const {
     label = t('actions'),
+    hover = 'tint',
+    fit_trigger = false,
     ...attributes
 } = Astro.props
 
@@ -19,25 +37,85 @@ delete attributes.class
 ---
 
 <Dropdown
-    class:list={['[ action-menu ]', Astro.props.class]}
+    class:list={['[ action-menu ]', { 'action-menu--fill': hover === 'fill', 'action-menu--fit': fit_trigger }, Astro.props.class]}
     {...attributes}
 >
-    <span slot="button">{label}</span>
+    <span slot="button" class="[ action-menu__label ]">{label}</span>
     <nav class="[ action-menu__list ]" aria-label={label}>
         <slot />
     </nav>
 </Dropdown>
 
 <style lang="scss" is:global>
+    .action-menu.button-dropdown {
+        display: inline-block;
+    }
+
     .action-menu.dropdown-panel {
-        min-width: 12rem;
+        min-width: max(12rem, var(--button-dropdown-min-width, 0px));
         padding: var(--space-3xs);
         background: var(--background);
+    }
+
+    .action-menu--fit.dropdown-panel {
+        width: var(--button-dropdown-min-width, max-content);
+    }
+
+    .action-menu__label {
+        white-space: nowrap;
     }
 
     .action-menu__list {
         display: flex;
         flex-direction: column;
         width: 100%;
+    }
+
+    .action-menu-item-host > .flex {
+        display: block;
+        width: 100%;
+    }
+
+    .action-menu-item-host :is(button, a) {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--foreground);
+            background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+    }
+
+    /* Doubled class: beats ActionMenuItem's scoped [data-astro-cid] rules. */
+    .action-menu.action-menu--fill .action-menu-item {
+        transition: var(--fast-transition);
+
+        &:is(a, button):hover,
+        &:is(a, button):focus-visible {
+            background: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+            color: var(--button-color);
+            /* The filled row is the focus indicator. */
+            outline: none;
+        }
+
+        &.action-menu-item--success:is(a, button):hover,
+        &.action-menu-item--success:is(a, button):focus-visible {
+            background: color-mix(in srgb, var(--green) 25%, transparent);
+            color: var(--highlight);
+        }
     }
 </style>

@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
@@ -84,8 +84,8 @@ const campaigns_select_options = [  no_campaign_option  ].concat(
 
 let FLEET_TYPES_LABELS = {}
 const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
-    FLEET_TYPES_LABELS[i] = t(i as any) ?? i
-    return {value: i, label: t(i as any) ?? i}
+    FLEET_TYPES_LABELS[i] = t(dynamic_key(i)) ?? i
+    return {value: i, label: t(dynamic_key(i)) ?? i}
 } )
 
 const no_location_option = {
@@ -582,8 +582,13 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             transition: var(--fast-transition);
 
             &:hover {
-                transform: scale(0.8);
                 filter: saturate(0.5);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    transform: scale(0.8);
+                }
             }
 
             &.selected {

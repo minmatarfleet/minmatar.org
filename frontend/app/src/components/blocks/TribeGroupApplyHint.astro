@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { login_url } from '@helpers/http_responses'
 const { t, translatePath } = i18n(Astro.url)
 
 import type {
@@ -59,7 +60,7 @@ const ineligible_text = apply_ui.affiliation_names
     : t('tribes.detail.apply_affiliation_denied')
 const status_id = `tribe-group-status-${group.tribe_id}-${group.id}`
 const hint_id = `tribe-group-apply-hint-${group.tribe_id}-${group.id}`
-const auth_redirect = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+const auth_redirect = login_url(Astro)
 
 import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'

@@ -4,8 +4,9 @@ Live campaigns over a set of theaters: Faction Warfare systems, structure
 recon, or both. A campaign is a named operation that runs for a month or two;
 everything an enlisted pilot does inside those theaters is counted.
 
-The product specification is `docs/campaigns/fw-campaigns-plan.md`. This file
-records what the code actually does today.
+This file records what the code does today and is the reference for it.
+`docs/campaigns/fw-campaigns-plan.md` is the original plan, kept for its
+reasoning; its header lists where the build went a different way.
 
 ## Campaign kinds
 
@@ -56,16 +57,49 @@ in admin (or via the timer API) creates the recon row and grows the theater.
 | Fleets | `services.fleets` | A fleet counts once someone sets `campaign` on it. |
 | Points | `services.scoring` + `services.stats` | Recomputed into `CampaignParticipantDay`. Boards include `structure_kills` / `capital_kills`. |
 | Awards | `services.awards` | Six weekly + three campaign awards from day rows. |
+| Corporation projects | ESI corp projects (`eveonline.helpers.corporations.projects`, twice an hour) · `CampaignProject` | A CEO or director attaches an active project of their corporation to a scheduled or active campaign (`endpoints/projects.py`), with no approval. Display only: projects do not score. |
+
+How the feed records killmails and hands them to campaigns: [docs/architecture/feed-and-rollups.md](../../docs/architecture/feed-and-rollups.md).
+
+## Counting rules
+
+- **A kill counts once per pilot.** `services.stats._add_killmails` folds a
+  pilot's characters on one mail into one kill and scores it with the number
+  of distinct pilots on the mail, so a multiboxer's alts don't multiply a
+  kill.
+  Migration `0028_recount_multibox_kills` rebuilt the older days.
+- **Corporation boards count each mail once.** `corporation_leaderboard`
+  rolls pilots up by their main's corporation; its kill, ISK, structure and
+  capital boards count distinct mails, so thirty members on one kill is one
+  kill. `week_kills` counts distinct mails too. Summing day-row kills across
+  pilots overcounts; don't do it for a corporation or campaign total.
+- **Objective rows show the move since the week opened.** The weekly targets
+  are judged against the week, so `GET /api/campaigns/overlay` returns
+  `change_week` (from the last snapshot before the week opened, or the
+  target's baseline for advantage rows) and `flipped`, next to the older
+  `change_24h` that installed desktop apps still read. A system that changed
+  hands this week shows Captured / Lost instead of a move.
+- **Boards.** The site's leaderboard tabs are Kills, Complexes, Advantage
+  and FCs (FCs ranks fleets led); the API also takes `isk`, `fleets`,
+  `structures` and `capitals` (`BOARD_METRICS` in `services/stats.py`). The roster endpoint returns the pilots plus their
+  roll-up by corporation (`serializers.roster_corporations`); the page shows
+  the corporation table, the coverage chart and prime times.
+- **No streaks.** Day streaks, their bonus and their notification were
+  removed in migration `0026_remove_streaks`.
 
 ## Deliberate limits
 
 - **No backfill.** A campaign is created before it starts, and attribution
   only counts a character while it was included. `seed_campaign_dev` breaks
   this rule on purpose and is development only.
-- **Unconfirmed event codes never score.** The calibration table ships with
-  event 371 and 367 confirmed; 516 and 359 are stored, displayed and left
-  unscored until somebody confirms what they are. See the plan's open
-  questions.
+- **Unconfirmed event codes never score.** The calibration table
+  (`EVENT_CODE_SEED` in `constants.py`, confirmed by migration
+  `0025_confirm_complex_and_advantage_codes`) has 371, 516, 359, 373 and 367
+  confirmed: 359 and 373 are complex captures (each payout carries an
+  itemRefID), 371 the older complex capture, 516 the advantage-site family
+  (10,000 LP flat, 15,000 for a supply cache; other amounts are shown but not
+  scored) and 367 the kill payout. Any other code is stored and displayed but
+  left unscored until somebody confirms it.
 - **Ambiguous complexes are not named.** Several base LP tiers are exact
   multiples of each other, so a solo 15,000 plex and a 30,000 plex shared
   with one untracked pilot pay the same. Those rows keep their candidate list
@@ -74,8 +108,8 @@ in admin (or via the timer API) creates the recon row and grows the theater.
   shown as an estimate and is excluded from objectives. Re-reporting the same
   system only scores once every two hours.
 - **Pods never score**, on either side. The ship loss already cost the pilot.
-- **Every read is gated on the campaign's visibility.** The roster names
-  pilots and the coverage chart shows when the alliance is *not* online, so
+- **Every read is gated on the campaign's visibility.** The roster endpoint
+  names pilots and the coverage chart shows when the alliance is *not* online, so
   only a campaign explicitly marked `public` is readable without the
   `campaigns.view` feature.
 - **Being in the alliance is not being in the campaign.** Reporting
@@ -113,35 +147,21 @@ opening one in game.
 
 Also outstanding: notifications (ticket 14) and the whole Phase 1b community
 layer, whose columns (`supply_isk_delivered`, `project_isk_earned`) exist but
-are written by nothing yet. `services.esi_gate` keeps its own ledger and
-reads ESI's headers where it can see them, but the platform-wide limiter is
-still a separate job.
-
-## Not implemented yet
-
-An FC attributes a fleet to a campaign from the fleet form, and everything
-downstream of that works: attendance, fleet-linked kills, the fleet bonus and
-the softer loss penalty. What is still only a contract is the campaign
-creating a fleet *for* you: the ESI invite behind `standing-fleet/join`
-(ticket 10) and gang fleets through the quick-start path (ticket 11). Until
-then `form_gang` announces a gang on the timeline rather than creating a
-tracked fleet, and the standing fleet records who holds it rather than
-opening one in game.
-
-Also outstanding: notifications (ticket 14) and the whole Phase 1b community
-layer, whose columns (`supply_isk_delivered`, `project_isk_earned`) exist but
-are written by nothing yet. `services.esi_gate` keeps its own ledger and
-reads ESI's headers where it can see them, but the platform-wide limiter is
-still a separate job.
+are written by nothing yet. `services.esi_gate` keeps one ledger, shared
+by the campaign polls, the structure notification poller
+(`structures/tasks.py`) and intel's Local lookups (`intel/services/local.py`),
+and reads ESI's headers where it can see them. A platform-wide limiter for
+the rest of the backend is still a separate job.
 
 ## Calibration
 
-Event codes ship unconfirmed and unconfirmed codes never score. When somebody
-establishes what a code actually is:
+A new event code is stored unconfirmed, and unconfirmed codes never score.
+The five codes above are already confirmed; don't re-run the command for
+them. When somebody establishes what a new code actually is:
 
 ```bash
-python manage.py confirm_fw_event_code 516 \
-    --site-kind rendezvous_point --by "BearThatCares deployed one, 20 Sep"
+pipenv run python manage.py confirm_fw_event_code <code> \
+    --site-kind rendezvous_point --by "who confirmed it, and how"
 ```
 
 That confirms the code and rescores the completions already recorded with it.
@@ -151,9 +171,9 @@ The table is also in the Django admin, but prefer the command: editing
 ## Running it locally
 
 ```bash
-python manage.py migrate
-python manage.py seed_campaign_dev --reset      # dev data from the local feed
-python manage.py test campaigns --settings=app.settings_test
+pipenv run python manage.py migrate
+pipenv run python manage.py seed_campaign_dev --reset      # dev data from the local feed
+pipenv run python manage.py test campaigns --settings=app.settings_test
 ```
 
 `seed_campaign_dev` builds the campaign from real killmails already in the dev

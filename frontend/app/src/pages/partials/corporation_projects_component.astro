@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 import type { CorporationProject, CorporationProjects } from '@dtypes/api.minmatar.org'
@@ -18,12 +19,14 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
 import CorporationProjectCard from '@components/blocks/CorporationProjectCard.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 type UiKey = keyof typeof ui['en']
 
 const ROOT_ID = 'corporation-projects'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : null
+const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const params = Astro.url.searchParams
@@ -66,10 +69,18 @@ if (Astro.request.method === 'POST') {
     }
 }
 
-const data = await get_corporation_projects(auth_token, corporation_id) as CorporationProjects | null
-if (!data) return HTTP_403_Forbidden()
+let fetched: CorporationProjects | null = null
+let fetch_error: Error | false = false
+try {
+    fetched = await get_corporation_projects(auth_token, corporation_id) as CorporationProjects | null
+} catch (error) {
+    fetch_error = error as Error
+}
+if (!fetched && !fetch_error) return HTTP_403_Forbidden()
+const data = fetched
+const delay = parseInt(params.get('delay') ?? '0')
 
-const projects = sort_projects(data.projects)
+const projects = sort_projects(data?.projects ?? [])
 const active = projects.filter((project) => project.state === 'Active')
 const finished = projects.filter((project) => project.state !== 'Active')
 
@@ -78,12 +89,21 @@ function open_campaigns_for(project: CorporationProject) {
     return data!.campaigns.filter((campaign) => !attached.has(campaign.slug))
 }
 
-const synced_text = data.synced_at
+const synced_text = data?.synced_at
     ? t('corporations.projects.synced').replace('{when}', from_now_diff(lang, new Date(data.synced_at)))
     : t('corporations.projects.never_synced')
 ---
 
-<div
+{fetch_error &&
+    <ErrorRefetch
+        args={{
+            partial: PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+}
+{data && <div
     id={ROOT_ID}
     class="[ corp-projects ]"
     {...(data.refreshing && {
@@ -141,7 +161,7 @@ const synced_text = data.synced_at
         }
 
         {projects.length === 0 && data.has_token &&
-            <p class="[ corp-projects__muted ]">{t('corporations.projects.empty')}</p>
+            <EmptyState title={t('corporations.projects.empty')} />
         }
 
         {[
@@ -228,7 +248,7 @@ const synced_text = data.synced_at
             </section>
         )}
     </Flexblock>
-</div>
+</div>}
 
 <style lang="scss">
     // Flexblock spaces children with margin-block-start; keep that intact.

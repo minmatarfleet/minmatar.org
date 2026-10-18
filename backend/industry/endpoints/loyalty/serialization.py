@@ -3,12 +3,16 @@
 from dataclasses import dataclass, field
 
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
+from eveonline.models import EveCharacter
 from industry.endpoints.loyalty.schemas import (
     LoyaltyCurrencyResponse,
     LoyaltyLedgerEntryResponse,
     LoyaltyMarketOrderClaimResponse,
     LoyaltyMarketOrderResponse,
+    LoyaltyOfferConversionCosts,
     LoyaltyOfferResponse,
 )
 from industry.helpers.lp_corporation_ids import corporation_ids
@@ -17,6 +21,7 @@ from industry.helpers.lp_market_orders import (
     express_due_at,
     remaining_quantity,
 )
+from industry.helpers.plan_costing import lp_offer_side_costs
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointLedgerEntry,
@@ -102,10 +107,7 @@ def order_context(orders) -> OrderContext:
         )
         names += order_destination_names(order)
     primaries: dict[int, EveCharacter | None] = dict.fromkeys(user_ids)
-    for player in EvePlayer.objects.filter(
-        user_id__in=user_ids
-    ).select_related("primary_character"):
-        primaries[player.user_id] = player.primary_character
+    primaries.update(primary_characters_for_users(user_ids))
     return OrderContext(
         primaries=primaries, corporation_ids=corporation_ids(names)
     )
@@ -206,6 +208,29 @@ def ledger_entry_response(
     )
 
 
+def offer_conversion_costs(
+    row: IndustryLpStoreOfferEconomics,
+) -> dict[str, LoyaltyOfferConversionCosts]:
+    """Tax and freight per LP for each market side the row has a price for."""
+    prices = {
+        "sell": row.jita_sell,
+        "buy": row.jita_buy,
+        "avg_7d": row.jita_avg_7d,
+    }
+    return {
+        side: LoyaltyOfferConversionCosts(
+            **lp_offer_side_costs(
+                lp_cost=row.lp_cost,
+                quantity=row.quantity,
+                market_price_isk=price,
+                input_freight_isk=row.input_freight_isk,
+            )
+        )
+        for side, price in prices.items()
+        if price is not None
+    }
+
+
 def offer_economics_row_response(
     row: IndustryLpStoreOfferEconomics,
 ) -> LoyaltyOfferResponse:
@@ -229,6 +254,7 @@ def offer_economics_row_response(
         conversion_isk_per_lp_sell=row.conversion_isk_per_lp_sell,
         conversion_isk_per_lp_buy=row.conversion_isk_per_lp_buy,
         conversion_isk_per_lp_avg_7d=row.conversion_isk_per_lp_avg_7d,
+        conversion_costs=offer_conversion_costs(row),
         volume_1d=row.volume_1d,
         volume_7d=row.volume_7d,
         volume_30d=row.volume_30d,

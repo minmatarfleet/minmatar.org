@@ -11,7 +11,6 @@ interface Props {
     claim_disabled_reason?:     string | null;
     order_breakdown:            RootSingleItem[];
     location_name:              string | undefined;
-    init_tooltips?:             boolean;
     /** HTMX swap target for claim/delivery. Detail page uses the breakdown root. */
     swap_target_id?:            string;
     /** After claim/delivery, render breakdown-only HTML instead of the list OrderItem card. */
@@ -25,7 +24,6 @@ const {
     claim_disabled_reason = null,
     order_breakdown,
     location_name,
-    init_tooltips = false,
     swap_target_id,
     claim_render = 'order_item',
     alert = null,
@@ -70,7 +68,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 <Flexblock
     id={id}
-    hx-on--after-swap="window.minmatar_after_outer_html_swap?.call(this)"
     x-init={alert ? `show_alert_dialog(${JSON.stringify(alert)})` : undefined}
 >
     <hr class="border-bottom">
@@ -79,14 +76,12 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
         hx-target={`#${id}`}
         hx-swap="outerHTML transition:true"
         hx-indicator=".loader"
-        hx-on--before-request="this.setAttribute('disabled','');"
-        hx-on--after-request="this.removeAttribute('disabled')"
+        hx-disabled-elt="this"
     >
         <FlexInline
             gap='var(--space-2xs)'
             class="[ items-center! w-fit ]"
             data-tippy-content={t('click_to_reload')}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >
             <h4>{t('assignments_breakdown')}</h4>
             <RefreshIcon small_size={true} />
@@ -129,7 +124,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                             <div
                                 class="[ text-highlight h-[32px] ]"
                                 data-tippy-content={t('industrialists')}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                             >
                                 <IndustrialistIcon size={32} />
                             </div>
@@ -147,7 +141,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                                 contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * undelivered_quantity : undefined}
                                                 earnings={item?.estimated_profit_per_unit ? item.estimated_profit_per_unit * undelivered_quantity : undefined}
                                                 has_blueprints={assignment.has_blueprints}
-                                                init_tooltip={init_tooltips}
                                             >
                                                 <CharacterPicture
                                                     character_id={assignment.character_id}
@@ -169,7 +162,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                                 contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * assignment.delivered_quantity : undefined}
                                                 earnings={item?.estimated_profit_per_unit ? item.estimated_profit_per_unit * assignment.delivered_quantity : undefined}
                                                 has_blueprints={assignment.has_blueprints}
-                                                init_tooltip={init_tooltips}
                                             >
                                                 <CharacterPicture
                                                     character_id={assignment.character_id}
@@ -202,7 +194,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                 max="100"
                                 value={completion > 0 ? completion : 0.1}
                                 data-tippy-content={item.quantity > 0 ? `${completion.toFixed(0)}%` : t('no_data')}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                 style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
                             >
                                 {completion.toFixed(2)}%
@@ -228,7 +219,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                         <span
                                             class="[ inline-flex w-full ]"
                                             data-tippy-content={claim_disabled_reason}
-                                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                         >
                                             <Button
                                                 size='sm'

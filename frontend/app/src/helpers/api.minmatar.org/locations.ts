@@ -1,5 +1,5 @@
 import type { Location } from '@dtypes/api.minmatar.org'
-import { get_error_message } from '@helpers/string'
+import { api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/eveonline/locations`
 
@@ -14,28 +14,11 @@ export async function get_locations(): Promise<Location[]> {
     if (locations_inflight)
         return locations_inflight
 
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
     const ENDPOINT = `${API_ENDPOINT}/`
-
-    console.log(`Requesting: ${ENDPOINT}`)
 
     locations_inflight = (async () => {
         try {
-            const response = await fetch(ENDPOINT, {
-                headers: headers
-            })
-
-            if (!response.ok) {
-                throw new Error(get_error_message(
-                    response.status,
-                    `GET ${ENDPOINT}`
-                ), {
-                    cause: response.status
-                });
-            }
+            const response = await api_response(ENDPOINT)
 
             return await response.json() as Location[]
         } catch (error) {

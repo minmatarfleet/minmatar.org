@@ -58,13 +58,13 @@ const detail = (site:CampaignSite):string =>
         site.confidence && site.site_kind === 'complex' ? `${site.confidence} confidence` : '',
     ].filter(Boolean).join(' · ')
 
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 {sites.length === 0 ?
     <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.sites.none')}</small>
     :
-    <CampaignTable
+    <DataGrid
         min_width='40rem'
         template='11rem 8rem minmax(12rem, 1fr) minmax(10rem, 1fr)'
         columns={[
@@ -77,10 +77,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         {...attributes}
     >
         {sites.map(site =>
-            <div class="[ campaign-table-row ]" role="row">
-                <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, site.occurred_at)}</small>
+            <div class="[ data-grid-row ]" role="row">
+                <small role="cell" class="[ data-grid-muted ]">{format_date_time(lang, site.occurred_at)}</small>
                 <span role="cell">{site.system}</span>
-                <div class="[ campaign-cell-media ]" role="cell">
+                <div class="[ data-grid-media ]" role="cell">
                     {site.character_id &&
                         <img
                             loading='lazy'
@@ -90,10 +90,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             alt=''
                         />
                     }
-                    <span>{site.character_name || site.username || '—'}</span>
+                    <span>{site.character_name || t('unknown_pilot')}</span>
                 </div>
                 <span role="cell" title={detail(site)}>{what(site)}</span>
             </div>
         )}
-    </CampaignTable>
+    </DataGrid>
 }

@@ -4,12 +4,9 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token } = get_request_user(Astro)
 
 import type { IndustryOrderUI, Alert } from '@dtypes/layout_components'
 import { post_order_item_assignment, mark_assignment } from '@helpers/api.minmatar.org/industry'
@@ -161,16 +158,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         claim_disabled_reason={claim_disabled_reason}
         order_breakdown={order_breakdown}
         location_name={undefined}
-        init_tooltips={true}
         swap_target_id={`order-breakdown-${order_id}-inner`}
         claim_render="breakdown"
         alert={alert}
     /> :
     <OrderItem
         order={order as IndustryOrderUI }
-        init_tooltips={true}
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
-        location_name={order?.location.location_name}
+        location_name={order?.location?.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
         claim_disabled_reason={fetch_breakdown ? claim_disabled_reason : undefined}
         alert={alert}

@@ -34,10 +34,11 @@ import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetric
 </div>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .skel {
-        background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
         border-radius: 2px;
-        animation: loyalty-offers-pulse 1.2s ease-in-out infinite;
+        @include skeleton.pulse(color-mix(in srgb, var(--component-background) 70%, var(--foreground)));
     }
 
     .loyalty-offers-skeleton__rail {
@@ -78,15 +79,5 @@ import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetric
     .loyalty-offers-skeleton__row {
         height: var(--space-xl);
         width: 100%;
-    }
-
-    @keyframes loyalty-offers-pulse {
-        0%,
-        100% {
-            opacity: 0.45;
-        }
-        50% {
-            opacity: 0.85;
-        }
     }
 </style>

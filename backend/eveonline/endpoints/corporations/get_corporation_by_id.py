@@ -6,6 +6,7 @@ from ninja import Router
 from authentication import AuthBearer
 from eveonline.endpoints.corporations.schemas import CorporationResponse
 from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.helpers.corporations.profile import (
     load_corporation,
     public_profile,
@@ -32,7 +33,12 @@ def get_corporation_by_id(request, corporation_id: int):
         "corporation_name": corporation.name,
         "introduction": corporation.introduction,
         "biography": corporation.biography,
-        "executor_notes": corporation.executor_notes,
+        # Leadership guidance, the same audience as the admin endpoint.
+        "executor_notes": (
+            corporation.executor_notes
+            if can_manage_corporation(request.user, corporation)
+            else None
+        ),
         "timezones": split_timezones(corporation.timezones),
         "requirements": split_requirements(corporation.requirements),
         "type": corporation.type,

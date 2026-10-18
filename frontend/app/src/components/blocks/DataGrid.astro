@@ -1,0 +1,178 @@
+---
+/**
+ * Grid "table": a header row built from `columns`, then the rows you slot in
+ * (`<div class="data-grid-row" role="row">` with one child per column). The
+ * column template is shared by the header and every row, and the grid scrolls
+ * sideways with an edge fade below `min_width`.
+ *
+ * Row and cell classes (global, only inside a DataGrid):
+ * - `data-grid-row`: a row; `data-grid-numeric` right-aligns a cell.
+ * - `data-grid-muted`: secondary text.
+ * - `data-grid-cell`: wraps a cell whose element keeps its own role (img,
+ *   button, link), since `role="cell"` on it would erase that role.
+ * - `data-grid-media`: an EVE portrait/icon next to a label.
+ *
+ * `variant`: 'compact' (boards: heading-font header, tight gaps, highlighted
+ * rows) or 'ledger' (contract lists: bold body-font header, roomier gaps).
+ *
+ * `stack`: on phones (48rem and below) drop the header and the minimum width
+ * so rows can lay out as cards; cells with a `data-label` show it as their
+ * caption. The row layout itself stays with the component that owns the row.
+ */
+interface Props {
+    columns:            string[];
+    template:           string;
+    numeric?:           number[];
+    min_width?:         string;
+    variant?:           'compact' | 'ledger';
+    stack?:             boolean;
+    [propName: string]: any;
+}
+
+const {
+    columns,
+    template,
+    numeric = [],
+    min_width = '38rem',
+    variant = 'compact',
+    stack = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+<XFadeScroll>
+    <div
+        class:list={[
+            '[ data-grid ]',
+            `data-grid--${variant}`,
+            { 'data-grid--stack': stack },
+            Astro.props.class,
+        ]}
+        role="table"
+        style={`min-width: ${min_width}; --data_grid_template: ${template};`}
+        {...attributes}
+    >
+        <div class="[ data-grid-row data-grid-head ]" role="row">
+            {columns.map((column, index) =>
+                <span
+                    role="columnheader"
+                    class:list={{ 'data-grid-numeric': numeric.includes(index) }}
+                >{column}</span>
+            )}
+        </div>
+        <slot />
+    </div>
+</XFadeScroll>
+
+<style lang="scss" is:global>
+    /* :where() keeps these at one class of specificity so a consumer's own
+       row rules (phone layouts, column spans) still win. */
+    .data-grid {
+        width: 100%;
+        font-size: var(--step--1);
+    }
+
+    :where(.data-grid) .data-grid-row {
+        display: grid;
+        grid-template-columns: var(--data_grid_template);
+        gap: var(--space-2xs);
+        align-items: center;
+        padding: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+    }
+
+    :where(.data-grid--compact) .data-grid-row:last-child {
+        border-bottom: none;
+    }
+
+    :where(.data-grid) .data-grid-head {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+    }
+
+    :where(.data-grid) .data-grid-head span {
+        white-space: nowrap;
+    }
+
+    :where(.data-grid--ledger) .data-grid-row {
+        gap: var(--space-s);
+        color: inherit;
+    }
+
+    :where(.data-grid--ledger) .data-grid-head {
+        align-items: end;
+        font-family: inherit;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--highlight);
+    }
+
+    :where(.data-grid) .data-grid-numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    :where(.data-grid) .data-grid-muted {
+        color: var(--foreground);
+    }
+
+    :where(.data-grid) .data-grid-cell {
+        display: grid;
+        align-items: center;
+        min-width: 0;
+    }
+
+    :where(.data-grid) .data-grid-media {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    :where(.data-grid) .data-grid-media img {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    :where(.data-grid) .data-grid-media span {
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 48rem) {
+        .data-grid.data-grid--stack {
+            /* Beats the inline min-width. */
+            min-width: 0 !important;
+        }
+
+        :where(.data-grid--stack) .data-grid-head {
+            display: none;
+        }
+
+        :where(.data-grid--stack) .data-grid-row > [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-family: var(--heading-font);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--faded);
+        }
+
+        :where(.data-grid--stack.data-grid--ledger) .data-grid-row {
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            padding-block: var(--space-s);
+            padding-inline: 0;
+        }
+    }
+</style>

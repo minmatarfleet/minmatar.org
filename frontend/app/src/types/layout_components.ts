@@ -14,9 +14,6 @@ export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type ImageSize = 16 | 24 | 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
 export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
-export type MetaGroupColors = 'tech-i' | 'tech-ii' | 'storyline' | 'faction' | 'officer' | 'deadspace' | 'tech-iii'
-                            | 'abyssal' | 'premium' | 'limited-time' | 'structure-faction' | 'structure-tech-ii' | 'structure-tech-i'
-
 export type spaces = '0' | '1px' | '2px' | 'var(--component-block-gap)' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
 | 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
 | 'var(--space-3xs-2xs)' | 'var(--space-2xs-xs)' | 'var(--space-xs-s)' | 'var(--space-s-m)' | 'var(--space-m-l)' 
@@ -54,14 +51,6 @@ export interface ShipTypeFittingGroups {
     ship_groups:    ShipFittings[];
 }
 
-export interface DoctrineItemObj {
-    doctrine_name:  string;
-    href:           string;
-    id:             number;
-    tags:           Tag[];
-    fits:           Fit[];
-}
-
 export interface Fit {
     image: string;
     alt:   string;
@@ -75,49 +64,16 @@ export interface Tag {
     description: string;
 }
 
-/*export interface Slot {
-    name:    string;
-    modules: Module[];
-}
-
-export interface Module {
-    image?: string;
-    name:   string;
-    amount: number;
-}*/
-
-export interface ItemListProps {
-    title:  string;
-    items:  ItemListItem[];
-}
-
 export interface ItemListItem {
     image:  string;
     name:   string;
     alt:    string;
 }
 
-export interface FitDetails {
-    name:           string;
-    image:          string;
-    alt:            string;
-    description:    string;
-    fitting_eft:    string;
-}
-
-export interface FittingParsed {
-    [propName: string]: Fittable[];
-}
-
 export interface Fittable {
     name:   string;
     amount: number;
     image:  string;
-}
-
-export interface StructureFittingGroups {
-    name:       string;
-    fittables:  StructureFittable[];
 }
 
 export interface StructureFittable {
@@ -157,36 +113,12 @@ export interface Structure {
     fitting?:       string;
 }
 
-export interface FleetCompositionObj {
-    ship_name: string;
-    ship_id:   number;
-    fitting:   string;
-    pilots:    Pilot[];
-}
-
 export interface Pilot {
     name: string;
     id:   number;
 }
 
-export interface FreightCalculation {
-    name:             string;
-    ship_to:          string;
-    pick_up_station:  string;
-    reward:           number;
-    collateral:       number;
-    expiration:       string;
-    days_to_complete: string;
-}
-
 export type roles = 'pilot' | 'director' | 'administrator'
-
-export interface PersonaListData {
-    id:             number;
-    name:           string;
-    roles:          roles[];
-    character_id:   number;
-}
 
 export interface CorporationListData {
     id:             number;
@@ -250,17 +182,6 @@ export interface ViewportComponents {
 	corporation_finder?:	boolean;
 	alliance_finder?:		boolean;
 }
-
-export interface GroupListObject {
-    id:             number;
-    name:           string;
-    description:    string;
-    image_url:      string;
-    status:         string;
-    members:        number;
-}
-
-export type GroupRequestType = 'join' | 'leave'
 
 export interface CorporationApplications {
     corporation_id:         number;
@@ -337,39 +258,24 @@ export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 export interface CorporationObject {
     corporation_id:         number;
     corporation_name:       string;
-    alliance_id:            number;
-    alliance_name:          string,
+    alliance_id:            number | null;
+    alliance_name:          string | null,
     active:                 boolean;
     trial?:                 boolean;
     corporation_type:       CorporationType;
     status?:                CorporationStatusType;
     application_updated?:   Date;
-    introduction?:          string;
-    biography?:             string;
-    executor_notes?:        string;
-    timezones?:             string[];
-    requirements?:          string[];
+    introduction?:          string | null;
+    biography?:             string | null;
+    executor_notes?:        string | null;
+    timezones?:             string[] | null;
+    requirements?:          string[] | null;
     open_application_corporation_name?: string;
 }
 
 export interface CorporationBasic {
     id:     number;
     name:   string;
-}
-
-export interface GroupRequest {
-    id:             number;
-    user:           number;
-    group:          number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-}
-
-export interface GroupRequestListUI {
-    group_id:           number;
-    group_name:         string;
-    group_image:        string;
-    requests:           GroupRequestUI[];
 }
 
 export interface GroupRequestUI {
@@ -400,15 +306,6 @@ export interface CharacterBasic {
 
 export type GroupRequestAction = 'accept' | 'deny' | 'transfer'
 
-export interface ModalCover {
-    image:          string;
-    image_990:      string;
-    alt?:           string;
-    animated?:      boolean;
-    scrollable?:    boolean;
-    overlay?:       boolean;
-}
-
 export type BadgeSize = 'xs' | 'sm' | 'lg'
 
 export interface CorporationBadgeProps {
@@ -429,25 +326,6 @@ export interface CorporationHistoryItem {
     membership_time_text?:  string;
 }
 
-export type GroupItemType = 'group' | 'team'
-
-export interface GroupItemUI {
-    id:             number;
-    name:           string;
-    description:    string | null;
-    image_url:      string | null;
-    content?:       string | null;
-    status?:        GroupStatus;
-    last_update?:    Date;
-}
-
-export interface SkillsetUI {
-    id:             number;
-    name:           string;
-    progress:       number;
-    missing_skills: SkillsUI[];
-}
-
 export interface SkillsUI {
     skill_name:     string;
     skill_level:    number;
@@ -461,11 +339,6 @@ export interface SkillsetMissingSkillUI {
 export interface VideoWidgetCredits {
     character_id?:  number;
     character_name: string;
-}
-
-export interface AssetsLocationUI {
-    location_name: string;
-    assets:        AssetUI[];
 }
 
 export interface AssetUI {
@@ -522,15 +395,6 @@ export interface AssetGroup {
     id:     number;
     name:   string;
     count:  number;
-}
-
-export interface GroupMembersUI {
-    id:             number;
-    name:           string;
-    description:    string;
-    image_url:      string | null,
-    members:        MemberUI[];
-    officers:       number[];
 }
 
 export interface MemberUI {
@@ -640,13 +504,6 @@ export interface Fitting {
     latest_version: string;
 }
 
-export interface GroupBasic {
-    id:             number;
-    name:           string;
-    image_url:      string;
-    description:    string;
-}
-
 export interface DoctrineType {
     id:                     number;
     name:                   string;
@@ -753,12 +610,12 @@ export interface StructureTimerUI {
     id:                 number;
     name:               string;
     state:              string;
-    timer:              Date;
+    timer:              string;
     system_name:        string;
     alliance_id:        number;
-    alliance_name:      string;
-    corporation_name:   string;
-    structure_id:       number;
+    alliance_name:      string | null;
+    corporation_name:   string | null;
+    structure_id:       number | null;
     structure_type:     string;
     structure_type_id:  number;
     verified:           boolean;
@@ -780,14 +637,6 @@ export interface FreightRoutesData {
     route_translation:  RouteTranslate;
     stations:           RouteStations;
     route_details:      Record<string, FreightRouteDetails>;
-}
-
-export interface RoutesData {
-    [propName: string]: unknown;
-}
-
-export interface FreightSizes {
-    [propName: string]: SelectOptions[];
 }
 
 export interface RouteTranslate {
@@ -849,11 +698,12 @@ export interface PostListUI {
     title:              string;
     state:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     author:             CharacterBasic;
     tags:               string[];
-    image:              string;
+    /** Never filled: the posts API has no image, so cards show the author. */
+    image?:             string;
 }
 
 export interface PostUI {
@@ -861,7 +711,7 @@ export interface PostUI {
     state:              string;
     title:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     excerpt:            string;
     content:            string;
@@ -1010,13 +860,13 @@ export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
 import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
 export interface IndustryOrderUI {
     id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
+    created_at:         string;
+    needed_by:          string;
+    fulfilled_at:       string | null;
     public_short_code:  string;
     character_id:       number | null;
     character_name:     string;
-    location:           BaseLocation;
+    location:           BaseLocation | null;
     items:              RootItem[];
     assigned_to:        Producer[];
 }
@@ -1032,11 +882,6 @@ export interface FreightContractLocationDestination {
     contracts:      FreightContract[];
 }
 
-export interface FreightContractLocation {
-    location_name:  string;
-    destinations:   FreightContractLocationDestination[];
-}
-
 import type { ColonyEntry } from '@dtypes/api.minmatar.org'
 
 export interface ColonyPlanet {
@@ -1047,25 +892,7 @@ export interface ColonyPlanet {
     colonies:           ColonyEntry[];
 }
 
-export interface ColonySystems {
-    solar_system_id:        number;
-    solar_system_name:      string;
-    system_sun_type_id:     number;
-    planets:                ColonyPlanet[];
-}
-
 import type { OrderAssignment } from '@dtypes/api.minmatar.org'
-
-export interface OrderBreakdownGroupedUI {
-    id:                             number;
-    eve_type_id:                    number;
-    eve_type_name:                  string;
-    quantity:                       number;
-    unassigned_quantity:            number;
-    self_assign_maximum:            number | null;
-    self_assign_window_ends_at:     Date;
-    assignments:                    OrderAssignment[];
-}
 
 export interface SRPTargetValue {
     name:       string;

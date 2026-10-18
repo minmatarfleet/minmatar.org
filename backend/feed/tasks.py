@@ -8,6 +8,7 @@ from django.utils import timezone
 from celery_once import QueueOnce
 
 from app.celery import app
+from app.locks import overlap_guard
 from feed.constants import (
     FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS,
     FEED_KILLMAIL_RETENTION_DAYS,
@@ -35,6 +36,7 @@ def poll_zkill_r2z2() -> dict:
 
 
 @app.task(queue="celery")
+@overlap_guard(ttl=15 * 60)
 def detect_feed_clusters() -> int:
     count = detect_clusters(since_hours=48)
     logger.info("Detected/updated %s feed clusters", count)
@@ -58,6 +60,7 @@ def run_feed_rollups(*, since_hours: int = 48) -> int:
 
 
 @app.task(queue="celery")
+@overlap_guard(ttl=15 * 60)
 def populate_feed_affiliations() -> dict:
     updated = populate_pending_character_affiliations_batch()
     logger.info("Feed character affiliation populate complete: %s", updated)

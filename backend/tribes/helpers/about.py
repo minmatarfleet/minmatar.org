@@ -21,12 +21,8 @@ from typing import Any
 from django.db.models import Count
 from django.utils import timezone
 
-from eveonline.helpers.corporations.safe_cache import (
-    cache_add,
-    cache_delete,
-    cache_get,
-    cache_set,
-)
+from app.cache import CachedRollup
+from app.eve_time import month_key
 from eveonline.models import (
     EveCharacterAsset,
     EveCharacterKillmailAttacker,
@@ -345,7 +341,7 @@ def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
     year_kills = {k: v for k, v in kills.items() if v[0] >= year_ago}
     victim_types = _type_groups(v[1] for v in year_kills.values())
     months = _month_keys(now)
-    by_month = Counter(v[0].strftime("%Y-%m") for v in year_kills.values())
+    by_month = Counter(month_key(v[0]) for v in year_kills.values())
     classes = Counter(
         victim_types.get(v[1], ("", "Unknown"))[1] or "Unknown"
         for v in year_kills.values()
@@ -470,7 +466,7 @@ def supply_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
     for day, type_id, quantity in rows:
         volume, ore = types.get(type_id, (0, ""))
         m3 = (quantity or 0) * volume
-        by_month[day.strftime("%Y-%m")] += m3
+        by_month[month_key(day)] += m3
         if ore:
             by_ore[ore] += m3
     return {
@@ -515,24 +511,13 @@ def compute_tribe_about(tribe: Tribe) -> dict[str, Any]:
 
 def refresh_tribe_about(tribe: Tribe) -> dict[str, Any]:
     about = compute_tribe_about(tribe)
-    cache_set(_ABOUT_KEY.format(tribe_id=tribe.pk), about, ABOUT_TTL_SECONDS)
-    cache_delete(_LOCK_KEY.format(tribe_id=tribe.pk))
+    ABOUT.store(about, tribe_id=tribe.pk)
     return about
 
 
 def tribe_about(tribe_id: int) -> dict[str, Any] | None:
     """Cached About payload, or None after queueing a refresh."""
-    key = _ABOUT_KEY.format(tribe_id=tribe_id)
-    about = cache_get(key)
-    if about is not None:
-        return about
-    # cache.add is atomic, so only one request per window queues the work.
-    if cache_add(
-        _LOCK_KEY.format(tribe_id=tribe_id), True, REFRESH_LOCK_SECONDS
-    ):
-        _queue_refresh(tribe_id)
-    # Eager Celery (tests) fills the cache during the call above.
-    return cache_get(key)
+    return ABOUT.get_or_queue(tribe_id=tribe_id)
 
 
 def _queue_refresh(tribe_id: int) -> None:
@@ -541,10 +526,15 @@ def _queue_refresh(tribe_id: int) -> None:
         refresh_tribe_about_page,
     )
 
-    try:
-        refresh_tribe_about_page.apply_async(args=[tribe_id])
-    except Exception:  # pylint: disable=broad-exception-caught
-        logger.exception(
-            "Could not queue tribe about refresh for %s", tribe_id
-        )
-        cache_delete(_LOCK_KEY.format(tribe_id=tribe_id))
+    refresh_tribe_about_page.apply_async(args=[tribe_id])
+
+
+ABOUT = CachedRollup(
+    key=_ABOUT_KEY,
+    ttl=ABOUT_TTL_SECONDS,
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    # Late-bound so tests can patch _queue_refresh.
+    # pylint: disable-next=unnecessary-lambda
+    enqueue=lambda tribe_id: _queue_refresh(tribe_id),
+)

@@ -21,10 +21,6 @@ interface Props {
 const { t, lang } = i18n(Astro.url)
 const { row, reason_label } = Astro.props
 
-function format_value(isk: number | null | undefined): string {
-    if (isk == null) return '—'
-    return format_isk(isk)
-}
 
 function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
     if (!buyer.counterparty_id) return null
@@ -65,7 +61,7 @@ function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
     </div>
 
     <div class="[ buyback-stockpile-sale-item__total ]" role="cell" data-label={t("buyback.ledger.col.total")}>
-        <span>{format_value(row.isk_total)}</span> <span>ISK</span>
+        <span>{format_isk(row.isk_total)}</span> <span>ISK</span>
     </div>
 
     <div class="[ buyback-stockpile-sale-item__via ]" role="cell">

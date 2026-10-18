@@ -6,12 +6,10 @@ import type { Product } from '@dtypes/api.minmatar.org'
 
 interface Props {
     products:           Product[];
-    init_tooltips:      boolean;
 }
 
 const {
     products,
-    init_tooltips,
 } = Astro.props
 
 import ProductItem from '@components/blocks/ProductItem.astro';
@@ -20,7 +18,7 @@ import Table from '@components/blocks/Table.astro';
 
 <Table id="products-list" width="100%" responsive={false}>
     {products.map(product =>
-        <ProductItem product={product} init_tooltips={init_tooltips} />
+        <ProductItem product={product} />
     )}
     <p x-show="products_count === 0">{t('no_products_to_display')}</p>
 </Table>

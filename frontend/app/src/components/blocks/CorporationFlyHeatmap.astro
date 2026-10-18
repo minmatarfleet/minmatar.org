@@ -4,6 +4,7 @@ const { t, lang } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import { busiest_hours, heatmap_cells, prime_spans } from '@helpers/corporations/about'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     corporation: CorporationInfo
@@ -51,7 +52,7 @@ const caption = spans.length > 0
 
     <div class="card">
         {!has_fleets
-            ? <p class="empty">{t('corporations.about.no_fleets')}</p>
+            ? <EmptyState title={t('corporations.about.no_fleets')} />
             : (
                 <>
                     <div class="wide" role="img" aria-label={`${t('corporations.about.when_we_fly')}. ${busiest_label}`}>
@@ -170,11 +171,6 @@ const caption = spans.length > 0
         gap: var(--space-3xs);
         padding: var(--space-m);
         background: var(--component-background);
-    }
-
-    .empty {
-        margin: 0;
-        color: var(--faded);
     }
 
     .row,

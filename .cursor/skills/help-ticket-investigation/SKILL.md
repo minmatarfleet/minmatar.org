@@ -37,7 +37,7 @@ copy-paste kickoff for the user.
 ## Outcomes (pick one in Discord)
 
 Reply in the **ticket thread**. Do not wait to be asked. Do not leave the
-reporter hanging in this Cursor chat.
+reporter hanging in this chat.
 
 1. **Clarify existing behavior** — expected permission, how a flow works,
    pending vs active, “not a bug.” Explain it to the opener in the thread.
@@ -196,6 +196,7 @@ Scan this table before inventing a new theory.
 | Buyback **Match stock** adds extra ores / leftover 11,231-style qtys | Purchase fill (`fill_purchase`). Mineral paste still converts to ore. **Ore paste** leftover used to become mineral demand, then `_allocate_ore_for_minerals` pulled **other families**. Now leftover ore fills **same family only** (grades/moon prefixes). Compressed ore picks are floored to `ORE_BATCH_SIZE` (100). Dump the paste vs `remaining_sale_quantities` before blaming Janice. |
 | Buyback stock page qty is only partly on the purchase / “Not in hangar” for ore the stock list shows | Stock list and Match stock must use the same pool. `remaining_sale_quantities` used to be inbound contracts minus outbound contracts, capped by the hangar, so ore sitting in the hangar without a matching ledger net was listed and then refused. With a `BuybackHangarSnapshot`, sellable qty is the snapshot minus sales **after** `taken_at` (contract and market) minus pending. Do not add inbound contracts on top of the snapshot (that double-counts). No snapshot: ledger net only; market sales are not in that path. |
 | Mineral order barely uses Veldspar | `_allocate_ore_for_minerals` covers Tritanium from Veldspar while any Veldspar-family ore is on hand, then the largest remaining mineral. A Pyerite-heavy paste used to burn Scordite first and cover Tritanium only as a byproduct. Dump the paste mineral qtys and the fill lines. |
+| Planner on-hand stock and Class II/III/IV ore | II/III/IV-Grade and Brimful/Glistening are credited from variant TypeMaterials before the compressed buy is sized. Fallback scale is 1.05/1.10/1.15, Brimful 1.15, Glistening 2. Exact `Compressed {base}` still matches the shopping list 1:1. Buyback fill uses those yields, not the base family. |
 | Accepted buyback item should stay off (oversupply) | `PAUSED_ACCEPTED_TYPE_NAMES` (Water). The weekly seed writes `active=False` for those names; dropping the name re-enables on the next seed. Appraisal uses `get_active_accepted_type_ids`. Hangar sales of stock already on hand are a different path. |
 | No Discord roles after waiting in the server | `DiscordUser` missing for the opener (`HelpTicket.opener` null). They never completed site Discord login. Waiting in the server does not grant roles. Point them at my.minmatar.org login, then link a main and Refresh Discord roles on `/account/`. Do not treat it as a sync delay. If `DiscordUser` exists, use the next row. |
 | Authed on the site but no Discord / voice | Dump `EvePlayer.primary_character`, `UserAffiliation`, `user.groups`. **Guest** + non-FL33T/BUILD alliance = expected (no Alliance role). **Corp TICKER** without Alliance and `primary_character` null = affiliation never ran; refresh Discord roles after a main is set. Affiliation sync now auto-sets a main when the user has **exactly one** character. Voice channels need the Alliance (or equivalent) Discord role, not just Guest. |
@@ -298,3 +299,4 @@ done until that PR exists.
 
 - [learnings.md](learnings.md)
 - [debug-production-readonly-db](../debug-production-readonly-db/SKILL.md)
+- LP buyback order states, reminders and auto-cancel: `docs/industry/lp-buyback.md`
