@@ -1,5 +1,4 @@
 """Break down dronelands alliance losses Nov 2025 – Jun 2026 by region and ship type."""
-import ast
 from collections import defaultdict
 from datetime import datetime
 
@@ -7,6 +6,7 @@ import requests
 from django.utils import timezone
 
 from eveonline.models import EveAlliance, EveCharacter, EveCharacterKillmail
+from eveonline.helpers.killmail_text import parse_killmail_list
 from eveuniverse.models import EveType
 from market.helpers.pricing import get_prices_by_type_id
 
@@ -61,15 +61,9 @@ def get_region_system_ids(region_id: int) -> set[int]:
     return system_ids
 
 
-def parse_items(raw):
-    if isinstance(raw, list):
-        return raw
-    if isinstance(raw, str):
-        try:
-            return ast.literal_eval(raw)
-        except (SyntaxError, ValueError):
-            return []
-    return []
+def parse_items(raw) -> list:
+    # Old rows hold Python repr, new rows JSON; the shared reader takes both.
+    return parse_killmail_list(raw)
 
 
 def collect_type_ids(items, out: set[int]) -> None:
