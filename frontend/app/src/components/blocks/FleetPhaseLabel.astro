@@ -1,0 +1,28 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetPhase } from '@helpers/fleet_phase'
+import type { FleetTrackingTexts } from '@dtypes/layout_components'
+
+interface Props {
+    phase:              FleetPhase;
+    /** Completed fleets: pass the tracking texts (or `false`) to add the end time and duration line. */
+    completed_detail?:  FleetTrackingTexts | false;
+}
+
+const {
+    phase,
+    completed_detail,
+} = Astro.props
+
+import StatusText from '@components/blocks/StatusText.astro';
+import CompletedStatus from '@components/blocks/CompletedStatus.astro';
+---
+
+{phase === 'cancelled' && <StatusText tone='danger'>{t('cancelled')}</StatusText>}
+{phase === 'active' && <StatusText blink={true}>{t('active')}</StatusText>}
+{phase === 'completed' && (completed_detail === undefined ?
+    <StatusText>{t('completed')}</StatusText> :
+    <CompletedStatus fleet_tracking_texts={completed_detail} />
+)}

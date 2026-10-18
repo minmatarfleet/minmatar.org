@@ -29,6 +29,9 @@ import { renderer } from '@helpers/marked';
 import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
 const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
+import { fleet_phase } from '@helpers/fleet_phase'
+const phase = fleet_phase(fleet)
+
 const [ system, station ] = fleet.location?.split(' - ') ?? []
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -41,7 +44,7 @@ import Button from '@components/blocks/Button.astro';
 import Tile from '@components/blocks/Tile.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro'
-import CompletedStatus from '@components/blocks/CompletedStatus.astro'
+import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 
 import FleetIcon from '@components/icons/FleetIcon.astro';
@@ -169,15 +172,15 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
                 <Flexblock>
                 {
-                    fleet?.status === 'cancelled' ?
+                    phase === 'cancelled' ?
                         <TextGroup
                             title={t('eve_time')}
                             class="[ sentence-cap ]"
                         >
                             {eve_time_text}
                         </TextGroup>
-                        <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p> :
-                    fleet?.tracking && !fleet?.tracking?.end_time ?
+                        <FleetPhaseLabel phase={phase} /> :
+                    phase === 'active' ?
                         <>{fleet?.tracking?.start_time ?
                             <TextGroup
                                 title={t('fleet_started')}
@@ -193,10 +196,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                                 {eve_time_text}
                             </TextGroup>
                         }</>
-                        <p class="[ fleet-status-text blink-animation ]">{t('active')}</p> :
-                    fleet?.tracking && fleet?.tracking?.end_time ?
-                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
-                    !history && !fleet?.tracking ?
+                        <FleetPhaseLabel phase={phase} /> :
+                    phase === 'completed' ?
+                        <FleetPhaseLabel phase={phase} completed_detail={fleet_tracking_texts} /> :
+                    !history ?
                         <TextGroup
                             title={t('eve_time')}
                             class="[ sentence-cap ]"
@@ -246,23 +249,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     :global(.wrap-break-word *) {
         max-width: 100%;
         overflow-wrap: break-word;
-    }
-
-    .fleet-status-text {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        margin-left: -10px;
-        margin-right: -10px;
-        color: var(--highlight);
-		letter-spacing: 12px;
-        text-indent: 12px;
-		line-height: 1;
-        white-space: nowrap;
-        text-transform: uppercase;
-
-        &.cancelled {
-            color: var(--fleet-red);
-        }
     }
 
     // Phones: compact media-object card (FC portrait as a thumbnail beside the name,

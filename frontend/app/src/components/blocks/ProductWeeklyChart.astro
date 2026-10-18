@@ -22,6 +22,8 @@ delete attributes.class
 
 import { number_thousand_separator } from '@helpers/numbers'
 
+import ChartTable from '@components/blocks/ChartTable.astro'
+
 // Built goes up from the baseline and everything that left (lost, sold)
 // goes down. Both halves share one scale, so a fight-sized week reads as one.
 const out_of = (week: ProductWeek) => (show_lost ? week.lost : 0) + week.sold
@@ -107,27 +109,19 @@ const columns = weekly.map((week, index) => {
         <p class="[ empty ]">{t('industry.product.no_weekly_activity')}</p>
     }
 
-    <table class="[ visually-hidden ]">
-        <caption>{t('industry.product.weekly_title')}</caption>
-        <thead>
-            <tr>
-                <th scope="col">{t('industry.product.week')}</th>
-                <th scope="col">{t('industry.product.built')}</th>
-                {show_lost && <th scope="col">{t('industry.product.lost')}</th>}
-                <th scope="col">{t('industry.product.sold')}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {columns.map(column =>
-                <tr>
-                    <th scope="row">{month_label(column.week.week_start)}</th>
-                    <td>{column.week.built}</td>
-                    {show_lost && <td>{column.lost}</td>}
-                    <td>{column.week.sold}</td>
-                </tr>
-            )}
-        </tbody>
-    </table>
+    <ChartTable
+        caption={t('industry.product.weekly_title')}
+        columns={[
+            t('industry.product.week'),
+            t('industry.product.built'),
+            ...(show_lost ? [t('industry.product.lost')] : []),
+            t('industry.product.sold'),
+        ]}
+        rows={columns.map(column => ({
+            label: month_label(column.week.week_start),
+            values: [column.week.built, ...(show_lost ? [column.lost] : []), column.week.sold],
+        }))}
+    />
 </figure>
 
 <style lang="scss" define:vars={{ up_share, down_share }}>

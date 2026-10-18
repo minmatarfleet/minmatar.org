@@ -47,7 +47,8 @@ import FleetHero from '@components/blocks/FleetHero.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import Tag from '@components/blocks/Tag.astro';
 import Button from '@components/blocks/Button.astro';
-import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
+import RankingReel from '@components/blocks/RankingReel.astro';
+import { fleet_commanders_reel } from '@helpers/ranking_reels';
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 ---
 
@@ -185,9 +186,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
         x-show={skip_hero ? "show_fc_ranking || !initialized" : undefined}
         x-on:marquee-started={skip_hero ? "$nextTick(() => { initialized = true; })" : undefined}
     >
-        <FleetCommandersReel
-            fc_metrics={fc_metrics}
-        />
+        <RankingReel {...fleet_commanders_reel(fc_metrics, t)} />
     </div>
 }
 

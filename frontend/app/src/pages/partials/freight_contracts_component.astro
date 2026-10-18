@@ -76,7 +76,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import FreightContractsTable from '@components/blocks/FreightContractsTable.astro'
 import FreightContractsMetrics from '@components/blocks/FreightContractsMetrics.astro'
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
-import SpaceTruckersReel from '@components/blocks/SpaceTruckersReel.astro'
+import RankingReel from '@components/blocks/RankingReel.astro'
+import { space_truckers_reel } from '@helpers/ranking_reels'
 import Button from '@components/blocks/Button.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -116,7 +117,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                 }
             </Flexblock>
         }
-        <SpaceTruckersReel space_truckers={space_truckers} />
+        <RankingReel {...space_truckers_reel(space_truckers, t, translatePath)} />
         <UpdateAlpineVariables
             variables={{
                 contracts_count: contracts_count,
