@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 def update_corporations():
     """Queue update_corporation for each allied corporation."""
     for corporation in member_corporations():
-        update_corporation.apply_async(
-            args=[corporation.corporation_id], queue="eveonline"
-        )
+        update_corporation.apply_async(args=[corporation.corporation_id])
 
 
 @app.task
@@ -38,9 +36,7 @@ def sync_corporations_projects():
     for corporation_id in member_corporations().values_list(
         "corporation_id", flat=True
     ):
-        sync_corporation_projects.apply_async(
-            args=[corporation_id], queue="eveonline"
-        )
+        sync_corporation_projects.apply_async(args=[corporation_id])
 
 
 @app.task(rate_limit="20/m")

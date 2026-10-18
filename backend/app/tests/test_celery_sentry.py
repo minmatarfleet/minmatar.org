@@ -1,8 +1,8 @@
-"""Unit tests for Celery Sentry before_send filter."""
+"""Unit tests for the Sentry before_send filter."""
 
 from unittest import TestCase
 
-from app.celery import _sentry_before_send
+from app.monitoring import before_send as _sentry_before_send
 
 
 class SentryBeforeSendTestCase(TestCase):

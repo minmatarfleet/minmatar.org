@@ -25,7 +25,7 @@ zKill R2Z2 stream ──> poll_zkill_r2z2 (every 7 s) ──> upsert_feed_killma
                                                          └─> campaigns.services.attribution.attribute_feed_killmail
 ```
 
-- **Live stream.** `feed.tasks.poll_zkill_r2z2` (`QueueOnce`, every 7 seconds) reads zKillboard's R2Z2 sequence through `feed/helpers/r2z2.py`, keeping its place in `FeedR2z2Cursor`. The same loop sends capital kill pings (`feed/helpers/capital_pings.py`).
+- **Live stream.** `feed.tasks.poll_zkill_r2z2` (every 15 seconds on the `feed` queue, never two at once; see [celery-queues.md](celery-queues.md)) reads zKillboard's R2Z2 sequence through `feed/helpers/r2z2.py`, keeping its place in `FeedR2z2Cursor`. The same loop sends capital kill pings (`feed/helpers/capital_pings.py`).
 - **Every path goes through one function.** `feed/helpers/ingest.py` `upsert_feed_killmail_from_r2z2` (or `upsert_feed_killmail_from_raw` for an ESI-shaped mail) is used by the stream and by the backfill commands (`backfill_feed_killmails`, `backfill_engagement`, `import_feed_killmail`). Never write `FeedKillmail` rows another way: campaign attribution is hooked in here, and campaigns have no other backfill.
 - **Campaign hook.** After the row is saved, the mail is handed to `attribute_feed_killmail`. A failure there is logged and swallowed so the feed keeps recording; `campaigns.tasks.sweep_campaign_killmails` re-attributes the last 48 hours. The import is inside the function on purpose: campaigns depend on the feed, not the other way round.
 - **Retention.** `purge_feed_killmails` (daily, 04:30) deletes `FeedKillmail` rows older than `FEED_KILLMAIL_RETENTION_DAYS` (30). Anything that needs a mail for longer copies what it needs (campaigns keep their own `CampaignKillmail` rows).

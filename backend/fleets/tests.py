@@ -16,6 +16,7 @@ from django.test.utils import CaptureQueriesContext
 from django.contrib.auth.models import User, Permission
 from django.utils import timezone
 
+from app.celery import app as celery_app
 from app.test import TestCase
 from users.helpers import add_user_permission
 from eveonline.client import EsiResponse
@@ -287,7 +288,11 @@ class FleetSignalsTestCase(TestCase):
         delay, so Discord sees one delete-and-repost."""
         instance = MagicMock(spec=EveFleet)
         instance.audience.add_to_schedule = True
-        lock_key = update_fleet_schedule.get_key()
+        # Dedupe only applies when publishing to a broker, not eager runs.
+        eager = celery_app.conf.task_always_eager
+        celery_app.conf.task_always_eager = False
+        self.addCleanup(setattr, celery_app.conf, "task_always_eager", eager)
+        lock_key = update_fleet_schedule.queued_key((), {})
         cache.delete(lock_key)
         self.addCleanup(cache.delete, lock_key)
 

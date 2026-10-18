@@ -3,11 +3,8 @@ import logging
 from django.utils import timezone
 from django.conf import settings
 
-from celery_once import QueueOnce
-
 from app.celery import app
 from app.links import new_player_fleet_guide_url, upcoming_fleets_url
-from app.locks import DedupedTask, overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
 from fleets.helpers.active_clones import (
@@ -33,8 +30,7 @@ def get_fleet_emoji(fleet_type):
     return ""
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=30, cooldown=20)
-@overlap_guard(ttl=5 * 60)
+@app.task(expires=30, exclusive=5 * 60)
 def update_fleet_instances():
     """
     Update fleet instances
@@ -54,10 +50,7 @@ def update_fleet_instances():
 SCHEDULE_REFRESH_DELAY_SECONDS = 2
 
 
-@app.task(
-    base=QueueOnce,
-    once={"graceful": True, "unlock_before_run": True, "timeout": 60},
-)
+@app.task()
 def update_fleet_schedule():
     """
     Updates fleet schedule message to display all upcoming fleets
@@ -145,8 +138,8 @@ def queue_fleet_schedule_refresh() -> None:
 
     The refresh deletes and re-posts the channel's messages, so it must not
     run inside a web request. One queued refresh covers every save made
-    before it starts: QueueOnce drops duplicates while one is waiting and
-    unlocks just before it runs, so a save during a run queues another.
+    before it starts: AppTask drops duplicates while one is waiting and
+    unlocks when a worker starts it, so a save during a run queues another.
     """
     on_commit_enqueue(
         update_fleet_schedule,
@@ -155,8 +148,7 @@ def queue_fleet_schedule_refresh() -> None:
     )
 
 
-@app.task()
-@overlap_guard(ttl=30 * 60)
+@app.task(exclusive=30 * 60)
 def poll_active_fleet_implants():
     """Queue implant polls for active fleet members within the 45-minute window."""
     members = members_to_poll()
@@ -187,11 +179,7 @@ def publish_fleet_roam_report(fleet_id: int):
     return publish_fleet_roam_report_impl(fleet_id)
 
 
-@app.task(
-    base=QueueOnce,
-    once={"graceful": True, "timeout": 120},
-    queue="celery",
-)
+@app.task(exclusive=10 * 60)
 def poll_npsi_events():
     """Fetch NPSI calendar feeds and DM FCs to confirm schedule posts."""
     stats = poll_npsi_sources()

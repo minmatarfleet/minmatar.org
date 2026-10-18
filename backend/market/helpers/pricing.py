@@ -116,9 +116,7 @@ def enqueue_history_for_types(
     )
 
     for type_id in queued:
-        fetch_market_item_history_for_type.apply_async(
-            args=[type_id], queue="market"
-        )
+        fetch_market_item_history_for_type.apply_async(args=[type_id])
     logger.info("Enqueued baseline history fetch for %s type(s)", len(queued))
     return queued
 

@@ -26,7 +26,7 @@ class CorporationStatsCacheTestCase(TestCase):
         ) as compute:
             self.assertIsNone(stats_cache.corporation_stats(98726134))
             self.assertIsNone(stats_cache.corporation_stats(98726134))
-        queued.assert_called_once_with(args=[98726134], queue="eveonline")
+        queued.assert_called_once_with(args=[98726134])
         compute.assert_not_called()
 
     def test_hit_serves_cached_stats(self):

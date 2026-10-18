@@ -8,8 +8,7 @@ this file overrides secrets, URLs, the database and the cache.
 
 import os
 
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
+from app.monitoring import init_sentry
 
 from app.settings_celery import *  # noqa # pylint: disable=wildcard-import
 from app.settings_common import *  # noqa # pylint: disable=wildcard-import
@@ -87,19 +86,12 @@ DATABASES = {
     }
 }
 
-# Monitoring
-sentry_sdk.init(
+# Monitoring: same setup as production, with the DSN taken only from
+# the environment (empty in CI, so nothing is sent).
+init_sentry(
+    component="web",
     dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),
-    integrations=[DjangoIntegration()],
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
     environment=os.environ.get("ENV", ENV),
-    _experiments={"enable_logs": True},
 )
 
 REDDIT_REDIRECT_URL = os.environ.get(
