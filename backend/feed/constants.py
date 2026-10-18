@@ -145,16 +145,15 @@ CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
 # Only ping for genuinely fresh kills. Stale killmails (feed backlog, bot
 # restarts, replays) must not fire a "capital within jump range" alert.
 CAPITAL_PING_MAX_AGE_SECONDS = 180
-# Reuse one Discord message for further capital-related kills in the same system.
+# Fold further capital-related kills in the same system into one alert. Discord
+# gets a single message per alert; it is never edited (rate limit).
 CAPITAL_PING_SESSION_SECONDS = 30 * 60
-# Amarr fleet Discord pings (fleet_active rollups). Reuse one Discord message
-# for further updates to the same system engagement within the session TTL.
+# Amarr fleet Discord pings (fleet_active rollups). One message per system
+# engagement within the session TTL; later rollups update the row, not Discord.
 AMARR_FLEET_PING_SESSION_SECONDS = 30 * 60
 # Skip rollup catch-up / historical rewrites. Only live fleets whose tip is
 # fresher than this should create Discord traffic.
 AMARR_FLEET_PING_MAX_AGE_SECONDS = 20 * 60
-# Skip no-op Discord message edits within this window (rollups run ~3m).
-AMARR_FLEET_PING_EDIT_MIN_SECONDS = 90
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
 CAPITAL_SHIP_GROUPS = frozenset(
     {

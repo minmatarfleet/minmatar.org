@@ -664,24 +664,6 @@ def _post_alert_messages(
     return messages
 
 
-def _edit_alert_messages(
-    alert: FeedCapitalAlert,
-    payload: dict[str, Any],
-    *,
-    discord_client: DiscordClient,
-) -> None:
-    for entry in alert.discord_messages or []:
-        channel_id = entry.get("channel_id")
-        message_id = entry.get("message_id")
-        if not channel_id or not message_id:
-            continue
-        discord_client.update_message(
-            channel_id=int(channel_id),
-            message_id=int(message_id),
-            payload=payload,
-        )
-
-
 def _age_gate_blocks(raw: dict[str, Any]) -> bool:
     killmail_time_str = raw.get("killmail_time")
     killmail_time = (
@@ -745,8 +727,8 @@ def _update_capital_alert(
     capitals: list[dict[str, Any]],
     kill: dict[str, Any],
     composition: dict[str, Any],
-    discord_client: DiscordClient,
 ) -> FeedCapitalAlert:
+    """Fold a follow-up kill into the alert; the Discord message is not edited."""
     alert.capitals = _merge_capitals(alert.capitals or [], capitals)
     alert.kills = list(alert.kills or []) + [kill]
     alert.composition = _merge_composition(alert.composition, composition)
@@ -760,15 +742,6 @@ def _update_capital_alert(
     alert.distance_ly = distance_ly
     alert.system_name = system_name
     alert.last_activity_at = timezone.now()
-    discord_payload = build_capital_alert_payload(
-        system_name=alert.system_name,
-        distance_ly=alert.distance_ly,
-        capitals=alert.capitals,
-        kills=alert.kills,
-        systems=alert.systems,
-        composition=alert.composition,
-    )
-    _edit_alert_messages(alert, discord_payload, discord_client=discord_client)
     alert.save(
         update_fields=[
             "solar_system_id",
@@ -824,7 +797,11 @@ def _upsert_capital_alert_for_notify(
     composition: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedCapitalAlert | None:
-    """Create or update a capital alert; soft-fail expected Discord HTTP errors."""
+    """Post a new capital alert, or fold the kill into the live one.
+
+    Discord gets one message per alert; follow-up kills only update the row.
+    Soft-fails expected Discord HTTP errors.
+    """
     try:
         if existing is None:
             return _create_capital_alert(
@@ -844,11 +821,10 @@ def _upsert_capital_alert_for_notify(
             capitals=capitals,
             kill=kill,
             composition=composition,
-            discord_client=discord_client,
         )
     except Exception as exc:
-        # Stale Discord message IDs (400/404) or transient 5xx on PATCH
-        # (CELERY-KD / JM). Do not logger.exception — Sentry noise.
+        # Transient Discord 4xx/5xx on post (CELERY-KD / JM).
+        # Do not logger.exception — Sentry noise.
         if _is_discord_edit_soft_fail(exc):
             logger.warning(
                 "Capital ping Discord HTTP %s for killmail %s: %s",
@@ -871,8 +847,9 @@ def maybe_notify_capital_kill(
 ) -> bool | None:
     """Evaluate an R2Z2 payload and create/update a capital presence alert.
 
-    Returns True if a Discord message was created or edited, False if skipped
-    (not eligible), and None if skipped solely due to the killmail age gate.
+    Returns True if the kill was posted to Discord or folded into a live alert
+    (whose message is left as posted), False if skipped (not eligible), and
+    None if skipped solely due to the killmail age gate.
     """
     if not _capital_ping_channel_ids():
         return False
