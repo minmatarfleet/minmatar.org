@@ -1,0 +1,314 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeEventRowUI } from '@dtypes/layout_components'
+import { eve_clock } from '@helpers/date'
+
+/**
+ * One event on its own group's Events tab, so there is no host chip. Interested
+ * opens the Discord event: Discord owns RSVPs and reminders.
+ */
+interface Props {
+    event:          TribeEventRowUI;
+    [propName: string]: any;
+}
+
+const {
+    event,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const starts = event.starts_at ? new Date(event.starts_at) : null
+const cancelled = event.status === 'cancelled'
+const completed = event.status === 'completed'
+const live = event.status === 'scheduled' && !!event.discord_event_url
+
+const day = starts ? String(starts.getUTCDate()) : t('tribes.publishing.event.tbd')
+const weekday = starts
+    ? starts.toLocaleDateString(lang, { weekday: 'short', timeZone: 'UTC' })
+    : t('tribes.publishing.event.date_not_set')
+
+const eve_time = !starts
+    ? t('tribes.publishing.event.time_not_set')
+    : event.ends_at
+        ? t('tribes.publishing.event.eve_range')
+            .replace('{start}', eve_clock(starts))
+            .replace('{end}', eve_clock(event.ends_at))
+        : t('tribes.publishing.event.eve_start').replace('{start}', eve_clock(starts))
+
+const count_text = t(
+    event.status === 'scheduled' ? 'tribes.publishing.event.interested_count' : 'tribes.publishing.event.was_interested_count'
+).replace('{count}', String(event.interested_count))
+
+import Tag from '@components/blocks/Tag.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro'
+import StageChannelIcon from '@components/icons/StageChannelIcon.astro'
+import VoiceChannelIcon from '@components/icons/VoiceChannelIcon.astro'
+import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
+---
+
+<article
+    class:list={['[ tribe-event-row ]', { 'is-cancelled': cancelled }, Astro.props.class]}
+    data-status={event.status}
+    {...attributes}
+>
+    <span class="[ tribe-event-row__date ]">
+        <b class:list={{ 'is-tbd': !starts }}>{day}</b>
+        <small>{weekday}</small>
+    </span>
+
+    {event.cover_url ?
+        <img
+            class="[ tribe-event-row__cover ]"
+            src={event.cover_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+        />
+        :
+        <span class="[ tribe-event-row__cover tribe-event-row__cover--empty ]" aria-hidden="true">
+            <CalendarEVEIcon />
+        </span>
+    }
+
+    <div class="[ tribe-event-row__main ]">
+        <span class="[ tribe-event-row__heading ]">
+            <b class="[ tribe-event-row__title ]">{event.title}</b>
+            {event.recurrence_label && <Tag variant="outline" text={event.recurrence_label} />}
+            {cancelled && <Tag variant="outline" color="fleet-red" text_color="color-mix(in srgb, var(--fleet-red) 60%, var(--highlight))" text={t('cancelled')} />}
+            {completed && <Tag variant="outline" text={t('tribes.publishing.event.completed')} />}
+        </span>
+        <span class="[ tribe-event-row__facts ]">
+            <span class="[ tribe-event-row__where ]">
+                {event.where_kind === 'stage' && <StageChannelIcon size={16} />}
+                {event.where_kind === 'voice' && <VoiceChannelIcon size={16} />}
+                {event.where_kind === 'place' && <PlacePinIcon size={16} />}
+                <span>{event.where_label}</span>
+            </span>
+            <span>{eve_time}</span>
+            {starts && <LocalTime eve_time={starts} format="time" show_label={true} />}
+        </span>
+    </div>
+
+    <div class="[ tribe-event-row__aside ]">
+        <span class="[ tribe-event-row__count ]">
+            {event.status === 'scheduled' && !event.discord_event_url ? t('tribes.publishing.event.not_on_discord') : count_text}
+        </span>
+        {live &&
+            <a
+                class="[ tribe-event-row__interested ]"
+                href={event.discord_event_url}
+                target="_blank"
+                rel="noopener noreferrer"
+            >{t('tribes.publishing.event.interested_button')}</a>
+        }
+        {event.edit_href &&
+            <a class="[ tribe-event-row__edit ]" href={event.edit_href}>{t('tribes.publishing.event.edit')}</a>
+        }
+    </div>
+</article>
+
+<style lang="scss">
+    .tribe-event-row {
+        display: grid;
+        grid-template-columns: 5.25rem 13.75rem minmax(0, 1fr) auto;
+        grid-template-areas: "date cover main aside";
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s) var(--space-2xs) var(--space-2xs);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+
+        &.is-cancelled .tribe-event-row__date,
+        &.is-cancelled .tribe-event-row__cover,
+        &.is-cancelled .tribe-event-row__title,
+        &.is-cancelled .tribe-event-row__facts,
+        &.is-cancelled .tribe-event-row__count {
+            opacity: 0.6;
+        }
+
+        &.is-cancelled .tribe-event-row__title {
+            text-decoration: line-through;
+        }
+    }
+
+    .tribe-event-row__date {
+        grid-area: date;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        align-self: stretch;
+        min-height: 5.5rem;
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline);
+
+        b {
+            font-family: var(--heading-font);
+            font-weight: 400;
+            font-size: var(--step-3);
+            line-height: 1;
+            color: var(--highlight);
+
+            &.is-tbd {
+                font-size: var(--step-1);
+            }
+        }
+
+        small {
+            font-size: var(--step--2);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .tribe-event-row__cover {
+        grid-area: cover;
+        display: block;
+        width: 100%;
+        height: 5.5rem;
+        object-fit: cover;
+
+        &--empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--hairline);
+
+            :global(img) {
+                width: 2rem;
+                height: 2rem;
+                opacity: 0.55;
+            }
+        }
+    }
+
+    .tribe-event-row__main {
+        grid-area: main;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .tribe-event-row__heading {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-2xs);
+    }
+
+    .tribe-event-row__title {
+        font-size: var(--step-0);
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
+
+    .tribe-event-row__facts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-s);
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+
+    .tribe-event-row__where {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .tribe-event-row__aside {
+        grid-area: aside;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-2xs);
+    }
+
+    .tribe-event-row__count {
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+        text-align: right;
+    }
+
+    .tribe-event-row__interested {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-s);
+        font-family: var(--button-font);
+        font-weight: 700;
+        font-size: var(--step--1);
+        text-decoration: none;
+        color: var(--highlight);
+        background-color: var(--discord-blurple);
+        border: 1px solid var(--discord-blurple);
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-event-row__interested:hover {
+            transform: scale(1.05);
+        }
+    }
+
+    @media (hover: none) {
+        .tribe-event-row__interested:active {
+            transform: scale(0.95);
+        }
+    }
+
+    .tribe-event-row__edit {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        text-decoration: underline;
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-event-row__edit:hover {
+            color: var(--highlight);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .tribe-event-row {
+            grid-template-columns: 4.5rem minmax(0, 1fr);
+            grid-template-areas:
+                "date main"
+                "cover cover"
+                "aside aside";
+            align-items: start;
+            padding: var(--space-2xs);
+            gap: var(--space-2xs) var(--space-xs);
+        }
+
+        .tribe-event-row__cover {
+            height: 6rem;
+        }
+
+        .tribe-event-row__aside {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+    }
+</style>

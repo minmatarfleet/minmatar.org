@@ -1,0 +1,110 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeGroupCrestUI } from '@dtypes/layout_components'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+
+/**
+ * What an outsider gets from a members-only link. It takes only the group, so
+ * nothing about the fleet or post can leak. The page sends the 403 and puts
+ * its apply button (ButtonApplyTribe) in the `apply` slot.
+ */
+interface Props {
+    group:          TribeGroupCrestUI;
+    kind:           'fleet' | 'post';
+    back_href:      string;
+    back_label:     string;
+    [propName: string]: any;
+}
+
+const {
+    group,
+    kind,
+    back_href,
+    back_label,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const crest = group.crest_url ?? tribe_group_cover(group.id)
+const title = t(kind === 'fleet' ? 'tribes.publishing.gate.fleet_title' : 'tribes.publishing.gate.post_title')
+    .replace('{group}', group.name)
+const body = t(kind === 'fleet' ? 'tribes.publishing.gate.fleet_body' : 'tribes.publishing.gate.post_body')
+    .replace('{group}', group.name)
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<section class:list={['[ members-only-gate ]', Astro.props.class]} {...attributes}>
+    <img
+        class="[ members-only-gate__crest ]"
+        src={crest}
+        alt={t('tribes.publishing.crest_alt').replace('{group}', group.name)}
+        width="56"
+        height="56"
+    />
+    <h1 class="[ members-only-gate__title ]">{title}</h1>
+    <p class="[ members-only-gate__body ]">{body}</p>
+    <div class="[ members-only-gate__actions ]">
+        <slot name="apply" />
+        <Button class="[ members-only-gate__back ]" color="transparent" href={back_href}>{back_label}</Button>
+    </div>
+</section>
+
+<style lang="scss">
+    .members-only-gate {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        width: 100%;
+        max-width: 28rem;
+        margin-inline: auto;
+        box-sizing: border-box;
+        padding: var(--space-xl) var(--space-l);
+        text-align: center;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+    }
+
+    .members-only-gate__crest {
+        display: block;
+        object-fit: cover;
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+    }
+
+    .members-only-gate__title {
+        margin: 0;
+        font-size: var(--step-2);
+        line-height: 1.1;
+        text-wrap: balance;
+        color: var(--highlight);
+    }
+
+    .members-only-gate__body {
+        margin: 0;
+        color: var(--fleet-yellow);
+    }
+
+    .members-only-gate__actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2xs);
+        width: 100%;
+        margin-top: var(--space-xs);
+
+        > :global(*) {
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    .members-only-gate :global(a.members-only-gate__back[href]) {
+        text-align: center;
+        border: solid 1px color-mix(in srgb, var(--highlight) 25%, transparent);
+        color: var(--highlight);
+    }
+</style>
