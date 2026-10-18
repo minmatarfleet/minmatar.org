@@ -82,6 +82,7 @@ describe('fetch_fleet_by_id', () => {
             status: 'pending',
             aar_link: '',
             roam_report_url: '',
+            aar_forum_url: '',
             campaign_id: 2,
             campaign_slug: 'tama',
             campaign_name: 'Tama push',

@@ -1,0 +1,586 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetFights, FleetFightRound, FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon, get_player_icon, get_group_logo } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
+
+/**
+ * One engagement's battle report, br.evetools style: a card per side with
+ * its losses and the groups on it, every pilot on each side with the ships
+ * they flew and lost, and every killmail in the engagement's systems from a
+ * minute before it to a minute after. Moving a group to another side
+ * re-renders the report (fleet_battle_report_component) and keeps the
+ * choice in the URL, so the link shares the same sides.
+ */
+interface Props {
+    report:             FleetBattleReport;
+    fights:             FleetFights;
+    /** 1-based position in the rounds list. */
+    position:           number;
+    fleet_id:           number;
+    [propName: string]: any;
+}
+
+const {
+    report,
+    fights,
+    position,
+    fleet_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const href = (at: number) => translatePath(`/fleets/history/${fleet_id}/rounds/${at}`)
+const back = translatePath(fights.live ? `/fleets/upcoming/${fleet_id}#aar` : `/fleets/history/${fleet_id}#aar`)
+const previous = position > 1 ? fights.rounds[position - 2] : null
+const next = position < fights.rounds.length ? fights.rounds[position] : null
+const label = (round: FleetFightRound) => round.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+
+const title = report.kind === 'round' ?
+    t('fleets.fights.report_title').replace('{number}', (report.number ?? 0).toString()).replace('{total}', fights.round_count.toString()) :
+    t('fleets.fights.report_skirmish').replace('{time}', eve_clock(report.start))
+const window_text = `${eve_clock(report.window_start)}–${eve_clock(report.window_end)} EVE`
+const systems = report.systems.map(system => system.name).join(', ')
+
+// Sides keep their colour whatever is moved: ours blue, then red, then purple.
+const LETTERS = ['A', 'B', 'C']
+const team_name = (index: number) => {
+    const team = report.teams.find(item => item.index === index)
+    return team?.ours ? t('fleets.report.our_side') : t('fleets.report.side').replace('{letter}', LETTERS[index] ?? `${index + 1}`)
+}
+const others = report.teams.filter(team => !team.ours).map(team => team.index).sort((a, b) => a - b)
+const team_class = (index: number) => {
+    if (report.teams.find(item => item.index === index)?.ours) return 'ours'
+    return others.indexOf(index) <= 0 ? 'enemy' : 'third'
+}
+// A group can go to any side, or open a third one.
+const side_choices = [...report.teams.map(team => team.index), ...(report.teams.length < 3 ? [Math.max(-1, ...report.teams.map(team => team.index)) + 1] : [])]
+
+const PARTIAL_URL = translatePath('/partials/fleet_battle_report_component')
+const PAGE_URL = translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
+const RESET_URL = `${PARTIAL_URL}?${query_string({ fleet_id, position })}`
+const PILOTS_SHOWN = 25
+const GROUPS_SHOWN = 6
+const group_line = (pilots: number, lost: number) =>
+    (pilots === 1 ? t('fleets.report.group_line_one') : t('fleets.report.group_line').replace('{pilots}', pilots.toString()))
+        .replace('{lost}', lost.toString())
+---
+
+<div id="battle-report" class:list={['[ battle-report ]', Astro.props.class]} {...attributes}>
+    <nav class="[ battle-report__steps ]" aria-label={t('fleets.fights.rounds')}>
+        {previous ?
+            <a href={href(position - 1)}>‹ {label(previous)}</a> :
+            <a href={back}>‹ {t('fleets.fights.back')}</a>
+        }
+        <div>
+            <h2>{title}</h2>
+            <span>{window_text} · {systems}</span>
+        </div>
+        {next ? <a href={href(position + 1)}>{label(next)} ›</a> : <span />}
+    </nav>
+
+    {!report.complete &&
+        <p class="[ battle-report__partial ]" role="status">{t('fleets.report.partial')}</p>
+    }
+
+    <section class="[ battle-report__sides ]" aria-label={t('fleets.report.sides')}>
+        {report.teams.map(team =>
+            <article class:list={['[ battle-report__side ]', `battle-report__side--${team_class(team.index)}`]} aria-labelledby={`battle-side-${team.index}`}>
+                <header>
+                    <h3 id={`battle-side-${team.index}`}>{team_name(team.index)}</h3>
+                    <dl>
+                        <div>
+                            <dt>{t('fleets.report.isk_lost')}</dt>
+                            <dd><b>{format_isk(team.totals.isk_lost)}</b></dd>
+                        </div>
+                        <div>
+                            <dt>{t('fleets.report.ships_lost')}</dt>
+                            <dd><b>{team.totals.ships_lost}</b></dd>
+                        </div>
+                        <div>
+                            <dt>{t('fleets.report.pilots')}</dt>
+                            <dd><b>{team.totals.pilots}</b></dd>
+                        </div>
+                    </dl>
+                    {team.totals.efficiency !== null && team.totals.efficiency !== undefined &&
+                        <span
+                            class="[ battle-report__efficiency ]"
+                            role="img"
+                            aria-label={t('fleets.fights.efficiency_label').replace('{pct}', team.totals.efficiency.toString())}
+                        ><span style={`width: ${team.totals.efficiency}%`} /></span>
+                    }
+                </header>
+
+                <ul class="[ battle-report__groups ]" x-data="{ all: false }">
+                    {team.groups.map((group, index) =>
+                        <li
+                            x-show={index >= GROUPS_SHOWN ? 'all' : undefined}
+                            x-cloak={index >= GROUPS_SHOWN ? '' : undefined}
+                        >
+                            <img src={get_group_logo(group.id, 32)} alt="" width="28" height="28" loading="lazy" />
+                            <span class="[ battle-report__group-name ]">
+                                <b>{group.name}</b>
+                                <small>{group_line(group.pilots, group.ships_lost)}</small>
+                            </span>
+                            <form
+                                action={PAGE_URL}
+                                method="get"
+                                hx-get={PARTIAL_URL}
+                                hx-trigger="change"
+                                hx-target="#battle-report"
+                                hx-swap="outerHTML"
+                            >
+                                <input type="hidden" name="fleet_id" value={fleet_id} />
+                                <input type="hidden" name="position" value={position} />
+                                <input type="hidden" name="sides" value={report.sides} />
+                                <input type="hidden" name="group" value={group.id} />
+                                <label>
+                                    <span class="visually-hidden">{t('fleets.report.move').replace('{name}', group.name)}</span>
+                                    <select name="team">
+                                        {side_choices.map(index =>
+                                            <option value={index} selected={index === team.index}>
+                                                {report.teams.some(item => item.index === index) ? team_name(index) : t('fleets.report.new_side')}
+                                            </option>
+                                        )}
+                                    </select>
+                                </label>
+                                <noscript><button type="submit">{t('fleets.report.move_button')}</button></noscript>
+                            </form>
+                        </li>
+                    )}
+                    {team.groups.length > GROUPS_SHOWN &&
+                        <li class="[ battle-report__more ]">
+                            <button type="button" x-on:click="all = !all">
+                                <span x-show="!all">{t('fleets.report.more_groups').replace('{count}', (team.groups.length - GROUPS_SHOWN).toString())}</span>
+                                <span x-show="all" x-cloak>{t('fleets.after.show_fewer')}</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+
+                <ol class="[ battle-report__pilots ]" x-data="{ all: false }">
+                    {team.pilots.map((pilot, index) =>
+                        <li
+                            x-show={index >= PILOTS_SHOWN ? 'all' : undefined}
+                            x-cloak={index >= PILOTS_SHOWN ? '' : undefined}
+                            class:list={[{ 'battle-report__pilot--lost': pilot.ships.some(ship => ship.lost) }]}
+                        >
+                            <img class="[ battle-report__portrait ]" src={get_player_icon(pilot.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                            <span class="[ battle-report__pilot-name ]">
+                                <a href={`https://zkillboard.com/character/${pilot.character_id}/`} target="_blank" rel="noopener noreferrer">{pilot.name}</a>
+                                <small>{t('fleets.report.pilot_line').replace('{kills}', pilot.kills.toString()).replace('{damage}', pilot.damage.toLocaleString('en-US'))}</small>
+                            </span>
+                            <span class="[ battle-report__ships ]">
+                                {pilot.ships.filter(ship => ship.type_id).map(ship =>
+                                    ship.lost && ship.killmail_id ?
+                                        <a
+                                            href={`https://zkillboard.com/kill/${ship.killmail_id}/`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="[ battle-report__ship battle-report__ship--lost ]"
+                                            data-tippy-content={t('fleets.report.lost_ship').replace('{ship}', ship.name)}
+                                        >
+                                            <img src={get_item_icon(ship.type_id as number, 32)} alt={t('fleets.report.lost_ship').replace('{ship}', ship.name)} width="28" height="28" loading="lazy" />
+                                        </a>
+                                        :
+                                        <span class="[ battle-report__ship ]" data-tippy-content={ship.name}>
+                                            <img src={get_item_icon(ship.type_id as number, 32)} alt={ship.name} width="28" height="28" loading="lazy" />
+                                        </span>
+                                )}
+                            </span>
+                        </li>
+                    )}
+                    {team.pilots.length > PILOTS_SHOWN &&
+                        <li class="[ battle-report__more ]">
+                            <button type="button" x-on:click="all = !all">
+                                <span x-show="!all">{t('fleets.report.all_pilots').replace('{count}', team.pilots.length.toString())}</span>
+                                <span x-show="all" x-cloak>{t('fleets.after.show_fewer')}</span>
+                            </button>
+                        </li>
+                    }
+                </ol>
+            </article>
+        )}
+    </section>
+
+    {report.sides &&
+        <p class="[ battle-report__reset ]">
+            <button type="button" hx-get={RESET_URL} hx-target="#battle-report" hx-swap="outerHTML" hx-push-url={PAGE_URL}>
+                {t('fleets.report.reset')}
+            </button>
+        </p>
+    }
+
+    <section class="[ battle-report__mails ]" aria-labelledby="battle-mails">
+        <h2 id="battle-mails">{t('fleets.report.killmails').replace('{count}', report.killmails.length.toString())}</h2>
+        <ol>
+            {report.killmails.map(mail =>
+                <li class={`battle-report__mail--${team_class(mail.team)}`}>
+                    <time datetime={mail.time}>{mail.time.slice(11, 19)}</time>
+                    {mail.ship_type_id ? <img src={get_item_icon(mail.ship_type_id, 32)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                    <span class="[ battle-report__mail-what ]">
+                        <a href={`https://zkillboard.com/kill/${mail.id}/`} target="_blank" rel="noopener noreferrer">{mail.ship_name}{mail.pod ? ` (${t('fleets.fights.pod')})` : ''}</a>
+                        <small>{[mail.victim_name, team_name(mail.team), mail.final_blow?.name ? t('fleets.report.final_blow').replace('{name}', mail.final_blow.name) : '', mail.system_name].filter(Boolean).join(' · ')}</small>
+                    </span>
+                    <span class="[ battle-report__mail-isk ]">{format_isk(mail.isk)}</span>
+                </li>
+            )}
+        </ol>
+    </section>
+</div>
+
+<style lang="scss">
+    .battle-report {
+        --side-ours: var(--alliance-blue);
+        --side-enemy: var(--fleet-red);
+        --side-third: var(--militia-purple);
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .battle-report__steps {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        > a:last-child {
+            justify-self: end;
+        }
+
+        a {
+            font-weight: 700;
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .battle-report__steps {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                'title title'
+                'back next';
+
+            > div {
+                grid-area: title;
+            }
+
+            > :first-child {
+                grid-area: back;
+            }
+
+            > :last-child {
+                grid-area: next;
+            }
+        }
+    }
+
+    .battle-report__partial {
+        margin: 0;
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--border-color-hover);
+    }
+
+    .battle-report__sides {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+        gap: var(--space-s);
+        align-items: stretch;
+    }
+
+    .battle-report__side {
+        --side: var(--side-enemy);
+
+        display: flex;
+        flex-direction: column;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+        border-top: 3px solid var(--side);
+
+        > header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding: var(--space-s) var(--space-m);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+
+        dl {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: var(--space-xs);
+            margin: 0;
+        }
+
+        dt {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+
+            b {
+                font-family: var(--heading-font);
+                font-size: var(--step-2);
+                font-weight: 400;
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .battle-report__side--ours { --side: var(--side-ours); }
+    .battle-report__side--third { --side: var(--side-third); }
+
+    .battle-report__efficiency {
+        display: flex;
+        height: var(--space-3xs);
+        background-color: var(--hairline-strong);
+
+        span {
+            background-color: var(--side);
+        }
+    }
+
+    .battle-report__groups,
+    .battle-report__pilots {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .battle-report__groups {
+        gap: 1px;
+        padding: var(--space-2xs) var(--space-m);
+        border-bottom: 1px solid var(--border-color);
+
+        li {
+            display: grid;
+            grid-template-columns: 28px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-3xs) 0;
+        }
+
+        select {
+            min-height: 2.75rem;
+            max-width: 9rem;
+            padding: 0 var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--hairline-strong);
+            color: var(--foreground);
+            font: inherit;
+            font-size: var(--step--1);
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    .battle-report__group-name,
+    .battle-report__pilot-name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b,
+        a {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--highlight);
+        }
+    }
+
+    .battle-report__pilot-name a {
+        text-decoration: none;
+
+        &:hover,
+        &:focus-visible {
+            text-decoration: underline;
+        }
+    }
+
+    .battle-report__pilots {
+        padding: var(--space-2xs) var(--space-m) var(--space-s);
+
+        li {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-3xs) 0;
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+    }
+
+    .battle-report__ships {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+    }
+
+    .battle-report__ship {
+        display: inline-flex;
+        border: 1px solid transparent;
+    }
+
+    .battle-report__ship--lost {
+        border-color: var(--fleet-red);
+        background-color: color-mix(in srgb, var(--fleet-red) 25%, transparent);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .battle-report__groups li.battle-report__more,
+    .battle-report__pilots li.battle-report__more {
+        grid-template-columns: 1fr;
+        border-bottom: 0;
+
+        button {
+            min-height: 2.75rem;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            color: var(--foreground);
+            font: inherit;
+            font-weight: 700;
+            text-align: left;
+            cursor: pointer;
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    .battle-report__reset {
+        margin: 0;
+
+        button {
+            min-height: 2.75rem;
+            padding: 0 var(--space-s);
+            background: transparent;
+            border: 1px solid var(--hairline-strong);
+            color: var(--foreground);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+
+            &:hover,
+            &:focus-visible {
+                border-color: var(--foreground);
+            }
+        }
+    }
+
+    .battle-report__mails {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        ol {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            --side: var(--side-enemy);
+
+            display: grid;
+            grid-template-columns: 4.5rem 32px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-3xs) var(--space-xs);
+            background-color: var(--component-background);
+            border-left: 3px solid var(--side);
+            font-variant-numeric: tabular-nums;
+            time {
+                font-size: var(--step--1);
+            }
+        }
+
+        .battle-report__mail--ours { --side: var(--side-ours); }
+        .battle-report__mail--third { --side: var(--side-third); }
+    }
+
+    .battle-report__mail-what {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .battle-report__mail-isk {
+        color: var(--highlight);
+        text-align: right;
+    }
+
+    @media (max-width: 30rem) {
+        .battle-report__mails li {
+            grid-template-columns: 32px minmax(0, 1fr) auto;
+
+            time {
+                display: none;
+            }
+        }
+    }
+</style>

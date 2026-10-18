@@ -36,6 +36,12 @@ from fleets.endpoints.fleet.get_fleet_participants import (
     get_fleet_participants,
     METHOD as get_fleet_participants_method,
 )
+from fleets.endpoints.fleet.get_fleet_public_kills import (
+    PATH as get_fleet_public_kills_path,
+    ROUTE_SPEC as get_fleet_public_kills_spec,
+    get_fleet_public_kills,
+    METHOD as get_fleet_public_kills_method,
+)
 from fleets.endpoints.fleet.get_fleet_my_pilot_locations import (
     PATH as get_fleet_my_pilot_locations_path,
     ROUTE_SPEC as get_fleet_my_pilot_locations_spec,
@@ -163,6 +169,12 @@ from fleets.endpoints.fleet.get_fleet_fights import (
     ROUTE_SPEC as get_fleet_fights_spec,
     get_fleet_fights,
     METHOD as get_fleet_fights_method,
+)
+from fleets.endpoints.fleet.get_fleet_fight_report import (
+    PATH as get_fleet_fight_report_path,
+    ROUTE_SPEC as get_fleet_fight_report_spec,
+    get_fleet_fight_report,
+    METHOD as get_fleet_fight_report_method,
 )
 from fleets.endpoints.fleet.post_fleet_fights_merge import (
     PATH as post_fleet_fights_merge_path,
@@ -323,6 +335,12 @@ _ROUTES = (
         get_fleet_fights,
     ),
     (
+        get_fleet_fight_report_method,
+        get_fleet_fight_report_path,
+        get_fleet_fight_report_spec,
+        get_fleet_fight_report,
+    ),
+    (
         post_fleet_fights_merge_method,
         post_fleet_fights_merge_path,
         post_fleet_fights_merge_spec,
@@ -405,6 +423,12 @@ _ROUTES = (
         get_fleet_participants_path,
         get_fleet_participants_spec,
         get_fleet_participants,
+    ),
+    (
+        get_fleet_public_kills_method,
+        get_fleet_public_kills_path,
+        get_fleet_public_kills_spec,
+        get_fleet_public_kills,
     ),
     (
         get_fleet_my_pilot_locations_method,

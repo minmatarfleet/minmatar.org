@@ -12,17 +12,19 @@ import { query_string } from '@helpers/string'
  * characters and how far each is (loaded by htmx, since it reads ESI).
  */
 interface Props {
-    fleet:  FleetUI;
+    fleet:              FleetUI;
+    /** The viewer's characters and their distance; off once the fleet is over. */
+    show_characters?:   boolean;
 }
 
-const { fleet } = Astro.props
+const { fleet, show_characters = true } = Astro.props
 
 const [ system_name, station ] = fleet.location?.split(' - ') ?? []
 const system = system_name ?
     (await filter_systems_by_name(system_name)).find(found => found.system_name === system_name) ?? null :
     null
 
-const LOCATIONS_URL = system ? `${translatePath('/partials/fleet_pilot_locations_component')}?${query_string({
+const LOCATIONS_URL = system && show_characters ? `${translatePath('/partials/fleet_pilot_locations_component')}?${query_string({
     fleet_id: fleet.id,
     staging_id: system.system_id,
 })}` : null

@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const position = parseInt(Astro.url.searchParams.get('position') ?? '0')
+
+if (!fleet_id || !position)
+    return HTTP_404_Not_Found()
+
+import { get_fleet_fights, get_fleet_battle_report, type FleetFights, type FleetBattleReport as FleetBattleReportData } from '@helpers/api.minmatar.org/fleets'
+import { move_to_side } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
+
+// The move form sends the sides so far plus the group it moved.
+const sides = move_to_side(
+    Astro.url.searchParams.get('sides') ?? '',
+    parseInt(Astro.url.searchParams.get('group') ?? ''),
+    parseInt(Astro.url.searchParams.get('team') ?? ''),
+)
+
+let fights:FleetFights | null = null
+let report:FleetBattleReportData | null = null
+let fetch_error:Error | false = false
+
+try {
+    [fights, report] = await Promise.all([
+        get_fleet_fights(auth_token as string, fleet_id),
+        get_fleet_battle_report(auth_token as string, fleet_id, position, sides),
+    ])
+} catch (error) {
+    fetch_error = error
+}
+
+if (!fetch_error && (!fights || !report))
+    return HTTP_404_Not_Found()
+
+// The address bar keeps the sides, so the link shares this report as shown.
+const page_url = translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
+Astro.response.headers.set('HX-Push-Url', report?.sides ? `${page_url}?sides=${encodeURIComponent(report.sides)}` : page_url)
+
+const RETRY_URL = `${translatePath('/partials/fleet_battle_report_component')}?${query_string({ fleet_id, position, ...(sides && { sides }) })}`
+
+import FleetBattleReport from '@components/blocks/FleetBattleReport.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <div id="battle-report">
+        <ErrorRefetch
+            args={{
+                partial: RETRY_URL,
+                error: fetch_error,
+                delay: 0,
+                target: '#battle-report',
+            }}
+        />
+    </div>
+    :
+    <FleetBattleReport report={report as FleetBattleReportData} fights={fights as FleetFights} position={position} fleet_id={fleet_id} />
+}

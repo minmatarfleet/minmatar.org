@@ -34,7 +34,7 @@ const bands = chart_bands(
     fights.live,
 )
 const ticks = chart_ticks(chart)
-// Percent of the chart below which a band shows "R5" instead of "Round 5".
+// Percent of the chart below which a band shows "E5" instead of "Engagement 5".
 const NARROW_BAND = 6
 
 const event_label = (event: FleetFights['events'][number]) => {
@@ -112,7 +112,6 @@ const events = fights.events.map(event => {
     <figcaption>
         <span class="[ fights-chart__key fights-chart__key--kill ]" aria-hidden="true" />{t('fleets.fights.ships_killed')}
         <span class="[ fights-chart__key fights-chart__key--loss ]" aria-hidden="true" />{t('fleets.fights.ships_lost')}
-        · {t('fleets.fights.chart_note').replace('{minutes}', chart.bin_minutes.toString())}
     </figcaption>
 </figure>
 

@@ -64,6 +64,8 @@ class EveFleetResponse(BaseModel):
     campaign_id: Optional[int] = None
     campaign_slug: Optional[str] = None
     roam_report_url: Optional[str] = None
+    # The #aars forum, where the FC writes the AAR (fleet detail only).
+    aar_forum_url: Optional[str] = None
     # Tribe group fleets (docs/tribes/tribe-publishing.md).
     host_group: Optional[HostGroupRef] = None
     open_to_alliance: bool = False
@@ -809,6 +811,8 @@ class EveFleetFightsResponse(BaseModel):
     round_count: int = 0
     skirmish_count: int = 0
     rounds: List[FleetFightRound] = []
+    # The whole fleet's battle report links; missing on older payloads.
+    links: FleetFightLinks | None = None
     events: List[FleetFightEvent] = []
     chart: FleetFightChart | None = None
     edits: List[FleetFightEdit] = []

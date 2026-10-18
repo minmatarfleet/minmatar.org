@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+
+/**
+ * The viewer's losses on this fleet that SRP covers, each with its payout
+ * and a button to file the claim.
+ */
+interface Props {
+    srp_losses:         FleetSrpLoss[];
+    fleet_id:           number;
+    [propName: string]: any;
+}
+
+const {
+    srp_losses,
+    fleet_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const unfiled_srp = srp_losses.filter(loss => !loss.filed)
+
+import SRPButton from '@components/blocks/SRPButton.astro'
+---
+
+<section class:list={['[ fleet-srp ][ component ]', Astro.props.class]} aria-labelledby="fleet-srp-title" {...attributes}>
+    <h3 id="fleet-srp-title">{t('fleets.srp.title')}</h3>
+    <ul>
+        {srp_losses.map(loss =>
+            <li>
+                <img src={get_item_icon(loss.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                <span>
+                    <b>{t('fleets.srp.pays').replace('{ship}', loss.ship_name).replace('{amount}', format_isk(loss.amount))}</b>
+                    <small>{loss.character_name} · {t('fleets.srp.lost_at').replace('{time}', eve_clock(loss.killmail_time))}</small>
+                </span>
+                {loss.filed ?
+                    <small class="[ text-green ]">{t('fleets.srp.filed')}</small> :
+                    <SRPButton
+                        fleet_id={fleet_id}
+                        target='#fleet-srp-claims'
+                        external_killmail_link={`https://zkillboard.com/kill/${loss.killmail_id}/`}
+                        label={t('fleets.srp.file')}
+                    />
+                }
+            </li>
+        )}
+    </ul>
+    {unfiled_srp.length > 0 && <div id="fleet-srp-claims" />}
+</section>
+
+<style lang="scss">
+    .fleet-srp {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        border: 1px solid var(--fleet-red);
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-s);
+
+            > span {
+                flex: 1 1 12rem;
+                display: flex;
+                flex-direction: column;
+            }
+
+            b {
+                color: var(--highlight);
+            }
+        }
+    }
+</style>

@@ -3,15 +3,21 @@
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.db import connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 from app.testing import make_token
 from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
+from fleets.helpers.doctrine_flown import doctrine_hulls, pick_doctrine
+from fleets.helpers.opsec import sensitive_hull_ids
 from fleets.models import (
+    EveFleetFightTimeline,
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetInstanceMemberShipSnapshot,
@@ -34,6 +40,10 @@ DAMNATION = (22474, "Damnation")
 DEVOTER = (12017, "Devoter")
 ZARMAZD = (49712, "Zarmazd")
 EXEQUROR = (634, "Exequror")
+MAELSTROM = (24690, "Maelstrom")
+NAGLFAR = (19722, "Naglfar")
+RAPIER = (11963, "Rapier")
+SIN = (22430, "Sin")
 
 HULL_GROUPS = {
     CAPSULE: (29, "Capsule"),
@@ -43,6 +53,10 @@ HULL_GROUPS = {
     DAMNATION: (540, "Command Ship"),
     DEVOTER: (894, "Heavy Interdiction Cruiser"),
     EXEQUROR: (26, "Cruiser"),
+    MAELSTROM: (27, "Battleship"),
+    NAGLFAR: (485, "Dreadnought"),
+    RAPIER: (833, "Force Recon Ship"),
+    SIN: (898, "Black Ops"),
 }
 
 OWN = 1001  # the regular viewer's character
@@ -63,8 +77,20 @@ def _seed_hulls():
         )
         EveType.objects.get_or_create(
             id=type_id,
-            defaults={"name": name, "published": True, "eve_group": group},
+            defaults={
+                "name": name,
+                "published": True,
+                "eve_group": group,
+                "enabled_sections": EveType.enabled_sections.dogmas,
+            },
         )
+
+
+def _strategic_fc(username="strategic"):
+    user = User.objects.create(username=username)
+    add_user_permission(user, "view_evefleet")
+    add_user_permission(user, "manage_any_fleet")
+    return user
 
 
 class FleetParticipantsTestCase(TestCase):
@@ -90,6 +116,7 @@ class FleetParticipantsTestCase(TestCase):
             )
         }
         self.fc_user = User.objects.create(username="fc")
+        self.sfc = _strategic_fc()
         self.fleet = make_test_fleet("Fleet", self.fc_user)
         self.fleet.doctrine = self.doctrine
         self.fleet.save()
@@ -170,7 +197,7 @@ class FleetParticipantsTestCase(TestCase):
         return next(row for row in body["roles_flown"] if row["role"] == role)
 
     def test_each_pilot_counts_once_by_first_non_capsule_ship(self):
-        body = self._body()
+        body = self._body(self.sfc)
 
         self.assertEqual(7, body["pilots"])
         self.assertEqual(
@@ -202,7 +229,7 @@ class FleetParticipantsTestCase(TestCase):
         # Podded reships into a Typhoon in the second instance.
         self._pilot(3002, "Podded", [TYPHOON], TYPHOON, instance=later)
 
-        body = self._body()
+        body = self._body(self.sfc)
         self.assertEqual(7, body["pilots"])
         self.assertEqual(
             ("Typhoon", 2),
@@ -214,7 +241,7 @@ class FleetParticipantsTestCase(TestCase):
         self.assertEqual(1, body["ended_in_pod"])
 
     def test_roles_come_from_any_hull_flown(self):
-        body = self._body()
+        body = self._body(self.sfc)
 
         logi = self._role(body, "logi")
         self.assertEqual("Logistics", logi["label"])
@@ -288,7 +315,9 @@ class FleetParticipantsTestCase(TestCase):
             body["no_shows"],
         )
         self.assertEqual(2, body["signed_up"])
-        self.assertEqual(6, body["joined_without_signing_up"])
+        # Cyno Alt flew a cyno hull: hidden from an FC who is not a
+        # Strategic FC, so not counted either.
+        self.assertEqual(5, body["joined_without_signing_up"])
 
     def test_no_shows_hidden_from_a_regular_pilot(self):
         self._sign_up(9001, "Never Came", DEVOTER)
@@ -305,9 +334,422 @@ class FleetParticipantsTestCase(TestCase):
         self.assertEqual(403, expected)
         self.assertEqual(expected, self._get(outsider).status_code)
 
+    def test_pilots_per_hull(self):
+        typhoon = self._body()["flew"][0]
+
+        self.assertEqual("Typhoon", typhoon["ship_name"])
+        self.assertEqual(
+            [
+                {"character_id": OWN, "character_name": "Own Pilot"},
+                {"character_id": 3002, "character_name": "Podded"},
+            ],
+            typhoon["pilots"],
+        )
+
+    def test_hidden_roster_names_only_your_own_pilots_per_hull(self):
+        self.fleet.hide_volunteers = True
+        self.fleet.save()
+
+        typhoon = self._body()["flew"][0]
+        self.assertEqual(2, typhoon["count"])
+        self.assertEqual([OWN], [p["character_id"] for p in typhoon["pilots"]])
+        # A Strategic FC still sees everyone.
+        typhoon = self._body(self.sfc)["flew"][0]
+        self.assertEqual(2, len(typhoon["pilots"]))
+
+    def test_opsec_leaves_out_cyno_pilots_for_a_regular_viewer(self):
+        EveFleetRoleVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=3004,
+            character_name="Cyno Alt",
+            role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,
+        )
+        body = self._body()
+
+        self.assertTrue(body["opsec_filtered"])
+        self.assertEqual(6, body["pilots"])
+        self.assertNotIn("Devoter", [row["ship_name"] for row in body["flew"]])
+        self.assertEqual(
+            ["logi", "links"], [row["role"] for row in body["roles_flown"]]
+        )
+        self.assertEqual([], body["logi_fc"])
+
+        body = self._body(self.sfc)
+        self.assertFalse(body["opsec_filtered"])
+        self.assertEqual(7, body["pilots"])
+        self.assertEqual(
+            ["Cyno Alt"], [v["character_name"] for v in body["logi_fc"]]
+        )
+
+    def test_no_timeline_no_engagements_or_doctrine(self):
+        body = self._body()
+
+        self.assertEqual([], body["engagements"])
+        self.assertIsNone(body["engagement"])
+        self.assertEqual([], body["doctrine_flown"])
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/participants?engagement=1",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(404, response.status_code)
+
+    def test_timeline_without_rounds_is_one_whole_fleet_segment(self):
+        start = timezone.now() - timedelta(hours=1)
+        EveFleetFightTimeline.objects.create(
+            eve_fleet=self.fleet,
+            payload={
+                "rounds": [
+                    {
+                        "kind": "skirmish",
+                        "number": None,
+                        "start": start.isoformat(),
+                        "end": start.isoformat(),
+                    }
+                ]
+            },
+        )
+        body = self._body()
+
+        self.assertEqual([], body["engagements"])
+        [segment] = body["doctrine_flown"]
+        self.assertEqual([], segment["positions"])
+        # Typhoon x2, Damnation, Exequror, Zarmazd: one Armor hull in five.
+        self.assertIsNone(segment["doctrine_id"])
+        self.assertEqual(0, segment["share"])
+        self.assertEqual(5, segment["pilots"])
+        self.assertEqual(
+            ("Typhoon", 2),
+            (segment["hulls"][0]["ship_name"], segment["hulls"][0]["count"]),
+        )
+        self.assertIsNotNone(segment["start"])
+
     def test_unknown_fleet(self):
         response = self.client.get(
             f"{BASE_URL}/999999/participants",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(404, response.status_code)
+
+
+class SensitiveHullsTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        disconnect_fleet_signals()
+        setup_fleet_reference_data()
+        _seed_hulls()
+
+    def test_capitals_covert_hulls_and_cyno_fits(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Armor", type="non_strategic", description=""
+        )
+        fitting = EveFitting.objects.create(
+            name="Devoter",
+            ship_id=DEVOTER[0],
+            description="",
+            eft_format=DEVOTER_EFT,
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=fitting, role="support"
+        )
+        fleet = make_test_fleet("Fleet", self.user)
+        fleet.doctrine = doctrine
+        fleet.save()
+
+        hulls = {h[0] for h in (TYPHOON, NAGLFAR, RAPIER, SIN, DEVOTER)}
+        self.assertEqual(
+            {NAGLFAR[0], RAPIER[0], SIN[0], DEVOTER[0]},
+            sensitive_hull_ids(fleet, hulls),
+        )
+
+
+class DoctrinePickTestCase(TestCase):
+    def test_needs_half_the_pilots_and_prefers_the_planned_doctrine(self):
+        doctrines = {
+            1: {"name": "Typhoons", "hulls": {TYPHOON[0]}},
+            2: {"name": "Armor", "hulls": {TYPHOON[0], GUARDIAN[0]}},
+        }
+        hulls = {1: TYPHOON, 2: TYPHOON, 3: EXEQUROR, 4: EXEQUROR}
+        # Tie on two Typhoons: the planned doctrine wins, else by name.
+        self.assertEqual(2, pick_doctrine(hulls, doctrines))
+        self.assertEqual(1, pick_doctrine(hulls, doctrines, 1))
+        hulls[5] = EXEQUROR
+        self.assertIsNone(pick_doctrine(hulls, doctrines))
+
+    def test_doctrine_hulls_in_one_query(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Armor", type="non_strategic", description=""
+        )
+        for ship_id in (DAMNATION[0], GUARDIAN[0]):
+            EveDoctrineFitting.objects.create(
+                doctrine=doctrine,
+                fitting=EveFitting.objects.create(
+                    name=f"Fit {ship_id}",
+                    ship_id=ship_id,
+                    description="",
+                    eft_format="",
+                ),
+                role="primary",
+            )
+        with self.assertNumQueries(1):
+            found = doctrine_hulls()
+        self.assertEqual(
+            {doctrine.id: {"name": "Armor", "hulls": {22474, 11987}}}, found
+        )
+
+
+class FleetEngagementsTestCase(TestCase):
+    """Rounds of the fight timeline narrow the tab; doctrine per round.
+
+    Round 1 (position 1) is a Typhoon fight; a skirmish sits at position 2;
+    rounds 2 and 3 (positions 3, 4) are fought in Maelstroms.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        disconnect_fleet_signals()
+        setup_fleet_reference_data()
+        _seed_hulls()
+        add_user_permission(self.user, "view_evefleet")
+        EveCharacter.objects.create(
+            character_id=OWN, character_name="Own Pilot", user=self.user
+        )
+        self.sfc = _strategic_fc()
+        armor = EveDoctrine.objects.create(
+            name="Armor", type="non_strategic", description=""
+        )
+        self.typhoons = EveDoctrine.objects.create(
+            name="Typhoons", type="non_strategic", description=""
+        )
+        self.maelstroms = EveDoctrine.objects.create(
+            name="Maelstroms", type="non_strategic", description=""
+        )
+        for doctrine, hull, eft in (
+            (armor, DEVOTER, DEVOTER_EFT),
+            (armor, GUARDIAN, GUARDIAN_EFT),
+            (self.typhoons, TYPHOON, "[Typhoon, Typhoon]\n"),
+            (self.maelstroms, MAELSTROM, "[Maelstrom, Maelstrom]\n"),
+        ):
+            EveDoctrineFitting.objects.create(
+                doctrine=doctrine,
+                fitting=EveFitting.objects.create(
+                    name=f"{doctrine.name} {hull[1]}",
+                    ship_id=hull[0],
+                    description="",
+                    eft_format=eft,
+                ),
+                role="primary",
+            )
+        self.fleet = make_test_fleet(
+            "Fleet", User.objects.create(username="fc")
+        )
+        self.fleet.doctrine = armor
+        self.fleet.save()
+        self.instance = EveFleetInstance.objects.create(
+            id=7101, eve_fleet=self.fleet
+        )
+        self.t0 = timezone.now() - timedelta(hours=3)
+        EveFleetInstance.objects.filter(pk=self.instance.pk).update(
+            start_time=self.t0, end_time=self.t0 + timedelta(minutes=80)
+        )
+
+        self._pilot(
+            OWN,
+            "Own Pilot",
+            0,
+            80,
+            [(1, TYPHOON), (15, CAPSULE), (35, MAELSTROM)],
+        )
+        self._pilot(3002, "Typhoon Two", 0, 80, [(2, TYPHOON)])
+        self._pilot(3003, "Late Maelstrom", 38, 80, [(38, MAELSTROM)])
+        self._pilot(3004, "Early Leaver", 0, 25, [(3, TYPHOON)])
+        self._pilot(3005, "Second Maelstrom", 36, 80, [(36, MAELSTROM)])
+        self._pilot(3006, "Dread", 0, 80, [(4, NAGLFAR)])
+        self._pilot(3007, "Recon", 0, 80, [(5, RAPIER)])
+        self._pilot(3008, "Cyno", 0, 80, [(6, DEVOTER)])
+
+        EveFleetFightTimeline.objects.create(
+            eve_fleet=self.fleet,
+            payload={
+                "rounds": [
+                    self._round("round", 1, 10, 20),
+                    self._round("skirmish", None, 30, 31),
+                    self._round("round", 2, 40, 50),
+                    self._round("round", 3, 60, 70),
+                ]
+            },
+        )
+
+    def _at(self, minutes):
+        return self.t0 + timedelta(minutes=minutes)
+
+    def _round(self, kind, number, start, end):
+        return {
+            "kind": kind,
+            "number": number,
+            "start": self._at(start).isoformat(),
+            "end": self._at(end).isoformat(),
+        }
+
+    def _pilot(self, character_id, name, joined, last_seen, ships):
+        final = ships[-1][1]
+        member = EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=self.instance,
+            character_id=character_id,
+            character_name=name,
+            role="squad_member",
+            role_name="Squad Member",
+            ship_type_id=final[0],
+            ship_name=final[1],
+            solar_system_id=30002537,
+            solar_system_name="Amamake",
+            squad_id=1,
+            wing_id=1,
+        )
+        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+            join_time=self._at(joined),
+            created_at=self._at(joined),
+            updated_at=self._at(last_seen),
+        )
+        for minutes, (ship_type_id, ship_name) in ships:
+            snapshot = EveFleetInstanceMemberShipSnapshot.objects.create(
+                member=member,
+                ship_type_id=ship_type_id,
+                ship_name=ship_name,
+                solar_system_id=30002537,
+                solar_system_name="Amamake",
+            )
+            EveFleetInstanceMemberShipSnapshot.objects.filter(
+                pk=snapshot.pk
+            ).update(created_at=self._at(minutes))
+
+    def _get(self, user=None, query=""):
+        token = make_token(user) if user else self.token
+        return self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/participants{query}",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+
+    def _body(self, user=None, query=""):
+        response = self._get(user, query)
+        self.assertEqual(200, response.status_code, response.content)
+        return response.json()
+
+    @staticmethod
+    def _flew(body):
+        return [(row["ship_name"], row["count"]) for row in body["flew"]]
+
+    def test_engagements_list_only_rounds(self):
+        body = self._body()
+
+        self.assertEqual(
+            [(1, 1), (3, 2), (4, 3)],
+            [(e["position"], e["number"]) for e in body["engagements"]],
+        )
+        self.assertIsNone(body["engagement"])
+
+    def test_engagement_counts_pilots_present_by_their_hull_then(self):
+        body = self._body(query="?engagement=1")
+
+        self.assertEqual(1, body["engagement"])
+        # The late Maelstroms were not there yet; Own Pilot counts by the
+        # Typhoon they lost in the round.
+        self.assertEqual(3, body["pilots"])
+        self.assertEqual([("Typhoon", 3)], self._flew(body))
+        self.assertEqual(
+            ["Early Leaver", "Own Pilot", "Typhoon Two"],
+            [p["character_name"] for p in body["flew"][0]["pilots"]],
+        )
+        self.assertEqual(1, body["changed_ship"])
+        self.assertEqual(1, body["ended_in_pod"])
+
+        body = self._body(query="?engagement=3")
+        # The early leaver is gone; Own Pilot is back in a Maelstrom.
+        self.assertEqual(4, body["pilots"])
+        self.assertEqual([("Maelstrom", 3), ("Typhoon", 1)], self._flew(body))
+        self.assertEqual(0, body["ended_in_pod"])
+
+    def test_skirmish_or_missing_engagement_is_not_found(self):
+        self.assertEqual(404, self._get(query="?engagement=2").status_code)
+        self.assertEqual(404, self._get(query="?engagement=9").status_code)
+
+    def test_opsec_hides_capital_recon_and_cyno_pilots(self):
+        body = self._body()
+
+        self.assertTrue(body["opsec_filtered"])
+        self.assertEqual(5, body["pilots"])
+        flown = {row["ship_name"] for row in body["flew"]}
+        self.assertFalse(flown & {"Naglfar", "Rapier", "Devoter"})
+        self.assertNotIn("cyno", [r["role"] for r in body["roles_flown"]])
+        self.assertEqual(3, self._body(query="?engagement=1")["pilots"])
+
+    def test_strategic_fc_sees_everyone(self):
+        body = self._body(self.sfc)
+
+        self.assertFalse(body["opsec_filtered"])
+        self.assertEqual(8, body["pilots"])
+        flown = {row["ship_name"] for row in body["flew"]}
+        self.assertTrue({"Naglfar", "Rapier", "Devoter"} <= flown)
+        cyno = next(r for r in body["roles_flown"] if r["role"] == "cyno")
+        self.assertEqual(
+            ["Cyno"], [p["character_name"] for p in cyno["pilots"]]
+        )
+        self.assertEqual(6, self._body(self.sfc, "?engagement=1")["pilots"])
+
+    def test_doctrine_flown_per_round_merging_neighbours(self):
+        segments = self._body()["doctrine_flown"]
+
+        self.assertEqual(
+            [
+                ([1], "Typhoons", 100, 3),
+                ([3, 4], "Maelstroms", 75, 4),
+            ],
+            [
+                (
+                    s["positions"],
+                    s["doctrine_name"],
+                    s["share"],
+                    s["pilots"],
+                )
+                for s in segments
+            ],
+        )
+        self.assertEqual(self.typhoons.id, segments[0]["doctrine_id"])
+        for key, minutes in (("start", 40), ("end", 70)):
+            self.assertAlmostEqual(
+                self._at(minutes),
+                parse_datetime(segments[1][key]),
+                delta=timedelta(seconds=1),
+            )
+        self.assertEqual(
+            [
+                {"ship_type_id": 24690, "ship_name": "Maelstrom", "count": 3},
+                {"ship_type_id": 644, "ship_name": "Typhoon", "count": 1},
+            ],
+            segments[1]["hulls"],
+        )
+
+    def test_doctrine_flown_for_a_strategic_fc_counts_hidden_hulls(self):
+        first = self._body(self.sfc)["doctrine_flown"][0]
+
+        # Three Typhoons of six pilots is still half.
+        self.assertEqual(
+            ("Typhoons", 50, 6),
+            (first["doctrine_name"], first["share"], first["pilots"]),
+        )
+
+    def test_doctrine_flown_queries_do_not_grow_with_rounds(self):
+        with self.assertNumQueries(self._queries()):
+            self._get()
+        timeline = EveFleetFightTimeline.objects.get(eve_fleet=self.fleet)
+        timeline.payload["rounds"] += [
+            self._round("round", n, 70 + n, 71 + n) for n in range(4, 12)
+        ]
+        timeline.save()
+        with self.assertNumQueries(self._queries()):
+            self._get()
+
+    def _queries(self):
+        with CaptureQueriesContext(connection) as ctx:
+            self._get()
+        return len(ctx.captured_queries)

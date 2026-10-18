@@ -24,14 +24,23 @@ if (isNaN(fleet_id) || isNaN(position) || position < 1)
 
 import type { FleetUI } from '@dtypes/layout_components'
 import { fetch_fleet_access } from '@helpers/fetching/fleets'
-import { get_fleet_fights, type FleetFights } from '@helpers/api.minmatar.org/fleets'
+import { get_fleet_fights, get_fleet_battle_report, type FleetFights, type FleetBattleReport as FleetBattleReportData } from '@helpers/api.minmatar.org/fleets'
+import { move_to_side } from '@helpers/fleet_fights'
 
 let fleet:FleetUI | null = null
 let fights:FleetFights | null = null
+let report:FleetBattleReportData | null = null
 let fetch_error:Error | false = false
 
+// Sides the viewer moved groups to; without JavaScript the move form posts here.
+const sides = move_to_side(
+    Astro.url.searchParams.get('sides') ?? '',
+    parseInt(Astro.url.searchParams.get('group') ?? ''),
+    parseInt(Astro.url.searchParams.get('team') ?? ''),
+)
+
 try {
-    const [access, fleet_fights] = await Promise.all([
+    const [access, fleet_fights, battle_report] = await Promise.all([
         fetch_fleet_access(auth_token as string, fleet_id),
         // A members-only tribe fleet 403s here for outsiders; the fleet
         // page below shows them the group's gate instead.
@@ -39,6 +48,7 @@ try {
             if (error?.cause === 403) return null
             throw error
         }),
+        get_fleet_battle_report(auth_token as string, fleet_id, position, sides),
     ])
     // Members-only tribe fleet: the fleet page shows who to ask, and nothing
     // about the fleet or its fights.
@@ -46,6 +56,7 @@ try {
         return Astro.redirect(translatePath(`/fleets/history/${fleet_id}`))
     fleet = access.fleet
     fights = fleet_fights
+    report = battle_report
 } catch (error) {
     if (error?.cause === 403)
         return HTTP_403_Forbidden()
@@ -76,7 +87,7 @@ import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FleetRoundReport from '@components/blocks/FleetRoundReport.astro'
+import FleetBattleReport from '@components/blocks/FleetBattleReport.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Button from '@components/blocks/Button.astro'
 ---
@@ -97,11 +108,11 @@ import Button from '@components/blocks/Button.astro'
         <Wrapper padding_block='0' padding_inline='0' max_width='var(--max-col-width)'>
             {fetch_error ?
                 <EmptyState title={fetch_error.message} prominent={true} />
-                : round && fights ?
-                    <FleetRoundReport fights={fights} round={round} position={position} fleet_id={fleet_id} />
+                : round && fights && report ?
+                    <FleetBattleReport report={report} fights={fights} position={position} fleet_id={fleet_id} />
                     :
                     <EmptyState title={t('fleets.fights.round_missing')} prominent={true}>
-                        <Button slot="action" href={translatePath(`${fleet_path}#fights`)}>{t('fleets.fights.back')}</Button>
+                        <Button slot="action" href={translatePath(`${fleet_path}#aar`)}>{t('fleets.fights.back')}</Button>
                     </EmptyState>
             }
         </Wrapper>

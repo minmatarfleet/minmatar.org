@@ -63,7 +63,6 @@ const {
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
-const FLEET_KILLS_PARTIAL_URL = `${translatePath('/partials/fleet_kills_component')}?fleet_id=${fleet.id}`
 
 
 
@@ -79,17 +78,17 @@ import FleetMyPilots from '@components/blocks/FleetMyPilots.astro';
 import SectionTabs from '@components/blocks/SectionTabs.astro';
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
 import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro';
-import Markdown from '@components/blocks/Markdown.astro';
-import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
-import FleetKills from '@components/blocks/FleetKills.astro';
 import FleetFights from '@components/blocks/FleetFights.astro';
 import FleetOverview from '@components/blocks/FleetOverview.astro';
 import FleetSignups from '@components/blocks/FleetSignups.astro';
 import FleetShipsSetup from '@components/blocks/FleetShipsSetup.astro';
 import FleetCommand from '@components/blocks/FleetCommand.astro';
 import FleetParticipantsDone from '@components/blocks/FleetParticipantsDone.astro';
+import FleetAfterAction from '@components/blocks/FleetAfterAction.astro';
+import FleetKillFeed from '@components/blocks/FleetKillFeed.astro';
+import FleetDoctrineFlown from '@components/blocks/FleetDoctrineFlown.astro';
 
 // A finished fleet with no kills or losses has no Fights tab.
 const show_fights = Boolean(fights && (fights.status === 'building' || fights.live || fights.rounds.length > 0))
@@ -156,16 +155,27 @@ const participant_tabs = [
     }] : []),
 ]
 
+// A finished fleet: Overview, what it flew, who flew, every killmail, and the
+// after action report last.
+const show_kills = Boolean(fleet_kills?.tracked && fleet_kills.killmails.length > 0)
+const show_history_ships = has_ships || Boolean(fleet.doctrine) || (participants?.doctrine_flown?.length ?? 0) > 0
 const history_tabs = [
     { id: 'overview', label: t('fleets.tabs.overview') },
-    ...(show_fights ? [{ id: 'fights', label: t('fleets.tabs.fights'), ...fights_meta }] : []),
+    ...(show_history_ships ? [{
+        id: 'ships',
+        label: t('fleets.tabs.ships'),
+        ...(has_ships ? { meta: t('fleets.tabs.fits_meta').replace('{count}', composition.length.toString()) } : {}),
+    }] : []),
     ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.flew_meta').replace('{count}', participants.pilots.toString()) }] : []),
+    ...(show_kills && fleet_kills ? [{ id: 'kills', label: t('fleets.tabs.kills'), meta: t('fleets.tabs.kills_meta').replace('{count}', fleet_kills.killmails.length.toString()) }] : []),
+    { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
 ]
 
 // Old links (Discord, the hub) still open the right tab.
 const tab_aliases = {
     'participants-': 'participants',
     'your-pilots': 'ships',
+    'fights': 'aar',
 }
 
 import { query_string } from '@helpers/string'
@@ -203,68 +213,91 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
             hash_aliases={tab_aliases}
         >
             <SectionTabPanel id="overview" id_prefix="fleet" is_default={true}>
-                <BlockList gap="var(--space-xl)">
-                    {fleet.description &&
-                        <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
-                            <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
-                            <Markdown markdown={fleet.description as string} />
-                        </section>
-                    }
-
-                    <Wrapper
-                        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                        padding_block='0'
-                        padding_inline='0'
-                        max_width='var(--max-col-width)'
-                    >
-                        <AARLinkButton
-                            aarlink={fleet.aar_link ? fleet.aar_link : undefined}
-                            fleet_id={fleet.id}
-                            can_edit={can_remove_fleet}
-                        />
-                    </Wrapper>
-
-                    {fleet.tracking &&
-                        <Wrapper
-                            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                            padding_block='0'
-                            padding_inline='0'
-                            max_width='var(--max-col-width)'
-                        >
-                            {fleet_kills ?
-                                <FleetKills fleet_kills={fleet_kills} fleet_id={fleet.id} srp_losses={srp_losses} summary_only={show_fights} />
-                                :
-                                <div
-                                    id="fleet-kills"
-                                    hx-get={`${FLEET_KILLS_PARTIAL_URL}${show_fights ? '&summary_only=1' : ''}`}
-                                    hx-trigger="load"
-                                    hx-swap="outerHTML transition:true"
-                                >
-                                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
-                                </div>
-                            }
-                        </Wrapper>
-                    }
-                </BlockList>
+                <FleetOverview
+                    fleet={fleet}
+                    composition={composition}
+                    pilots={[]}
+                    ship_volunteers={[]}
+                    roles={null}
+                    can_pick={false}
+                    history={true}
+                    fleet_kills={fleet_kills}
+                    srp_losses={srp_losses}
+                    fights={fights}
+                    flown_doctrines={[...new Set((participants?.doctrine_flown ?? []).flatMap(segment => segment.doctrine_name ? [segment.doctrine_name] : []))]}
+                />
             </SectionTabPanel>
 
-            {show_fights && fights &&
-                <SectionTabPanel id="fights" id_prefix="fleet">
+            {show_history_ships &&
+                <SectionTabPanel id="ships" id_prefix="fleet">
                     <Wrapper
                         padding_block='0'
                         padding_inline='0'
                         max_width='var(--max-col-width)'
                     >
-                        <FleetFights fights={fights} fleet_id={fleet.id} />
+                        <BlockList gap="var(--space-xl)">
+                            {participants && participants.doctrine_flown.length > 0 &&
+                                <FleetDoctrineFlown
+                                    segments={participants.doctrine_flown}
+                                    engagements={participants.engagements}
+                                    planned={fleet.doctrine ?? null}
+                                    start={fleet.tracking?.start_time ?? null}
+                                    end={fleet.tracking?.end_time ?? null}
+                                />
+                            }
+                            {has_ships &&
+                                <FleetShips
+                                    fleet_id={fleet.id}
+                                    composition={composition}
+                                    volunteers={[]}
+                                    refits={[]}
+                                    pilots={[]}
+                                    readonly={true}
+                                    can_manage={false}
+                                    doctrine_name={fleet?.doctrine?.name ?? null}
+                                />
+                            }
+                        </BlockList>
                     </Wrapper>
                 </SectionTabPanel>
             }
 
             {participants &&
                 <SectionTabPanel id="participants" id_prefix="fleet">
-                    <FleetParticipantsDone participants={participants} />
+                    <FleetParticipantsDone participants={participants} fleet_id={fleet.id} />
                 </SectionTabPanel>
             }
+
+            {show_kills && fleet_kills &&
+                <SectionTabPanel id="kills" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <FleetKillFeed fleet_kills={fleet_kills} fleet_id={fleet.id} rounds={fights?.rounds ?? []} />
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+
+            <SectionTabPanel id="aar" id_prefix="fleet">
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='0'
+                    max_width='var(--max-col-width)'
+                >
+                    <BlockList gap="var(--space-xl)">
+                        <FleetAfterAction
+                            fleet={fleet}
+                            fights={fights}
+                            can_edit={can_remove_fleet}
+                        />
+                        {show_fights && fights &&
+                            <FleetFights fights={fights} fleet_id={fleet.id} />
+                        }
+                    </BlockList>
+                </Wrapper>
+            </SectionTabPanel>
         </SectionTabs>
     }
 
@@ -444,13 +477,6 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
 
 </BlockList>
 <style lang="scss">
-    .fleet-briefing {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        max-width: var(--max-text-width, 70ch);
-    }
-
     /* The Ships tab's own picker carries the pick-ships button; one is enough. */
     :global(body:has(#fleet-my-pilots) .fleet-ships-pick) {
         display: none;

@@ -10,6 +10,7 @@ from tribes.schemas import RestrictedResponse, restricted
 from fleets.endpoints.helpers import _fleet_authorized, fleet_host_fields
 
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
+from fleets.helpers.roam_report import aars_forum_url
 from fleets.models import EveFleet, EveFleetInstance
 
 PATH = "/{fleet_id}"
@@ -64,6 +65,7 @@ def get_fleet(request, fleet_id: int):
         "campaign_id": fleet.campaign_id,
         "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         "roam_report_url": fleet.roam_report_url,
+        "aar_forum_url": aars_forum_url(),
         **fleet_host_fields(fleet),
     }
     if fleet.doctrine:

@@ -4,14 +4,16 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
-import type { FleetCompositionEntry, FleetRoleCoverage, FleetShipVolunteer } from '@helpers/api.minmatar.org/fleets'
+import type { FleetCompositionEntry, FleetRoleCoverage, FleetShipVolunteer, FleetKills, FleetKillmail, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { role_tally } from '@helpers/fleet_roles'
 import { get_item_icon } from '@helpers/eve_image_server'
+import { format_isk } from '@helpers/numbers'
 
 /**
- * The Overview tab before and during a fleet: what it is (type, doctrine,
- * campaign), the briefing beside where to form up, and one card per other
- * tab saying what is still open there.
+ * The Overview tab: what the fleet is (type, doctrine, campaign) and the
+ * briefing beside where to form up. Before and during the fleet, one card
+ * per other tab says what is still open there; once it is over, the outcome
+ * takes their place.
  */
 interface Props {
     fleet:              FleetUI;
@@ -21,6 +23,14 @@ interface Props {
     roles:              FleetRoleCoverage | null;
     /** Pilots may pick ships (the fleet has ships and is not cancelled). */
     can_pick:           boolean;
+    /** The fleet is over: show its outcome instead of what is still open. */
+    history?:           boolean;
+    /** A completed fleet's killmails; null loads the outcome through the partial. */
+    fleet_kills?:       FleetKills | null;
+    srp_losses?:        FleetSrpLoss[] | null;
+    fights?:            FleetFights | null;
+    /** Doctrines a finished fleet actually flew, in order. */
+    flown_doctrines?:   string[];
 }
 
 const {
@@ -30,6 +40,11 @@ const {
     ship_volunteers,
     roles,
     can_pick,
+    history = false,
+    fleet_kills = null,
+    srp_losses = null,
+    fights = null,
+    flown_doctrines = [],
 } = Astro.props
 
 const type_label =
@@ -47,7 +62,27 @@ const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.
 const flying_text = my_flying === 1 ? t('fleets.before.flying_one') : t('fleets.before.flying').replace('{count}', my_flying.toString())
 const signed_text = signed_up === 0 ? t('fleets.before.nobody_yet') : signed_up === 1 ? t('fleets.signups.summary_one') : t('fleets.signups.summary').replace('{count}', signed_up.toString())
 
+// The outcome of a finished fleet. Pods count towards ISK but not ships.
+const outcome = history && fleet_kills?.tracked ? (() => {
+    const total = fleet_kills.isk_destroyed + fleet_kills.isk_lost
+    const biggest = fleet_kills.killmails
+        .filter(killmail => killmail.outcome === 'kill')
+        .reduce<FleetKillmail | null>((best, killmail) => !best || killmail.isk_value > best.isk_value ? killmail : best, null)
+    return {
+        efficiency: total > 0 ? Math.round(100 * fleet_kills.isk_destroyed / total) : null,
+        biggest,
+    }
+})() : null
+const engagements = fights?.round_count ?? 0
+const systems = [...new Set((fights?.rounds ?? []).flatMap(round => round.systems.map(system => system.name)))]
+const outcome_meta = [
+    engagements === 1 ? t('fleets.fights.badge_round') : engagements > 1 ? t('fleets.fights.badge_rounds').replace('{count}', engagements.toString()) : '',
+    systems.join(', '),
+].filter(Boolean).join(' · ')
+const FLEET_KILLS_PARTIAL_URL = `${translatePath('/partials/fleet_kills_component')}?fleet_id=${fleet.id}&summary_only=1`
+
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
+import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
 import FleetFormUp from '@components/blocks/FleetFormUp.astro'
 import Markdown from '@components/blocks/Markdown.astro'
 import Button from '@components/blocks/Button.astro'
@@ -82,7 +117,10 @@ import Button from '@components/blocks/Button.astro'
                     :
                     <span>
                         <b>{t('fleets.overview.not_set')}</b>
-                        {composition.length > 0 && <a href="#ships"><small>{t('fleets.overview.fits_link').replace('{count}', composition.length.toString())}</small></a>}
+                        {flown_doctrines.length > 0 ?
+                            <a href="#ships"><small>{t('fleets.overview.flew').replace('{doctrines}', flown_doctrines.join(', '))}</small></a>
+                            : composition.length > 0 && <a href="#ships"><small>{t('fleets.overview.fits_link').replace('{count}', composition.length.toString())}</small></a>
+                        }
                     </span>
                 }
             </dd>
@@ -108,10 +146,84 @@ import Button from '@components/blocks/Button.astro'
             }
         </section>
 
-        <FleetFormUp fleet={fleet} />
+        <FleetFormUp fleet={fleet} show_characters={!history} />
     </div>
 
-    {fleet.status !== 'cancelled' &&
+    {history && fleet.tracking &&
+        <section class="[ fleet-overview__before ]" aria-labelledby="fleet-outcome-title">
+            <header class="[ fleet-overview__section-head ]">
+                <h2 id="fleet-outcome-title">{t('fleets.outcome.title')}</h2>
+                {outcome_meta && <small>{outcome_meta}</small>}
+            </header>
+
+            {!fleet_kills ?
+                <div
+                    id="fleet-kills"
+                    hx-get={FLEET_KILLS_PARTIAL_URL}
+                    hx-trigger="load"
+                    hx-swap="outerHTML transition:true"
+                >
+                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
+                </div>
+            : !outcome ?
+                <small>{t('fleets.kills.untracked')}</small>
+            :
+                <>
+                    <div class="[ fleet-overview__cards fleet-overview__cards--outcome ]">
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.outcome.destroyed')}</span>
+                            <b class="[ fleet-overview__big fleet-overview__kill ]">{format_isk(fleet_kills.isk_destroyed)}</b>
+                            <small>{t('fleets.outcome.ships').replace('{count}', fleet_kills.ships_destroyed.toString())}</small>
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.outcome.lost')}</span>
+                            <b class="[ fleet-overview__big fleet-overview__loss ]">{format_isk(fleet_kills.isk_lost)}</b>
+                            <small>{t('fleets.outcome.ships').replace('{count}', fleet_kills.ships_lost.toString())}</small>
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.history.isk_efficiency')}</span>
+                            <b class="[ fleet-overview__big ]">{outcome.efficiency !== null ? `${outcome.efficiency}%` : '—'}</b>
+                            {outcome.efficiency !== null &&
+                                <span
+                                    class="[ fleet-overview__efficiency ]"
+                                    role="img"
+                                    aria-label={t('fleets.fights.efficiency_label').replace('{pct}', outcome.efficiency.toString())}
+                                ><span style={`width: ${outcome.efficiency}%`} /></span>
+                            }
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.kills.biggest')}</span>
+                            {outcome.biggest ?
+                                <span class="[ fleet-overview__biggest ]">
+                                    {outcome.biggest.victim_ship_type_id &&
+                                        <img src={get_item_icon(outcome.biggest.victim_ship_type_id, 64)} alt="" width="44" height="44" loading="lazy" />
+                                    }
+                                    <span>
+                                        <b>{outcome.biggest.victim_ship_name || t('fleets.kills.unknown_ship')}</b>
+                                        <small>{format_isk(outcome.biggest.isk_value)} · {outcome.biggest.solar_system_name}</small>
+                                    </span>
+                                </span>
+                                :
+                                <b>—</b>
+                            }
+                        </div>
+                    </div>
+
+                    {srp_losses && srp_losses.length > 0 &&
+                        <FleetSrpLosses srp_losses={srp_losses} fleet_id={fleet.id} />
+                    }
+
+                    <p class="[ fleet-overview__next ]">
+                        <a href="#aar" class="[ fleet-overview__link ]">{t('fleets.outcome.read_aar')} →</a>
+                        {fleet_kills.killmails.length > 0 && <a href="#kills" class="[ fleet-overview__link ]">{t('fleets.outcome.every_kill')} →</a>}
+                        {fleet.aar_link && <a href={fleet.aar_link} target="_blank" rel="noopener noreferrer" class="[ fleet-overview__link ]">{t('fleets.outcome.fc_aar')} ↗</a>}
+                    </p>
+                </>
+            }
+        </section>
+    }
+
+    {!history && fleet.status !== 'cancelled' &&
         <section class="[ fleet-overview__before ]" aria-labelledby="fleet-before-title">
             <h2 id="fleet-before-title">{t('fleets.before.title')}</h2>
             <div class="[ fleet-overview__cards ]">
@@ -254,6 +366,65 @@ import Button from '@components/blocks/Button.astro'
             font-size: var(--step-0);
             letter-spacing: 0.08em;
         }
+    }
+
+    .fleet-overview__section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .fleet-overview__cards--outcome {
+        grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    }
+
+    .fleet-overview__card .fleet-overview__big {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        font-weight: 400;
+        line-height: 1.05;
+    }
+
+    .fleet-overview__card .fleet-overview__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fleet-overview__card .fleet-overview__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fleet-overview__efficiency {
+        display: flex;
+        height: var(--space-2xs);
+        background-color: var(--fleet-red);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fleet-overview__biggest {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        b {
+            font-size: var(--step-0);
+        }
+    }
+
+    .fleet-overview__next {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-l);
+        margin: 0;
     }
 
     .fleet-overview__label {

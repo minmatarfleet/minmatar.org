@@ -5,7 +5,7 @@ const { t, translatePath } = i18n(Astro.url)
 import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { earlier_rounds, round_bars, round_groups, seconds_since, eve_clock } from '@helpers/fleet_fights'
+import { earlier_rounds, round_bars, round_opponents, seconds_since, eve_clock } from '@helpers/fleet_fights'
 
 /**
  * The Fights tab: a fleet's killmails as rounds. While the fleet is out it
@@ -51,19 +51,21 @@ const latest_name = !latest ? '' : latest.kind === 'round' ?
     t('fleets.fights.round').replace('{number}', (latest.number ?? 0).toString()) :
     t('fleets.fights.skirmish')
 const latest_bars = latest ? round_bars(latest, latest.fighting ? now.toISOString() : latest.end) : []
-const latest_groups = latest ? latest.hostiles.filter(h => h.pilots > 0).slice(0, 4) : []
+const latest_groups = latest ? round_opponents(latest) : []
 const newest = latest ? latest.killmails.filter(mail => !mail.pod).reverse().slice(0, 6) : []
 
 const feed_behind_minutes = fights.feed_behind_since ? Math.round(seconds_since(fights.feed_behind_since, now) / 60) : 0
 
 const totals = fights.totals
-const best = rounds.filter(r => r.kind === 'round' && r.efficiency !== null)
-    .sort((a, b) => (b.efficiency ?? 0) - (a.efficiency ?? 0))[0]
-const all_systems = [...new Set(rounds.flatMap(r => r.systems.map(s => s.name)))]
+// Engagements in order; skirmishes fold into one group after them.
+const listed_engagements = listed.filter(round => round.kind === 'round')
+const listed_skirmishes = listed.filter(round => round.kind !== 'round')
+const skirmish_isk = listed_skirmishes.reduce((sum, round) => sum + round.isk_lost + round.isk_destroyed, 0)
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetFightRound from '@components/blocks/FleetFightRound.astro'
 import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
+import GroupLogos from '@components/blocks/GroupLogos.astro'
 ---
 
 {building ?
@@ -91,35 +93,6 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
                 <b>{t('fleets.fights.feed_behind').replace('{minutes}', feed_behind_minutes.toString())}</b>
                 {t('fleets.fights.feed_behind_note')}
             </p>
-        }
-
-        {!live && totals && rounds.length > 0 &&
-            <dl class="[ fleet-fights__totals ]">
-                <div>
-                    <dt>{t('fleets.fights.total_rounds')}</dt>
-                    <dd><b>{fights.round_count}</b>{fights.skirmish_count > 0 && <span>{t('fleets.fights.plus_skirmishes').replace('{count}', fights.skirmish_count.toString())}</span>}</dd>
-                </div>
-                <div>
-                    <dt>{t('fleets.fights.kills')}</dt>
-                    <dd><b class="[ fleet-fights__kill ]">{totals.ships_destroyed}</b><span>{format_isk(totals.isk_destroyed)}</span></dd>
-                </div>
-                <div>
-                    <dt>{t('fleets.fights.losses')}</dt>
-                    <dd><b class="[ fleet-fights__loss ]">{totals.ships_lost}</b><span>{format_isk(totals.isk_lost)}</span></dd>
-                </div>
-                {totals.efficiency !== null &&
-                    <div>
-                        <dt>{t('fleets.fights.isk_efficiency')}</dt>
-                        <dd><b>{totals.efficiency}%</b>{best && <span>{t('fleets.fights.best_round').replace('{number}', (best.number ?? 0).toString())}</span>}</dd>
-                    </div>
-                }
-                {all_systems.length > 0 &&
-                    <div>
-                        <dt>{t('fleets.fights.fought_in')}</dt>
-                        <dd><b>{all_systems[0]}</b>{all_systems.length > 1 && <span>{t('fleets.fights.plus_systems').replace('{count}', (all_systems.length - 1).toString())}</span>}</dd>
-                    </div>
-                }
-            </dl>
         }
 
         {latest &&
@@ -176,7 +149,7 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
                         {latest_groups.length > 0 &&
                             <div>
                                 <small class="[ fleet-fights__label ]">{t('fleets.fights.hostile_pilots')}</small>
-                                <p>{latest_groups.map(group => `${group.name} ${group.pilots}`).join(' · ')}</p>
+                                <p><GroupLogos groups={latest_groups} /></p>
                             </div>
                         }
                     </div>
@@ -196,13 +169,9 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
                             )}
                         </ul>
                         <div class="[ fleet-fights__report-links ]">
-                            <small class="[ fleet-fights__label ]">{t('fleets.fights.report_so_far')}</small>
                             <span>
-                                <a href={round_href(rounds.length)}>{t('fleets.fights.battle_report')}</a>
-                                <a href={latest.links.zkillboard} target="_blank" rel="noopener noreferrer">{t('fleets.fights.zkillboard')} ↗</a>
-                                <a href={latest.links.brtools} target="_blank" rel="noopener noreferrer">{t('fleets.fights.brtools')} ↗</a>
+                                <a href={round_href(rounds.length)}>{t('fleets.fights.report_so_far')}</a>
                             </span>
-                            <small>{t('fleets.fights.links_note')}</small>
                         </div>
                     </div>
                 </article>
@@ -242,19 +211,25 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
                         }
                     </header>
                     <div class="[ fleet-fights__list ]">
-                        {listed.map(round =>
+                        {listed_engagements.map(round =>
                             <FleetFightRound round={round} href={round_href(rounds.indexOf(round) + 1)} />
                         )}
                     </div>
-                    <small>{t('fleets.fights.rules')}{fights.status === 'settling' && ` ${t('fleets.fights.settling')}`}</small>
+                    {listed_skirmishes.length > 0 &&
+                        <details class="[ fleet-fights__skirmishes ]">
+                            <summary>
+                                <span class="[ fleet-fights__caret ]" aria-hidden="true" />
+                                <b>{listed_skirmishes.length === 1 ? t('fleets.fights.skirmishes_one') : t('fleets.fights.skirmishes').replace('{count}', listed_skirmishes.length.toString())}</b>
+                                {skirmish_isk > 0 && <span>{format_isk(skirmish_isk)}</span>}
+                            </summary>
+                            <div class="[ fleet-fights__list ]">
+                                {listed_skirmishes.map(round =>
+                                    <FleetFightRound round={round} href={round_href(rounds.indexOf(round) + 1)} />
+                                )}
+                            </div>
+                        </details>
+                    }
                 </section>
-        }
-
-        {!live && rounds.length > 0 &&
-            <p class="[ fleet-fights__whole ]">
-                <span class="[ fleet-fights__label ]">{t('fleets.fights.whole_fleet')}</span>
-                <a href="#overview">{t('fleets.fights.every_mail')}</a>
-            </p>
         }
     </div>
 }
@@ -317,49 +292,6 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
 
         b {
             color: var(--highlight);
-        }
-    }
-
-    .fleet-fights__totals {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-        gap: 1px;
-        margin: 0;
-        background-color: var(--border-color);
-        border: 1px solid var(--border-color);
-
-        > div {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-            padding: var(--space-s) var(--space-m);
-            background-color: var(--component-background);
-        }
-
-        dt {
-            font-size: var(--step--2);
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        dd {
-            display: flex;
-            align-items: baseline;
-            gap: var(--space-2xs);
-            margin: 0;
-
-            b {
-                font-family: var(--heading-font);
-                font-size: var(--step-3);
-                font-weight: 400;
-                line-height: 1.1;
-            }
-
-            b:not([class]) {
-                color: var(--highlight);
-            }
         }
     }
 
@@ -602,14 +534,54 @@ import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
         gap: var(--space-3xs);
     }
 
-    .fleet-fights__whole {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-s);
-        margin: 0;
-        padding-top: var(--space-s);
-        border-top: 1px solid var(--hairline-medium);
+    .fleet-fights__skirmishes {
+        > summary {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-3xs) var(--space-s);
+            padding: var(--space-2xs) var(--space-m);
+            background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
+            cursor: pointer;
+
+            b {
+                font-family: var(--heading-font);
+                font-weight: 400;
+                color: var(--highlight);
+            }
+
+            span {
+                font-size: var(--step--1);
+                font-variant-numeric: tabular-nums;
+            }
+
+            &:hover {
+                background-color: var(--component-background);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+
+        > .fleet-fights__list {
+            margin-top: var(--space-3xs);
+        }
+
+        &[open] .fleet-fights__caret {
+            transform: rotate(90deg);
+        }
+    }
+
+    .fleet-fights__caret {
+        align-self: center;
+        width: 0;
+        height: 0;
+        border-block: 0.35em solid transparent;
+        border-inline-start: 0.5em solid currentColor;
+        transition: transform var(--fast-transition);
     }
 
     @media (max-width: 48rem) {

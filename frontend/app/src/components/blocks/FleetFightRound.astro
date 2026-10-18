@@ -5,12 +5,12 @@ const { t } = i18n(Astro.url)
 import type { FleetFightRound } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { round_groups, eve_clock } from '@helpers/fleet_fights'
+import { eve_clock, round_opponents } from '@helpers/fleet_fights'
 
 /**
- * One round on the Fights tab: who it was against, when and where, the
- * score, the hulls on each side and its battle report links. A skirmish
- * (under four ships) is a single line instead.
+ * One engagement on the After Action Report tab: who it was against (their
+ * logos), when and where, the score, the hulls on each side and a link to
+ * its battle report. A skirmish (under four ships) is a single line instead.
  */
 interface Props {
     round:              FleetFightRound;
@@ -29,8 +29,7 @@ delete attributes.class
 
 const HULLS_SHOWN = 2
 const POD_TYPE_IDS = [670, 33328]
-const groups = round_groups(round)
-const groups_text = groups.length ? groups.join(', ') : t('fleets.fights.unknown_groups')
+const opponents = round_opponents(round)
 const name = round.kind === 'round' ?
     t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
     t('fleets.fights.skirmish')
@@ -45,12 +44,11 @@ const skirmish_text = (() => {
     const hulls = [...round.hulls_killed, ...round.hulls_lost]
         .filter(hull => hull.name && !POD_TYPE_IDS.includes(hull.type_id ?? 0))
         .map(hull => hull.name)
-    const what = round.ships_destroyed === 0 ?
+    const text = round.ships_destroyed === 0 ?
         (round.ships_lost === 1 ? t('fleets.fights.skirmish_loss') : t('fleets.fights.skirmish_losses').replace('{count}', round.ships_lost.toString())) :
         round.ships_lost === 0 ?
             t('fleets.fights.skirmish_kills').replace('{count}', round.ships_destroyed.toString()) :
             t('fleets.fights.skirmish_mixed').replace('{kills}', round.ships_destroyed.toString()).replace('{losses}', round.ships_lost.toString())
-    const text = what.replace('{groups}', groups_text)
     return hulls.length ? `${text}: ${hulls.slice(0, 4).join(', ')}` : text
 })()
 
@@ -64,14 +62,20 @@ const hull_rows = [
     { key: 'kill', label: t('fleets.fights.killed'), hulls: round.hulls_killed.filter(hull => hull.type_id) },
     { key: 'loss', label: t('fleets.fights.lost_label'), hulls: round.hulls_lost.filter(hull => hull.type_id) },
 ].filter(row => row.hulls.length > 0)
+import GroupLogos from '@components/blocks/GroupLogos.astro'
 ---
 
 {round.kind === 'round' ?
     <article class:list={['[ fight-round ]', Astro.props.class]} {...attributes}>
         <header class="[ fight-round__who ]">
             <h3>{name}</h3>
-            <span class="[ fight-round__vs ]">{t('fleets.fights.vs').replace('{groups}', groups_text)}</span>
             <small>{span} · {systems}</small>
+            {opponents.length > 0 &&
+                <span class="[ fight-round__vs ]">
+                    <small>{t('fleets.fights.vs_short')}</small>
+                    <GroupLogos groups={opponents} max={5} size={24} />
+                </span>
+            }
         </header>
 
         <div class="[ fight-round__score ]">
@@ -107,20 +111,13 @@ const hull_rows = [
             )}
         </dl>
 
-        <div class="[ fight-round__links ]">
-            <a class="[ fight-round__report ]" href={href}>{t('fleets.fights.battle_report')}</a>
-            <small>
-                <a href={round.links.zkillboard} target="_blank" rel="noopener noreferrer">{t('fleets.fights.zkillboard')} ↗</a>
-                · <a href={round.links.brtools} target="_blank" rel="noopener noreferrer">{t('fleets.fights.brtools')} ↗</a>
-                {round.links.evekill && <>· <a href={round.links.evekill} target="_blank" rel="noopener noreferrer">{t('fleets.fights.evekill')} ↗</a></>}
-            </small>
-        </div>
+        <a class="[ fight-round__report ]" href={href}>{t('fleets.fights.battle_report')} →</a>
     </article>
     :
     <a class:list={['[ fight-skirmish ]', Astro.props.class]} href={href} {...attributes}>
-        <b>{name}</b>
         <span>{round.start === round.end ? eve_clock(round.start) : `${eve_clock(round.start)}–${eve_clock(round.end)}`}</span>
         <span class="[ fight-skirmish__what ]">{skirmish_text}</span>
+        {opponents.length > 0 && <GroupLogos groups={opponents} max={4} size={22} />}
         <span class="[ fight-skirmish__isk ]">{round.isk_lost ? t('fleets.fights.lost').replace('{isk}', format_isk(round.isk_lost)) : format_isk(round.isk_destroyed)}</span>
     </a>
 }
@@ -153,7 +150,10 @@ const hull_rows = [
     }
 
     .fight-round__vs {
-        color: var(--highlight);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-top: var(--space-2xs);
     }
 
     .fight-round__score {
@@ -232,48 +232,39 @@ const hull_rows = [
         color: color-mix(in srgb, var(--fleet-red) 70%, white);
     }
 
-    .fight-round__links {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-2xs);
-    }
-
     .fight-round__report {
+        justify-self: end;
         display: inline-flex;
         align-items: center;
         min-height: 2.75rem;
         padding: 0 var(--space-s);
-        background-color: var(--fleet-red);
-        color: var(--highlight);
-        font-family: var(--button-font);
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
         font-weight: 700;
         text-decoration: none;
-        transition: filter var(--fast-transition);
+        white-space: nowrap;
+        transition: border-color var(--fast-transition);
 
         &:hover,
         &:focus-visible {
-            filter: brightness(1.15);
+            border-color: var(--foreground);
+        }
+
+        @media (max-width: 60rem) {
+            justify-self: start;
         }
     }
 
     .fight-skirmish {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         gap: var(--space-3xs) var(--space-m);
         padding: var(--space-2xs) var(--space-m);
         background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
         color: var(--foreground);
         font-size: var(--step--1);
         text-decoration: none;
-
-        b {
-            width: 6rem;
-            font-family: var(--heading-font);
-            font-weight: 400;
-            color: var(--text-muted);
-        }
 
         &:hover,
         &:focus-visible {
