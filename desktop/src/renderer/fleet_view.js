@@ -231,9 +231,9 @@
             ${total ? `<div class="fw-efficiency" role="img" aria-label="ISK efficiency ${pct} percent"><span class="fw-efficiency__bar"><span data-pct="${pct}"></span></span><span class="eve-dim">${pct}%</span></div>` : ''}`
     }
 
-    // ------------------------------------------------------------ Fights: the fleet's rounds
+    // ------------------------------------------------------- Fights: the fleet's engagements
 
-    const round_name = r => r.kind === 'round' ? `Round ${r.number}` : 'Skirmish'
+    const round_name = r => r.kind === 'round' ? `Engagement ${r.number}` : 'Skirmish'
     const round_span = r => eve_clock(r.start) === eve_clock(r.end) ? eve_clock(r.start) : `${eve_clock(r.start)}–${eve_clock(r.end)}`
 
     // The Kills chip becomes Fights once the fleet has a round; it names the round being fought.
@@ -241,7 +241,7 @@
         const c = v.counts
         if (!v.fights) return chip('kills', 'Kills', `${c.kills} / ${c.losses}`)
         const latest = v.fights.latest
-        return chip('kills', 'Fights', latest.fighting ? round_name(latest).replace('Round ', 'R') : `${c.kills} / ${c.losses}`)
+        return chip('kills', 'Fights', latest.fighting ? round_name(latest).replace('Engagement ', 'E') : `${c.kills} / ${c.losses}`)
     }
 
     function round_bars(bins) {
