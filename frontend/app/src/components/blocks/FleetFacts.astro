@@ -9,6 +9,8 @@ import { eve_clock } from '@helpers/fetching/fleet_schedule'
 /**
  * The fleet at a glance: when (EVE and local), the countdown or how long it
  * ran, staging, doctrine or campaign, and the FC with the fleet-type flag.
+ * As the page header (`masthead`) it keeps only who and when; staging,
+ * doctrine and campaign live in the Overview tab.
  */
 interface Props {
     fleet:                  FleetUI;
@@ -17,6 +19,7 @@ interface Props {
     corporation_name?:      string;
     fleet_count?:           number;
     members_count?:         number;
+    masthead?:              boolean;
 }
 
 const {
@@ -26,6 +29,7 @@ const {
     corporation_name = '',
     fleet_count,
     members_count,
+    masthead = false,
 } = Astro.props
 
 const live = !history && Boolean(fleet.tracking?.start_time) && !fleet.tracking?.end_time
@@ -78,6 +82,7 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
         </dd>
     </div>
 
+    {!masthead &&
     <div>
         <dt>{t('staging')}</dt>
         <dd>
@@ -85,8 +90,9 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
             {station && <small>{station}</small>}
         </dd>
     </div>
+    }
 
-    {(fleet.doctrine || fleet.campaign_slug) &&
+    {!masthead && (fleet.doctrine || fleet.campaign_slug) &&
         <div>
             <dt>{fleet.doctrine ? t('doctrine') : t('campaign')}</dt>
             <dd>

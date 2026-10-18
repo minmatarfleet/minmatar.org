@@ -46,7 +46,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import StartFleetButton from '@components/blocks/StartFleetButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
-import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
 ---
 
 <div
@@ -111,12 +110,5 @@ import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro';
             </template>
         }
 
-        {is_fleet_commander && fleet_tracking && phase === 'active' &&
-            <FleetSetupSteps
-                start_time={start_time}
-                tracking={fleet_tracking}
-                disable_motd={disable_motd}
-            />
-        }
     </Flexblock>
 </div>

@@ -9,7 +9,7 @@ import type {
     FleetRoleCoverage,
 } from '@helpers/api.minmatar.org/fleets'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { link_kinds, ships_for_role } from '@helpers/fleet_roles'
+import { link_kinds, ships_for_role, CYNOS_WANTED } from '@helpers/fleet_roles'
 
 /**
  * Fleet roles, filled by ships: links, cynos and logi come from the ships
@@ -37,8 +37,6 @@ const {
 } = Astro.props
 
 delete attributes.class
-
-const CYNOS_WANTED = 2
 
 const links = link_kinds(roles, composition)
 const cyno_ships = ships_for_role(composition, entry => entry.fit_roles?.cyno ?? false)

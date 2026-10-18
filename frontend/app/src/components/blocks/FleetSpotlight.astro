@@ -85,8 +85,8 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         {live ?
             <Button href={href}>{t('fleets.spotlight.open_fleet')}</Button> :
             signups > 0 ?
-                <Button href={`${href}#your-pilots`} color="transparent">{t('fleets.spotlight.change_ships')}</Button> :
-                <Button href={`${href}#your-pilots`} color="green">{t('fleets.spotlight.pick_ships')}</Button>
+                <Button href={`${href}#ships`} color="transparent">{t('fleets.spotlight.change_ships')}</Button> :
+                <Button href={`${href}#ships`} color="green">{t('fleets.spotlight.pick_ships')}</Button>
         }
     </div>
 </section>

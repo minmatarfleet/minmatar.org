@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const staging_id = parseInt(Astro.url.searchParams.get('staging_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!fleet_id || !staging_id)
+    return HTTP_404_Not_Found()
+
+import { get_fleet_my_pilot_locations, type FleetPilotLocation } from '@helpers/api.minmatar.org/fleets'
+import { get_route } from '@helpers/api.eveonline/routes'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+let locations:FleetPilotLocation[] = []
+let fetch_error:Error | false = false
+try {
+    locations = await get_fleet_my_pilot_locations(auth_token as string, fleet_id) ?? []
+} catch (error) {
+    fetch_error = error
+}
+
+const SELF_URL = `${translatePath('/partials/fleet_pilot_locations_component')}?${query_string({ fleet_id, staging_id })}`
+
+const located = locations.filter(location => location.has_location_scope && location.solar_system_id)
+
+// Jumps from each character to staging; one ESI route per distinct system.
+const systems = [...new Set(located.map(location => location.solar_system_id as number))]
+const routes = new Map(await Promise.all(systems.map(async (system_id) => {
+    if (system_id === staging_id) return [system_id, 0] as const
+    const route = await get_route(system_id, staging_id)
+    return [system_id, route.length > 0 ? route.length - 1 : null] as const
+})))
+
+const distance = (location:FleetPilotLocation) => {
+    const jumps = routes.get(location.solar_system_id as number)
+    if (jumps === 0) return t('fleets.formup.in_staging')
+    if (jumps === null || jumps === undefined) return location.solar_system_name ?? ''
+    return `${location.solar_system_name} · ${jumps === 1 ? t('fleets.formup.jump') : t('fleets.formup.jumps').replace('{count}', jumps.toString())}`
+}
+
+const waypoint_url = (character_id:number) => `${translatePath('/partials/fleet_waypoint_component')}?${query_string({
+    character_id,
+    destination_id: staging_id,
+})}`
+---
+
+{fetch_error ?
+    <ErrorRefetch args={{ partial: SELF_URL, error: fetch_error, delay }} />
+    : located.length === 0 ?
+    <small>{t('fleets.formup.no_scope')}</small>
+    :
+    <ul class="[ fleet-formup__list ]">
+        {located.map(location =>
+            <li>
+                <img src={get_player_icon(location.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                <span class="[ fleet-formup__name ]">{location.character_name}</span>
+                <span class="[ fleet-formup__distance ]">{distance(location)}</span>
+                {location.solar_system_id !== staging_id &&
+                    <button
+                        type="button"
+                        class="[ fleet-formup__waypoint ]"
+                        hx-post={waypoint_url(location.character_id)}
+                        hx-swap="outerHTML"
+                    >
+                        {t('fleets.formup.set_destination')}
+                    </button>
+                }
+            </li>
+        )}
+    </ul>
+}

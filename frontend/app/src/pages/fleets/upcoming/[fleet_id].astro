@@ -62,6 +62,9 @@ import {
     get_fleet_fights,
     type FleetFights,
 } from '@helpers/api.minmatar.org/fleets'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import type { Doctrine } from '@dtypes/api.minmatar.org'
+let doctrines: Doctrine[] = []
 let fights: FleetFights | null = null
 let pilots: SummaryCharacter[] = []
 let roles: FleetRoleCoverage | null = null
@@ -175,6 +178,15 @@ if (restricted?.host_group)
 
 const supply = fleet && !history ? await (supply_promise ?? fetch_fleet_supply(auth_token as string, fleet_id)) : EMPTY_SUPPLY
 
+// The FC picks a doctrine on the Ships tab while the fleet has no ships.
+if (fleet && !history && can_manage_fleet && composition.length === 0 && !fleet.doctrine && fleet.status !== 'cancelled') {
+    try {
+        doctrines = await get_doctrines() ?? []
+    } catch (error) {
+        console.log(`Skipping doctrines: ${error.message}`)
+    }
+}
+
 // fleet is null when the fetch failed (e.g. the fleet's audience excludes
 // the viewer); the page then shows fetch_fleets_error instead of a 500.
 const can_remove_fleet = can(gates, 'fleets.delete') ||
@@ -212,12 +224,11 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FleetDetails from '@components/blocks/FleetDetails.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import FleetManageMenu from '@components/blocks/FleetManageMenu.astro';
 import FleetHostStrip from '@components/blocks/FleetHostStrip.astro';
 import FleetMembersOnlyGate from '@components/blocks/FleetMembersOnlyGate.astro';
 
-// Pilots pick ships in the Your pilots tab; on phones the bottom actions
-// bar links straight to it.
+// Pilots pick ships at the top of the Ships tab; on phones the bottom
+// actions bar links straight to it. The FC's controls live in the Command tab.
 const can_pick_ships = Boolean(fleet) && !history && fleet?.status !== 'cancelled' && composition.length > 0 && pilots.length > 0
 
 
@@ -275,15 +286,12 @@ const breadcrumbs = [
             <PageActions>
                 {can_pick_ships &&
                     <Button
-                        href="#your-pilots"
+                        href="#ships"
                         color="green"
                         class="[ xl:hidden! ]"
                     >
                         {t('fleets.spotlight.pick_ships')}
                     </Button>
-                }
-                {fleet && can_manage_fleet &&
-                    <FleetManageMenu fleet={fleet} />
                 }
             </PageActions>
         </FlexInline>
@@ -317,6 +325,7 @@ const breadcrumbs = [
                 composition={composition}
                 supply={supply}
                 fights={fights}
+                doctrines={doctrines}
             />
         }
     </PageWide>

@@ -653,3 +653,28 @@ export async function reset_fleet_fights(access_token: string, fleet_id: number)
         token: access_token,
     })
 }
+
+// --- Overview: where the viewer's characters are ---------------------------
+
+/** One of the viewer's characters; no location when its token lacks esi-location.read_location.v1. */
+export type FleetPilotLocation = ApiResponse<'MyPilotLocationResponse'>
+
+export async function get_fleet_my_pilot_locations(access_token: string, fleet_id: number): Promise<FleetPilotLocation[]> {
+    return await api_request<FleetPilotLocation[]>(`${API_ENDPOINT}/${fleet_id}/my-pilot-locations`, {
+        token: access_token,
+    })
+}
+
+// --- Participants after the fleet ------------------------------------------
+
+/**
+ * Who flew a fleet: each pilot once by the first ship they undocked in, the
+ * roles flown, and (for the fleet's managers only, else null) the no-shows.
+ */
+export type FleetParticipants = ApiResponse<'FleetParticipantsResponse'>
+
+export async function get_fleet_participants(access_token: string, fleet_id: number): Promise<FleetParticipants> {
+    return await api_request<FleetParticipants>(`${API_ENDPOINT}/${fleet_id}/participants`, {
+        token: access_token,
+    })
+}

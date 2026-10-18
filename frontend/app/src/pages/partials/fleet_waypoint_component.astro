@@ -1,0 +1,40 @@
+---
+// no-error-refetch: a one-click action; the result (or failure) shows in place of the button.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
+const destination_id = parseInt(Astro.url.searchParams.get('destination_id') ?? '0')
+
+if (!character_id || !destination_id)
+    return HTTP_404_Not_Found()
+
+import { set_character_waypoint } from '@helpers/api.minmatar.org/characters'
+
+// One click, one request; the backend owns the rate limit and the token check.
+let status = 0
+try {
+    status = await set_character_waypoint(auth_token as string, character_id, destination_id)
+} catch (error) {
+    console.log(`Waypoint failed: ${error.message}`)
+}
+
+const text =
+    status === 204 ? t('fleets.formup.destination_set') :
+    status === 409 ? t('fleets.formup.destination_scope') :
+    t('fleets.formup.destination_failed')
+---
+
+<small class:list={['[ fleet-formup__waypoint-result ]', { 'text-green': status === 204 }]} role="status">{text}</small>

@@ -2,6 +2,10 @@
 interface SectionTab {
     id: string
     label: string
+    /** Small text after the label, e.g. a count. */
+    meta?: string
+    /** A dot before `meta`: `attention` (orange, something to do) or `live` (red). */
+    flag?: 'attention' | 'live'
 }
 
 interface Props {
@@ -13,6 +17,10 @@ interface Props {
      * so `#campaign-system-42` opens Systems and scrolls to that element.
      */
     hash_aliases?: Record<string, string>
+    /** The tab shown when the URL names none; the first tab otherwise. */
+    default_tab?: string
+    /** `pills` for sub-tabs inside a tab panel. */
+    variant?: 'tabs' | 'pills'
     [propName: string]: any
 }
 
@@ -21,19 +29,21 @@ const {
     aria_label,
     id_prefix,
     hash_aliases = {},
+    default_tab: requested_default,
+    variant = 'tabs',
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
 const tab_ids = tabs.map((tab) => tab.id)
-const default_tab = tab_ids[0] ?? ''
+const default_tab = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')
 ---
 
 {tabs.length > 0 &&
     <div
         {...attributes}
-        class:list={['[ section-tabs ]', Astro.props.class]}
+        class:list={['[ section-tabs ]', { 'section-tabs--pills': variant === 'pills' }, Astro.props.class]}
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
@@ -83,15 +93,15 @@ const default_tab = tab_ids[0] ?? ''
         x-on:hashchange.window="follow_hash()"
     >
         <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
-            {tabs.map((tab, index) =>
+            {tabs.map((tab) =>
                 <button
                     type="button"
                     role="tab"
                     id={`${id_prefix}-tab-${tab.id}`}
-                    class:list={['[ section-tab ]', { 'is-active': index === 0 }]}
+                    class:list={['[ section-tab ]', { 'is-active': tab.id === default_tab }]}
                     aria-controls={`${id_prefix}-panel-${tab.id}`}
-                    aria-selected={index === 0 ? 'true' : 'false'}
-                    tabindex={index === 0 ? 0 : -1}
+                    aria-selected={tab.id === default_tab ? 'true' : 'false'}
+                    tabindex={tab.id === default_tab ? 0 : -1}
                     x-ref={`tab-${tab.id}`}
                     x-bind:class={`{ 'is-active': tab === ${JSON.stringify(tab.id)} }`}
                     x-bind:aria-selected={`tab === ${JSON.stringify(tab.id)} ? 'true' : 'false'`}
@@ -103,6 +113,9 @@ const default_tab = tab_ids[0] ?? ''
                     x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
                 >
                     {tab.label}
+                    {tab.meta &&
+                        <span class:list={['[ section-tab__meta ]', tab.flag && `section-tab__meta--${tab.flag}`]}>{tab.meta}</span>
+                    }
                 </button>
             )}
         </div>
@@ -159,6 +172,65 @@ const default_tab = tab_ids[0] ?? ''
         }
     }
 
+    .section-tab__meta {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        margin-inline-start: var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+        opacity: 0.75;
+    }
+
+    .section-tab__meta--attention,
+    .section-tab__meta--live {
+        opacity: 1;
+
+        &::before {
+            content: '';
+            inline-size: 0.5em;
+            block-size: 0.5em;
+            border-radius: 50%;
+            background: currentColor;
+        }
+    }
+
+    .section-tab__meta--attention {
+        color: var(--security-status-point-4);
+    }
+
+    .section-tab__meta--live {
+        color: var(--fleet-red);
+    }
+
+    .section-tabs--pills > .section-tabs-list {
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        box-shadow: none;
+        overflow-x: visible;
+
+        > .section-tab {
+            min-height: 2.75rem;
+            margin: 0;
+            padding: var(--space-3xs) var(--space-s);
+            border: 1px solid var(--border-color-hover);
+            font-family: var(--default-font);
+            font-size: var(--step--1);
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: none;
+
+            &.is-active {
+                background-color: var(--fleet-yellow);
+                border-color: var(--fleet-yellow);
+                color: var(--background);
+            }
+        }
+    }
+
     @media (hover: hover) {
         .section-tab:hover {
             color: var(--highlight);
@@ -169,6 +241,10 @@ const default_tab = tab_ids[0] ?? ''
         // Tabs share the width while they fit.
         .section-tabs-list {
             gap: 0;
+        }
+
+        .section-tabs--pills > .section-tabs-list {
+            gap: var(--space-2xs);
         }
 
         .section-tab {

@@ -13,6 +13,7 @@ if (!user)
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const summary_only = Astro.url.searchParams.get('summary_only') === '1'
 
 if (!fleet_id)
     return HTTP_404_Not_Found()
@@ -41,7 +42,7 @@ if (!fetch_kills_error && can_file_srp) {
     }
 }
 
-const FLEET_KILLS_PARTIAL_URL = translatePath(`/partials/fleet_kills_component?fleet_id=${fleet_id}`)
+const FLEET_KILLS_PARTIAL_URL = translatePath(`/partials/fleet_kills_component?fleet_id=${fleet_id}${summary_only ? '&summary_only=1' : ''}`)
 
 import FleetKills from '@components/blocks/FleetKills.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -57,5 +58,5 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }}
     />
     :
-    <FleetKills fleet_kills={fleet_kills as FleetKillsData} fleet_id={fleet_id} srp_losses={srp_losses} />
+    <FleetKills fleet_kills={fleet_kills as FleetKillsData} fleet_id={fleet_id} srp_losses={srp_losses} summary_only={summary_only} />
 }

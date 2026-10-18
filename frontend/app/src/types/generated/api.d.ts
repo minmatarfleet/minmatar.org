@@ -2628,6 +2628,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/my-pilot-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet My Pilot Locations
+         * @description Where each of the caller's characters is (ESI location, cached for a minute). has_location_scope is false when the character's token lacks esi-location.read_location.v1 (the Desktop scope group); the location is null then, and also when ESI fails for that character.
+         */
+        get: operations["fleets_endpoints_fleet_get_fleet_my_pilot_locations_get_fleet_my_pilot_locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/my-pilots": {
         parameters: {
             query?: never;
@@ -2680,6 +2700,26 @@ export interface paths {
          * @description Ship losses by the caller's characters while in this fleet, on hulls that have an SRP program. Uncovered hulls and capsules are left out. filed is true once a reimbursement exists for the killmail.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_my_srp_get_fleet_my_srp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Participants
+         * @description Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else.
+         */
+        get: operations["fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12089,6 +12129,79 @@ export interface components {
             /** Ships Lost */
             ships_lost: number;
         };
+        /** FleetParticipantsHull */
+        FleetParticipantsHull: {
+            /** Count */
+            count: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
+        /** FleetParticipantsNoShow */
+        FleetParticipantsNoShow: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
+        /** FleetParticipantsResponse */
+        FleetParticipantsResponse: {
+            /** Changed Ship */
+            changed_ship: number;
+            /** Ended In Pod */
+            ended_in_pod: number;
+            /** Flew */
+            flew: components["schemas"]["FleetParticipantsHull"][];
+            /** Joined Without Signing Up */
+            joined_without_signing_up?: number | null;
+            /** Logi Fc */
+            logi_fc: components["schemas"]["EveFleetRoleVolunteerResponse"][];
+            /** No Shows */
+            no_shows?: components["schemas"]["FleetParticipantsNoShow"][] | null;
+            /** Pilots */
+            pilots: number;
+            /** Roles Flown */
+            roles_flown: components["schemas"]["FleetParticipantsRole"][];
+            /** Signed Up */
+            signed_up?: number | null;
+        };
+        /** FleetParticipantsRole */
+        FleetParticipantsRole: {
+            /** Count */
+            count: number;
+            /** Hulls */
+            hulls: components["schemas"]["FleetParticipantsRoleHull"][];
+            /** Label */
+            label: string;
+            /** Pilots */
+            pilots: components["schemas"]["FleetParticipantsRolePilot"][];
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "logi" | "links" | "cyno";
+        };
+        /** FleetParticipantsRoleHull */
+        FleetParticipantsRoleHull: {
+            /** Count */
+            count: number;
+            /** Ship Name */
+            ship_name: string;
+        };
+        /** FleetParticipantsRolePilot */
+        FleetParticipantsRolePilot: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Ship Name */
+            ship_name: string;
+        };
         /**
          * FleetPingPreviewRequest
          * @description The fleet form's fields that shape the start ping.
@@ -14775,6 +14888,23 @@ export interface components {
              * @default 0
              */
             srp_owed?: number;
+        };
+        /** MyPilotLocationResponse */
+        MyPilotLocationResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Has Location Scope */
+            has_location_scope: boolean;
+            /** Solar System Id */
+            solar_system_id?: number | null;
+            /** Solar System Name */
+            solar_system_name?: string | null;
+            /** Station Id */
+            station_id?: number | null;
+            /** Structure Id */
+            structure_id?: number | null;
         };
         /** MyRecentFleet */
         MyRecentFleet: {
@@ -25122,6 +25252,42 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_fleet_get_fleet_my_pilot_locations_get_fleet_my_pilot_locations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPilotLocationResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     fleets_endpoints_fleet_get_fleet_my_pilots_get_fleet_my_pilots: {
         parameters: {
             query?: never;
@@ -25225,6 +25391,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetSrpLossResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetParticipantsResponse"];
                 };
             };
             /** @description Forbidden */
