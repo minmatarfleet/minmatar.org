@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
-import { round_groups, eve_clock } from '@helpers/fleet_fights'
+import { round_opponents, eve_clock } from '@helpers/fleet_fights'
 
 /**
  * Fleet managers fix the rounds: tick neighbouring rounds and merge them,
@@ -42,6 +42,7 @@ const span = (round: typeof rounds[number]) => round.start === round.end ?
 const edit_text = (edit: FleetFights['edits'][number]) => (edit.kind === 'merge' ?
     t('fleets.fights.change_merge').replace('{start}', eve_clock(edit.start)).replace('{end}', eve_clock(edit.end ?? edit.start)) :
     t('fleets.fights.change_split').replace('{at}', eve_clock(edit.start)))
+import GroupLogos from '@components/blocks/GroupLogos.astro'
 ---
 
 <form
@@ -102,7 +103,7 @@ const edit_text = (edit: FleetFights['edits'][number]) => (edit.kind === 'merge'
     <ol class="[ fights-edit__list ]">
         {rounds.map((round, index) => {
             const label = name(round)
-            const groups = round_groups(round)
+            const opponents = round_opponents(round)
             return (
                 <li class:list={['[ fights-edit__row ]', `fights-edit__row--${round.kind}`, { 'fights-edit__row--edited': round.merge_edit_ids.length > 0 || round.split_edit_ids.length > 0 }]}>
                     <div class="[ fights-edit__line ]">
@@ -119,7 +120,7 @@ const edit_text = (edit: FleetFights['edits'][number]) => (edit.kind === 'merge'
                             <small>{span(round)}{round.kind === 'round' ? ` · ${round.minutes} min` : ''}</small>
                         </label>
                         <span class="[ fights-edit__vs ]">
-                            {groups.length > 0 && t('fleets.fights.vs').replace('{groups}', groups.join(', '))}
+                            {opponents.length > 0 && <GroupLogos groups={opponents} max={4} size={22} />}
                             {round.merge_edit_ids.length > 0 && <span class="[ fights-edit__tag ]">{t('fleets.fights.merged_tag')}</span>}
                             {round.split_edit_ids.length > 0 && <span class="[ fights-edit__tag ]">{t('fleets.fights.split_tag')}</span>}
                         </span>

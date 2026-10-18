@@ -109,6 +109,11 @@
   "events": [],
   "feed_behind_since": null,
   "fleet_id": 501,
+  "links": {
+    "brtools": "https://br.evetools.org/related/30002537/202601171700",
+    "evekill": null,
+    "zkillboard": "https://zkillboard.com/related/30002537/202601171700/"
+  },
   "live": false,
   "round_count": 2,
   "rounds": [

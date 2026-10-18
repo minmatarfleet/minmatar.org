@@ -1,0 +1,294 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetKills, FleetFightRound } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { killmail_engagement } from '@helpers/fleet_fights'
+
+/**
+ * The Kills tab: every killmail of a finished fleet, oldest first, filtered
+ * to kills or losses and to one engagement over the rendered rows. Links to
+ * the public page that shares the same list.
+ */
+interface Props {
+    fleet_kills:        FleetKills;
+    fleet_id:           number;
+    /** The fleet's rounds, to tag each mail with its engagement. */
+    rounds:             FleetFightRound[];
+    /** On the public page itself: no share link back to it. */
+    public_view?:       boolean;
+    [propName: string]: any;
+}
+
+const {
+    fleet_kills,
+    fleet_id,
+    rounds,
+    public_view = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const ROWS_SHOWN = 100
+const killmails = [...fleet_kills.killmails]
+    .sort((a, b) => a.killmail_time.localeCompare(b.killmail_time) || a.killmail_id - b.killmail_id)
+    .map(killmail => ({ ...killmail, engagement: killmail_engagement(killmail.killmail_time, rounds) }))
+const engagements = [...new Set(killmails.map(killmail => killmail.engagement).filter((number): number is number => number !== null))]
+const kills = killmails.filter(killmail => killmail.outcome === 'kill').length
+const losses = killmails.length - kills
+const filters = [
+    { key: 'all', label: t('fleets.killfeed.all').replace('{count}', killmails.length.toString()) },
+    { key: 'kill', label: t('fleets.killfeed.kills').replace('{count}', kills.toString()) },
+    { key: 'loss', label: t('fleets.killfeed.losses').replace('{count}', losses.toString()) },
+]
+
+const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
+---
+
+<section
+    class:list={['[ kill-feed ]', Astro.props.class]}
+    aria-labelledby="kill-feed-title"
+    x-data={`{
+        outcome: 'all',
+        engagement: '',
+        show_all: false,
+        copied: false,
+        shows(row) {
+            return (this.outcome === 'all' || row.dataset.outcome === this.outcome) &&
+                (this.engagement === '' || row.dataset.engagement === this.engagement)
+        },
+        async share() {
+            const url = new URL('${PUBLIC_URL}', window.location.origin).href
+            try {
+                await navigator.clipboard.writeText(url)
+                this.copied = true
+                setTimeout(() => this.copied = false, 2000)
+            } catch {
+                window.open(url, '_blank', 'noopener')
+            }
+        },
+    }`}
+    {...attributes}
+>
+    <header class="[ kill-feed__head ]">
+        <h2 id="kill-feed-title" class="visually-hidden">{t('fleets.tabs.kills')}</h2>
+        <div class="[ kill-feed__filters ]" role="group" aria-label={t('fleets.killfeed.filter')}>
+            {filters.map(filter =>
+                <button
+                    type="button"
+                    x-on:click={`outcome = '${filter.key}'`}
+                    x-bind:aria-pressed={`outcome === '${filter.key}'`}
+                    aria-pressed={filter.key === 'all' ? 'true' : 'false'}
+                >{filter.label}</button>
+            )}
+            {engagements.length > 1 &&
+                <label class="[ kill-feed__engagement ]">
+                    <span class="visually-hidden">{t('fleets.killfeed.engagement')}</span>
+                    <select x-model="engagement">
+                        <option value="">{t('fleets.killfeed.every_engagement')}</option>
+                        {engagements.map(number =>
+                            <option value={number.toString()}>{t('fleets.fights.round').replace('{number}', number.toString())}</option>
+                        )}
+                    </select>
+                </label>
+            }
+        </div>
+        <span class="[ kill-feed__share ]">
+            <button type="button" x-on:click="share()">
+                <span x-show="!copied">{t('fleets.killfeed.share')}</span>
+                <span x-show="copied" x-cloak>{t('fleets.killfeed.copied')}</span>
+            </button>
+            {!public_view && <a href={PUBLIC_URL} target="_blank" rel="noopener noreferrer">{t('fleets.killfeed.public_page')} ↗</a>}
+        </span>
+    </header>
+
+    <ol class="[ kill-feed__list ]">
+        {killmails.map((killmail, index) =>
+            <li
+                class:list={['[ kill-feed__row ]', `kill-feed__row--${killmail.outcome}`]}
+                data-outcome={killmail.outcome}
+                data-engagement={killmail.engagement?.toString() ?? ''}
+                x-show={index < ROWS_SHOWN ? 'shows($el)' : 'show_all && shows($el)'}
+                x-cloak={index < ROWS_SHOWN ? undefined : ''}
+            >
+                <time datetime={killmail.killmail_time}>{killmail.killmail_time.slice(11, 19)}</time>
+                {killmail.victim_ship_type_id ?
+                    <img src={get_item_icon(killmail.victim_ship_type_id, 32)} alt="" width="32" height="32" loading="lazy" /> :
+                    <span />
+                }
+                <span class="[ kill-feed__what ]">
+                    <a href={`https://zkillboard.com/kill/${killmail.killmail_id}/`} target="_blank" rel="noopener noreferrer">
+                        <b class={`kill-feed__${killmail.outcome}`}>{killmail.outcome === 'kill' ? t('fleets.fights.kill') : t('fleets.fights.loss')}</b>
+                        {' '}{killmail.victim_ship_name || t('fleets.kills.unknown_ship')}
+                    </a>
+                    <small>{[killmail.victim_character_name || t('fleets.kills.unknown_pilot'), killmail.solar_system_name].join(' · ')}</small>
+                </span>
+                <small class="[ kill-feed__tag ]">{killmail.engagement ? `E${killmail.engagement}` : ''}</small>
+                <span class="[ kill-feed__isk ]">{format_isk(killmail.isk_value)}</span>
+            </li>
+        )}
+    </ol>
+
+    {killmails.length > ROWS_SHOWN &&
+        <button type="button" class="[ kill-feed__more ]" x-on:click="show_all = !show_all">
+            <span x-show="!show_all">{t('fleets.killfeed.show_all').replace('{count}', killmails.length.toString())}</span>
+            <span x-show="show_all" x-cloak>{t('fleets.after.show_fewer')}</span>
+        </button>
+    }
+</section>
+
+<style lang="scss">
+    .kill-feed {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .kill-feed__head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .kill-feed__filters,
+    .kill-feed__share {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .kill-feed__filters button,
+    .kill-feed__share button,
+    .kill-feed__engagement select,
+    .kill-feed__more {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--foreground);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .kill-feed__filters button[aria-pressed='true'] {
+        background-color: var(--highlight);
+        border-color: var(--highlight);
+        color: var(--background);
+    }
+
+    .kill-feed__engagement select {
+        background-color: var(--component-background);
+    }
+
+    .kill-feed__share a {
+        font-weight: 700;
+    }
+
+    .kill-feed__list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .kill-feed__row {
+        display: grid;
+        grid-template-columns: 4.5rem 32px minmax(0, 1fr) 2.5rem 5rem;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-3xs) var(--space-xs);
+        background-color: var(--component-background);
+        border-left: 3px solid transparent;
+        font-variant-numeric: tabular-nums;
+        content-visibility: auto;
+        contain-intrinsic-size: auto 3rem;
+
+        time {
+            font-size: var(--step--1);
+        }
+    }
+
+    .kill-feed__row--kill {
+        border-left-color: var(--alliance-blue);
+    }
+
+    .kill-feed__row--loss {
+        border-left-color: var(--fleet-red);
+    }
+
+    .kill-feed__what {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .kill-feed__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .kill-feed__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .kill-feed__tag {
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .kill-feed__isk {
+        color: var(--highlight);
+        text-align: right;
+    }
+
+    .kill-feed__more {
+        align-self: flex-start;
+    }
+
+    @media (max-width: 30rem) {
+        .kill-feed__row {
+            grid-template-columns: 32px minmax(0, 1fr) auto;
+
+            time,
+            .kill-feed__tag {
+                display: none;
+            }
+        }
+    }
+</style>

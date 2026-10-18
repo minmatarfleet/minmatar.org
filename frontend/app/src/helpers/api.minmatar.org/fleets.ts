@@ -673,8 +673,30 @@ export async function get_fleet_my_pilot_locations(access_token: string, fleet_i
  */
 export type FleetParticipants = ApiResponse<'FleetParticipantsResponse'>
 
-export async function get_fleet_participants(access_token: string, fleet_id: number): Promise<FleetParticipants> {
-    return await api_request<FleetParticipants>(`${API_ENDPOINT}/${fleet_id}/participants`, {
+export type FleetBattleReport = ApiResponse<'FleetBattleReportResponse'>
+
+/** One engagement's battle report; ``sides`` moves groups (``group:team,...``). */
+export async function get_fleet_battle_report(access_token: string, fleet_id: number, position: number, sides: string = ''): Promise<FleetBattleReport | null> {
+    const query = sides ? `?sides=${encodeURIComponent(sides)}` : ''
+    return await api_request<FleetBattleReport | null>(`${API_ENDPOINT}/${fleet_id}/fights/${position}/report${query}`, {
+        token: access_token,
+        allow: [403, 404],
+    })
+}
+
+export type FleetPublicKills = ApiResponse<'FleetPublicKillsResponse'>
+
+/** A finished fleet's killmails for anyone, signed in or not; null when it isn't public. */
+export async function get_fleet_public_kills(fleet_id: number): Promise<FleetPublicKills | null> {
+    return await api_request<FleetPublicKills | null>(`${API_ENDPOINT}/${fleet_id}/public-kills`, {
+        allow: [404],
+    })
+}
+
+/** Who flew; with ``engagement`` (a 1-based rounds position) only that engagement. */
+export async function get_fleet_participants(access_token: string, fleet_id: number, engagement?: number): Promise<FleetParticipants> {
+    const query = engagement ? `?engagement=${engagement}` : ''
+    return await api_request<FleetParticipants>(`${API_ENDPOINT}/${fleet_id}/participants${query}`, {
         token: access_token,
     })
 }

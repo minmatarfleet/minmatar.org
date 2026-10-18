@@ -9216,6 +9216,16 @@
             "title": "Fleet Id",
             "type": "integer"
           },
+          "links": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetFightLinks"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "live": {
             "default": false,
             "title": "Live",
@@ -9853,6 +9863,17 @@
       "EveFleetResponse": {
         "description": "Response model for fleet objects.",
         "properties": {
+          "aar_forum_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aar Forum Url"
+          },
           "aar_link": {
             "anyOf": [
               {
@@ -12909,6 +12930,504 @@
         "title": "FittingResponse",
         "type": "object"
       },
+      "FleetBattleFinalBlow": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Type Id"
+          }
+        },
+        "required": [
+          "character_id",
+          "name"
+        ],
+        "title": "FleetBattleFinalBlow",
+        "type": "object"
+      },
+      "FleetBattleGroup": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "pilots",
+          "ships_lost",
+          "isk_lost"
+        ],
+        "title": "FleetBattleGroup",
+        "type": "object"
+      },
+      "FleetBattleKillmail": {
+        "properties": {
+          "attackers": {
+            "title": "Attackers",
+            "type": "integer"
+          },
+          "final_blow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetBattleFinalBlow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "isk": {
+            "title": "Isk",
+            "type": "integer"
+          },
+          "pod": {
+            "title": "Pod",
+            "type": "boolean"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Type Id"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "integer"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          },
+          "team": {
+            "title": "Team",
+            "type": "integer"
+          },
+          "time": {
+            "format": "date-time",
+            "title": "Time",
+            "type": "string"
+          },
+          "victim_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Alliance Id"
+          },
+          "victim_corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Corporation Id"
+          },
+          "victim_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Group Id"
+          },
+          "victim_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Id"
+          },
+          "victim_name": {
+            "title": "Victim Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "system_id",
+          "system_name",
+          "ship_name",
+          "victim_name",
+          "team",
+          "isk",
+          "pod",
+          "attackers"
+        ],
+        "title": "FleetBattleKillmail",
+        "type": "object"
+      },
+      "FleetBattlePilot": {
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
+          },
+          "damage": {
+            "title": "Damage",
+            "type": "integer"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleShip"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "ships",
+          "kills",
+          "damage"
+        ],
+        "title": "FleetBattlePilot",
+        "type": "object"
+      },
+      "FleetBattleReportResponse": {
+        "description": "Every killmail in a round's systems from its first mail minus a\nminute to its last plus a minute, split into sides.",
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "killmails": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleKillmail"
+            },
+            "title": "Killmails",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "sides": {
+            "title": "Sides",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleSystem"
+            },
+            "title": "Systems",
+            "type": "array"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleTeam"
+            },
+            "title": "Teams",
+            "type": "array"
+          },
+          "window_end": {
+            "format": "date-time",
+            "title": "Window End",
+            "type": "string"
+          },
+          "window_start": {
+            "format": "date-time",
+            "title": "Window Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "position",
+          "kind",
+          "start",
+          "end",
+          "minutes",
+          "window_start",
+          "window_end",
+          "systems",
+          "complete",
+          "sides",
+          "teams",
+          "killmails"
+        ],
+        "title": "FleetBattleReportResponse",
+        "type": "object"
+      },
+      "FleetBattleShip": {
+        "properties": {
+          "killmail_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Killmail Id"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          }
+        },
+        "required": [
+          "name",
+          "lost"
+        ],
+        "title": "FleetBattleShip",
+        "type": "object"
+      },
+      "FleetBattleSystem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "FleetBattleSystem",
+        "type": "object"
+      },
+      "FleetBattleTeam": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "ours": {
+            "title": "Ours",
+            "type": "boolean"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattlePilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/FleetBattleTotals"
+          }
+        },
+        "required": [
+          "index",
+          "ours",
+          "totals",
+          "groups",
+          "pilots"
+        ],
+        "title": "FleetBattleTeam",
+        "type": "object"
+      },
+      "FleetBattleTotals": {
+        "properties": {
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "pods_lost": {
+            "title": "Pods Lost",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pilots",
+          "ships_lost",
+          "pods_lost",
+          "isk_lost",
+          "isk_destroyed"
+        ],
+        "title": "FleetBattleTotals",
+        "type": "object"
+      },
       "FleetFightChart": {
         "properties": {
           "bin_minutes": {
@@ -13569,7 +14088,7 @@
         "title": "FleetFightTotals",
         "type": "object"
       },
-      "FleetParticipantsHull": {
+      "FleetParticipantsDoctrineHull": {
         "properties": {
           "count": {
             "title": "Count",
@@ -13589,7 +14108,166 @@
           "ship_name",
           "count"
         ],
+        "title": "FleetParticipantsDoctrineHull",
+        "type": "object"
+      },
+      "FleetParticipantsDoctrineSegment": {
+        "properties": {
+          "doctrine_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Id"
+          },
+          "doctrine_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Name"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "hulls": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsDoctrineHull"
+            },
+            "title": "Hulls",
+            "type": "array"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "positions": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Positions",
+            "type": "array"
+          },
+          "share": {
+            "title": "Share",
+            "type": "integer"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          }
+        },
+        "required": [
+          "positions",
+          "share",
+          "pilots",
+          "hulls"
+        ],
+        "title": "FleetParticipantsDoctrineSegment",
+        "type": "object"
+      },
+      "FleetParticipantsEngagement": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "number",
+          "start",
+          "end"
+        ],
+        "title": "FleetParticipantsEngagement",
+        "type": "object"
+      },
+      "FleetParticipantsHull": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "pilots": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsHullPilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "ship_name",
+          "count"
+        ],
         "title": "FleetParticipantsHull",
+        "type": "object"
+      },
+      "FleetParticipantsHullPilot": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name"
+        ],
+        "title": "FleetParticipantsHullPilot",
         "type": "object"
       },
       "FleetParticipantsNoShow": {
@@ -13626,9 +14304,36 @@
             "title": "Changed Ship",
             "type": "integer"
           },
+          "doctrine_flown": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsDoctrineSegment"
+            },
+            "title": "Doctrine Flown",
+            "type": "array"
+          },
           "ended_in_pod": {
             "title": "Ended In Pod",
             "type": "integer"
+          },
+          "engagement": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engagement"
+          },
+          "engagements": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsEngagement"
+            },
+            "title": "Engagements",
+            "type": "array"
           },
           "flew": {
             "items": {
@@ -13668,6 +14373,11 @@
               }
             ],
             "title": "No Shows"
+          },
+          "opsec_filtered": {
+            "default": false,
+            "title": "Opsec Filtered",
+            "type": "boolean"
           },
           "pilots": {
             "title": "Pilots",
@@ -13874,6 +14584,213 @@
           "payload"
         ],
         "title": "FleetPingPreviewResponse",
+        "type": "object"
+      },
+      "FleetPublicKillmail": {
+        "properties": {
+          "is_capsule": {
+            "title": "Is Capsule",
+            "type": "boolean"
+          },
+          "isk_value": {
+            "title": "Isk Value",
+            "type": "integer"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "killmail_time": {
+            "format": "date-time",
+            "title": "Killmail Time",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "kill",
+              "loss"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "victim_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Alliance Id"
+          },
+          "victim_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Character Id"
+          },
+          "victim_corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Corporation Id"
+          },
+          "victim_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Name"
+          },
+          "victim_ship_name": {
+            "title": "Victim Ship Name",
+            "type": "string"
+          },
+          "victim_ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Victim Ship Type Id"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "killmail_time",
+          "outcome",
+          "victim_ship_name",
+          "solar_system_name",
+          "isk_value",
+          "is_capsule"
+        ],
+        "title": "FleetPublicKillmail",
+        "type": "object"
+      },
+      "FleetPublicKillsResponse": {
+        "properties": {
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fc_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Character Id"
+          },
+          "fc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Name"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "fleet_type": {
+            "title": "Fleet Type",
+            "type": "string"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "killmails": {
+            "items": {
+              "$ref": "#/components/schemas/FleetPublicKillmail"
+            },
+            "title": "Killmails",
+            "type": "array"
+          },
+          "ships_destroyed": {
+            "title": "Ships Destroyed",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "title",
+          "fleet_type",
+          "start",
+          "end",
+          "systems",
+          "ships_destroyed",
+          "ships_lost",
+          "isk_destroyed",
+          "isk_lost",
+          "killmails"
+        ],
+        "title": "FleetPublicKillsResponse",
         "type": "object"
       },
       "FleetWindowAfterAction": {
@@ -39197,6 +40114,75 @@
         ]
       }
     },
+    "/api/fleets/{fleet_id}/fights/{position}/report": {
+      "get": {
+        "description": "A battle report for round or skirmish ``position`` (1-based, in the order of GET /fights rounds): every killmail in its systems from its first mail minus a minute to its last plus a minute, third parties included, with up to three sides. Team 0 is ours. Groups are alliances, or corporations outside one. ``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; the response echoes the moves it applied. isk_destroyed is the ISK other teams lost on mails the team was on. complete is false when the killmail feed had already purged the mails and the report only has the mails our fleet was on. Same access rules as GET /fights.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "position",
+            "required": true,
+            "schema": {
+              "title": "Position",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sides",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sides"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetBattleReportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Fight Report",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/{fleet_id}/fitting-access": {
       "get": {
         "description": "Whether the requesting fleet manager has a character with the esi-fittings.write_fittings.v1 scope (needed to save refits and custom fits in-game), plus which character to prompt for the Fleet Commander token.",
@@ -39765,7 +40751,7 @@
     },
     "/api/fleets/{fleet_id}/participants": {
       "get": {
-        "description": "Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else.",
+        "description": "Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else. engagement=<position> (1-based over the fight timeline's rounds, the same index the Fights tab uses) counts only pilots in fleet from a minute before that round to a minute after, each by the hull they were in at the time; a skirmish, a missing position or a fleet without a timeline is a 404. engagements lists the rounds for filter pills. doctrine_flown has one segment per round (neighbouring rounds on the same doctrine merged; a doctrine needs half the pilots out of pods in its hulls), one whole-fleet segment when the timeline has no rounds, and is empty without a timeline. For viewers who are not Strategic FCs every pilot who flew a capital, jump freighter, Rorqual, force recon, black ops or cyno hull is left out of everything and the cyno row is dropped; opsec_filtered is true for every such viewer.",
         "operationId": "fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants",
         "parameters": [
           {
@@ -39775,6 +40761,22 @@
             "schema": {
               "title": "Fleet Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "engagement",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Engagement"
             }
           }
         ],
@@ -39871,6 +40873,47 @@
           }
         ],
         "summary": "Send Pre Ping",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/public-kills": {
+      "get": {
+        "description": "What a finished fleet killed and lost, for a public page; no login needed. 404 until every tracked instance has ended, and always for cancelled fleets, members-only tribe group fleets and fleets for a hidden audience. Only what the killmails already show publicly: the roster, doctrine, staging and description are never included. Killmails are newest first; totals count capsules towards ISK but not ships.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_public_kills_get_fleet_public_kills",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetPublicKillsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Fleet Public Kills",
         "tags": [
           "Fleets"
         ]

@@ -65,7 +65,7 @@ export function chart_bands(
         return {
             index,
             label: round.kind === 'round' ? labels.round(round.number ?? 0) : labels.skirmish,
-            short: round.kind === 'round' ? `R${round.number ?? 0}` : labels.skirmish,
+            short: round.kind === 'round' ? `E${round.number ?? 0}` : labels.skirmish,
             kind: round.kind,
             left,
             width: Math.max(one_bin, Math.min(100, end) - left),
@@ -111,11 +111,11 @@ export function round_bars(round: FleetFightRound, end: string = round.end): Cha
     return chart_bars({ start: round.start, end, bin_minutes: per_bar, bins })
 }
 
-export function round_groups(round: FleetFightRound, limit = 3): string[] {
+/** Who an engagement was against, most involved first, for GroupLogos. */
+export function round_opponents(round: FleetFightRound): { id: number | null, name: string }[] {
     return round.hostiles
         .filter(hostile => hostile.pilots > 0 || hostile.ships_killed > 0)
-        .slice(0, limit)
-        .map(hostile => hostile.name)
+        .map(hostile => ({ id: hostile.group_id ?? null, name: hostile.name }))
 }
 
 export function seconds_since(moment: string, now: Date = new Date()): number {
@@ -134,3 +134,30 @@ export function round_position(fights: FleetFights, round: FleetFightRound): num
 
 /** "18:27" in EVE time (UTC) from an ISO time or a Date. */
 export const eve_clock = (moment: string | Date): string => new Date(moment).toISOString().slice(11, 16)
+
+// A mail belongs to an engagement when it lands inside it, give or take this.
+const ENGAGEMENT_PAD_MS = 60 * 1000
+
+/** The engagement number a killmail falls in, or null for a skirmish or a quiet spell. */
+export function killmail_engagement(time: string, rounds: FleetFightRound[]): number | null {
+    const at = new Date(time).getTime()
+    const round = rounds.find(round => round.kind === 'round' &&
+        new Date(round.start).getTime() - ENGAGEMENT_PAD_MS <= at &&
+        at <= new Date(round.end).getTime() + ENGAGEMENT_PAD_MS)
+    return round?.number ?? null
+}
+
+/**
+ * Battle report sides after moving one group: ``sides`` is the report's
+ * ``group:team,...`` override string. Ids sort so the same sides always give
+ * the same URL.
+ */
+export function move_to_side(sides: string, group: number, team: number): string {
+    const moves = new Map<number, number>()
+    for (const pair of sides.split(',')) {
+        const [id, index] = pair.split(':').map(Number)
+        if (Number.isInteger(id) && id > 0 && Number.isInteger(index) && index >= 0) moves.set(id, index)
+    }
+    if (Number.isInteger(group) && group > 0 && Number.isInteger(team) && team >= 0) moves.set(group, team)
+    return [...moves.entries()].sort((a, b) => a[0] - b[0]).map(([id, index]) => `${id}:${index}`).join(',')
+}

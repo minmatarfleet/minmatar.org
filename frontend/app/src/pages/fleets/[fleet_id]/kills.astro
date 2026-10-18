@@ -1,0 +1,234 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+// Public: anyone with the link sees what a finished fleet killed and lost.
+// Only killmail data, which is public anyway; nothing about who flew or where
+// the fleet formed.
+const fleet_id = parseInt(Astro.params.fleet_id ?? '')
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+const { user } = get_request_user(Astro)
+
+import { get_fleet_public_kills, type FleetPublicKills, type FleetKills } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fleet_fights'
+
+let report:FleetPublicKills | null = null
+try {
+    report = await get_fleet_public_kills(fleet_id)
+} catch (error) {
+    console.log(`Public kills for fleet ${fleet_id}: ${error.message}`)
+}
+
+if (!report)
+    return HTTP_404_Not_Found()
+
+// The kill list reads the members' kills shape.
+const fleet_kills:FleetKills = {
+    fleet_id,
+    tracked: true,
+    isk_destroyed: report.isk_destroyed,
+    isk_lost: report.isk_lost,
+    ships_destroyed: report.ships_destroyed,
+    pods_destroyed: 0,
+    ships_lost: report.ships_lost,
+    pods_lost: 0,
+    killmails: report.killmails.map(killmail => ({
+        killmail_id: killmail.killmail_id,
+        killmail_time: killmail.killmail_time,
+        outcome: killmail.outcome as 'kill' | 'loss',
+        solar_system_id: 0,
+        solar_system_name: killmail.solar_system_name ?? '',
+        victim_ship_type_id: killmail.victim_ship_type_id ?? null,
+        victim_ship_name: killmail.victim_ship_name ?? '',
+        victim_character_id: killmail.victim_character_id ?? null,
+        victim_character_name: killmail.victim_name ?? '',
+        isk_value: killmail.isk_value,
+        fleet_pilots: 0,
+        is_capsule: killmail.is_capsule,
+    })),
+}
+
+const biggest = report.killmails
+    .filter(killmail => killmail.outcome === 'kill' && !killmail.is_capsule)
+    .reduce<FleetPublicKills['killmails'][number] | null>((best, killmail) => !best || killmail.isk_value > best.isk_value ? killmail : best, null)
+
+const day = report.start ? new Date(report.start).toISOString().slice(0, 10) : ''
+const when = report.start ? `${day} ${eve_clock(report.start)} EVE` : ''
+const score = t('fleets.public.score')
+    .replace('{kills}', report.ships_destroyed.toString())
+    .replace('{destroyed}', format_isk(report.isk_destroyed))
+const page_title = `${report.title} · ${score}`
+const meta_description = [
+    [when, report.fc_name ? t('fleets.public.fc').replace('{name}', report.fc_name) : '', report.systems.join(', ')].filter(Boolean).join(' · '),
+    t('fleets.public.description')
+        .replace('{kills}', report.ships_destroyed.toString())
+        .replace('{destroyed}', format_isk(report.isk_destroyed))
+        .replace('{losses}', report.ships_lost.toString())
+        .replace('{lost}', format_isk(report.isk_lost))
+        + (report.efficiency !== null && report.efficiency !== undefined ? ` ${t('fleets.public.efficiency').replace('{pct}', report.efficiency.toString())}` : ''),
+].join('. ')
+const meta_image = biggest?.victim_ship_type_id ? `https://images.evetech.net/types/${biggest.victim_ship_type_id}/render?size=512` : undefined
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FleetKillFeed from '@components/blocks/FleetKillFeed.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    og_type="article"
+>
+    <PageWide
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <div class="[ public-kills__title ]">
+                <PageTitle>{report.title}</PageTitle>
+                <span class="[ public-kills__meta ]">
+                    {report.fc_character_id && <img src={get_player_icon(report.fc_character_id, 64)} alt="" width="32" height="32" />}
+                    {[report.fc_name ? t('fleets.public.fc').replace('{name}', report.fc_name) : '', when, report.systems.join(', ')].filter(Boolean).join(' · ')}
+                </span>
+            </div>
+            {user &&
+                <Button href={translatePath(`/fleets/history/${fleet_id}`)}>{t('fleets.public.open_fleet')}</Button>
+            }
+        </FlexInline>
+
+        <Wrapper padding_block='0' padding_inline='0' max_width='var(--max-col-width)'>
+            <div class="[ public-kills ]">
+                <dl class="[ public-kills__cards ]">
+                    <div>
+                        <dt>{t('fleets.outcome.destroyed')}</dt>
+                        <dd><b class="[ public-kills__kill ]">{format_isk(report.isk_destroyed)}</b><small>{t('fleets.outcome.ships').replace('{count}', report.ships_destroyed.toString())}</small></dd>
+                    </div>
+                    <div>
+                        <dt>{t('fleets.outcome.lost')}</dt>
+                        <dd><b class="[ public-kills__loss ]">{format_isk(report.isk_lost)}</b><small>{t('fleets.outcome.ships').replace('{count}', report.ships_lost.toString())}</small></dd>
+                    </div>
+                    <div>
+                        <dt>{t('fleets.history.isk_efficiency')}</dt>
+                        <dd><b>{report.efficiency !== null && report.efficiency !== undefined ? `${report.efficiency}%` : '—'}</b></dd>
+                    </div>
+                    {biggest &&
+                        <div>
+                            <dt>{t('fleets.kills.biggest')}</dt>
+                            <dd class="[ public-kills__biggest ]">
+                                {biggest.victim_ship_type_id && <img src={get_item_icon(biggest.victim_ship_type_id, 64)} alt="" width="44" height="44" loading="lazy" />}
+                                <span>
+                                    <b>{biggest.victim_ship_name}</b>
+                                    <small>{format_isk(biggest.isk_value)} · {biggest.solar_system_name}</small>
+                                </span>
+                            </dd>
+                        </div>
+                    }
+                </dl>
+
+                {fleet_kills.killmails.length > 0 &&
+                    <FleetKillFeed fleet_kills={fleet_kills} fleet_id={fleet_id} rounds={[]} public_view={true} />
+                }
+            </div>
+        </Wrapper>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .public-kills {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .public-kills__title {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .public-kills__meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .public-kills__cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+        gap: var(--space-s);
+        margin: 0;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding: var(--space-m);
+            background-color: var(--component-background);
+            border: 1px solid var(--border-color);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        dd {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: 0;
+
+            > b {
+                font-family: var(--heading-font);
+                font-size: var(--step-3);
+                font-weight: 400;
+                line-height: 1.05;
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .public-kills__cards .public-kills__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .public-kills__cards .public-kills__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .public-kills__cards .public-kills__biggest {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-xs);
+
+        > span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+</style>

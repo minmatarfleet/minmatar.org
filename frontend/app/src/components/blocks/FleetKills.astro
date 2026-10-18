@@ -76,10 +76,8 @@ const sides = [
     { key: 'losses', label: t('fleets.kills.tab_losses').replace('{count}', losses.length.toString()), hulls: by_hull(losses), rows: losses },
 ]
 
-const unfiled_srp = (srp_losses ?? []).filter(loss => !loss.filed)
-
 import Flexblock from '@components/compositions/Flexblock.astro'
-import SRPButton from '@components/blocks/SRPButton.astro'
+import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
 ---
 
 <Flexblock
@@ -125,30 +123,7 @@ import SRPButton from '@components/blocks/SRPButton.astro'
             </dl>
 
             {srp_losses && srp_losses.length > 0 &&
-                <section class="[ fleet-kills__srp ][ component ]" aria-labelledby="fleet-srp-title">
-                    <h3 id="fleet-srp-title">{t('fleets.srp.title')}</h3>
-                    <ul>
-                        {srp_losses.map(loss =>
-                            <li>
-                                <img src={get_item_icon(loss.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
-                                <span>
-                                    <b>{t('fleets.srp.pays').replace('{ship}', loss.ship_name).replace('{amount}', format_isk(loss.amount))}</b>
-                                    <small>{loss.character_name} · {t('fleets.srp.lost_at').replace('{time}', eve_clock(loss.killmail_time))}</small>
-                                </span>
-                                {loss.filed ?
-                                    <small class="[ text-green ]">{t('fleets.srp.filed')}</small> :
-                                    <SRPButton
-                                        fleet_id={fleet_id}
-                                        target='#fleet-srp-claims'
-                                        external_killmail_link={`https://zkillboard.com/kill/${loss.killmail_id}/`}
-                                        label={t('fleets.srp.file')}
-                                    />
-                                }
-                            </li>
-                        )}
-                    </ul>
-                    {unfiled_srp.length > 0 && <div id="fleet-srp-claims" />}
-                </section>
+                <FleetSrpLosses srp_losses={srp_losses} fleet_id={fleet_id} />
             }
 
             {!summary_only && buckets.length > 1 &&
@@ -158,7 +133,6 @@ import SRPButton from '@components/blocks/SRPButton.astro'
                         <small>
                             <span class="[ fleet-kills__key fleet-kills__key--destroyed ]" aria-hidden="true" />{t('fleets.kills.isk_destroyed')}
                             <span class="[ fleet-kills__key fleet-kills__key--lost ]" aria-hidden="true" />{t('fleets.kills.isk_lost')}
-                            · {t('fleets.kills.per_ten_minutes')}
                         </small>
                     </header>
                     <div
@@ -180,7 +154,7 @@ import SRPButton from '@components/blocks/SRPButton.astro'
             }
 
             {summary_only ?
-                <a class="[ fleet-kills__to-fights ]" href="#fights">{t('fleets.kills.see_fights')}</a>
+                <a class="[ fleet-kills__to-fights ]" href="#aar">{t('fleets.kills.see_fights')}</a>
                 :
                 <>
             <section class="[ fleet-kills__hulls ]" aria-labelledby="fleet-hulls-title">
@@ -252,7 +226,6 @@ import SRPButton from '@components/blocks/SRPButton.astro'
                 )}
             </section>
 
-            <small class="[ fleet-kills__note ]">{t('fleets.kills.source_note')}</small>
                 </>
             }
         </>
@@ -314,40 +287,6 @@ import SRPButton from '@components/blocks/SRPButton.astro'
                     display: flex;
                     flex-direction: column;
                 }
-            }
-        }
-    }
-
-    .fleet-kills__srp {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        border: 1px solid var(--fleet-red);
-
-        ul {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-xs);
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        li {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: var(--space-s);
-
-            > span {
-                flex: 1 1 12rem;
-                display: flex;
-                flex-direction: column;
-            }
-
-            b {
-                color: var(--highlight);
             }
         }
     }
@@ -521,10 +460,6 @@ import SRPButton from '@components/blocks/SRPButton.astro'
         font-weight: 600;
         text-align: left;
         cursor: pointer;
-    }
-
-    .fleet-kills__note {
-        opacity: 0.75;
     }
 
     @media (max-width: 48rem) {

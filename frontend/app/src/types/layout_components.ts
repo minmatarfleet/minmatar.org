@@ -577,6 +577,8 @@ export interface FleetUI {
     status?:                TrackingStatus;
     aar_link:               string;
     roam_report_url?:       string;
+    /** The #aars forum, where the FC writes the AAR. */
+    aar_forum_url?:         string;
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;

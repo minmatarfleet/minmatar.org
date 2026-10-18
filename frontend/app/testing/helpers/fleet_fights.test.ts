@@ -8,7 +8,9 @@ import {
     chart_ticks,
     earlier_rounds,
     round_bars,
-    round_groups,
+    round_opponents,
+    move_to_side,
+    killmail_engagement,
 } from '@helpers/fleet_fights'
 
 const contract = (name: string): FleetFights =>
@@ -70,7 +72,7 @@ describe('fleet fights rounds', () => {
     })
 
     it('names who the round was against', () => {
-        expect(round_groups(contract('fleet_fights_finished').rounds[0])).toEqual(['Hostile Alliance'])
+        expect(round_opponents(contract('fleet_fights_finished').rounds[0]).map(group => group.name)).toEqual(['Hostile Alliance'])
     })
 })
 
@@ -80,5 +82,32 @@ describe('round bars for a live round', () => {
         const bars = round_bars(round, '2030-01-01T00:00:00Z')
         expect(bars.length).toBeLessThanOrEqual(round.minutes + 11)
         expect(bars.reduce((sum, bar) => sum + bar.kills, 0)).toBe(round.ships_destroyed)
+    })
+})
+
+describe('battle report sides', () => {
+    it('moves a group and keeps the others, sorted by id', () => {
+        expect(move_to_side('99000002:0', 98000001, 2)).toBe('98000001:2,99000002:0')
+    })
+
+    it('moves a group again instead of listing it twice', () => {
+        expect(move_to_side('98000001:2,99000002:0', 98000001, 1)).toBe('98000001:1,99000002:0')
+    })
+
+    it('ignores junk and a missing move', () => {
+        expect(move_to_side('x:1,99000002:-1,5', NaN, NaN)).toBe('')
+    })
+})
+
+describe('killmail engagement', () => {
+    const rounds = contract('fleet_fights_finished').rounds
+    const first = rounds.find((round: any) => round.kind === 'round')!
+
+    it('tags a mail inside an engagement with its number', () => {
+        expect(killmail_engagement(first.start, rounds)).toBe(first.number)
+    })
+
+    it('leaves a mail far from every engagement untagged', () => {
+        expect(killmail_engagement('2001-01-01T00:00:00Z', rounds)).toBeNull()
     })
 })

@@ -39,7 +39,9 @@ import {
     get_fleet_my_srp,
     get_fleet_fights,
     get_fleet_participants,
+    get_fleet_composition,
     type FleetParticipants,
+    type FleetCompositionEntry,
 } from '@helpers/api.minmatar.org/fleets'
 import { settled_value } from '@helpers/settled'
 
@@ -107,6 +109,15 @@ let fleet_kills:FleetKills | null = null
 let srp_losses:FleetSrpLoss[] | null = null
 let fights:FleetFights | null = null
 let participants:FleetParticipants | null = null
+// The fits the FC set, for the read-only Ships tab.
+let composition:FleetCompositionEntry[] = []
+
+const composition_promise = fleet && !restricted ?
+    get_fleet_composition(auth_token as string, fleet_id).catch((error) => {
+        console.log(`Skipping fleet composition: ${error.message}`)
+        return []
+    }) :
+    Promise.resolve([])
 
 if (fleet?.tracking) {
     const [kills_result, fights_result, participants_result] = await Promise.allSettled([
@@ -132,6 +143,8 @@ if (fleet?.tracking) {
         }
     }
 }
+
+composition = await composition_promise
 
 const can_remove_fleet = can(gates, 'fleets.delete') ||
                          user_character?.character_id === fleet?.fleet_commander_id
@@ -245,6 +258,7 @@ const breadcrumbs = [
                 srp_losses={srp_losses}
                 fights={fights}
                 participants={participants}
+                composition={composition}
             />
         }
     </PageWide>

@@ -156,6 +156,7 @@ async function fleet_ui(access_token:string, fleet:Fleet):Promise<FleetUI> {
         status: fleet.status,
         aar_link: fleet.aar_link ?? '',
         roam_report_url: fleet.roam_report_url ?? '',
+        aar_forum_url: fleet.aar_forum_url ?? '',
         campaign_id: fleet.campaign_id ?? null,
         campaign_slug: fleet.campaign_slug ?? null,
         campaign_name: campaign_name,
