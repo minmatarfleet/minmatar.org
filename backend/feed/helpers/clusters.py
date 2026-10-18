@@ -12,7 +12,7 @@ from feed.helpers.killmail_classify import (
     dominant_attacker_faction,
     resolve_attacker_militia_factions,
 )
-from feed.models import FeedCluster, FeedKillmail
+from feed.models import FeedCluster, FeedKillmail, FeedMonitoredSystem
 from feed.rollups.config import get_rollup_config
 
 
@@ -357,10 +357,15 @@ def detect_clusters(*, since_hours: int = 48) -> int:
     fleet_min_pilots = fleet_cfg.get("min_pilots", 8)
     stale_minutes = fleet_cfg.get("stale_minutes", 20)
 
+    # The feed also keeps tracked fleets' mails outside the warzone; bursts
+    # and engagements are only about the monitored systems.
     killmails = list(
-        FeedKillmail.objects.filter(killmail_time__gte=since).order_by(
-            "killmail_time"
-        )
+        FeedKillmail.objects.filter(
+            killmail_time__gte=since,
+            solar_system_id__in=FeedMonitoredSystem.objects.filter(
+                is_active=True
+            ).values("solar_system_id"),
+        ).order_by("killmail_time")
     )
     by_system: dict[int, list[FeedKillmail]] = defaultdict(list)
     for km in killmails:

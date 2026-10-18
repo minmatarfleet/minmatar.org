@@ -340,6 +340,14 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Rebuild fleet fight timelines",
+        {
+            "task": "fleets.tasks.rebuild_fight_timelines",
+            "schedule": schedule(timedelta(seconds=30)),
+            "options": {"expire_seconds": 30, "queue": "realtime"},
+        },
+    ),
+    (
         "[Misc] Poll Active Fleet Implants",
         {
             "task": "fleets.tasks.poll_active_fleet_implants",

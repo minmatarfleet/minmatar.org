@@ -18,8 +18,10 @@ from app.testing import make_token
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
+from fleets.helpers.fights.rounds import build_payload
 from fleets.models import (
     EveFleet,
+    EveFleetFightTimeline,
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
@@ -158,6 +160,53 @@ class FleetContractTests(TestCase):
             character_id=PILOT_CHARACTER,
             character_name="Pilot One",
             fitting=self.guardian,
+        )
+        self._fights()
+
+    def _fights(self):
+        """A won round 20 minutes ago and a round still going."""
+
+        def row(killmail_id, minutes_ago, outcome):
+            return {
+                "id": killmail_id,
+                "t": (self.now - timedelta(minutes=minutes_ago)).isoformat(),
+                "outcome": outcome,
+                "system": AMAMAKE,
+                "ship": RIFTER_ID,
+                "victim": None,
+                "victim_group": 99000900 if outcome == "kill" else None,
+                "isk": 20_000_000,
+                "pending": False,
+                "pod": False,
+                "pilots": [FC_CHARACTER],
+                "hostiles": ([[99000900, 6001]] if outcome == "loss" else []),
+            }
+
+        rows = [row(1, 20, "kill"), row(2, 19, "kill"), row(3, 19, "kill")]
+        rows += [row(4, 18, "kill"), row(5, 17, "loss")]
+        rows += [row(6, 4, "kill"), row(7, 3, "loss"), row(8, 2, "kill")]
+        rows += [row(9, 1, "kill")]
+        names = {
+            "systems": {str(AMAMAKE): "Amamake"},
+            "ships": {str(RIFTER_ID): "Rifter"},
+            "groups": {"99000900": "Hostile Alliance"},
+            "our_groups": [],
+        }
+        EveFleetFightTimeline.objects.create(
+            eve_fleet=self.fleet,
+            killmails=rows,
+            names=names,
+            computed_at=self.now,
+            payload=build_payload(
+                rows,
+                events=[],
+                names=names,
+                edits=[],
+                battles={},
+                start=self.now - timedelta(minutes=25),
+                end=None,
+                now=self.now,
+            ),
         )
 
     def _get(self, url, user):
