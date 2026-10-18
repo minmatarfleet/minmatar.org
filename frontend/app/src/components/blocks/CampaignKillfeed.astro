@@ -59,7 +59,7 @@ const militia_name = (side:Militia) => t(`campaigns.killfeed.faction_${side}`)
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 import CampaignPager from '@components/blocks/CampaignPager.astro'
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
 import AmarrLogo from '@components/logos/AmarrLogo.astro'
@@ -91,7 +91,7 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
     {killmails.length === 0 ?
         <small>{t('campaigns.killfeed.none')}</small>
         :
-        <CampaignTable
+        <DataGrid
             min_width='44rem'
             template='11rem 8rem minmax(12rem, 1fr) minmax(12rem, 1fr)'
             columns={[
@@ -105,10 +105,10 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                 const killer_side = militia(killmail.killer_faction_id)
 
                 return (
-                    <div class="[ campaign-table-row ]" role="row" data-outcome={killmail.outcome}>
-                        <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
+                    <div class="[ data-grid-row ]" role="row" data-outcome={killmail.outcome}>
+                        <small role="cell" class="[ data-grid-muted ]">{format_date_time(lang, killmail.killmail_time)}</small>
                         <span role="cell">{system_names.get(killmail.solar_system_id) ?? killmail.solar_system_id}</span>
-                        <div class="[ campaign-cell-media ]" role="cell">
+                        <div class="[ data-grid-media ]" role="cell">
                             {killmail.victim_ship_type_id &&
                                 <img
                                     loading='lazy'
@@ -120,12 +120,12 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                             }
                             <Flexblock gap='0' class="[ min-w-0 ]">
                                 <span>{ship_names.get(killmail.victim_ship_type_id ?? 0) ?? t('campaigns.killfeed.unknown_ship')}</span>
-                                <small class="[ campaign-table-muted ]">
+                                <small class="[ data-grid-muted ]">
                                     {t('campaigns.killfeed.flown_by').replace('{pilot}', killmail.victim_character_name || t('campaigns.killfeed.unknown_pilot'))}
                                 </small>
                             </Flexblock>
                         </div>
-                        <div class="[ campaign-cell-media ]" role="cell">
+                        <div class="[ data-grid-media ]" role="cell">
                             <span
                                 class:list={['[ campaign-militia ]', `campaign-militia-${killer_side}`]}
                                 role="img"
@@ -149,13 +149,13 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                             }
                             <Flexblock gap='0' class="[ min-w-0 ]">
                                 <span>{killmail.killer_character_name || t('campaigns.killfeed.unknown_pilot')}</span>
-                                <small class="[ campaign-table-muted ]">{format_isk(killmail.isk_value)} ISK</small>
+                                <small class="[ data-grid-muted ]">{format_isk(killmail.isk_value)} ISK</small>
                             </Flexblock>
                         </div>
                     </div>
                 )
             })}
-        </CampaignTable>
+        </DataGrid>
     }
 
     <CampaignPager page={page} has_more={has_more} url_for={next => partial_url(outcome, next)} target='#campaign-killfeed' />
