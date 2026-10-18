@@ -5544,6 +5544,7 @@ export const ui = {
         'campaigns.coverage.hostiles': 'Hostile activity',
         'campaigns.coverage.none': 'No coverage data yet.',
         'campaigns.coverage.hour_label': '{hour}:00 UTC',
+        'campaigns.coverage.hour': 'Hour (UTC)',
 
         'campaigns.advantage.dialog_title': 'Report advantage',
         'campaigns.advantage.our_pct': 'Our advantage %',
