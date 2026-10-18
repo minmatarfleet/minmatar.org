@@ -1,4 +1,5 @@
 ---
+import { partial_redirect } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -27,7 +28,7 @@ if (
     ))
 ) {
     const return_to = encodeURIComponent(translatePath('/ships/srp/'))
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+    return partial_redirect(Astro.request, `${translatePath('/onboarding/')}?return=${return_to}`)
 }
 
 import type { SRPFrontendPrograms } from '@dtypes/layout_components'
