@@ -1312,7 +1312,7 @@ class CampaignParticipantStatAdmin(admin.ModelAdmin):
         "campaign",
         "points",
         "rank_points",
-        "characters_tracked",
+        "active_days",
     )
     list_filter = ("campaign",)
     search_fields = ("user__username",)

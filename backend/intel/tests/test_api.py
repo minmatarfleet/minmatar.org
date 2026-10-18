@@ -1,8 +1,6 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.core.cache import cache
 from django.test import TestCase
@@ -20,15 +18,9 @@ from intel.services import local as local_service
 from intel.services.local import FRIENDLY, HOSTILE, NEUTRAL
 
 from .test_paste import DSCAN_PASTE
+from app.testing import auth_headers
 
 AMAMAKE = 30002537
-
-
-def auth_headers(user):
-    token = jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 def grant(user, *codenames):

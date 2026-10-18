@@ -33,6 +33,29 @@
         }
     }
 
+    // The update prompt, the same in every overlay window: restart once the installer build has downloaded
+    // the update, or a link to the release when the build can't update itself (portable). null: nothing to say.
+    function update_prompt(update) {
+        const u = update || {}
+        if (u.status === 'ready') return { label: 'Restart to update', title: `v${u.version} is downloaded. Restart the app to install it`, command: 'update:install' }
+        if (u.status === 'available') return { label: `v${u.version} available`, title: 'Open the release page to download it', command: 'update:download' }
+        return null
+    }
+
+    // Draws update_prompt on a footer button (hidden when there is nothing to say); wire_update sends its command.
+    function show_update(button, update) {
+        const prompt = update_prompt(update)
+        button.hidden = !prompt
+        if (!prompt) return
+        button.textContent = prompt.label
+        button.title = prompt.title
+        button.dataset.updateCommand = prompt.command
+    }
+
+    function wire_update(button, send) {
+        button.addEventListener('click', () => { if (button.dataset.updateCommand) send(button.dataset.updateCommand) })
+    }
+
     // Fade in/out on the main process's show/hide. The body starts hidden (class in the HTML).
     function follow_visibility(on_visibility) {
         on_visibility(visible => document.body.classList.toggle('is-hidden', !visible))
@@ -86,7 +109,7 @@
         handle(document.getElementById('resize'), 'resize', () => true)
     }
 
-    const api = { background_alpha, apply, follow_visibility, wire_overlay, wire_drag }
+    const api = { background_alpha, apply, follow_visibility, wire_overlay, wire_drag, update_prompt, show_update, wire_update }
     if (typeof module !== 'undefined' && module.exports) module.exports = api
     else root.eve_window = api
 })(this)

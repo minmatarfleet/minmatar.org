@@ -923,6 +923,11 @@ class SrpRouterTestCase(TestCase):
         data = response.json()
         self.assertEqual("dps", data["category"])
         self.assertEqual("Testing FTW", data["comments"])
+        self.assertEqual(combat_log.id, data["combat_log_id"])
+        self.assertEqual(
+            combat_log.id,
+            EveFleetShipReimbursement.objects.get(id=data["id"]).combat_log_id,
+        )
 
 
 class SrpWithdrawTestCase(TestCase):

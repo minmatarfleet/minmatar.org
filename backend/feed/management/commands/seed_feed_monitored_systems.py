@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import requests
 from django.core.management.base import BaseCommand
 
+from eveonline.esi_http import esi_request
 from feed.constants import FW_WARZONE_REGIONS
 from feed.helpers.monitored_systems import invalidate_monitored_systems_cache
 from feed.models import FeedMonitoredSystem
@@ -47,10 +47,6 @@ def seed_from_fixture() -> int:
     return count
 
 
-def _esi_headers() -> dict[str, str]:
-    return {"User-Agent": "minmatar.org-feed-seed/1.0"}
-
-
 def _region_id_for_constellation(
     constellation_id: int,
     *,
@@ -58,27 +54,24 @@ def _region_id_for_constellation(
 ) -> int | None:
     if constellation_id in cache:
         return cache[constellation_id]
-    response = requests.get(
-        f"https://esi.evetech.net/latest/universe/constellations/{constellation_id}/",
-        headers=_esi_headers(),
-        timeout=30,
+    result = esi_request(
+        "GET", f"/universe/constellations/{constellation_id}/"
     )
-    if response.status_code != 200:
+    if result.status != 200 or not result.ok:
         return None
-    region_id = response.json().get("region_id")
+    region_id = (result.data or {}).get("region_id")
     if region_id is not None:
         cache[constellation_id] = region_id
     return region_id
 
 
 def seed_from_esi() -> int:
-    fw_response = requests.get(
-        "https://esi.evetech.net/latest/fw/systems/",
-        headers=_esi_headers(),
-        timeout=60,
-    )
-    fw_response.raise_for_status()
-    fw_systems = fw_response.json()
+    fw_result = esi_request("GET", "/fw/systems/", timeout=60, empty=[])
+    if not fw_result.ok:
+        if fw_result.response is not None and fw_result.status >= 400:
+            fw_result.response.raise_for_status()
+        raise fw_result.error
+    fw_systems = fw_result.data
 
     region_ids = set(FW_WARZONE_REGIONS.keys())
     constellation_regions: dict[int, int] = {}
@@ -87,14 +80,10 @@ def seed_from_esi() -> int:
         system_id = entry.get("solar_system_id")
         if not system_id:
             continue
-        sys_response = requests.get(
-            f"https://esi.evetech.net/latest/universe/systems/{system_id}/",
-            headers=_esi_headers(),
-            timeout=30,
-        )
-        if sys_response.status_code != 200:
+        sys_result = esi_request("GET", f"/universe/systems/{system_id}/")
+        if sys_result.status != 200 or not sys_result.ok:
             continue
-        system_data = sys_response.json()
+        system_data = sys_result.data or {}
         constellation_id = system_data.get("constellation_id")
         if not constellation_id:
             continue

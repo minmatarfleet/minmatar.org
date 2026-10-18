@@ -162,6 +162,29 @@ class CorporationAboutTestCase(TestCase):
             {"name": "Amamake", "share": 1.0}, about["home_system"]
         )
 
+    def test_fleets_led_skips_cancelled_campaign_and_future_fleets(self):
+        fc = self._user("fc")
+        self._character(411, "FC Main", fc, main=True)
+        for offset_days, fleet_type, status in (
+            (-2, "training", "complete"),
+            (-3, "strategic", "pending"),
+            (-4, "training", "cancelled"),
+            (-5, "standing", "active"),
+            (-6, "gang", "complete"),
+            (3, "strategic", "pending"),
+        ):
+            EveFleet.objects.create(
+                start_time=NOW + timedelta(days=offset_days),
+                type=fleet_type,
+                status=status,
+                created_by=fc,
+            )
+
+        self.assertEqual(
+            [{"character_id": 411, "character_name": "FC Main", "value": 2}],
+            self._about()["leaderboards"]["fleets_led"],
+        )
+
     def test_tribe_groups_count_people_once(self):
         pilot = self._user("tribal")
         self._character(501, "Tribal", pilot, main=True)

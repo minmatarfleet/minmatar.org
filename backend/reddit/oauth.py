@@ -1,10 +1,12 @@
 """Reddit authorization-code OAuth for linking a user's own account."""
 
+import hashlib
 import logging
 from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,12 @@ ME_URL = "https://oauth.reddit.com/api/v1/me"
 
 # identity: read the username; submit: post; flair: list and set link flair.
 SCOPES = ("identity", "submit", "flair")
+
+ACCESS_TOKEN_CACHE_PREFIX = "reddit:access-token:"
+# Reddit access tokens last an hour (expires_in). Drop ours five minutes
+# early so a token is never used right at its expiry.
+ACCESS_TOKEN_EXPIRY_MARGIN_SECONDS = 300
+DEFAULT_ACCESS_TOKEN_SECONDS = 3600
 
 
 class RedditOAuthError(Exception):
@@ -78,6 +86,76 @@ def _token_request(data: dict) -> dict:
     return body
 
 
+def _access_token_key(grant: str, identity: str) -> str:
+    """Cache key for one grant. The identity (username or refresh token)
+    is hashed so no credential appears in a cache key."""
+    digest = hashlib.sha256(
+        f"{settings.REDDIT_CLIENT_ID}:{grant}:{identity}".encode()
+    ).hexdigest()
+    return ACCESS_TOKEN_CACHE_PREFIX + digest
+
+
+def _cache_get(key: str):
+    try:
+        return cache.get(key)
+    except Exception:  # pragma: no cover - cache backend down
+        logger.warning("Reddit token cache unavailable", exc_info=True)
+        return None
+
+
+def _cache_set(key: str, value: str, seconds: int) -> None:
+    try:
+        cache.set(key, value, seconds)
+    except Exception:  # pragma: no cover
+        logger.warning("Reddit token cache unavailable", exc_info=True)
+
+
+def _cache_seconds(body: dict) -> int:
+    try:
+        lifetime = int(body.get("expires_in") or DEFAULT_ACCESS_TOKEN_SECONDS)
+    except (TypeError, ValueError):
+        lifetime = DEFAULT_ACCESS_TOKEN_SECONDS
+    return lifetime - ACCESS_TOKEN_EXPIRY_MARGIN_SECONDS
+
+
+def _cached_access_token(grant: str, identity: str, data: dict) -> str:
+    """An access token for this grant, from the cache until near expiry.
+
+    Two workers that miss at once both ask Reddit and the later write
+    wins; both tokens are valid, so no lock is needed.
+    """
+    key = _access_token_key(grant, identity)
+    token = _cache_get(key)
+    if token:
+        return token
+    body = _token_request(data)
+    seconds = _cache_seconds(body)
+    if seconds > 0:
+        _cache_set(key, body["access_token"], seconds)
+    return body["access_token"]
+
+
+def forget_access_token(grant: str, identity: str) -> None:
+    """Drop a cached token Reddit has rejected (e.g. after a 401)."""
+    try:
+        cache.delete(_access_token_key(grant, identity))
+    except Exception:  # pragma: no cover
+        logger.warning("Reddit token cache unavailable", exc_info=True)
+
+
+def password_access_token(username: str, password: str) -> str:
+    """The alliance account's access token (password grant), cached."""
+    return _cached_access_token(
+        "password",
+        username,
+        {
+            "grant_type": "password",
+            "username": username,
+            "password": password,
+        },
+    )
+
+
 def exchange_code(code: str) -> dict:
     """Swap an authorization code for access and refresh tokens."""
     return _token_request(
@@ -90,12 +168,14 @@ def exchange_code(code: str) -> dict:
 
 
 def refresh_access_token(refresh_token: str) -> str:
-    """A fresh one-hour access token from a stored refresh token."""
+    """A one-hour access token from a stored refresh token, cached."""
     if not refresh_token:
         raise RedditOAuthError("invalid_grant")
-    return _token_request(
-        {"grant_type": "refresh_token", "refresh_token": refresh_token}
-    )["access_token"]
+    return _cached_access_token(
+        "refresh_token",
+        refresh_token,
+        {"grant_type": "refresh_token", "refresh_token": refresh_token},
+    )
 
 
 def fetch_username(access_token: str) -> str:

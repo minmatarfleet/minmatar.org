@@ -9,8 +9,7 @@ from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from market.endpoints.cache import get_cached
-from market.helpers.pricing import get_prices_by_type_id
-from market.models import EveMarketItemLocationPrice
+from market.helpers.pricing import baseline_book, get_prices_by_type_id
 from market.models.contract import EveMarketContractExpectation
 from market.models.item import (
     EveMarketFittingExpectation,
@@ -39,25 +38,26 @@ def _baseline_prices_by_name(type_info: dict) -> dict[str, float]:
     }
 
 
-def _get_baseline_location_prices() -> (
-    dict[str, tuple[float | None, float | None, float | None]]
-):
-    """Sell, buy, split prices per item name at the price_baseline location (EveMarketItemLocationPrice)."""
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if not baseline:
-        return {}
-    rows = (
-        EveMarketItemLocationPrice.objects.filter(location=baseline)
-        .select_related("item")
-        .values_list("item__name", "sell_price", "buy_price", "split_price")
-    )
+def _get_baseline_location_prices(
+    type_info: dict,
+) -> dict[str, tuple[float | None, float | None, float | None]]:
+    """
+    Sell, buy, split per item name at the price_baseline location
+    (EveMarketItemLocationPrice), for the types this response renders.
+    """
+    id_to_name = {
+        info[0]: name
+        for name, info in type_info.items()
+        if info[0] is not None
+    }
     return {
-        name: (
-            float(sell) if sell is not None else None,
-            float(buy) if buy is not None else None,
-            float(split) if split is not None else None,
+        id_to_name[type_id]: (
+            float(row.sell) if row.sell is not None else None,
+            float(row.buy) if row.buy is not None else None,
+            float(row.split) if row.split is not None else None,
         )
-        for name, sell, buy, split in rows
+        for type_id, row in baseline_book(id_to_name).items()
+        if type_id in id_to_name
     }
 
 
@@ -174,7 +174,6 @@ def get_sell_orders(request, location_id: int | None = None):
         return []
 
     location_pks = [location.pk for location in location_list]
-    baseline_location_prices = _get_baseline_location_prices()
     effective_by_location = get_effective_item_expectations_bulk(location_list)
     current_stock_by_location = _bulk_current_stock_by_location(location_pks)
     lowest_prices_by_location = _bulk_lowest_prices_by_location(location_pks)
@@ -198,6 +197,7 @@ def get_sell_orders(request, location_id: int | None = None):
         )
     )
     baseline_prices = _baseline_prices_by_name(type_info)
+    baseline_location_prices = _get_baseline_location_prices(type_info)
 
     results = []
     for location in location_list:

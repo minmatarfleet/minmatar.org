@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("campaigns", "0028_recount_multibox_kills"),
+        ("campaigns", "0030_remove_unwritten_stat_columns"),
     ]
 
     operations = [

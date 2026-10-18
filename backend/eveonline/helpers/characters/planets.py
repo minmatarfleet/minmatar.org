@@ -1,14 +1,13 @@
 """Helpers to update a character's planetary interaction data from ESI."""
 
 import logging
-from datetime import datetime
 from decimal import Decimal
 
-import pytz
 from django.utils import timezone
 from eveuniverse.models import EveType
 
 from eveonline.client import EsiClient, esi_public
+from eveonline.helpers.esi import parse_esi_date
 from eveonline.models import EveCharacter
 from eveonline.models.characters import (
     EveCharacterPlanet,
@@ -19,20 +18,6 @@ from eveonline.models.universe import EveUniverseSchematic
 logger = logging.getLogger(__name__)
 
 SECONDS_PER_DAY = 86400
-
-
-def _parse_esi_date(value):
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return (
-            timezone.make_aware(value) if timezone.is_naive(value) else value
-        )
-    # pylint: disable=no-value-for-parameter
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = pytz.UTC.localize(dt)
-    return dt
 
 
 # ---------------------------------------------------------------------------
@@ -560,9 +545,7 @@ def update_character_planets(eve_character_id: int) -> int:
                 "solar_system_id": planet_entry.get("solar_system_id", 0),
                 "upgrade_level": planet_entry.get("upgrade_level", 0),
                 "num_pins": planet_entry.get("num_pins", 0),
-                "last_update": _parse_esi_date(
-                    planet_entry.get("last_update")
-                ),
+                "last_update": parse_esi_date(planet_entry.get("last_update")),
             },
         )
 

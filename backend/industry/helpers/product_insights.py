@@ -33,10 +33,10 @@ from eveonline.models import (
 )
 from eveuniverse.models import (
     EveIndustryActivityProduct,
-    EveMarketPrice,
     EveSolarSystem,
 )
 from industry.models import IndustryOrderItem, IndustryProduct
+from market.helpers.pricing import get_history_averages_by_type_id
 from market.models import (
     EveMarketContractItem,
     EveMarketInferredSale,
@@ -47,7 +47,8 @@ logger = logging.getLogger(__name__)
 
 INSIGHTS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_INSIGHTS_KEY = "industry_product_insights:v2:{product_id}"
+# v3: unit_price is the Jita guide price, not the CCP average.
+_INSIGHTS_KEY = "industry_product_insights:v3:{product_id}"
 _LOCK_KEY = "industry_product_insights:refreshing"
 
 WINDOW_DAYS = 90
@@ -579,11 +580,8 @@ def compute_product_insights(now: datetime | None = None) -> dict[int, dict]:
     type_ids = list(by_type)
     ship_type_ids = [tid for tid, data in by_type.items() if data["is_ship"]]
 
-    prices = dict(
-        EveMarketPrice.objects.filter(eve_type_id__in=type_ids).values_list(
-            "eve_type_id", "average_price"
-        )
-    )
+    # Jita guide value (Forge history, then CCP average): "ISK lost" etc.
+    prices = get_history_averages_by_type_id(type_ids)
     for tid, price in prices.items():
         by_type[tid]["unit_price"] = float(price) if price else None
 

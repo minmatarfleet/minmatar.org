@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
 const { start_login, decode_token_payload, TokenStore, LoginCancelled, LoginFailed } = require('./auth')
-const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('./api')
+const { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign } = require('./api')
 const { EveClients } = require('./eve_clients')
 const { Settings } = require('./settings')
 const { EveWindowSettings, character_id_for_name } = require('./eve_settings')
@@ -16,8 +16,11 @@ const { OVERLAY_WINDOWS, window_def } = require('./windows')
 const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
-const { IntelController } = require('./intel')
+const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE, REFRESH_MS: INTEL_REFRESH_MS } = require('./intel')
+const { Poller, window_data_wanted } = require('./poller')
 const { MenuFade, intersects } = require('./menu_fade')
+const { COMMANDS, id_of, fleet_ship, intel_range, window_toggle } = require('./ipc_commands')
+const { TOGGLES, read_toggle, window_key, stored_window, read_window } = require('./settings_schema')
 
 const config = load_config()
 const DIAG = (process.argv.find(a => a.startsWith('--diag=')) || '').slice(7)
@@ -31,12 +34,11 @@ const CCP_NOTICE = '© CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", 
     'trademarks or registered trademarks of CCP hf. This application has been created under the EVE Developer License Agreement. ' +
     'It is a Minmatar Fleet alliance tool and is not affiliated with or endorsed by CCP hf.'
 
-// Settings the Settings window may change (booleans only), saved on the account (settings.js).
-// "locked" is the pin button: whether the windows can be dragged and resized.
-const USER_SETTINGS = ['locked', 'show_sneak', 'fade_on_right_click']
-const SETTINGS_DEFAULTS = { locked: true, show_sneak: true, fade_on_right_click: true }
-const INTEL_DEFAULT_RANGE = 5   // jumps
-const SESSION_SETTINGS = []
+// Settings the Settings window may change are the boolean TOGGLES in settings_schema.js, saved on the
+// account (settings.js) with every other key there. "locked" is the pin button: whether the windows can
+// be dragged and resized.
+const USER_SETTINGS = Object.keys(TOGGLES)
+const toggle = key => read_toggle(key, settings.get(key))
 const SETTINGS_WAIT_MS = 3000   // how long a sign-in waits for the account's settings before showing defaults
 
 function diag(entry) {
@@ -56,8 +58,9 @@ const overlays = new Map()       // window id -> BrowserWindow
 const hidden = new Set()         // overlay ids closed/minimised this session (the tray or Settings brings them back)
 let active_hwnd = null           // last logged-in EVE client that was in front (Sneak sits on its badge)
 let login_flow = null
-let refresh_timer = null
-let list_refreshed_at = 0
+let reminder_timer = null
+let pollers = {}                 // window id -> Poller for that window's data (created at start-up)
+let intel_on = false             // the Intel window is enabled for the signed-in pilot
 let fleet_snapshot = null        // what the Fleets window's fleet view shows (fleet_window.js), sent on its own channel
 let quitting = false
 let glass_ready = false
@@ -202,20 +205,18 @@ function show_login() {
 // ---------------------------------------------------------------- overlay windows
 
 // Each window's settings are one key ("window.fleets": { enabled, bounds }) so a change to one window
-// never overwrites another's on the account.
-const window_key = id => `window.${id}`
-
+// never overwrites another's on the account. Read through settings_schema.js; a save spreads the stored
+// object so fields another version added survive.
 function window_saved(id) {
-    return settings.get(window_key(id)) || {}
+    return read_window(settings.get(window_key(id)), window_def(id))
 }
 
 function window_enabled(id) {
-    const saved = window_saved(id)
-    return typeof saved.enabled === 'boolean' ? saved.enabled : window_def(id).default_enabled
+    return window_saved(id).enabled
 }
 
 function save_window(id, patch) {
-    settings.set(window_key(id), { ...window_saved(id), ...patch })
+    settings.set(window_key(id), { ...stored_window(settings.get(window_key(id))), ...patch })
 }
 
 // Moves made by the app (restoring a saved spot, or the fallback when it's off this PC's screens) are
@@ -271,9 +272,9 @@ function show_windows() {
         if (!overlays.has(def.id)) create_overlay(def)
     }
     reveal_overlays()
-    start_refresh()
-    update_polling()
+    start_reminders()
     sync_intel()
+    update_polling()
 }
 
 function set_window_enabled(id, enabled) {
@@ -283,12 +284,11 @@ function set_window_enabled(id, enabled) {
         hidden.delete(id)
         if (state.user && !overlays.has(id)) create_overlay(window_def(id))
         reveal_overlays()
-        WINDOW_LOADERS[id]?.()   // a window enabled mid-session has no data yet
     } else {
         destroy_overlay(id)
     }
-    update_polling()
     sync_intel()
+    update_polling()   // a window enabled mid-session loads at once (it has no data yet)
     update_tray()
     push_state()
 }
@@ -370,7 +370,7 @@ function update_overlay_visibility({ force = false } = {}) {
 
 // The helper reports mouse buttons only while this is on and a client is in front.
 function sync_button_watch() {
-    if (eve) eve.watch_buttons(!!state.user && !!settings.get('fade_on_right_click'))
+    if (eve) eve.watch_buttons(!!state.user && toggle('fade_on_right_click'))
 }
 
 // Windows near the menu are hidden outright: fading only the page would leave the native glass (blur and tint)
@@ -430,7 +430,7 @@ function update_mascot() {
     if (!eve || !settings) return
     if (eve.foreground.client && is_logged_in_client(eve.foreground)) active_hwnd = eve.foreground.hwnd
     const client = active_client()
-    const wanted = state.user && settings.get('show_sneak') && !helper_starting()
+    const wanted = state.user && toggle('show_sneak') && !helper_starting()
     const stay = stays_with_eve()
     const show = wanted ? mascot_should_show({ helper_ready: eve.ready, foreground: eve.foreground, own_pids: own_pids(), active_client: client }) : false
     if (show === false) return conceal(mascot_win, { instant: !mascot_win || hide_instantly(eve.foreground) })
@@ -479,12 +479,12 @@ function apply_loaded_settings(keys) {
         const win = overlays.get(def.id)
         if (!window_enabled(def.id)) destroy_overlay(def.id)
         else if (!win) {
-            create_overlay(def)
-            WINDOW_LOADERS[def.id]?.()   // enabled by the account's settings: it has no data yet
+            create_overlay(def)   // enabled by the account's settings: update_polling below loads it
         } else if (window_saved(def.id).bounds && !win.isDestroyed()) place(win, on_screen_bounds(window_saved(def.id).bounds, def))
     }
     update_overlay_visibility({ force: true })
     sync_intel()
+    update_polling()
     update_tray()
     push_state()
 }
@@ -500,7 +500,7 @@ function adopt_local_settings_file(remote_values) {
     if (Object.keys(remote_values).length || !fs.existsSync(LEGACY_SETTINGS_FILE)) return
     let legacy
     try { legacy = JSON.parse(fs.readFileSync(LEGACY_SETTINGS_FILE, 'utf8')) } catch (e) { legacy = {} }
-    for (const key of USER_SETTINGS) if (!SESSION_SETTINGS.includes(key) && typeof legacy[key] === 'boolean') settings.set(key, legacy[key])
+    for (const key of USER_SETTINGS) if (typeof legacy[key] === 'boolean') settings.set(key, legacy[key])
     const windows = { ...(legacy.windows || {}) }
     if (legacy.fleets_bounds && !windows.fleets) windows.fleets = { bounds: legacy.fleets_bounds }
     for (const [id, saved] of Object.entries(windows)) if (window_def(id) && saved) settings.set(window_key(id), saved)
@@ -521,26 +521,39 @@ function set_user_setting(key, value) {
 
 // ---------------------------------------------------------------- data
 
-// The fleet list and the fleet view poll only while the Fleets window is up: not closed to the tray,
-// and not while EVE isn't running, when the window can't show anyway.
-function polling_wanted() {
-    if (!state.user || !settings) return false
-    const win = overlays.get('fleets')
-    if (!win || win.isDestroyed() || hidden.has('fleets')) return false
-    return !eve || !eve.supported || eve.failed || eve.eve_running
+// A window's data is polled only while the window can show (poller.js window_data_wanted); otherwise
+// polling would only load the API. Coming back loads at once if the data is stale.
+function window_wanted(id) {
+    const win = overlays.get(id)
+    return window_data_wanted({
+        signed_in: !!(state.user && settings),
+        open: !!(win && !win.isDestroyed()),
+        hidden: hidden.has(id),
+        helper: eve,
+    })
 }
 
+// Re-check every poller. Called whenever a window opens, closes or hides, EVE starts or stops, or the pilot changes.
 function update_polling() {
     if (!fleet_window) return
-    const wanted = polling_wanted()
-    fleet_window.set_active(wanted)
-    if (wanted && list_wanted() && Date.now() - list_refreshed_at >= config.refresh_ms) refresh_fleets()
+    fleet_window.set_active(window_wanted('fleets'))   // the fleet views (fleet_window.js)
+    for (const poller of Object.values(pollers)) poller.sync()
 }
 
-// The schedule feeds every tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed), so it
-// is fetched whenever the window is up; the fleet views have their own poll.
-function list_wanted() {
-    return polling_wanted()
+// The schedule feeds every Fleets tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed);
+// Campaigns and Intel each have their own data. Same rule for all (poller.js).
+function create_pollers() {
+    const poller = (id, interval_ms, run) => new Poller({ interval_ms, run, wanted: () => window_wanted(id), on_unauthorized: session_expired })
+    pollers = {
+        fleets: poller('fleets', config.refresh_ms, refresh_fleets),
+        campaigns: poller('campaigns', config.refresh_ms, refresh_campaign),
+        intel: poller('intel', INTEL_REFRESH_MS, () => intel.refresh()),
+    }
+}
+
+// Every 401 from the API ends up here: the session is gone, sign out once.
+function session_expired() {
+    if (state.user) sign_out('Your session has expired. Sign in again.')
 }
 
 function fetch_error(err, what) {
@@ -550,21 +563,24 @@ function fetch_error(err, what) {
 }
 
 // Each window's data loads on its own, so a slow campaign request never holds back the fleets list.
-// A load already in flight is reused rather than started twice (interval tick, refresh button, enabling a window).
+// A load already in flight is reused rather than started twice (poll, refresh button, enabling a window).
+// Resolves true when it loaded, false when it failed (the poller backs off).
 const in_flight = new Map()   // source -> promise
 
 function load(source, fetcher, apply) {
-    if (!state.user) return Promise.resolve()
+    if (!state.user) return Promise.resolve(false)
     if (in_flight.has(source)) return in_flight.get(source)
     const done = (async () => {
         try {
             const value = await fetcher()
             if (state.user) apply(value, null)   // not if the pilot signed out meanwhile
+            return true
         } catch (err) {
             diag({ t: 'refresh-error', source, status: err.status, message: err.message })
-            if (!state.user) return
-            if (err instanceof ApiError && err.status === 401) return sign_out('Your session has expired. Sign in again.')
-            apply(null, err)
+            if (!state.user) return false
+            if (is_unauthorized(err)) session_expired()
+            else apply(null, err)
+            return false
         }
     })().finally(() => {
         in_flight.delete(source)
@@ -577,10 +593,7 @@ function load(source, fetcher, apply) {
     return done
 }
 
-// The upcoming list is only fetched while it's on screen (force: the refresh button and tray).
-function refresh_fleets({ force = false } = {}) {
-    if (!force && !list_wanted()) return Promise.resolve()
-    list_refreshed_at = Date.now()
+function refresh_fleets() {
     return load('fleets', () => load_upcoming_fleets(api, config.web_url), (fleets, err) => {
         if (err) return void (state.error = fetch_error(err, 'fleets'))
         state.fleets = fleets
@@ -599,34 +612,38 @@ function refresh_campaign() {
     })
 }
 
-const WINDOW_LOADERS = { fleets: refresh_fleets, campaigns: refresh_campaign }
+// The refresh buttons and the tray's Refresh: every enabled window's data now, whether or not it's on
+// screen. A disabled window costs no requests.
+function refresh_all() {
+    if (!state.user) return
+    for (const [id, poller] of Object.entries(pollers)) if (window_enabled(id)) poller.poll()
+    if (fleet_window) fleet_window.poll()
+    check_reminders()
+}
 
-// Data for the windows the pilot has enabled; a disabled window costs no requests.
-function refresh({ force = false } = {}) {
-    for (const [id, loader] of Object.entries(WINDOW_LOADERS)) if (window_enabled(id)) loader({ force })
-    // "Remind me" toasts fire whether or not the Fleets window is up.
+// "Remind me" toasts fire whether or not the Fleets window is up.
+function check_reminders() {
     if (fleet_window && state.user) fleet_window.check_reminders()
 }
 
-function start_refresh() {
-    clearInterval(refresh_timer)
-    refresh()
-    refresh_timer = setInterval(refresh, config.refresh_ms)
+function start_reminders() {
+    clearInterval(reminder_timer)
+    check_reminders()
+    reminder_timer = setInterval(check_reminders, config.refresh_ms)
 }
 
 // ---------------------------------------------------------------- intel
 
-// Poll the intel sheet only while the Intel window is on.
+// The Intel window was turned on (or off) for this pilot: give it the saved range and where the pilot is.
+// Its poller (update_polling) does the fetching.
 function sync_intel() {
     const on = !!state.user && window_enabled('intel')
-    if (on && !intel.timer) {
+    if (on && !intel_on) {
         const range = window_saved('intel').range
         intel.set_options({ range: range === undefined ? INTEL_DEFAULT_RANGE : range })
         intel.set_origin(state.location)
-        intel.start()
-    } else if (!on && intel.timer) {
-        intel.stop()
     }
+    intel_on = on
 }
 
 // Typing a note needs keyboard focus, which overlay windows never take. Let the Intel window take it
@@ -687,7 +704,9 @@ async function begin_login() {
 }
 
 function sign_out(reason = null) {
-    clearInterval(refresh_timer)
+    clearInterval(reminder_timer)
+    for (const poller of Object.values(pollers)) poller.reset()
+    intel_on = false
     fleet_window.reset()
     api.forget_cached()
     set_fleet_snapshot(null)
@@ -745,9 +764,9 @@ function push_state() {
     const payload = {
         ...state,
         version: app.getVersion(),
-        locked: settings.get('locked'),
+        locked: toggle('locked'),
         settings_sync: settings.status,
-        settings: Object.fromEntries(USER_SETTINGS.map(k => [k, settings.get(k)])),
+        settings: Object.fromEntries(USER_SETTINGS.map(k => [k, toggle(k)])),
         windows: OVERLAY_WINDOWS.map(def => ({ id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id) })),
         glass: glass_ready,
         eve_running: eve ? eve.eve_running : false,
@@ -792,7 +811,7 @@ function update_tray() {
     tray.setContextMenu(Menu.buildFromTemplate([
         { label: 'Show windows', enabled: signed_in, click: () => show_windows() },
         { label: 'Settings…', enabled: signed_in, click: () => open_settings() },
-        { label: 'Refresh', enabled: signed_in, click: () => { refresh({ force: true }); fleet_window.poll(); if (intel.timer) intel.refresh() } },
+        { label: 'Refresh', enabled: signed_in, click: () => refresh_all() },
         { type: 'separator' },
         ...update_menu_items(),
         signed_in ? { label: `Sign out (${state.user.name})`, click: () => sign_out() } : { label: 'Sign in…', click: show_login },
@@ -802,28 +821,32 @@ function update_tray() {
 
 // ---------------------------------------------------------------- IPC (renderer -> main)
 
+// The commands and the checks on their values live in ipc_commands.js (preload.js allows the same list).
+const registered = new Set()
+function on_command(command, handler) {
+    if (!COMMANDS.includes(command)) throw new Error(`IPC command ${command} is not in ipc_commands.js`)
+    registered.add(command)
+    ipcMain.on(command, handler)
+}
+
 function sender_window(event) {
     return BrowserWindow.fromWebContents(event.sender)
 }
 
-ipcMain.on('login:start', () => begin_login())
-ipcMain.on('login:cancel', () => login_flow && login_flow.cancel())
-ipcMain.on('auth:sign-out', () => sign_out())
-ipcMain.on('fleets:refresh', () => {
-    refresh({ force: true })
-    if (fleet_window && state.user) fleet_window.poll()
-})
+on_command('login:start', () => begin_login())
+on_command('login:cancel', () => login_flow && login_flow.cancel())
+on_command('auth:sign-out', () => sign_out())
+// The refresh button in any window's title bar refreshes every enabled window's data, like the tray's Refresh.
+on_command('app:refresh', () => refresh_all())
 // Fleet window clicks. Each is one click; fleet_window.js only acts on fleets, ships, killmails and
 // systems it is showing, never on ids the renderer made up.
-const fleet_key = value => (typeof value === 'string' && /^[fm]:\d+$/.test(value) ? value : null)
-const id_of = value => (Number.isSafeInteger(value) && value > 0 ? value : null)
-const on_fleet = (command, act) => ipcMain.on(command, (event, value) => { if (fleet_window && state.user) act(value) })
-on_fleet('fleets:open', value => id_of(value) && fleet_window.open(value))
+const on_fleet = (command, act) => on_command(command, (event, value) => { if (fleet_window && state.user) act(value) })
+on_fleet('fleet:open', value => id_of(value) && fleet_window.open(value))
 on_fleet('fleet:close', () => fleet_window.close())
 on_fleet('fleet:open-site', value => id_of(value) && fleet_window.open_site(value))
 on_fleet('fleet:refresh-motd', () => fleet_window.refresh_motd())
-on_fleet('fleet:copy-fit', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.copy_fit(value.fleet_id, value.key))
-on_fleet('fleet:sign-up', value => value && id_of(value.fleet_id) && fleet_key(value.key) && fleet_window.sign_up(value.fleet_id, value.key))
+on_fleet('fleet:copy-fit', value => { const ship = fleet_ship(value); if (ship) fleet_window.copy_fit(ship.fleet_id, ship.key) })
+on_fleet('fleet:sign-up', value => { const ship = fleet_ship(value); if (ship) fleet_window.sign_up(ship.fleet_id, ship.key) })
 on_fleet('fleet:srp', value => id_of(value) && fleet_window.file_srp(value))
 on_fleet('fleet:dismiss-loss', value => id_of(value) && fleet_window.dismiss_loss(value))
 on_fleet('fleet:done', () => fleet_window.done())
@@ -831,11 +854,10 @@ on_fleet('fleet:destination', value => id_of(value) && fleet_window.set_destinat
 on_fleet('fleet:preping', value => id_of(value) && fleet_window.preping(value))
 on_fleet('fleet:start', value => id_of(value) && fleet_window.start(value))
 on_fleet('fleet:remind', value => id_of(value) && fleet_window.toggle_reminder(value))
-ipcMain.on('campaigns:open', () => {
+on_command('campaigns:open', () => {
     // Same rule as fleets: only a URL we built.
     if (state.campaign) shell.openExternal(state.campaign.url)
 })
-ipcMain.on('intel:refresh', () => intel.refresh())
 // The paste button reads the clipboard here, on the pilot's click; Ctrl+V in a focused window sends the text.
 // The draft starts on the system of the client in front (EVE's logs), which the pilot can overwrite.
 function start_draft(text) {
@@ -844,40 +866,44 @@ function start_draft(text) {
     intel.set_origin(state.location)
     intel.paste(text)
 }
-ipcMain.on('intel:paste', () => start_draft(clipboard.readText()))
-ipcMain.on('intel:paste-text', (event, text) => start_draft(text))
-ipcMain.on('intel:kind', (event, kind) => intel.set_kind(kind))
-ipcMain.on('intel:edit', (event, change) => change && intel.edit_draft(change))
-ipcMain.on('intel:share', async () => {
+on_command('intel:paste', () => start_draft(clipboard.readText()))
+on_command('intel:paste-text', (event, text) => start_draft(text))
+on_command('intel:kind', (event, kind) => intel.set_kind(kind))
+on_command('intel:edit', (event, change) => change && intel.edit_draft(change))
+on_command('intel:share', async () => {
     const url = await intel.share()
     if (!url) return   // failed: the draft stays open for another try
     clipboard.writeText(url)
     intel_typing(false)
 })
-ipcMain.on('intel:discard', () => { intel.discard(); intel_typing(false) })
-ipcMain.on('intel:open-report', (event, report_id) => intel.open_report(report_id))
-ipcMain.on('intel:close-report', () => intel.close_report())
-ipcMain.on('intel:copy-link', (event, report_id) => {
+on_command('intel:discard', () => { intel.discard(); intel_typing(false) })
+on_command('intel:open-report', (event, report_id) => intel.open_report(report_id))
+on_command('intel:close-report', () => intel.close_report())
+on_command('intel:copy-link', (event, report_id) => {
     const url = intel.url_for(report_id)
     if (url) clipboard.writeText(url)
 })
-ipcMain.on('intel:open-site', (event, report_id) => {
+on_command('intel:open-site', (event, report_id) => {
     const url = intel.url_for(report_id)
     if (url) shell.openExternal(url)
 })
-ipcMain.on('intel:range', (event, range) => {
-    if (range !== null && !Number.isInteger(range)) return
+on_command('intel:range', (event, value) => {
+    const range = intel_range(value)
+    if (range === undefined) return
     save_window('intel', { range })
     intel.set_options({ range })
 })
-ipcMain.on('update:install', () => install_update())
-ipcMain.on('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
-ipcMain.on('update:check', () => updater && updater.check())
-ipcMain.on('settings:open', () => { if (state.user) open_settings() })
-ipcMain.on('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
-ipcMain.on('window:set-enabled', (event, change) => change && typeof change.enabled === 'boolean' && set_window_enabled(change.id, change.enabled))
-ipcMain.on('lock:toggle', () => set_user_setting('locked', !settings.get('locked')))
-ipcMain.on('window:minimize', event => {
+on_command('update:install', () => install_update())
+on_command('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
+on_command('update:check', () => updater && updater.check())
+on_command('settings:open', () => { if (state.user) open_settings() })
+on_command('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
+on_command('window:set-enabled', (event, value) => {
+    const change = window_toggle(value)
+    if (change) set_window_enabled(change.id, change.enabled)
+})
+on_command('lock:toggle', () => set_user_setting('locked', !toggle('locked')))
+on_command('window:minimize', event => {
     const win = sender_window(event)
     const id = overlay_id_of(win)
     if (id) {
@@ -888,11 +914,11 @@ ipcMain.on('window:minimize', event => {
         win.minimize()
     }
 })
-ipcMain.on('window:close', event => {
+on_command('window:close', event => {
     const win = sender_window(event)
     if (win) win.close()
 })
-ipcMain.on('mouse:interactive', (event, interactive) => {
+on_command('mouse:interactive', (event, interactive) => {
     const win = sender_window(event)
     if (win && (win === mascot_win || overlay_id_of(win)) && !win.isFocusable()) {
         win.setIgnoreMouseEvents(!interactive, interactive ? undefined : { forward: true })
@@ -900,12 +926,12 @@ ipcMain.on('mouse:interactive', (event, interactive) => {
 })
 // Unpinned windows move by the header and resize from the grip (eve_window.js wire_drag).
 let drag = null
-ipcMain.on('drag:start', (event, start) => {
+on_command('drag:start', (event, start) => {
     const win = sender_window(event)
-    if (!win || settings.get('locked') || !start || !['move', 'resize'].includes(start.kind)) return
+    if (!win || toggle('locked') || !start || !['move', 'resize'].includes(start.kind)) return
     drag = { win, kind: start.kind, point: start.point, bounds: win.getBounds(), min: window_def(overlay_id_of(win))?.min_size || { width: 320, height: 220 } }
 })
-ipcMain.on('drag:move', (event, point) => {
+on_command('drag:move', (event, point) => {
     if (!drag || drag.win.isDestroyed() || drag.win !== sender_window(event)) return
     const dx = Math.round(point.x - drag.point.x)
     const dy = Math.round(point.y - drag.point.y)
@@ -913,7 +939,8 @@ ipcMain.on('drag:move', (event, point) => {
     if (drag.kind === 'move') drag.win.setBounds({ ...drag.bounds, x: drag.bounds.x + dx, y: drag.bounds.y + dy })
     else drag.win.setBounds({ ...drag.bounds, width: Math.max(drag.min.width, drag.bounds.width + dx), height: Math.max(drag.min.height, drag.bounds.height + dy) })
 })
-ipcMain.on('drag:end', () => { drag = null })
+on_command('drag:end', () => { drag = null })
+for (const command of COMMANDS) if (!registered.has(command)) throw new Error(`IPC command ${command} has no handler in main.js`)
 
 // ---------------------------------------------------------------- lifecycle
 
@@ -945,17 +972,17 @@ app.whenReady().then(async () => {
         store: { get: key => settings && settings.get(key), set: (key, value) => settings && settings.set(key, value) },
     })
     fleet_window.on('change', set_fleet_snapshot)
-    fleet_window.on('unauthorized', () => sign_out('Your session has expired. Sign in again.'))
+    fleet_window.on('unauthorized', session_expired)
     intel = new IntelController({
         api,
         web_url: config.web_url,
         on_change: view => { state.intel = view; push_state() },
-        on_unauthorized: () => sign_out('Your session has expired. Sign in again.'),
+        on_unauthorized: session_expired,
         diag,
     })
+    create_pollers()
     settings = new Settings({
-        defaults: SETTINGS_DEFAULTS,
-        session_keys: SESSION_SETTINGS,
+        defaults: TOGGLES,
         remote: { load: () => api.desktop_settings(), save: values => api.save_desktop_settings(values) },
     })
     settings.on('loaded', adopt_local_settings_file)
@@ -969,6 +996,7 @@ app.whenReady().then(async () => {
         for (const win of all_windows()) if (win !== mascot_win) eve.apply_glass(win)
         push_state()
         update_overlay_visibility({ force: true })
+        update_polling()
     })
     eve.on('change', () => {
         update_overlay_visibility()
@@ -978,7 +1006,7 @@ app.whenReady().then(async () => {
     })
     eve.on('client-front', () => setTimeout(update_overlay_visibility, 300))   // EVE can land above us for a frame
     eve.on('button', event => {
-        if (state.user && settings.get('fade_on_right_click')) menu_fade.button(event, state.eve_window.ui_scale)
+        if (state.user && toggle('fade_on_right_click')) menu_fade.button(event, state.eve_window.ui_scale)
     })
     eve.on('log', diag)
     eve.start()
@@ -1044,9 +1072,9 @@ app.on('before-quit', event => {
         flush_settings_before_quit().finally(() => app.quit())
         return
     }
-    clearInterval(refresh_timer)
+    clearInterval(reminder_timer)
+    for (const poller of Object.values(pollers)) poller.stop()
     if (fleet_window) fleet_window.stop()
-    if (intel) intel.stop()
     if (settings) settings.stop()
     if (eve) eve.stop()
     if (eve_window) eve_window.stop()

@@ -8,12 +8,14 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from app.testing import make_token
 from discord.models import DiscordUser
 from esi.models import Scope, Token
 
 from eveonline.client import SUCCESS, EsiResponse
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
+from fittings.eft import fitted_modules
 from fittings.models import (
     EveDoctrine,
     EveDoctrineFitting,
@@ -31,7 +33,6 @@ from fleets.helpers.esi_fittings import (
     fitting_publisher,
 )
 from fleets.helpers.refits import (
-    eft_fitted_modules,
     parse_cargo_modules,
     refit_cargo_diff,
 )
@@ -54,16 +55,6 @@ from fleets.tests import (
     setup_fleet_reference_data,
 )
 from users.helpers import add_user_permission
-
-
-def token_for(user):
-    """Bearer token for an arbitrary test user."""
-    import jwt  # pylint: disable=import-outside-toplevel
-    from django.conf import settings  # pylint: disable=import-outside-toplevel
-
-    return jwt.encode(
-        {"user_id": user.id}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 def grant_fittings_scope(user, character_id, name):
@@ -181,7 +172,7 @@ class RefitHelperTestCase(TestCase):
     """Pure helpers for EFT parsing and cargo diffs."""
 
     def test_eft_fitted_modules_skips_header_empty_and_cargo(self):
-        modules = eft_fitted_modules(BASE_EFT)
+        modules = fitted_modules(BASE_EFT)
         self.assertEqual(3, modules["720mm Howitzer Artillery II"])
         self.assertEqual(2, modules["Gyrostabilizer II"])
         self.assertNotIn("Warrior II", modules)
@@ -315,7 +306,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         self.fleet.doctrine = self.doctrine
         self.fleet.save()
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         # Refits are saved in-game under the FC: scope + mocked ESI.
         self.fc_character = grant_fittings_scope(self.fc_user, 2001, "FC")
         self.esi = mock_esi_fittings(self)
@@ -667,7 +658,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         add_user_permission(other, "view_evefleet")
         response = Client().get(
             f"{BASE_URL}/{self.fleet.id}/ship-volunteers",
-            **self._auth(token_for(other)),
+            **self._auth(make_token(other)),
         )
         self.assertEqual(200, response.status_code)
         self.assertIsNone(response.json()[0]["solar_system_name"])
@@ -765,7 +756,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         strategic = User.objects.create(username="strategic")
         add_user_permission(strategic, "view_evefleet")
         add_user_permission(strategic, "manage_any_fleet")
-        auth = self._auth(token_for(strategic))
+        auth = self._auth(make_token(strategic))
         response = Client().get(ship_url, **auth)
         self.assertEqual(
             [1001], [row["character_id"] for row in response.json()]
@@ -791,7 +782,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         strategic = User.objects.create(username="strategic-edit")
         add_user_permission(strategic, "view_evefleet")
         add_user_permission(strategic, "manage_any_fleet")
-        auth = self._auth(token_for(strategic))
+        auth = self._auth(make_token(strategic))
         client = Client()
 
         response = client.patch(
@@ -827,7 +818,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         add_user_permission(outsider, "view_evefleet")
         response = Client().delete(
             f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
-            **self._auth(token_for(outsider)),
+            **self._auth(make_token(outsider)),
         )
         self.assertEqual(403, response.status_code)
 
@@ -843,7 +834,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
     def test_other_fc_cannot_edit_or_cancel_someone_elses_fleet(self):
         other_fc = User.objects.create(username="other-fc")
         add_user_permission(other_fc, "add_evefleet")
-        auth = self._auth(token_for(other_fc))
+        auth = self._auth(make_token(other_fc))
 
         response = Client().patch(
             f"{BASE_URL}/{self.fleet.id}",
@@ -926,7 +917,7 @@ class FleetCompositionRouterTestCase(TestCase):
         add_user_permission(self.fc_user, "view_evefleet")
         self.fleet = make_test_fleet("Fleet", self.fc_user)
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         self.fc_character = grant_fittings_scope(self.fc_user, 2001, "FC")
         self.esi = mock_esi_fittings(self)
 
@@ -1148,11 +1139,11 @@ class FleetCompositionRouterTestCase(TestCase):
         from market.models import (  # pylint: disable=import-outside-toplevel
             EveMarketItemOrder,
         )
-        from fleets.helpers.supply import (  # pylint: disable=import-outside-toplevel
-            eft_purchase_items,
+        from fittings.eft import (  # pylint: disable=import-outside-toplevel
+            purchase_items,
         )
 
-        needed = eft_purchase_items(BASE_EFT)
+        needed = purchase_items(BASE_EFT)
         self.assertEqual(1, needed["Hurricane"])
         self.assertEqual(3, needed["720mm Howitzer Artillery II"])
         self.assertNotIn("Warrior II", needed)
@@ -1384,7 +1375,7 @@ class EsiFittingsTestCase(TestCase):
         self.fleet.doctrine = self.doctrine
         self.fleet.save()
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         self.esi = mock_esi_fittings(self)
 
     def _auth(self, token=None):

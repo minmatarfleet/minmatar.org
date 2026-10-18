@@ -8,8 +8,11 @@ from django.utils import timezone
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
-from fleets.helpers.member_ships import (
+from eveonline.killmail_classes import (
     CAPSULE_TYPE_ID,
+    GENOLUTION_CAPSULE_TYPE_ID,
+)
+from fleets.helpers.member_ships import (
     apply_esi_fleet_member,
     effective_fleet_ship,
     record_ship_snapshots_for_change,
@@ -158,6 +161,26 @@ class FleetMemberShipSnapshotTest(TestCase):
         ship_type_id, ship_name = effective_fleet_ship(self.member)
         self.assertEqual(ship_type_id, 22468)
         self.assertEqual(ship_name, "Apocalypse Navy Issue")
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_effective_fleet_ship_skips_a_genolution_pod_too(self):
+        record_ship_snapshots_for_change(
+            self.member,
+            previous_ship_type_id=22468,
+            previous_ship_name="Apocalypse Navy Issue",
+            previous_solar_system_id=30000142,
+            previous_solar_system_name="Jita",
+            new_ship_type_id=GENOLUTION_CAPSULE_TYPE_ID,
+            new_ship_name="Capsule - Genolution",
+            new_solar_system_id=30000142,
+            new_solar_system_name="Jita",
+        )
+        self.member.ship_type_id = GENOLUTION_CAPSULE_TYPE_ID
+        self.member.ship_name = "Capsule - Genolution"
+        self.member.save(update_fields=["ship_type_id", "ship_name"])
+
+        ship_type_id, _ = effective_fleet_ship(self.member)
+        self.assertEqual(ship_type_id, 22468)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")

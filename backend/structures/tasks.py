@@ -230,7 +230,7 @@ def _campaign_esi_gate():
     campaigns at import time.
     """
     # pylint: disable=import-outside-toplevel
-    from campaigns.services import esi_gate
+    from eveonline import esi_budget as esi_gate
 
     return esi_gate
 

@@ -12,10 +12,11 @@ Usage (from backend/, with DB_READONLY_* / production_readonly configured):
     pipenv run python manage.py sync_market_expectations_from_production --dry-run
 """
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+
+from eveonline.helpers.production_import import validate_source_alias
 
 from eveonline.models import EveLocation
 from fittings.models import EveFitting
@@ -58,7 +59,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):  # noqa: C901
         source = options["source"]
         local = "default"
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
 
         contract_exps = list(
             EveMarketContractExpectation.objects.using(source)
@@ -190,15 +191,6 @@ class Command(BaseCommand):
             f"item={EveMarketItemExpectation.objects.using(local).count()}, "
             f"buy={EveMarketBuyOrderExpectation.objects.using(local).count()}."
         )
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _missing_fitting_ids(self, fit_ids, local):
         present = set(

@@ -1,8 +1,8 @@
 // Formatting for the Intel window. Shared by the window (global `intel_format`) and the node tests.
 (function (root) {
+    const { type_icon, corporation_logo, alliance_logo } = typeof module !== 'undefined' && module.exports ? require('./ui_helpers') : root.ui_helpers
     const KIND_LABELS = { dscan: 'D-scan', local: 'Local', caps: 'Capital ping', fleet: 'Fleet ping' }
     const STRIP_SIZE = 4   // hulls shown on a row; the rest go behind "+N"
-    const IMAGE_HOST = 'https://images.evetech.net'
 
     // Ships arrive biggest first; split them into the strip and the "+N" list.
     function split_ships(ships, size = STRIP_SIZE) {
@@ -24,16 +24,12 @@
         return `${jumps} ${jumps === 1 ? 'jump' : 'jumps'}`
     }
 
-    function type_icon(type_id, size = 64) {
-        return `${IMAGE_HOST}/types/${encodeURIComponent(type_id)}/icon?size=${size}`
-    }
-
-    // Factions and NPC corporations share the corporation logo endpoint.
+    // An item's picture: a type icon, or a faction, corporation or alliance logo.
     function image_url(image, size = 64) {
         if (!image) return null
         if (image.kind === 'type') return type_icon(image.id, size)
-        if (image.kind === 'faction' || image.kind === 'corporation') return `${IMAGE_HOST}/corporations/${encodeURIComponent(image.id)}/logo?size=${size}`
-        if (image.kind === 'alliance') return `${IMAGE_HOST}/alliances/${encodeURIComponent(image.id)}/logo?size=${size}`
+        if (image.kind === 'faction' || image.kind === 'corporation') return corporation_logo(image.id, size)
+        if (image.kind === 'alliance') return alliance_logo(image.id, size)
         return null
     }
 

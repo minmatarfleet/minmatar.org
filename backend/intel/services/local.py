@@ -20,7 +20,7 @@ from typing import Callable, Iterable
 
 from django.core.cache import cache
 
-from campaigns.services import esi_gate
+from eveonline import esi_budget as esi_gate
 from eveonline.client import EsiClient
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
 from feed.models import FeedCharacterAffiliation

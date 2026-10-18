@@ -17,10 +17,11 @@ Options:
     --source            Database alias to read from (default: production_readonly).
 """
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections, transaction
 from django.db.utils import ProgrammingError
+
+from eveonline.helpers.production_import import validate_source_alias
 
 from feed.helpers.fw_contested import poll_monitored_contested_snapshots
 from feed.helpers.monitored_systems import invalidate_monitored_systems_cache
@@ -58,7 +59,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source = options["source"]
         local = "default"
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
 
         prod_systems = list(
             FeedMonitoredSystem.objects.using(source)
@@ -150,15 +151,6 @@ class Command(BaseCommand):
                     "--poll-esi to seed current readings from ESI."
                 )
             )
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _load_prod_snapshots(self, source):
         try:

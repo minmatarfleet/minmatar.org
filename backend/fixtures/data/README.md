@@ -25,6 +25,8 @@ Use `--clear` to remove existing reference rows before loading. This does
 
 ## Regenerate (maintainers with production_readonly access)
 
+Configure the alias with the `DB_READONLY_*` variables in `backend/.env` (see `backend/.env.example`).
+
 ```bash
 pipenv run python manage.py export_reference_fixtures
 ```

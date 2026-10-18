@@ -27,11 +27,27 @@ COHORT_EARLY = "1-3mo"
 COHORT_ESTABLISHED = "3-12mo"
 COHORT_VETERAN = "1yr+"
 
-# Activity tiers (distinct fleets attended in the trailing quarter)
+# Activity tiers (distinct fleets attended in the trailing quarter). The
+# corporation page's member tiers use the same table
+# (eveonline.helpers.corporations.summary).
 ACTIVITY_CORE = "core"  # 10+
 ACTIVITY_REGULAR = "regular"  # 3-9
 ACTIVITY_LAPSING = "lapsing"  # 1-2
 ACTIVITY_INACTIVE = "inactive"  # 0
+ACTIVITY_LAPSING_MAX_FLEETS = 2
+ACTIVITY_REGULAR_MAX_FLEETS = 9
+
+
+def activity_tier(fleet_count: int) -> str:
+    """The activity tier for a count of fleets attended."""
+    if fleet_count <= 0:
+        return ACTIVITY_INACTIVE
+    if fleet_count <= ACTIVITY_LAPSING_MAX_FLEETS:
+        return ACTIVITY_LAPSING
+    if fleet_count <= ACTIVITY_REGULAR_MAX_FLEETS:
+        return ACTIVITY_REGULAR
+    return ACTIVITY_CORE
+
 
 # Segment key used for the "everyone" aggregate row
 SEGMENT_ALL = "all"

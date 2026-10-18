@@ -1,12 +1,10 @@
-import re
-from collections import defaultdict
-
 from django.db import models
 from django.db.models import Exists, OuterRef, Sum
 from django.utils import timezone
 
 from eveuniverse.models import EveType
 from eveonline.models import EveLocation
+from fittings.eft import item_quantities
 from fittings.models import EveFitting
 
 from market.models.contract import EveMarketContractExpectation
@@ -189,41 +187,6 @@ class EveMarketItemTransaction(models.Model):
         return str(f"{self.item.name} - {self.location.location_name}")
 
 
-def parse_eft_items(eft_format):
-    """
-    Parse an EFT-format fitting string and return a dict of {item_name: quantity}.
-    Includes the ship (qty 1) and all modules, rigs, charges, and cargo.
-    """
-    lines = eft_format.strip().split("\n")
-    if not lines:
-        return {}
-
-    items = defaultdict(int)
-
-    # First line: [ShipName, Fitting name]
-    header = lines[0].strip()
-    ship_name = header.split(",")[0].strip().strip("[]")
-    if ship_name:
-        items[ship_name] += 1
-
-    cargo_re = re.compile(r"^(.+?)\s+x(\d+)$")
-
-    for line in lines[1:]:
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("[Empty "):
-            continue
-
-        m = cargo_re.match(line)
-        if m:
-            items[m.group(1).strip()] += int(m.group(2))
-        else:
-            items[line] += 1
-
-    return dict(items)
-
-
 class EveMarketFittingExpectation(models.Model):
     """
     Catalog entry: track that a fitting's components should be present on
@@ -243,12 +206,12 @@ class EveMarketFittingExpectation(models.Model):
 
     def get_item_names(self):
         """Item names from one fit (presence catalog; no BOM multipliers)."""
-        return set(parse_eft_items(self.fitting.eft_format).keys())
+        return set(item_quantities(self.fitting.eft_format))
 
     def get_item_quantities(self):
         """
         Presence map for fitting components: each item name → 1.
-        Callers that need BOM line qtys should use parse_eft_items.
+        Callers that need BOM line qtys should use fittings.eft.item_quantities.
         """
         return {name: 1 for name in self.get_item_names()}
 
@@ -265,7 +228,7 @@ def _get_consumable_items(fitting):
     Items whose EveType cannot be resolved are also excluded (we need a
     known category to classify them).
     """
-    all_items = parse_eft_items(fitting.eft_format)
+    all_items = item_quantities(fitting.eft_format)
     if not all_items:
         return {}
 

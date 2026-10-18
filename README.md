@@ -140,9 +140,13 @@ From the repo root:
    - `DISCORD_GUILD_ID` is from right-click your server icon → Copy Server ID
    - `DISCORD_PEOPLE_TEAM_CHANNEL_ID` (and other channel IDs) are from Copy Channel ID; you can point them all at the same channel for local dev
 1. `cd backend/`
-1. `cp app/settings.py.example app/settings.py` — `settings.py` is gitignored, so this step is required
+1. `cp app/settings.py.example app/settings.py` — `settings.py` is gitignored, so this step is required. Keep secrets in `backend/.env`, not in `settings.py`, and re-copy the example when it changes
 1. `pipenv install --dev`
 1. `pipenv run python manage.py migrate`
+
+## Tests
+
+Backend: `cd backend && pipenv run python manage.py test --settings=app.settings_test`. See [Running backend tests](backend/README.md#running-backend-tests) for the network guard, parallel runs and coverage. Frontend: `cd frontend/app && npm run check && npm run test`.
 
 ## Mobile (optional, dormant proof of concept)
 1. `cd mobile`

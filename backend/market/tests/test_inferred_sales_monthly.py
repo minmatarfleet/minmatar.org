@@ -1,9 +1,6 @@
 from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal
 
-import jwt
-from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import Client
 
@@ -27,12 +24,6 @@ AMAMAKE = 1022167642188
 
 def _utc(*args):
     return datetime(*args, tzinfo=dt_timezone.utc)
-
-
-def _token_for(user: User) -> str:
-    return jwt.encode(
-        {"user_id": user.id}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 class InferredSalesMonthlyTestCase(TestCase):

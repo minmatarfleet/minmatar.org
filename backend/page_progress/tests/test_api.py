@@ -1,22 +1,16 @@
 """Tests for page progress API endpoints and admin roster."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
 from page_progress.admin import UserPageProgressAdmin
 from page_progress.helpers import MAX_IMPORT_PAGES
 from page_progress.models import UserPageProgress, UserPageSectionProgress
+from app.testing import make_token
 
 BASE = "/api/page-progress"
 PAGE_KEY = "guides/bookmarks"
 VERSION = "abc123version"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class PageProgressApiTestCase(TestCase):
@@ -26,7 +20,7 @@ class PageProgressApiTestCase(TestCase):
             username="reader",
             password="unused",
         )
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
         self.sections = ["intro", "basics", "advanced"]
 

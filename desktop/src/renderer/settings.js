@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id)
 const { send, on_state, on_visibility } = window.minmatar
-const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const { esc, portrait } = window.ui_helpers
 
 window.eve_window.follow_visibility(on_visibility)
 
@@ -48,7 +48,7 @@ on_state(state => {
     $('sync').textContent = SYNC_TEXT[state.settings_sync] || ''
     const id = state.user && state.user.character_id
     $('portrait').hidden = !id
-    if (id && !$('portrait').src.includes(String(id))) $('portrait').src = `https://images.evetech.net/characters/${encodeURIComponent(id)}/portrait?size=64`
+    if (id && !$('portrait').src.includes(String(id))) $('portrait').src = portrait(id)
     $('version').textContent = `Minmatar Fleet v${state.version}`
     $('notice').textContent = state.notice
     render_update(state)
