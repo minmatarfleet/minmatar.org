@@ -1,6 +1,7 @@
 // Text and bar geometry for the Campaigns window. Shared by the window (global `campaign_format`)
 // and the node tests (module.exports).
 (function (root) {
+    const { plural } = typeof module !== 'undefined' && module.exports ? require('./ui_helpers') : root.ui_helpers
     const clamp = value => Math.min(100, Math.max(0, value))
 
     // The move, rounded to whole points: up is good for every objective (the API inverts the rest).
@@ -44,8 +45,6 @@
         if (period === 'week' && system.change_24h != null) parts.push(`${change_text(system.change_24h)} in 24 hours`)
         return parts.filter(Boolean).join(' · ')
     }
-
-    const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`
 
     // "2 kills, in fleet": what a pilot did in the window, most telling first.
     function activity_text(pilot) {

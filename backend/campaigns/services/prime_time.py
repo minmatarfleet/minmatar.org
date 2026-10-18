@@ -7,21 +7,17 @@ from campaigns.models import (
     CampaignKillmailParticipant,
     CampaignSiteCompletion,
 )
+from eveonline.helpers.prime_time import prime_bucket
 
 
 def prime_time_label(hour_utc: int) -> str:
     """The timezone a pilot plays in, from the hour they are most active.
 
-    Uses the same codes a pilot picks for themselves on their profile, so the
-    roster can show a stated and an observed prime time side by side without
-    two vocabularies. The bands are EVE's, not the clock's: the alliance
-    peaks at 19:00 UTC, which is European evening.
+    Uses the codes and hour bands a pilot's profile and the corporation page
+    use (eveonline.helpers.prime_time), so the roster can show a stated and
+    an observed prime time side by side without two vocabularies.
     """
-    if 0 <= hour_utc < 8:
-        return "US"
-    if 8 <= hour_utc < 16:
-        return "AP"
-    return "EU"
+    return prime_bucket(hour_utc)
 
 
 def observed_activity(campaign: Campaign, user_id: int) -> tuple[list, str]:

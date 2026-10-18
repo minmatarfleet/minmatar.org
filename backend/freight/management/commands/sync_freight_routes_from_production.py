@@ -17,10 +17,11 @@ Options:
     --source    Database alias to read from (default: production_readonly).
 """
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
+
+from eveonline.helpers.production_import import validate_source_alias
 
 from eveonline.models import EveLocation
 from freight.models import EveFreightRoute
@@ -68,7 +69,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source = options["source"]
         local = "default"
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
 
         prod_routes = list(
             EveFreightRoute.objects.using(source)
@@ -133,15 +134,6 @@ class Command(BaseCommand):
             self._print_route_line(route, prefix="  ")
 
         self._verify_jita_amamake(local_routes)
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _gather_location_ids(self, routes):
         loc_ids = set()

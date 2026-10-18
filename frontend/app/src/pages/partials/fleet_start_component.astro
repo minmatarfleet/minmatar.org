@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect, partial_redirect } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
@@ -34,16 +34,7 @@ if (Astro.request.method === 'POST') {
         send_active_fleet_notification(auth_token as string, fleet.id)
 
         const fleet_path = translatePath(`/fleets/upcoming/${fleet.id}`)
-        if (Astro.request.headers.get('HX-Request') === 'true') {
-            return new Response('', {
-                status: 200,
-                headers: {
-                    'Content-Type': 'text/html',
-                    'HX-Redirect': fleet_path,
-                },
-            })
-        }
-        return Astro.redirect(fleet_path)
+        return partial_redirect(Astro.request, fleet_path)
     } catch (error) {
         alert = {
             title: t('starting_fleet'),

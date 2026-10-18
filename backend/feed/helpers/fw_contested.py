@@ -7,11 +7,11 @@ import requests
 from django.db.models import Max, Q
 from django.utils import timezone
 
+from eveonline.esi_http import esi_request
 from feed.constants import (
     ESI_FW_SYSTEMS_URL,
     FACTION_AMARR,
     FACTION_MINMATAR,
-    FEED_FW_ESI_USER_AGENT,
 )
 from feed.helpers.killmail_classify import faction_to_label
 from feed.helpers.monitored_systems import get_monitored_system_ids
@@ -45,14 +45,15 @@ def contested_percent_from_esi_entry(entry: dict) -> float:
 
 
 def fetch_fw_contested_from_esi() -> dict[int, FwSystemContested]:
-    response = requests.get(
-        ESI_FW_SYSTEMS_URL,
-        headers={"User-Agent": FEED_FW_ESI_USER_AGENT},
-        timeout=60,
-    )
-    response.raise_for_status()
+    result = esi_request("GET", ESI_FW_SYSTEMS_URL, timeout=60, empty=[])
+    if not result.ok:
+        if result.response is not None and result.status >= 400:
+            result.response.raise_for_status()
+        raise result.error or requests.RequestException(
+            f"ESI fw/systems failed ({result.status})"
+        )
     rows: dict[int, FwSystemContested] = {}
-    for entry in response.json():
+    for entry in result.data:
         system_id = entry.get("solar_system_id")
         if not system_id:
             continue

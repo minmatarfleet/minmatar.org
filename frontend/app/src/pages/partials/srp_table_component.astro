@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
@@ -51,16 +51,7 @@ if (
     // A partial can't redirect the page with a 302; htmx would swap the
     // onboarding page into the table. Ask htmx to navigate instead.
     const onboarding_path = translatePath('/ships/srp/onboarding/')
-    if (Astro.request.headers.get('HX-Request') === 'true') {
-        return new Response('', {
-            status: 200,
-            headers: {
-                'Content-Type': 'text/html',
-                'HX-Redirect': onboarding_path,
-            },
-        })
-    }
-    return Astro.redirect(onboarding_path)
+    return partial_redirect(Astro.request, onboarding_path)
 }
 
 let data_fetching_error: Error | false = false

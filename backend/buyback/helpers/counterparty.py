@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-import requests
-
-from eveonline.client import ESI_BASE_URL
+from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 
 KIND_CHARACTER = "character"
 KIND_CORPORATION = "corporation"
+# POST /universe/names/ takes at most 1000 ids.
+UNIVERSE_NAMES_CHUNK = 1000
 
 
 @dataclass(frozen=True)
@@ -40,23 +40,24 @@ def _from_local(entity_id: int) -> Counterparty | None:
     return None
 
 
+def _esi_name_rows(entity_ids: list[int]) -> list[dict]:
+    client = EsiClient(None)
+    rows: list[dict] = []
+    for start in range(0, len(entity_ids), UNIVERSE_NAMES_CHUNK):
+        chunk = entity_ids[start : start + UNIVERSE_NAMES_CHUNK]
+        response = client.resolve_universe_names(chunk)
+        if not response.success():
+            logger.warning("universe/names failed: %s", response.error_text())
+            continue
+        rows.extend(response.results() or [])
+    return rows
+
+
 def _from_esi_names(entity_ids: list[int]) -> dict[int, Counterparty]:
     if not entity_ids:
         return {}
-    try:
-        resp = requests.post(
-            f"{ESI_BASE_URL}/universe/names/",
-            json=entity_ids,
-            timeout=30,
-        )
-    except Exception as exc:
-        logger.warning("universe/names failed: %s", exc)
-        return {}
-    if resp.status_code >= 400:
-        logger.warning("universe/names HTTP %s", resp.status_code)
-        return {}
     result: dict[int, Counterparty] = {}
-    for row in resp.json() or []:
+    for row in _esi_name_rows(entity_ids):
         try:
             eid = int(row["id"])
             category = str(row.get("category") or "")

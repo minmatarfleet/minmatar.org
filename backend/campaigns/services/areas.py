@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def sde_sqlite_path() -> Path | None:
     """Prefer an explicit setting, then the frontend SDE glob used by exports."""
-    configured = getattr(settings, "EVE_SDE_SQLITE_PATH", None)
+    configured = settings.EVE_SDE_SQLITE_PATH
     if configured:
         path = Path(configured)
         return path if path.exists() else None

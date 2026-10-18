@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
+from eveonline.tests.fake_esi_http import FakeEsi, make_response
 from feed.helpers.zkill_backfill import backfill_monitored_systems
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_fixture,
@@ -18,7 +19,7 @@ class ZkillBackfillTestCase(TestCase):
 
     @patch("feed.helpers.zkill_backfill.timezone.now")
     @patch("feed.helpers.zkill_backfill.time.sleep")
-    @patch("feed.helpers.zkill_backfill.requests.get")
+    @patch("feed.helpers.zkill_client.requests.get")
     def test_backfill_monitored_systems_ingests_recent_kills(
         self,
         mock_get: MagicMock,
@@ -48,9 +49,16 @@ class ZkillBackfillTestCase(TestCase):
                     }
                 ]
                 return response
-            if "/killmails/136402789/" in url:
-                response.status_code = 200
-                response.json.return_value = {
+            raise AssertionError(f"Unexpected URL: {url}")
+
+        mock_get.side_effect = fake_get
+        # The ESI detail goes through the shared ESI transport.
+        FakeEsi().install(self).add(
+            "GET",
+            "/killmails/136402789/abc123/",
+            make_response(
+                200,
+                {
                     "killmail_id": 136402789,
                     "killmail_time": kill_time.isoformat().replace(
                         "+00:00", "Z"
@@ -66,11 +74,9 @@ class ZkillBackfillTestCase(TestCase):
                             "final_blow": True,
                         }
                     ],
-                }
-                return response
-            raise AssertionError(f"Unexpected URL: {url}")
-
-        mock_get.side_effect = fake_get
+                },
+            ),
+        )
 
         stats = backfill_monitored_systems(hours=24, sleep_seconds=0)
 
@@ -81,7 +87,7 @@ class ZkillBackfillTestCase(TestCase):
             136402789,
         )
 
-    @patch("feed.helpers.zkill_backfill.requests.get")
+    @patch("feed.helpers.zkill_client.requests.get")
     def test_backfill_skips_existing_killmails(self, mock_get: MagicMock):
         FeedKillmail.objects.create(
             killmail_id=136402789,

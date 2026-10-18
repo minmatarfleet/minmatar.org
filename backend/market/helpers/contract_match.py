@@ -4,10 +4,10 @@ import re
 from collections import defaultdict
 
 from eveuniverse.models import EveType
+from fittings.eft import item_quantities
 from fittings.models import EveFitting
 
 from market.helpers.contract_stock import MATCH_THRESHOLD
-from market.models.item import parse_eft_items
 
 # Hull, modules, subsystems, and rigs — exclude charges/drones/paste/fuel.
 _STRUCTURAL_CATEGORIES = frozenset({"Ship", "Module", "Subsystem"})
@@ -50,7 +50,7 @@ def fitting_type_quantities_bulk(
     per_fitting_names: dict[int, dict[str, int]] = {}
     all_names: set[str] = set()
     for fitting in fittings:
-        names = parse_eft_items(fitting.eft_format)
+        names = item_quantities(fitting.eft_format)
         per_fitting_names[fitting.id] = names
         all_names.update(names.keys())
     name_to_id = dict(
@@ -74,7 +74,7 @@ def fitting_structural_type_quantities(fitting: EveFitting) -> dict[int, int]:
     Bulk charges and other consumables dominate FAX fits and erase Active vs
     Buffer discrimination if left in the match score.
     """
-    per_name = parse_eft_items(fitting.eft_format)
+    per_name = item_quantities(fitting.eft_format)
     if not per_name:
         return {}
     names = list(per_name.keys())

@@ -3,20 +3,16 @@ Availability of a fleet's ships at its staging location: outstanding
 contracts per fit and how many complete fits the local sell orders cover.
 """
 
-import re
-from collections import Counter
 from dataclasses import dataclass, field
 
 from django.db.models import Count, Sum
 
 from eveuniverse.models import EveType
-from fittings.models import EveFitting
+from fittings.eft import purchase_items
 from market.helpers.contract_stock import outstanding_stock_q
 from market.models import EveMarketContract, EveMarketItemOrder
 
 from fleets.helpers.composition import CompositionEntry, fleet_composition
-
-_QTY_SUFFIX_RE = re.compile(r"^(?P<name>.+?)\s+x(?P<qty>\d+)$")
 
 
 @dataclass
@@ -27,33 +23,6 @@ class SupplyEntry:
     contracts: int | None = None
     market_fits: int | None = None
     market_missing: list = field(default_factory=list)
-
-
-def eft_purchase_items(eft_format: str) -> Counter:
-    """
-    Items needed to buy one copy of a fit: the hull plus every fitted module
-    and rig. Charges, drones and cargo (``Name xN`` lines) are left out so a
-    fit still counts as available when only ammo is missing.
-    """
-    needed: Counter = Counter()
-    lines = (eft_format or "").strip().splitlines()
-    if not lines:
-        return needed
-    ship = EveFitting.ship_name_from_eft(eft_format)
-    if ship:
-        needed[ship] += 1
-    for raw in lines[1:]:
-        line = raw.strip()
-        if (
-            not line
-            or line.startswith("[Empty ")
-            or _QTY_SUFFIX_RE.match(line)
-        ):
-            continue
-        module = line.split(",", 1)[0].strip()
-        if module:
-            needed[module] += 1
-    return needed
 
 
 def _sell_order_stock(location, names: set[str]) -> dict[str, int]:
@@ -100,7 +69,7 @@ def fleet_supply(eve_fleet) -> list[SupplyEntry]:
             for e in entries
         ]
 
-    needed_by_key = {e.key: eft_purchase_items(e.eft_format) for e in entries}
+    needed_by_key = {e.key: purchase_items(e.eft_format) for e in entries}
     all_names = set().union(*(set(n) for n in needed_by_key.values()))
     known_names = set(
         EveType.objects.filter(name__in=all_names).values_list(

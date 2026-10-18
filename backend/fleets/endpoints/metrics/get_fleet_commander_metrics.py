@@ -2,14 +2,13 @@
 
 from typing import List
 
-from django.db.models import Count
 from django.utils import timezone
 
 from authentication import AuthBearer
 from eveonline.models import EveCorporation, EvePlayer
 
 from fleets.endpoints.schemas import EveFleetCommanderMetric
-from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
+from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 
 
 def _calendar_month_bounds():
@@ -33,18 +32,7 @@ ROUTE_SPEC = {
 
 def get_fleet_commander_metrics(request):
     month_start, month_end = _calendar_month_bounds()
-    rows = (
-        EveFleet.objects.filter(
-            start_time__gte=month_start,
-            start_time__lt=month_end,
-            created_by_id__isnull=False,
-        )
-        .exclude(status="cancelled")
-        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
-        .values("created_by_id")
-        .annotate(fleet_count=Count("id"))
-        .order_by("-fleet_count", "created_by_id")
-    )
+    rows = fleets_led_by_user(led_fleets(month_start, month_end))
 
     user_ids = [r["created_by_id"] for r in rows]
     players = {

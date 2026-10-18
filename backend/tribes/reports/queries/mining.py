@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from eveonline.models import EveCharacter, EveCharacterMiningEntry
 from eveonline.models.characters import EvePlayer
-from eveuniverse.models import EveMarketPrice
+from market.helpers.pricing import get_history_averages_by_type_id
 from tribes.reports.roster import roster_character_pks, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -44,10 +44,8 @@ def run_mining_report(
         user_ids = {e.character.user_id for e in entries if e.character}
 
     type_ids = {e.eve_type_id for e in entries if e.eve_type_id}
-    prices = {
-        p.eve_type_id: p.average_price
-        for p in EveMarketPrice.objects.filter(eve_type_id__in=type_ids)
-    }
+    # Jita guide value of the ore (Forge history, then CCP average price).
+    prices = get_history_averages_by_type_id(list(type_ids))
 
     vol_by_user: dict[int, float] = defaultdict(float)
     isk_by_user: dict[int, float] = defaultdict(float)

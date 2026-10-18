@@ -14,7 +14,6 @@ from django.utils import timezone
 
 from eveuniverse.models import (
     EveIndustryActivityProduct,
-    EveMarketPrice,
     EveTypeMaterial,
 )
 
@@ -26,6 +25,7 @@ from eveonline.models import (
     EveCorporationIndustryJob,
 )
 from eveonline.helpers.characters import character_primary
+from market.helpers.pricing import get_history_averages_by_type_id
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
@@ -47,14 +47,18 @@ PI_PLANET_MAX_AGE_DAYS = 30
 
 
 def _get_material_prices(type_ids: list[int]) -> dict[int, float]:
-    """Return average_price for each type_id from EveMarketPrice; missing types are omitted."""
+    """
+    Jita guide value per type_id (Forge history, then CCP average price);
+    missing types are omitted.
+    """
     if not type_ids:
         return {}
-    return dict(
-        EveMarketPrice.objects.filter(eve_type_id__in=type_ids).values_list(
-            "eve_type_id", "average_price"
-        )
-    )
+    return {
+        type_id: float(price)
+        for type_id, price in get_history_averages_by_type_id(
+            list(type_ids)
+        ).items()
+    }
 
 
 def _resolve_to_primary_producers(character_refs):
@@ -351,7 +355,7 @@ def _build_ore_to_materials_above_threshold(type_ids):
     """
     Build ore_tid -> [material_tid] only for materials that make up at least
     ORE_MINERAL_SHARE_THRESHOLD of that ore's total output. Uses value share
-    (quantity * price) when EveMarketPrice exists, else volume share.
+    (quantity * price) when a guide price exists, else volume share.
     """
     ore_source_rows = list(
         EveTypeMaterial.objects.filter(

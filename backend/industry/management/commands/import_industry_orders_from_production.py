@@ -18,13 +18,14 @@ Options:
     --source    Database alias to read from (default: production_readonly).
 """
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Prefetch
+
 from eveuniverse.models import EveType
 
+from eveonline.helpers.production_import import validate_source_alias
 from eveonline.models import EveCharacter, EveLocation
 from industry.models import (
     IndustryOrder,
@@ -60,7 +61,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source = options["source"]
         local = "default"
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
 
         orders = self._load_orders_from_source(source)
         char_pks, loc_ids, eve_type_ids = self._gather_ids_from_orders(orders)
@@ -86,15 +87,6 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"Imported {len(orders)} orders into {local}.")
         )
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _load_orders_from_source(self, source):
         item_qs = (

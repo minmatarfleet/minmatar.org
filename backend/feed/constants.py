@@ -41,9 +41,6 @@ FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS = 8
 
 # ESI faction warfare
 ESI_FW_SYSTEMS_URL = "https://esi.evetech.net/latest/fw/systems/"
-FEED_FW_ESI_USER_AGENT = (
-    "minmatar.org-feed/1.0 (https://minmatar.org; fw contested polling)"
-)
 
 # API defaults
 FEED_DEFAULT_HISTORY_DAYS = 7

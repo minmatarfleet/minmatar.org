@@ -27,6 +27,8 @@ export interface ApiOptions {
     raw_body?:      BodyInit;
     /** `application/json` by default. */
     content_type?:  string;
+    /** Extra request headers, e.g. `X-Shared-Secret` for server-only endpoints. */
+    headers?:       Record<string, string>;
     /** Error message prefix, e.g. `Error fetching fleet`. */
     error?:         string;
     /** Statuses that are not errors here: `api_request` returns null for them. */
@@ -107,7 +109,7 @@ async function send(url:string, options:ApiOptions) {
 
     const response = await fetch(url, {
         method: method,
-        headers: api_headers(options.token, options.content_type),
+        headers: { ...api_headers(options.token, options.content_type), ...options.headers },
         ...(options.raw_body !== undefined ?
             { body: options.raw_body } :
             options.body !== undefined && { body: JSON.stringify(options.body) }

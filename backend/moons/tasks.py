@@ -1,56 +1,73 @@
 import logging
+from datetime import timedelta
 from decimal import Decimal
 
-import requests
+from django.utils import timezone
+from eveuniverse.models import EveType
 
 from app.celery import app
+from market.helpers.pricing import (
+    enqueue_history_for_types,
+    get_history_averages_by_type_id,
+)
 from moons.helpers import calc_metanox_yield
 from moons.models import EveMoon, EveMoonDistribution, ore_yield_map
 
 logger = logging.getLogger(__name__)
 
-
-def item_id(item_name: str, product_ids) -> str:
-    for product in product_ids:
-        if product["name"] == item_name:
-            return product["id"]
-    return -1
+# Refresh a moon product's Forge history when its latest day is older.
+HISTORY_MAX_AGE_DAYS = 2
 
 
-def get_prices():
-    logger.info("Fetching moon product prices...")
+def get_prices() -> dict[str, Decimal]:
+    """
+    Jita guide price per moon product name: the latest daily average from
+    stored Forge (price_baseline region) history, then CCP's average price.
 
-    prices = {}
-    for ore in ore_yield_map:
-        for item in ore_yield_map[ore]:
-            prices[item] = Decimal(0)
-
-    products = []
-    for item in prices:
-        products.append(item)
-
-    base_url = "https://esi.evetech.net/latest"
-
-    response = requests.post(
-        url=base_url + "/universe/ids", json=products, timeout=5
+    Products without any price are left out. Products whose history is
+    missing or stale get a history fetch queued for the next run.
+    """
+    names = sorted(
+        {product for yields in ore_yield_map.values() for product in yields}
     )
-    product_ids = response.json()["inventory_types"]
+    name_to_id = dict(
+        EveType.objects.filter(name__in=names).values_list("name", "id")
+    )
+    unknown = [name for name in names if name not in name_to_id]
+    if unknown:
+        logger.warning("Moon products not in the universe cache: %s", unknown)
 
-    for price in prices:
-        type_id = item_id(price, product_ids)
-        url = base_url + "/markets/10000002/history?type_id=" + str(type_id)
-        response = requests.get(url, timeout=5)
-        data = response.json()[0]["average"]
-        logger.debug("%s value = %.2f", price, data)
-        prices[price] = Decimal(data)
+    stale_before = timezone.now().date() - timedelta(days=HISTORY_MAX_AGE_DAYS)
+    enqueue_history_for_types(name_to_id.values(), stale_before=stale_before)
 
-    logger.info("Moon product prices retrieved.")
-
+    by_id = get_history_averages_by_type_id(list(name_to_id.values()))
+    prices = {
+        name: by_id[type_id]
+        for name, type_id in name_to_id.items()
+        if type_id in by_id
+    }
+    unpriced = [name for name in name_to_id if name not in prices]
+    if unpriced:
+        logger.warning("Moon products with no market price: %s", unpriced)
     return prices
 
 
-def calculate_moon_revenue(moon, distributions, prices):
+def calculate_moon_revenue(moon, distributions, prices) -> Decimal | None:
+    """
+    Monthly Metenox revenue for one moon, or None when a product it yields
+    has no price (an estimate missing a product would be too low).
+    """
     yields = calc_metanox_yield(distributions)
+    missing = [product for product in yields if product not in prices]
+    if missing:
+        logger.warning(
+            "%s %s %s: no price for %s; revenue not updated",
+            moon.system,
+            moon.planet,
+            moon.moon,
+            missing,
+        )
+        return None
     moon_revenue = Decimal(0.0)
     for moon_yield in yields:
         cycle_revenue = yields[moon_yield] * prices[moon_yield]
@@ -78,6 +95,8 @@ def update_moon_revenues():
     for moon in moons:
         distributions = EveMoonDistribution.objects.filter(moon=moon)
         moon_revenue = calculate_moon_revenue(moon, distributions, prices)
+        if moon_revenue is None:
+            continue
         logger.debug("Monthly revenue = %.2f", moon_revenue)
         moon.monthly_revenue = moon_revenue
         moon.save()

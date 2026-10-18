@@ -7,6 +7,9 @@ class ApiError extends Error {
     }
 }
 
+// The session is gone (expired or revoked): the one condition that signs the pilot out.
+const is_unauthorized = err => !!err && err.status === 401
+
 const FLEET_TYPE_LABELS = {
     strategic: 'Strategic',
     non_strategic: 'Non-Strategic',
@@ -257,4 +260,4 @@ async function load_campaign(api, web_url) {
     }
 }
 
-module.exports = { ApiClient, ApiError, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }
+module.exports = { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }
