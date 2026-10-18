@@ -10,10 +10,10 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 ## 1. Interactivity & state management
 
-- **htmx owns all server state.** Any data fetching, mutation, partial re-render, or DOM update that reflects server state must use htmx (`hx-get`/`hx-post`/`hx-swap`/`hx-swap-oob`, `htmx.process()`) against server-rendered partials in `src/pages/partials/*_component.astro`. The server renders HTML; the client never builds DOM from JSON.
+- **htmx owns all server state.** Any data fetching, mutation, partial re-render, or DOM update that reflects server state must use htmx (`hx-get`/`hx-post`/`hx-swap`/`hx-swap-oob`) against server-rendered partials in `src/pages/partials/*_component.astro`. The server renders HTML; the client never builds DOM from JSON.
 - **Alpine.js is for minor, local UI interactivity only**: toggles, collapsibles, filters over already-rendered DOM, dialog open/close, small transient UI state.
 - **Forbidden**: Alpine calling endpoints (`fetch()`/axios), holding server data in Alpine state, or driving DOM updates from fetched data. If data must update the DOM, use an htmx partial.
-- After htmx injects a partial containing Alpine/htmx markup, call `htmx.process(element)` / `Alpine.initTree(element)`.
+- Swapped-in partials are initialised globally by `src/helpers/swap_init.ts` (htmx processes what it swaps; `Alpine.initTree` and tooltips run on the swap target). Don't add `htmx:afterSwap` re-init scripts and don't call `htmx.process()` on swapped content: re-processing an `hx-trigger="load"` element fires its request twice. Call `htmx.process()` only on markup Alpine creates itself (`x-teleport`, `x-if`/`x-for`), as `DialogButton` and `Dropdown` do. Load deferred slots with `LazyPartial`.
 - Do **not** add new Alpine `fetch()` callers. Existing ones (e.g. `LoyaltyOrderBook`, `PageProgressTracker`) are pending migration.
 
 ## 2. Naming
