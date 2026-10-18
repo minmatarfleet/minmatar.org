@@ -11,6 +11,8 @@ describe('scout links', () => {
     it('sends site targets to their page', () => {
         expect(scout_link_destination('learning')).toBe('/learning/')
         expect(scout_link_destination('corporations')).toBe('/alliance/corporations/')
+        expect(scout_link_destination('warzone')).toBe('/warzone/')
+        expect(scout_link_destination('amamake')).toBe('/amamake-market/')
     })
 
     it('sends unknown targets home without counting them', () => {

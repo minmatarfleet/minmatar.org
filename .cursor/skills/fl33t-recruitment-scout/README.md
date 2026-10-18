@@ -83,7 +83,9 @@ Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
 | `proof_videos.always` | Bring Fun Shit — every r/evejobs and forum send; not on r/eve |
 | `proof_videos.mining` | Rock Hoppin' — extra mining/industry close |
 | `proof_aars` | Current billion-ISK AARs (rotate when a new one posts) |
-| `proof_pages` | Warzone report, corp directory, freight, optional sieges |
+| `proof_pages` | Warzone report, Amamake market report, corp directory, freight, optional sieges |
+
+On r/eve the reply is one of those reports or a kit AAR. The corporation pitch stays on r/evejobs and the forums.
 
 ### Reddit OAuth
 
