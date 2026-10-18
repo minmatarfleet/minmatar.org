@@ -10,7 +10,7 @@ from django.http import HttpRequest, HttpResponse
 from django.core.paginator import Paginator
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer, AuthOptional
+from authentication import AuthBearer, AuthLenient
 from campaigns.helpers import resolve_attachable_campaign
 
 from eveonline.helpers.characters.identity import (
@@ -242,7 +242,7 @@ class UpdateEvePostRequest(BaseModel):
     announce: bool | None = None
 
 
-@router.get("/posts", response=List[EvePostListResponse], auth=AuthOptional())
+@router.get("/posts", response=List[EvePostListResponse], auth=AuthLenient())
 def get_posts(
     request: HttpRequest,
     response: HttpResponse,
@@ -330,7 +330,7 @@ def get_posts(
         403: RestrictedResponse,
         404: ErrorResponse,
     },
-    auth=AuthOptional(),
+    auth=AuthLenient(),
 )
 def get_post(request, post_id: int):
     post = (

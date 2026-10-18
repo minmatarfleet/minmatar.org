@@ -245,3 +245,19 @@ class PostsRouterTestCase(TestCase):
         self.assertEqual(
             url, "https://external-preview.redd.it/abc.jpg?width=10&s=1"
         )
+
+
+class PublicPostReadsTestCase(TestCase):
+    """A stale browser session must not break the public post pages."""
+
+    def test_expired_or_garbage_token_reads_as_anonymous(self):
+        client = Client()
+        for header in ("Bearer not-a-jwt", "Bearer ", "Basic abc"):
+            response = client.get(
+                f"{BASE_URL}/posts", HTTP_AUTHORIZATION=header
+            )
+            self.assertEqual(200, response.status_code, header)
+
+    def test_no_token_still_works(self):
+        response = Client().get(f"{BASE_URL}/posts")
+        self.assertEqual(200, response.status_code)
