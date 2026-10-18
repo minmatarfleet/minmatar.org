@@ -2,13 +2,11 @@
 
 import logging
 
-import jwt
-from django.conf import settings
-from django.utils import timezone
 from esi.models import Token
 
 from app.errors import create_error_id
 from eveonline.models import EveCharacter
+from users.jwt_auth import issue_eve_character_jwt
 
 logger = logging.getLogger(__name__)
 
@@ -23,33 +21,19 @@ def issue_mobile_jwt(request, esi_token: Token) -> str:
         .first()
     )
 
-    payload = {
-        "character_id": esi_token.character_id,
-        "character_name": esi_token.character_name,
-        "avatar": (
-            f"https://images.evetech.net/characters/"
-            f"{esi_token.character_id}/portrait?size=128"
-        ),
-        "sub": str(esi_token.character_id),
-        "iss": request.get_host(),
-        "iat": timezone.now(),
-    }
-
+    user = None
     if character and character.user_id:
         user = character.user
-        payload.update(
-            {
-                "user_id": user.id,
-                "username": user.username,
-                "is_superuser": user.is_superuser,
-                "sub": user.username,
-            }
-        )
         if esi_token.user_id != user.id:
             esi_token.user = user
             esi_token.save(update_fields=["user"])
 
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+    return issue_eve_character_jwt(
+        request,
+        esi_token.character_id,
+        esi_token.character_name,
+        user=user,
+    )
 
 
 def eve_login_error_redirect(redirect_url: str, code: str) -> str:

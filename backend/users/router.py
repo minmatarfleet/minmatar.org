@@ -1,13 +1,11 @@
 import json
 import logging
 
-import jwt
 from typing import List, Optional
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import redirect
-from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
@@ -27,7 +25,11 @@ from audit.models import AuditEntry
 from groups.tasks import sync_user_corporation_groups, update_affiliation
 from users.endpoints import router as endpoints_router
 from users.eve_sso import EVE_LOGIN_SCOPES
-from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
+from users.jwt_auth import (
+    decode_user_jwt,
+    issue_discord_user_jwt,
+    issue_fake_login_jwt,
+)
 from users.redirects import (
     default_login_redirect_url,
     oauth_redirect,
@@ -407,18 +409,8 @@ def fake_login(request, redirect_url):
     logger.warning("*** FAKE USER LOGIN (id=%d) ***", user_id)
 
     django_user = User.objects.get(id=user_id)
-    payload = {
-        "user_id": django_user.id,
-        "username": django_user.username,
-        "is_superuser": django_user.is_superuser,
-        "sub": django_user.username,
-        "iss": request.get_host(),
-        "iat": timezone.now(),
-    }
-    encoded_jwt_token = jwt.encode(
-        payload, settings.SECRET_KEY, algorithm="HS256"
-    )
-    logger.debug("Signed JWT Token: %s", encoded_jwt_token)
+    encoded_jwt_token = issue_fake_login_jwt(request, django_user)
+    logger.debug("Signed JWT Token: ...%s", encoded_jwt_token[-5:])
 
     redirect_url = safe_login_redirect_url(
         redirect_url, default_login_redirect_url()
