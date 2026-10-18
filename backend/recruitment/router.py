@@ -1,7 +1,9 @@
 """Corporation recruitment threads and recruitment scout click tracking."""
 
+import hmac
 from typing import List
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from ninja import Router
@@ -160,13 +162,29 @@ def get_scout_outreach(request, days: int = 30):
     return outreach_stats(max(1, min(days, 365)))
 
 
+# The Astro server records scout link visits on behalf of the visitor, so it
+# sends the visitor's address in the body and proves who it is with the
+# secret both apps share.
+SHARED_SECRET_HEADER = "X-Shared-Secret"
+
+
+def is_frontend_server(request) -> bool:
+    expected = getattr(settings, "SHARED_SECRET", "") or ""
+    supplied = request.headers.get(SHARED_SECRET_HEADER, "")
+    if not expected or not supplied:
+        return False
+    return hmac.compare_digest(supplied.encode(), expected.encode())
+
+
 @router.post(
     "/scout/clicks",
-    response={201: str, 404: ErrorResponse},
+    response={201: str, 403: ErrorResponse, 404: ErrorResponse},
     summary="Record a visit through a scout reply's tracked link. Called "
-    "by the my.minmatar.org /go/ redirect.",
+    "by the my.minmatar.org /go/ redirect (frontend server only).",
 )
 def post_scout_click(request, payload: ScoutClickRequest):
+    if not is_frontend_server(request):
+        return 403, ErrorResponse(detail="Not permitted")
     click = record_click(
         code=payload.code,
         target=payload.target,
