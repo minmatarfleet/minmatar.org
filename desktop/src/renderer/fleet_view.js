@@ -153,6 +153,7 @@
                 ${you ? `<div class="fw-you">${ship_icon(you.ship_type_id, 44)}<span class="fw-you__ship">${esc(you.ship_name)}</span><span class="fw-you__who">${esc(you.character_name)}</span>${ship_line}</div>` : ''}
                 <div class="fw-where${where.warn ? ' fw-warn' : ''}"><span>${esc(where.text)}</span>${route}</div>
             </div>
+            ${v.fights && v.fights.latest.fighting ? section('Fighting now') + round_card(v.fights.latest) : ''}
             ${needs ? section('Fleet needs') + `<div class="fw-chips">${needs}</div>` : ''}
             ${v.ships.length ? section('Doctrine fits', 'EFT to clipboard') + fits(v) : ''}`
     }
@@ -171,7 +172,7 @@
                     <div><span class="fw-stat">${c.kills}<span class="fw-stat__sep"> / </span>${c.losses}</span><span>kills / losses</span></div>
                 </div>
                 <div class="fw-chipbar" role="tablist" aria-label="Fleet detail">
-                    ${chip('overview', 'Overview')}${chip('pilots', 'Pilots', String(c.in_fleet))}${chip('kills', 'Kills', `${c.kills} / ${c.losses}`)}
+                    ${chip('overview', 'Overview')}${chip('pilots', 'Pilots', String(c.in_fleet))}${fights_chip(v, chip)}
                 </div>
             </section>`
     }
@@ -230,19 +231,84 @@
             ${total ? `<div class="fw-efficiency" role="img" aria-label="ISK efficiency ${pct} percent"><span class="fw-efficiency__bar"><span data-pct="${pct}"></span></span><span class="eve-dim">${pct}%</span></div>` : ''}`
     }
 
+    // ------------------------------------------------------------ Fights: the fleet's rounds
+
+    const round_name = r => r.kind === 'round' ? `Round ${r.number}` : 'Skirmish'
+    const round_span = r => eve_clock(r.start) === eve_clock(r.end) ? eve_clock(r.start) : `${eve_clock(r.start)}–${eve_clock(r.end)}`
+
+    // The Kills chip becomes Fights once the fleet has a round; it names the round being fought.
+    function fights_chip(v, chip) {
+        const c = v.counts
+        if (!v.fights) return chip('kills', 'Kills', `${c.kills} / ${c.losses}`)
+        const latest = v.fights.latest
+        return chip('kills', 'Fights', latest.fighting ? round_name(latest).replace('Round ', 'R') : `${c.kills} / ${c.losses}`)
+    }
+
+    function round_bars(bins) {
+        const peak = bins.reduce((most, [k, l]) => Math.max(most, k, l), 1)
+        return `<div class="fw-round__bars" aria-hidden="true">${bins.map(([k, l]) => `<span>
+                <span class="fw-round__up"><span data-h="${Math.round(k / peak * 100)}"></span></span>
+                <span class="fw-round__down"><span data-h="${Math.round(l / peak * 100)}"></span></span>
+            </span>`).join('')}</div>`
+    }
+
+    function efficiency(pct) {
+        return pct == null ? '' : `<div class="fw-efficiency" role="img" aria-label="ISK efficiency ${pct} percent"><span class="fw-efficiency__bar"><span data-pct="${pct}"></span></span><span class="eve-dim">${pct}%</span></div>`
+    }
+
+    // The round being fought (or the last one), in full.
+    function round_card(r) {
+        const span = r.fighting ? `${eve_clock(r.start)} → now · ${r.minutes} min` : `${eve_clock(r.start)}–${eve_clock(r.end)} · ${r.minutes} min`
+        const vs = r.hostiles.map(h => `${h.name} ${h.pilots}`).join(' · ')
+        return `<section class="fw-round${r.fighting ? ' is-fighting' : ''}" aria-label="${esc(round_name(r))}">
+                <div class="fw-round__head"><span class="fw-round__name">${r.fighting ? '<span class="fw-round__dot" aria-hidden="true"></span>' : ''}${esc(round_name(r))}</span><span class="eve-dim">${esc(span)}</span></div>
+                <div class="fw-stats fw-stats--two">
+                    <div><span class="fw-stat fw-kill-text">${isk(r.isk_destroyed)}</span><span>destroyed · ${plural(r.kills, 'ship')}</span></div>
+                    <div><span class="fw-stat fw-danger">${isk(r.isk_lost)}</span><span>lost · ${plural(r.losses, 'ship')}</span></div>
+                </div>
+                ${efficiency(r.efficiency)}
+                ${r.bins ? round_bars(r.bins) : ''}
+                <span class="eve-dim fw-round__vs">${esc([vs ? `vs ${vs}` : '', r.systems.join(', ')].filter(Boolean).join(' · '))}</span>
+            </section>`
+    }
+
+    function earlier_rounds(rounds) {
+        if (!rounds.length) return ''
+        return section('Earlier', 'kills / losses · eff.') + rounds.map(r => `<div class="fw-row fw-round-row${r.kind === 'round' ? '' : ' is-skirmish'}">
+                <span class="fw-row__name">${esc(round_name(r))} <span class="eve-dim">${round_span(r)}${r.hostiles.length ? ` · ${esc(r.hostiles.map(h => h.name).join(', '))}` : ''}</span></span>
+                <span class="fw-count">${r.kills} / ${r.losses}</span>
+                <span class="fw-count eve-dim">${r.kind !== 'round' || r.efficiency == null ? '' : `${r.efficiency}%`}</span>
+            </div>`).join('')
+    }
+
     function fc_kills(v) {
-        const rows = v.feed.map(k => {
+        if (v.fights) return fights_view(v)
+        return feed_view(v)
+    }
+
+    function fights_view(v) {
+        // Pods add to the ISK but not to the fight's story: newest ships only.
+        const ships = { ...v, feed: v.feed.filter(k => !k.capsule) }
+        return `<div class="fw-gap"></div>${round_card(v.fights.latest)}${feed_rows(ships, 4)}${earlier_rounds(v.fights.earlier)}`
+    }
+
+    function feed_rows(v, limit = Infinity) {
+        const rows = v.feed.slice(0, limit).map(k => {
             const loss = k.outcome === 'loss'
             const who = loss ? k.victim_name : `${k.solar_system_name}`
             const sub = loss ? `${k.solar_system_name} · ${k.capsule ? 'pod' : 'ship'} lost` : `${plural(k.fleet_pilots, 'pilot')} on it${k.victim_name ? ` · ${k.victim_name}` : ''}`
             return `<div class="fw-kill${loss ? ' fw-kill--loss' : ''}">
                 <span class="fw-kill__time">${eve_clock(k.killmail_time)}</span>
                 ${ship_icon(k.ship_type_id, 26)}
-                <span class="fw-kill__text"><span><span class="${loss ? 'fw-danger' : 'fw-good'}">${loss ? 'Loss' : 'Kill'}</span> <span class="fw-row__name">${esc(k.ship_name || 'Unknown')}</span></span><span class="fw-meta">${esc(loss ? `${who} · ${k.solar_system_name}` : sub)}</span></span>
+                <span class="fw-kill__text"><span><span class="${loss ? 'fw-danger' : 'fw-kill-text'}">${loss ? 'Loss' : 'Kill'}</span> <span class="fw-row__name">${esc(k.ship_name || 'Unknown')}</span></span><span class="fw-meta">${esc(loss ? `${who} · ${k.solar_system_name}` : sub)}</span></span>
                 <span class="fw-count">${isk(k.isk_value)}</span>
             </div>`
         }).join('')
-        return `<div class="fw-gap"></div>${isk_summary(v.counts)}${section('Newest first', 'EVE time')}${rows || '<div class="fw-quiet">No kills or losses yet.</div>'}`
+        return `${section('Newest first', 'EVE time')}${rows || '<div class="fw-quiet">No kills or losses yet.</div>'}`
+    }
+
+    function feed_view(v) {
+        return `<div class="fw-gap"></div>${isk_summary(v.counts)}${feed_rows(v)}`
     }
 
     // Window at its minimum size: the count, the doctrine bars and one line for who needs a nudge.
@@ -318,6 +384,7 @@
                     picked ? button('fleet:copy-fit', 'Copy fit', { quiet: true, id: f.id, key: picked.key }) : '')}
                 ${step(3, 'X up for an invite', `Fleet chat in game${f.fc_name ? ` · FC ${esc(f.fc_name)}` : ''}`)}
             </div>
+            ${v.fights && v.fights.latest.fighting ? section('Fighting now') + round_card(v.fights.latest) : ''}
             ${needs ? section('Fleet needs') + `<div class="fw-chips">${needs}</div>` : ''}
             ${picked ? '' : picks(v)}`
     }
