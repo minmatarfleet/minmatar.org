@@ -84,6 +84,25 @@ class EveFleet(models.Model):
         max_length=32, choices=fleet_statuses, default="unknown"
     )
 
+    # A tribe group fleet: audience is None, the start ping goes to the
+    # group's channel and members-only ones are hidden from everyone else.
+    # See docs/tribes/tribe-publishing.md.
+    host_group = models.ForeignKey(
+        "tribes.TribeGroup",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hosted_fleets",
+    )
+    open_to_alliance = models.BooleanField(
+        default=False,
+        help_text="Group fleet anyone in the alliance can see and join.",
+    )
+    on_schedule = models.BooleanField(
+        default=False,
+        help_text="Open group fleet listed in the #schedule message.",
+    )
+
     campaign = models.ForeignKey(
         "campaigns.Campaign",
         on_delete=models.SET_NULL,

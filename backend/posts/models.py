@@ -38,6 +38,23 @@ class EvePost(models.Model):
         related_name="posts",
         help_text="Optional campaign this post (propaganda, write-up) is for.",
     )
+    host_group = models.ForeignKey(
+        "tribes.TribeGroup",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hosted_posts",
+        help_text="Tribe group this post is published as.",
+    )
+    members_only = models.BooleanField(
+        default=False,
+        help_text="Only the host group's members (and its managers) see it.",
+    )
+    announced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the bot announced the post in the group's channel.",
+    )
     tribe_groups = models.ManyToManyField(
         "tribes.TribeGroup",
         blank=True,
