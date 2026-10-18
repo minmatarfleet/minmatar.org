@@ -29220,6 +29220,10 @@
         "scheme": "bearer",
         "type": "http"
       },
+      "AuthLenient": {
+        "scheme": "bearer",
+        "type": "http"
+      },
       "AuthOptional": {
         "scheme": "bearer",
         "type": "http"
@@ -30366,7 +30370,7 @@
         },
         "security": [
           {
-            "AuthOptional": []
+            "AuthLenient": []
           }
         ],
         "summary": "Get Posts",
@@ -30526,7 +30530,7 @@
         },
         "security": [
           {
-            "AuthOptional": []
+            "AuthLenient": []
           }
         ],
         "summary": "Get Post",
