@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 from eveonline.helpers.alliances import alliance_corporations
 from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters.identity import owned_by_q
 from groups.helpers.feature_access import can_use_feature
 
 EXECUTOR_FEATURE = "alliance.health.executor"
@@ -19,7 +20,7 @@ def ceo_corp_ids(user: User) -> set[int]:
         return set()
     return set(
         mfa_corporation_qs()
-        .filter(ceo__user=user)
+        .filter(owned_by_q(user.id, "ceo__"))
         .values_list("corporation_id", flat=True)
     )
 
@@ -30,7 +31,7 @@ def officer_corp_ids(user: User) -> set[int]:
         return set()
     director_ids = set(
         mfa_corporation_qs()
-        .filter(directors__user=user)
+        .filter(owned_by_q(user.id, "directors__"))
         .values_list("corporation_id", flat=True)
     )
     return ceo_corp_ids(user) | director_ids

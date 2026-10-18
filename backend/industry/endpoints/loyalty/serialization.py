@@ -3,7 +3,10 @@
 from dataclasses import dataclass, field
 
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
+from eveonline.models import EveCharacter
 from industry.endpoints.loyalty.schemas import (
     LoyaltyCurrencyResponse,
     LoyaltyLedgerEntryResponse,
@@ -102,10 +105,7 @@ def order_context(orders) -> OrderContext:
         )
         names += order_destination_names(order)
     primaries: dict[int, EveCharacter | None] = dict.fromkeys(user_ids)
-    for player in EvePlayer.objects.filter(
-        user_id__in=user_ids
-    ).select_related("primary_character"):
-        primaries[player.user_id] = player.primary_character
+    primaries.update(primary_characters_for_users(user_ids))
     return OrderContext(
         primaries=primaries, corporation_ids=corporation_ids(names)
     )

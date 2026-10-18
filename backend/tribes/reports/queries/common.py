@@ -9,8 +9,11 @@ from typing import Iterable
 from django.utils import timezone
 
 from app.eve_time import month_key
-from eveonline.models import EveCharacter
-from eveonline.models.characters import EvePlayer
+from eveonline.helpers.characters.identity import (
+    character_ids_for_users,
+    owner_user_ids,
+    primary_refs_for_users,
+)
 from tribes.reports.types import PeriodBounds
 
 # Months scanned for a "best month" record.
@@ -77,42 +80,17 @@ def next_milestone(value: float) -> int | None:
 
 def roster_characters_by_eve_id(user_ids: Iterable[int]) -> dict[int, int]:
     """Every character a set of users owns, EVE character id -> user id."""
-    user_ids = list(user_ids)
-    if not user_ids:
-        return {}
-    return dict(
-        EveCharacter.objects.filter(
-            user_id__in=user_ids, character_id__isnull=False
-        ).values_list("character_id", "user_id")
-    )
+    return character_ids_for_users(user_ids)
 
 
 def characters_to_users(eve_ids: Iterable[int]) -> dict[int, int]:
-    eve_ids = {eve_id for eve_id in eve_ids if eve_id}
-    if not eve_ids:
-        return {}
-    return dict(
-        EveCharacter.objects.filter(
-            character_id__in=eve_ids, user_id__isnull=False
-        ).values_list("character_id", "user_id")
-    )
+    """EVE character id -> owning user id (see eveonline identity rule)."""
+    return owner_user_ids(eve_ids)
 
 
 def primary_characters(user_ids: Iterable[int]) -> dict[int, tuple[int, str]]:
     """User id -> (primary character id, name)."""
-    user_ids = {uid for uid in user_ids if uid}
-    if not user_ids:
-        return {}
-    result = {}
-    for player in EvePlayer.objects.filter(
-        user_id__in=user_ids, primary_character__isnull=False
-    ).select_related("primary_character"):
-        char = player.primary_character
-        result[player.user_id] = (
-            int(char.character_id),
-            char.character_name or "",
-        )
-    return result
+    return primary_refs_for_users(user_ids)
 
 
 def person_rows(

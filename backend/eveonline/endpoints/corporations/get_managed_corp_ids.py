@@ -6,6 +6,7 @@ from ninja import Router
 
 from authentication import AuthBearer
 from eveonline.helpers.alliances import member_corporations
+from eveonline.helpers.characters.identity import owned_by_q
 from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCorporation
 
@@ -23,7 +24,7 @@ def get_managed_corp_ids(request) -> List[int]:
     corporations = (
         member_corporations()
         .select_related("ceo", "ceo__token")
-        .prefetch_related("directors")
+        .prefetch_related("directors__token")
     )
     ids = {
         corp.corporation_id
@@ -31,13 +32,13 @@ def get_managed_corp_ids(request) -> List[int]:
         if can_manage_corporation(user, corp)
     }
     ids.update(
-        EveCorporation.objects.filter(directors__user=user).values_list(
-            "corporation_id", flat=True
-        )
+        EveCorporation.objects.filter(
+            owned_by_q(user.id, "directors__")
+        ).values_list("corporation_id", flat=True)
     )
     ids.update(
-        EveCorporation.objects.filter(ceo__user=user).values_list(
-            "corporation_id", flat=True
-        )
+        EveCorporation.objects.filter(
+            owned_by_q(user.id, "ceo__")
+        ).values_list("corporation_id", flat=True)
     )
     return sorted(ids)

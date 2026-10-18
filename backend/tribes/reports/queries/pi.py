@@ -2,8 +2,10 @@
 
 from collections import defaultdict
 
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from eveonline.models import EveCharacter, EveCorporationWalletJournalEntry
-from eveonline.models.characters import EvePlayer
 from tribes.reports.queries.common import period_window
 from tribes.reports.roster import roster_character_eve_ids, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
@@ -71,18 +73,11 @@ def run_pi_report(
 
 
 def _build_user_rows(user_ids, chars_by_user, gross_by_user):
-    players = {
-        p.user_id: p
-        for p in EvePlayer.objects.filter(user_id__in=user_ids).select_related(
-            "primary_character"
-        )
-    }
+    mains = primary_characters_for_users(user_ids)
     rows = []
     for uid in user_ids:
-        pc = players.get(uid)
-        name = ""
-        if pc and pc.primary_character:
-            name = pc.primary_character.character_name or ""
+        main = mains.get(uid)
+        name = (main.character_name or "") if main else ""
         rows.append(
             {
                 "primary_character_name": name,

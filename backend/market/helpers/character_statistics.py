@@ -10,7 +10,8 @@ from django.db.models import DecimalField, F, Sum, Value
 from django.db.models.functions import Coalesce
 from pydantic import BaseModel
 
-from eveonline.models import EveCharacter, EveLocation, EvePlayer
+from eveonline.helpers.characters.identity import primary_refs_for_users
+from eveonline.models import EveCharacter, EveLocation
 from market.helpers.market_operators import eligible_market_operator_user_ids
 from market.models import EveMarketAttributedOrder, EveMarketContract
 
@@ -85,22 +86,7 @@ def build_market_character_statistics() -> list[MarketCharacterStatResponse]:
     if not user_totals:
         return []
 
-    primary_by_user = {}
-    for player in (
-        EvePlayer.objects.filter(user_id__in=user_totals.keys())
-        .select_related("primary_character")
-        .only(
-            "user_id",
-            "primary_character_id",
-            "primary_character__character_id",
-            "primary_character__character_name",
-        )
-    ):
-        if player.primary_character_id:
-            primary_by_user[player.user_id] = (
-                player.primary_character.character_id,
-                player.primary_character.character_name or "",
-            )
+    primary_by_user = primary_refs_for_users(user_totals)
 
     result: list[MarketCharacterStatResponse] = []
     for user_id, total in user_totals.items():

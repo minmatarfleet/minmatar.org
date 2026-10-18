@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 
 from app.eve_time import as_eve_time
+from eveonline.helpers.characters.identity import character_ids_for_users
 from eveonline.helpers.corporations.kills import RecentKills
 from eveonline.models import EveCharacter, EvePlayer
 from fleets.endpoints.helpers import time_region
@@ -44,13 +45,7 @@ def observed_prime_buckets_for_users(
     ids = sorted({int(uid) for uid in user_ids if uid})
     if not ids:
         return {}
-    char_to_user = {
-        character_id: user_id
-        for character_id, user_id in EveCharacter.objects.filter(
-            user_id__in=ids
-        ).values_list("character_id", "user_id")
-        if character_id and user_id
-    }
+    char_to_user = character_ids_for_users(ids)
     if not char_to_user:
         return {}
     cutoff = timezone.now() - timedelta(days=days)
@@ -103,11 +98,7 @@ def weekday_distribution(
     ids = sorted({int(uid) for uid in user_ids if uid})
     members = {day: set() for day in range(7)}
     if ids:
-        char_to_user = dict(
-            EveCharacter.objects.filter(user_id__in=ids).values_list(
-                "character_id", "user_id"
-            )
-        )
+        char_to_user = character_ids_for_users(ids)
         cutoff = timezone.now() - timedelta(days=days)
         rows = EveFleetInstanceMember.objects.filter(
             character_id__in=list(char_to_user),

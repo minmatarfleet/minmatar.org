@@ -36,6 +36,7 @@ from campaigns.models import (
 )
 from campaigns.services import fleets, scoring
 from campaigns.services.prime_time import observed_activity
+from eveonline.helpers.characters.identity import primary_refs_for_users
 from eveonline.models import EveCorporation, EvePlayer
 from feed.models import FeedKillmail
 
@@ -717,15 +718,7 @@ def primary_characters(user_ids) -> dict[int, tuple[int, str]]:
     boards must not link it to an EVE main. A pilot without a primary
     character is simply absent here; callers show ``UNKNOWN_PILOT``.
     """
-    return {
-        player.user_id: (
-            player.primary_character.character_id,
-            player.primary_character.character_name,
-        )
-        for player in EvePlayer.objects.filter(
-            user_id__in=list(user_ids), primary_character__isnull=False
-        ).select_related("primary_character")
-    }
+    return primary_refs_for_users(user_ids)
 
 
 def pilot_name(user_id: int | None) -> str:
