@@ -1,17 +1,19 @@
 ---
 import { i18n } from '@helpers/i18n'
 import { eve_day_short } from '@helpers/date'
-const { lang, t } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetSchedule } from '@helpers/fetching/fleet_schedule'
 import type { FleetTypes } from '@dtypes/api.minmatar.org'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { eve_day } from '@helpers/fetching/fleet_schedule'
+import { FLEET_HOST_FILTERS, type FleetHostFilter } from '@helpers/fleet_hosts'
 
 /**
  * The fleets page: live fleets and the next one as spotlight cards, then
  * the rest of the schedule grouped by EVE day. Type chips filter the rows
- * already on the page.
+ * already on the page; host pills (shown once the viewer can see a tribe
+ * group fleet) re-render the list on the server through htmx.
  */
 interface Props {
     schedule:       FleetSchedule;
@@ -21,7 +23,17 @@ const {
     schedule,
 } = Astro.props
 
-const { fleets, live, next, rest, doctrines, next_signups } = schedule
+const { fleets, live, next, rest, doctrines, next_signups, host_filter, host_counts } = schedule
+
+const show_host_filter = host_counts.tribe > 0
+const SCHEDULE_PARTIAL_URL = translatePath('/partials/upcoming_fleets_component/')
+const HUB_URL = translatePath('/fleets/upcoming/')
+const host_query = (filter:FleetHostFilter) => filter === 'all' ? '' : `?host=${filter}`
+const host_label = (filter:FleetHostFilter) =>
+    filter === 'alliance' ? t('fleets.host.filter_alliance').replace('{count}', host_counts.alliance.toString()) :
+    filter === 'tribe' ? t('fleets.host.filter_tribe').replace('{count}', host_counts.tribe.toString()) :
+    filter === 'mine' ? t('fleets.host.filter_mine') :
+    t('fleets.host.filter_all').replace('{count}', host_counts.all.toString())
 
 const today = eve_day(new Date())
 const tomorrow = eve_day(new Date(Date.now() + 24 * 60 * 60 * 1000))
@@ -79,6 +91,25 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
         />
     }
 
+    {show_host_filter &&
+        <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
+            {FLEET_HOST_FILTERS.map(filter =>
+                <button
+                    type="button"
+                    class="[ fleet-type-chip ]"
+                    aria-pressed={filter === host_filter ? 'true' : 'false'}
+                    hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
+                    hx-target="#upcoming-fleets"
+                    hx-swap="innerHTML transition:true"
+                    hx-push-url={`${HUB_URL}${host_query(filter)}`}
+                    hx-indicator=".loader"
+                >
+                    {host_label(filter)}
+                </button>
+            )}
+        </FlexInline>
+    }
+
     {rest.length > 0 &&
         <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
             <button
@@ -123,7 +154,7 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     )}
 
     {fleets.length === 0 &&
-        <p>{t('fleets.upcoming.empty_message')}</p>
+        <p>{host_filter === 'mine' ? t('fleets.host.mine_empty') : t('fleets.upcoming.empty_message')}</p>
     }
 </Flexblock>
 

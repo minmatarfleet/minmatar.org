@@ -41,6 +41,7 @@ import FleetPortrait from '@components/blocks/FleetPortrait.astro'
 import Countdown from '@components/blocks/Countdown.astro'
 import LocalTime from '@components/blocks/LocalTime.astro'
 import Button from '@components/blocks/Button.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
 ---
 
 <section
@@ -75,6 +76,7 @@ import Button from '@components/blocks/Button.astro'
 
     <div class="[ fleet-spotlight__body ]">
         <h2 set:html={objective} />
+        <FleetHostTags fleet={fleet} linked={true} size="md" />
         <p>{meta}</p>
         {live && <small>{t('fleets.spotlight.x_up').replace('{system}', system ?? '')}</small>}
     </div>

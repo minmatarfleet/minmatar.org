@@ -15,18 +15,37 @@ if (!user) return login_redirect(Astro)
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
-const can_view_page = can(gates, 'fleets.create')
+const can_create_alliance_fleets = can(gates, 'fleets.create')
+
+import { get_publishable_groups } from '@helpers/api.minmatar.org/tribes'
+import type { PublishableGroup } from '@dtypes/api.minmatar.org'
+
+// Tribe groups this pilot can schedule fleets for. None (or an error) keeps
+// today's form; a group publisher without fleets.create gets the groups only.
+let host_groups:PublishableGroup[] = []
+try {
+    host_groups = await get_publishable_groups(auth_token as string, 'fleet')
+} catch (error) {
+    console.log(`Skipping fleet host groups: ${error.message}`)
+}
+
+const can_view_page = can_create_alliance_fleets || host_groups.length > 0
 
 if (!can_view_page)
     return HTTP_403_Forbidden()
 
 import { create_fleet, get_audiences, get_locations, start_fleet } from '@helpers/api.minmatar.org/fleets'
 import type { FleetRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
+import { ALLIANCE_HOST, fleet_host_fields, parse_host_param, ping_preview_request, tribe_group_path } from '@helpers/fleet_hosts'
+import { fetch_fleet_ping_preview, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
+import { AMAMAKE_LOCATION_ID } from '@helpers/market_ops_redirect'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
 let create_fleet_error
 let alert:Alert | false = false
+// The host picked on a failed submit, so the re-rendered form keeps it.
+let posted_host:string | null = null
 
 if (Astro.request.method === "POST") {
     const data = await Astro.request.formData()
@@ -46,6 +65,11 @@ if (Astro.request.method === "POST") {
         const campaign = data.get('campaign_id') as string | null
         const campaign_id = campaign && campaign !== '-1' ? parseInt(campaign) : null
 
+        // Null when the form had no Host row: the request is then exactly today's.
+        const host_fields = fleet_host_fields(data, host_groups)
+        posted_host = data.get('host') as string | null
+        const is_group_fleet = Boolean(host_fields?.host_group_id)
+
         const fleet_data = {
             doctrine_id: doctrine_id,
             campaign_id: campaign_id,
@@ -53,11 +77,13 @@ if (Astro.request.method === "POST") {
             objective: data.get('objective') as string,
             start_time: start_time,
             type: data.get('fleet_type') as FleetTypes,
-            audience_id: parseInt(data.get('audience_id') as string),
+            // A group fleet has no audience (the API ignores it), but the field is required.
+            audience_id: is_group_fleet ? 0 : parseInt(data.get('audience_id') as string),
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
             hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
             immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
+            ...(host_fields && is_group_fleet && host_fields),
         } as FleetRequest
         
         const new_fleet = await create_fleet(auth_token as string, fleet_data)
@@ -135,6 +161,47 @@ const preselected_campaign = parseInt(Astro.url.searchParams.get('campaign_id') 
 const default_campaign_id = Number.isFinite(preselected_campaign) ? preselected_campaign : null
 
 const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
+
+// `?host=<group_id>` (the group page's New fleet) opens the form on that group,
+// and Cancel goes back to the group's Fleets tab.
+const host_param = parse_host_param(Astro.url.searchParams.get('host'), host_groups)
+const host_param_group = host_groups.find((group) => group.id === host_param) ?? null
+const selected_host = posted_host ?? (
+    host_param !== null ? String(host_param) :
+    can_create_alliance_fleets ? ALLIANCE_HOST :
+    String(host_groups[0]?.id ?? ALLIANCE_HOST)
+)
+
+const referer = Astro.request.headers.get('referer')
+const same_site_referer = (() => {
+    try {
+        const url = referer ? new URL(referer) : null
+        return url && url.origin === Astro.url.origin && url.pathname !== Astro.url.pathname ? `${url.pathname}${url.search}${url.hash}` : null
+    } catch {
+        return null
+    }
+})()
+const cancel_href = host_groups.length === 0 ? null :
+    host_param_group ? translatePath(tribe_group_path(host_param_group, 'fleets')) :
+    same_site_referer ?? translatePath('/fleets/upcoming/')
+
+// The start ping these defaults would send; the form re-renders it as fields change.
+let ping_preview:FleetPingPreviewUI | null = null
+if (host_groups.length > 0 && !fetch_doctrines_error) {
+    const selected_group = host_groups.find((group) => String(group.id) === selected_host) ?? null
+    const default_location = locations.find((location) => location.location_id === AMAMAKE_LOCATION_ID)
+    const preview_form = new Map<string, string>([
+        [ 'host', selected_host ],
+        [ 'fleet_type', selected_group ? 'non_strategic' : 'strategic' ],
+        [ 'location_id', String(default_location?.location_id ?? '') ],
+        [ 'audience_id', audiences.length === 1 ? String(audiences[0].id) : '' ],
+    ])
+    ping_preview = await fetch_fleet_ping_preview(
+        auth_token as string,
+        ping_preview_request({ get: (name:string) => preview_form.get(name) ?? null }),
+        selected_group?.tribe_id ?? null,
+    )
+}
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -227,6 +294,11 @@ const eve_time = eve_clock(eve_datetime)
                     disable_motd={false}
                     hide_volunteers={false}
                     lang={lang}
+                    host_groups={host_groups}
+                    selected_host={selected_host}
+                    allow_alliance_host={can_create_alliance_fleets}
+                    cancel_href={cancel_href}
+                    ping_preview={ping_preview}
                 />
             }
         </Flexblock>

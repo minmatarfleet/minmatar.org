@@ -16,12 +16,15 @@ import { marked } from 'marked'
 interface Props {
     fleet:          FleetItem;
     doctrine?:      FleetScheduleDoctrine | null;
+    /** Group chip + visibility tag; off on the group's own Fleets tab. */
+    show_host?:     boolean;
     [propName: string]: any;
 }
 
 const {
     fleet,
     doctrine = null,
+    show_host = true,
     ...attributes
 } = Astro.props
 
@@ -33,6 +36,7 @@ const cancelled = fleet.status === 'cancelled'
 
 import FleetPortrait from '@components/blocks/FleetPortrait.astro'
 import LocalTime from '@components/blocks/LocalTime.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
 ---
 
 <a
@@ -55,6 +59,7 @@ import LocalTime from '@components/blocks/LocalTime.astro'
     <span class="[ fleet-schedule-row__fleet ]">
         <span class="[ fleet-schedule-row__heading ]">
             <b set:html={objective} />
+            {show_host && <FleetHostTags fleet={fleet} class="[ fleet-schedule-row__host ]" />}
             <slot name="tags" />
         </span>
         <small>
@@ -117,6 +122,10 @@ import LocalTime from '@components/blocks/LocalTime.astro'
 
         b {
             color: var(--highlight);
+        }
+
+        :global(.fleet-schedule-row__host) {
+            margin-block: var(--space-3xs);
         }
 
         small {

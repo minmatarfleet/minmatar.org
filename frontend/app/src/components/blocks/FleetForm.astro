@@ -2,11 +2,14 @@
 import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
-import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
+import type { Audience, Location, CampaignListItem, PublishableGroup } from '@dtypes/api.minmatar.org'
+import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic, HostOptionUI } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 import { AMAMAKE_LOCATION_ID } from '@helpers/market_ops_redirect'
+import { ALLIANCE_HOST } from '@helpers/fleet_hosts'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+import type { FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
 
 interface Props {
     fleet?:                         FleetUI | null;
@@ -21,6 +24,19 @@ interface Props {
     disable_motd:                   boolean;
     hide_volunteers?:               boolean;
     lang:                           string;
+    /**
+     * Tribe groups the FC can schedule for. Empty (the default) leaves the
+     * form exactly as it was: no Host row, no switches, no ping preview.
+     */
+    host_groups?:                   PublishableGroup[];
+    /** `alliance` or a group id: the host the form opens on. */
+    selected_host?:                 string;
+    /** False for a group publisher who can't schedule alliance fleets. */
+    allow_alliance_host?:           boolean;
+    open_to_alliance?:              boolean;
+    on_schedule?:                   boolean;
+    cancel_href?:                   string | null;
+    ping_preview?:                  FleetPingPreviewUI | null;
 }
 
 const {
@@ -36,9 +52,61 @@ const {
     disable_motd,
     hide_volunteers = false,
     lang,
+    host_groups: host_groups_prop = [],
+    selected_host: selected_host_prop = ALLIANCE_HOST,
+    allow_alliance_host = true,
+    open_to_alliance = false,
+    on_schedule = false,
+    cancel_href = null,
+    ping_preview = null,
 } = Astro.props
 
 const audiences = Array.isArray(audiences_prop) ? audiences_prop : []
+const host_groups = Array.isArray(host_groups_prop) ? host_groups_prop : []
+
+// Tribe group fleets: a Host row (Alliance + each group) only for FCs who can
+// schedule for a group. Everything below keyed on show_host_row is absent otherwise.
+const show_host_row = host_groups.length > 0
+const host_options:HostOptionUI[] = !show_host_row ? [] : [
+    ...(allow_alliance_host ? [{
+        value: ALLIANCE_HOST,
+        label: t('fleets.host.alliance'),
+        sub: t('fleets.host.alliance_sub'),
+        image_url: '/images/fleet-logo.png',
+    }] : []),
+    ...host_groups.map((group):HostOptionUI => ({
+        value: String(group.id),
+        label: group.name,
+        sub: t('fleets.host.group_sub')
+            .replace('{tribe}', group.tribe_name)
+            .replace('{count}', group.member_count.toString()),
+        image_url: tribe_group_cover(group.id),
+    })),
+]
+const selected_host = host_options.some((option) => option.value === selected_host_prop) ?
+    selected_host_prop :
+    host_options[0]?.value ?? ALLIANCE_HOST
+const initial_is_group = show_host_row && selected_host !== ALLIANCE_HOST
+const initial_group = initial_is_group ? host_groups.find((group) => String(group.id) === selected_host) ?? null : null
+const HOST_GROUPS = Object.fromEntries(host_groups.map((group) => [ String(group.id), {
+    name: group.name,
+    tribe_id: group.tribe_id,
+    allow_open: group.allow_open_fleets,
+    audience: t('fleets.host.audience_group').replace('{group}', group.name),
+} ]))
+const initial_open = Boolean(initial_group?.allow_open_fleets) && open_to_alliance
+// "Post on #schedule" is on by default once the fleet is open.
+const initial_schedule = initial_open ? on_schedule : true
+// Spread on the audience controls: hidden and not submitted for a group fleet.
+const audience_host_attributes = show_host_row ? { 'x-show': '!is_group', style: initial_is_group ? 'display: none' : undefined } : {}
+const audience_input_attributes = show_host_row ? { 'x-bind:disabled': 'is_group', disabled: initial_is_group ? true : undefined } : {}
+const strategic_option_attributes = show_host_row ? {
+    'x-bind:disabled': 'is_group',
+    'x-bind:hidden': 'is_group',
+    disabled: initial_is_group ? true : undefined,
+    hidden: initial_is_group ? true : undefined,
+} : {}
+const PING_PREVIEW_PARTIAL_URL = translatePath('/partials/discord_preview_component/')
 const locations = Array.isArray(locations_prop) ? locations_prop : []
 const doctrines = Array.isArray(doctrines_prop) ? doctrines_prop : []
 const campaigns = Array.isArray(campaigns_prop) ? campaigns_prop : []
@@ -134,7 +202,8 @@ if (fleet) {
     fleet_audience_id = fleet_audience !== undefined ? fleet_audience?.value : null
 }
 
-const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
+// A group fleet can't be Strategic, so a new one opens on Non-strategic.
+const default_fleet_type = fleet?.type ?? (initial_is_group ? 'non_strategic' : fleet_types_select_options[0].value)
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
 // The fleet's own campaign wins; a new fleet takes the one the page asked for.
 const wanted_campaign_id = fleet?.campaign_id ?? default_campaign_id
@@ -172,6 +241,8 @@ import Input from '@components/blocks/Input.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import DoctrineBadge from '@components/blocks/DoctrineBadge.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
+import HostPicker from '@components/blocks/HostPicker.astro'
+import FleetPingPreview from '@components/blocks/FleetPingPreview.astro'
 
 import FlagIcon from '@components/icons/FlagIcon.astro';
 import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
@@ -186,9 +257,22 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
     />
 
     <form
+        id={show_host_row ? 'fleet-form' : undefined}
         method="POST"
         x-data={`{
-            submitted: false,
+            submitted: false,${show_host_row ? `
+            host: ${JSON.stringify(selected_host)},
+            open: ${JSON.stringify(initial_open)},
+            sched: ${JSON.stringify(initial_schedule)},
+            host_groups: ${JSON.stringify(HOST_GROUPS)},
+            members_only_note: ${JSON.stringify(t('fleets.host.members_only_note'))},
+            get is_group() { return this.host !== ${JSON.stringify(ALLIANCE_HOST)} },
+            get group() { return this.host_groups[this.host] ?? null },
+            pick_host() {
+                this.open = false
+                this.sched = true
+                if (this.is_group && this.fleet_type === 'strategic') this.fleet_type = 'non_strategic'
+            },` : ''}
             fleet_type: ${JSON.stringify(String(default_fleet_type))},
             eve_date: ${JSON.stringify(eve_date)},
             eve_time: ${JSON.stringify(eve_time)},
@@ -237,9 +321,20 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 
                         <p>{t('fleets.add.form_info')}</p>
 
+                        {show_host_row && <>
+                            <HostPicker
+                                name="host"
+                                hosts={host_options}
+                                selected={selected_host}
+                                legend={t('fleets.host.legend')}
+                                input_attributes={{ 'x-model': 'host', 'x-on:change': 'pick_host()' }}
+                            />
+                            <input type="hidden" name="host_tribe_id" value={initial_group?.tribe_id ?? ''} x-bind:value="group?.tribe_id ?? ''" />
+                        </>}
+
                         <Flexblock>
                             {show_audience_picker ?
-                                <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
+                                <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%" {...audience_host_attributes}>
                                     <label>{t('select_audience')}</label>
                                     <FlexInline class="[ audiences !justify-center ]">
                                         {audiences.map((option) =>
@@ -266,6 +361,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                                 x-model="audience"
                                                 tabindex="-1"
                                                 required
+                                                {...audience_input_attributes}
                                             >
                                                 {audiences_select_options.map((option) => 
                                                     <option value={option.value} selected={String(option.value) === default_audience_value}>
@@ -277,7 +373,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     </FlexInline>
                                 </FixedFluid>
                                 :
-                                <input type="hidden" name="audience_id" value={default_audience_value} />
+                                <input type="hidden" name="audience_id" value={default_audience_value} {...audience_input_attributes} />
                             }
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
@@ -391,10 +487,17 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 <label for="type">{t('type')}</label>
                                 <Select id="type" x-model="fleet_type" name="fleet_type">
                                     {fleet_types_select_options.map((option) => 
-                                        <option value={option.value} selected={option.value === default_fleet_type}>{option.label}</option>
+                                        <option
+                                            value={option.value}
+                                            selected={option.value === default_fleet_type}
+                                            {...(option.value === 'strategic' ? strategic_option_attributes : {})}
+                                        >{option.label}</option>
                                     )}
                                 </Select>
                             </FixedFluid>
+                            {show_host_row &&
+                                <small x-show="is_group" style={initial_is_group ? undefined : 'display: none'}>{t('fleets.host.strategic_note')}</small>
+                            }
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                 <label for="objective">{t('objective')}</label>
@@ -420,6 +523,44 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     >{fleet?.description}</MarkdownTextArea>
                                 </Flexblock>
                             </Context>
+
+                            {show_host_row &&
+                                <Flexblock
+                                    class="[ fleet-host-switches ]"
+                                    gap="var(--space-s)"
+                                    x-show="is_group"
+                                    style={initial_is_group ? undefined : 'display: none'}
+                                >
+                                    <Flexblock gap="var(--space-s)" x-show="group?.allow_open" style={initial_group?.allow_open_fleets ? undefined : 'display: none'}>
+                                        <SwitchSquare
+                                            class="[ w-full ]"
+                                            name="open_to_alliance"
+                                            label={t('fleets.host.open_label')}
+                                            description={t('fleets.host.open_description')}
+                                            checked={initial_open}
+                                            x-bind:checked="open"
+                                            x-on:change="open = $event.target.checked; if (open) sched = true"
+                                        />
+                                        <SwitchSquare
+                                            class="[ w-full ]"
+                                            name="on_schedule"
+                                            label={t('fleets.host.schedule_label')}
+                                            description={t('fleets.host.schedule_description')}
+                                            checked={initial_open && initial_schedule}
+                                            disabled={!initial_open}
+                                            x-bind:checked="open && sched"
+                                            x-bind:disabled="!open"
+                                            x-on:change="sched = $event.target.checked"
+                                        />
+                                        <small x-show="!open" style={initial_open ? 'display: none' : undefined}>{t('fleets.host.schedule_disabled')}</small>
+                                    </Flexblock>
+                                    <small
+                                        x-show="!group?.allow_open"
+                                        style={initial_group && !initial_group.allow_open_fleets ? undefined : 'display: none'}
+                                        x-text="members_only_note.replace('{group}', group?.name ?? '')"
+                                    >{t('fleets.host.members_only_note').replace('{group}', initial_group?.name ?? '')}</small>
+                                </Flexblock>
+                            }
                         </Flexblock>
                     </Flexblock>
                 </ComponentBlock>
@@ -478,14 +619,25 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 {t('waiting_fleet_time')}
                             </TextGroup>
 
-                            <TextGroup
-                                class:list={{ 'text-red': !default_audience_value }}
-                                x-bind:class="{ 'text-red': !audience }"
-                                title={t('audience')}
-                                x-text={`audience ? audiences[audience] : ${JSON.stringify(t('no_audience_selected'))}`}
-                            >
-                                {default_audience_value ? AUDIENCES[default_audience_value] : t('no_audience_selected')}
-                            </TextGroup>
+                            {show_host_row ?
+                                <TextGroup
+                                    class:list={{ 'text-red': !initial_is_group && !default_audience_value }}
+                                    x-bind:class="{ 'text-red': !is_group && !audience }"
+                                    title={t('audience')}
+                                    x-text={`is_group ? (group?.audience ?? '') : (audience ? audiences[audience] : ${JSON.stringify(t('no_audience_selected'))})`}
+                                >
+                                    {initial_group ? HOST_GROUPS[String(initial_group.id)].audience : default_audience_value ? AUDIENCES[default_audience_value] : t('no_audience_selected')}
+                                </TextGroup>
+                                :
+                                <TextGroup
+                                    class:list={{ 'text-red': !default_audience_value }}
+                                    x-bind:class="{ 'text-red': !audience }"
+                                    title={t('audience')}
+                                    x-text={`audience ? audiences[audience] : ${JSON.stringify(t('no_audience_selected'))}`}
+                                >
+                                    {default_audience_value ? AUDIENCES[default_audience_value] : t('no_audience_selected')}
+                                </TextGroup>
+                            }
 
                             <TextGroup
                                 title={t('location')}
@@ -496,6 +648,21 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         </FlexInline>
                     </Flexblock>
                 </ComponentBlock>
+
+                {show_host_row &&
+                    <ComponentBlock width='narrow'>
+                        <div
+                            class="[ fleet-ping-preview ]"
+                            aria-live="polite"
+                            hx-post={PING_PREVIEW_PARTIAL_URL}
+                            hx-trigger="change from:#fleet-form delay:400ms"
+                            hx-swap="innerHTML"
+                            hx-sync="this:replace"
+                        >
+                            <FleetPingPreview preview={ping_preview ?? { channel_name: null, payload: null, role_name: null, error: true }} />
+                        </div>
+                    </ComponentBlock>
+                }
 
                 <ComponentBlock width='narrow'>
                     <Flexblock
@@ -559,6 +726,9 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         />
                         
                         <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
+                        {cancel_href &&
+                            <Button href={cancel_href} color="transparent" class="[ w-full ]">{t('fleets.host.cancel')}</Button>
+                        }
                     </Flexblock>
                 </ComponentBlock>
             </Flexblock>

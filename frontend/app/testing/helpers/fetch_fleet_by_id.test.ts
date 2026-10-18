@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@helpers/api.minmatar.org/fleets', () => ({
     get_fleet_by_id: vi.fn(),
+    get_fleet_access: vi.fn(),
     get_fleets_v3: vi.fn(),
     get_fleets_metrics: vi.fn(),
     get_fleet_commander_metrics: vi.fn(),
@@ -17,11 +18,11 @@ vi.mock('@helpers/api.eveonline/routes', () => ({ get_route: vi.fn() }))
 vi.mock('@helpers/sde/map', () => ({ get_system_sun_type_id: vi.fn() }))
 vi.mock('@helpers/date', () => ({ time_diff_text: vi.fn() }))
 
-import { get_fleet_by_id } from '@helpers/api.minmatar.org/fleets'
+import { get_fleet_by_id, get_fleet_access, get_fleets_v3 } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import { get_campaign } from '@helpers/api.minmatar.org/campaigns'
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_by_id, fetch_fleet_access, add_fleet_info, fetch_fleets_auth } from '@helpers/fetching/fleets'
 import { settled_value } from '@helpers/settled'
 
 const FLEET = {
@@ -84,6 +85,9 @@ describe('fetch_fleet_by_id', () => {
             campaign_id: 2,
             campaign_slug: 'tama',
             campaign_name: 'Tama push',
+            host_group: null,
+            open_to_alliance: false,
+            on_schedule: false,
         })
         expect(get_campaign).toHaveBeenCalledWith('tama', 'token')
     })
@@ -150,6 +154,56 @@ describe('fetch_fleet_by_id', () => {
         vi.mocked(get_fleet_by_id).mockRejectedValue(missing)
 
         await expect(fetch_fleet_by_id('token', 7)).rejects.toBe(missing)
+    })
+})
+
+const DREADS = { id: 1, code: 'dreads', name: 'Dreads', tribe_id: 3, tribe_name: 'Capitals' }
+const GROUP_FLEET = { ...FLEET, audience: null, host_group: DREADS, open_to_alliance: true, on_schedule: true }
+
+describe('tribe group fleets', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(get_user_character).mockResolvedValue(FC as any)
+        vi.mocked(fetch_doctrine_by_id).mockResolvedValue(DOCTRINE as any)
+        vi.mocked(get_campaign).mockResolvedValue({ name: 'Tama push' } as any)
+    })
+
+    it('maps the host group and its flags onto the fleet page and list items', async () => {
+        vi.mocked(get_fleet_by_id).mockResolvedValue(GROUP_FLEET as any)
+        expect(await fetch_fleet_by_id('token', 7)).toMatchObject({
+            host_group: DREADS, open_to_alliance: true, on_schedule: true,
+        })
+        expect(add_fleet_info(GROUP_FLEET as any, [], [])).toMatchObject({
+            host_group: DREADS, open_to_alliance: true, on_schedule: true,
+        })
+        expect(add_fleet_info(FLEET as any, [], [])).toMatchObject({
+            host_group: null, open_to_alliance: false, on_schedule: false,
+        })
+    })
+
+    it('returns only the group for a members-only fleet the viewer cannot see', async () => {
+        vi.mocked(get_fleet_access).mockResolvedValue({ fleet: null, restricted: { detail: 'members_only', host_group: DREADS } } as any)
+
+        expect(await fetch_fleet_access('token', 7)).toEqual({
+            fleet: null,
+            restricted: { detail: 'members_only', host_group: DREADS },
+        })
+        expect(get_user_character).not.toHaveBeenCalled()
+    })
+
+    it('builds the fleet as fetch_fleet_by_id does when the viewer can see it', async () => {
+        vi.mocked(get_fleet_by_id).mockResolvedValue(GROUP_FLEET as any)
+        vi.mocked(get_fleet_access).mockResolvedValue({ fleet: GROUP_FLEET, restricted: null } as any)
+
+        const access = await fetch_fleet_access('token', 7)
+        expect(access.restricted).toBeNull()
+        expect(access.fleet).toEqual(await fetch_fleet_by_id('token', 7))
+    })
+
+    it('asks the API for one group\'s fleets', async () => {
+        vi.mocked(get_fleets_v3).mockResolvedValue([] as any)
+        await fetch_fleets_auth('token', false, true, null, 1)
+        expect(get_fleets_v3).toHaveBeenCalledWith('token', 'recent', 1)
     })
 })
 

@@ -52,6 +52,7 @@ const ship_counts = result ?
     ''
 
 import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
 ---
 
 <a
@@ -68,6 +69,7 @@ import FleetPortrait from '@components/blocks/FleetPortrait.astro'
         <span class="[ fleet-history-row__title ]">
             <b set:html={objective} />
             {fleet.aar_link && <span class="[ fleet-history-row__tag ]">{t('fleets.history.aar')}</span>}
+            <FleetHostTags fleet={fleet} />
         </span>
         <span class="[ fleet-history-row__fc ]">
             <FleetPortrait

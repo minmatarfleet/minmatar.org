@@ -423,12 +423,18 @@
             ${v.ships.length ? section('Signed up', plural(signed, 'pilot')) + ships + roles_line(v.roles) : '<div class="fw-quiet">No doctrine set yet.</div>'}`
     }
 
+    // "FC <name>", led by an outlined chip naming the tribe group that hosts the fleet.
+    function fc_with_group(row) {
+        const chip = row.host_group ? `<span class="fw-group-chip">${esc(row.host_group.name)}</span> ` : ''
+        return `${chip}FC ${esc(row.fc_name)}`
+    }
+
     function next_card(row, signup = null) {
         return `<button class="fw-next" data-interactive data-open="${Number(row.id)}">
                 ${portrait(row.fc_character_id, 36)}
                 <span class="fw-next__title">${esc(fleet_title(row))}</span>
                 ${fleet_clock(row.start_time)}
-                <span class="fw-meta">${when(row.start_time)} · FC ${esc(row.fc_name)}</span>
+                <span class="fw-meta">${when(row.start_time)} · ${fc_with_group(row)}</span>
                 ${signup ? `<span class="fw-next__signed">Signed up as ${esc(fit_label(signup.fit_name) || 'a fit')}</span>` : ''}
             </button>`
     }
@@ -495,7 +501,7 @@
                 ${portrait(row.fc_character_id, 32)}
                 <span class="fw-row__name">${esc(fleet_title(row))} <span class="fleet-type fleet-type--${esc(row.type)}">${esc(row.type_label)}</span></span>
                 ${right}
-                <span class="fw-meta">${row.live ? 'Live now' : when(row.start_time)} · FC ${esc(row.fc_name)}${row.location ? ` · ${esc(row.location)}` : ''}</span>
+                <span class="fw-meta">${row.live ? 'Live now' : when(row.start_time)} · ${fc_with_group(row)}${row.location ? ` · ${esc(row.location)}` : ''}</span>
                 ${tag}
             </button>`
     }

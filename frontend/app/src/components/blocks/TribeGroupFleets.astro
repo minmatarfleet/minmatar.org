@@ -81,6 +81,7 @@ import LockIcon from '@components/icons/LockIcon.astro'
                         role="listitem"
                         fleet={fleet}
                         doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+                        show_host={false}
                     >
                         <VisibilityTag slot="tags" visibility={visibility[fleet.id] ?? 'members_only'} size="sm" />
                     </FleetScheduleRow>

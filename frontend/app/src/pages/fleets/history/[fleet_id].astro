@@ -26,8 +26,9 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import type { FleetUI, FleetCombatLog } from '@dtypes/layout_components'
-import type { EveCharacterProfile, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import type { EveCharacterProfile, FleetMetrics, FleetCommanderMetrics, RestrictedResponse, TribeGroup } from '@dtypes/api.minmatar.org'
+import { fetch_fleet_access } from '@helpers/fetching/fleets'
+import { get_tribe_group } from '@helpers/api.minmatar.org/tribes'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 import type { FleetKills, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
@@ -46,6 +47,9 @@ let user_character:EveCharacterProfile | null = null
 let saved_logs:FleetCombatLog[] = []
 let fleet_metrics: FleetMetrics | undefined
 let fleet_commander_metrics: FleetCommanderMetrics | undefined
+// A members-only tribe group fleet the viewer can't see: only its group.
+let restricted:RestrictedResponse | null = null
+let host_group_details:TribeGroup | null = null
 
 // None of these depend on each other. Results are read in the order the page
 // used to await them one by one, so a failure still lands where it did.
@@ -56,12 +60,14 @@ try {
         fleets_metrics_result,
         fleet_commanders_metrics_result,
     ] = await Promise.allSettled([
-        fetch_fleet_by_id(auth_token as string, fleet_id),
+        fetch_fleet_access(auth_token as string, fleet_id),
         get_user_character(user.user_id),
         get_fleets_metrics(auth_token as string, fleet_id),
         get_fleet_commander_metrics(auth_token as string),
     ])
-    fleet = settled_value(fleet_result)
+    const access = settled_value(fleet_result)
+    restricted = access.restricted
+    fleet = access.fleet
     user_character = settled_value(user_character_result)
 
     const fleets_metrics = settled_value(fleets_metrics_result)
@@ -76,9 +82,21 @@ try {
 }
 
 try {
-    saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
+    saved_logs = user && fleet && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
 } catch (error) {
     console.log(error)
+}
+
+if (restricted?.host_group)
+    Astro.response.status = 403
+
+// Only the host strip's member count and role name; the strip renders without them.
+if (fleet?.host_group) {
+    try {
+        host_group_details = await get_tribe_group(fleet.host_group.tribe_id, fleet.host_group.id, auth_token)
+    } catch (error) {
+        console.log(`Skipping host group details: ${error.message}`)
+    }
 }
 
 // Render the kills here: their styles only reach the page if the page renders
@@ -133,9 +151,13 @@ import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
+import FleetHostStrip from '@components/blocks/FleetHostStrip.astro';
+import FleetMembersOnlyGate from '@components/blocks/FleetMembersOnlyGate.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
-const page_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`;
+// The gate names neither the fleet nor its number.
+const page_title = restricted ? t('fleets.host.gate_breadcrumb') : fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`;
 const breadcrumbs = [
     { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
     { page_title: t('fleets.history.page_title'), accumulated_path: '/fleets/history/' },
@@ -164,11 +186,22 @@ const breadcrumbs = [
         breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-            </FlexInline>
+            <Flexblock gap="var(--space-3xs)">
+                {!restricted &&
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                }
+                {fleet?.host_group &&
+                    <FleetHostStrip
+                        group={fleet.host_group}
+                        open_to_alliance={Boolean(fleet.open_to_alliance)}
+                        on_schedule={Boolean(fleet.on_schedule)}
+                        member_count={host_group_details?.member_count ?? null}
+                        role_name={host_group_details?.discord_role_name ?? null}
+                    />
+                }
+            </Flexblock>
             <PageActions>
                 <Button href={translatePath('/fleets/history/')}>
                     <FleetIcon slot="icon" />
@@ -181,7 +214,9 @@ const breadcrumbs = [
             </PageActions>
         </FlexInline>
 
-        {fetch_fleets_error ?
+        {restricted?.host_group ?
+            <FleetMembersOnlyGate host_group={restricted.host_group} /> :
+        fetch_fleets_error ?
             <ErrorRefetch
                 args={{
                     partial: FLEET_DETAIL_PARTIAL_URL,

@@ -1,0 +1,86 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { HostGroupRef, TribeGroup, SummaryCharacter, TribeMembership, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { get_tribe_group, get_memberships, get_membership_characters_available } from '@helpers/api.minmatar.org/tribes'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { get_user_profile } from '@helpers/permissions'
+import { host_group_ref, tribe_group_path } from '@helpers/fleet_hosts'
+
+/**
+ * A members-only tribe group fleet seen by someone outside the group. It
+ * only knows the group (from the API's 403 body), so nothing about the fleet
+ * can leak. The apply slot is the group's own apply / pending / member status.
+ */
+interface Props {
+    host_group:     HostGroupRef;
+}
+
+const { host_group } = Astro.props
+
+const { auth_token, user } = get_request_user(Astro)
+const group_ref = host_group_ref(host_group) as NonNullable<ReturnType<typeof host_group_ref>>
+
+let tribe_group:TribeGroup | null = null
+let user_characters:SummaryCharacter[] = []
+let available_characters:TribeAvailableCharacter[] = []
+const membership_by_group = new Map<number, TribeMembership | null>()
+let user_on_trial = false
+
+try {
+    tribe_group = await get_tribe_group(host_group.tribe_id, host_group.id, auth_token)
+    const [memberships, summary, available, profile] = await Promise.all([
+        get_memberships(auth_token as string, host_group.tribe_id, host_group.id, { mine: true }),
+        get_characters_summary_sorted(auth_token as string),
+        get_membership_characters_available(auth_token as string, host_group.tribe_id, host_group.id).catch(() => []),
+        user && user.username ? get_user_profile(user.username).catch(() => null) : null,
+    ])
+    membership_by_group.set(host_group.id, memberships[0] ?? null)
+    user_characters = summary.characters ?? []
+    available_characters = available
+    user_on_trial = profile?.community_status === 'trial'
+} catch (error) {
+    // The gate still names the group; the apply slot falls back to a link to its page.
+    console.log(`Members-only gate for group ${host_group.id}: ${error.message}`)
+    tribe_group = null
+}
+
+import MembersOnlyGate from '@components/blocks/MembersOnlyGate.astro'
+import TribeStatus from '@components/blocks/TribeStatus.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<MembersOnlyGate
+    group={group_ref}
+    kind="fleet"
+    back_href={translatePath('/fleets/upcoming/')}
+    back_label={t('fleets.host.gate_back')}
+>
+    <div slot="apply" class="[ fleet-gate-apply ]">
+        {tribe_group ?
+            <TribeStatus
+                group={tribe_group}
+                tribe_id={host_group.tribe_id}
+                group_id={host_group.id}
+                is_auth={Boolean(user)}
+                user_characters={user_characters}
+                available_characters={available_characters}
+                membership_by_group={membership_by_group}
+                user_on_trial={user_on_trial}
+            />
+            :
+            <Button href={translatePath(tribe_group_path(host_group))} color="green">
+                {t('fleets.host.apply_on_group_page').replace('{group}', host_group.name)}
+            </Button>
+        }
+    </div>
+</MembersOnlyGate>
+
+<style lang="scss">
+    .fleet-gate-apply {
+        display: flex;
+        justify-content: center;
+    }
+</style>

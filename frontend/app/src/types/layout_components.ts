@@ -552,6 +552,10 @@ export interface FleetItem {
     campaign_slug?:                 string | null;
     campaign_name?:                 string | null;
     aar_link?:                      string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:                    TribeGroupRefUI | null;
+    open_to_alliance?:              boolean;
+    on_schedule?:                   boolean;
 }
 
 import type { TrackingStatus } from '@dtypes/api.minmatar.org'
@@ -576,6 +580,10 @@ export interface FleetUI {
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:            TribeGroupRefUI | null;
+    open_to_alliance?:      boolean;
+    on_schedule?:           boolean;
 }
 
 export interface Tracking {
