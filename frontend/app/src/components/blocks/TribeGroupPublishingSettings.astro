@@ -1,0 +1,280 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PublishingKind, PublishingPolicy, TribeGroupPublishing } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { PUBLISHING_KINDS, PUBLISHING_POLICIES, policy_of, publishers_of } from '@helpers/tribe_group_settings'
+
+/**
+ * Settings tab, Publishing: who may post, schedule fleets and create events
+ * for the group (chiefs only, chiefs and chosen pilots, any active member),
+ * and whether publishers may reach the whole alliance. Chosen pilots come
+ * from the group roster; picking them is local UI over the rendered roster.
+ */
+interface Props {
+    settings:       TribeGroupPublishing;
+    /** Active members who can be chosen. */
+    roster:         { character_id: number, character_name: string }[];
+    tribe_id:       number;
+    group_id:       number;
+    tribe_name:     string;
+    group_name:     string;
+    status?:        { kind: 'success' | 'error', message: string } | null;
+    [propName: string]: any;
+}
+
+const {
+    settings,
+    roster,
+    tribe_id,
+    group_id,
+    tribe_name,
+    group_name,
+    status = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fill = (text: string) => text.replaceAll('{group}', group_name).replaceAll('{tribe}', tribe_name)
+
+const kind_title: Record<PublishingKind, string> = {
+    post: fill(t('tribes.settings.publishing.post')),
+    fleet: fill(t('tribes.settings.publishing.fleet')),
+    event: fill(t('tribes.settings.publishing.event')),
+}
+const policy_label: Record<PublishingPolicy, string> = {
+    chiefs: t('tribes.settings.policy.chiefs'),
+    chosen: t('tribes.settings.policy.chosen'),
+    members: t('tribes.settings.policy.members'),
+}
+
+// Everyone pickable: the roster plus any chosen pilot it doesn't list.
+const pilots_for = (kind: PublishingKind) => {
+    const pilots = new Map(roster.map((pilot) => [pilot.character_id, pilot.character_name]))
+    publishers_of(settings, kind).forEach((pilot) => pilots.set(pilot.character_id, pilot.character_name))
+    return [...pilots].map(([character_id, character_name]) => ({ character_id, character_name }))
+        .sort((a, b) => a.character_name.localeCompare(b.character_name))
+}
+
+const fieldsets = PUBLISHING_KINDS.map((kind) => ({
+    kind,
+    policy: policy_of(settings, kind),
+    chosen: publishers_of(settings, kind).map((pilot) => pilot.character_id),
+    pilots: pilots_for(kind),
+}))
+
+const PARTIAL_URL = translatePath(`/partials/tribe_group_settings_component?section=publishing&tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import Button from '@components/blocks/Button.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Select from '@components/blocks/Select.astro'
+import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+---
+
+<form
+    class:list={['[ tribe-settings-section tribe-publishing-settings ]', Astro.props.class]}
+    hx-post={PARTIAL_URL}
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-indicator=".loader"
+    aria-labelledby="tribe-settings-publishing-title"
+    {...attributes}
+>
+    <div class="[ tribe-settings-section__head ]">
+        <h2 id="tribe-settings-publishing-title">{t('tribes.settings.publishing.title')}</h2>
+        <p>{fill(t('tribes.settings.publishing.lead'))}</p>
+    </div>
+
+    <div class="[ tribe-publishing-settings__who ]">
+        {fieldsets.map((fieldset) =>
+            <fieldset
+                class="[ tribe-publishing-settings__fieldset ]"
+                x-data={`{ policy: ${JSON.stringify(fieldset.policy)}, chosen: ${JSON.stringify(fieldset.chosen)} }`}
+            >
+                <legend>{kind_title[fieldset.kind]}</legend>
+                {PUBLISHING_POLICIES.map((policy) =>
+                    <RadioCheckInput
+                        type="radio"
+                        name={`${fieldset.kind}_policy`}
+                        value={policy}
+                        checked={policy === fieldset.policy}
+                        label={policy_label[policy]}
+                        x-model="policy"
+                    />
+                )}
+
+                <div
+                    class="[ tribe-publishing-settings__pilots ]"
+                    x-show="policy === 'chosen'"
+                    style={fieldset.policy === 'chosen' ? undefined : 'display: none'}
+                >
+                    <ul role="list">
+                        {fieldset.pilots.map((pilot) =>
+                            <li
+                                x-show={`chosen.includes(${pilot.character_id})`}
+                                style={fieldset.chosen.includes(pilot.character_id) ? undefined : 'display: none'}
+                            >
+                                <img src={get_player_icon(pilot.character_id, 32)} alt="" width="22" height="22" loading="lazy" />
+                                <span>{pilot.character_name}</span>
+                                <input
+                                    type="hidden"
+                                    name={`${fieldset.kind}_publishers`}
+                                    value={pilot.character_id}
+                                    disabled={!fieldset.chosen.includes(pilot.character_id)}
+                                    x-bind:disabled={`!chosen.includes(${pilot.character_id})`}
+                                />
+                                <button
+                                    type="button"
+                                    aria-label={t('tribes.settings.publishers.remove').replace('{name}', pilot.character_name)}
+                                    x-on:click={`chosen = chosen.filter((id) => id !== ${pilot.character_id})`}
+                                >×</button>
+                            </li>
+                        )}
+                    </ul>
+                    <small x-show="chosen.length === 0" style={fieldset.chosen.length === 0 ? undefined : 'display: none'}>
+                        {t('tribes.settings.publishers.none')}
+                    </small>
+                    <Select
+                        size="sm"
+                        aria-label={t('tribes.settings.publishers.add')}
+                        x-on:change="if ($el.value) { chosen = [...chosen, parseInt($el.value)] } $el.value = ''"
+                    >
+                        <option value="" selected>{t('tribes.settings.publishers.add')}</option>
+                        {fieldset.pilots.map((pilot) =>
+                            <option
+                                value={pilot.character_id}
+                                disabled={fieldset.chosen.includes(pilot.character_id)}
+                                x-bind:disabled={`chosen.includes(${pilot.character_id})`}
+                                x-bind:hidden={`chosen.includes(${pilot.character_id})`}
+                            >{pilot.character_name}</option>
+                        )}
+                    </Select>
+                </div>
+
+                {fieldset.kind === 'event' &&
+                    <small class="[ tribe-publishing-settings__hint ]">{t('tribes.settings.publishing.event_hint')}</small>
+                }
+            </fieldset>
+        )}
+    </div>
+
+    <div class="[ tribe-publishing-settings__switches ]">
+        <SwitchSquare
+            name="allow_alliance_posts"
+            checked={settings.allow_alliance_posts}
+            label={t('tribes.settings.allow_posts')}
+            description={fill(t('tribes.settings.allow_posts_help'))}
+        />
+        <SwitchSquare
+            name="allow_open_fleets"
+            checked={settings.allow_open_fleets}
+            label={t('tribes.settings.allow_fleets')}
+            description={t('tribes.settings.allow_fleets_help')}
+        />
+    </div>
+
+    <div class="[ tribe-settings-section__foot ]">
+        {status &&
+            <p
+                class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
+                role={status.kind === 'error' ? 'alert' : 'status'}
+            >{status.message}</p>
+        }
+        <Button type="submit" size="sm">{t('tribes.settings.publishing.save')}</Button>
+    </div>
+</form>
+
+<style lang="scss" is:global>
+    .tribe-publishing-settings__who {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-s);
+    }
+
+    .tribe-publishing-settings__fieldset {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin: 0;
+        padding: var(--space-xs) var(--space-s) var(--space-s);
+        border: 1px solid var(--hairline);
+        background-color: var(--surface-sunken);
+
+        legend {
+            padding-inline: var(--space-3xs);
+            font-weight: 700;
+            color: var(--highlight);
+        }
+    }
+
+    .tribe-publishing-settings__pilots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-left: var(--space-s);
+
+        ul {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+            padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-3xs);
+            border: 1px solid var(--hairline-strong);
+            font-size: var(--step--1);
+            color: var(--highlight);
+        }
+
+        li img {
+            display: block;
+        }
+
+        li button {
+            appearance: none;
+            background: none;
+            border: 0;
+            padding: 0 var(--space-3xs);
+            font: inherit;
+            line-height: 1;
+            color: var(--text-muted);
+            cursor: pointer;
+
+            &:focus-visible {
+                outline: solid 2px var(--fleet-yellow);
+                outline-offset: 1px;
+            }
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-publishing-settings__pilots li button:hover {
+            color: var(--fleet-red);
+        }
+    }
+
+    .tribe-publishing-settings__hint {
+        color: var(--text-muted);
+    }
+
+    .tribe-publishing-settings__switches {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-top: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+</style>

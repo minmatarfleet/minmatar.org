@@ -1,0 +1,328 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TribeEvent } from '@dtypes/api.minmatar.org'
+import type { DiscordChannelUI } from '@dtypes/layout_components'
+import { eve_clock, eve_day_short } from '@helpers/date'
+import { TRIBE_GROUP_EVENTS_ID, cancel_event_dialog_call, event_row, split_events } from '@helpers/tribe_group_page'
+
+/**
+ * A tribe group's Events tab: the next event as a hero with a countdown, then
+ * the rest. Interested opens the Discord event (Discord owns RSVPs). Cancel
+ * asks first, then posts to the events partial, which swaps this block back.
+ */
+interface Props {
+    events:             TribeEvent[];
+    tribe_id:           number;
+    group_id:           number;
+    group_name:         string;
+    cover_url:          string;
+    can_create:         boolean;
+    voice_channels?:    DiscordChannelUI[];
+    /** A failed cancel, shown above the list. */
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const {
+    events,
+    tribe_id,
+    group_id,
+    group_name,
+    cover_url,
+    can_create,
+    voice_channels = [],
+    error = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fill = (text: string) => text.replaceAll('{group}', group_name)
+const { next, rest } = split_events(events)
+const edit_href = (event: TribeEvent) => event.can_manage
+    ? translatePath(`/alliance/tribes/${tribe_id}/${group_id}/events/${event.id}/edit`)
+    : null
+const rows = rest.map((event) => event_row(event, { cover_url, edit_href: edit_href(event), voice_channels }))
+const hero = next ? event_row(next, { cover_url, edit_href: edit_href(next), voice_channels }) : null
+const started = next ? new Date(next.starts_at).getTime() <= Date.now() : false
+
+const hero_when = next
+    ? [
+        eve_day_short(lang, next.starts_at, { weekday: true }),
+        next.ends_at
+            ? t('tribes.publishing.event.eve_range').replace('{start}', eve_clock(next.starts_at)).replace('{end}', eve_clock(next.ends_at))
+            : t('tribes.publishing.event.eve_start').replace('{start}', eve_clock(next.starts_at)),
+    ].join(' · ')
+    : ''
+
+const PARTIAL_URL = translatePath('/partials/tribe_group_events_component')
+const cancel_dialog = (event: TribeEvent) => cancel_event_dialog_call({
+    title: t('tribes.group.events.cancel_title'),
+    event_title: event.title,
+    body: t('tribes.group.events.cancel_body'),
+    url: `${PARTIAL_URL}?tribe_id=${tribe_id}&group_id=${group_id}&event_id=${event.id}`,
+})
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Countdown from '@components/blocks/Countdown.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import TribeEventRow from '@components/blocks/TribeEventRow.astro'
+import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import Tag from '@components/blocks/Tag.astro'
+import StageChannelIcon from '@components/icons/StageChannelIcon.astro'
+import VoiceChannelIcon from '@components/icons/VoiceChannelIcon.astro'
+import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
+---
+
+<div id={TRIBE_GROUP_EVENTS_ID} class:list={['[ tribe-group-events ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap="var(--space-l)">
+        {error &&
+            <p class="[ tribe-group-events__error ]" role="alert">
+                {t('tribes.group.events.cancel_error').replace('{error}', error)}
+            </p>
+        }
+
+        {!next && rows.length === 0 &&
+            <EmptyState
+                title={fill(t('tribes.group.events.empty'))}
+                hint={can_create ? t('tribes.group.events.empty_hint') : undefined}
+            />
+        }
+
+        {next && hero &&
+            <section class="[ tribe-event-hero ]" aria-labelledby={`tribe-event-hero-${next.id}`}>
+                <img class="[ tribe-event-hero__cover ]" src={cover_url} alt="" loading="lazy" decoding="async" />
+
+                <div class="[ tribe-event-hero__main ]">
+                    <span class="[ tribe-event-hero__kicker ]">
+                        {started ? t('tribes.group.events.now') : t('tribes.group.events.next')}
+                    </span>
+                    {!started &&
+                        <Countdown id={next.id} tag="tribe-event" date={next.starts_at} />
+                    }
+                    <span class="[ tribe-event-hero__heading ]">
+                        <b id={`tribe-event-hero-${next.id}`}>{next.title}</b>
+                        {hero.recurrence_label && <Tag variant="outline" text={hero.recurrence_label} />}
+                        {next.members_only && <VisibilityTag visibility="members_only" size="sm" />}
+                    </span>
+                    <span class="[ tribe-event-hero__facts ]">
+                        <span>{hero_when}</span>
+                        <LocalTime eve_time={new Date(next.starts_at)} format="time" show_label={true} />
+                        <span class="[ tribe-event-hero__where ]">
+                            {hero.where_kind === 'stage' && <StageChannelIcon size={16} />}
+                            {hero.where_kind === 'voice' && <VoiceChannelIcon size={16} />}
+                            {hero.where_kind === 'place' && <PlacePinIcon size={16} />}
+                            {next.where_label}
+                        </span>
+                    </span>
+                </div>
+
+                <div class="[ tribe-event-hero__aside ]">
+                    <span class="[ tribe-event-hero__count ]">
+                        {next.discord_event_url
+                            ? t('tribes.group.events.interested').replace('{count}', String(next.interested_count ?? 0))
+                            : t('tribes.publishing.event.not_on_discord')}
+                    </span>
+                    {next.discord_event_url &&
+                        <a
+                            class="[ tribe-event-hero__interested ]"
+                            href={next.discord_event_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >{t('tribes.publishing.event.interested_button')}</a>
+                    }
+                    {next.can_manage &&
+                        <span class="[ tribe-event-hero__manage ]">
+                            <a href={edit_href(next)}>{t('tribes.group.events.edit')}</a>
+                            <button type="button" x-data x-on:click={cancel_dialog(next)}>
+                                {t('tribes.group.events.cancel')}
+                            </button>
+                        </span>
+                    }
+                </div>
+            </section>
+        }
+
+        {rows.length > 0 &&
+            <section class="[ tribe-group-events__more ]">
+                <h3>{t('tribes.group.events.more')}</h3>
+                <Flexblock gap="var(--space-2xs)" role="list">
+                    {rows.map((row) => <TribeEventRow role="listitem" event={row} />)}
+                </Flexblock>
+            </section>
+        }
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .tribe-group-events__error {
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        border: 1px solid var(--fleet-red);
+        color: var(--highlight);
+    }
+
+    .tribe-event-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 18rem) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-m);
+        padding: var(--space-s);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+        border-left: 3px solid var(--fleet-yellow);
+    }
+
+    .tribe-event-hero__cover {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+    }
+
+    .tribe-event-hero__main {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .tribe-event-hero__kicker {
+        font-size: var(--step--1);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .tribe-event-hero__heading {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-2xs);
+
+        b {
+            font-family: var(--heading-font);
+            font-weight: 400;
+            font-size: var(--step-2);
+            line-height: 1.1;
+            color: var(--highlight);
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .tribe-event-hero__facts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-s);
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .tribe-event-hero__where {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+
+    .tribe-event-hero__aside {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-xs);
+        text-align: right;
+    }
+
+    .tribe-event-hero__count {
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+
+    .tribe-event-hero__interested {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-m);
+        font-family: var(--button-font);
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--highlight);
+        background-color: var(--discord-blurple);
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-event-hero__interested:hover {
+            transform: scale(1.05);
+        }
+    }
+
+    @media (hover: none) {
+        .tribe-event-hero__interested:active {
+            transform: scale(0.95);
+        }
+    }
+
+    .tribe-event-hero__manage {
+        display: flex;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+
+        a,
+        button {
+            appearance: none;
+            background: none;
+            border: 0;
+            padding: 0;
+            font: inherit;
+            color: var(--foreground);
+            text-decoration: underline;
+            cursor: pointer;
+
+            &:focus-visible {
+                outline: solid 2px var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+
+        button {
+            color: var(--fleet-red);
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-event-hero__manage a:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .tribe-group-events__more h3 {
+        margin-bottom: var(--space-2xs);
+        font-size: var(--step-0);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    @media (max-width: 48rem) {
+        .tribe-event-hero {
+            grid-template-columns: minmax(0, 1fr);
+            gap: var(--space-s);
+        }
+
+        .tribe-event-hero__aside {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+        }
+    }
+</style>
