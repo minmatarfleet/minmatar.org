@@ -1,0 +1,429 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { round_groups, eve_clock } from '@helpers/fleet_fights'
+
+/**
+ * Fleet managers fix the rounds: tick neighbouring rounds and merge them,
+ * split a round at one of its quiet gaps, undo one change or reset to the
+ * automatic cut. Every action posts to fleet_fights_edit_component, which
+ * saves it and renders this again; Done swaps the Fights tab back in.
+ */
+interface Props {
+    fights:             FleetFights;
+    fleet_id:           number;
+    error?:             string | false;
+    [propName: string]: any;
+}
+
+const {
+    fights,
+    fleet_id,
+    error = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const EDIT_URL = `${translatePath('/partials/fleet_fights_edit_component')}?fleet_id=${fleet_id}`
+const FIGHTS_URL = `${translatePath('/partials/fleet_fights_component')}?fleet_id=${fleet_id}`
+
+const rounds = fights.rounds
+const name = (round: typeof rounds[number]) => round.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+const span = (round: typeof rounds[number]) => round.start === round.end ?
+    eve_clock(round.start) :
+    `${eve_clock(round.start)}–${eve_clock(round.end)}`
+
+const edit_text = (edit: FleetFights['edits'][number]) => (edit.kind === 'merge' ?
+    t('fleets.fights.change_merge').replace('{start}', eve_clock(edit.start)).replace('{end}', eve_clock(edit.end ?? edit.start)) :
+    t('fleets.fights.change_split').replace('{at}', eve_clock(edit.start)))
+---
+
+<form
+    id="fleet-fights"
+    class:list={['[ fights-edit ]', Astro.props.class]}
+    hx-post={EDIT_URL}
+    hx-target="#fleet-fights"
+    hx-swap="outerHTML"
+    x-data="{ picked: [] }"
+    {...attributes}
+>
+    <header class="[ fights-edit__head ]">
+        <div>
+            <h2>{t('fleets.fights.editing')}</h2>
+            <span>{t('fleets.fights.editing_note')}</span>
+        </div>
+        <div class="[ fights-edit__actions ]">
+            <button
+                type="button"
+                class="[ fights-edit__button ]"
+                disabled={fights.edits.length === 0}
+                hx-post={EDIT_URL}
+                hx-vals={JSON.stringify({ action: 'reset' })}
+                hx-confirm={t('fleets.fights.reset_confirm')}
+                hx-target="#fleet-fights"
+                hx-swap="outerHTML"
+            >
+                {t('fleets.fights.reset')}
+            </button>
+            <button
+                type="button"
+                class="[ fights-edit__button fights-edit__button--primary ]"
+                hx-get={FIGHTS_URL}
+                hx-target="#fleet-fights"
+                hx-swap="outerHTML"
+            >
+                {t('fleets.fights.done')}
+            </button>
+        </div>
+    </header>
+
+    {error && <p class="[ fights-edit__error ]" role="alert">{t('fleets.fights.edit_failed').replace('{error}', error)}</p>}
+
+    <div class="[ fights-edit__toolbar ]">
+        <span x-text={`picked.length < 2 ? ${JSON.stringify(t('fleets.fights.merge_hint'))} : ''`}>{t('fleets.fights.merge_hint')}</span>
+        <button
+            type="submit"
+            name="action"
+            value="merge"
+            class="[ fights-edit__button fights-edit__button--primary ]"
+            x-bind:disabled="picked.length < 2"
+            disabled
+        >
+            {t('fleets.fights.merge')}
+        </button>
+    </div>
+
+    <ol class="[ fights-edit__list ]">
+        {rounds.map((round, index) => {
+            const label = name(round)
+            const groups = round_groups(round)
+            return (
+                <li class:list={['[ fights-edit__row ]', `fights-edit__row--${round.kind}`, { 'fights-edit__row--edited': round.merge_edit_ids.length > 0 || round.split_edit_ids.length > 0 }]}>
+                    <div class="[ fights-edit__line ]">
+                        <input
+                            type="checkbox"
+                            name="segment"
+                            value={index}
+                            id={`fights-edit-${index}`}
+                            x-model="picked"
+                            aria-label={t('fleets.fights.select').replace('{name}', label).replace('{time}', eve_clock(round.start))}
+                        />
+                        <label for={`fights-edit-${index}`}>
+                            <b>{label}</b>
+                            <small>{span(round)}{round.kind === 'round' ? ` · ${round.minutes} min` : ''}</small>
+                        </label>
+                        <span class="[ fights-edit__vs ]">
+                            {groups.length > 0 && t('fleets.fights.vs').replace('{groups}', groups.join(', '))}
+                            {round.merge_edit_ids.length > 0 && <span class="[ fights-edit__tag ]">{t('fleets.fights.merged_tag')}</span>}
+                            {round.split_edit_ids.length > 0 && <span class="[ fights-edit__tag ]">{t('fleets.fights.split_tag')}</span>}
+                        </span>
+                        <span class="[ fights-edit__score ]"><b class="[ fights-edit__kill ]">{round.ships_destroyed}</b> / <b class="[ fights-edit__loss ]">{round.ships_lost}</b></span>
+                        <span class="[ fights-edit__isk ]">{round.isk_destroyed ? format_isk(round.isk_destroyed) : '–'} / {format_isk(round.isk_lost)}</span>
+                        <span class="[ fights-edit__row-actions ]">
+                            {round.merge_edit_ids.map(edit_id =>
+                                <button type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.unmerge')}</button>
+                            )}
+                            {round.split_edit_ids.map(edit_id =>
+                                <button type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.undo_split')}</button>
+                            )}
+                        </span>
+                    </div>
+                    {round.split_gaps.length > 0 &&
+                        <details class="[ fights-edit__split ]">
+                            <summary>{t('fleets.fights.split')}</summary>
+                            <span class="[ fights-edit__label ]">{t('fleets.fights.gaps')}</span>
+                            <ul>
+                                {round.split_gaps.map(gap =>
+                                    <li>
+                                        <b>{eve_clock(gap.after)} → {eve_clock(gap.at)}</b>
+                                        <span>
+                                            {t('fleets.fights.gap_text')
+                                                .replace('{minutes}', (Math.round(gap.seconds / 6) / 10).toString())
+                                                .replace('{bk}', gap.before_kills.toString())
+                                                .replace('{bl}', gap.before_losses.toString())
+                                                .replace('{ak}', gap.after_kills.toString())
+                                                .replace('{al}', gap.after_losses.toString())}
+                                        </span>
+                                        <button type="submit" name="split" value={gap.at} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.split_here')}</button>
+                                    </li>
+                                )}
+                            </ul>
+                        </details>
+                    }
+                </li>
+            )
+        })}
+    </ol>
+
+    <section class="[ fights-edit__log ]" aria-labelledby="fights-edit-log">
+        <h3 id="fights-edit-log" class="[ fights-edit__label ]">{t('fleets.fights.changes')}</h3>
+        {fights.edits.length === 0 ?
+            <span>{t('fleets.fights.no_changes')}</span>
+            :
+            <ul>
+                {fights.edits.map(edit =>
+                    <li><b>{edit.created_by ?? t('fleets.fights.someone')}</b> · {edit_text(edit)}</li>
+                )}
+            </ul>
+        }
+        <small>{t('fleets.fights.stays')}</small>
+    </section>
+</form>
+
+<style lang="scss">
+    .fights-edit {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .fights-edit__head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--tech-ii) 12%, transparent);
+        border: 1px solid var(--tech-ii);
+
+        > div:first-child {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .fights-edit__actions,
+    .fights-edit__row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .fights-edit__row-actions {
+        justify-content: flex-end;
+    }
+
+    .fights-edit__button {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover:not(:disabled),
+        &:focus-visible {
+            border-color: var(--foreground);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+    }
+
+    .fights-edit__button--primary {
+        background-color: var(--fleet-red);
+        border-color: var(--fleet-red);
+        color: var(--highlight);
+    }
+
+    .fights-edit__button--small {
+        min-height: 2.25rem;
+        font-size: var(--step--1);
+    }
+
+    .fights-edit__error {
+        margin: 0;
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fights-edit__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .fights-edit__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .fights-edit__row {
+        background-color: var(--component-background);
+        box-shadow: inset 3px 0 0 transparent;
+
+        &:has(input:checked) {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 10%, var(--component-background));
+            box-shadow: inset 3px 0 0 var(--fleet-yellow);
+        }
+    }
+
+    .fights-edit__row--skirmish {
+        background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
+        font-size: var(--step--1);
+    }
+
+    .fights-edit__row--edited {
+        box-shadow: inset 3px 0 0 var(--tech-ii);
+    }
+
+    .fights-edit__line {
+        display: grid;
+        grid-template-columns: 2.75rem 10rem minmax(0, 1fr) 5rem 9rem minmax(12rem, auto);
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-2xs);
+
+        input {
+            justify-self: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: var(--fleet-yellow);
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+
+            b {
+                font-family: var(--heading-font);
+                font-weight: 400;
+                font-size: var(--step-1);
+                color: var(--highlight);
+            }
+        }
+
+        @media (max-width: 60rem) {
+            grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+
+            .fights-edit__vs,
+            .fights-edit__isk {
+                display: none;
+            }
+
+            .fights-edit__row-actions {
+                grid-column: 1 / -1;
+            }
+        }
+    }
+
+    .fights-edit__row--skirmish label b {
+        font-size: var(--step-0);
+        color: var(--text-muted);
+    }
+
+    .fights-edit__vs {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .fights-edit__tag {
+        padding: 0 var(--space-2xs);
+        border: 1px solid var(--tech-ii);
+        color: color-mix(in srgb, var(--tech-ii) 50%, white);
+        font-size: var(--step--2);
+        font-weight: 700;
+    }
+
+    .fights-edit__score,
+    .fights-edit__isk {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fights-edit__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fights-edit__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fights-edit__split {
+        padding: 0 var(--space-m) var(--space-s) calc(2.75rem + var(--space-s));
+
+        summary {
+            width: fit-content;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: var(--space-2xs) 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-2xs) var(--space-m);
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--surface-sunken);
+
+            b {
+                width: 8rem;
+                color: var(--highlight);
+            }
+
+            span {
+                flex: 1 1 18rem;
+            }
+        }
+    }
+
+    .fights-edit__label {
+        margin: 0;
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .fights-edit__log {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-top: var(--space-s);
+        border-top: 1px solid var(--hairline-medium);
+
+        ul {
+            margin: 0;
+            padding-left: var(--space-s);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+</style>

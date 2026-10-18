@@ -1,0 +1,98 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'fleets.view'))
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
+const position = parseInt(Astro.params.round ?? '0')
+
+if (isNaN(fleet_id) || isNaN(position) || position < 1)
+    return HTTP_404_Not_Found()
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { get_fleet_fights, type FleetFights } from '@helpers/api.minmatar.org/fleets'
+
+let fleet:FleetUI | null = null
+let fights:FleetFights | null = null
+let fetch_error:Error | false = false
+
+try {
+    ;[fleet, fights] = await Promise.all([
+        fetch_fleet_by_id(auth_token as string, fleet_id),
+        get_fleet_fights(auth_token as string, fleet_id),
+    ])
+} catch (error) {
+    if (error?.cause === 403)
+        return HTTP_403_Forbidden()
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+    fetch_error = error
+}
+
+// While the fleet is out only its managers and pilots may read its fights.
+if (!fetch_error && !fights)
+    return HTTP_403_Forbidden()
+
+const round = fights?.rounds[position - 1] ?? null
+
+const fleet_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`
+const round_title = !round ? t('fleets.fights.rounds') : round.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+const fleet_path = fights?.live ? `/fleets/upcoming/${fleet_id}` : `/fleets/history/${fleet_id}`
+const breadcrumbs = [
+    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: t('fleets.history.page_title'), accumulated_path: '/fleets/history/' },
+    { page_title: fleet_title, accumulated_path: fleet_path },
+    { page_title: round_title, accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FleetRoundReport from '@components/blocks/FleetRoundReport.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<Viewport title={`${round_title} · ${fleet_title}`}>
+    <PageWide
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <PageTitle slot="header">{fleet_title}</PageTitle>
+
+        <Wrapper padding_block='0' padding_inline='0' max_width='var(--max-col-width)'>
+            {fetch_error ?
+                <EmptyState title={fetch_error.message} prominent={true} />
+                : round && fights ?
+                    <FleetRoundReport fights={fights} round={round} position={position} fleet_id={fleet_id} />
+                    :
+                    <EmptyState title={t('fleets.fights.round_missing')} prominent={true}>
+                        <Button slot="action" href={translatePath(`${fleet_path}#fights`)}>{t('fleets.fights.back')}</Button>
+                    </EmptyState>
+            }
+        </Wrapper>
+    </PageWide>
+</Viewport>

@@ -30,12 +30,13 @@ import type { EveCharacterProfile, FleetMetrics, FleetCommanderMetrics } from '@
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
-import type { FleetKills, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
+import type { FleetKills, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
 import {
     get_fleets_metrics,
     get_fleet_commander_metrics,
     get_fleet_kills,
     get_fleet_my_srp,
+    get_fleet_fights,
 } from '@helpers/api.minmatar.org/fleets'
 import { settled_value } from '@helpers/settled'
 
@@ -84,14 +85,19 @@ try {
 // FleetKills, since htmx drops the <link> a partial leads with.
 let fleet_kills:FleetKills | null = null
 let srp_losses:FleetSrpLoss[] | null = null
+let fights:FleetFights | null = null
 
 if (fleet?.tracking) {
-    try {
-        fleet_kills = await get_fleet_kills(auth_token as string, fleet_id)
-    } catch (error) {
-        // FleetDetails falls back to the partial, which retries and shows the error.
-        console.log(error)
-    }
+    const [kills_result, fights_result] = await Promise.allSettled([
+        get_fleet_kills(auth_token as string, fleet_id),
+        get_fleet_fights(auth_token as string, fleet_id),
+    ])
+    // FleetDetails falls back to the partial, which retries and shows the error.
+    if (kills_result.status === 'fulfilled') fleet_kills = kills_result.value
+    else console.log(kills_result.reason)
+    // No Fights tab when they fail to load; the kills above still show.
+    if (fights_result.status === 'fulfilled') fights = fights_result.value
+    else console.log(fights_result.reason)
 
     if (fleet_kills && can(gates, 'srp.resolve')) {
         try {
@@ -195,6 +201,7 @@ const breadcrumbs = [
                 fleet_commander_metrics={fleet_commander_metrics}  
                 fleet_kills={fleet_kills}
                 srp_losses={srp_losses}
+                fights={fights}
             />
         }
     </PageWide>

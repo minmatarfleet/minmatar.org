@@ -163,7 +163,7 @@ class FleetContractTests(TestCase):
         )
         self._fights()
 
-    def _fights(self):
+    def _fights(self, end=None):
         """A won round 20 minutes ago and a round still going."""
 
         def row(killmail_id, minutes_ago, outcome):
@@ -204,7 +204,7 @@ class FleetContractTests(TestCase):
                 edits=[],
                 battles={},
                 start=self.now - timedelta(minutes=25),
-                end=None,
+                end=end,
                 now=self.now,
             ),
         )
@@ -230,6 +230,26 @@ class FleetContractTests(TestCase):
             self,
             contracts.DESKTOP / "fleet_window_member.json",
             self._get("/api/fleets/window/current", self.pilot),
+        )
+
+    def test_fleet_fights_live(self):
+        self._live()
+        contracts.check(
+            self,
+            contracts.WEB / "fleet_fights_live.json",
+            self._get(f"/api/fleets/{LIVE_FLEET}/fights", self.fc),
+        )
+
+    def test_fleet_fights_finished(self):
+        self._live()
+        ended = self.now - timedelta(minutes=1)
+        EveFleetInstance.objects.filter(pk=900).update(end_time=ended)
+        EveFleetFightTimeline.objects.filter(eve_fleet=self.fleet).delete()
+        self._fights(end=ended)
+        contracts.check(
+            self,
+            contracts.WEB / "fleet_fights_finished.json",
+            self._get(f"/api/fleets/{LIVE_FLEET}/fights", self.pilot),
         )
 
     def test_fleet_window_fc(self):
