@@ -12,10 +12,11 @@ import type {
     FleetTrackingTexts,
     Tracking,
 } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, Fleet, FleetMember, FleetMetrics, FleetCommanderMetrics, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import {
     get_fleets_v3,
     get_fleet_by_id,
+    get_fleet_access,
     get_fleets_metrics,
     get_fleet_commander_metrics,
 } from '@helpers/api.minmatar.org/fleets'
@@ -27,6 +28,7 @@ import { get_system_sun_type_id } from '@helpers/sde/map'
 import { get_fleet_users } from '@helpers/api.minmatar.org/fleets'
 import { time_diff_text } from '@helpers/date'
 import { settled_value } from '@helpers/settled'
+import { host_group_ref } from '@helpers/fleet_hosts'
 
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
@@ -36,10 +38,11 @@ export async function fetch_fleets_auth(
     upcoming:boolean = true,
     simplified:boolean = false,
     fc_metrics:FleetCommanderMetrics[] | null = null,
+    host_group_id:number | null = null,
 ) {
     let api_fleets:Fleet[]
 
-    api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
+    api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent', host_group_id)
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
     if (!upcoming)
         api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time ?? 0) < new Date())
@@ -88,6 +91,9 @@ export function add_fleet_info(
         tracking: fleet.tracking as unknown as FleetItem['tracking'],  // same: the view-model's Dates are ISO strings
         status: fleet.status,
         aar_link: fleet.aar_link ?? null,
+        host_group: host_group_ref(fleet.host_group),
+        open_to_alliance: fleet.open_to_alliance ?? false,
+        on_schedule: fleet.on_schedule ?? false,
     } as FleetItem
 }
 
@@ -103,8 +109,25 @@ async function fetch_campaign_name(access_token:string, campaign_slug:string):Pr
 }
 
 export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
-    const fleet = await get_fleet_by_id(access_token, fleet_id)
+    return await fleet_ui(access_token, await get_fleet_by_id(access_token, fleet_id))
+}
 
+/**
+ * The fleet, or, for a members-only tribe group fleet the viewer can't see,
+ * only the group that hosts it (the page then shows the members-only gate).
+ * Any other error throws, as fetch_fleet_by_id does.
+ */
+export async function fetch_fleet_access(access_token:string, fleet_id:number):Promise<
+    { fleet: FleetUI, restricted: null } | { fleet: null, restricted: RestrictedResponse }
+> {
+    const access = await get_fleet_access(access_token, fleet_id)
+    if (access.restricted)
+        return { fleet: null, restricted: access.restricted }
+
+    return { fleet: await fleet_ui(access_token, access.fleet), restricted: null }
+}
+
+async function fleet_ui(access_token:string, fleet:Fleet):Promise<FleetUI> {
     // FC, doctrine and campaign only need the fleet, so fetch them together.
     const [profile_result, doctrine_result, campaign_name_result] = await Promise.allSettled([
         fleet?.fleet_commander ? get_user_character(fleet.fleet_commander) : null,
@@ -136,6 +159,9 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         campaign_id: fleet.campaign_id ?? null,
         campaign_slug: fleet.campaign_slug ?? null,
         campaign_name: campaign_name,
+        host_group: host_group_ref(fleet.host_group),
+        open_to_alliance: fleet.open_to_alliance ?? false,
+        on_schedule: fleet.on_schedule ?? false,
     } as FleetUI
 }
 

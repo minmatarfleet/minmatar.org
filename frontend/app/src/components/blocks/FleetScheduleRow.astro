@@ -29,6 +29,7 @@ const cancelled = fleet.status === 'cancelled'
 
 import FleetPortrait from '@components/blocks/FleetPortrait.astro'
 import LocalTime from '@components/blocks/LocalTime.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
 ---
 
 <a
@@ -50,6 +51,7 @@ import LocalTime from '@components/blocks/LocalTime.astro'
 
     <span class="[ fleet-schedule-row__fleet ]">
         <b set:html={objective} />
+        <FleetHostTags fleet={fleet} class="[ fleet-schedule-row__host ]" />
         <small>
             {cancelled && <span style="color: var(--fleet-red)">{t('cancelled')} · </span>}
             {[ fleet.fleet_commander_name, system ].filter(Boolean).join(' · ')}
@@ -110,6 +112,10 @@ import LocalTime from '@components/blocks/LocalTime.astro'
 
         b {
             color: var(--highlight);
+        }
+
+        :global(.fleet-schedule-row__host) {
+            margin-block: var(--space-3xs);
         }
 
         small {

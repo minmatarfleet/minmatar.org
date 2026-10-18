@@ -14,6 +14,8 @@ interface Props {
     crest_url?:     string;
     /** CSS max-width where the name is cut with an ellipsis. */
     max_width?:     string;
+    /** False inside a row that is already a link: the chip is then a plain span. */
+    linked?:        boolean;
     [propName: string]: any;
 }
 
@@ -23,11 +25,13 @@ const {
     show_tribe = false,
     crest_url,
     max_width,
+    linked = true,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
+const Element = linked ? 'a' : 'span'
 const crest = crest_url ?? tribe_group_cover(group.id)
 const crest_size = size === 'sm' ? 16 : 20
 const full_name = t('tribes.publishing.group_chip.title')
@@ -35,8 +39,8 @@ const full_name = t('tribes.publishing.group_chip.title')
     .replace('{tribe}', group.tribe_name)
 ---
 
-<a
-    href={translatePath(`/alliance/tribes/${group.tribe_id}/${group.id}/`)}
+<Element
+    href={linked ? translatePath(`/alliance/tribes/${group.tribe_id}/${group.id}/`) : undefined}
     class:list={['[ tribe-group-chip ]', `tribe-group-chip--${size}`, Astro.props.class]}
     title={full_name}
     style={max_width ? `max-width: ${max_width}` : undefined}
@@ -53,7 +57,7 @@ const full_name = t('tribes.publishing.group_chip.title')
     <span class="[ tribe-group-chip__name ]">
         {group.name}{show_tribe && <span class="[ tribe-group-chip__tribe ]"> · {group.tribe_name}</span>}
     </span>
-</a>
+</Element>
 
 <style lang="scss">
     .tribe-group-chip {
@@ -92,7 +96,7 @@ const full_name = t('tribes.publishing.group_chip.title')
     }
 
     @media (hover: hover) {
-        .tribe-group-chip:hover {
+        a.tribe-group-chip:hover {
             border-color: var(--fleet-yellow);
             color: var(--highlight);
         }
