@@ -30,6 +30,18 @@ from fleets.endpoints.fleet.get_fleet_my_srp import (
     get_fleet_my_srp,
     METHOD as get_fleet_my_srp_method,
 )
+from fleets.endpoints.fleet.get_fleet_participants import (
+    PATH as get_fleet_participants_path,
+    ROUTE_SPEC as get_fleet_participants_spec,
+    get_fleet_participants,
+    METHOD as get_fleet_participants_method,
+)
+from fleets.endpoints.fleet.get_fleet_my_pilot_locations import (
+    PATH as get_fleet_my_pilot_locations_path,
+    ROUTE_SPEC as get_fleet_my_pilot_locations_spec,
+    get_fleet_my_pilot_locations,
+    METHOD as get_fleet_my_pilot_locations_method,
+)
 from fleets.endpoints.fleet.get_fleet import (
     PATH as get_fleet_path,
     ROUTE_SPEC as get_fleet_spec,
@@ -387,6 +399,18 @@ _ROUTES = (
         get_fleet_my_srp_path,
         get_fleet_my_srp_spec,
         get_fleet_my_srp,
+    ),
+    (
+        get_fleet_participants_method,
+        get_fleet_participants_path,
+        get_fleet_participants_spec,
+        get_fleet_participants,
+    ),
+    (
+        get_fleet_my_pilot_locations_method,
+        get_fleet_my_pilot_locations_path,
+        get_fleet_my_pilot_locations_spec,
+        get_fleet_my_pilot_locations,
     ),
     (get_fleet_method, get_fleet_path, get_fleet_spec, get_fleet),
     (patch_fleet_method, patch_fleet_path, patch_fleet_spec, update_fleet),
