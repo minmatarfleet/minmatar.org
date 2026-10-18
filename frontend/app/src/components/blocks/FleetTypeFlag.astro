@@ -9,14 +9,12 @@ interface Props {
     type?:          FleetTypes;
     /** Edge length in px; the icons are drawn at 57. */
     size?:          number;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
 const {
     type,
     size = 57,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -40,7 +38,6 @@ import NpsiIcon from '@components/icons/NpsiIcon.astro';
         role="img"
         aria-label={label}
         data-tippy-content={label}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         style={`--flag-size: ${size}px`}
         {...attributes}
     >

@@ -10,12 +10,10 @@ import { format_date_short, format_date_time, humanize_date_diff_single } from '
 
 interface Props {
     contract:       FreightContract;
-    init_tooltips:  boolean;
 }
 
 const {
     contract,
-    init_tooltips,
 } = Astro.props
 
 const STATUS_COLORS: Record<FreightContractStatus, TagColors> = {
@@ -60,7 +58,6 @@ import Tag from '@components/blocks/Tag.astro';
         role="cell"
         data-label={t('date_created')}
         data-tippy-content={t('date_issued').replace('{date}', issued_datetime)}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <span class="[ whitespace-nowrap ]">{issued_date}</span>
     </div>
@@ -83,7 +80,6 @@ import Tag from '@components/blocks/Tag.astro';
         role="cell"
         data-label={t('status')}
         data-tippy-content={delivery_tooltip}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <Tag
             text={t(t_key('contract_', contract.status)) ?? contract.status}
@@ -96,21 +92,18 @@ import Tag from '@components/blocks/Tag.astro';
     <div class="[ freight-contract-item__size ]" role="cell" data-label={t('size_m3')}>
         <span
             data-tippy-content={number_name(contract.volume, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
     </div>
 
     <div class="[ freight-contract-item__collateral ]" role="cell" data-label={t('collateral')}>
         <span
             data-tippy-content={number_name(contract.collateral, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.collateral.toLocaleString()}</span> <span>ISK</span>
     </div>
 
     <div class="[ freight-contract-item__reward ]" role="cell" data-label={t('reward')}>
         <span
             data-tippy-content={number_name(contract.reward, lang)}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >{contract.reward.toLocaleString()}</span> <span>ISK</span>
     </div>
 
@@ -120,7 +113,6 @@ import Tag from '@components/blocks/Tag.astro';
                 gap='var(--space-3xs)'
                 class="[ items-center ]"
                 data-tippy-content={contract.completed_by_character_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
                 {contract.completed_by_id &&
                     <CharacterPicture

@@ -17,7 +17,6 @@ interface Props {
     corporation_name?:      string;
     fleet_count?:           number;
     members_count?:         number;
-    init_tooltips?:         boolean;
 }
 
 const {
@@ -27,7 +26,6 @@ const {
     corporation_name = '',
     fleet_count,
     members_count,
-    init_tooltips = true,
 } = Astro.props
 
 const live = !history && Boolean(fleet.tracking?.start_time) && !fleet.tracking?.end_time
@@ -118,7 +116,6 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
                 size={64}
-                init_tooltips={init_tooltips}
             />
             <span class="[ fleet-facts__fc-text ]">
                 <b>{fleet.fleet_commander_name}</b>
@@ -133,7 +130,6 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
                         <span
                             class="[ fleet-facts__count ]"
                             data-tippy-content={t('fleet_commander_fleets')}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
                             <FleetIcon size={16} />
                             {fleet_count}

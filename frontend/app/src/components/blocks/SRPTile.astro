@@ -16,7 +16,6 @@ interface Props {
     values?:            SRPTargetValue[];
     stats_history?:     SRPGroupHistory;
     readonly?:          boolean;
-    init_tooltips:      boolean;
 }
 
 const {
@@ -27,7 +26,6 @@ const {
     values,
     stats_history,
     readonly = false,
-    init_tooltips,
 } = Astro.props
 
 const values_sorted = values ? values.sort((a, b) => a.value - b.value) : undefined
@@ -60,8 +58,8 @@ import SRPStat from '@components/blocks/SRPStat.astro';
     >
         {stats_history &&
             <FlexInline slot="subtitle" gap='var(--space-xl)'>
-                <SRPStat value={stats_history?.approved} type='approved' init_tooltips={init_tooltips} />
-                <SRPStat value={stats_history?.rejected} type='rejected' init_tooltips={init_tooltips} />
+                <SRPStat value={stats_history?.approved} type='approved' />
+                <SRPStat value={stats_history?.rejected} type='rejected' />
             </FlexInline>
         }
     </Tile>
@@ -104,7 +102,6 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                                                 <span 
                                                     class="[ w-fit ]"
                                                     data-tippy-content={number_name(value.value, lang)}
-                                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                                 >{number_thousand_separator(value.value)}</span>&nbsp;ISK
                                             </small>
                                         </ItemBadge>
@@ -125,7 +122,6 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                             program={program}
                             description={description}
                             cover={cover}
-                            init_tooltips={init_tooltips}
                         />
                     </div>
                 </FlexInline>

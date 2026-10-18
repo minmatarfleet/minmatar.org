@@ -28,7 +28,10 @@ This is the reason this spec exists. Recent changes introduced Alpine `fetch()` 
   - Server-rendered partials live under `src/pages/partials/*_component.astro` and are requested via `PARTIAL_URL` constants
 - Partials redirect with `partial_redirect(Astro.request, url)` and send visitors without a session to login with `login_redirect(Astro)` (`@helpers/http_responses`). For htmx requests they answer `HX-Redirect`, so htmx navigates the window instead of swapping the redirect target into the fragment, and login returns to the page (`HX-Current-URL`), not the partial. Never `Astro.redirect()` from a partial.
 - The server renders the resulting HTML; the client never reconstructs DOM from JSON.
-- When htmx injects a partial that contains Alpine or htmx markup, re-initialize it: `htmx.process(element)` (and `Alpine.initTree(element)` if Alpine was added). Existing example: `src/components/partials/AlpineScripts.astro`.
+- Swapped-in partials are wired up globally (`src/helpers/swap_init.ts`, loaded by `FooterScripts`/`GuestsFooterScripts`): htmx processes what it swaps, `Alpine.initTree` runs on the swap target, and one tippy delegate gives every `[data-tippy-content]` element a tooltip on first hover/focus. Don't add per-page `htmx:afterSwap` re-init scripts, and don't `htmx.process()` swapped content: re-processing an `hx-trigger="load"` element fires its request again. Call `htmx.process()` only on markup Alpine creates itself (`x-teleport`, `x-if`/`x-for` templates), as `DialogButton` and `Dropdown` do.
+- Load a partial into a page with `LazyPartial` (`src/components/blocks/LazyPartial.astro`): `url`, `trigger` (`load` or `reveal`), `swap`, and a skeleton as its children. It sets `hx-target="this"` (so it never inherits a surrounding form's target inside a `DialogButton`) and clears `aria-busy` after the request.
+- A partial's own CSS, and the CSS of components only the partial renders, reaches the page through `src/helpers/htmx_partial_styles.ts` (htmx drops the leading `<link>`/`<style>` tags of a partial response). The page does not need to render a component just to ship its styles.
+- Disable a button while its request runs with `hx-disabled-elt="this"`.
 
 ### Alpine is for minor, local interactivity only
 

@@ -9,7 +9,6 @@ interface Props {
     item:           RootSingleItem;
     item_count:     number;
     assignment:     OrderAssignment;
-    init_tooltips:  boolean;
 }
 
 const {
@@ -17,7 +16,6 @@ const {
     item,
     item_count,
     assignment,
-    init_tooltips,
 } = Astro.props
 
 const target_unit_price = parseFloat(item.target_unit_price ?? '0')
@@ -102,7 +100,6 @@ import PilotBadge from './PilotBadge.astro';
                 <p>
                     <span
                         data-tippy-content={number_name(target_unit_price * assignment.quantity, lang)}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                     >
                         {number_thousand_separator(target_unit_price * assignment.quantity)} ISK
                     </span>

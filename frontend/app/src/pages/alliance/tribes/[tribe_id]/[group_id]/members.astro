@@ -175,8 +175,8 @@ const breadcrumbs = [
                             tribe_group={tribe_group}
                             chief_membership={chief_membership}
                         />
-                        <MembershipRequests requests={pending} init_tooltips={false} />
-                        <MembershipTable memberships={approved} init_tooltips={false} />
+                        <MembershipRequests requests={pending} />
+                        <MembershipTable memberships={approved} />
                         :
                         <p>{t('no_request_no_members')}</p>
                     }

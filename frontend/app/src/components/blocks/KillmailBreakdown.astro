@@ -8,14 +8,12 @@ interface Props {
     killmail_analysis:          KillmailAnalysis;
     program:                    SRPFrontendPrograms;
     external_killmail_link:     string;
-    init_tooltips?:             boolean;
 }
 
 const {
     killmail_analysis,
     program,
     external_killmail_link,
-    init_tooltips = false,
 } = Astro.props
 
 const SRP_INITIAL_FORM_PARTIAL_URL = translatePath(`/partials/srp_initial_form_component?program=${program}`)
@@ -64,7 +62,6 @@ import CandidateFleetCard from '@components/blocks/CandidateFleetCard.astro'
                             fleet={fleet}
                             program={program}
                             external_killmail_link={external_killmail_link}
-                            init_tooltips={init_tooltips}
                         />
                     )}
                 </Grid>

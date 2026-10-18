@@ -93,7 +93,6 @@ const alpine = {
         <ComponentBlock padding_inline="var(--space-m)">
             <div
                 id={table_id}
-                hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
             >
                 <slot />
             </div>

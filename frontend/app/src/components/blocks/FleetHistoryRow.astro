@@ -15,7 +15,6 @@ interface Props {
     fleet:          FleetItem;
     doctrine?:      FleetScheduleDoctrine | null;
     result?:        FleetResult | null;
-    init_tooltips?: boolean;
     [propName: string]: any;
 }
 
@@ -23,7 +22,6 @@ const {
     fleet,
     doctrine = null,
     result = null,
-    init_tooltips = true,
     ...attributes
 } = Astro.props
 
@@ -77,7 +75,6 @@ import FleetPortrait from '@components/blocks/FleetPortrait.astro'
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
                 size={28}
-                init_tooltips={init_tooltips}
             />
             <small>{fc_line}</small>
         </span>

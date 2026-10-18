@@ -25,8 +25,8 @@ try {
 if (fetching_error && (fetching_error.cause === 404 || fetching_error.cause === 400))
     return Astro.redirect(translatePath('/industry/products/'))
 
-// Render the panel here when the cache is warm. Its styles only reach the
-// page if the page renders it; htmx drops the <link> a partial leads with.
+// Render the panel here when the cache is warm, saving the partial round trip.
+// When it isn't, the partial below loads it (its CSS ships via htmx_partial_styles).
 let insights: ProductInsights | null = null
 
 if (product && auth_token) {

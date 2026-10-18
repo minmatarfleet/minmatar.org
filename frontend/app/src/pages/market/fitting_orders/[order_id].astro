@@ -23,6 +23,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FittingBuyOrderSkeleton from '@components/blocks/FittingBuyOrderSkeleton.astro'
 import FittingBuyOrderAssets from '@components/blocks/FittingBuyOrderAssets.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = t('fitting_buy.order_id').replace('{id}', String(order_id))
 const PARTIAL = translatePath(`/partials/fitting_buy_order_component?order_id=${order_id}`)
@@ -56,47 +57,19 @@ const breadcrumbs = [
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)" class="[ compensate-bottom-bar ]">
-            <div
+            <LazyPartial
                 id="fitting-buy-order-slot"
-                hx-get={PARTIAL}
-                hx-trigger="load once"
-                hx-swap="innerHTML"
+                url={PARTIAL}
+                indicator={false}
             >
                 <FittingBuyOrderSkeleton />
-            </div>
+            </LazyPartial>
         </Flexblock>
         <FittingBuyOrderAssets />
     </PageWide>
 </Viewport>
 
 <script>
-    function refreshFittingBuyOrderSlot() {
-        const order = document.getElementById('fitting-buy-order')
-        const slot = document.getElementById('fitting-buy-order-slot')
-        const el = order || slot
-        if (!el)
-            return
-        if (typeof htmx !== 'undefined')
-            htmx.process(el)
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(el)
-
-        const meta = document.getElementById('fitting-buy-order-meta')
-        if (meta) {
-            if (typeof htmx !== 'undefined')
-                htmx.process(meta)
-            if (typeof Alpine !== 'undefined')
-                Alpine.initTree(meta)
-        }
-        const actions = document.getElementById('fitting-buy-order-actions')
-        if (actions) {
-            if (typeof htmx !== 'undefined')
-                htmx.process(actions)
-            if (typeof Alpine !== 'undefined')
-                Alpine.initTree(actions)
-        }
-    }
-
     function restoreFittingBuyAllocFocus() {
         const focus = (window as any).__fitting_buy_alloc_focus as {
             preferred_type_id?: number | string
@@ -146,10 +119,11 @@ const breadcrumbs = [
             return
         slot.dataset.bound = '1'
 
+        // Swapped content is initialised globally (helpers/swap_init.ts); this
+        // only puts the cursor back in the allocation input after a save.
         document.body.addEventListener('htmx:afterSwap', (event: any) => {
             if (!isFittingBuyOrderRequest(event))
                 return
-            refreshFittingBuyOrderSlot()
             restoreFittingBuyAllocFocus()
         })
     }

@@ -102,8 +102,7 @@ const page_title = t('friend.page_title');
                                 type="button"
                                 hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
                                 hx-swap="outerHTML transition:true"
-                                hx-on--before-request="this.setAttribute('disabled','')"
-                                hx-on--after-request="this.removeAttribute('disabled')"
+                                hx-disabled-elt="this"
                             >
                                 {t('refresh_discord_roles')}
                             </Button>

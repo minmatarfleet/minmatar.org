@@ -6,12 +6,10 @@ import type { TribeRequirement } from '@dtypes/api.minmatar.org'
 
 interface Props {
     requirement:    TribeRequirement;
-    init_tooltips:  boolean;
 }
 
 const {
     requirement,
-    init_tooltips,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -29,7 +27,6 @@ import SkillItem from '@components/blocks/SkillItem.astro';
             {requirement.asset_types.map(asset =>
                 <div
                     data-tippy-content={asset.type_name}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                 >
                     <ItemPicture
                         item_id={asset.type_id}

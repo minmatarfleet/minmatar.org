@@ -22,6 +22,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import BuybackContractsSkeleton from '@components/blocks/BuybackContractsSkeleton.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = is_history
     ? t('buyback_contracts.history.page_title')
@@ -83,74 +84,16 @@ const breadcrumbs = is_history
             </Flexblock>
         </FlexInline>
 
-        <div
+        <LazyPartial
             id="buyback-contracts-slot"
             data-buyback-contracts-deferred="1"
-            hx-get={BUYBACK_CONTRACTS_PARTIAL_URL}
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            hx-indicator=".loader"
-            aria-busy="true"
-            aria-live="polite"
+            url={BUYBACK_CONTRACTS_PARTIAL_URL}
         >
             <BuybackContractsSkeleton
                 show_metrics={!is_history}
                 show_history_cta={!is_history}
             />
-        </div>
+        </LazyPartial>
     </PageWide>
 </Viewport>
 
-<script>
-    function refreshBuybackContractsSlot() {
-        const slot = document.getElementById('buyback-contracts-slot')
-        if (!slot)
-            return
-
-        // htmx already processed the swapped content. Processing the slot again
-        // re-fires its hx-trigger="load" and fetches the partial a second time.
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#buyback-contracts-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
-        }
-    }
-
-    function isBuybackContractsRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('buyback_contracts_component')
-    }
-
-    function bindBuybackContractsDeferred() {
-        const slot = document.getElementById('buyback-contracts-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isBuybackContractsRequest(event))
-                return
-            refreshBuybackContractsSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isBuybackContractsRequest(event))
-                return
-            if (!event.detail?.successful) {
-                document.getElementById('buyback-contracts-slot')?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindBuybackContractsDeferred()
-    document.addEventListener('astro:page-load', bindBuybackContractsDeferred)
-</script>

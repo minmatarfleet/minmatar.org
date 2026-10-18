@@ -10,14 +10,12 @@ interface Props {
     programs:           SRPProgram[];
     history_groups?:    SRPStatsHistoryGroup[];
     readonly:           boolean;
-    init_tooltips:      boolean;
 }
 
 const {
     programs,
     history_groups = [],
     readonly,
-    init_tooltips,
 } = Astro.props
 
 const subcapitals_values:SRPTargetValue[] = []
@@ -95,7 +93,6 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         values={subcapitals_values}
         stats_history={history_groups ? subcapitals_stats_history : undefined}
         readonly={readonly}
-        init_tooltips={init_tooltips}
     />
 
     <SRPTile
@@ -106,7 +103,6 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         values={dreads_values}
         stats_history={history_groups ? dreads_stats_history : undefined}
         readonly={readonly}
-        init_tooltips={init_tooltips}
     />
 
     <SRPTile
@@ -117,6 +113,5 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         values={carriers_values}
         stats_history={history_groups ? carriers_stats_history : undefined}
         readonly={readonly}
-        init_tooltips={init_tooltips}
     />
 </Grid>

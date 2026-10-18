@@ -24,6 +24,7 @@ import Button from '@components/blocks/Button.astro'
 import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 import { freight_contracts_history_csv_url } from '@helpers/api.minmatar.org/freights'
 import { get_request_user } from '@helpers/request_user'
@@ -113,72 +114,12 @@ const can_download_csv = Boolean(auth_token && user)
             </PageActions>
         </FlexInline>
 
-        <div
+        <LazyPartial
             id="freight-contracts-slot"
             data-freight-contracts-deferred="1"
-            hx-get={FREIGHT_CONTRACTS_PARTIAL_URL}
-            hx-trigger="load"
-            hx-swap="innerHTML"
-            hx-indicator=".loader"
-            aria-busy="true"
-            aria-live="polite"
+            url={FREIGHT_CONTRACTS_PARTIAL_URL}
         >
             <FreightContractsSkeleton show_history_cta={false} show_metrics={false} />
-        </div>
+        </LazyPartial>
     </PageWide>
 </Viewport>
-
-<script>
-    function refreshFreightContractsSlot() {
-        const slot = document.getElementById('freight-contracts-slot')
-        if (!slot)
-            return
-
-        // htmx already processed the swapped content. Processing the slot again
-        // re-fires its hx-trigger="load" and fetches the partial a second time.
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#freight-contracts-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
-        }
-    }
-
-    function isFreightContractsRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('freight_contracts_component')
-    }
-
-    function bindFreightContractsDeferred() {
-        const slot = document.getElementById('freight-contracts-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isFreightContractsRequest(event))
-                return
-            refreshFreightContractsSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isFreightContractsRequest(event))
-                return
-            if (!event.detail?.successful) {
-                const root = document.getElementById('freight-contracts-slot')
-                root?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindFreightContractsDeferred()
-    document.addEventListener('astro:page-load', bindFreightContractsDeferred)
-</script>

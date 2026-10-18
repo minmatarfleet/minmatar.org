@@ -31,6 +31,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import SellOrderGapsSkeleton from '@components/blocks/SellOrderGapsSkeleton.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = t('staging_supply.ops.sell_orders.page_title')
 
@@ -75,69 +76,13 @@ const SELL_ORDERS_PARTIAL = translatePath(
                 delay: 0,
             }} />
             :
-            <div
+            <LazyPartial
                 id="ops-sell-orders-slot"
                 data-ops-sell-orders-deferred="1"
-                hx-get={SELL_ORDERS_PARTIAL}
-                hx-trigger="load"
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                aria-busy="true"
-                aria-live="polite"
+                url={SELL_ORDERS_PARTIAL}
             >
                 <SellOrderGapsSkeleton rows={8} />
-            </div>
+            </LazyPartial>
         }
     </PageWide>
 </Viewport>
-
-<script>
-    function refreshOpsSellOrdersSlot() {
-        const slot = document.getElementById('ops-sell-orders-slot')
-        if (!slot)
-            return
-
-        // htmx already processed the swapped content. Processing the slot again
-        // re-fires its hx-trigger="load" and fetches the partial a second time.
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof Alpine !== 'undefined') {
-            Alpine.destroyTree(slot)
-            Alpine.initTree(slot)
-        }
-        tippy('#ops-sell-orders-slot [data-tippy-content]', tippy_options)
-    }
-
-    function isOpsSellOrdersRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('sell_order_gaps_component')
-    }
-
-    function bindOpsSellOrdersDeferred() {
-        const slot = document.getElementById('ops-sell-orders-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isOpsSellOrdersRequest(event))
-                return
-            refreshOpsSellOrdersSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isOpsSellOrdersRequest(event))
-                return
-            if (!event.detail?.successful) {
-                document.getElementById('ops-sell-orders-slot')?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindOpsSellOrdersDeferred()
-    document.addEventListener('astro:page-load', bindOpsSellOrdersDeferred)
-</script>

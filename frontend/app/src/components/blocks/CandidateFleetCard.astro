@@ -9,14 +9,12 @@ interface Props {
     fleet:                      CandidateFleet;
     program:                    SRPFrontendPrograms;
     external_killmail_link:     string;
-    init_tooltips:              boolean;
 }
 
 const {
     fleet,
     program,
     external_killmail_link,
-    init_tooltips,
 } = Astro.props
 
 console.log(fleet)
@@ -110,7 +108,6 @@ import NpsiIcon from '@components/icons/NpsiIcon.astro';
                 t('npsi_fleet') :
                 t('non_strategic_fleet')
             }
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >
             {fleet.type === 'strategic' ?
                 <StratopIcon /> :

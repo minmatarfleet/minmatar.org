@@ -6,13 +6,11 @@ import type { TribeMembership } from '@dtypes/api.minmatar.org'
 
 interface Props {
     membership:             TribeMembership;
-    init_tooltips:          boolean;
     required_token_type?:   string | null;
 }
 
 const {
     membership,
-    init_tooltips,
     required_token_type = null,
 } = Astro.props
 
@@ -68,7 +66,6 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
         <div
             class="[ h-[32px] text-highlight ]"
             data-tippy-content={t('characters')}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
         >
             <MemberIcon size={32} />
         </div>
@@ -111,7 +108,6 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                         <div
                             class="[ relative ]"
                             data-tippy-content={character.character_name}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         >
                             <CharacterPicture
                                 character_id={character.character_id}
@@ -126,7 +122,6 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                                 class:list={[ 'membership-status', status_ok ? 'text-green' : 'text-red' ]}
                                 color={status_ok ? 'green' : 'fleet-red'}
                                 data-tippy-content={tooltip_text ? tooltip_text : undefined}
-                                x-init={init_tooltips && tooltip_text ? 'tippy($el, tippy_options)' : undefined}
                             >
                                 {status_ok ? '▲' : '▼'}
                             </span>

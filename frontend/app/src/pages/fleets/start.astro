@@ -79,7 +79,6 @@ const page_title = t('fleets.start.page_title')
 
             <div
                 id="fleet-start"
-                hx-on--after-swap="window.minmatar_after_inner_html_swap.call(this)"
             >
                 {fetch_error ?
                     <ErrorRefetch

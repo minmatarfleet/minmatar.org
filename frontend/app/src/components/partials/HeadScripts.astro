@@ -46,6 +46,13 @@ import AllianceHealthPilotAlpine from '@components/partials/AllianceHealthPilotA
 
 <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
 
+<!-- Partial responses carry their CSS in what DOMParser treats as <head>, which htmx drops. -->
+<script>
+	import { bind_partial_styles } from '@helpers/htmx_partial_styles'
+
+	bind_partial_styles(window)
+</script>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css">
 <script is:inline src="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js"></script>
 
