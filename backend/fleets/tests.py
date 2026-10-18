@@ -1,5 +1,7 @@
+import ast
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from unittest.mock import patch, MagicMock, ANY
 
 import factory
@@ -43,7 +45,11 @@ from fleets.signals import (
 from fleets.helpers.fleet_location import backfill_missing_fleet_locations
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
-from fleets.tasks import update_fleet_schedule, update_fleet_instances
+from fleets.tasks import (
+    get_fleet_emoji,
+    update_fleet_schedule,
+    update_fleet_instances,
+)
 from fittings.models import EveDoctrine
 
 BASE_URL = "/api/fleets"
@@ -187,6 +193,43 @@ class FleetHelperTestCase(SimpleTestCase):
             fleet_voice_channel_link="link",
         )
         self.assertEqual("@everyone", notification["content"])
+
+
+class FleetEmojiTestCase(SimpleTestCase):
+    """The schedule's fleet-type emoji must be keyed by the stored fleet type."""
+
+    def _settings_example_emoji_keys(self):
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "app"
+            / "settings.py.example"
+        )
+        tree = ast.parse(path.read_text())
+        for node in tree.body:
+            if (
+                isinstance(node, ast.Assign)
+                and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id == "DISCORD_FLEET_EMOJIS"
+            ):
+                return [key.value for key in node.value.keys]
+        self.fail("DISCORD_FLEET_EMOJIS not found in settings.py.example")
+        return []
+
+    def test_emoji_keys_are_fleet_types(self):
+        fleet_types = {value for value, _ in EveFleet.fleet_types}
+        keys = self._settings_example_emoji_keys()
+        self.assertIn("non_strategic", keys)
+        for key in keys:
+            self.assertIn(key, fleet_types)
+
+    @patch("fleets.tasks.settings")
+    def test_non_strategic_fleet_gets_its_emoji(self, settings_mock):
+        settings_mock.DISCORD_FLEET_EMOJIS = {
+            "non_strategic": {"name": "non_strategic", "id": 123},
+        }
+        self.assertEqual(
+            get_fleet_emoji("non_strategic"), "<:non_strategic:123>"
+        )
 
 
 class FleetSignalsTestCase(TestCase):

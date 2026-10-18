@@ -64,8 +64,8 @@ DISCORD_FLEET_EMOJIS = {
         "name": os.environ.get("DISCORD_STRATEGIC_EMOJI", "strategic"),
         "id": os.environ.get("DISCORD_STRATEGIC_EMOJI_ID", None),
     },
-    "non-strategic": {
-        "name": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI", "non-strategic"),
+    "non_strategic": {
+        "name": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI", "non_strategic"),
         "id": os.environ.get("DISCORD_NON_STRATEGIC_EMOJI_ID", None),
     },
     "training": {
