@@ -1,0 +1,113 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.params.tribe_id ?? '')
+const group_id = parseInt(Astro.params.group_id ?? '')
+const event_id = parseInt(Astro.params.event_id ?? '')
+if (isNaN(tribe_id) || isNaN(group_id) || isNaN(event_id)) return HTTP_400_Bad_Request()
+
+import type { Alert } from '@dtypes/layout_components'
+import type { TribeEvent } from '@dtypes/api.minmatar.org'
+import { update_tribe_event } from '@helpers/api.minmatar.org/tribes'
+import {
+    fetch_group_event,
+    fetch_tribe_event_form_context,
+    type TribeEventFormContext,
+} from '@helpers/fetching/tribe_events'
+import {
+    event_form_values,
+    event_form_values_from_form,
+    event_patch_body,
+    type EventFormValues,
+} from '@helpers/tribe_event_form'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+
+let context: TribeEventFormContext
+let event: TribeEvent | null
+try {
+    ;[context, event] = await Promise.all([
+        fetch_tribe_event_form_context(auth_token, tribe_id, group_id),
+        fetch_group_event(auth_token, group_id, event_id),
+    ])
+} catch (error) {
+    return (error as Error).cause === 404 ? HTTP_404_Not_Found() : HTTP_403_Forbidden()
+}
+const { group } = context
+// Only upcoming, scheduled events can be edited, by their creator or a group manager.
+if (group.tribe_id !== tribe_id || !event || event.status !== 'scheduled') return HTTP_404_Not_Found()
+if (!event.can_manage) return HTTP_403_Forbidden()
+
+const group_url = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`)
+let values: EventFormValues = event_form_values(event, new Date(event.starts_at))
+let alert: Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    try {
+        await update_tribe_event(auth_token, event_id, event_patch_body(form))
+        return Astro.redirect(`${group_url}#events`)
+    } catch (error) {
+        values = { ...event_form_values_from_form(form), announce: event.announce }
+        alert = {
+            title: t('tribes.event_form.error_title'),
+            content: (error as Error).message.replace(/^Error updating event:\s*/, ''),
+        }
+    }
+}
+
+const page_title = t('tribes.event_form.edit_title')
+const breadcrumbs = [
+    { page_title: t('alliance.page_title'), accumulated_path: translatePath('/alliance/') },
+    { page_title: t('tribes.page_title'), accumulated_path: translatePath('/alliance/tribes/') },
+    { page_title: group.tribe_name, accumulated_path: translatePath(`/alliance/tribes/${tribe_id}/`) },
+    { page_title: group.name, accumulated_path: group_url },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TribeEventForm from '@components/blocks/TribeEventForm.astro'
+---
+
+<Viewport title={`${page_title} · ${event.title}`} components={{ alert_dialog: true }}>
+    <PageDefault
+        cover={{
+            image: tribe_group_cover(group_id),
+            image_990: tribe_group_cover(group_id),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+        x-data={`{
+            init() {
+                ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
+    >
+        <PageTitle slot="header">{page_title}</PageTitle>
+
+        <TribeEventForm
+            mode="edit"
+            values={values}
+            voice_channels={context.voice_channels}
+            voice_channels_ok={context.voice_channels_ok}
+            tribe_id={tribe_id}
+            group_id={group_id}
+            tribe_name={group.tribe_name}
+            group_name={group.name}
+            member_count={group.member_count}
+            cover_url={tribe_group_cover(group_id)}
+            channel_name={context.channel_name}
+            role_name={group.discord_role_name}
+        />
+    </PageDefault>
+</Viewport>

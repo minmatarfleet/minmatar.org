@@ -13,7 +13,10 @@ import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_response
 import { strip_markdown } from '@helpers/string'
 import { tribe_group_cover } from '@helpers/tribe_covers'
 import { getGuidesByTribeGroupCode } from '@/data/guides'
-import { fetch_posts } from '@helpers/fetching/posts'
+import { get_posts } from '@helpers/api.minmatar.org/posts'
+import { get_fleets_v3 } from '@helpers/api.minmatar.org/fleets'
+import { add_fleet_info } from '@helpers/fetching/fleets'
+import { fetch_doctrine_names, type FleetScheduleDoctrine } from '@helpers/fetching/fleet_schedule'
 
 import type {
     Tribe,
@@ -23,8 +26,10 @@ import type {
     TribeAvailableCharacter,
     TribeGroupRosterEntry,
     TribeGroupShowcase,
+    TribeEvent,
+    TribeGroupPublishing,
 } from '@dtypes/api.minmatar.org'
-import type { PostListUI } from '@dtypes/layout_components'
+import type { DiscordChannelUI, FleetItem, PostTileUI, TribeVisibility } from '@dtypes/layout_components'
 import type { GuideMeta } from '@/data/guides/types'
 import {
     get_tribe,
@@ -33,10 +38,24 @@ import {
     get_membership_characters_available,
     get_tribe_group_roster,
     get_tribe_group_showcase,
+    get_group_events,
+    get_group_publishing,
+    get_discord_channels,
 } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { TRIBE_ACTIVITY_BY_CODE } from '@helpers/tribe_activity'
 import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
+import {
+    TRIBE_GROUP_HASH_ALIASES,
+    discord_channel_ui,
+    fleet_visibility,
+    post_tile,
+    sort_newest_first,
+    tribe_group_tab_ids,
+    tribe_new_menu_items,
+    type GroupPostSource,
+    type TribeGroupTab,
+} from '@helpers/tribe_group_page'
 
 const tribe_id = parseInt(Astro?.params?.tribe_id ?? '')
 const group_id = parseInt(Astro?.params?.group_id ?? '')
@@ -57,7 +76,14 @@ const membership_by_group = new Map<number, TribeMembership | null>()
 let roster: TribeGroupRosterEntry[] | null = null
 let showcase: TribeGroupShowcase | null = null
 let guides: GuideMeta[] = []
-let posts: PostListUI[] = []
+let posts: PostTileUI[] = []
+let fleets: FleetItem[] = []
+const fleet_visibility_by_id: Record<number, TribeVisibility> = {}
+let fleet_doctrines: Record<number, FleetScheduleDoctrine> = {}
+let events: TribeEvent[] = []
+let voice_channels: DiscordChannelUI[] = []
+let publishing: TribeGroupPublishing | null = null
+let text_channels: DiscordChannelUI[] | null = null
 let fetch_group_error: Error | false = false
 
 try {
@@ -69,17 +95,35 @@ try {
         : null
 
     guides = getGuidesByTribeGroupCode(tribe_group.code)
-    try {
-        const posts_page = await fetch_posts({
-            tribe_group_id: group_id,
-            status: 'published',
-            page_num: 1,
-            page_size: 12,
-        })
-        posts = posts_page.chunk
-    } catch {
-        posts = []
-    }
+    const post_href = (post_id: number) => translatePath(`/alliance/propaganda/${post_id}`)
+    const can_view_fleets = Boolean(auth_token) && can(gates, 'fleets.view')
+    const manages = Boolean(auth_token && tribe_group.can_manage)
+    const [posts_page, group_fleets, group_events, voice_list, loaded_publishing, text_list] = await Promise.all([
+        // With a token the API adds members-only posts the viewer may read.
+        get_posts({ tribe_group_id: group_id, status: 'published', page_num: 1, page_size: 12 }, auth_token)
+            .catch(() => ({ total_posts: 0, posts: [] })),
+        // Members-only fleets are already left out for outsiders.
+        can_view_fleets
+            ? get_fleets_v3(auth_token as string, 'upcoming', group_id).catch(() => [])
+            : Promise.resolve([]),
+        get_group_events(group_id, auth_token).catch(() => []),
+        // Tells stage channels from voice on the Events tab.
+        auth_token && tribe_group.can_create_events
+            ? get_discord_channels(auth_token, 'voice').catch(() => [])
+            : Promise.resolve([]),
+        manages ? get_group_publishing(auth_token as string, group_id).catch(() => null) : Promise.resolve(null),
+        manages ? get_discord_channels(auth_token as string, 'text').catch(() => null) : Promise.resolve(null),
+    ])
+    posts = sort_newest_first(posts_page.posts as unknown as GroupPostSource[])
+        .map((post) => post_tile(post, group_id, post_href(post.post_id)))
+    const listed_fleets = group_fleets.filter((fleet) => fleet.fleet_commander)
+    listed_fleets.forEach((fleet) => { fleet_visibility_by_id[fleet.id] = fleet_visibility(fleet) })
+    fleets = listed_fleets.map((fleet) => add_fleet_info(fleet, [], []))
+    fleet_doctrines = await fetch_doctrine_names(fleets)
+    events = group_events
+    voice_channels = voice_list.map(discord_channel_ui)
+    publishing = loaded_publishing
+    text_channels = text_list ? text_list.map(discord_channel_ui) : null
 
     if (auth_token && user) {
         const [summary, memberships, available] = await Promise.all([
@@ -152,8 +196,6 @@ const breadcrumbs = [
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
 
-type TribeGroupTab = 'about' | 'requirements' | 'guides' | 'activity' | 'members' | 'propaganda'
-
 function tribe_tab_label(tab: TribeGroupTab) {
     switch (tab) {
         case 'about':
@@ -166,8 +208,14 @@ function tribe_tab_label(tab: TribeGroupTab) {
             return t('tribes.detail.tab.activity')
         case 'members':
             return t('tribes.detail.tab.members')
-        case 'propaganda':
-            return t('tribes.detail.tab.propaganda')
+        case 'fleets':
+            return t('tribes.detail.tab.fleets')
+        case 'events':
+            return t('tribes.detail.tab.events')
+        case 'posts':
+            return t('tribes.detail.tab.posts')
+        case 'settings':
+            return t('tribes.detail.tab.settings')
         default: {
             const unexpected: never = tab
             return unexpected
@@ -175,19 +223,31 @@ function tribe_tab_label(tab: TribeGroupTab) {
     }
 }
 
-const tribe_tab_ids: TribeGroupTab[] = [
-    ...(about_markdown ? ['about' as const] : []),
-    'requirements',
-    ...(guides.length > 0 ? ['guides' as const] : []),
-    ...(activity ? ['activity' as const] : []),
-    'members',
-    ...(posts.length > 0 ? ['propaganda' as const] : []),
-]
+// Settings needs the publishing settings, which only the API's managers get.
+const show_settings = Boolean(tribe_group?.can_manage && publishing)
+const tribe_tab_ids = tribe_group_tab_ids({
+    has_about: Boolean(about_markdown),
+    has_guides: guides.length > 0,
+    has_activity: Boolean(activity),
+    fleet_count: fleets.length,
+    event_count: events.length,
+    post_count: posts.length,
+    can_schedule_fleets: Boolean(tribe_group?.can_schedule_fleets),
+    can_create_events: Boolean(tribe_group?.can_create_events),
+    can_post: Boolean(tribe_group?.can_post),
+    can_manage: show_settings,
+})
 const tribe_tabs = tribe_tab_ids.map((id) => ({
     id,
     label: tribe_tab_label(id),
 }))
 const default_tribe_tab = tribe_tabs[0]?.id
+const new_menu_items = tribe_group ? tribe_new_menu_items(tribe_group, tribe_id, group_id) : []
+// Non-members never see members-only fleets, so tell them they exist.
+const show_members_only_fleet_note = Boolean(tribe_group && !tribe_group.is_member && !can_manage)
+const publishing_roster = (roster ?? [])
+    .filter((entry) => entry.primary_character_id)
+    .map((entry) => ({ character_id: entry.primary_character_id as number, character_name: entry.primary_character_name }))
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -213,7 +273,12 @@ import TribeGroupApplyHint from '@components/blocks/TribeGroupApplyHint.astro'
 import TribeGroupTokenRequirement from '@components/blocks/TribeGroupTokenRequirement.astro'
 import TribeGroupMembershipRequirements from '@components/blocks/TribeGroupMembershipRequirements.astro'
 import GuidePostCard from '@components/blocks/GuidePostCard.astro'
-import PropagandaPostCard from '@components/blocks/PropagandaPostCard.astro'
+import TribeGroupNewMenu from '@components/blocks/TribeGroupNewMenu.astro'
+import TribeGroupFleets from '@components/blocks/TribeGroupFleets.astro'
+import TribeGroupEvents from '@components/blocks/TribeGroupEvents.astro'
+import TribeGroupPosts from '@components/blocks/TribeGroupPosts.astro'
+import TribeGroupDiscordSettings from '@components/blocks/TribeGroupDiscordSettings.astro'
+import TribeGroupPublishingSettings from '@components/blocks/TribeGroupPublishingSettings.astro'
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
@@ -267,6 +332,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 {t('manage_membership')}
                             </Button>
                         }
+                        <TribeGroupNewMenu group_name={tribe_group.name} items={new_menu_items} />
                         <TribeGroupActions
                             group={tribe_group}
                             tribe_id={tribe_id}
@@ -297,6 +363,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                             aria_label={t('tribes.detail.tabs_label')}
                             id_prefix="tribe-group"
                             tabs={tribe_tabs}
+                            hash_aliases={TRIBE_GROUP_HASH_ALIASES}
                         >
                             {about_markdown &&
                                 <SectionTabPanel id="about" id_prefix="tribe-group" is_default={default_tribe_tab === 'about'}>
@@ -431,21 +498,64 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 />
                             </SectionTabPanel>
 
-                            {posts.length > 0 &&
-                                <SectionTabPanel id="propaganda" id_prefix="tribe-group" is_default={default_tribe_tab === 'propaganda'}>
+                            {tribe_tab_ids.includes('fleets') &&
+                                <SectionTabPanel id="fleets" id_prefix="tribe-group" is_default={default_tribe_tab === 'fleets'}>
+                                    <TribeGroupFleets
+                                        fleets={fleets}
+                                        visibility={fleet_visibility_by_id}
+                                        doctrines={fleet_doctrines}
+                                        group_id={group_id}
+                                        group_name={tribe_group.name}
+                                        show_members_only_note={show_members_only_fleet_note}
+                                        can_schedule={Boolean(tribe_group.can_schedule_fleets)}
+                                    />
+                                </SectionTabPanel>
+                            }
+
+                            {tribe_tab_ids.includes('events') &&
+                                <SectionTabPanel id="events" id_prefix="tribe-group" is_default={default_tribe_tab === 'events'}>
+                                    <TribeGroupEvents
+                                        events={events}
+                                        tribe_id={tribe_id}
+                                        group_id={group_id}
+                                        group_name={tribe_group.name}
+                                        cover_url={cover}
+                                        can_create={Boolean(tribe_group.can_create_events)}
+                                        voice_channels={voice_channels}
+                                    />
+                                </SectionTabPanel>
+                            }
+
+                            {tribe_tab_ids.includes('posts') &&
+                                <SectionTabPanel id="posts" id_prefix="tribe-group" is_default={default_tribe_tab === 'posts'}>
+                                    <TribeGroupPosts
+                                        posts={posts}
+                                        crest_url={cover}
+                                        group_name={tribe_group.name}
+                                        can_post={Boolean(tribe_group.can_post)}
+                                    />
+                                </SectionTabPanel>
+                            }
+
+                            {show_settings && publishing &&
+                                <SectionTabPanel id="settings" id_prefix="tribe-group" is_default={default_tribe_tab === 'settings'}>
                                     <Flexblock gap="var(--space-l)">
-                                        <h2>{t('content.propaganda.section_title')}</h2>
-                                        <Wrapper padding_block="0" padding_inline="0" max_width="100%">
-                                            <div id="tribe-group-posts-swiper" class="[ swiper ][ w-full pb-10! ]">
-                                                <LandingSwiper swiper_selector="#tribe-group-posts-swiper" align="end" gap={10}>
-                                                    {posts.map((post) => (
-                                                        <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
-                                                            <PropagandaPostCard post={post} is_editing={false} />
-                                                        </div>
-                                                    ))}
-                                                </LandingSwiper>
-                                            </div>
-                                        </Wrapper>
+                                        <TribeGroupDiscordSettings
+                                            settings={publishing}
+                                            channels={text_channels}
+                                            tribe_id={tribe_id}
+                                            group_id={group_id}
+                                            tribe_name={tribe?.name ?? tribe_group.tribe_name}
+                                            group_name={tribe_group.name}
+                                        />
+                                        <TribeGroupPublishingSettings
+                                            settings={publishing}
+                                            roster={publishing_roster}
+                                            tribe_id={tribe_id}
+                                            group_id={group_id}
+                                            tribe_name={tribe?.name ?? tribe_group.tribe_name}
+                                            group_name={tribe_group.name}
+                                        />
                                     </Flexblock>
                                 </SectionTabPanel>
                             }

@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeNewMenuItem } from '@helpers/tribe_group_page'
+
+/**
+ * "New" on a tribe group page: post, fleet or event with the group already
+ * picked. Only the items the viewer may publish are passed in; none, no menu.
+ */
+interface Props {
+    group_name:     string;
+    items:          TribeNewMenuItem[];
+    [propName: string]: any;
+}
+
+const {
+    group_name,
+    items,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fill = (text: string) => text.replaceAll('{group}', group_name)
+const labels = {
+    post: { title: fill(t('tribes.group.new.post')), sub: fill(t('tribes.group.new.post_sub')) },
+    fleet: { title: fill(t('tribes.group.new.fleet')), sub: fill(t('tribes.group.new.fleet_sub')) },
+    event: { title: fill(t('tribes.group.new.event')), sub: fill(t('tribes.group.new.event_sub')) },
+}
+
+import ActionMenu from '@components/blocks/ActionMenu.astro'
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
+---
+
+{items.length > 0 &&
+    <ActionMenu
+        class:list={['[ tribe-group-new-menu ]', Astro.props.class]}
+        label={t('tribes.group.new')}
+        variant="button"
+        color="green"
+        size="sm"
+        {...attributes}
+    >
+        {items.map((item) =>
+            <ActionMenuItem href={translatePath(item.href)} class="[ tribe-group-new-menu__item ]">
+                <b>{labels[item.kind].title}</b>
+                <small>{labels[item.kind].sub}</small>
+            </ActionMenuItem>
+        )}
+    </ActionMenu>
+}
+
+<style lang="scss" is:global>
+    .tribe-group-new-menu__item.action-menu-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            font-family: var(--default-font);
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+    }
+</style>
