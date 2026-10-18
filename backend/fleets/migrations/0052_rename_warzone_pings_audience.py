@@ -31,7 +31,7 @@ def backwards(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fleets", "0050_tribe_publishing"),
+        ("fleets", "0051_tribe_publishing"),
     ]
 
     operations = [

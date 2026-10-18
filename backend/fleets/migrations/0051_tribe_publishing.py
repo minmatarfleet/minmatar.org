@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fleets", "0049_fleet_fitting_utility_role"),
+        ("fleets", "0050_fight_timeline"),
         ("tribes", "0043_tribe_publishing"),
     ]
 
