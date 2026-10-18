@@ -162,6 +162,17 @@ test('the schedule draws a row for every fleet, with your state on it', () => {
     assert.match(parts.main, /Training fleet/)
 })
 
+test('a tribe group fleet leads its FC with an outlined group chip; alliance fleets have none', () => {
+    const group_row = { ...LIST[1], host_group: { id: 1, name: 'Dreads <b>' } }
+    const parts = upcoming_tab(snapshot(), [LIST[0], group_row])
+    assert.equal((parts.main.match(/class="fw-group-chip"/g) || []).length, 1)
+    assert.match(parts.main, /<span class="fw-group-chip">Dreads &lt;b&gt;<\/span> FC Vel/)
+    assert.doesNotMatch(upcoming_tab(snapshot(), LIST).main, /fw-group-chip/)
+
+    const next = fleet_tab(snapshot({ kind: 'next', fleet: null, next: group_row })).main
+    assert.match(next, /<span class="fw-group-chip">Dreads &lt;b&gt;<\/span> FC Vel/)
+})
+
 test('an opened fleet has a breadcrumb back, the ship picker and the reminder switch', () => {
     const v = fleet_view_of({ mode: 'viewer', fleet: { ...FLEET, id: 8, live: false, start_time: '2099-10-18T19:00:00Z' }, jumps: 5, signed_up_key: 'f:2', reminder: true })
     const parts = upcoming_tab(snapshot({ opened: { id: 8, is_current: false, row: LIST[1], fleet: v } }), LIST)

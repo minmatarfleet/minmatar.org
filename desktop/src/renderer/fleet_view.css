@@ -58,6 +58,7 @@
 .fw-s26 { width: 26px; height: 26px; } .fw-s28 { width: 28px; height: 28px; } .fw-s32 { width: 32px; height: 32px; }
 .fw-s36 { width: 36px; height: 36px; } .fw-s44 { width: 44px; height: 44px; }
 .fw-tag { font-size: 11px; color: var(--eve-text-dim); white-space: nowrap; text-align: right; }
+.fw-group-chip { display: inline-block; max-width: 10em; padding: 0 4px; border: 1px solid var(--eve-gold); color: var(--eve-gold); font-size: 11px; line-height: 14px; vertical-align: 1px; overflow: hidden; text-overflow: ellipsis; }
 .fw-card { margin-top: 14px; background: var(--fw-card); }
 
 /* buttons */
