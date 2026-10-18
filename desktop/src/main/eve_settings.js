@@ -14,6 +14,7 @@
 const fs = require('fs')
 const path = require('path')
 const { EventEmitter } = require('events')
+const { universe_ids, find_named } = require('./esi')
 
 const DEFAULT_TRANSPARENCY = 1.0
 
@@ -207,32 +208,17 @@ class EveWindowSettings extends EventEmitter {
     }
 }
 
-// ESI etiquette (docs/desktop/ccp-third-party-guidelines.md rule 12): identify the app and pin the API version.
-const ESI_HEADERS = {
-    'User-Agent': `MinmatarFleetDesktop/${require('../../package.json').version} (+https://github.com/minmatarfleet/minmatar.org)`,
-    'X-Compatibility-Date': '2025-08-26',
-}
-
-// "EVE - <name>" -> character ID via ESI's public name lookup, cached for the session.
+// "EVE - <name>" -> character ID via ESI's public name lookup (esi.js), cached for the session.
 const id_cache = new Map()
 async function character_id_for_name(name, fetch_impl = globalThis.fetch) {
     if (!name) return null
     if (id_cache.has(name)) return id_cache.get(name)
-    try {
-        const response = await fetch_impl('https://esi.evetech.net/universe/ids', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...ESI_HEADERS },
-            body: JSON.stringify([name]),
-        })
-        if (!response.ok) return null
-        const body = await response.json()
-        const match = (body.characters || []).find(c => c.name.toLowerCase() === name.toLowerCase())
-        const id = match ? match.id : null
-        id_cache.set(name, id)
-        return id
-    } catch (e) {
-        return null
-    }
+    const body = await universe_ids([name], fetch_impl)
+    if (!body) return null   // not cached: try again next time
+    const match = find_named(body, 'characters', name)
+    const id = match ? match.id : null
+    id_cache.set(name, id)
+    return id
 }
 
-module.exports = { read_number_setting, read_int_pair_setting, read_public_settings, ui_scale_from, find_character_files, EveWindowSettings, character_id_for_name, DEFAULT_TRANSPARENCY, ESI_HEADERS }
+module.exports = { read_number_setting, read_int_pair_setting, read_public_settings, ui_scale_from, find_character_files, EveWindowSettings, character_id_for_name, DEFAULT_TRANSPARENCY }

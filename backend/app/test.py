@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from esi.models import Token
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import set_primary_character
-from users.jwt_auth import encode_jwt
+
+from app.testing import make_token
 
 
 class TestCase(django.test.TestCase):
@@ -11,8 +12,7 @@ class TestCase(django.test.TestCase):
 
     def setUp(self):
         self.user = User.objects.create(username="test")
-        payload = {"user_id": self.user.id}
-        self.token = encode_jwt(payload)
+        self.token = make_token(self.user)
 
     def make_superuser(self):
         self.user.is_superuser = True

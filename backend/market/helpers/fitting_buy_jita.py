@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from eveonline.client import get_region_market_orders_pages
 from eveonline.models import EveLocation
+from market.helpers.pricing import baseline_location
 
 JITA_DEPTH_CACHE_TTL = 300
 # v3: band skipped when best sell < JITA_DEPTH_BAND_MIN_PRICE.
@@ -53,11 +54,9 @@ class BandedSellDepth:
 
 
 def baseline_jita_location() -> EveLocation | None:
-    return (
-        EveLocation.objects.filter(price_baseline=True)
-        .exclude(region_id__isnull=True)
-        .first()
-    )
+    """The price_baseline location, when it has a region to read orders in."""
+    location = baseline_location()
+    return location if location and location.region_id else None
 
 
 def _cache_key(location_id: int, type_id: int) -> str:

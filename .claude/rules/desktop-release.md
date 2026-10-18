@@ -27,3 +27,12 @@ Commit it as its own commit, e.g. `Release desktop v0.5.0`, with a short list of
 - Never reuse or lower a released version. The PR check fails if you do.
 - Never create GitHub releases tagged `v*` for anything else on this repo: the updater installs whatever release is "latest".
 - Every new feature must pass `docs/desktop/ccp-third-party-guidelines.md` before it ships.
+
+## Account settings are shared by every installed version
+
+Desktop settings live on the pilot's account (`/api/users/me/desktop-settings`, saved as a merge of the changed keys), not on the PC. Two PCs, or an installer and a portable exe, can run different app versions against the same keys at the same time. The keys and their shapes are listed in `desktop/src/main/settings_schema.js`: `locked`, `show_sneak`, `fade_on_right_click`, `window.<id>` (`enabled`, `bounds`, intel's `range`) and `fleet_reminders`.
+
+- **Never change the shape or meaning of an existing key or field.** For a new shape, use a new key name and have the new version read the old key as a fallback. Changing an existing key in place is a **major** version, because it breaks the pilot's other installs.
+- Adding a key or a field is fine (minor). Older versions ignore it.
+- Read every key through `settings_schema.js`. An invalid or unknown value reads as the default, and a read never writes, so this version never "fixes" another version's value on the account.
+- When writing an object key, spread the stored value first (`stored_window`), so fields added by a newer version survive. Leave keys you don't know alone.

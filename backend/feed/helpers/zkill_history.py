@@ -6,18 +6,14 @@ from datetime import timedelta
 import requests
 from django.utils.dateparse import parse_datetime
 
-from feed.constants import R2Z2_USER_AGENT
 from feed.helpers.ingest import upsert_feed_killmail_from_raw
 from feed.helpers.monitored_systems import get_monitored_system_ids
+from feed.helpers.zkill_client import ZKILL_API_BASE, zkill_get
 from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
 
-ZKILL_API = "https://zkillboard.com/api/kills/solarSystemID/{system_id}/"
-
-
-def _headers() -> dict[str, str]:
-    return {"User-Agent": R2Z2_USER_AGENT, "Accept": "application/json"}
+ZKILL_API = ZKILL_API_BASE + "/kills/solarSystemID/{system_id}/"
 
 
 def fetch_system_kills(
@@ -27,7 +23,7 @@ def fetch_system_kills(
 ) -> list[dict]:
     url = ZKILL_API.format(system_id=solar_system_id)
     params = {"page": page, "w-space": 0}
-    response = requests.get(url, headers=_headers(), params=params, timeout=60)
+    response = zkill_get(url, params=params)
     response.raise_for_status()
     return response.json()
 

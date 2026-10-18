@@ -9,8 +9,9 @@
 // time in data-clock / data-since and fleets.js ticks them. Shared by the window (global `fleet_view`) and
 // the node tests (module.exports).
 (function (root) {
-    const fmt = typeof module !== 'undefined' && module.exports ? require('./fleet_format') : root.fleet_format
-    const IMAGES = 'https://images.evetech.net'
+    const node = typeof module !== 'undefined' && module.exports
+    const fmt = node ? require('./fleet_format') : root.fleet_format
+    const { esc, plural, type_icon, type_render, portrait: portrait_url } = node ? require('./ui_helpers') : root.ui_helpers
     const ROLE_LABELS = { logi: 'Logi', links: 'Links', cyno: 'Cyno' }
     const ATTENTION_LABELS = {
         capsule: 'In a pod', off_doctrine: 'Off doctrine', docked: 'Docked', away: 'Not with the fleet', not_in_fleet: 'Signed up, not in fleet',
@@ -18,17 +19,15 @@
     const SRP_LABELS = { none: 'SRP not filed', pending: 'SRP pending', approved: 'SRP paid', rejected: 'SRP rejected' }
     const pad = n => String(n).padStart(2, '0')
 
-    const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-
     // One image URL per type (64 px, crisp at 2x for the 20-48 px icons) so the cache serves every use.
     const ship_icon = (type_id, size, extra = '') => type_id
-        ? `<img class="fw-icon" src="${IMAGES}/types/${Number(type_id)}/icon?size=64" alt="" width="${size}" height="${size}" decoding="async"${extra}>`
+        ? `<img class="fw-icon" src="${type_icon(Number(type_id))}" alt="" width="${size}" height="${size}" decoding="async"${extra}>`
         : `<span class="fw-icon fw-s${size}"></span>`
     const portrait = (character_id, size) => character_id
-        ? `<img class="fw-portrait" src="${IMAGES}/characters/${Number(character_id)}/portrait?size=64" alt="" width="${size}" height="${size}" decoding="async">`
+        ? `<img class="fw-portrait" src="${portrait_url(Number(character_id))}" alt="" width="${size}" height="${size}" decoding="async">`
         : `<span class="fw-portrait fw-s${size}"></span>`
     const render_img = type_id => type_id
-        ? `<img class="fw-render" src="${IMAGES}/types/${Number(type_id)}/render?size=256" alt="" decoding="async">` : ''
+        ? `<img class="fw-render" src="${type_render(Number(type_id))}" alt="" decoding="async">` : ''
 
     function isk(value) {
         const n = Number(value) || 0
@@ -50,17 +49,13 @@
         return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`
     }
 
-    function eve_clock(iso) {
-        const d = new Date(iso)
-        return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`
-    }
+    const eve_clock = fmt.eve_time
 
     function duration(seconds) {
         const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60)
         return h ? `${h}h ${pad(m)}m` : `${m}m`
     }
 
-    const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
     const fit_label = name => String(name || '').replace(/^\[[^\]]*\]\s*/, '')
     const fleet_title = row => row.doctrine || `${row.type_label} fleet`
 

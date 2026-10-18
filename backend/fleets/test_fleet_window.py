@@ -9,6 +9,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from app.testing import make_token
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
@@ -26,7 +27,6 @@ from fleets.test_fleet_roles import (
     GUARDIAN_EFT,
     GUARDIAN_ID,
 )
-from fleets.test_ship_volunteers_refits import token_for
 from fleets.tests import (
     BASE_URL,
     disconnect_fleet_signals,
@@ -100,7 +100,7 @@ class FleetWindowTestCase(TestCase):
             ),
         )
         self.fc_auth = {
-            "HTTP_AUTHORIZATION": f"Bearer {token_for(self.fc_user)}"
+            "HTTP_AUTHORIZATION": f"Bearer {make_token(self.fc_user)}"
         }
 
         self.doctrine = EveDoctrine.objects.create(

@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from django.db.models import Q, QuerySet
 from eveuniverse.models import EveType
 
-from market.models.item import parse_eft_items
+from fittings.eft import item_quantities, parse_eft_header
 
 # Size / capacity tokens that distinguish families within an Eve group
 # (e.g. 5MN MWDs vs 50MN MWDs; Medium extenders vs Large).
@@ -120,15 +120,11 @@ _FAMILY_KEY_NORMALIZE = {
 
 
 def fitting_item_names(eft_format: str) -> list[str]:
-    """Unique EFT item names excluding the hull (EFT header ship)."""
-    items = parse_eft_items(eft_format or "")
-    if not items:
-        return []
-    header_ship = ""
-    first_line = (eft_format or "").strip().split("\n", 1)[0]
-    if first_line.startswith("["):
-        header_ship = first_line.split(",")[0].strip().strip("[]")
-    return sorted(name for name in items if name != header_ship)
+    """Unique EFT item names (modules, charges, drones, cargo) minus the hull."""
+    ship, _ = parse_eft_header(eft_format or "")
+    return sorted(
+        name for name in item_quantities(eft_format or "") if name != ship
+    )
 
 
 def fitting_item_types(fitting) -> QuerySet[EveType]:

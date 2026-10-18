@@ -6,7 +6,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
-import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
 
 const auth_token = Astro.cookies.has('auth_token')
     ? (Astro.cookies.get('auth_token')?.value as string)
@@ -55,13 +55,7 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
         }
         case 'delete_order': {
             await delete_fitting_buy_order(token, order_id)
-            return new Response('', {
-                status: 200,
-                headers: {
-                    'Content-Type': 'text/html',
-                    'HX-Redirect': translatePath('/market/fitting_orders/'),
-                },
-            })
+            return partial_redirect(Astro.request, translatePath('/market/fitting_orders/'))
         }
         case 'swap': {
             order = await apply_fitting_buy_swap(

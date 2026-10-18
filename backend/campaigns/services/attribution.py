@@ -26,11 +26,12 @@ from campaigns.models import (
     KillmailOutcome,
 )
 from campaigns.services import structures as structure_service
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from eveonline.models import EveCharacter
 
 logger = logging.getLogger(__name__)
 
-POD_GROUP_TYPE_IDS = {670, 33328}  # Capsule, Capsule - Genolution
+POD_GROUP_TYPE_IDS = CAPSULE_TYPE_IDS
 
 
 def attribute_feed_killmail(

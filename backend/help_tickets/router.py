@@ -84,6 +84,7 @@ class CloseHelpTicketRequest(BaseModel):
     auth=AuthBearer(),
 )
 def get_help_ticket_panel_config(request):
+    require_service_account(request)
     return build_help_ticket_panel_config()
 
 
@@ -93,6 +94,7 @@ def get_help_ticket_panel_config(request):
     auth=AuthBearer(),
 )
 def get_help_ticket_panel_state(request):
+    require_service_account(request)
     panel = HelpTicketPanel.get_solo()
     return {
         "channel_id": panel.channel_id,
@@ -166,6 +168,7 @@ def create_help_ticket(request, payload: CreateHelpTicketRequest):
     auth=AuthBearer(),
 )
 def list_open_help_tickets(request):
+    require_service_account(request)
     tickets = HelpTicket.objects.filter(
         status=HelpTicket.STATUS_OPEN
     ).order_by("opened_at")
@@ -183,6 +186,7 @@ def list_open_help_tickets(request):
     auth=AuthBearer(),
 )
 def get_help_ticket(request, ticket_id: int):
+    require_service_account(request)
     ticket = get_object_or_404(HelpTicket, pk=ticket_id)
     return {
         "id": ticket.id,

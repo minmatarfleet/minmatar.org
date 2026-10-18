@@ -37,6 +37,9 @@ def list_user_submitted(
         params={"limit": min(limit, 100), "raw_json": 1},
         timeout=15,
     )
+    if response.status_code == 401:
+        # The cached alliance token was revoked; the next call fetches one.
+        client.forget_access_token()
     if response.status_code >= 400:
         logger.warning(
             "Reddit user submitted failed for %s: %s %s",

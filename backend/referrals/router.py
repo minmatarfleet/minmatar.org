@@ -1,9 +1,11 @@
 import logging
 import hashlib
+import hmac
 
 from typing import List
 from ninja import Router
 from pydantic import BaseModel
+from django.conf import settings
 from django.shortcuts import redirect
 
 from app.errors import ErrorResponse
@@ -106,10 +108,28 @@ def hash_client_ip(client_ip):
     return client_id
 
 
+# The Astro server records referral visits on behalf of the visitor, so it
+# sends the visitor's address in the body and proves who it is with the
+# secret both apps share.
+SHARED_SECRET_HEADER = "X-Shared-Secret"
+
+
+def is_frontend_server(request) -> bool:
+    expected = getattr(settings, "SHARED_SECRET", "") or ""
+    supplied = request.headers.get(SHARED_SECRET_HEADER, "")
+    if not expected or not supplied:
+        return False
+    return hmac.compare_digest(supplied.encode(), expected.encode())
+
+
 @router.post(
-    "", description="Record use of a referral link", response={201: str}
+    "",
+    description="Record use of a referral link (frontend server only)",
+    response={201: str, 403: ErrorResponse},
 )
 def record_referral(request, referral: ReferralRecord) -> str:
+    if not is_frontend_server(request):
+        return 403, ErrorResponse(detail="Not permitted")
     ReferralClick.objects.get_or_create(
         page=referral.page,
         user_id=referral.user_id,

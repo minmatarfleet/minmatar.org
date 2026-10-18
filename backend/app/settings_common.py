@@ -30,10 +30,6 @@ CELERY_IMPORTS = (
 )
 
 
-# Crispy forms
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
-
 # ESI
 # LOGIN_URL="/authentication/login"
 
@@ -230,3 +226,17 @@ JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
 # "shadow" (legacy, but report where pilot features disagree), or "features".
 # Read by GET /api/users/me/gates; change it and restart the app to flip.
 FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")
+
+# Optional integrations, read directly as settings.X. Empty means "not
+# configured". They live here so every settings file, including local
+# copies of settings.py, defines them.
+#
+# Base URL of the Django admin; when set, doctrine/fitting change DMs link
+# to the review queues there.
+MINMATAR_ADMIN_BASE_URL = os.environ.get("MINMATAR_ADMIN_BASE_URL", "")
+# Bot invite link shown to corporations; defaults to one built from
+# DISCORD_CLIENT_ID.
+DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
+# SDE sqlite for campaign area names; defaults to the newest
+# frontend/app/src/data/sde-*.sqlite.
+EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")

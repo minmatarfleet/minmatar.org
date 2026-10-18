@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from django.conf import settings
 from django.core.management.base import CommandError
+from django.db import DatabaseError, connections
 from eveuniverse.models import EveType
 
 from eveonline.models import EveCharacter
 
+_LOOPBACK_HOSTS = {"", "localhost", "127.0.0.1", "::1"}
+_DEFAULT_PORTS = {"mysql": "3306", "postgresql": "5432"}
+
 
 def validate_source_alias(source: str, local: str = "default") -> None:
+    """Refuse to copy unless source and local are different databases.
+
+    The *_from_production commands read ``source`` and write (and with
+    --clear, delete) in ``local``. Comparing alias names is not enough: on a
+    host where both aliases reach the same server they would delete the
+    rows they are about to copy. So this also compares the configured
+    host/port/name, asks both MySQL servers who they are, and only runs
+    with DEBUG on (these are local development tools).
+    """
     if source not in settings.DATABASES:
         raise CommandError(
             f'Database alias "{source}" is not configured. '
@@ -17,6 +32,65 @@ def validate_source_alias(source: str, local: str = "default") -> None:
         )
     if source == local:
         raise CommandError("Source and destination must differ.")
+    if local not in settings.DATABASES:
+        raise CommandError(f'Database alias "{local}" is not configured.')
+    if not settings.DEBUG:
+        raise CommandError(
+            "Production import commands only run with DEBUG=True: they "
+            "write into the local database."
+        )
+    if database_identity(source) == database_identity(local):
+        raise CommandError(
+            f'"{source}" and "{local}" point at the same database. '
+            "Refusing to copy a database into itself."
+        )
+    source_server = server_identity(source)
+    if source_server is not None and source_server == server_identity(local):
+        raise CommandError(
+            f'"{source}" and "{local}" reach the same database server '
+            f"({source_server[0]}:{source_server[1]}/{source_server[2]}). "
+            "Refusing to copy a database into itself."
+        )
+
+
+def database_identity(alias: str) -> tuple:
+    """Where an alias points, from its settings, normalised for comparing."""
+    database = settings.DATABASES[alias]
+    engine = database.get("ENGINE", "")
+    vendor = engine.rsplit(".", 1)[-1]
+    name = str(database.get("NAME") or "")
+    if vendor == "sqlite3":
+        if name and name != ":memory:":
+            name = str(Path(name).resolve())
+        return (vendor, name)
+    host = str(database.get("HOST") or "").strip().lower()
+    if host in _LOOPBACK_HOSTS:
+        host = "localhost"
+    port = str(database.get("PORT") or "").strip()
+    port = port or _DEFAULT_PORTS.get(vendor, "")
+    return (vendor, host, port, name)
+
+
+def server_identity(alias: str) -> tuple | None:
+    """Ask a MySQL server for its hostname, port and current database.
+
+    Two aliases with different HOST strings (an IP and a DNS name, a proxy)
+    can still reach the same server; this catches that. Returns None for
+    other database vendors.
+    """
+    connection = connections[alias]
+    if connection.vendor != "mysql":
+        return None
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT @@hostname, @@port, DATABASE()")
+            row = cursor.fetchone()
+    except DatabaseError as exc:
+        raise CommandError(
+            f'Could not identify the database server behind "{alias}": '
+            f"{exc}"
+        ) from exc
+    return tuple(str(value) for value in row)
 
 
 def assert_local_has_eve_types(

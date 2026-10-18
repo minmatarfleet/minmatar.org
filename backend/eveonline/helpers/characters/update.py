@@ -2,11 +2,9 @@
 
 import logging
 import time
-from datetime import datetime
 from decimal import Decimal
 
-import pytz
-from django.utils import timezone
+from django.db import transaction
 
 from eveonline.client import EsiClient
 from eveonline.models import (
@@ -21,26 +19,14 @@ from eveonline.models import (
 
 from eveonline.helpers.characters.assets import create_character_assets
 from eveonline.helpers.db_sync import replace_with_bulk_create
+from eveonline.helpers.esi import esi_contract_defaults, parse_esi_date
+from eveonline.helpers.killmail_text import dump_killmail_list
 from eveonline.helpers.characters.skills import (
     create_eve_character_skillset,
     upsert_character_skills,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _parse_esi_date(value):
-    """Parse ESI ISO date string to timezone-aware datetime."""
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return (
-            timezone.make_aware(value) if timezone.is_naive(value) else value
-        )
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if timezone.is_naive(dt):
-        dt = pytz.UTC.localize(dt)
-    return dt
 
 
 def update_character_assets(eve_character_id: int) -> tuple[int, int, int]:
@@ -97,8 +83,16 @@ def update_character_skills(eve_character_id: int) -> None:
         create_eve_character_skillset(eve_character_id, skillset)
 
 
+def _optional(row: dict, key: str):
+    return row.get(key) if isinstance(row, dict) else None
+
+
 def update_character_killmails(eve_character_id: int) -> None:
-    """Fetch recent killmails from ESI and create missing records."""
+    """Fetch recent killmails from ESI and create missing records.
+
+    Killmails already stored are skipped before their detail is fetched, so
+    a sync only spends ESI calls on mails it has not seen.
+    """
     character = EveCharacter.objects.get(character_id=eve_character_id)
     logger.info("Updating killmails for character %s", eve_character_id)
     esi = EsiClient(eve_character_id)
@@ -112,8 +106,16 @@ def update_character_killmails(eve_character_id: int) -> None:
         )
         return
 
-    for killmail in response.results():
+    recent = response.results() or []
+    stored = set(
+        EveCharacterKillmail.objects.filter(
+            id__in=[killmail["killmail_id"] for killmail in recent]
+        ).values_list("id", flat=True)
+    )
+    for killmail in recent:
         killmail_id = killmail["killmail_id"]
+        if killmail_id in stored:
+            continue
         response = esi.get_character_killmail(
             killmail_id, killmail["killmail_hash"]
         )
@@ -125,69 +127,54 @@ def update_character_killmails(eve_character_id: int) -> None:
                 response.error_text(),
             )
             continue
-        details = response.results()
-        if not EveCharacterKillmail.objects.filter(id=killmail_id).exists():
-            killmail_obj = EveCharacterKillmail.objects.create(
-                id=killmail_id,
-                killmail_id=killmail_id,
-                killmail_hash=killmail["killmail_hash"],
-                solar_system_id=details["solar_system_id"],
-                ship_type_id=details["victim"]["ship_type_id"],
-                killmail_time=details["killmail_time"],
-                victim_character_id=(
-                    details["victim"]["character_id"]
-                    if "character_id" in details["victim"]
-                    else None
-                ),
-                victim_corporation_id=(
-                    details["victim"]["corporation_id"]
-                    if "corporation_id" in details["victim"]
-                    else None
-                ),
-                victim_alliance_id=(
-                    details["victim"]["alliance_id"]
-                    if "alliance_id" in details["victim"]
-                    else None
-                ),
-                victim_faction_id=(
-                    details["victim"]["faction_id"]
-                    if "faction_id" in details["victim"]
-                    else None
-                ),
-                attackers=details["attackers"],
-                items=details["victim"]["items"],
-                character=character,
-            )
+        _store_character_killmail(
+            character,
+            killmail_id,
+            killmail["killmail_hash"],
+            response.results(),
+        )
+        stored.add(killmail_id)
 
-            for attacker in details["attackers"]:
-                EveCharacterKillmailAttacker.objects.create(
+
+def _store_character_killmail(
+    character: EveCharacter, killmail_id: int, killmail_hash: str, details
+) -> None:
+    """One killmail and its attacker rows, written together.
+
+    attackers/items are stored as JSON text (older rows hold Python repr;
+    read either with eveonline.helpers.killmail_text.parse_killmail_list).
+    """
+    victim = details["victim"]
+    attackers = details["attackers"]
+    with transaction.atomic():
+        killmail_obj = EveCharacterKillmail.objects.create(
+            id=killmail_id,
+            killmail_id=killmail_id,
+            killmail_hash=killmail_hash,
+            solar_system_id=details["solar_system_id"],
+            ship_type_id=victim["ship_type_id"],
+            killmail_time=details["killmail_time"],
+            victim_character_id=victim.get("character_id"),
+            victim_corporation_id=victim.get("corporation_id"),
+            victim_alliance_id=victim.get("alliance_id"),
+            victim_faction_id=victim.get("faction_id"),
+            attackers=dump_killmail_list(attackers),
+            items=dump_killmail_list(victim.get("items")),
+            character=character,
+        )
+        EveCharacterKillmailAttacker.objects.bulk_create(
+            [
+                EveCharacterKillmailAttacker(
                     killmail=killmail_obj,
-                    character_id=(
-                        attacker["character_id"]
-                        if "character_id" in attacker
-                        else None
-                    ),
-                    corporation_id=(
-                        attacker["corporation_id"]
-                        if "corporation_id" in attacker
-                        else None
-                    ),
-                    alliance_id=(
-                        attacker["alliance_id"]
-                        if "alliance_id" in attacker
-                        else None
-                    ),
-                    faction_id=(
-                        attacker["faction_id"]
-                        if "faction_id" in attacker
-                        else None
-                    ),
-                    ship_type_id=(
-                        attacker["ship_type_id"]
-                        if "ship_type_id" in attacker
-                        else None
-                    ),
+                    character_id=_optional(attacker, "character_id"),
+                    corporation_id=_optional(attacker, "corporation_id"),
+                    alliance_id=_optional(attacker, "alliance_id"),
+                    faction_id=_optional(attacker, "faction_id"),
+                    ship_type_id=_optional(attacker, "ship_type_id"),
                 )
+                for attacker in attackers or []
+            ]
+        )
 
 
 def update_character_contracts(eve_character_id: int) -> int:
@@ -219,47 +206,11 @@ def update_character_contracts(eve_character_id: int) -> int:
     contracts_data = response.results() or []
     for raw in contracts_data:
         contract_id = raw["contract_id"]
-        price = raw.get("price")
-        if price is not None:
-            price = Decimal(str(price))
-        reward = raw.get("reward")
-        if reward is not None:
-            reward = Decimal(str(reward))
-        collateral = raw.get("collateral")
-        if collateral is not None:
-            collateral = Decimal(str(collateral))
-        buyout = raw.get("buyout")
-        if buyout is not None:
-            buyout = Decimal(str(buyout))
-        volume = raw.get("volume")
-        if volume is not None:
-            volume = Decimal(str(volume))
-
         EveCharacterContract.objects.update_or_create(
             contract_id=contract_id,
             defaults={
+                **esi_contract_defaults(raw),
                 "character_id": character.pk,
-                "type": raw.get("type", ""),
-                "status": raw.get("status", ""),
-                "availability": raw.get("availability", ""),
-                "issuer_id": raw.get("issuer_id"),
-                "issuer_corporation_id": raw.get("issuer_corporation_id"),
-                "assignee_id": raw.get("assignee_id"),
-                "acceptor_id": raw.get("acceptor_id"),
-                "for_corporation": raw.get("for_corporation", False),
-                "date_issued": _parse_esi_date(raw.get("date_issued")),
-                "date_expired": _parse_esi_date(raw.get("date_expired")),
-                "date_accepted": _parse_esi_date(raw.get("date_accepted")),
-                "date_completed": _parse_esi_date(raw.get("date_completed")),
-                "days_to_complete": raw.get("days_to_complete"),
-                "price": price,
-                "reward": reward,
-                "collateral": collateral,
-                "buyout": buyout,
-                "volume": volume,
-                "start_location_id": raw.get("start_location_id"),
-                "end_location_id": raw.get("end_location_id"),
-                "title": raw.get("title", ""),
             },
         )
     logger.info(
@@ -309,7 +260,7 @@ def update_character_industry_jobs(
     created_job_ids: list[int] = []
     for raw in jobs_data:
         job_id = raw["job_id"]
-        completed_date = _parse_esi_date(raw.get("completed_date"))
+        completed_date = parse_esi_date(raw.get("completed_date"))
         cost = raw.get("cost")
         if cost is not None:
             cost = Decimal(str(cost))
@@ -327,8 +278,8 @@ def update_character_industry_jobs(
                 "output_location_id": raw["output_location_id"],
                 "status": raw["status"],
                 "installer_id": raw["installer_id"],
-                "start_date": _parse_esi_date(raw["start_date"]),
-                "end_date": _parse_esi_date(raw["end_date"]),
+                "start_date": parse_esi_date(raw["start_date"]),
+                "end_date": parse_esi_date(raw["end_date"]),
                 "duration": raw["duration"],
                 "completed_date": completed_date,
                 "completed_character_id": raw.get("completed_character_id"),

@@ -25,7 +25,8 @@ from eveonline.models import (
     EveCorporation,
     EvePlayer,
 )
-from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from fleets.helpers.metrics import fleets_led_by_user, led_fleets
+from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from tribes.models import TribeGroupMembership
 
 WEEKS = 13
@@ -91,7 +92,7 @@ def corporation_about(
         "hulls": _top_hulls(recent, owners),
         "records": _records(attendance, owners),
         "leaderboards": _leaderboards(
-            corporation, characters, owners, mains, recent, kills, cutoff
+            corporation, characters, owners, mains, recent, kills, cutoff, now
         ),
         "tribe_groups": _tribe_groups({o for o in owners.values() if o > 0}),
     }
@@ -358,8 +359,8 @@ def _records(attendance, owners) -> dict:
     return {"biggest_turnout": biggest, "busiest_month": busiest}
 
 
-def _leaderboards(
-    corporation, characters, owners, mains, recent, kills, cutoff
+def _leaderboards(  # pylint: disable=too-many-arguments
+    corporation, characters, owners, mains, recent, kills, cutoff, now
 ) -> dict:
     fleets: dict[int, set] = defaultdict(set)
     for character_id, _, instance_id, *_ in recent:
@@ -371,12 +372,9 @@ def _leaderboards(
         )
     led = Counter(
         dict(
-            EveFleet.objects.filter(
-                created_by_id__in=list(mains), start_time__gte=cutoff
-            )
-            .values("created_by_id")
-            .annotate(n=Count("id"))
-            .values_list("created_by_id", "n")
+            fleets_led_by_user(
+                led_fleets(cutoff, now).filter(created_by_id__in=list(mains))
+            ).values_list("created_by_id", "fleet_count")
         )
     )
     return {

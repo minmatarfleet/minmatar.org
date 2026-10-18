@@ -27,7 +27,8 @@ from eveonline.helpers.corporations.safe_cache import (
     cache_set,
 )
 from eveonline.models import EveCharacter
-from feed.helpers.fleet_kills import CAPSULE_TYPE_IDS, fleet_kill_report
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
+from feed.helpers.fleet_kills import fleet_kill_report
 from fleets.helpers.composition import fleet_composition
 from fleets.helpers.role_coverage import PRESENT_SLACK
 

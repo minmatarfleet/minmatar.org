@@ -23,7 +23,7 @@ from users.helpers import (
     offboard_user,
 )
 from users.models import UserDesktopSettings
-from users.redirects import is_allowed_login_redirect
+from users.redirects import is_allowed_login_redirect, oauth_redirect
 from users.router import callback
 
 # Create your tests here.
@@ -785,5 +785,21 @@ class IsAllowedLoginRedirectTestCase(TestCase):
             "data:text/html,hi",
             "exp://evil.example:8081/--/auth/callback",
             "exp://8.8.8.8:8081/--/auth/callback",
+            # Not a scheme the deep-link redirect can serve.
+            "exps://192.168.1.20:8081/--/auth/callback",
         ]:
             self.assertFalse(is_allowed_login_redirect(url), url)
+
+    def test_every_allowed_redirect_can_be_served(self):
+        for url in [
+            "https://my.minmatar.org/auth/login",
+            "http://localhost:4321/auth/login",
+            "http://127.0.0.1:53123/callback/0123456789abcdef",
+            "mobile://auth/callback",
+            "minmatar://auth/callback",
+            "exp://192.168.1.20:8081/--/auth/callback",
+        ]:
+            self.assertTrue(is_allowed_login_redirect(url), url)
+            response = oauth_redirect(f"{url}?token=t")
+            self.assertEqual(302, response.status_code, url)
+            self.assertEqual(f"{url}?token=t", response.url, url)

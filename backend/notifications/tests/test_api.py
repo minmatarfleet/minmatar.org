@@ -1,7 +1,5 @@
 import json
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
@@ -13,20 +11,16 @@ from notifications.models import (
     NotificationPreference,
     NotificationTopicSubscription,
 )
+from app.testing import make_token
 
 BASE = "/api/notifications"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class PreferencesApiTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user("apiuser", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_make_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
     def test_get_preferences(self):
         response = self.client.get(f"{BASE}/preferences", **self.auth)
@@ -125,7 +119,7 @@ class AckDeliveryApiTestCase(TestCase):
             payload={"body": "hi"},
             status=NotificationDeliveryStatus.SENT,
         )
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_make_token(self.bot)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.bot)}"}
 
     def test_ack_success(self):
         response = self.client.post(
@@ -157,7 +151,7 @@ class AckDeliveryApiTestCase(TestCase):
 
     def test_ack_forbidden_for_non_staff_with_victim_discord_id(self):
         stranger = User.objects.create_user("nosy", password="x")
-        auth = {"HTTP_AUTHORIZATION": f"Bearer {_make_token(stranger)}"}
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(stranger)}"}
         response = self.client.post(
             f"{BASE}/deliveries/{self.delivery.id}/ack",
             data=json.dumps({"discord_user_id": 777888999}),
@@ -169,7 +163,7 @@ class AckDeliveryApiTestCase(TestCase):
         self.assertEqual(self.delivery.status, NotificationDeliveryStatus.SENT)
 
     def test_ack_owner_can_ack_own_delivery(self):
-        auth = {"HTTP_AUTHORIZATION": f"Bearer {_make_token(self.user)}"}
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
         response = self.client.post(
             f"{BASE}/deliveries/{self.delivery.id}/ack",
             data=json.dumps({"discord_user_id": 777888999}),
