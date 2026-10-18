@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from eveonline.killmail_classes import SMALL_GANG_MAX_ATTACKERS
+
 # Paths under /api/campaigns that a campaign slug would otherwise shadow.
 RESERVED_SLUGS = frozenset({"entities", "overlay"})
 
@@ -153,7 +155,9 @@ DEFAULT_SCORING: dict = {
     "solo_bonus": 10,
     "fleet_kill_bonus": 5,
     "gang_kill_bonus": 5,
-    "gang_size_max": 10,
+    # Enlisted pilots on the mail (2..max), not every attacker; tunable per
+    # campaign, defaulting to the alliance-wide small-gang size.
+    "gang_size_max": SMALL_GANG_MAX_ATTACKERS,
     "loss_penalty": -3,
     "loss_penalty_in_fleet": -1,
     "isk_per_point": 10_000_000,

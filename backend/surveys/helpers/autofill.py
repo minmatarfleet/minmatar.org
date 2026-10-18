@@ -12,16 +12,12 @@ from eveonline.helpers.characters import (
     user_primary_character,
 )
 from eveonline.models import EveCorporation
-from fleets.models import EveFleet, EveFleetInstanceMember
+from fleets.helpers.metrics import led_fleets
+from fleets.models import EveFleetInstanceMember
 from groups.helpers.feature_access import user_community_status
 from learning.helpers import completed_learning_ids
 from learning.models import UserLearningPreference
-from surveys.constants import (
-    ACTIVITY_CORE,
-    ACTIVITY_INACTIVE,
-    ACTIVITY_LAPSING,
-    ACTIVITY_REGULAR,
-)
+from surveys.constants import activity_tier
 from surveys.helpers import standing
 from surveys.helpers.corp_history import alliance_corp_history
 from surveys.helpers.teams import member_tribe_rows
@@ -125,20 +121,10 @@ def fleets_attended(user, start=None, end=None) -> int:
         return 0
 
 
-def _activity_tier(fleet_count: int) -> str:
-    if fleet_count >= 10:
-        return ACTIVITY_CORE
-    if fleet_count >= 3:
-        return ACTIVITY_REGULAR
-    if fleet_count >= 1:
-        return ACTIVITY_LAPSING
-    return ACTIVITY_INACTIVE
-
-
 def _role_flags(user) -> list[str]:
     flags = []
     try:
-        if EveFleet.objects.filter(created_by=user).exists():
+        if led_fleets().filter(created_by=user).exists():
             flags.append("fc")
     except Exception:  # pragma: no cover - defensive
         pass
@@ -181,12 +167,12 @@ def build_member_context(user) -> dict:
     joined = member_join_date(user)
     learning = _learning_progress(user)
     tribes = member_tribe_rows(user)
-    activity_tier = _activity_tier(fleet_count)
+    tier = activity_tier(fleet_count)
     prime = _prime_time(user)
 
     return {
         "tenure_note": standing.tenure_note(joined),
-        "fleets_note": standing.fleets_note(activity_tier),
+        "fleets_note": standing.fleets_note(tier),
         "guides_note": standing.guides_note(learning["guides_completed"]),
         "timezone_note": standing.timezone_note(prime),
         "character_id": corp["character_id"],
@@ -205,7 +191,7 @@ def build_member_context(user) -> dict:
         "tenure_cohort": tenure_cohort(days),
         "joined_at": joined.isoformat() if joined else None,
         "fleets_attended_quarter": fleet_count,
-        "activity_tier": _activity_tier(fleet_count),
+        "activity_tier": tier,
         "role_flags": _role_flags(user),
         "guides_completed": learning["guides_completed"],
         "persona": learning["persona"],
