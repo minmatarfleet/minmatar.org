@@ -3,20 +3,17 @@ from datetime import timedelta
 from celery.schedules import crontab, schedule
 
 CELERYD_HIJACK_ROOT_LOGGER = False
-# Queue/routing are set in app/celery.py so they apply for workers and producers.
+# Entries never set a queue: app.queues routes every task, beat included.
+# See docs/architecture/celery-queues.md.
 
 # Retain broker connection retries on worker startup (Celery 6+)
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Entries that fire every 15 minutes or faster set options.expire_seconds
 # (at most their interval), so runs queued while a worker is down are
-# dropped instead of piling up. The feed rollups task is QueueOnce and
-# already refuses a second queued copy, so it is left without one.
+# dropped instead of piling up. Every task also refuses a second queued
+# copy of the same call (app.task_base.AppTask).
 # DatabaseScheduler copies options into PeriodicTask when beat starts.
-#
-# Ticks that run every minute or faster go to the "realtime" queue, which
-# has its own worker, so a backlog of ESI fan-out on "celery" can't hold
-# them past their expiry.
 
 # Market
 CELERYBEAT_MARKET = [
@@ -47,7 +44,7 @@ CELERYBEAT_MARKET = [
         {
             "task": "market.tasks.fetch_attributed_market_orders",
             "schedule": schedule(timedelta(minutes=30)),
-            "options": {"expire_seconds": 30 * 60, "queue": "market"},
+            "options": {"expire_seconds": 30 * 60},
         },
     ),
     (
@@ -62,7 +59,6 @@ CELERYBEAT_MARKET = [
         {
             "task": "market.tasks.fetch_market_item_history",
             "schedule": crontab(minute=15, hour=12),
-            "options": {"queue": "market"},
         },
     ),
     (
@@ -74,7 +70,7 @@ CELERYBEAT_MARKET = [
     ),
 ]
 
-# Characters (eveonline tasks use queue="eveonline" for admin "Run" and beat)
+# Characters
 CELERYBEAT_CHARACTERS = [
     (
         "[Characters] Update Affiliations",
@@ -88,7 +84,6 @@ CELERYBEAT_CHARACTERS = [
         {
             "task": "eveonline.tasks.characters.update_alliance_characters",
             "schedule": crontab(minute=37, hour="*/4"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -96,7 +91,6 @@ CELERYBEAT_CHARACTERS = [
         {
             "task": "eveonline.tasks.characters.update_all_character_public_data",
             "schedule": crontab(minute=20, hour="*/8"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -104,7 +98,6 @@ CELERYBEAT_CHARACTERS = [
         {
             "task": "eveonline.tasks.characters.queue_stale_character_corporation_history",
             "schedule": crontab(minute="5,35", hour="*"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -115,7 +108,7 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
 ]
-# Corporations (eveonline tasks use queue="eveonline" for admin "Run" and beat)
+# Corporations
 CELERYBEAT_CORPORATIONS = [
     (
         "[Corporations] Import Corporations",
@@ -129,7 +122,6 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "eveonline.tasks.corporations.update_corporations",
             "schedule": crontab(minute=0, hour="*/1"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -137,7 +129,6 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "eveonline.tasks.corporations.sync_corporations_projects",
             "schedule": crontab(minute="5,35"),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -145,7 +136,7 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "structures.tasks.process_structure_notifications",
             "schedule": crontab(minute="*", hour="*/1"),
-            "options": {"expire_seconds": 60, "queue": "realtime"},
+            "options": {"expire_seconds": 60},
         },
     ),
     (
@@ -353,7 +344,15 @@ CELERYBEAT_OTHER = [
         {
             "task": "fleets.tasks.update_fleet_instances",
             "schedule": schedule(timedelta(seconds=30)),
-            "options": {"expire_seconds": 30, "queue": "realtime"},
+            "options": {"expire_seconds": 30},
+        },
+    ),
+    (
+        "[Misc] Rebuild fleet fight timelines",
+        {
+            "task": "fleets.tasks.rebuild_fight_timelines",
+            "schedule": schedule(timedelta(seconds=30)),
+            "options": {"expire_seconds": 30},
         },
     ),
     (
@@ -469,7 +468,7 @@ CELERYBEAT_FEED = [
             # A poll works through new kills for up to 25s, and only one
             # copy is queued or running at a time.
             "schedule": schedule(timedelta(seconds=15)),
-            "options": {"expire_seconds": 60, "queue": "realtime"},
+            "options": {"expire_seconds": 60},
         },
     ),
     (
@@ -477,7 +476,7 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.detect_feed_clusters",
             "schedule": schedule(timedelta(minutes=3)),
-            "options": {"expire_seconds": 3 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 3 * 60},
         },
     ),
     (
@@ -485,7 +484,7 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.run_feed_rollups",
             "schedule": schedule(timedelta(minutes=3)),
-            "options": {"queue": "celery"},
+            "options": {"expire_seconds": 3 * 60},
         },
     ),
     (
@@ -493,7 +492,6 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.poll_fw_contested_snapshots",
             "schedule": crontab(minute=50, hour="*"),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -501,7 +499,7 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.populate_feed_affiliations",
             "schedule": schedule(timedelta(minutes=3)),
-            "options": {"expire_seconds": 3 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 3 * 60},
         },
     ),
     (
@@ -509,7 +507,6 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.refresh_feed_affiliations",
             "schedule": crontab(minute=15, hour="*/6"),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -517,7 +514,6 @@ CELERYBEAT_FEED = [
         {
             "task": "feed.tasks.purge_feed_killmails",
             "schedule": crontab(minute=30, hour=4),
-            "options": {"queue": "celery"},
         },
     ),
 ]
@@ -538,7 +534,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.sweep_campaign_killmails",
             "schedule": schedule(timedelta(minutes=10)),
-            "options": {"expire_seconds": 10 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (
@@ -546,7 +542,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.deep_sweep_campaign_killmails",
             "schedule": schedule(timedelta(hours=1)),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -554,7 +549,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.poll_campaign_snapshots",
             "schedule": schedule(timedelta(minutes=30)),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -562,7 +556,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.poll_frontlines_advantage",
             "schedule": schedule(timedelta(minutes=10)),
-            "options": {"expire_seconds": 10 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (
@@ -570,7 +564,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.poll_campaign_payouts",
             "schedule": schedule(timedelta(minutes=20)),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -578,7 +571,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.poll_campaign_recent_killmails",
             "schedule": schedule(timedelta(minutes=30)),
-            "options": {"queue": "eveonline"},
         },
     ),
     (
@@ -586,7 +578,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.link_campaign_fleets",
             "schedule": schedule(timedelta(minutes=10)),
-            "options": {"expire_seconds": 10 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (
@@ -594,7 +586,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.materialise_campaign_stats",
             "schedule": schedule(timedelta(minutes=10)),
-            "options": {"expire_seconds": 10 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (
@@ -602,7 +594,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.mirror_campaign_feed_events",
             "schedule": schedule(timedelta(minutes=10)),
-            "options": {"expire_seconds": 10 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (
@@ -610,7 +602,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.run_campaign_lifecycle",
             "schedule": schedule(timedelta(minutes=1)),
-            "options": {"expire_seconds": 60, "queue": "realtime"},
+            "options": {"expire_seconds": 60},
         },
     ),
     (
@@ -618,7 +610,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.close_campaign_week",
             "schedule": crontab(hour=11, minute=2, day_of_week=4),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -626,7 +617,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.propose_campaign_week",
             "schedule": crontab(hour=11, minute=4, day_of_week=4),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -634,7 +624,6 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.generate_campaign_orders",
             "schedule": crontab(hour=11, minute=5),
-            "options": {"queue": "celery"},
         },
     ),
     (
@@ -642,13 +631,28 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.campaign_health",
             "schedule": schedule(timedelta(minutes=5)),
-            "options": {"expire_seconds": 5 * 60, "queue": "celery"},
+            "options": {"expire_seconds": 5 * 60},
+        },
+    ),
+]
+
+# Platform
+CELERYBEAT_QUEUES = [
+    (
+        "[Queues] Monitor queue health",
+        {
+            # Sentry cron monitor: a missed run means beat or the fast-lane
+            # workers are down (app.monitoring.CRON_MONITORED_SCHEDULES).
+            "task": "app.tasks.monitor_queue_health",
+            "schedule": schedule(timedelta(minutes=1)),
+            "options": {"expire_seconds": 60},
         },
     ),
 ]
 
 CELERYBEAT_SCHEDULE = dict(
-    CELERYBEAT_MARKET
+    CELERYBEAT_QUEUES
+    + CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
     + CELERYBEAT_CORPORATIONS
     + CELERYBEAT_BUYBACK

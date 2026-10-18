@@ -21,6 +21,7 @@ function patch(el, html) {
     el.__html = html
     el.innerHTML = html
     el.querySelectorAll('[data-pct]').forEach(bar => { bar.style.width = `${bar.dataset.pct}%` })
+    el.querySelectorAll('[data-h]').forEach(bar => { bar.style.height = `${bar.dataset.h}%` })
     return true
 }
 

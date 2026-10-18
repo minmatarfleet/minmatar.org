@@ -40,11 +40,8 @@ Use these when you only need part of the stack, or when debugging a single proce
 | --- | --- | --- |
 | MariaDB + Redis | repo root | `docker compose up -d` |
 | Django API | `backend/` | `pipenv run python manage.py runserver` |
-| Celery worker (all queues) | `backend/` | `pipenv run celery -A app worker -l info -Q celery,eveonline,market,realtime` |
-| Celery worker (default queue) | `backend/` | `pipenv run celery -A app worker -l info -Q celery` |
-| Celery worker (EVE Online queue) | `backend/` | `pipenv run celery -A app worker -l info -Q eveonline` |
-| Celery worker (market queue) | `backend/` | `pipenv run celery -A app worker -l info -Q market` |
-| Celery worker (realtime queue: zKill feed, fleet tracking, minute ticks) | `backend/` | `pipenv run celery -A app worker -l info -Q realtime` |
+| Celery worker (all queues) | `backend/` | `pipenv run celery -A app worker -l info -Q celery,feed,fleets,campaigns,eveonline,market,industry,community` |
+| Celery worker (one queue, e.g. the fast lane) | `backend/` | `pipenv run celery -A app worker -l info -Q celery` (queues: [docs/architecture/celery-queues.md](docs/architecture/celery-queues.md)) |
 | Celery Beat | `backend/` | `pipenv run celery -A app beat -l info` |
 | Discord bot | `bot/` | `pipenv run python main.py` |
 | Frontend | `frontend/app/` | `npm run dev` |

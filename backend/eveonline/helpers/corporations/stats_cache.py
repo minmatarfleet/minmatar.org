@@ -42,9 +42,7 @@ def _queue_refresh(corporation_id: int) -> None:
         refresh_corporation_profile_stats,
     )
 
-    refresh_corporation_profile_stats.apply_async(
-        args=[corporation_id], queue="eveonline"
-    )
+    refresh_corporation_profile_stats.apply_async(args=[corporation_id])
 
 
 STATS = CachedRollup(

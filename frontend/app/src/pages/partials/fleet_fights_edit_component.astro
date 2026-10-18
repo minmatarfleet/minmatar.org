@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import {
+    get_fleet_fights,
+    merge_fleet_fights,
+    split_fleet_fights,
+    undo_fleet_fights_edit,
+    reset_fleet_fights,
+    type FleetFights as FleetFightsData,
+} from '@helpers/api.minmatar.org/fleets'
+
+// no-error-refetch: an edit form; a failed save shows inline, a failed
+// read falls back to the Fights tab, which retries on its own.
+let error:string | false = false
+let fights:FleetFightsData | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = form.get('action')
+    const split = form.get('split')
+    const undo = form.get('undo')
+    try {
+        if (action === 'reset') {
+            fights = await reset_fleet_fights(auth_token as string, fleet_id)
+        } else if (undo) {
+            fights = await undo_fleet_fights_edit(auth_token as string, fleet_id, parseInt(undo.toString()))
+        } else if (split) {
+            fights = await split_fleet_fights(auth_token as string, fleet_id, split.toString())
+        } else if (action === 'merge') {
+            const current = await get_fleet_fights(auth_token as string, fleet_id)
+            const picked = form.getAll('segment').map(value => parseInt(value.toString())).sort((a, b) => a - b)
+            const rounds = picked.map(index => current?.rounds[index])
+            const adjacent = picked.length >= 2 && picked.every((index, i) => i === 0 || index === picked[i - 1] + 1)
+            if (!current || !adjacent || rounds.some(round => !round)) {
+                fights = current
+                error = t('fleets.fights.not_adjacent')
+            } else {
+                fights = await merge_fleet_fights(auth_token as string, fleet_id, rounds[0]!.start, rounds[rounds.length - 1]!.end)
+            }
+        }
+    } catch (e) {
+        error = e.message
+    }
+}
+
+if (!fights) {
+    try {
+        fights = await get_fleet_fights(auth_token as string, fleet_id)
+    } catch (e) {
+        error = error || e.message
+    }
+}
+
+import FleetFightsEdit from '@components/blocks/FleetFightsEdit.astro'
+import FleetFights from '@components/blocks/FleetFights.astro'
+---
+
+{fights && fights.can_edit ?
+    <FleetFightsEdit fights={fights} fleet_id={fleet_id} error={error} />
+    :
+    fights ?
+        <FleetFights fights={fights} fleet_id={fleet_id} />
+        :
+        <div id="fleet-fights" />
+}

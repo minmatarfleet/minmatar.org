@@ -1,0 +1,507 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetFights, FleetFightRound } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fleet_fights'
+
+/**
+ * One round's battle report: both sides, who we fought, the ships each side
+ * lost, the biggest mails, and the same round on zKillboard, br.evetools
+ * and eve-kill. Built here from the mails we matched, so it works whatever
+ * the outside tools do.
+ */
+interface Props {
+    fights:             FleetFights;
+    round:              FleetFightRound;
+    /** 1-based position in the rounds list. */
+    position:           number;
+    fleet_id:           number;
+    [propName: string]: any;
+}
+
+const {
+    fights,
+    round,
+    position,
+    fleet_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const href = (at: number) => translatePath(`/fleets/history/${fleet_id}/rounds/${at}`)
+const back = translatePath(fleet_id && fights.live ? `/fleets/upcoming/${fleet_id}#fights` : `/fleets/history/${fleet_id}#fights`)
+const previous = position > 1 ? fights.rounds[position - 2] : null
+const next = position < fights.rounds.length ? fights.rounds[position] : null
+const label = (r: FleetFightRound) => r.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (r.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+
+const title = round.kind === 'round' ?
+    t('fleets.fights.report_title').replace('{number}', (round.number ?? 0).toString()).replace('{total}', fights.round_count.toString()) :
+    t('fleets.fights.report_skirmish').replace('{time}', eve_clock(round.start))
+const span = t('fleets.fights.span')
+    .replace('{start}', eve_clock(round.start))
+    .replace('{end}', eve_clock(round.end))
+    .replace('{minutes}', round.minutes.toString())
+const systems = round.systems.map(system => system.name).join(', ')
+
+const hostile_pilots_on_losses = round.hostiles.reduce((sum, hostile) => sum + hostile.pilots, 0)
+const sides = [
+    { label: t('fleets.fights.pilots_on_mails'), us: round.our_pilots, them: Math.max(round.hostile_pilots, hostile_pilots_on_losses) },
+    { label: t('fleets.fights.ships_lost_row'), us: round.ships_lost, them: round.ships_destroyed },
+    { label: t('fleets.fights.pods_lost_row'), us: round.pods_lost, them: round.pods_destroyed },
+    { label: t('fleets.fights.isk_lost_row'), us: format_isk(round.isk_lost), them: format_isk(round.isk_destroyed) },
+]
+
+const outside = [
+    { name: t('fleets.fights.zkillboard'), what: t('fleets.fights.zkillboard_what'), url: round.links.zkillboard },
+    { name: t('fleets.fights.brtools'), what: t('fleets.fights.brtools_what'), url: round.links.brtools },
+    { name: t('fleets.fights.evekill'), what: round.links.evekill ? t('fleets.fights.evekill_what') : t('fleets.fights.evekill_pending'), url: round.links.evekill },
+]
+
+const mail_who = (mail: FleetFightRound['killmails'][number]) => [
+    mail.victim_name,
+    mail.outcome === 'kill' ? mail.group_name : '',
+    mail.system_name,
+].filter(Boolean).join(' · ')
+---
+
+<div class:list={['[ round-report ]', Astro.props.class]} {...attributes}>
+    <nav class="[ round-report__steps ]" aria-label={t('fleets.fights.rounds')}>
+        {previous ?
+            <a href={href(position - 1)}>‹ {label(previous)}</a> :
+            <a href={back}>‹ {t('fleets.fights.back')}</a>
+        }
+        <div>
+            <h2>{title}</h2>
+            <span>{span} · {systems}</span>
+        </div>
+        {next ? <a href={href(position + 1)}>{label(next)} ›</a> : <span />}
+    </nav>
+
+    <section aria-labelledby="round-sides">
+        <h2 id="round-sides">{t('fleets.fights.both_sides')}</h2>
+        <div class="[ round-report__scroll ]">
+            <table class="[ round-report__sides ]">
+                <thead>
+                    <tr>
+                        <td />
+                        <th scope="col">{t('fleets.fights.us')}</th>
+                        <th scope="col">{t('fleets.fights.them')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sides.map(row =>
+                        <tr>
+                            <th scope="row">{row.label}</th>
+                            <td class="[ round-report__loss ]">{row.us}</td>
+                            <td>{row.them}</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+        {round.efficiency !== null &&
+            <div class="[ round-report__efficiency ]">
+                <span role="img" aria-label={t('fleets.fights.efficiency_label').replace('{pct}', round.efficiency.toString())}>
+                    <span style={`width: ${round.efficiency}%`} />
+                </span>
+                <small>{t('fleets.fights.efficiency').replace('{pct}', round.efficiency.toString())}</small>
+            </div>
+        }
+    </section>
+
+    {round.hostiles.length > 0 &&
+        <section aria-labelledby="round-who">
+            <h2 id="round-who">{t('fleets.fights.who')}</h2>
+            <div class="[ round-report__scroll ]">
+                <table class="[ round-report__table ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('fleets.fights.group')}</th>
+                            <th scope="col">{t('fleets.fights.pilots_on_losses')}</th>
+                            <th scope="col">{t('fleets.fights.ships_we_killed')}</th>
+                            <th scope="col">{t('fleets.fights.isk_we_killed')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {round.hostiles.slice(0, 12).map(hostile =>
+                            <tr>
+                                <th scope="row">{hostile.name}</th>
+                                <td>{hostile.pilots || '–'}</td>
+                                <td>{hostile.ships_killed || '–'}</td>
+                                <td>{hostile.isk_killed ? format_isk(hostile.isk_killed) : '–'}</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <small>{t('fleets.fights.sides_note')}</small>
+        </section>
+    }
+
+    <section aria-labelledby="round-hulls" x-data="{ side: 'kills' }">
+        <header>
+            <h2 id="round-hulls">{t('fleets.fights.ships_destroyed')}</h2>
+            <div role="tablist" aria-label={t('fleets.fights.ships_destroyed')}>
+                <button type="button" role="tab" x-bind:aria-selected="side === 'kills'" x-on:click="side = 'kills'">
+                    {t('fleets.fights.tab_kills').replace('{count}', round.ships_destroyed.toString())}
+                </button>
+                <button type="button" role="tab" x-bind:aria-selected="side === 'losses'" x-on:click="side = 'losses'">
+                    {t('fleets.fights.tab_losses').replace('{count}', round.ships_lost.toString())}
+                </button>
+            </div>
+        </header>
+        {[{ key: 'kills', hulls: round.hulls_killed, empty: t('fleets.fights.no_kills') }, { key: 'losses', hulls: round.hulls_lost, empty: t('fleets.fights.no_losses') }].map(side =>
+            <div role="tabpanel" x-show={`side === '${side.key}'`} x-cloak={side.key !== 'kills' ? '' : undefined}>
+                {side.hulls.length === 0 ?
+                    <small>{side.empty}</small> :
+                    <ul class="[ round-report__hulls ]">
+                        {side.hulls.map(hull =>
+                            <li>
+                                {hull.type_id ? <img src={get_item_icon(hull.type_id, 64)} alt="" width="40" height="40" loading="lazy" /> : <span />}
+                                <b>{hull.name}</b>
+                                <span>{hull.count}</span>
+                                <span>{format_isk(hull.isk)}</span>
+                            </li>
+                        )}
+                    </ul>
+                }
+            </div>
+        )}
+    </section>
+
+    <section aria-labelledby="round-biggest" x-data="{ every: false }">
+        <header>
+            <h2 id="round-biggest">{t('fleets.fights.biggest')}</h2>
+            <button type="button" class="[ round-report__more ]" x-on:click="every = !every" x-bind:aria-expanded="every">
+                {t('fleets.fights.all_mails')} ({round.mails})
+            </button>
+        </header>
+        {[{ key: 'biggest', rows: round.biggest }, { key: 'every', rows: round.killmails }].map(list =>
+            <ul class="[ round-report__mails ]" x-show={list.key === 'every' ? 'every' : '!every'} x-cloak={list.key === 'every' ? '' : undefined}>
+                {list.rows.map(mail =>
+                    <li>
+                        <small>{new Date(mail.time).toISOString().slice(11, 19)}</small>
+                        {mail.ship_type_id ? <img src={get_item_icon(mail.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" /> : <span />}
+                        <a href={`https://zkillboard.com/kill/${mail.killmail_id}/`} target="_blank" rel="noopener noreferrer">
+                            <span><b class={mail.outcome === 'kill' ? 'round-report__kill' : 'round-report__loss'}>{mail.outcome === 'kill' ? t('fleets.fights.kill') : t('fleets.fights.loss')}</b>{' '}{mail.ship_name}</span>
+                            <small>{mail_who(mail)}</small>
+                        </a>
+                        <small>{mail.pod ? t('fleets.fights.pod') : mail.pilots ? t('fleets.fights.of_ours').replace('{count}', mail.pilots.toString()) : ''}</small>
+                        <span>{mail.pending ? t('fleets.fights.value_pending') : format_isk(mail.isk)}</span>
+                    </li>
+                )}
+            </ul>
+        )}
+    </section>
+
+    <section aria-labelledby="round-elsewhere">
+        <h2 id="round-elsewhere">{t('fleets.fights.elsewhere')}</h2>
+        <ul class="[ round-report__outside ]">
+            {outside.map(site =>
+                <li>
+                    <b>{site.name}</b>
+                    <span>{site.what}</span>
+                    {site.url &&
+                        <a href={site.url} target="_blank" rel="noopener noreferrer">{t('fleets.fights.open_on').replace('{site}', site.name)} ↗</a>
+                    }
+                </li>
+            )}
+        </ul>
+    </section>
+</div>
+
+<style lang="scss">
+    .round-report {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+
+        section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-s);
+        }
+
+        section > header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-xs) var(--space-m);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .round-report__steps {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+
+            h2 {
+                font-size: var(--step-3);
+            }
+        }
+
+        > a {
+            justify-self: start;
+            display: inline-flex;
+            align-items: center;
+            min-height: 2.75rem;
+            padding: 0 var(--space-s);
+            border: 1px solid var(--hairline-strong);
+            color: var(--foreground);
+            font-weight: 700;
+            text-decoration: none;
+
+            &:last-child {
+                justify-self: end;
+            }
+
+            &:hover,
+            &:focus-visible {
+                border-color: var(--foreground);
+            }
+        }
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+            > div {
+                grid-column: 1 / -1;
+                grid-row: 1;
+            }
+        }
+    }
+
+    .round-report__scroll {
+        overflow-x: auto;
+    }
+
+    .round-report__sides,
+    .round-report__table {
+        width: 100%;
+        min-width: 32rem;
+        border-collapse: separate;
+        border-spacing: 0 2px;
+        font-variant-numeric: tabular-nums;
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+            text-align: right;
+        }
+
+        thead th,
+        thead td {
+            background-color: transparent;
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        tbody th {
+            font-weight: 500;
+        }
+
+        td {
+            color: var(--highlight);
+        }
+    }
+
+    .round-report__table tbody th {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .round-report__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .round-report__loss,
+    td.round-report__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .round-report__efficiency {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        > span {
+            display: flex;
+            height: var(--space-2xs);
+            background-color: var(--fleet-red);
+
+            span {
+                background-color: var(--alliance-blue);
+            }
+        }
+    }
+
+    [role="tablist"] {
+        display: flex;
+        gap: var(--space-2xs);
+
+        button {
+            min-height: 2.75rem;
+            padding: 0 var(--space-s);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--foreground);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+
+            &[aria-selected="true"] {
+                background-color: var(--foreground);
+                color: var(--background);
+            }
+        }
+    }
+
+    .round-report__hulls,
+    .round-report__mails,
+    .round-report__outside {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .round-report__hulls li {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr) 4rem 6rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+        background-color: var(--component-background);
+        font-variant-numeric: tabular-nums;
+
+        b {
+            color: var(--highlight);
+        }
+
+        span {
+            text-align: right;
+            color: var(--highlight);
+        }
+    }
+
+    .round-report__mails li {
+        display: grid;
+        grid-template-columns: 5rem 40px minmax(0, 1fr) 7rem 6rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+        background-color: var(--component-background);
+        font-variant-numeric: tabular-nums;
+
+        a {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            color: var(--highlight);
+            text-decoration: none;
+
+            small {
+                color: var(--foreground);
+            }
+        }
+
+        > span:last-child {
+            text-align: right;
+            color: var(--highlight);
+        }
+
+        > small:nth-child(4) {
+            text-align: right;
+        }
+
+        @media (max-width: 48rem) {
+            grid-template-columns: 40px minmax(0, 1fr) 5rem;
+
+            > small {
+                display: none;
+            }
+        }
+    }
+
+    .round-report__more {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .round-report__outside {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+        gap: var(--space-s);
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            padding: var(--space-m);
+            background-color: var(--component-background);
+
+            b {
+                font-family: var(--heading-font);
+                font-size: var(--step-1);
+                font-weight: 400;
+                color: var(--highlight);
+            }
+
+            span {
+                flex: 1;
+            }
+
+            a {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 2.75rem;
+                border: 1px solid var(--hairline-strong);
+                color: var(--foreground);
+                font-weight: 700;
+                text-decoration: none;
+
+                &:hover,
+                &:focus-visible {
+                    border-color: var(--foreground);
+                }
+            }
+        }
+    }
+</style>

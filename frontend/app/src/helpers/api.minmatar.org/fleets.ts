@@ -12,6 +12,7 @@ import type {
     FleetPingPreview,
     FleetPingPreviewRequest,
     RestrictedResponse,
+    ApiResponse,
 } from '@dtypes/api.minmatar.org'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
@@ -602,6 +603,53 @@ export async function get_fleet_missing_signups(access_token: string, fleet_id: 
 export async function nudge_fleet_missing_signups(access_token: string, fleet_id: number): Promise<{ pilots: number }> {
     return await api_request<{ pilots: number }>(`${API_ENDPOINT}/${fleet_id}/missing-signups/nudge`, {
         method: 'POST',
+        token: access_token,
+    })
+}
+
+export type FleetFights = ApiResponse<'EveFleetFightsResponse'>
+export type FleetFightRound = ApiResponse<'FleetFightRound'>
+export type FleetFightKillmail = ApiResponse<'FleetFightKillmail'>
+export type FleetFightEvent = ApiResponse<'FleetFightEvent'>
+
+/**
+ * The fleet's killmails cut into rounds. Null when the viewer may not see
+ * them (403: while live, only the FC, fleet managers and pilots in fleet).
+ */
+export async function get_fleet_fights(access_token: string, fleet_id: number): Promise<FleetFights | null> {
+    return await api_request<FleetFights | null>(`${API_ENDPOINT}/${fleet_id}/fights`, {
+        token: access_token,
+        allow: [403, 404],
+    })
+}
+
+// Fleet managers fix where rounds start and end; each returns the re-cut timeline.
+export async function merge_fleet_fights(access_token: string, fleet_id: number, start: string, end: string): Promise<FleetFights> {
+    return await api_request<FleetFights>(`${API_ENDPOINT}/${fleet_id}/fights/merge`, {
+        method: 'POST',
+        token: access_token,
+        body: { start, end },
+    })
+}
+
+export async function split_fleet_fights(access_token: string, fleet_id: number, at: string): Promise<FleetFights> {
+    return await api_request<FleetFights>(`${API_ENDPOINT}/${fleet_id}/fights/split`, {
+        method: 'POST',
+        token: access_token,
+        body: { at },
+    })
+}
+
+export async function undo_fleet_fights_edit(access_token: string, fleet_id: number, edit_id: number): Promise<FleetFights> {
+    return await api_request<FleetFights>(`${API_ENDPOINT}/${fleet_id}/fights/edits/${edit_id}`, {
+        method: 'DELETE',
+        token: access_token,
+    })
+}
+
+export async function reset_fleet_fights(access_token: string, fleet_id: number): Promise<FleetFights> {
+    return await api_request<FleetFights>(`${API_ENDPOINT}/${fleet_id}/fights/edits`, {
+        method: 'DELETE',
         token: access_token,
     })
 }

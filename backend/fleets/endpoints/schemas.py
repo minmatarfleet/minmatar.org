@@ -553,6 +553,39 @@ class FleetWindowAfterAction(BaseModel):
     aar_link: Optional[str] = None
 
 
+class FleetWindowFightHostile(BaseModel):
+    name: str
+    pilots: int
+
+
+class FleetWindowRound(BaseModel):
+    kind: str  # round | skirmish
+    number: Optional[int] = None
+    start: datetime
+    end: datetime
+    minutes: int
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+    efficiency: Optional[int] = None
+    fighting: bool
+    systems: List[str]
+    hostiles: List[FleetWindowFightHostile]
+
+
+class FleetWindowLatestRound(FleetWindowRound):
+    # Ships killed and lost per bar, oldest first.
+    bins: List[List[int]]
+
+
+class FleetWindowFights(BaseModel):
+    round_count: int
+    skirmish_count: int
+    latest: FleetWindowLatestRound
+    earlier: List[FleetWindowRound]  # newest first
+
+
 class FleetWindowResponse(BaseModel):
     """Everything the desktop fleet window shows, for one viewer."""
 
@@ -568,6 +601,8 @@ class FleetWindowResponse(BaseModel):
     attention: List[FleetWindowAttention] = []
     after_action: Optional[FleetWindowAfterAction] = None
     feed: List[FleetWindowFeedRow] = []
+    # FC and pilots in fleet only; None before the first fight.
+    fights: Optional[FleetWindowFights] = None
 
 
 class MyFleetLoss(BaseModel):
@@ -640,3 +675,149 @@ class EveFleetSrpLossResponse(BaseModel):
     ship_name: str
     amount: int
     filed: bool
+
+
+class FleetFightSystem(BaseModel):
+    id: int
+    name: str
+    mails: int
+
+
+class FleetFightHull(BaseModel):
+    type_id: int | None = None
+    name: str
+    count: int
+    isk: int
+
+
+class FleetFightHostile(BaseModel):
+    group_id: int | None = None
+    name: str
+    pilots: int
+    ships_killed: int
+    isk_killed: int
+
+
+class FleetFightKillmail(BaseModel):
+    killmail_id: int
+    time: datetime
+    outcome: str
+    system_id: int
+    system_name: str
+    ship_type_id: int | None = None
+    ship_name: str
+    victim_name: str
+    group_name: str
+    isk: int
+    pending: bool
+    pod: bool
+    pilots: int
+
+
+class FleetFightLinks(BaseModel):
+    zkillboard: str
+    brtools: str
+    evekill: str | None = None
+
+
+class FleetFightSplitGap(BaseModel):
+    at: datetime
+    after: datetime
+    seconds: int
+    before_kills: int
+    before_losses: int
+    after_kills: int
+    after_losses: int
+
+
+class FleetFightTotals(BaseModel):
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+    isk_destroyed: int
+    isk_lost: int
+    isk_pending: int
+    efficiency: int | None = None
+
+
+class FleetFightRound(FleetFightTotals):
+    kind: str
+    number: int | None = None
+    start: datetime
+    end: datetime
+    minutes: int
+    systems: List[FleetFightSystem]
+    mails: int
+    our_pilots: int
+    hostile_pilots: int
+    hostiles: List[FleetFightHostile]
+    hulls_killed: List[FleetFightHull]
+    hulls_lost: List[FleetFightHull]
+    biggest: List[FleetFightKillmail]
+    killmails: List[FleetFightKillmail]
+    links: FleetFightLinks
+    split_gaps: List[FleetFightSplitGap]
+    fighting: bool
+    merge_edit_ids: List[int]
+    split_edit_ids: List[int]
+
+
+class FleetFightEventShip(BaseModel):
+    name: str
+    count: int
+
+
+class FleetFightEvent(BaseModel):
+    kind: str
+    at: datetime
+    count: int
+    ships: List[FleetFightEventShip]
+
+
+class FleetFightChart(BaseModel):
+    start: datetime
+    end: datetime
+    bin_minutes: int
+    bins: List[List[int]]
+
+
+class FleetFightEdit(BaseModel):
+    id: int
+    kind: str
+    start: datetime
+    end: datetime | None = None
+    created_by: str | None = None
+    created_at: datetime
+
+
+class EveFleetFightsResponse(BaseModel):
+    """A fleet's killmails cut into rounds. ``status`` is building (not
+    ready yet, ask again shortly), live, settling (ended, still filling in
+    late killmails) or settled."""
+
+    fleet_id: int
+    status: str
+    live: bool = False
+    can_edit: bool = False
+    computed_at: datetime | None = None
+    settled_at: datetime | None = None
+    feed_behind_since: datetime | None = None
+    start: datetime | None = None
+    end: datetime | None = None
+    totals: FleetFightTotals | None = None
+    round_count: int = 0
+    skirmish_count: int = 0
+    rounds: List[FleetFightRound] = []
+    events: List[FleetFightEvent] = []
+    chart: FleetFightChart | None = None
+    edits: List[FleetFightEdit] = []
+
+
+class FleetFightMergeRequest(BaseModel):
+    start: datetime
+    end: datetime
+
+
+class FleetFightSplitRequest(BaseModel):
+    at: datetime

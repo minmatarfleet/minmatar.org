@@ -12,8 +12,7 @@ from app.settings_common import * # noqa
 from app.settings_celery import * # noqa
 from app.settings_env import * # noqa
 import os
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
+from app.monitoring import init_sentry
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -93,22 +92,9 @@ _readonly_database = readonly_database_from_env()
 if _readonly_database:
     DATABASES["production_readonly"] = _readonly_database
 
-# Monitoring
-sentry_sdk.init(
-    dsn=os.environ.get("SENTRY_BACKEND_DSN", ""),
-    integrations=[DjangoIntegration()],
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-    environment=os.environ.get("ENV", ENV),
-    _experiments={
-        "enable_logs": True
-    },
-)
+# Monitoring: web, beat and workers share one Sentry setup
+# (sampling, cron monitors, filters); see app/monitoring.py.
+init_sentry(environment=os.environ.get("ENV", ENV))
 
 REDDIT_REDIRECT_URL = os.environ.get("REDDIT_REDIRECT_URL", "")
 

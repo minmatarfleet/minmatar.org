@@ -44,7 +44,7 @@ Users today:
 - **TTL longer than the refresh interval** for queued rollups, so a scheduled refresh replaces the value before it expires and readers rarely see a miss.
 - **Lock TTL** a little longer than the refresh takes. If a worker dies, the lock blocks new refreshes until it expires.
 - **Shared locks**: a pass that stores many values under one lock calls `store(..., release=False)` for each and `release()` once at the end.
-- **Celery tasks that must not overlap** (a slow run still going when the next is due) use `app.locks.overlap_guard` or `single_flight`, which hold an owner token so a late run never releases its successor's lock. If the cache is down they run unguarded rather than not at all.
+- **Celery tasks that must not overlap** (a slow run still going when the next is due) use `@app.task(exclusive=<seconds>)` (see [celery-queues.md](celery-queues.md)) or `app.locks.single_flight`, which hold an owner token so a late run never releases its successor's lock. If the cache is down they run unguarded rather than not at all.
 
 ## Adding a heavy aggregate
 

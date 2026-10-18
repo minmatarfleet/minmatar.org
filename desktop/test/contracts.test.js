@@ -99,6 +99,8 @@ test('fleet window, member: the pilot sees their own ship and the FC, never the 
     const parts = fleet_tab(s)
     assert_clean(parts.main)
     assert.ok(parts.main.includes(window.fleet.fc_name))
+    // A pilot in the fleet sees the round being fought.
+    assert.match(parts.main, /Fighting now/)
 })
 
 test('fleet window, FC: the summary, ships and roster render', async () => {
@@ -110,6 +112,12 @@ test('fleet window, FC: the summary, ships and roster render', async () => {
     assert.equal(s.focus.fleet.mode, 'fc')
     for (const fc_view of ['overview', 'pilots', 'kills']) assert_clean(fleet_tab(s, { fc_view }).main)
     assert.ok(fleet_tab(s, { fc_view: 'overview' }).main.includes(window.ships[0].ship_name))
+    // The fleet has rounds: Kills becomes Fights, naming the round being fought.
+    assert.match(fleet_tab(s, { fc_view: 'overview' }).main, /Fights <span class="eve-dim">R2<\/span>/)
+    const fights = fleet_tab(s, { fc_view: 'kills' }).main
+    assert.match(fights, /fw-round is-fighting/)
+    assert.equal((fights.match(/data-h="/g) || []).length, window.fights.latest.bins.length * 2)
+    assert.match(fights, /Round 1 <span class="eve-dim">/)
 })
 
 test('my fleets: recent fleets with losses and their SRP state', async () => {

@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.conf import settings
 
 from app.celery import app
-from app.locks import DedupedTask
 from app.models import get_or_create_active
 
 from discord.client import DiscordClient
@@ -37,7 +36,7 @@ LOW_FUEL_EXCLUDED_TYPES = [
 SCOPE_STRUCTURES = ["esi-corporations.read_structures.v1"]
 
 
-@app.task(base=DedupedTask, expires=30 * 60, cooldown=30 * 60)
+@app.task(expires=30 * 60, cooldown=30 * 60)
 def update_structures():
     # Tracked scope (every EveAlliance row), not just FL33T + BUILD: we keep
     # structures for every alliance an admin has added to the site.
@@ -60,7 +59,7 @@ def update_structures():
 
 
 # ESI caches corporation structures for an hour and beat polls hourly.
-@app.task(base=DedupedTask, expires=50 * 60, cooldown=30 * 60)
+@app.task(expires=50 * 60, cooldown=30 * 60)
 def update_corporation_structures(corporation_id: int):
     if get_esi_downtime_countdown() > 0:
         # The next hourly run picks this corporation up.
@@ -148,7 +147,7 @@ def _notification_characters_for_minute(current_minute: int):
     return [c for c in chars if c.character_id % 10 == mod]
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=60, cooldown=50)
+@app.task(expires=60, cooldown=50)
 def process_structure_notifications(
     current_minute: datetime | None = None,
 ):
@@ -178,7 +177,7 @@ def process_structure_notifications(
 # Each character is polled every 10 minutes (one bucket per minute). A
 # skipped or failed poll waits for the next one instead of queueing a retry:
 # retries stacked up behind each other and ran the same poll many times.
-@app.task(base=DedupedTask, expires=10 * 60, cooldown=5 * 60)
+@app.task(expires=10 * 60, cooldown=5 * 60)
 def fetch_structure_notifications_for_character(character_id: int):
     """Fetch notifications for one character with read_notifications in a corp that has structures."""
     if get_esi_downtime_countdown() > 0:

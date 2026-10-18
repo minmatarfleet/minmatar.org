@@ -3,15 +3,12 @@ import logging
 from django.utils import timezone
 from django.conf import settings
 
-from celery_once import QueueOnce
-
 from app.celery import app
 from app.links import (
     new_player_fleet_guide_url,
     site_url,
     upcoming_fleets_url,
 )
-from app.locks import DedupedTask, overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
 from fleets.helpers.active_clones import (
@@ -38,8 +35,7 @@ def get_fleet_emoji(fleet_type):
     return ""
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=30, cooldown=20)
-@overlap_guard(ttl=5 * 60)
+@app.task(expires=30, exclusive=5 * 60)
 def update_fleet_instances():
     """
     Update fleet instances
@@ -59,10 +55,7 @@ def update_fleet_instances():
 SCHEDULE_REFRESH_DELAY_SECONDS = 2
 
 
-@app.task(
-    base=QueueOnce,
-    once={"graceful": True, "unlock_before_run": True, "timeout": 60},
-)
+@app.task()
 def update_fleet_schedule():
     """
     Updates fleet schedule message to display all upcoming fleets
@@ -211,8 +204,8 @@ def queue_fleet_schedule_refresh() -> None:
 
     The refresh deletes and re-posts the channel's messages, so it must not
     run inside a web request. One queued refresh covers every save made
-    before it starts: QueueOnce drops duplicates while one is waiting and
-    unlocks just before it runs, so a save during a run queues another.
+    before it starts: AppTask drops duplicates while one is waiting and
+    unlocks when a worker starts it, so a save during a run queues another.
     """
     on_commit_enqueue(
         update_fleet_schedule,
@@ -221,8 +214,7 @@ def queue_fleet_schedule_refresh() -> None:
     )
 
 
-@app.task()
-@overlap_guard(ttl=30 * 60)
+@app.task(exclusive=30 * 60)
 def poll_active_fleet_implants():
     """Queue implant polls for active fleet members within the 45-minute window."""
     members = members_to_poll()
@@ -253,11 +245,7 @@ def publish_fleet_roam_report(fleet_id: int):
     return publish_fleet_roam_report_impl(fleet_id)
 
 
-@app.task(
-    base=QueueOnce,
-    once={"graceful": True, "timeout": 120},
-    queue="celery",
-)
+@app.task(exclusive=10 * 60)
 def poll_npsi_events():
     """Fetch NPSI calendar feeds and DM FCs to confirm schedule posts."""
     stats = poll_npsi_sources()
@@ -274,3 +262,65 @@ def nudge_missing_signups(fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if fleet:
         send_missing_signup_nudges(fleet)
+
+
+@app.task(expires=30, exclusive=5 * 60)
+def rebuild_fight_timelines():
+    """Rebuild every live or unsettled fleet's fight timeline.
+
+    Each fleet rebuilds from scratch; one that fails is logged and the rest
+    carry on. Sweeps and settling need zKill and eve-kill, so they run as
+    their own tasks.
+    """
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights import timeline as fights
+
+    now = timezone.now()
+    for fleet in EveFleet.objects.filter(id__in=fights.due_fleet_ids(now)):
+        try:
+            timeline = fights.rebuild(fleet, now=now)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Fight timeline rebuild failed for %s", fleet.id)
+            continue
+        step = fights.next_step(fleet, timeline, now)
+        if step == "sweep":
+            sweep_fight_killmails.delay(fleet.id)
+        elif step == "settle":
+            settle_fight_timeline.delay(fleet.id)
+
+
+@app.task(expires=60, cooldown=10)
+def rebuild_fight_timeline(fleet_id: int):
+    """Build one fleet's timeline on demand, e.g. a fleet from before it existed."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights import timeline as fights
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if fleet:
+        fights.rebuild(fleet)
+
+
+@app.task(expires=15 * 60, exclusive=15 * 60)
+def sweep_fight_killmails(fleet_id: int):
+    """Fill in killmails the live feed missed, from zKill, then rebuild."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights import timeline as fights
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if not fleet:
+        return None
+    stats = fights.sweep(fleet)
+    fights.rebuild(fleet)
+    logger.info("Fight timeline sweep for fleet %s: %s", fleet_id, stats)
+    return stats
+
+
+@app.task(expires=15 * 60, exclusive=15 * 60)
+def settle_fight_timeline(fleet_id: int):
+    """Last rebuild two hours after the fleet, plus eve-kill battle links."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights import timeline as fights
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if fleet:
+        fights.settle(fleet)

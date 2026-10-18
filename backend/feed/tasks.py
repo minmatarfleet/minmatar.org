@@ -5,10 +5,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from celery_once import QueueOnce
-
 from app.celery import app
-from app.locks import DedupedTask, overlap_guard
 from feed.constants import (
     FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS,
     FEED_KILLMAIL_RETENTION_DAYS,
@@ -27,23 +24,21 @@ from feed.rollups.writer import write_rollup_results
 logger = logging.getLogger(__name__)
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=60, cooldown=5)
+# A poll works through new kills for up to 25s; never two at once.
+@app.task(expires=60, exclusive=60)
 def poll_zkill_r2z2() -> dict:
     stats = poll_r2z2_batch()
     return stats
 
 
-@app.task(queue="celery")
-@overlap_guard(ttl=15 * 60)
+@app.task(exclusive=15 * 60)
 def detect_feed_clusters() -> int:
     count = detect_clusters(since_hours=48)
     logger.info("Detected/updated %s feed clusters", count)
     return count
 
 
-@app.task(
-    base=QueueOnce, once={"graceful": True, "timeout": 300}, queue="celery"
-)
+@app.task(exclusive=5 * 60)
 def run_feed_rollups(*, since_hours: int = 48) -> int:
     now = timezone.now()
     since = now - timedelta(hours=since_hours)
@@ -57,29 +52,28 @@ def run_feed_rollups(*, since_hours: int = 48) -> int:
     return written
 
 
-@app.task(queue="celery")
-@overlap_guard(ttl=15 * 60)
+@app.task(exclusive=15 * 60)
 def populate_feed_affiliations() -> dict:
     updated = populate_pending_character_affiliations_batch()
     logger.info("Feed character affiliation populate complete: %s", updated)
     return {"characters": updated}
 
 
-@app.task(queue="celery")
+@app.task()
 def refresh_feed_affiliations() -> dict:
     updated = refresh_stale_character_affiliations_batch()
     logger.info("Feed character affiliation refresh complete: %s", updated)
     return {"characters": updated}
 
 
-@app.task(queue="celery")
+@app.task()
 def poll_fw_contested_snapshots() -> dict:
     stats = poll_monitored_contested_snapshots()
     logger.info("FW contested poll complete: %s", stats)
     return stats
 
 
-@app.task(queue="celery")
+@app.task()
 def purge_feed_killmails() -> dict:
     cutoff = timezone.now() - timedelta(days=FEED_KILLMAIL_RETENTION_DAYS)
     deleted_killmails, _ = FeedKillmail.objects.filter(
