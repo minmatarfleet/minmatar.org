@@ -704,6 +704,9 @@ export interface PostListUI {
     tags:               string[];
     /** Never filled: the posts API has no image, so cards show the author. */
     image?:             string;
+    /** The tribe group a group post is published as; null or absent for alliance posts. */
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface PostUI {
@@ -717,6 +720,8 @@ export interface PostUI {
     content:            string;
     author:             CharacterBasic;
     tags:               string[];
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface CombatLogAnalysis {

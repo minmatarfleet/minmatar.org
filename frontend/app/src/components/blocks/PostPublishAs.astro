@@ -1,0 +1,205 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { HostGroupRef, PublishableGroup } from '@dtypes/api.minmatar.org'
+import type { HostOptionUI } from '@dtypes/layout_components'
+import {
+    HOST_YOU,
+    announce_field,
+    announce_hint_key,
+    group_forces_members_only,
+    visibility_field,
+    type GroupDiscordInfo,
+    type PostVisibility,
+} from '@helpers/post_publishing'
+
+/**
+ * The "Publish as" row of the post editor. A new post picks You or a group; a
+ * group shows who sees it and an optional Discord announcement. An existing
+ * group post shows its host fixed. Local UI only: the choices are plain form
+ * fields (`host`, `visibility_<group>`, `announce_<group>`) read on submit by
+ * `post_publishing_params`.
+ */
+interface Props {
+    /** Groups the pilot can post as. */
+    groups:             PublishableGroup[];
+    /** The "You" card, then one per group (`post_host_options`). New posts only. */
+    hosts?:             HostOptionUI[];
+    selected?:          string;
+    /** Set when editing a group post: the host is shown fixed. */
+    existing_host?:     HostGroupRef | null;
+    /** What the form last held, to restore it after a failed submit or an edit. */
+    visibility_by_group?: Record<number, PostVisibility>;
+    announce_by_group?: Record<number, boolean>;
+    discord_by_group?:  Record<number, GroupDiscordInfo>;
+    /** A published post was already announced (or not) when it went live. */
+    show_announce?:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    groups,
+    hosts = [],
+    selected = HOST_YOU,
+    existing_host = null,
+    visibility_by_group = {},
+    announce_by_group = {},
+    discord_by_group = {},
+    show_announce = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const group_by_id = new Map(groups.map((group) => [group.id, group]))
+
+const panel_groups = existing_host
+    ? [group_by_id.get(existing_host.id) ?? { ...existing_host, member_count: 0, allow_alliance_posts: true, allow_open_fleets: false }]
+    : groups
+
+const is_fixed = Boolean(existing_host)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import HostPicker from '@components/blocks/HostPicker.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Switch from '@components/blocks/Switch.astro'
+import TribeGroupChip from '@components/blocks/TribeGroupChip.astro'
+import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+---
+
+<section
+    class:list={['[ post-publish-as ]', Astro.props.class]}
+    x-data={`{ host: ${JSON.stringify(is_fixed ? String(existing_host?.id) : selected)} }`}
+    {...attributes}
+>
+    <Flexblock gap='var(--space-s)'>
+        {is_fixed && existing_host ?
+            <Flexblock gap='var(--space-3xs)'>
+                <h2 class="[ post-publish-as__legend ]">{t('tribes.publishing.post.published_as')}</h2>
+                <input type="hidden" name="host" value={existing_host.id} />
+                <div class="[ post-publish-as__fixed ]">
+                    <TribeGroupChip group={existing_host} show_tribe={true} />
+                    <small>{t('tribes.publishing.post.host_fixed')}</small>
+                </div>
+            </Flexblock>
+            :
+            <HostPicker
+                name="host"
+                legend={t('tribes.publishing.post.publish_as')}
+                hosts={hosts}
+                selected={selected}
+                input_attributes={{ 'x-model': 'host' }}
+            />
+        }
+
+        {panel_groups.map((group) => {
+            const forced = group_forces_members_only(group)
+            const visibility = forced ? 'members' : (visibility_by_group[group.id] ?? 'alliance')
+            const discord = discord_by_group[group.id] ?? { has_channel: true, channel_name: null, role_name: null }
+            const announce_checked = discord.has_channel && (announce_by_group[group.id] ?? true)
+            const hint = t(announce_hint_key(discord.channel_name, discord.role_name, discord.has_channel))
+                .replace('{channel}', discord.channel_name ?? '')
+                .replace('{role}', discord.role_name ? `@${discord.role_name}` : '')
+            const is_open = (is_fixed || selected === String(group.id))
+
+            return (
+                <div
+                    class="[ post-publish-as__group ]"
+                    x-show={`host === '${group.id}'`}
+                    x-cloak={is_open ? undefined : ''}
+                >
+                    <Flexblock gap='var(--space-xs)'>
+                        <fieldset class="[ post-publish-as__fieldset ]">
+                            <legend class="[ post-publish-as__legend ]">{t('tribes.publishing.post.who_sees')}</legend>
+                            {forced ?
+                                <div class="[ post-publish-as__fixed ]">
+                                    <VisibilityTag visibility="members_only" />
+                                    <small>{t('tribes.publishing.post.alliance_posts_off').replace('{group}', group.name)}</small>
+                                </div>
+                                :
+                                <Grid min_item_width="14rem" row_gap="var(--space-2xs)" column_gap="var(--space-2xs)">
+                                    <OptionCard name={visibility_field(group.id)} value="alliance" checked={visibility === 'alliance'}>
+                                        <b>{t('tribes.publishing.post.whole_alliance')}</b>
+                                    </OptionCard>
+                                    <OptionCard name={visibility_field(group.id)} value="members" checked={visibility === 'members'}>
+                                        <b>{t('tribes.publishing.post.members_only_option').replace('{group}', group.name)}</b>
+                                    </OptionCard>
+                                </Grid>
+                            }
+                        </fieldset>
+
+                        {show_announce &&
+                            <Flexblock gap='var(--space-3xs)'>
+                                <h2 class="[ post-publish-as__legend ]">{t('tribes.publishing.post.discord')}</h2>
+                                <Switch
+                                    name={announce_field(group.id)}
+                                    checked={announce_checked}
+                                    disabled={!discord.has_channel}
+                                >
+                                    <span class="[ post-publish-as__switch-label ]">{t('tribes.publishing.post.announce')}</span>
+                                </Switch>
+                                <small class="[ post-publish-as__hint ]">{hint}</small>
+                                {discord.has_channel &&
+                                    <small class="[ post-publish-as__hint ]">{t('tribes.publishing.post.announce_once')}</small>
+                                }
+                            </Flexblock>
+                        }
+                    </Flexblock>
+                </div>
+            )
+        })}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .post-publish-as {
+        width: 100%;
+        padding: var(--space-xs) var(--space-s);
+        box-sizing: border-box;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+    }
+
+    .post-publish-as__legend {
+        margin: 0;
+        padding: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        font-weight: inherit;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--highlight);
+    }
+
+    .post-publish-as__fieldset {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .post-publish-as__fixed {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .post-publish-as__hint {
+        color: var(--text-muted);
+    }
+
+    .post-publish-as__switch-label {
+        color: var(--highlight);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

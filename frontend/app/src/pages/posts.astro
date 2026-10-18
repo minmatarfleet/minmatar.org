@@ -6,17 +6,18 @@ import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_user_posts } from '@helpers/fetching/posts'
-import { get_gates, can } from '@helpers/gates'
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
 const gates = await get_gates(Astro)
 
-const can_manage_posts = can(gates, 'posts.create')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
@@ -27,7 +28,7 @@ let fetch_user_posts_error: Error | false = false
 try {
     posts = await fetch_user_posts({
         user_id: user.user_id,
-    })
+    }, auth_token)
     posts = posts.filter(post => post.state !== 'trash')
 } catch (error) {
     fetch_user_posts_error = error

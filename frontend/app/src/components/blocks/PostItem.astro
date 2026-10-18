@@ -20,6 +20,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import Tag from '@components/blocks/Tag.astro';
+import PostByline from '@components/blocks/PostByline.astro';
 ---
 
 <FixedFluid width='64px'>
@@ -40,6 +41,7 @@ import Tag from '@components/blocks/Tag.astro';
     }
     <Flexblock gap='var(--space-xs)'>
         <h3><a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>{post.title}</a></h3>
+        <PostByline post={post} />
         <FlexInline>
             {post.tags.map(tag =>
                 <Tag text={tag} />
