@@ -224,3 +224,10 @@ EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")
 # to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
 # if the app is reached directly, or add one per extra hop (e.g. a CDN).
 TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+
+# The daily alliance health snapshot prune deletes rows (older than 35 days,
+# down to one per day), so it only runs when this is turned on. Off by
+# default: no snapshot history is deleted without sign-off.
+ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED = os.environ.get(
+    "ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED", ""
+).strip().lower() in {"1", "true", "yes", "on"}

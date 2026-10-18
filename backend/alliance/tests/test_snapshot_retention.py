@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
+from django.test import override_settings
+
 from alliance.helpers.health import latest_snapshot, snapshot_before
 from alliance.helpers.snapshot_retention import (
     KEEP_ALL_DAYS,
@@ -68,7 +70,24 @@ class SnapshotRetentionTestCase(TestCase):
         self._prune()
         self.assertEqual(self._prune(), 0)
 
+    @override_settings(ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED=True)
     def test_task_runs_the_prune(self):
         with patch("django.utils.timezone.now", return_value=NOW):
             deleted = prune_alliance_health_snapshots_task()
         self.assertGreater(deleted, 0)
+
+    def test_task_deletes_nothing_by_default(self):
+        with patch("django.utils.timezone.now", return_value=NOW):
+            deleted = prune_alliance_health_snapshots_task()
+        self.assertEqual(deleted, 0)
+        self.assertEqual(
+            AllianceHealthSnapshot.objects.count(), self.before_count
+        )
+
+    def test_task_dry_run_counts_while_disabled(self):
+        with patch("django.utils.timezone.now", return_value=NOW):
+            would = prune_alliance_health_snapshots_task(dry_run=True)
+        self.assertGreater(would, 0)
+        self.assertEqual(
+            AllianceHealthSnapshot.objects.count(), self.before_count
+        )
