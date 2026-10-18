@@ -193,12 +193,17 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `effective_discord_channel_name`, `discord_role_name`.
 - `PATCH` same path with `TribeGroupPublishingPatch` (all optional):
   policies, `*_publisher_character_ids`, allow flags, `discord_channel_id`.
+  Chosen publishers must be active members (400 otherwise);
+  `discord_channel_id` must be a guild text channel when the channel list
+  can be fetched, and `null` clears it back to the tribe's channel.
 - `GET /api/tribes/publishable-groups?kind=post|fleet|event`:
   `[PublishableGroupSchema]` = HostGroupRef + `member_count`,
   `allow_alliance_posts`, `allow_open_fleets`.
 - `GET /api/tribes/discord-channels?kind=text|voice` (anyone who can
   manage a group or publish events for one): `[{id, name, type}]`, voice
-  includes stage channels, cached 10 minutes.
+  includes stage channels, cached 10 minutes. (`DiscordChannelSchema`; checked
+  as "can publish events for some active group", which managers always
+  can).
 
 ### Events
 
