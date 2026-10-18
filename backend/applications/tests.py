@@ -21,6 +21,7 @@ from applications.prime_time import (
     parse_application_prime_time,
 )
 from applications.signals import eve_corporation_application_post_save
+from applications.tasks import sync_application_thread_task
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import set_primary_character, user_player
@@ -484,7 +485,8 @@ class L3arnCorporationApplicationValidationTest(TestCase):
 class EveCorporationApplicationSignalTest(TestCase):
     """Test case for the application signal handlers."""
 
-    def test_application_post_save_signal(self):
+    def setUp(self):
+        super().setUp()
         signals.post_save.connect(
             eve_corporation_application_post_save,
             sender=EveCorporationApplication,
@@ -498,8 +500,7 @@ class EveCorporationApplicationSignalTest(TestCase):
             sender=EveCorporation,
             dispatch_uid="eve_corporation_post_save",
         )
-
-        corporation = EveCorporation.objects.create(
+        self.corporation = EveCorporation.objects.create(
             corporation_id=123, name="Test Corporation"
         )
         char = EveCharacter.objects.create(
@@ -513,24 +514,147 @@ class EveCorporationApplicationSignalTest(TestCase):
             discord_tag="MrUser",
             user=self.user,
         )
+        discord_patch = patch("applications.discord.discord")
+        self.discord_mock = discord_patch.start()
+        self.addCleanup(discord_patch.stop)
+        self.discord_mock.create_forum_thread.return_value.json.return_value = {
+            "id": "555"
+        }
 
-        with patch("applications.discord.discord") as discord_mock:
-            discord_mock.create_forum_thread.return_value.json.return_value = {
-                "id": "555"
-            }
-            EveCorporationApplication.objects.create(
-                user=self.user,
-                corporation_id=corporation.corporation_id,
-                description="Test application",
-                status="accepted",
+    def _create(self, **fields):
+        return EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=self.corporation.corporation_id,
+            description="Test application",
+            **fields,
+        )
+
+    def test_application_post_save_signal(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            self._create(status="accepted")
+
+        self.discord_mock.create_message.assert_called()
+        message = self.discord_mock.create_message.call_args.kwargs["message"]
+        self.assertIn("https://my.minmatar.org/learning/", message)
+        self.assertIn("Learning Center", message)
+        self.assertNotIn("wiki.minmatar.org", message)
+
+    def test_save_queues_thread_instead_of_calling_discord(self):
+        with patch(
+            "applications.signals.sync_application_thread_task"
+        ) as task_mock:
+            with self.captureOnCommitCallbacks(execute=False) as callbacks:
+                application = self._create()
+
+            self.assertEqual([], self.discord_mock.mock_calls)
+            task_mock.delay.assert_not_called()
+            self.assertEqual(1, len(callbacks))
+
+            callbacks[0]()
+        task_mock.delay.assert_called_once_with(application.pk, "pending")
+
+    def test_thread_is_created_once_with_the_same_starter_message(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            application = self._create()
+
+        application.refresh_from_db()
+        self.assertEqual(555, application.discord_thread_id)
+        self.discord_mock.create_forum_thread.assert_called_once()
+        kwargs = self.discord_mock.create_forum_thread.call_args.kwargs
+        self.assertEqual("Mr User - Test Corporation", kwargs["title"])
+        self.assertEqual(
+            "<@1>\n\n"
+            "Main Character: Mr User\n"
+            "Applying to: Test Corporation\n"
+            "Description: Test application\n"
+            "https://my.minmatar.org/alliance/corporations/application/"
+            f"123/{application.pk}\n",
+            kwargs["message"],
+        )
+        self.discord_mock.create_message.assert_not_called()
+        self.discord_mock.close_thread.assert_not_called()
+
+    def test_pending_save_with_thread_queues_nothing(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            application = self._create(discord_thread_id=777)
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            application.description = "edited"
+            application.save()
+
+        self.assertEqual([], callbacks)
+        self.assertEqual([], self.discord_mock.mock_calls)
+
+    def test_reject_posts_notice_after_commit(self):
+        application = self._create(discord_thread_id=777)
+        application.status = "rejected"
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            application.save()
+        self.assertEqual([], self.discord_mock.mock_calls)
+
+        for callback in callbacks:
+            callback()
+        self.discord_mock.create_message.assert_called_once_with(
+            channel_id=777,
+            message=":bangbang: Your application has been rejected, "
+            "please contact your recruiter for more information",
+        )
+        self.discord_mock.close_thread.assert_called_once_with(channel_id=777)
+        self.discord_mock.create_forum_thread.assert_not_called()
+
+    def test_discord_failure_does_not_fail_the_save(self):
+        self.discord_mock.create_forum_thread.side_effect = RuntimeError(
+            "discord down"
+        )
+        with patch(
+            "applications.signals.sync_application_thread_task"
+        ) as task_mock:
+            with self.captureOnCommitCallbacks(execute=True):
+                application = self._create()
+        (application_id, status), _ = task_mock.delay.call_args
+
+        with self.assertLogs("applications.tasks", level="ERROR"):
+            result = sync_application_thread_task.apply(
+                args=(application_id, status), retries=3
             )
 
-            discord_mock.create_message.assert_called()
-            message = discord_mock.create_message.call_args.kwargs["message"]
-            self.assertIn("https://my.minmatar.org/learning/", message)
-            self.assertIn("Learning Center", message)
-            self.assertNotIn("wiki.minmatar.org", message)
+        self.assertTrue(result.successful())
+        self.discord_mock.create_forum_thread.assert_called_once()
+        application.refresh_from_db()
+        self.assertIsNone(application.discord_thread_id)
+        self.assertEqual("pending", application.status)
 
+    def test_broker_outage_does_not_fail_the_save(self):
+        with patch(
+            "applications.signals.sync_application_thread_task"
+        ) as task_mock:
+            task_mock.delay.side_effect = ConnectionError("broker down")
+            with self.assertLogs("applications.signals", level="ERROR"):
+                with self.captureOnCommitCallbacks(execute=True):
+                    application = self._create()
+
+        self.assertTrue(
+            EveCorporationApplication.objects.filter(
+                pk=application.pk
+            ).exists()
+        )
+        self.assertEqual([], self.discord_mock.mock_calls)
+
+    def test_delete_queues_thread_close(self):
+        application = self._create(discord_thread_id=777)
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            application.delete()
+        self.assertEqual([], self.discord_mock.mock_calls)
+
+        for callback in callbacks:
+            callback()
+        self.discord_mock.create_message.assert_called_once_with(
+            channel_id=777,
+            message=":bangbang: This application has been deleted",
+        )
+        self.discord_mock.close_thread.assert_called_once_with(channel_id=777)
+
+
+class NotifyApplicationTransferredTest(TestCase):
     def test_notify_application_transferred_updates_thread(self):
         signals.post_save.disconnect(
             sender=EveCharacter,
