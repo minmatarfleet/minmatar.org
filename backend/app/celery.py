@@ -30,6 +30,7 @@ app.conf.task_queues = (
     Queue("celery", routing_key="celery"),
     Queue("eveonline", routing_key="eveonline"),
     Queue("market", routing_key="market"),
+    Queue("realtime", routing_key="realtime"),
 )
 
 # Celery 6+: use this for startup retries; silences deprecation warning in 5.x

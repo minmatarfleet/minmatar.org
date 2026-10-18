@@ -6,6 +6,7 @@ from django.utils import timezone
 from celery import chord, group
 
 from app.celery import app
+from app.locks import DedupedTask
 from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacterContract,
@@ -336,7 +337,9 @@ def fetch_structure_sell_orders():
     )
 
 
-@app.task()
+# Beat fans these out every 30 minutes, on the market workers. ESI caches
+# open orders for 20 minutes, so a copy that waited 25 is not worth running.
+@app.task(base=DedupedTask, queue="market", expires=25 * 60, cooldown=15 * 60)
 def sync_character_attributed_orders(character_id: int):
     """Sync personal open orders for one character."""
     result = sync_character_orders(character_id)
@@ -349,7 +352,7 @@ def sync_character_attributed_orders(character_id: int):
     return result.status.value
 
 
-@app.task()
+@app.task(base=DedupedTask, queue="market", expires=25 * 60, cooldown=15 * 60)
 def sync_corporation_attributed_orders(corporation_id: int):
     """Sync corp open orders for one corporation (issued_by attribution)."""
     result = sync_corporation_orders(corporation_id)
@@ -362,7 +365,7 @@ def sync_corporation_attributed_orders(corporation_id: int):
     return result.status.value
 
 
-@app.task()
+@app.task(base=DedupedTask, queue="market", expires=30 * 60, cooldown=15 * 60)
 def fetch_attributed_market_orders():
     """Enqueue per-character and per-corp attributed order syncs."""
     character_ids = character_ids_for_attributed_order_sync()

@@ -10,9 +10,13 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Entries that fire every 15 minutes or faster set options.expire_seconds
 # (at most their interval), so runs queued while a worker is down are
-# dropped instead of piling up. QueueOnce tasks (zKill poll, feed rollups)
-# already refuse a second queued copy and are left without one.
+# dropped instead of piling up. The feed rollups task is QueueOnce and
+# already refuses a second queued copy, so it is left without one.
 # DatabaseScheduler copies options into PeriodicTask when beat starts.
+#
+# Ticks that run every minute or faster go to the "realtime" queue, which
+# has its own worker, so a backlog of ESI fan-out on "celery" can't hold
+# them past their expiry.
 
 # Market
 CELERYBEAT_MARKET = [
@@ -43,6 +47,7 @@ CELERYBEAT_MARKET = [
         {
             "task": "market.tasks.fetch_attributed_market_orders",
             "schedule": schedule(timedelta(minutes=30)),
+            "options": {"expire_seconds": 30 * 60, "queue": "market"},
         },
     ),
     (
@@ -140,7 +145,7 @@ CELERYBEAT_CORPORATIONS = [
         {
             "task": "structures.tasks.process_structure_notifications",
             "schedule": crontab(minute="*", hour="*/1"),
-            "options": {"expire_seconds": 60},
+            "options": {"expire_seconds": 60, "queue": "realtime"},
         },
     ),
     (
@@ -154,7 +159,9 @@ CELERYBEAT_CORPORATIONS = [
         "[Corporations] Update Structures",
         {
             "task": "structures.tasks.update_structures",
-            "schedule": crontab(minute="19,49", hour="*"),
+            # ESI caches corporation structures for an hour.
+            "schedule": crontab(minute=19, hour="*"),
+            "options": {"expire_seconds": 30 * 60},
         },
     ),
 ]
@@ -338,7 +345,7 @@ CELERYBEAT_OTHER = [
         {
             "task": "fleets.tasks.update_fleet_instances",
             "schedule": schedule(timedelta(seconds=30)),
-            "options": {"expire_seconds": 30},
+            "options": {"expire_seconds": 30, "queue": "realtime"},
         },
     ),
     (
@@ -451,8 +458,10 @@ CELERYBEAT_FEED = [
         "[Feed] Poll zKill R2Z2",
         {
             "task": "feed.tasks.poll_zkill_r2z2",
-            "schedule": schedule(timedelta(seconds=7)),
-            "options": {"queue": "celery"},
+            # A poll works through new kills for up to 25s, and only one
+            # copy is queued or running at a time.
+            "schedule": schedule(timedelta(seconds=15)),
+            "options": {"expire_seconds": 60, "queue": "realtime"},
         },
     ),
     (
@@ -593,7 +602,7 @@ CELERYBEAT_CAMPAIGNS = [
         {
             "task": "campaigns.tasks.run_campaign_lifecycle",
             "schedule": schedule(timedelta(minutes=1)),
-            "options": {"expire_seconds": 60, "queue": "celery"},
+            "options": {"expire_seconds": 60, "queue": "realtime"},
         },
     ),
     (

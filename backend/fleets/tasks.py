@@ -7,7 +7,7 @@ from celery_once import QueueOnce
 
 from app.celery import app
 from app.links import new_player_fleet_guide_url, upcoming_fleets_url
-from app.locks import overlap_guard
+from app.locks import DedupedTask, overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
 from fleets.helpers.active_clones import (
@@ -33,7 +33,7 @@ def get_fleet_emoji(fleet_type):
     return ""
 
 
-@app.task()
+@app.task(base=DedupedTask, queue="realtime", expires=30, cooldown=20)
 @overlap_guard(ttl=5 * 60)
 def update_fleet_instances():
     """

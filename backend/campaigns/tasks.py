@@ -15,7 +15,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from app.celery import app
-from app.locks import overlap_guard
+from app.locks import DedupedTask, overlap_guard
 from campaigns.helpers import campaign_day, campaign_week_start
 from campaigns.models import (
     Campaign,
@@ -443,7 +443,7 @@ def generate_campaign_orders() -> dict:
     return {"created": created}
 
 
-@app.task()
+@app.task(base=DedupedTask, queue="realtime", expires=60, cooldown=50)
 @overlap_guard(ttl=5 * 60)
 def run_campaign_lifecycle() -> dict:
     """Scheduled becomes active on time; active completes at the end.
