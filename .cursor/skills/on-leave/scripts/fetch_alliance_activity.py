@@ -3,7 +3,7 @@
 Fetch Alliance-affiliated active users with fleet / kill / voice metrics.
 
 Usage (from repo root):
-  cd backend && pipenv run python ../.cursor/skills/on-leave/scripts/fetch_alliance_activity.py --json
+  cd backend && pipenv run python ../.claude/skills/on-leave/scripts/fetch_alliance_activity.py --json
 """
 
 from __future__ import annotations

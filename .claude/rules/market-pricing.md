@@ -8,7 +8,7 @@ paths:
 
 There is **no** model named `ItemPrice`. Colloquial “ItemPrice” means **`EveMarketItemLocationPrice`** (live order book at one location). Do **not** use it as the Jita guide price.
 
-See also: `docs/market-pricing.md`.
+See also: `docs/market-pricing.md`. LP buyback order rules (tiers, timers): `docs/industry/lp-buyback.md`.
 
 ## Which source to use
 

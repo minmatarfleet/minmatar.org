@@ -33,7 +33,7 @@ sources, judge fit, draft outreach per examples.
 **Optional fetchers** (run only what you need):
 
 ```bash
-cd .cursor/skills/fl33t-recruitment-scout
+cd .claude/skills/fl33t-recruitment-scout
 pip install -r requirements.txt
 
 # Reddit OAuth — load from backend/.env (do not commit these values)

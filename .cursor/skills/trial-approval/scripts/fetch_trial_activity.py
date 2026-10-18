@@ -8,7 +8,7 @@ Emits full-window totals plus a recent (30d) slice and last-activity ages so
 front-loaded then-gone pilots are visible.
 
 Usage (from repo root):
-  cd backend && pipenv run python ../.cursor/skills/trial-approval/scripts/fetch_trial_activity.py --json
+  cd backend && pipenv run python ../.claude/skills/trial-approval/scripts/fetch_trial_activity.py --json
 """
 
 from __future__ import annotations

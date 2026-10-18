@@ -39,7 +39,7 @@ Imposed leave only — do not invent declared LOA requests.
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/on-leave/scripts/fetch_alliance_activity.py --json --max-fleets 6
+pipenv run python ../.claude/skills/on-leave/scripts/fetch_alliance_activity.py --json --max-fleets 6
 ```
 
 Defaults: **90d** window; soft line **~1 fleet/month** (≈ **3 fleets / 90d**).

@@ -97,6 +97,9 @@ echo "Running database migrations..."
 (
   cd "$ROOT/backend"
   pipenv run python manage.py migrate --noinput
+  # Same as deploy (backend/app-start.sh): PilotFeature rows are defined in code,
+  # and gated pages 403 until they exist.
+  pipenv run python manage.py sync_pilot_features
 )
 
 echo "Starting app services (Ctrl+C to stop all)..."

@@ -22,6 +22,8 @@ npm version minor --no-git-tag-version
 
 Commit it as its own commit, e.g. `Release desktop v0.5.0`, with a short list of what changed. Don't create tags by hand; the workflow tags the merge commit.
 
+Before bumping, make sure `desktop/README.md` describes what changed since the last release (windows, settings, API calls, new `src/main` modules). `backend/app/tests/test_docs.py` fails when a `src/main` module is missing from the README's path table.
+
 ## Rules
 
 - Never reuse or lower a released version. The PR check fails if you do.

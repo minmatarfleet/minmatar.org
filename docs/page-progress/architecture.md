@@ -75,7 +75,7 @@ flowchart TB
 ### Components
 
 - **`PageProgress.astro`** — the only component pages mount. Reads the `auth_token` cookie server-side, resolves i18n labels, and renders the tracker whenever `section_ids` is non-empty (signed in or not).
-- **`PageProgressSection.astro`** — sugar for `<section id data-section-id>` when marking sections in custom layouts.
+- Custom layouts mark sections with plain markup: any element with `id` and `data-section-id` set to the same value inside `data-page-progress-root`.
 - **`PageProgressTracker.astro`** — internal Alpine component. Owns the IntersectionObserver, dwell timers, percent state, ack button, and all storage/API calls.
 
 ### Read detection (dwell)
@@ -162,7 +162,7 @@ The merge is triggered lazily by the tracker rather than a login hook: the first
 | Helpers barrel | `frontend/app/src/helpers/pageProgress/index.ts` |
 | Anonymous stash | `frontend/app/src/helpers/pageProgress/localStore.ts` |
 | Dwell logic + tests | `frontend/app/src/helpers/pageProgress/dwellObserver.ts`, `frontend/app/testing/helpers/dwellObserver.test.ts` |
-| UI components | `frontend/app/src/components/blocks/PageProgress.astro`, `PageProgressSection.astro`, `PageProgressTracker.astro` |
+| UI components | `frontend/app/src/components/blocks/PageProgress.astro`, `PageProgressTracker.astro` |
 | API client | `frontend/app/src/helpers/api.minmatar.org/pageProgress.ts` |
 | Models / helpers | `backend/page_progress/models.py`, `backend/page_progress/helpers.py` |
 | Endpoints | `backend/page_progress/endpoints/` |

@@ -1,0 +1,36 @@
+---
+description: Desktop app versioning and releases
+alwaysApply: true
+---
+
+# Desktop app versioning and releases
+
+The desktop app (`desktop/`) releases itself: merging to `main` publishes a GitHub release whenever `desktop/package.json` has a version that hasn't been released yet (`.github/workflows/desktop.yml`). Installed apps auto-update from that release. **Bumping the version is the release button.**
+
+## When to bump
+
+Only bump when the user says the desktop changes are ready to release. Changing `desktop/` without a bump is fine: it merges without releasing, and the PR check posts a notice saying so.
+
+## How to bump (semantic versioning)
+
+Pick the level from what changed since the last release (`git log v<last>..HEAD -- desktop`):
+
+- **patch** (`0.4.0` → `0.4.1`): bug fixes, timing/visual tweaks, no new behaviour.
+- **minor** (`0.4.1` → `0.5.0`): new features or settings, new windows, new log-engine events.
+- **major** (`0.x` → `1.0.0`, `1.4.2` → `2.0.0`): breaking changes, such as a stored-session or settings format change that signs everyone out or resets settings, dropping Windows support, or a minimum backend/API version requirement.
+
+Run the bump from `desktop/` so `package.json` and `package-lock.json` stay in sync. On Windows (npm doesn't run on the WSL share), copy the folder out as the desktop README describes:
+
+```bash
+npm version minor --no-git-tag-version
+```
+
+Commit it as its own commit, e.g. `Release desktop v0.5.0`, with a short list of what changed. Don't create tags by hand; the workflow tags the merge commit.
+
+Before bumping, make sure `desktop/README.md` describes what changed since the last release (windows, settings, API calls, new `src/main` modules). `backend/app/tests/test_docs.py` fails when a `src/main` module is missing from the README's path table.
+
+## Rules
+
+- Never reuse or lower a released version. The PR check fails if you do.
+- Never create GitHub releases tagged `v*` for anything else on this repo: the updater installs whatever release is "latest".
+- Every new feature must pass `docs/desktop/ccp-third-party-guidelines.md` before it ships.
