@@ -1,0 +1,7 @@
+# Generated files: GitHub collapses these in diffs and leaves them out of
+# language stats. Regenerate them; don't edit by hand (see
+# .claude/rules/api-types.md).
+frontend/app/src/types/generated/openapi.json linguist-generated=true
+frontend/app/src/types/generated/api.d.ts linguist-generated=true
+desktop/test/contracts/*.json linguist-generated=true
+frontend/app/testing/contracts/*.json linguist-generated=true
