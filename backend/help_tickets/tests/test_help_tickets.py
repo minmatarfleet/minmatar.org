@@ -359,7 +359,7 @@ class HelpTicketBotOnlyTestCase(TestCase):
         ):
             response = self.client.get(
                 f"{BASE_URL}{path}",
-                HTTP_AUTHORIZATION=f"Bearer {_make_token(bot)}",
+                HTTP_AUTHORIZATION=f"Bearer {make_token(bot)}",
             )
             self.assertEqual(response.status_code, 200, path)
 
