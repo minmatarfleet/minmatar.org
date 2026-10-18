@@ -964,7 +964,7 @@ export interface DiscordPreviewEventUI {
     recurrence_label?:  string | null;
     cover_url?:         string | null;
     interested_count?:  number;
-
+}
 
 /* Tribe publishing: view models for the shared blocks (not API shapes). */
 
