@@ -1,0 +1,364 @@
+---
+// What the bot will post, drawn from the same payload the bot sends.
+// fleet_ping takes the payload the fleet ping builder returns; an event
+// announcement takes the message content plus Discord's event card.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DiscordPreviewEventUI, DiscordPreviewPayloadUI } from '@dtypes/layout_components'
+
+interface Props {
+    kind:               'fleet_ping' | 'event_announcement';
+    channel_name?:      string | null;
+    role_name?:         string | null;
+    payload?:           DiscordPreviewPayloadUI | null;
+    content?:           string | null;
+    event?:             DiscordPreviewEventUI | null;
+    sent_at_label?:     string;
+    [propName: string]: any;
+}
+
+const {
+    kind,
+    channel_name = null,
+    role_name = null,
+    payload = null,
+    content = null,
+    event = null,
+    sent_at_label = t('discord_preview.sent_at'),
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+interface Segment {
+    text:       string;
+    bold?:      boolean;
+    mention?:   boolean;
+}
+
+// Discord markup the bot uses: **bold**, role mentions and @everyone.
+// Parsed into segments so nothing is injected as raw HTML.
+const MENTION = /(<@&\d+>|@everyone|\*\*[^*]+\*\*)/g
+
+const to_segments = (text: string): Segment[] => text
+    .split(MENTION)
+    .filter((part) => part !== '')
+    .map((part) => {
+        if (part.startsWith('<@&'))
+            return { text: `@${role_name ?? t('discord_preview.role')}`, mention: true }
+        if (part === '@everyone')
+            return { text: part, mention: true }
+        if (part.startsWith('**') && part.endsWith('**'))
+            return { text: part.slice(2, -2), bold: true }
+        return { text: part }
+    })
+
+const to_lines = (text: string): Segment[][] => text
+    .replace(/<t:(\d+)(:[a-zA-Z])?>/g, (_, seconds) => new Date(Number(seconds) * 1000).toUTCString())
+    .split('\n')
+    .map(to_segments)
+
+const message_text = kind === 'fleet_ping' ? (payload?.content ?? '') : (content ?? '')
+const message_lines = message_text ? to_lines(message_text) : []
+
+const embed = kind === 'fleet_ping' ? payload?.embeds?.[0] ?? null : null
+const embed_lines = embed?.description ? to_lines(embed.description) : []
+const buttons = kind === 'fleet_ping'
+    ? (payload?.components ?? []).flatMap((row) => row.components ?? [])
+    : []
+
+const BOT_AVATAR = '/images/fleet-logo.png'
+---
+
+<figure class:list={['[ discord-preview ]', Astro.props.class]} {...attributes}>
+    <figcaption class="[ discord-preview__caption ]">
+        {kind === 'fleet_ping' ? t('discord_preview.fleet_caption') : t('discord_preview.event_caption')}
+        {channel_name &&
+            <span class="[ discord-preview__channel ]">#{channel_name.replace(/^#/, '')}</span>
+        }
+    </figcaption>
+
+    <div class="[ discord-preview__message ]">
+        <img class="[ discord-preview__avatar ]" src={BOT_AVATAR} alt="" width="40" height="40" loading="lazy" />
+        <div class="[ discord-preview__body ]">
+            <p class="[ discord-preview__meta ]">
+                <b>{t('discord_preview.bot_name')}</b>
+                <span class="[ discord-preview__app ]">{t('discord_preview.app')}</span>
+                <small>{sent_at_label}</small>
+            </p>
+
+            {message_lines.map((line) =>
+                <p class="[ discord-preview__line ]">
+                    {line.map((segment) =>
+                        segment.mention
+                            ? <span class="[ discord-preview__mention ]">{segment.text}</span>
+                            : segment.bold ? <b>{segment.text}</b> : <span>{segment.text}</span>
+                    )}
+                </p>
+            )}
+
+            {embed &&
+                <div class="[ discord-preview__embed ]">
+                    {embed.author?.name &&
+                        <p class="[ discord-preview__author ]">
+                            {embed.author.icon_url &&
+                                <img src={embed.author.icon_url} alt="" width="20" height="20" loading="lazy" />
+                            }
+                            {embed.author.name}
+                        </p>
+                    }
+                    {embed.title && <p class="[ discord-preview__title ]">{embed.title}</p>}
+                    {embed_lines.map((line) =>
+                        line.length === 0
+                            ? <span class="[ discord-preview__gap ]"></span>
+                            : <p class="[ discord-preview__line ]">
+                                {line.map((segment) => segment.bold ? <b>{segment.text}</b> : <span>{segment.text}</span>)}
+                            </p>
+                    )}
+                    {embed.footer?.text &&
+                        <p class="[ discord-preview__footer ]">
+                            <img src={BOT_AVATAR} alt="" width="16" height="16" loading="lazy" />
+                            {embed.footer.text}
+                        </p>
+                    }
+                </div>
+            }
+
+            {buttons.length > 0 &&
+                <div class="[ discord-preview__buttons ]">
+                    {buttons.map((button) =>
+                        <span class:list={['[ discord-preview__button ]', { 'is-disabled': button.disabled }]}>{button.label} ↗</span>
+                    )}
+                </div>
+            }
+
+            {kind === 'event_announcement' && event &&
+                <div class="[ discord-preview__event ]">
+                    {event.cover_url &&
+                        <img class="[ discord-preview__event-cover ]" src={event.cover_url} alt="" loading="lazy" />
+                    }
+                    <div class="[ discord-preview__event-body ]">
+                        <p class="[ discord-preview__event-when ]">
+                            {event.when_label}{event.recurrence_label && ` · ${event.recurrence_label}`}
+                        </p>
+                        <p class="[ discord-preview__event-title ]">{event.title}</p>
+                        <p class="[ discord-preview__event-where ]">{event.where_label}</p>
+                        <p class="[ discord-preview__event-actions ]">
+                            <small>{t('discord_preview.interested').replace('{count}', String(event.interested_count ?? 0))}</small>
+                            <span class="[ discord-preview__button ]">{t('discord_preview.interested_button')}</span>
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</figure>
+
+<style lang="scss">
+    .discord-preview {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .discord-preview__caption {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .discord-preview__channel {
+        color: var(--highlight);
+        text-transform: none;
+    }
+
+    .discord-preview__message {
+        display: flex;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        background-color: var(--discord-surface);
+        color: var(--discord-text);
+        font-size: var(--step--1);
+        line-height: 1.45;
+    }
+
+    .discord-preview__avatar {
+        flex: none;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+    }
+
+    .discord-preview__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .discord-preview__meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        b {
+            color: var(--discord-heading);
+        }
+
+        small {
+            color: var(--discord-muted);
+            font-size: var(--step--2);
+        }
+    }
+
+    .discord-preview__app {
+        padding: 0 var(--space-3xs);
+        border-radius: var(--space-3xs);
+        background-color: var(--discord-blurple);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 700;
+    }
+
+    .discord-preview__line {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .discord-preview__mention {
+        padding: 0 var(--space-3xs);
+        border-radius: var(--space-3xs);
+        background-color: var(--discord-mention-bg);
+        color: var(--discord-mention);
+    }
+
+    .discord-preview__embed {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        border-left: var(--space-3xs) solid var(--green);
+        border-radius: var(--space-3xs);
+        background-color: var(--discord-embed);
+
+        b {
+            color: var(--discord-heading);
+        }
+    }
+
+    .discord-preview__author {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        color: var(--discord-heading);
+        font-weight: 600;
+
+        img {
+            border-radius: 50%;
+        }
+    }
+
+    .discord-preview__title {
+        margin: 0;
+        color: var(--discord-link);
+        font-weight: 700;
+    }
+
+    .discord-preview__gap {
+        height: var(--space-2xs);
+    }
+
+    .discord-preview__footer {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: var(--space-3xs) 0 0;
+        color: var(--discord-muted);
+        font-size: var(--step--2);
+
+        img {
+            border-radius: 50%;
+        }
+    }
+
+    .discord-preview__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .discord-preview__button {
+        padding: var(--space-3xs) var(--space-xs);
+        border-radius: var(--space-3xs);
+        background-color: var(--discord-button);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 600;
+
+        &.is-disabled {
+            opacity: 0.5;
+        }
+    }
+
+    .discord-preview__event {
+        display: grid;
+        grid-template-columns: minmax(0, 6rem) minmax(0, 1fr);
+        gap: var(--space-xs);
+        align-items: center;
+        padding: var(--space-xs);
+        border-radius: var(--space-3xs);
+        background-color: var(--discord-embed);
+    }
+
+    .discord-preview__event-cover {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: var(--space-3xs);
+    }
+
+    .discord-preview__event-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .discord-preview__event-when {
+        color: var(--discord-link);
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .discord-preview__event-title {
+        color: var(--discord-heading);
+        font-weight: 700;
+    }
+
+    .discord-preview__event-where {
+        color: var(--discord-muted);
+        font-size: var(--step--2);
+    }
+
+    .discord-preview__event-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+        color: var(--discord-muted);
+    }
+</style>

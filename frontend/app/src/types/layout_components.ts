@@ -938,3 +938,30 @@ export interface DisplayItem {
     used_in_is_ore?: boolean
     in_demand?: boolean
 }
+// Discord preview: the payload shape the bot sends (fleet ping) and the
+// event card Discord shows under an event announcement.
+export interface DiscordPreviewButtonUI {
+    label:      string;
+    url?:       string;
+    disabled?:  boolean;
+}
+
+export interface DiscordPreviewPayloadUI {
+    content?:       string | null;
+    embeds?:        {
+        title?:         string;
+        description?:   string;
+        author?:        { name?: string; icon_url?: string };
+        footer?:        { text?: string };
+    }[];
+    components?:    { components?: DiscordPreviewButtonUI[] }[];
+}
+
+export interface DiscordPreviewEventUI {
+    title:              string;
+    when_label:         string;
+    where_label:        string;
+    recurrence_label?:  string | null;
+    cover_url?:         string | null;
+    interested_count?:  number;
+}
