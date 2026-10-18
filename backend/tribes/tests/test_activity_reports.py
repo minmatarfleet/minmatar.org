@@ -1,6 +1,7 @@
 """Tests for the tribe group Activity queries and their showcase highlights."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
+from unittest.mock import patch
 
 import factory
 from django.contrib.auth.models import User
@@ -88,7 +89,11 @@ from tribes.reports.registry import (
 from tribes.reports.types import ReportScope
 from users.models import UserDesktopSettings
 
-PERIOD = parse_period("30d")
+# Every test runs at this instant. The reports bucket by calendar day, week
+# and 91-day block, so fixtures stamped relative to the real clock flip
+# between buckets near midnight (and a period parsed at import time goes
+# stale if the suite crosses midnight before this module runs).
+FROZEN_NOW = datetime(2026, 5, 13, 12, 0, tzinfo=dt_timezone.utc)
 MUTED = (
     django_signals.pre_save,
     django_signals.post_save,
@@ -130,7 +135,11 @@ class ActivityTestCase(TestCase):
     def setUp(self):
         super().setUp()
         cache.clear()
+        clock = patch("django.utils.timezone.now", return_value=FROZEN_NOW)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.now = timezone.now()
+        self.period = parse_period("30d")
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe, name=self.group_name, code=self.code
@@ -214,7 +223,7 @@ class MarketSalesTestCase(ActivityTestCase):
 
     def test_counts_roster_sales_including_vanished_public_contracts(self):
         rows, totals, _ = run_market_sales_report(
-            self.group, PERIOD, ReportScope.ROSTER, {}
+            self.group, self.period, ReportScope.ROSTER, {}
         )
         self.assertEqual(totals["fits_sold"], 2)
         self.assertEqual(totals["confirmed_sales"], 1)
@@ -224,7 +233,7 @@ class MarketSalesTestCase(ActivityTestCase):
         self.assertEqual(rows[0]["primary_character_name"], "Member")
 
     def test_highlights_group_hulls_and_count_all_time(self):
-        highlights = market_sales_highlights(self.group, PERIOD)
+        highlights = market_sales_highlights(self.group, self.period)
         self.assertEqual(
             highlights["hulls"],
             [{"type_id": 587, "name": "Rifter", "count": 2}],
@@ -268,7 +277,7 @@ class LpBuybackTestCase(ActivityTestCase):
 
     def test_counts_sells_only_and_credits_the_converter(self):
         rows, totals, _ = run_lp_buyback_report(
-            self.group, PERIOD, ReportScope.PROGRAM, {}
+            self.group, self.period, ReportScope.PROGRAM, {}
         )
         self.assertEqual(totals["completed"], 1)
         self.assertEqual(totals["lp_completed"], 100_000)
@@ -279,7 +288,7 @@ class LpBuybackTestCase(ActivityTestCase):
         self.assertEqual(rows[0]["lp"], 100_000)
 
     def test_highlights_all_time_and_record_week(self):
-        highlights = lp_buyback_highlights(self.group, PERIOD)
+        highlights = lp_buyback_highlights(self.group, self.period)
         self.assertEqual(highlights["all_time"]["lp"], 100_000)
         self.assertEqual(highlights["all_time"]["pilots"], 1)
         self.assertEqual(highlights["record_week_lp"], 100_000)
@@ -348,7 +357,7 @@ class AdvocatesTestCase(ActivityTestCase):
 
     def test_welcome_totals_and_roster_recruiters(self):
         rows, totals, _ = run_advocates_report(
-            self.group, PERIOD, ReportScope.PROGRAM, {}
+            self.group, self.period, ReportScope.PROGRAM, {}
         )
         self.assertEqual(totals["pilots_welcomed"], 2)
         self.assertEqual(totals["academy_pilots"], 1)
@@ -360,7 +369,7 @@ class AdvocatesTestCase(ActivityTestCase):
         )
 
     def test_highlights_wall_skips_leavers(self):
-        highlights = advocates_highlights(self.group, PERIOD)
+        highlights = advocates_highlights(self.group, self.period)
         self.assertEqual(
             [w["character_name"] for w in highlights["welcomed"]],
             ["Recruit"],
@@ -437,7 +446,7 @@ class ReadinessTestCase(ActivityTestCase):
 
     def test_doctrine_updates_and_fleet_discipline(self):
         rows, totals, _ = run_readiness_report(
-            self.group, PERIOD, ReportScope.PROGRAM, {}
+            self.group, self.period, ReportScope.PROGRAM, {}
         )
         self.assertEqual(totals["doctrine_updates"], 1)
         self.assertEqual(totals["doctrine_fleets"], 1)
@@ -484,7 +493,7 @@ class HelpDeskTestCase(ActivityTestCase):
 
     def test_credits_every_closer_of_the_groups_tickets(self):
         rows, totals, _ = run_help_desk_report(
-            self.group, PERIOD, ReportScope.PROGRAM, {"desktop_app": True}
+            self.group, self.period, ReportScope.PROGRAM, {"desktop_app": True}
         )
         self.assertEqual(totals["tickets_resolved"], 2)
         self.assertEqual(totals["median_fix_hours"], 7.0)
@@ -496,7 +505,7 @@ class HelpDeskTestCase(ActivityTestCase):
         )
 
     def test_highlights_name_the_pilot_helped(self):
-        highlights = help_desk_highlights(self.group, PERIOD)
+        highlights = help_desk_highlights(self.group, self.period)
         self.assertEqual(len(highlights["fixed"]), 2)
         self.assertEqual(highlights["fixed"][0]["pilot_name"], "Member")
         self.assertEqual(highlights["fixed"][0]["closed_by"], "Outsider")
@@ -540,7 +549,7 @@ class PublishingTestCase(ActivityTestCase):
 
     def test_counts_roster_posts_and_videos(self):
         rows, totals, _ = run_publishing_report(
-            self.group, PERIOD, ReportScope.ROSTER, {}
+            self.group, self.period, ReportScope.ROSTER, {}
         )
         self.assertEqual(totals["posts_published"], 1)
         self.assertEqual(totals["videos"], 1)
@@ -549,7 +558,7 @@ class PublishingTestCase(ActivityTestCase):
         self.assertEqual(rows[0]["pieces"], 2)
 
     def test_latest_work_mixes_posts_and_videos_newest_first(self):
-        highlights = publishing_highlights(self.group, PERIOD)
+        highlights = publishing_highlights(self.group, self.period)
         self.assertEqual(
             [w["kind"] for w in highlights["latest_work"]], ["video", "post"]
         )
@@ -601,7 +610,7 @@ class BlopsTestCase(ActivityTestCase):
 
     def test_kills_hunters_and_capital_catches(self):
         rows, totals, _ = run_blops_report(
-            self.group, PERIOD, ReportScope.ROSTER, {}
+            self.group, self.period, ReportScope.ROSTER, {}
         )
         self.assertEqual(totals["kills"], 1)
         self.assertEqual(totals["hunters"], 1)
@@ -611,7 +620,7 @@ class BlopsTestCase(ActivityTestCase):
         self.assertEqual(rows[0]["capitals_caught"], 1)
 
     def test_highlights_list_the_super(self):
-        highlights = blops_highlights(self.group, PERIOD)
+        highlights = blops_highlights(self.group, self.period)
         self.assertEqual(len(highlights["catches"]), 1)
         catch = highlights["catches"][0]
         self.assertEqual(catch["ship_name"], "Nyx")

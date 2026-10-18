@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Permission
-from django.test import Client
+from django.test import Client, override_settings
 
 from app.test import TestCase
 from recruitment.models import ScoutOutreach, ScoutOutreachClick
@@ -7,12 +7,14 @@ from recruitment.scout_links import hash_visitor, is_bot, outreach_stats
 
 BASE_URL = "/api/recruitment/scout"
 THREAD = "https://www.reddit.com/r/evejobs/comments/1abc234/lf_corp_eutz/"
+SECRET = "frontend-secret"
 BROWSER = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/141.0 Safari/537.36"
 )
 
 
+@override_settings(SHARED_SECRET=SECRET)
 class ScoutLinksTestCase(TestCase):
     def setUp(self):
         super().setUp()
@@ -39,7 +41,16 @@ class ScoutLinksTestCase(TestCase):
             **self.auth,
         )
 
-    def click(self, code, target="discord", ip="203.0.113.7", ua=BROWSER):
+    def click(
+        self,
+        code,
+        target="discord",
+        ip="203.0.113.7",
+        ua=BROWSER,
+        headers=None,
+    ):
+        if headers is None:
+            headers = {"X-Shared-Secret": SECRET}
         return self.client.post(
             f"{BASE_URL}/clicks",
             {
@@ -49,6 +60,7 @@ class ScoutLinksTestCase(TestCase):
                 "user_agent": ua,
             },
             content_type="application/json",
+            headers=headers,
         )
 
 
@@ -108,6 +120,23 @@ class RecordClickTestCase(ScoutLinksTestCase):
             hash_visitor("203.0.113.7"),
             ScoutOutreachClick.objects.get().visitor,
         )
+
+    def test_requires_frontend_secret(self):
+        for headers in (
+            {},
+            {"X-Shared-Secret": "wrong"},
+            {"Authorization": f"Bearer {self.token}"},
+        ):
+            with self.subTest(headers=list(headers)):
+                response = self.click("k3x9qa", headers=headers)
+                self.assertEqual(403, response.status_code)
+        self.assertFalse(ScoutOutreachClick.objects.exists())
+
+    @override_settings(SHARED_SECRET="")
+    def test_refused_when_secret_unset(self):
+        response = self.click("k3x9qa", headers={"X-Shared-Secret": ""})
+        self.assertEqual(403, response.status_code)
+        self.assertFalse(ScoutOutreachClick.objects.exists())
 
     def test_unknown_code_is_not_recorded(self):
         self.assertEqual(404, self.click("zzzzzz").status_code)

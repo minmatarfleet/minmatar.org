@@ -136,11 +136,14 @@ def notify_application_rejected(application) -> None:
 
 
 def notify_application_deleted(application) -> None:
+    notify_application_thread_deleted(application.discord_thread_id)
+
+
+def notify_application_thread_deleted(discord_thread_id: int) -> None:
+    """Deleted notice by thread id, for when the application row is gone."""
     message = ":bangbang: This application has been deleted"
-    discord.create_message(
-        channel_id=application.discord_thread_id, message=message
-    )
-    discord.close_thread(channel_id=application.discord_thread_id)
+    discord.create_message(channel_id=discord_thread_id, message=message)
+    discord.close_thread(channel_id=discord_thread_id)
 
 
 def notify_application_transferred(
