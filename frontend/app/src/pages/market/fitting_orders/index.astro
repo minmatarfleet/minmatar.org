@@ -47,6 +47,8 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Table from '@components/blocks/Table.astro'
 import FittingBuyOrderItem from '@components/blocks/FittingBuyOrderItem.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
@@ -123,38 +125,26 @@ const breadcrumbs = [
                         class="[ w-full fitting-buy-orders__toolbar ]"
                         gap="var(--space-s)"
                     >
-                        <FlexInline gap="var(--space-3xs)" class="[ fitting-buy-orders__chips ]">
-                            <a
+                        <ChipGroup wrap={true}>
+                            <FilterChip
                                 href={translatePath('/market/fitting_orders/')}
-                                class:list={[
-                                    '[ fitting-buy-orders__chip ]',
-                                    { 'is-active': !mine && !include_all },
-                                ]}
-                                aria-pressed={!mine && !include_all ? 'true' : 'false'}
+                                active={!mine && !include_all}
                             >
                                 {t('fitting_buy.all_orders')}
-                            </a>
-                            <a
+                            </FilterChip>
+                            <FilterChip
                                 href={translatePath('/market/fitting_orders/?mine=1')}
-                                class:list={[
-                                    '[ fitting-buy-orders__chip ]',
-                                    { 'is-active': mine && !include_all },
-                                ]}
-                                aria-pressed={mine && !include_all ? 'true' : 'false'}
+                                active={mine && !include_all}
                             >
                                 {t('fitting_buy.mine_only')}
-                            </a>
-                            <a
+                            </FilterChip>
+                            <FilterChip
                                 href={translatePath('/market/fitting_orders/?all=1')}
-                                class:list={[
-                                    '[ fitting-buy-orders__chip ]',
-                                    { 'is-active': include_all },
-                                ]}
-                                aria-pressed={include_all ? 'true' : 'false'}
+                                active={include_all}
                             >
                                 {t('fitting_buy.show_all')}
-                            </a>
-                        </FlexInline>
+                            </FilterChip>
+                        </ChipGroup>
                         {orders.length > 0 && (
                             <div class="[ fitting-buy-orders__search ]">
                                 <Input
@@ -209,10 +199,6 @@ const breadcrumbs = [
         min-width: 0;
     }
 
-    .fitting-buy-orders__chips {
-        flex-wrap: wrap;
-    }
-
     .fitting-buy-orders__search {
         flex: 1 1 12rem;
         min-width: 0;
@@ -233,49 +219,4 @@ const breadcrumbs = [
         }
     }
 
-    .fitting-buy-orders__chip {
-        appearance: none;
-        display: inline-flex;
-        align-items: center;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        background: transparent;
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-decoration: none;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition:
-            border-color var(--fast-transition),
-            background-color var(--fast-transition),
-            color var(--fast-transition);
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-                color: var(--fleet-yellow);
-            }
-
-            &.is-active:hover {
-                background: var(--fleet-yellow);
-                color: var(--background);
-            }
-        }
-
-        &:focus-visible {
-            outline: 1px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
-    }
 </style>
