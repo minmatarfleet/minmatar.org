@@ -167,7 +167,7 @@ describe('convention rule matchers', () => {
         const partial = (text: string) => ({ path: 'src/pages/partials/x_component.astro', text })
         const fetches = "---\nimport { get_things } from '@helpers/api.minmatar.org/things'\n---\n"
         expect(count('partial_error_state', partial(fetches + '<div />'))).toBe(1)
-        expect(count('partial_error_state', partial(fetches + '{fetch_error && <ErrorRefetch args={args} />}'))).toBe(1 - 1)
+        expect(count('partial_error_state', partial(fetches + '{fetch_error && <ErrorRefetch args={args} />}'))).toBe(0)
         expect(count('partial_error_state', partial(fetches.replace('---\n', '---\n// no-error-refetch: form result, errors render inline\n') + '<form />'))).toBe(0)
         expect(count('partial_error_state', partial('---\nimport { i18n } from "@helpers/i18n"\n---\n<div />'))).toBe(0)
         expect(count('partial_error_state', { path: 'src/components/blocks/Thing.astro', text: fetches })).toBe(0)

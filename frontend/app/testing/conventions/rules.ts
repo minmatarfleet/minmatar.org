@@ -39,14 +39,15 @@ const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/
 /** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
 const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
 
+// `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
+const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
+const HOVER_GATE = /@media[^{]*\(\s*hover\s*:\s*hover\s*\)/
+
 /**
  * `transform`/`scale`/`translate`/`rotate` declarations that apply on :hover
  * without an enclosing `@media (hover: hover)`. Walks the nested (SCSS) block
  * structure, so `&:hover` inside a rule and gating on any ancestor both count.
  */
-// `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
-const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
-const HOVER_GATE = /@media[^{]*\(\s*hover\s*:\s*hover\s*\)/
 function ungated_hover_motion(file: SourceFile, region: Region): Hit[] {
     // Blank out comments, keeping offsets (// only at line start or after whitespace, so url(https://...) survives).
     const text = region.text.replace(/\/\*[\s\S]*?\*\/|(^|[\s;{}])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' '))
