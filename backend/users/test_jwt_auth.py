@@ -123,10 +123,16 @@ class TokenParityTest(TestCase):
 
     def test_mobile_token_for_linked_character(self):
         esi_token = Token.objects.create(
-            character_id=9002, character_name="Linked"
+            character_id=9002,
+            character_name="Linked",
+            character_owner_hash="owner-9002",
         )
+        # The EVE login checks the owner hash against the linked token.
         EveCharacter.objects.create(
-            character_id=9002, character_name="Linked", user=self.user
+            character_id=9002,
+            character_name="Linked",
+            user=self.user,
+            token=esi_token,
         )
         token = issue_mobile_jwt(self.request, esi_token)
         self.assert_same_token(

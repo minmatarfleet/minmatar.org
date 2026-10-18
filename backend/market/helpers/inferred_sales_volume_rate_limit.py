@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest
 
+from app.client_ip import client_ip
 from notifications.rate_limit import acquire
 
 # Anonymous: a handful of page/filter flips, then ask them to log in.
@@ -21,16 +22,6 @@ class VolumeRateLimited(Exception):
         self.retry_after = max(1.0, float(retry_after))
         self.login_suggested = login_suggested
         super().__init__(f"rate_limited retry_after={self.retry_after:.0f}")
-
-
-def client_ip(request: HttpRequest) -> str:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR") or ""
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    cf = request.META.get("HTTP_CF_CONNECTING_IP") or ""
-    if cf:
-        return cf.strip()
-    return request.META.get("REMOTE_ADDR") or "unknown"
 
 
 def _auth_user(request: HttpRequest):

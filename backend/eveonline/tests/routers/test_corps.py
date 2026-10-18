@@ -109,8 +109,35 @@ class CorporationRouterTestCase(TestCase):
         corp = response.json()
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
-        self.assertEqual("Executor notes", corp["executor_notes"])
+        self.assertIsNone(corp["executor_notes"])
         self.assertFalse(corp["trial"])
+
+    def test_corporation_executor_notes_are_for_leadership(self):
+        corp = self.create_corp(12345, "TestCorp")
+        url = BASE_URL + "corporations/12345"
+        auth = f"Bearer {self.token}"
+
+        member = self.client.get(url, HTTP_AUTHORIZATION=auth).json()
+        self.assertIn("executor_notes", member)
+        self.assertIsNone(member["executor_notes"])
+
+        director = EveCharacter.objects.create(
+            character_id=20002,
+            character_name="Director Dan",
+            user=self.user,
+        )
+        corp.directors.add(director)
+        leader = self.client.get(url, HTTP_AUTHORIZATION=auth).json()
+        self.assertEqual("Executor notes", leader["executor_notes"])
+
+    def test_corporation_list_never_includes_executor_notes(self):
+        self.create_corp(12345, "TestCorp")
+
+        for headers in ({}, {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}):
+            corps = self.client.get(
+                BASE_URL + "corporations", **headers
+            ).json()
+            self.assertIsNone(corps[0]["executor_notes"])
 
     def test_get_corporation_info(self):
         self.create_corp(12345, "TestCorp")

@@ -240,3 +240,8 @@ DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
 # SDE sqlite for campaign area names; defaults to the newest
 # frontend/app/src/data/sde-*.sqlite.
 EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")
+
+# Reverse proxies in front of the app that each append the address they saw
+# to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
+# if the app is reached directly, or add one per extra hop (e.g. a CDN).
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))

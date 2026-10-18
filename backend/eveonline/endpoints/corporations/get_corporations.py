@@ -56,7 +56,6 @@ def get_corporations(
             payload["faction_name"] = corporation.faction.name
         payload["introduction"] = corporation.introduction
         payload["biography"] = corporation.biography
-        payload["executor_notes"] = corporation.executor_notes
         payload["timezones"] = (
             corporation.timezones.strip().split(",")
             if corporation.timezones

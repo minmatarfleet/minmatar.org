@@ -69,10 +69,6 @@ class ServiceAccountTest(SiteTestCase):
 
     def test_npsi_bot_may_act_for_another_user(self):
         # pylint: disable=import-outside-toplevel
-        # (importing npsi_actions first hits an existing import cycle)
-        from fleets.endpoints import (  # noqa: F401  pylint: disable=unused-import
-            router,
-        )
         from fleets.helpers.npsi_actions import (
             NpsiActionError,
             authorize_npsi_actor,
