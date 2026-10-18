@@ -2,6 +2,7 @@
 
 import importlib
 from datetime import date, timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -36,9 +37,12 @@ from market.models import (
     EveMarketContract,
     EveMarketContractItem,
     EveMarketInferredSale,
+    EveMarketItemLocationPrice,
 )
+from market.models.history import EveMarketItemHistory
 
 from app.test import TestCase as AppTestCase
+from industry.helpers.cost_breakdown import jita_sell_unit_prices_by_type_id
 from industry.helpers.product_insights import (
     compute_product_insights,
     product_insights,
@@ -525,6 +529,77 @@ class ProductBuildEndpointTestCase(AppTestCase):
         self.assertEqual(component["strategy"], "imported")
         self.assertIsNotNone(component["industry_product_id"])
         self.assertIsNone(mineral["strategy"])
+
+    def test_prices_at_jita_sell_like_the_planner(self):
+        """Live Jita sell, else Forge history; CCP averages are ignored."""
+        for type_id, price in (
+            (SHIP_TYPE_ID, 1000),
+            (COMPONENT_TYPE_ID, 300),
+            (UNTRACKED_TYPE_ID, 2),
+        ):
+            EveMarketPrice.objects.create(
+                eve_type_id=type_id, average_price=price, adjusted_price=price
+            )
+        jita = EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=10000002,
+            price_baseline=True,
+            prices_active=True,
+            market_active=False,
+        )
+        for type_id, sell in (
+            (SHIP_TYPE_ID, "1500.00"),
+            (UNTRACKED_TYPE_ID, "3.90"),
+        ):
+            EveMarketItemLocationPrice.objects.create(
+                location=jita, item_id=type_id, sell_price=Decimal(sell)
+            )
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item_id=COMPONENT_TYPE_ID,
+            date=timezone.now().date(),
+            average=Decimal("250.50"),
+            highest=Decimal("260"),
+            lowest=Decimal("240"),
+            volume=10,
+        )
+
+        data = Client().get(self.url).json()
+
+        self.assertEqual(data["sell_price"], 1500)
+        # 2 × 250.50 + 100 × 3.90, unrounded per unit.
+        self.assertAlmostEqual(data["material_cost"], 891.0)
+        self.assertAlmostEqual(data["margin"], 609.0)
+        planner_prices = jita_sell_unit_prices_by_type_id(
+            [SHIP_TYPE_ID, COMPONENT_TYPE_ID, UNTRACKED_TYPE_ID]
+        )
+        self.assertEqual(
+            {m["type_id"]: m["unit_price"] for m in data["materials"]},
+            {
+                COMPONENT_TYPE_ID: float(planner_prices[COMPONENT_TYPE_ID]),
+                UNTRACKED_TYPE_ID: float(planner_prices[UNTRACKED_TYPE_ID]),
+            },
+        )
+
+    def test_insights_value_hulls_at_the_jita_guide(self):
+        EveMarketPrice.objects.create(
+            eve_type_id=SHIP_TYPE_ID, average_price=1000, adjusted_price=1000
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item_id=SHIP_TYPE_ID,
+            date=timezone.now().date(),
+            average=Decimal("1200.00"),
+            highest=Decimal("1200"),
+            lowest=Decimal("1200"),
+            volume=1,
+        )
+        insights = compute_product_insights()
+        self.assertEqual(insights[self.product.pk]["unit_price"], 1200.0)
 
     def test_missing_price_leaves_margin_unknown(self):
         EveMarketPrice.objects.create(

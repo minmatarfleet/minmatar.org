@@ -2,14 +2,18 @@ from app.test import TestCase
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from eveonline.models import EveLocation
+from fittings.eft import item_quantities
 from fittings.models import EveFitting
+from market.helpers.contract_match import (
+    fitting_structural_type_quantities,
+    fitting_type_quantities,
+)
 from market.models import (
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
     _get_consumable_items,
     get_effective_item_expectations,
-    parse_eft_items,
 )
 
 
@@ -80,38 +84,40 @@ def rifter_eft(fit_name: str = "AC Rifter") -> str:
 
 
 class ParseEftItemsTestCase(TestCase):
+    """Market's EFT projection: fittings.eft.item_quantities."""
+
     def test_parses_ship(self):
-        items = parse_eft_items(RIFTER_EFT)
+        items = item_quantities(RIFTER_EFT)
         self.assertEqual(items["Rifter"], 1)
 
     def test_parses_single_modules(self):
-        items = parse_eft_items(RIFTER_EFT)
+        items = item_quantities(RIFTER_EFT)
         self.assertEqual(items["Damage Control II"], 1)
         self.assertEqual(items["Multispectrum Coating II"], 1)
 
     def test_stacks_duplicate_modules(self):
-        items = parse_eft_items(RIFTER_EFT)
+        items = item_quantities(RIFTER_EFT)
         self.assertEqual(items["150mm Light Prototype Automatic Cannon"], 3)
         self.assertEqual(items["Small Trimark Armor Pump I"], 2)
 
     def test_parses_cargo_with_quantity(self):
-        items = parse_eft_items(RIFTER_EFT)
+        items = item_quantities(RIFTER_EFT)
         self.assertEqual(items["Nanite Repair Paste"], 5)
         self.assertEqual(items["Fusion S"], 2000)
         self.assertEqual(items["Republic Fleet EMP S"], 720)
 
     def test_skips_empty_slots(self):
         eft = "[Rifter, Empty Rifter]\n\n[Empty Low slot]\n[Empty Med slot]\nDamage Control II\n"
-        items = parse_eft_items(eft)
+        items = item_quantities(eft)
         self.assertNotIn("[Empty Low slot]", items)
         self.assertNotIn("[Empty Med slot]", items)
         self.assertEqual(items["Damage Control II"], 1)
 
     def test_empty_string(self):
-        self.assertEqual(parse_eft_items(""), {})
+        self.assertEqual(item_quantities(""), {})
 
     def test_total_unique_items(self):
-        items = parse_eft_items(RIFTER_EFT)
+        items = item_quantities(RIFTER_EFT)
         expected_unique = {
             "Rifter",
             "Damage Control II",
@@ -129,6 +135,108 @@ class ParseEftItemsTestCase(TestCase):
             "Republic Fleet EMP S",
         }
         self.assertEqual(set(items.keys()), expected_unique)
+
+
+# Same fit as copied from the EVE client: charges loaded in the guns and
+# an offline module. The old market parser kept these lines whole, so the
+# cannons, the scram and the loaded ammo never resolved to a type.
+CHARGED_RIFTER_EFT = """\
+[Rifter, Charged Rifter]
+
+Damage Control II
+
+Initiated Compact Warp Scrambler /offline
+
+150mm Light Prototype Automatic Cannon, Republic Fleet EMP S
+150mm Light Prototype Automatic Cannon, Republic Fleet EMP S
+150mm Light Prototype Automatic Cannon, Republic Fleet EMP S
+
+Republic Fleet EMP S x720
+"""
+
+
+class ChargedFitTestCase(TestCase):
+    """Fits with loaded charges and offline modules (BM-1)."""
+
+    def setUp(self):
+        super().setUp()
+        self.rifter = _make_typed_eve_type(587, "Rifter", 6, "Ship")
+        self.dc = _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
+        self.scram = _make_typed_eve_type(
+            5399, "Initiated Compact Warp Scrambler", 7, "Module"
+        )
+        self.cannon = _make_typed_eve_type(
+            9071, "150mm Light Prototype Automatic Cannon", 7, "Module"
+        )
+        self.emp = _make_typed_eve_type(
+            21894, "Republic Fleet EMP S", 8, "Charge"
+        )
+        self.fitting = EveFitting.objects.create(
+            name="Charged Rifter",
+            eft_format=CHARGED_RIFTER_EFT,
+            ship_id=587,
+        )
+
+    def test_item_quantities_split_module_and_charge(self):
+        self.assertEqual(
+            item_quantities(CHARGED_RIFTER_EFT),
+            {
+                "Rifter": 1,
+                "Damage Control II": 1,
+                "Initiated Compact Warp Scrambler": 1,
+                "150mm Light Prototype Automatic Cannon": 3,
+                # 720 in cargo plus one loaded per gun.
+                "Republic Fleet EMP S": 723,
+            },
+        )
+
+    def test_shopping_list_has_the_guns_and_the_scram(self):
+        self.assertEqual(
+            fitting_type_quantities(self.fitting),
+            {
+                self.rifter.id: 1,
+                self.dc.id: 1,
+                self.scram.id: 1,
+                self.cannon.id: 3,
+                self.emp.id: 723,
+            },
+        )
+
+    def test_contract_match_scores_the_guns(self):
+        self.assertEqual(
+            fitting_structural_type_quantities(self.fitting),
+            {
+                self.rifter.id: 1,
+                self.dc.id: 1,
+                self.scram.id: 1,
+                self.cannon.id: 3,
+            },
+        )
+
+    def test_presence_catalog_and_consumables(self):
+        location = EveLocation.objects.create(
+            location_id=2002,
+            location_name="Charged Keepstar",
+            market_active=True,
+            solar_system_id=30000001,
+        )
+        exp = EveMarketFittingExpectation.objects.create(
+            fitting=self.fitting, location=location
+        )
+        self.assertEqual(
+            exp.get_item_names(),
+            {
+                "Rifter",
+                "Damage Control II",
+                "Initiated Compact Warp Scrambler",
+                "150mm Light Prototype Automatic Cannon",
+                "Republic Fleet EMP S",
+            },
+        )
+        self.assertEqual(
+            _get_consumable_items(self.fitting),
+            {"Republic Fleet EMP S": 723},
+        )
 
 
 class EveMarketFittingExpectationTestCase(TestCase):

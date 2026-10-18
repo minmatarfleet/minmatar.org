@@ -12,13 +12,13 @@ import math
 from dataclasses import dataclass
 from typing import Dict, Optional, Sequence, Tuple
 
-from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from freight.helpers.pricing import route_cost_isk
 from freight.models import EveFreightRoute
 from industry.helpers.compressed_ore import compressed_volume_m3
 from industry.helpers.facility_profiles import get_facility_system_id
+from market.helpers.pricing import baseline_location
 
 
 @dataclass(frozen=True)
@@ -106,7 +106,7 @@ def find_inbound_freight_route(
         destination_location__solar_system_id=dest_system_id,
     ).select_related("origin_location", "destination_location")
 
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
+    baseline = baseline_location()
     if baseline is None:
         return None
 

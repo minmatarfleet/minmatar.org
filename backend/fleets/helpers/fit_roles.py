@@ -15,7 +15,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
-from fleets.helpers.eft_items import parse_eft_items
+from fittings.eft import parse_eft_items
 
 # Display order; also the canonical order of a stored burst list.
 BURST_KINDS = ("armor", "shield", "skirmish", "information", "mining")

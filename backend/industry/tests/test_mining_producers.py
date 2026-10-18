@@ -2,6 +2,7 @@
 
 import factory
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db.models import signals
 from django.utils import timezone
@@ -17,8 +18,10 @@ from eveuniverse.models import (
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EveCharacterMiningEntry
 from industry.helpers.producers import (
+    _get_material_prices,
     get_producers_for_types,
 )
+from market.models.history import EveMarketItemHistory
 
 
 def _ensure_eve_types(type_ids):
@@ -101,6 +104,24 @@ class MiningProducersTest(TestCase):
             quantity=200_000,
             solar_system_id=30001,
         )
+
+    def test_material_prices_prefer_the_jita_guide(self):
+        EveMarketPrice.objects.update_or_create(
+            eve_type=self.types[34],
+            defaults={"adjusted_price": 1000.0, "average_price": 1000.0},
+        )
+        self.assertEqual(_get_material_prices([34]), {34: 1000.0})
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item=self.types[34],
+            date=timezone.now().date(),
+            average=Decimal("3.95"),
+            highest=Decimal("4"),
+            lowest=Decimal("3.9"),
+            volume=1,
+        )
+        # Unrounded: minerals are worth a few ISK each.
+        self.assertEqual(_get_material_prices([34]), {34: 3.95})
 
     def test_batch_includes_mining_in_character_producers(self):
         """get_producers_for_types merges miners into character_producers (when value >= 50M)."""

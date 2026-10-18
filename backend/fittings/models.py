@@ -7,6 +7,7 @@ from django.db import models
 from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
+from fittings.eft import parse_eft_header
 from fittings.known_fitting import KnownFitting
 
 
@@ -330,22 +331,13 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     @staticmethod
     def ship_name_from_eft(eft_format):
-        """Extract ship name from the first line of EFT format [ShipName, Fitting name]."""
-        first_line = eft_format.split("\n")[0]
-        return first_line.split(",")[0].strip().strip("[]")
+        """Ship name from the EFT header ``[ShipName, Fitting name]``."""
+        return parse_eft_header(eft_format)[0]
 
     @staticmethod
     def fitting_name_from_eft(eft_format):
-        """Extract fitting name from the first line of EFT format [ShipName, Fitting name]."""
-        if not (eft_format and eft_format.strip()):
-            return ""
-        parts = eft_format.split("\n")[0].split(",", 1)
-        if len(parts) < 2:
-            return ""
-        fitting_name = parts[1].strip()
-        if fitting_name.endswith("]"):
-            fitting_name = fitting_name[:-1].strip()
-        return fitting_name
+        """Fitting name from the EFT header ``[ShipName, Fitting name]``."""
+        return parse_eft_header(eft_format)[1]
 
 
 class EveFittingPod(MinmatarSoftDeleteModel):

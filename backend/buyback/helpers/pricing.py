@@ -6,14 +6,15 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 from industry.helpers.compressed_ore import (
     ORE_BATCH_SIZE,
     ore_materials_per_portion,
 )
-from market.helpers.pricing import get_history_averages_by_type_id
-from market.models import EveMarketItemLocationPrice
+from market.helpers.pricing import (
+    baseline_book,
+    get_history_averages_by_type_id,
+)
 
 from buyback.helpers.classify import BuybackCategory
 from buyback.models import DEFAULT_RATE_RULES
@@ -28,22 +29,11 @@ def _history_prices_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
 
 def _live_jita_buys_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
     """Station-range Jita buy, then split, at the price_baseline location."""
-    if not type_ids:
-        return {}
-    unique_ids = list({int(tid) for tid in type_ids})
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if baseline is None:
-        return {}
     prices: dict[int, Decimal] = {}
-    rows = EveMarketItemLocationPrice.objects.filter(
-        location=baseline,
-        item_id__in=unique_ids,
-    ).values_list("item_id", "buy_price", "split_price")
-    for type_id, buy_price, split_price in rows:
-        if buy_price is not None:
-            prices[int(type_id)] = Decimal(str(buy_price))
-        elif split_price is not None:
-            prices[int(type_id)] = Decimal(str(split_price))
+    for type_id, row in baseline_book(type_ids).items():
+        value = row.buy if row.buy is not None else row.split
+        if value is not None:
+            prices[type_id] = Decimal(str(value))
     return prices
 
 

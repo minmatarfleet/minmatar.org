@@ -2,6 +2,7 @@
 
 import json
 from datetime import date, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import factory
@@ -25,6 +26,7 @@ from eveonline.models import (
 from eveonline.models.characters import EveCharacterMiningEntry, EvePlayer
 from eveuniverse.models import EveCategory, EveGroup, EveMarketPrice, EveType
 from fleets.models import EveFleet
+from market.models.history import EveMarketItemHistory
 from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
@@ -209,6 +211,24 @@ class MiningReportTestCase(TestCase):
             totals["avg_isk_per_m3"], round(100000.0 / 150.0, 4), places=4
         )
         self.assertAlmostEqual(totals["avg_isk_per_character"], 100000.0)
+
+    def test_mining_isk_uses_jita_guide_over_ccp_average(self):
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item_id=1228,
+            date=timezone.now().date(),
+            average=Decimal("120.00"),
+            highest=Decimal("120"),
+            lowest=Decimal("120"),
+            volume=1,
+        )
+        rows, totals, _ = run_mining_report(
+            self.group, parse_period("30d"), ReportScope.ROSTER, {}
+        )
+        self.assertAlmostEqual(rows[0]["isk_ore_market_estimate"], 120000.0)
+        self.assertAlmostEqual(
+            totals["total_isk_ore_market_estimate"], 120000.0
+        )
 
     def test_mining_scope_override_via_runner(self):
         outsider = User.objects.create_user(username="outsider")

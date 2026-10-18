@@ -1,6 +1,6 @@
 """POST /plans - calculate a full manufacture/reaction job plan for a product."""
 
-from eveuniverse.models import EveMarketPrice, EveType
+from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthOptional
@@ -18,6 +18,7 @@ from industry.helpers.blueprint_efficiency import (
     is_faction_navy_hull,
 )
 from industry.helpers.build_planner import plan_build
+from industry.helpers.cost_breakdown import jita_sell_unit_prices_by_type_id
 from industry.helpers.compressed_ore import (
     build_compressed_ore_plan,
     compression_covered_materials,
@@ -95,12 +96,11 @@ def _character_skills_payload(skills) -> dict:
 
 
 def _leaf_materials_with_prices(plan):
+    """Leaf materials at the planner's own unit price (industry Jita sell)."""
     type_ids = list(plan.leaf_materials.keys())
     prices = {
-        tid: float(avg or 0.0)
-        for tid, avg in EveMarketPrice.objects.filter(
-            eve_type_id__in=type_ids
-        ).values_list("eve_type_id", "average_price")
+        tid: float(price or 0.0)
+        for tid, price in jita_sell_unit_prices_by_type_id(type_ids).items()
     }
     leaf_materials = []
     total_buy = 0.0
