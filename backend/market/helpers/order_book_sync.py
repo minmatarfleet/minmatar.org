@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from app.locks import single_flight
 from eveonline.client import EsiClient
+from eveonline.helpers.universe import ensure_eve_types
 from eveonline.models import EveLocation
 
 from market.helpers.inferred_sales import (
@@ -17,7 +18,6 @@ from market.helpers.inferred_sales import (
     orders_from_db_rows,
     parse_esi_order,
 )
-from market.helpers.orders import _ensure_eve_types
 from market.helpers.pricing import get_prices_by_type_id
 from market.models import (
     EveMarketInferredSale,
@@ -102,8 +102,7 @@ def apply_order_book_snapshot(
         baseline_by_type=baseline_by_type,
     )
 
-    types_cache: dict = {}
-    _ensure_eve_types(type_ids, types_cache)
+    types_cache = ensure_eve_types(type_ids, raise_on_error=True)
 
     sale_objs = [
         EveMarketInferredSale(

@@ -22,6 +22,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from app.cache import CachedRollup
+from app.eve_time import month_key
 from eveonline.models import (
     EveCharacterAsset,
     EveCharacterKillmailAttacker,
@@ -340,7 +341,7 @@ def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
     year_kills = {k: v for k, v in kills.items() if v[0] >= year_ago}
     victim_types = _type_groups(v[1] for v in year_kills.values())
     months = _month_keys(now)
-    by_month = Counter(v[0].strftime("%Y-%m") for v in year_kills.values())
+    by_month = Counter(month_key(v[0]) for v in year_kills.values())
     classes = Counter(
         victim_types.get(v[1], ("", "Unknown"))[1] or "Unknown"
         for v in year_kills.values()
@@ -465,7 +466,7 @@ def supply_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
     for day, type_id, quantity in rows:
         volume, ore = types.get(type_id, (0, ""))
         m3 = (quantity or 0) * volume
-        by_month[day.strftime("%Y-%m")] += m3
+        by_month[month_key(day)] += m3
         if ore:
             by_ore[ore] += m3
     return {

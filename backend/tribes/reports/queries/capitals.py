@@ -1,10 +1,8 @@
 """Capitals combat activity: kills, losses, and fleet participation by qualifying ship types."""
 
 from collections import defaultdict
-from datetime import datetime
 
 from django.db.models import F
-from django.utils import timezone
 
 from eveonline.models import (
     EveCharacter,
@@ -14,6 +12,7 @@ from eveonline.models import (
 from eveonline.models.characters import EvePlayer
 from fleets.models import EveFleetInstanceMember
 from tribes.models import TribeGroupRequirementAssetType
+from tribes.reports.queries.common import period_window
 from tribes.reports.roster import roster_character_eve_ids, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -43,12 +42,7 @@ def run_capitals_report(
     if not ship_type_ids:
         return [], {"note": "No qualifying ship types configured"}, COLUMNS
 
-    start_dt = timezone.make_aware(
-        datetime.combine(period.start, datetime.min.time())
-    )
-    end_dt = timezone.make_aware(
-        datetime.combine(period.end, datetime.max.time())
-    )
+    start_dt, end_dt = period_window(period)
 
     if scope == ReportScope.ROSTER:
         char_eve_ids = roster_character_eve_ids(tribe_group)

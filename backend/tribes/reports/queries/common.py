@@ -8,6 +8,7 @@ from typing import Iterable
 
 from django.utils import timezone
 
+from app.eve_time import month_key
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EvePlayer
 from tribes.reports.types import PeriodBounds
@@ -34,6 +35,7 @@ MILESTONES = (
 
 
 def period_window(period: PeriodBounds) -> tuple[datetime, datetime]:
+    """Report period in UTC; the end is inclusive (23:59:59.999999)."""
     start = timezone.make_aware(
         datetime.combine(period.start, datetime.min.time())
     )
@@ -59,7 +61,7 @@ def best_month(
     for stamp, amount in stamps:
         if stamp is None:
             continue
-        totals[stamp.strftime("%Y-%m")] += amount or 0
+        totals[month_key(stamp)] += amount or 0
     if not totals:
         return None
     month, value = max(totals.items(), key=lambda item: (item[1], item[0]))

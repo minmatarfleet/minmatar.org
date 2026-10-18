@@ -6,13 +6,13 @@ import logging
 import math
 from dataclasses import dataclass, field
 
+from eveonline.helpers.universe import resolve_types_by_name
 from eveonline.models import EveCharacter
 from eveuniverse.models import EveType
 
 from buyback.helpers.classify import (
     BuybackCategory,
     classify_eve_type,
-    resolve_types_by_name,
 )
 from buyback.helpers.ore_names import (
     buyback_ore_family,
@@ -303,7 +303,9 @@ def fill_purchase(  # noqa: C901
     if not lines:
         return result
 
-    resolved = resolve_types_by_name([line.name for line in lines])
+    resolved = resolve_types_by_name(
+        [line.name for line in lines], case_insensitive=True
+    )
     remaining = remaining_sale_quantities(exclude_order_id=exclude_order_id)
     lot_ids = set(remaining)
     for eve_type in resolved.values():

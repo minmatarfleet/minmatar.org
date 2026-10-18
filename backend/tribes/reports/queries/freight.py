@@ -1,11 +1,9 @@
 """Freight program aggregate stats (FL33T freight corp contracts)."""
 
-from datetime import datetime
 from statistics import median
 
-from django.utils import timezone
-
 from freight.models import FreightContract
+from tribes.reports.queries.common import period_window
 from tribes.reports.types import PeriodBounds, ReportScope
 
 COLUMNS = []
@@ -14,12 +12,7 @@ COLUMNS = []
 def run_freight_report(
     tribe_group, period: PeriodBounds, scope: ReportScope, params
 ):
-    start_dt = timezone.make_aware(
-        datetime.combine(period.start, datetime.min.time())
-    )
-    end_dt = timezone.make_aware(
-        datetime.combine(period.end, datetime.max.time())
-    )
+    start_dt, end_dt = period_window(period)
 
     contracts = list(
         FreightContract.objects.finished().filter(

@@ -15,7 +15,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from eveuniverse.models import EveType
+from eveonline.helpers.universe import resolve_types_by_name
 
 from market.helpers.health_common import (
     VOLUME_DAYS_1,
@@ -73,7 +73,9 @@ def build_sell_order_health(  # noqa: C901
     for name_map in effective.values():
         all_names.update(name_map.keys())
     type_by_name = {
-        t.name: t for t in EveType.objects.filter(name__in=all_names)
+        name: eve_type
+        for name, eve_type in resolve_types_by_name(all_names).items()
+        if eve_type is not None
     }
     target_type_ids = [t.id for t in type_by_name.values()]
     baseline_by_type = forge_baseline_by_type(target_type_ids)

@@ -92,29 +92,3 @@ def classify_eve_type(eve_type: EveType) -> Classification:
         BuybackCategory.UNKNOWN,
         reject_reason="Item type is not accepted for buyback",
     )
-
-
-def resolve_types_by_name(names: list[str]) -> dict[str, EveType | None]:
-    """Resolve paste names to EveType (exact match, then case-insensitive)."""
-    if not names:
-        return {}
-    unique = list(dict.fromkeys(names))
-    found: dict[str, EveType] = {}
-
-    for eve_type in EveType.objects.filter(name__in=unique).select_related(
-        "eve_group", "eve_group__eve_category"
-    ):
-        found[eve_type.name] = eve_type
-
-    result: dict[str, EveType | None] = {}
-    for name in unique:
-        if name in found:
-            result[name] = found[name]
-            continue
-        eve_type = (
-            EveType.objects.filter(name__iexact=name)
-            .select_related("eve_group", "eve_group__eve_category")
-            .first()
-        )
-        result[name] = eve_type
-    return result

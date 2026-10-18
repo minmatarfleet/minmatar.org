@@ -2,12 +2,9 @@
 
 from collections import defaultdict
 
-from datetime import datetime
-
-from django.utils import timezone
-
 from eveonline.models import EveCharacter, EveCorporationWalletJournalEntry
 from eveonline.models.characters import EvePlayer
+from tribes.reports.queries.common import period_window
 from tribes.reports.roster import roster_character_eve_ids, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -24,9 +21,7 @@ def run_pi_report(
     tribe_group, period: PeriodBounds, scope: ReportScope, params
 ):
     pi_tax_rate = float(params.get("pi_tax_rate", 0.01))
-    start_dt = timezone.make_aware(
-        datetime.combine(period.start, datetime.min.time())
-    )
+    start_dt, end_dt = period_window(period)
 
     if scope == ReportScope.ALLIANCE:
         char_eve_ids = None
@@ -38,9 +33,6 @@ def run_pi_report(
     qs = EveCorporationWalletJournalEntry.objects.filter(
         ref_type__in=PI_TAX_TYPES,
         date__gte=start_dt,
-    )
-    end_dt = timezone.make_aware(
-        datetime.combine(period.end, datetime.max.time())
     )
     qs = qs.filter(date__lte=end_dt)
     if char_eve_ids is not None:

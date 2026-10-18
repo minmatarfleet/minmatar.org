@@ -18,7 +18,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 
-from buyback.helpers.classify import resolve_types_by_name
+from eveonline.helpers.universe import resolve_types_by_name
 from market.models.fitting_buy_order import (
     FittingBuyOrder,
     FittingBuyOrderItem,
@@ -168,7 +168,9 @@ def apply_landed_prices(
     order: FittingBuyOrder, paste: str
 ) -> tuple[int, list[str]]:
     name_prices = parse_price_paste(paste)
-    resolved = resolve_types_by_name(list(name_prices.keys()))
+    resolved = resolve_types_by_name(
+        list(name_prices.keys()), case_insensitive=True
+    )
     unresolved: list[str] = []
     items = {
         row.eve_type_id: row for row in order.items.select_related("eve_type")
