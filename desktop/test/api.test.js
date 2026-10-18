@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { ApiClient, ApiError, load_upcoming_fleets, load_campaign } = require('../src/main/api')
+const { ApiClient, ApiError, client_id, load_upcoming_fleets, load_campaign } = require('../src/main/api')
 const { load_config } = require('../src/main/config')
 
 function fake_fetch(routes, calls = []) {
@@ -40,6 +40,29 @@ test('sends the stored token as a Bearer header on authenticated calls only', as
     assert.equal(calls.find(c => c.url.includes('/profiles')).auth, undefined)
 })
 
+test('names the app and its version on every request, signed in or not', async () => {
+    const seen = []
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        client: client_id({ version: '1.2.3', portable: true }),
+        fetch_impl: async (url, options) => {
+            seen.push(options.headers['X-Minmatar-Client'])
+            return { ok: true, status: 200, json: async () => ({}) }
+        },
+    })
+    await api.me()
+    await api.intel_map()   // unauthenticated
+    await api.save_desktop_settings({ locked: true })
+    assert.deepEqual(seen, ['desktop/1.2.3 (portable)', 'desktop/1.2.3 (portable)', 'desktop/1.2.3 (portable)'])
+    assert.equal(client_id({ version: '0.10.0' }), 'desktop/0.10.0 (installer)')
+})
+
+test('main.js reads the client version from the running app', () => {
+    const source = require('fs').readFileSync(require.resolve('../src/main/main.js'), 'utf8')
+    assert.match(source, /client_id\(\{ version: app\.getVersion\(\)/)
+})
+
 test('builds overlay rows: FC names, doctrine names, links, soonest first, no FC-less fleets', async () => {
     const api = new ApiClient({
         api_url: 'https://api.example',
@@ -60,6 +83,38 @@ test('builds overlay rows: FC names, doctrine names, links, soonest first, no FC
     assert.equal(rows[1].fc_name, 'fc_two')
     assert.equal(rows[1].doctrine, 'Hurricanes')
     assert.equal(rows[1].url, 'https://web.example/fleets/upcoming/2')
+})
+
+test('a backend that names FCs and doctrines needs one request for the schedule', async () => {
+    const calls = []
+    const named = FLEETS.map(fleet => ({
+        ...fleet,
+        fleet_commander_character_id: fleet.fleet_commander === 10 ? 9001 : null,
+        fleet_commander_name: fleet.fleet_commander === 10 ? 'FC One' : null,
+        doctrine_name: fleet.doctrine_id === 5 ? 'Hurricanes' : null,
+    }))
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: fake_fetch({
+            '/api/fleets/v3?fleet_filter=active': named,
+            '/api/users/profiles?ids=11': PROFILES.filter(p => p.user_id === 11),
+        }, calls),
+    })
+    const rows = await load_upcoming_fleets(api, 'https://web.example')
+    // FC 11 has no primary character, so only that profile is looked up (for the username).
+    assert.deepEqual(calls.map(c => c.url.replace('https://api.example', '')), ['/api/fleets/v3?fleet_filter=active', '/api/users/profiles?ids=11'])
+    // Same rows as the old join builds.
+    const old_api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: fake_fetch({
+            '/api/fleets/v3?fleet_filter=active': FLEETS,
+            '/api/users/profiles?ids=11,10': PROFILES,
+            '/api/doctrines/5': { id: 5, name: 'Hurricanes' },
+        }),
+    })
+    assert.deepEqual(rows, await load_upcoming_fleets(old_api, 'https://web.example'))
 })
 
 test('API errors carry the HTTP status (401 -> sign in again, 403 -> no fleet access)', async () => {

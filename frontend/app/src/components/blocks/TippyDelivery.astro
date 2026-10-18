@@ -4,7 +4,7 @@ const { translatePath } = i18n(Astro.url)
 
 interface Props {
     producer_name:      string;
-    delivery:           Date | null;
+    delivery:           Date | string | null;
     contract_value?:    number;
     earnings?:          number;
     has_blueprints?:    boolean;

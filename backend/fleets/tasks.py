@@ -5,8 +5,8 @@ from django.conf import settings
 
 from celery_once import QueueOnce
 
-from app.links import site_url
 from app.celery import app
+from app.links import new_player_fleet_guide_url, upcoming_fleets_url
 from app.locks import overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
@@ -112,16 +112,14 @@ def update_fleet_schedule():
                     {
                         "style": 5,
                         "label": "View Fleet Board",
-                        "url": site_url("/fleets/upcoming/"),
+                        "url": upcoming_fleets_url(),
                         "disabled": False,
                         "type": 2,
                     },
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": site_url(
-                            "/learning/guides/new-player-fleet-guide/"
-                        ),
+                        "url": new_player_fleet_guide_url(),
                         "disabled": False,
                         "type": 2,
                     },

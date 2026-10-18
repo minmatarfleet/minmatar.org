@@ -4,6 +4,7 @@
 // REFRESH_MS while the Intel window is up (poller.js).
 const { IntelMap } = require('./intel_map')
 const { is_unauthorized } = require('./api')
+const web_routes = require('./web_routes')
 
 const REFRESH_MS = 30_000
 const NEW_FOR_MS = 5 * 60_000   // a row counts as new this long after it first shows up
@@ -204,7 +205,7 @@ class IntelController {
     // ---------------------------------------------------------------- report detail
 
     report_url(report_id) {
-        return `${this.web_url}/intel/scans/${encodeURIComponent(report_id)}`
+        return web_routes.intel_scan(this.web_url, report_id)
     }
 
     async open_report(report_id) {

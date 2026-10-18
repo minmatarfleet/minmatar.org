@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from app.links import site_url
+
 from fleets.models import NpsiExternalEvent
+from app.links import upcoming_fleets_url
 
 POST_CUSTOM_ID_PREFIX = "npsi:create:"
 PREPING_CUSTOM_ID_PREFIX = "npsi:preping:"
@@ -29,7 +30,7 @@ def _unix(dt: datetime) -> int:
 
 
 def _fleet_url(fleet_id: int) -> str:
-    return site_url("/fleets/upcoming/")
+    return upcoming_fleets_url()
 
 
 def npsi_event_embed(event: NpsiExternalEvent) -> dict:

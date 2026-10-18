@@ -258,18 +258,18 @@ export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 export interface CorporationObject {
     corporation_id:         number;
     corporation_name:       string;
-    alliance_id:            number;
-    alliance_name:          string,
+    alliance_id:            number | null;
+    alliance_name:          string | null,
     active:                 boolean;
     trial?:                 boolean;
     corporation_type:       CorporationType;
     status?:                CorporationStatusType;
     application_updated?:   Date;
-    introduction?:          string;
-    biography?:             string;
-    executor_notes?:        string;
-    timezones?:             string[];
-    requirements?:          string[];
+    introduction?:          string | null;
+    biography?:             string | null;
+    executor_notes?:        string | null;
+    timezones?:             string[] | null;
+    requirements?:          string[] | null;
     open_application_corporation_name?: string;
 }
 
@@ -610,12 +610,12 @@ export interface StructureTimerUI {
     id:                 number;
     name:               string;
     state:              string;
-    timer:              Date;
+    timer:              string;
     system_name:        string;
     alliance_id:        number;
-    alliance_name:      string;
-    corporation_name:   string;
-    structure_id:       number;
+    alliance_name:      string | null;
+    corporation_name:   string | null;
+    structure_id:       number | null;
     structure_type:     string;
     structure_type_id:  number;
     verified:           boolean;
@@ -698,11 +698,12 @@ export interface PostListUI {
     title:              string;
     state:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     author:             CharacterBasic;
     tags:               string[];
-    image:              string;
+    /** Never filled: the posts API has no image, so cards show the author. */
+    image?:             string;
 }
 
 export interface PostUI {
@@ -710,7 +711,7 @@ export interface PostUI {
     state:              string;
     title:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     excerpt:            string;
     content:            string;
@@ -859,13 +860,13 @@ export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
 import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
 export interface IndustryOrderUI {
     id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
+    created_at:         string;
+    needed_by:          string;
+    fulfilled_at:       string | null;
     public_short_code:  string;
     character_id:       number | null;
     character_name:     string;
-    location:           BaseLocation;
+    location:           BaseLocation | null;
     items:              RootItem[];
     assigned_to:        Producer[];
 }

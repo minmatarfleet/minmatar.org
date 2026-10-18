@@ -1,0 +1,76 @@
+{
+  "generated_at": "2026-01-17T18:00:00Z",
+  "items": [
+    {
+      "count": 5,
+      "id": "r:contract1",
+      "image": {
+        "id": 597,
+        "kind": "type"
+      },
+      "is_ping": false,
+      "kind": "dscan",
+      "note": "on the Siseide gate",
+      "occurred_at": "2026-01-17T18:00:00Z",
+      "report_id": "contract1",
+      "ships": [
+        {
+          "count": 1,
+          "name": "Zealot",
+          "type_id": 12003
+        },
+        {
+          "count": 1,
+          "name": "Omen",
+          "type_id": 2006
+        },
+        {
+          "count": 1,
+          "name": "Coercer",
+          "type_id": 16236
+        },
+        {
+          "count": 2,
+          "name": "Punisher",
+          "type_id": 597
+        }
+      ],
+      "source": "Ardo Kesh",
+      "standings": null,
+      "summary": "5 ships · 1 capsule · 2 other",
+      "system_id": 30002537,
+      "system_name": "Amamake"
+    },
+    {
+      "count": null,
+      "id": "c:1",
+      "image": {
+        "id": 19720,
+        "kind": "type"
+      },
+      "is_ping": true,
+      "kind": "caps",
+      "note": "",
+      "occurred_at": "2026-01-17T17:57:00Z",
+      "report_id": null,
+      "ships": [
+        {
+          "count": 1,
+          "name": "Revelation",
+          "type_id": 19720
+        },
+        {
+          "count": 5,
+          "name": "Punisher",
+          "type_id": 597
+        }
+      ],
+      "source": "Feed",
+      "standings": null,
+      "summary": "Revelation · 6.1 ly from Amamake · 1 kill",
+      "system_id": 30003070,
+      "system_name": "Sosala"
+    }
+  ],
+  "window_minutes": 120
+}

@@ -7,8 +7,10 @@ import jwt
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db import connection
 from django.db.models import signals
 from django.test import Client, SimpleTestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.contrib.auth.models import User, Permission
 from django.utils import timezone
 
@@ -323,6 +325,72 @@ class FleetRouterTestCase(TestCase):
         fleets = response.json()
         self.assertEqual(1, len(fleets))
         self.assertEqual(doctrine.id, fleets[0]["doctrine_id"])
+
+    def test_get_fleets_v3_names_fc_and_doctrine(self):
+        """The schedule carries the FC's primary character and the doctrine
+        name, so clients need no profile or doctrine lookups."""
+        doctrine = EveDoctrine.objects.create(
+            name="Hurricanes", type="non_strategic", description=""
+        )
+        fc = User.objects.create(username="fc_with_main")
+        character = EveCharacter.objects.create(
+            character_id=9001, character_name="FC Main", user=fc
+        )
+        EvePlayer.objects.create(
+            user=fc, primary_character=character, nickname="fc_with_main"
+        )
+        named = make_test_fleet("With FC", fc)
+        named.doctrine = doctrine
+        named.save()
+        no_main = make_test_fleet("No main", User.objects.create(username="x"))
+
+        response = self.client.get(
+            f"{BASE_URL}/v3?fleet_filter=upcoming",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        by_id = {fleet["id"]: fleet for fleet in response.json()}
+        self.assertEqual(9001, by_id[named.id]["fleet_commander_character_id"])
+        self.assertEqual("FC Main", by_id[named.id]["fleet_commander_name"])
+        self.assertEqual("Hurricanes", by_id[named.id]["doctrine_name"])
+        self.assertEqual(fc.id, by_id[named.id]["fleet_commander"])
+        self.assertIsNone(by_id[no_main.id]["fleet_commander_character_id"])
+        self.assertIsNone(by_id[no_main.id]["fleet_commander_name"])
+        self.assertIsNone(by_id[no_main.id]["doctrine_name"])
+
+    def test_get_fleets_v3_names_cost_no_query_per_fleet(self):
+        """FC and doctrine names come from the list query (select_related),
+        so only tracking still costs queries per fleet."""
+        doctrine = EveDoctrine.objects.create(
+            name="Hurricanes", type="non_strategic", description=""
+        )
+
+        def count_queries(fleets):
+            for n in range(fleets):
+                fc = User.objects.create(username=f"fc{fleets}_{n}")
+                character = EveCharacter.objects.create(
+                    character_id=1000 * fleets + n,
+                    character_name=f"FC {n}",
+                    user=fc,
+                )
+                EvePlayer.objects.create(
+                    user=fc, primary_character=character, nickname=fc.username
+                )
+                fleet = make_test_fleet(f"Fleet {n}", fc)
+                fleet.doctrine = doctrine
+                fleet.save()
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.get(
+                    f"{BASE_URL}/v3?fleet_filter=upcoming",
+                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
+                )
+            EveFleet.objects.all().delete()
+            self.assertEqual(fleets, len(response.json()))
+            return len(queries)
+
+        one, three = count_queries(1), count_queries(3)
+        # Each fleet still checks for a tracking instance (exists()).
+        self.assertLessEqual(three - one, 2 * 1)
 
     def test_get_fleet(self):
         fleet = make_test_fleet("Test fleet", self.user)

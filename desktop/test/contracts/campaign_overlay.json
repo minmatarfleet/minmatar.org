@@ -1,0 +1,122 @@
+{
+  "campaign": {
+    "active_pilots": [
+      {
+        "advantage_sites": 0,
+        "character_id": 3002,
+        "character_name": "Pilot Main",
+        "complexes": 0,
+        "in_fleet": false,
+        "kills": 1,
+        "last_at": "2026-01-17T17:50:00Z",
+        "losses": 0,
+        "system": "Kamela"
+      }
+    ],
+    "active_window_minutes": 60,
+    "name": "Push",
+    "slug": "contract-push",
+    "systems": [
+      {
+        "change_24h": -3.0,
+        "change_week": 7.0,
+        "detail": "390 of 3,000 victory points",
+        "flipped": null,
+        "holder": "minmatar",
+        "name": "Kourmonen",
+        "objective": "defend_complexes",
+        "objective_label": "Defend complexes",
+        "priority": "high",
+        "progress_percent": 87.0,
+        "solar_system_id": 30003068,
+        "system_id": 102
+      },
+      {
+        "change_24h": 8.0,
+        "change_week": 32.0,
+        "detail": "1,860 of 3,000 victory points",
+        "flipped": null,
+        "holder": "amarr",
+        "name": "Kamela",
+        "objective": "capture_complexes",
+        "objective_label": "Capture complexes",
+        "priority": "medium",
+        "progress_percent": 62.0,
+        "solar_system_id": 30003069,
+        "system_id": 101
+      },
+      {
+        "change_24h": null,
+        "change_week": 0.0,
+        "detail": "Our advantage 0%",
+        "flipped": null,
+        "holder": "amarr",
+        "name": "Kamela",
+        "objective": "gain_advantage",
+        "objective_label": "Gain advantage",
+        "priority": "medium",
+        "progress_percent": 0.0,
+        "solar_system_id": 30003069,
+        "system_id": 101
+      },
+      {
+        "change_24h": null,
+        "change_week": null,
+        "detail": "",
+        "flipped": null,
+        "holder": null,
+        "name": "Vard",
+        "objective": "capture_complexes",
+        "objective_label": "Capture complexes",
+        "priority": "medium",
+        "progress_percent": null,
+        "solar_system_id": 30003072,
+        "system_id": 107
+      },
+      {
+        "change_24h": -85.0,
+        "change_week": null,
+        "detail": "300 of 3,000 victory points",
+        "flipped": "captured",
+        "holder": "minmatar",
+        "name": "Huola",
+        "objective": "capture_complexes",
+        "objective_label": "Capture complexes",
+        "priority": "medium",
+        "progress_percent": 10.0,
+        "solar_system_id": 30003067,
+        "system_id": 103
+      },
+      {
+        "change_24h": 15.0,
+        "change_week": 25.0,
+        "detail": "Their advantage 35%",
+        "flipped": null,
+        "holder": null,
+        "name": "Sosala",
+        "objective": "destroy_advantage",
+        "objective_label": "Destroy advantage",
+        "priority": "medium",
+        "progress_percent": 65.0,
+        "solar_system_id": 30003070,
+        "system_id": 105
+      },
+      {
+        "change_24h": -6.0,
+        "change_week": 11.0,
+        "detail": "Our advantage 41%",
+        "flipped": null,
+        "holder": null,
+        "name": "Arzad",
+        "objective": "hold_advantage",
+        "objective_label": "Hold advantage",
+        "priority": "low",
+        "progress_percent": 41.0,
+        "solar_system_id": 30003504,
+        "system_id": 104
+      }
+    ],
+    "week_count": 3,
+    "week_index": 2
+  }
+}

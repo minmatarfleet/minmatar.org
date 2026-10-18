@@ -15,11 +15,9 @@ function group(overrides: Partial<TribeGroup> = {}): TribeGroup {
         requirements: [],
         discord_channel_id: null,
         chief: { character_id: 91439324, character_name: 'Keldor Eternia' },
-        ship_type_ids: [],
-        blueprint_type_ids: [],
         is_active: true,
         ...overrides,
-    }
+    } as TribeGroup
 }
 
 function membership(overrides: Partial<TribeMembership> = {}): TribeMembership {

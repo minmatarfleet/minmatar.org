@@ -55,6 +55,6 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
 {alert && <ShowAlert alert={alert} /> }
 
 <PrimeTimezone
-    prime_time={current_player.prime_time}
-    nickname={current_player.nickname}
+    prime_time={current_player.prime_time as PrimeTime | null}
+    nickname={current_player.nickname ?? ''}
 />

@@ -10,12 +10,15 @@ const { EventEmitter } = require('events')
 const CHECK_EVERY_MS = 4 * 3_600_000
 const RELEASES_URL = 'https://github.com/minmatarfleet/minmatar.org/releases/latest'
 
+// electron-builder's portable launcher sets this; the installed app never has it.
+const is_portable = (env = process.env) => !!env.PORTABLE_EXECUTABLE_DIR
+
 class Updater extends EventEmitter {
     constructor({ app, diag }) {
         super()
         this.app = app
         this.diag = diag
-        this.portable = !!process.env.PORTABLE_EXECUTABLE_DIR
+        this.portable = is_portable()
         this.state = { status: 'idle', version: null, percent: null, portable: this.portable }
     }
 
@@ -65,4 +68,4 @@ class Updater extends EventEmitter {
     }
 }
 
-module.exports = { Updater, RELEASES_URL }
+module.exports = { Updater, RELEASES_URL, is_portable }

@@ -29,9 +29,12 @@ export async function fetch_orders_by_locations(history:boolean = false) {
     for (let location_id in orders_by_locations) {
         const location_orders = orders_by_locations[location_id]
 
+        // Orders without a location were left out above.
+        const location = location_orders[0].location!
+
         orders_locations.push({
-            location_id: location_orders[0].location.location_id,
-            location_name: location_orders[0].location.location_name,
+            location_id: location.location_id,
+            location_name: location.location_name,
             orders: location_orders.map(order => {
                 return {
                     id: order.id,

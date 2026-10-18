@@ -14,11 +14,11 @@ const {
 } = Astro.props
 
 const pilots_missing_token = pilots.filter(
-    pilot => !pilot.requested_groups.includes('Industry')
+    pilot => !(pilot.requested_groups ?? []).includes('Industry')
         && !(pilot.actual_groups ?? []).includes('Industry')
 )
 const pilots_with_token = pilots.filter(
-    pilot => pilot.requested_groups.includes('Industry')
+    pilot => (pilot.requested_groups ?? []).includes('Industry')
         || (pilot.actual_groups ?? []).includes('Industry')
 )
 

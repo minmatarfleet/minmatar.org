@@ -28,7 +28,7 @@ programs.forEach(program => {
     const value:SRPTargetValue = {
         name: program.eve_type.name,
         type_id: program.eve_type.id,
-        value: program.current_amount.srp_value,
+        value: program.current_amount?.srp_value ?? 0,
     }
 
     if (frontend_program === 'carriers')

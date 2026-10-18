@@ -79,7 +79,7 @@ import Badge from '@components/blocks/Badge.astro';
     >
         {tags.map(tag =>
             <SelectableCard
-                image={tag.image_name}
+                image={tag.image_name ?? ''}
                 label={tag.description}
                 name="tag"
                 value={tag.id}

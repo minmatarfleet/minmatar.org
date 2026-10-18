@@ -71,7 +71,7 @@ export const humanize_date_diff = (locale:Locales, from:Date, to:Date):string =>
     return semantic_list(locale, durations)
 }
 
-export const humanize_date_diff_single = (locale:Locales, from:Date, to:Date):string => {
+export const humanize_date_diff_single = (locale:Locales, from:Date | string, to:Date | string):string => {
     const t = useTranslations(locale)
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
@@ -148,14 +148,14 @@ export const days_diff = (from:Date, to:Date):number => {
     return to_moment.diff(from_moment, 'days');
 }
 
-export const hours_diff = (from:Date, to:Date):number => {
+export const hours_diff = (from:Date | string, to:Date | string):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
 
     return to_moment.diff(from_moment, 'hours');
 }
 
-export const from_to_text = (locale:Locales = 'en', from:Date, to:Date):string => {
+export const from_to_text = (locale:Locales = 'en', from:Date | string, to:Date | string):string => {
     const t = useTranslations(locale);
 
     return `${format_date_short(locale, from)} ${t('to')} ${format_date_short(locale, to)} (${humanize_date_diff_single(locale, from, to)})`

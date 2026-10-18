@@ -10,7 +10,10 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers.feature_access import require_feature
 
-from fleets.endpoints.helpers import make_fleet_response
+from fleets.endpoints.helpers import (
+    FLEET_RESPONSE_RELATED,
+    make_fleet_response,
+)
 from fleets.endpoints.schemas import EveFleetFilter, EveFleetResponse
 from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
 
@@ -63,7 +66,9 @@ def get_v3_fleets(
             start_time__gte=timezone.now() - timedelta(days=30)
         ).order_by("-start_time")
 
-    fleets = fleets.filter(audience__hidden=False).exclude(
-        type__in=CAMPAIGN_FLEET_TYPES
+    fleets = (
+        fleets.filter(audience__hidden=False)
+        .exclude(type__in=CAMPAIGN_FLEET_TYPES)
+        .select_related(*FLEET_RESPONSE_RELATED)
     )
     return [make_fleet_response(fleet) for fleet in fleets]

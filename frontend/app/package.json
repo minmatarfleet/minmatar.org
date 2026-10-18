@@ -13,6 +13,7 @@
     "build": "export $(cat .env.BUILDONLY) && astro build",
     "prodbuild": "bash -c 'set -a; . ./.env.BUILDONLY; [ -f .env ] && . ./.env; set +a; astro build'",
     "generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "gen:api": "openapi-typescript src/types/generated/openapi.json --default-non-nullable false --output src/types/generated/api.d.ts",
     "push": "drizzle-kit push",
     "preview": "astro preview",
     "warzone:extract": "node scripts/warzone_extract.mjs",
@@ -60,7 +61,11 @@
     "@vitest/coverage-v8": "^3.1.4",
     "@vitest/ui": "^3.1.4",
     "happy-dom": "^17.4.7",
+    "openapi-typescript": "7.13.0",
     "sass": "^1.69.5",
     "vitest": "^3.1.4"
+  },
+  "overrides": {
+    "@redocly/openapi-core": "1.34.20"
   }
 }

@@ -99,6 +99,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # Answer browser CORS preflight (OPTIONS) before URL routing → 405.
     "app.cors.SimpleCorsMiddleware",
+    # Count which desktop versions call the API (X-Minmatar-Client).
+    "app.client_versions.ClientVersionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

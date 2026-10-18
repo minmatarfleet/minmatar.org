@@ -7,7 +7,7 @@ public API; the cyno pilot learns about it through a direct message.
 
 import logging
 
-from app.links import site_url
+from app.links import fleet_url
 from discord.models import DiscordUser
 from discord.outbox import queue_dm
 from eveonline.models import EveCharacter
@@ -30,7 +30,7 @@ def _discord_id_for_character(character_id: int) -> str | None:
 
 
 def _fleet_url(fleet) -> str:
-    return site_url(f"/fleets/upcoming/{fleet.id}")
+    return fleet_url(fleet.id)
 
 
 def build_cyno_assignment_message(fleet, volunteer) -> str:

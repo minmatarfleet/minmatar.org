@@ -56,7 +56,7 @@ test("CorporationFinder defaults", async () => {
       active: true,
       trial: false,
     },
-  ]);
+  ] as unknown as Awaited<ReturnType<typeof get_alliance_corporations_with_extraction>>);
 
   const container = await AstroContainer.create();
   const result = await container.renderToString(CorporationFinder, {});

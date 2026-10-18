@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
-from app.links import site_url
+from app.links import fitting_url, fleet_edit_url
 from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
@@ -1025,7 +1025,7 @@ def _fitting_web_url(fitting_id):
     """Public fitting page for a catalog fit; None for manual fits."""
     if not fitting_id:
         return None
-    return site_url(f"/ships/fittings/{fitting_id}")
+    return fitting_url(fitting_id)
 
 
 def _motd_composition(eve_fleet, in_game=True):
@@ -1052,7 +1052,7 @@ def _motd_composition(eve_fleet, in_game=True):
 
 def _motd_fleet_edit_url(eve_fleet):
     """URL to the fleet edit page for MOTD."""
-    return site_url(f"/fleets/upcoming/edit/{eve_fleet.id}")
+    return fleet_edit_url(eve_fleet.id)
 
 
 class EveFleetAudience(models.Model):

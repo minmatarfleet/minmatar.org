@@ -1,3 +1,5 @@
+const web_routes = require('./web_routes')
+
 // Minmatar Fleet API client. Runs in the main process only: the renderer never sees the token,
 // it receives the finished view model.
 class ApiError extends Error {
@@ -21,10 +23,18 @@ const FLEET_TYPE_LABELS = {
 
 const REQUEST_TIMEOUT_MS = 10_000
 
+// Sent on every request as X-Minmatar-Client, so the backend can count which desktop versions
+// still call it before it changes a field they read (.claude/rules/desktop-release.md).
+// The version comes from the running app, never a constant.
+function client_id({ version, portable = false }) {
+    return `desktop/${version} (${portable ? 'portable' : 'installer'})`
+}
+
 class ApiClient {
-    constructor({ api_url, get_token, fetch_impl = globalThis.fetch, timeout_ms = REQUEST_TIMEOUT_MS }) {
+    constructor({ api_url, get_token, client = null, fetch_impl = globalThis.fetch, timeout_ms = REQUEST_TIMEOUT_MS }) {
         this.api_url = api_url
         this.get_token = get_token
+        this.client = client
         this.fetch = fetch_impl
         this.timeout_ms = timeout_ms
         this.doctrine_names = new Map()
@@ -35,6 +45,7 @@ class ApiClient {
     // still goes out with the token it started with.
     async request(method, path, { auth = true, body, etag = false } = {}) {
         const headers = { Accept: 'application/json' }
+        if (this.client) headers['X-Minmatar-Client'] = this.client
         if (auth) {
             const token = this.get_token()
             if (!token) throw new ApiError(401, 'Not signed in')
@@ -189,17 +200,22 @@ class ApiClient {
     }
 }
 
-// Fleet list -> rows for the overlay, soonest first.
+// Fleet list -> rows for the overlay, soonest first. The backend names the FC's primary character
+// and the doctrine on each fleet; an older backend doesn't, so those fall back to the profile and
+// doctrine lookups (as does an FC with no primary character, who is shown by username).
 async function load_upcoming_fleets(api, web_url) {
     const fleets = (await api.fleets()).filter(fleet => fleet.fleet_commander)
-    const fc_ids = [...new Set(fleets.map(fleet => fleet.fleet_commander))]
+    const fc_ids = [...new Set(fleets.filter(fleet => !fleet.fleet_commander_name).map(fleet => fleet.fleet_commander))]
     const profiles = await api.profiles(fc_ids)
-    const doctrine_names = await Promise.all(fleets.map(fleet => api.doctrine_name(fleet.doctrine_id)))
+    const doctrine_names = await Promise.all(fleets.map(fleet =>
+        'doctrine_name' in fleet ? fleet.doctrine_name : api.doctrine_name(fleet.doctrine_id)))
 
     return fleets
         .map((fleet, i) => {
             const profile = profiles.find(p => p && p.user_id === fleet.fleet_commander)
-            const character = profile && profile.eve_character_profile
+            const character = fleet.fleet_commander_name
+                ? { character_id: fleet.fleet_commander_character_id, character_name: fleet.fleet_commander_name }
+                : profile && profile.eve_character_profile
             return {
                 id: fleet.id,
                 type: fleet.type,
@@ -215,7 +231,7 @@ async function load_upcoming_fleets(api, web_url) {
                 doctrine: doctrine_names[i],
                 fc_character_id: character ? character.character_id : null,
                 fc_name: character ? character.character_name : (profile ? profile.username : 'Unknown FC'),
-                url: `${web_url}/fleets/upcoming/${fleet.id}`,
+                url: web_routes.fleet(web_url, fleet.id),
             }
         })
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
@@ -230,7 +246,7 @@ async function load_campaign(api, web_url) {
         name: campaign.name,
         week_index: campaign.week_index,
         week_count: campaign.week_count,
-        url: `${web_url}/campaigns/${encodeURIComponent(campaign.slug)}`,
+        url: web_routes.campaign(web_url, campaign.slug),
         systems: campaign.systems.map(system => ({
             id: system.system_id,
             name: system.name,
@@ -260,4 +276,4 @@ async function load_campaign(api, web_url) {
     }
 }
 
-module.exports = { ApiClient, ApiError, is_unauthorized, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }
+module.exports = { ApiClient, ApiError, client_id, is_unauthorized, load_upcoming_fleets, load_campaign, FLEET_TYPE_LABELS }

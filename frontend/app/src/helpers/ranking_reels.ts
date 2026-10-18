@@ -38,8 +38,8 @@ export function fleet_commanders_reel(rows: FleetCommanderMetrics[], t: T): Rank
         caption: t('current_calendar_month'),
         fixed_width: '210px',
         items: rows.map(row => ({
-            character_id: row.primary_character_id,
-            character_name: row.primary_character_name,
+            character_id: row.primary_character_id ?? 0,
+            character_name: row.primary_character_name ?? '',
             stat_text: t(row.fleet_count != 1 ? 'fleets_plural' : 'fleets_singular').replace('{count}', String(row.fleet_count)),
         })),
     }
@@ -51,8 +51,8 @@ export function space_truckers_reel(rows: SpaceTruckerStatistics[], t: T, transl
         caption: t('last_30_days'),
         fixed_width: '170px',
         items: rows.map(row => ({
-            character_id: row.primary_character_id,
-            character_name: row.primary_character_name,
+            character_id: row.primary_character_id ?? 0,
+            character_name: row.primary_character_name ?? '',
             stat_text: t(row.completed_contracts_count != 1 ? 'contracts_plural' : 'contracts_singular').replace('{count}', String(row.completed_contracts_count)),
         })),
         cta: { href: translate_path(SUPPLY_TRIBE_PATH), text: t('become_a_trucker') },

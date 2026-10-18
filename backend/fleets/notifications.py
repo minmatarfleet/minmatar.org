@@ -1,4 +1,4 @@
-from app.links import site_url
+from app.links import fleet_url, new_player_fleet_guide_url, site_url
 
 
 def get_fleet_discord_notification(
@@ -54,16 +54,14 @@ def get_fleet_discord_notification(
                     {
                         "style": 5,
                         "label": "View Fleet Information",
-                        "url": site_url(f"/fleets/history/{fleet_id}"),
+                        "url": fleet_url(fleet_id, ended=True),
                         "disabled": False,
                         "type": 2,
                     },
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": site_url(
-                            "/learning/guides/new-player-fleet-guide/"
-                        ),
+                        "url": new_player_fleet_guide_url(),
                         "disabled": False,
                         "type": 2,
                     },

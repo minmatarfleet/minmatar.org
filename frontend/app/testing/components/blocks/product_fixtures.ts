@@ -96,6 +96,8 @@ export const product = (overrides: Partial<Product> = {}): Product => ({
     blueprint_or_reaction_type_id: 24693,
     supplied_for: [],
     supplies: [],
+    character_producers: [],
+    corporation_producers: [],
     ...overrides,
 });
 

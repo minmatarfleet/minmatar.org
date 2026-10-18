@@ -1,0 +1,105 @@
+{
+  "created_at": "2026-01-17T18:00:00Z",
+  "kind": "dscan",
+  "note": "on the Siseide gate",
+  "previous": null,
+  "raw": "597\tPilot A's Punisher\tPunisher\t12,400 km\n597\tPilot B's Punisher\tPunisher\t12,410 km\n16236\tPilot C's Coercer\tCoercer\t12,380 km\n2006\tPilot D's Omen\tOmen\t12,520 km\n12003\tPilot E's Zealot\tZealot\t12,520 km\n670\tCapsule\tCapsule\t12,600 km\n35832\tSome Astrahus\tAstrahus\t3.2 AU\n99999999\tMystery\tFuture Hull\t-",
+  "report_id": "contract1",
+  "reporter_name": "Ardo Kesh",
+  "summary": {
+    "capsules": 1,
+    "classes": [
+      {
+        "count": 2,
+        "hulls": [
+          {
+            "count": 1,
+            "name": "Zealot",
+            "rank": 302,
+            "type_id": 12003
+          },
+          {
+            "count": 1,
+            "name": "Omen",
+            "rank": 307,
+            "type_id": 2006
+          }
+        ],
+        "name": "Cruiser",
+        "rank": 3
+      },
+      {
+        "count": 1,
+        "hulls": [
+          {
+            "count": 1,
+            "name": "Coercer",
+            "rank": 503,
+            "type_id": 16236
+          }
+        ],
+        "name": "Destroyer",
+        "rank": 5
+      },
+      {
+        "count": 2,
+        "hulls": [
+          {
+            "count": 2,
+            "name": "Punisher",
+            "rank": 608,
+            "type_id": 597
+          }
+        ],
+        "name": "Frigate",
+        "rank": 6
+      }
+    ],
+    "hulls": [
+      {
+        "count": 1,
+        "name": "Zealot",
+        "rank": 302,
+        "type_id": 12003
+      },
+      {
+        "count": 1,
+        "name": "Omen",
+        "rank": 307,
+        "type_id": 2006
+      },
+      {
+        "count": 1,
+        "name": "Coercer",
+        "rank": 503,
+        "type_id": 16236
+      },
+      {
+        "count": 2,
+        "name": "Punisher",
+        "rank": 608,
+        "type_id": 597
+      }
+    ],
+    "objects": 8,
+    "other": 2,
+    "other_items": [
+      {
+        "count": 1,
+        "group": "Structure",
+        "name": "Astrahus",
+        "type_id": 35832
+      },
+      {
+        "count": 1,
+        "group": "Other",
+        "name": "Future Hull",
+        "type_id": 99999999
+      }
+    ],
+    "ships": 5
+  },
+  "summary_line": "5 ships · 1 capsule · 2 other",
+  "system_id": 30002537,
+  "system_name": "Amamake"
+}

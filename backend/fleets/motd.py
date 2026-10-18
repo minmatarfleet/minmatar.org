@@ -1,7 +1,8 @@
+from app.links import site_url
+
 # Section templates; compose in get_motd(). Each section is self-contained (all <font> closed).
 # role_volunteers: list of (role_label, [(character_id, character_name), ...]) for critical roles.
 
-from app.links import site_url
 
 SECTION_HEADER = """<font size="13" color="#ffffffff">Fleet Overview</font>"""
 
