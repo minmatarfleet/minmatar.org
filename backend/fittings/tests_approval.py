@@ -1160,6 +1160,101 @@ class ChangeRequestAdminActionsTestCase(TestCase):
         self.assertEqual("Self Approved", doctrine.name)
 
 
+class DoctrineAdminAddTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_staff", "is_superuser"])
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.fitting = EveFitting.objects.create(
+            name="[FL33T] Inquisitor",
+            ship_id=12034,
+            eft_format="[Inquisitor, Inquisitor]",
+            description="",
+        )
+        self.location = EveLocation.objects.create(
+            location_id=60008494,
+            location_name="Amamake",
+            short_name="Amamake",
+            solar_system_id=30003067,
+            solar_system_name="Amamake",
+        )
+
+    def _doctrine_post(self, **overrides):
+        data = {
+            "name": "Plexing",
+            "type": DOCTRINE_TYPE_NON_STRATEGIC,
+            "description": "Mixture of armor ships.",
+            "primary_fittings": [self.fitting.pk],
+            "secondary_fittings": [self.fitting.pk],
+            "support_fittings": [],
+            "utility_fittings": [],
+            "locations": [self.location.pk],
+            "_save": "Save",
+        }
+        data.update(overrides)
+        return data
+
+    def test_add_non_strategic_doctrine_queues_without_500(self):
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_add"),
+            self._doctrine_post(),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine = EveDoctrine.objects.get(name="Plexing")
+        self.assertFalse(
+            EveDoctrineFitting.objects.filter(doctrine=doctrine).exists()
+        )
+        self.assertFalse(doctrine.locations.exists())
+        change_request = doctrine.change_requests.get()
+        self.assertEqual(ChangeRequestStatus.PENDING, change_request.status)
+        self.assertEqual(
+            [self.fitting.pk],
+            change_request.payload["composition"]["primary"],
+        )
+        self.assertEqual(
+            [self.location.pk], change_request.payload["location_ids"]
+        )
+
+    def test_change_protected_doctrine_does_not_publish_locations(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Plexing",
+            type=DOCTRINE_TYPE_NON_STRATEGIC,
+            description="old",
+        )
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_change", args=[doctrine.pk]),
+            self._doctrine_post(description="updated"),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine.refresh_from_db()
+        self.assertEqual("old", doctrine.description)
+        self.assertFalse(doctrine.locations.exists())
+        change_request = doctrine.change_requests.get()
+        self.assertEqual(
+            [self.location.pk], change_request.payload["location_ids"]
+        )
+
+    def test_add_experimental_doctrine_applies_immediately(self):
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_add"),
+            self._doctrine_post(type=DOCTRINE_TYPE_EXPERIMENTAL),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine = EveDoctrine.objects.get(name="Plexing")
+        self.assertTrue(
+            EveDoctrineFitting.objects.filter(
+                doctrine=doctrine, fitting=self.fitting, role="primary"
+            ).exists()
+        )
+        self.assertTrue(
+            doctrine.locations.filter(pk=self.location.pk).exists()
+        )
+        self.assertFalse(doctrine.change_requests.exists())
+
+
 class HistoryDisplayTestCase(TestCase):
     def test_doctrine_history_display_shows_readable_snapshot(self):
         doctrine = EveDoctrine.objects.create(
