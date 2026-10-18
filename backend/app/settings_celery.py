@@ -344,7 +344,7 @@ CELERYBEAT_OTHER = [
         {
             "task": "fleets.tasks.rebuild_fight_timelines",
             "schedule": schedule(timedelta(seconds=30)),
-            "options": {"expire_seconds": 30, "queue": "realtime"},
+            "options": {"expire_seconds": 30},
         },
     ),
     (

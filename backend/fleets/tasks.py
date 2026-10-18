@@ -198,14 +198,13 @@ def nudge_missing_signups(fleet_id: int):
         send_missing_signup_nudges(fleet)
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=30, cooldown=20)
-@overlap_guard(ttl=5 * 60)
+@app.task(expires=30, exclusive=5 * 60)
 def rebuild_fight_timelines():
     """Rebuild every live or unsettled fleet's fight timeline.
 
     Each fleet rebuilds from scratch; one that fails is logged and the rest
     carry on. Sweeps and settling need zKill and eve-kill, so they run as
-    their own tasks on the main queue.
+    their own tasks.
     """
     # pylint: disable=import-outside-toplevel
     from fleets.helpers.fights import timeline as fights
@@ -224,7 +223,7 @@ def rebuild_fight_timelines():
             settle_fight_timeline.delay(fleet.id)
 
 
-@app.task(base=DedupedTask, queue="realtime", expires=60, cooldown=10)
+@app.task(expires=60, cooldown=10)
 def rebuild_fight_timeline(fleet_id: int):
     """Build one fleet's timeline on demand, e.g. a fleet from before it existed."""
     # pylint: disable=import-outside-toplevel
@@ -235,7 +234,7 @@ def rebuild_fight_timeline(fleet_id: int):
         fights.rebuild(fleet)
 
 
-@app.task(base=DedupedTask, queue="celery", expires=15 * 60)
+@app.task(expires=15 * 60, exclusive=15 * 60)
 def sweep_fight_killmails(fleet_id: int):
     """Fill in killmails the live feed missed, from zKill, then rebuild."""
     # pylint: disable=import-outside-toplevel
@@ -250,7 +249,7 @@ def sweep_fight_killmails(fleet_id: int):
     return stats
 
 
-@app.task(base=DedupedTask, queue="celery", expires=15 * 60)
+@app.task(expires=15 * 60, exclusive=15 * 60)
 def settle_fight_timeline(fleet_id: int):
     """Last rebuild two hours after the fleet, plus eve-kill battle links."""
     # pylint: disable=import-outside-toplevel
