@@ -86,7 +86,7 @@ def compute_corporation_stats(
     declared = prime_time_codes_for_users(timezone_users)
     observed = observed_prime_buckets_for_users(timezone_users)
     return {
-        "about": corporation_about(corporation, characters, observed, kills),
+        "about": corporation_about(corporation, characters, observed),
         "member_facts": member_facts(characters, corporation),
         "human_count": len(user_ids),
         # Per person, for leadership tags and the Members table.

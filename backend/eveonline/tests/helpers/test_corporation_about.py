@@ -16,10 +16,11 @@ from eveonline.helpers.corporations.about import (
     member_facts,
     prime_windows,
 )
-from eveonline.helpers.corporations.kills import RecentKills
 from eveonline.models import (
     EveCharacter,
     EveCharacterCorporationHistory,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
     EveCorporation,
     EvePlayer,
 )
@@ -185,6 +186,29 @@ class CorporationAboutTestCase(TestCase):
             self._about()["leaderboards"]["fleets_led"],
         )
 
+    def test_leaderboards_count_all_time(self):
+        fc = self._user("fc")
+        fc_main = self._character(421, "FC Main", fc, main=True)
+        fc_alt = self._character(422, "FC Alt", fc)
+        battleship = self.types["battleship"]
+        for instance_id, days_ago in ((11, 5), (12, 200), (13, 900)):
+            when = NOW - timedelta(days=days_ago)
+            fleet = self._fleet(instance_id, fc, when, "Ops")
+            self._attend(fc_main, fleet, battleship, when)
+            self._attend(fc_alt, fleet, battleship, when)
+        for killmail_id, days_ago in ((31, 10), (32, 400), (33, 1200)):
+            self._kill(
+                killmail_id, [fc_main, fc_alt], NOW - timedelta(days=days_ago)
+            )
+
+        leaderboards = self._about()["leaderboards"]
+        expected = [
+            {"character_id": 421, "character_name": "FC Main", "value": 3}
+        ]
+        self.assertEqual(expected, leaderboards["fleets"])
+        self.assertEqual(expected, leaderboards["kills"])
+        self.assertEqual(expected, leaderboards["fleets_led"])
+
     def test_tribe_groups_count_people_once(self):
         pilot = self._user("tribal")
         self._character(501, "Tribal", pilot, main=True)
@@ -298,7 +322,6 @@ class CorporationAboutTestCase(TestCase):
                 self.corporation,
                 characters,
                 {},
-                RecentKills([c.character_id for c in characters]),
                 now=NOW,
             )
 
@@ -339,6 +362,23 @@ class CorporationAboutTestCase(TestCase):
             description=description,
         )
         return EveFleetInstance.objects.create(id=instance_id, eve_fleet=fleet)
+
+    def _kill(self, killmail_id, attackers, when):
+        killmail = EveCharacterKillmail.objects.create(
+            id=killmail_id,
+            killmail_id=killmail_id,
+            killmail_hash=f"hash-{killmail_id}",
+            killmail_time=when,
+            solar_system_id=1,
+            ship_type_id=self.types["battleship"],
+            attackers="[]",
+            items="[]",
+            character=attackers[0],
+        )
+        for attacker in attackers:
+            EveCharacterKillmailAttacker.objects.create(
+                killmail=killmail, character_id=attacker.character_id
+            )
 
     def _attend(self, character, instance, ship_type_id, when):
         member = EveFleetInstanceMember.objects.create(

@@ -22,11 +22,12 @@ from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_refs_for_users,
 )
-from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
+from eveonline.helpers.corporations.kills import ACTIVITY_DAYS
 from eveonline.helpers.corporations.summary import ship_bucket
 from eveonline.models import (
     EveCharacter,
     EveCharacterCorporationHistory,
+    EveCharacterKillmailAttacker,
     EveCorporation,
 )
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
@@ -61,7 +62,6 @@ def corporation_about(
     corporation: EveCorporation,
     characters: list[EveCharacter],
     observed: dict[int, list[str]],
-    kills: RecentKills,
     now: datetime | None = None,
 ) -> dict:
     """The About tab's cached facts for one corporation."""
@@ -95,9 +95,7 @@ def corporation_about(
         "founders": _founders(mains, stints, founded),
         "hulls": _top_hulls(recent, owners),
         "records": _records(attendance, owners),
-        "leaderboards": _leaderboards(
-            corporation, characters, owners, mains, recent, kills, cutoff, now
-        ),
+        "leaderboards": _leaderboards(characters, owners, mains, now),
         "tribe_groups": _tribe_groups({o for o in owners.values() if o > 0}),
     }
 
@@ -357,21 +355,26 @@ def _records(attendance, owners) -> dict:
     return {"biggest_turnout": biggest, "busiest_month": busiest}
 
 
-def _leaderboards(  # pylint: disable=too-many-arguments
-    corporation, characters, owners, mains, recent, kills, cutoff, now
-) -> dict:
+def _leaderboards(characters, owners, mains, now) -> dict:
+    """All-time fleets flown, kills and fleets led by the corp's current
+    pilots. Attackers are read without joining killmail rows (see kills)."""
+    ids = [c.character_id for c in characters]
+    attended = EveFleetInstanceMember.objects.filter(
+        character_id__in=ids
+    ).values_list("character_id", "eve_fleet_instance_id")
     fleets: dict[int, set] = defaultdict(set)
-    for character_id, _, instance_id, *_ in recent:
+    for character_id, instance_id in attended:
         fleets[owners[character_id]].add(instance_id)
+    attacked = EveCharacterKillmailAttacker.objects.filter(
+        character_id__in=ids
+    ).values_list("character_id", "killmail_id")
     killmails: dict[int, set] = defaultdict(set)
-    for character in characters:
-        killmails[owners[character.character_id]] |= kills.killmails_for(
-            [character.character_id]
-        )
+    for character_id, killmail_id in attacked:
+        killmails[owners[character_id]].add(killmail_id)
     led = Counter(
         dict(
             fleets_led_by_user(
-                led_fleets(cutoff, now).filter(created_by_id__in=list(mains))
+                led_fleets(end=now).filter(created_by_id__in=list(mains))
             ).values_list("created_by_id", "fleet_count")
         )
     )
