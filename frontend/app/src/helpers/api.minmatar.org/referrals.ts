@@ -1,4 +1,5 @@
 import { parse_response_error } from '@helpers/string'
+import { get_shared_secret } from '@helpers/env'
 import type { ReferralLinkStats } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/referrals`
@@ -42,8 +43,11 @@ export async function record_referral(page:string, user_id:number, client_ip:str
 
     console.log(data)
 
+    // Server-side only: the API accepts referral records from the frontend
+    // server, which proves itself with the shared secret.
     const headers = {
         'Content-Type': 'application/json',
+        'X-Shared-Secret': get_shared_secret() ?? '',
     }
 
     const ENDPOINT = API_ENDPOINT

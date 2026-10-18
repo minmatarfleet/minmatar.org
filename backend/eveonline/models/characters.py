@@ -4,6 +4,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from esi.models import Token
 
+from eveonline.models.contracts import EsiContractFields
+
 logger = logging.getLogger(__name__)
 
 
@@ -217,43 +219,10 @@ class EveCharacterAsset(models.Model):
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
 
-class EveCharacterContract(models.Model):
+class EveCharacterContract(EsiContractFields):
     """Character contract from ESI (esi-contracts.read_character_contracts.v1)."""
 
-    contract_id = models.BigIntegerField(unique=True, primary_key=True)
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
-    type = models.CharField(max_length=32, db_index=True)
-    status = models.CharField(max_length=32, db_index=True)
-    availability = models.CharField(max_length=32, blank=True)
-    issuer_id = models.BigIntegerField()
-    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
-    assignee_id = models.BigIntegerField(null=True, blank=True)
-    acceptor_id = models.BigIntegerField(null=True, blank=True)
-    for_corporation = models.BooleanField(default=False)
-    date_issued = models.DateTimeField(null=True, blank=True)
-    date_expired = models.DateTimeField(null=True, blank=True)
-    date_accepted = models.DateTimeField(null=True, blank=True)
-    date_completed = models.DateTimeField(null=True, blank=True)
-    days_to_complete = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    reward = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    collateral = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    buyout = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    volume = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    start_location_id = models.BigIntegerField(null=True, blank=True)
-    end_location_id = models.BigIntegerField(null=True, blank=True)
-    title = models.CharField(blank=True, max_length=255)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["character", "status"])]

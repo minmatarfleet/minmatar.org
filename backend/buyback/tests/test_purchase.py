@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from app.test import TestCase
 from buyback.helpers.auth import can_manage_stock_sales
+from buyback.helpers.pricing import get_baseline_buy_prices
 from buyback.helpers.purchase_fill import fill_purchase
 from buyback.helpers.purchase_orders import (
     try_complete_from_outbound_contracts,
@@ -37,6 +38,7 @@ from industry.helpers.reprocessing_skills import (
     SKILL_UBIQUITOUS_MOON_ORE_PROCESSING,
 )
 from market.models import EveMarketItemLocationPrice
+from market.models.history import EveMarketItemHistory
 
 
 def _ledger(*, eve_type, quantity, reason, source_id, **extra):
@@ -221,6 +223,151 @@ class SellPricingTestCase(TestCase):
         settings.save()
         prices = unit_prices_for_types([self.ore.id], settings=settings)
         self.assertEqual(prices[self.ore.id], Decimal("12.60"))
+
+
+class SellPricingFallbackTestCase(TestCase):
+    """
+    Every sell basis falls back to Forge history when the Jita book has no
+    usable value. ``sell_price_basis`` × (live value / sell-only row / no
+    row with history / nothing at all).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.jita = EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=10000002,
+            price_baseline=True,
+            prices_active=True,
+            market_active=False,
+        )
+
+        def pi_type(type_id, name):
+            return ensure_type(
+                type_id=type_id,
+                name=name,
+                group_id=1042,
+                group_name="Basic Commodities - Tier 1",
+                category_id=43,
+                category_name="Planetary Commodities",
+            )
+
+        self.full = pi_type(3645, "Water")
+        self.sell_only = pi_type(3683, "Oxygen")
+        self.history_only = pi_type(2393, "Bacteria")
+        self.nothing = pi_type(2396, "Biofuels")
+        EveMarketItemLocationPrice.objects.create(
+            location=self.jita,
+            item=self.full,
+            buy_price=Decimal("10.00"),
+            sell_price=Decimal("14.00"),
+            split_price=Decimal("12.00"),
+        )
+        # No station-range buy orders: buy and split are null.
+        EveMarketItemLocationPrice.objects.create(
+            location=self.jita,
+            item=self.sell_only,
+            buy_price=None,
+            sell_price=Decimal("50.00"),
+            split_price=None,
+        )
+        for eve_type, average in (
+            (self.sell_only, "40.00"),
+            (self.history_only, "7.50"),
+        ):
+            EveMarketItemHistory.objects.create(
+                region_id=10000002,
+                item=eve_type,
+                date=timezone.now().date(),
+                average=Decimal(average),
+                highest=Decimal(average),
+                lowest=Decimal(average),
+                volume=1,
+            )
+
+    def _prices(self, basis):
+        settings = EveBuybackSettings.load()
+        settings.sell_price_basis = basis
+        settings.sell_markup = 0
+        settings.save()
+        return unit_prices_for_types(
+            [
+                self.full.id,
+                self.sell_only.id,
+                self.history_only.id,
+                self.nothing.id,
+            ],
+            settings=settings,
+        )
+
+    def test_jita_buy(self):
+        self.assertEqual(
+            self._prices(SellPriceBasis.JITA_BUY),
+            {
+                self.full.id: Decimal("10.00"),
+                self.sell_only.id: Decimal("40.00"),
+                self.history_only.id: Decimal("7.50"),
+            },
+        )
+
+    def test_jita_sell(self):
+        self.assertEqual(
+            self._prices(SellPriceBasis.JITA_SELL),
+            {
+                self.full.id: Decimal("14.00"),
+                self.sell_only.id: Decimal("50.00"),
+                self.history_only.id: Decimal("7.50"),
+            },
+        )
+
+    def test_jita_split(self):
+        self.assertEqual(
+            self._prices(SellPriceBasis.JITA_SPLIT),
+            {
+                self.full.id: Decimal("12.00"),
+                self.sell_only.id: Decimal("50.00"),
+                self.history_only.id: Decimal("7.50"),
+            },
+        )
+
+    def test_buy_basis_with_no_markup_matches_appraisal_buy_price(self):
+        """Selling at Jita buy uses the same price the appraisal pays."""
+        type_ids = [self.full.id, self.sell_only.id, self.history_only.id]
+        self.assertEqual(
+            self._prices(SellPriceBasis.JITA_BUY),
+            {
+                tid: value.quantize(Decimal("0.01"))
+                for tid, value in get_baseline_buy_prices(type_ids).items()
+            },
+        )
+
+    @patch("industry.helpers.compressed_ore._ensure_type_materials_loaded")
+    def test_unpriced_pick_is_a_shortfall_not_a_free_line(self, _):
+        settings = EveBuybackSettings.load()
+        settings.sell_price_basis = SellPriceBasis.JITA_BUY
+        settings.sell_markup = 0
+        settings.save()
+        for eve_type in (self.sell_only, self.nothing):
+            _ledger(
+                eve_type=eve_type,
+                quantity=10,
+                reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+                source_id=f"in:{eve_type.id}",
+            )
+        fill = fill_purchase("Oxygen\t10\nBiofuels\t5", settings=settings)
+        self.assertEqual(
+            [(pick.name, pick.unit_price) for pick in fill.picks],
+            [("Oxygen", 40.0)],
+        )
+        self.assertEqual(fill.contract_total, 400)
+        self.assertEqual(
+            [(row.name, row.quantity) for row in fill.shortfalls],
+            [("Biofuels", 5)],
+        )
 
 
 @patch("industry.helpers.compressed_ore._ensure_type_materials_loaded")

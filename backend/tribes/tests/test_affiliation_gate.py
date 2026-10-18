@@ -1,7 +1,5 @@
 """Tests for per-group affiliation allowlists on tribe apply/offboarding."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
@@ -20,13 +18,9 @@ from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipHistory,
 )
+from app.testing import make_token
 
 BASE_URL = "/api/tribes"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def setUpModule():
@@ -92,7 +86,7 @@ class TribeGroupAffiliationGateTestCase(TestCase):
         UserAffiliation.objects.create(
             user=self.user, affiliation=self.alliance
         )
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
 
     def tearDown(self):
         clear_feature_cache()

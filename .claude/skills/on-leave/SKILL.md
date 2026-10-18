@@ -87,7 +87,7 @@ exposes `restored_from_leave_at` (ISO date or `null`); treat non-null as omit.
 | Signal | Model | Roll-up |
 |--------|--------|---------|
 | Fleets | `EveFleetInstanceMember` | Distinct instances across linked EVE IDs |
-| Kills | `EveCharacterKillmailAttacker` | Attackers; exclude self-victim |
+| Kills | `EveCharacterKillmailAttacker` | Attackers; exclude self-victim; one per distinct mail per person (alts on the same mail count once) |
 | Voice | `DiscordChannelActivityRecord` | `voice_minute` by Django `username` → hours |
 | Restore | `UserCommunityStatusHistory` | Latest `on_leave`→non-leave in last 30d → `restored_from_leave_at` |
 

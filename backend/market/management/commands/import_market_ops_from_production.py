@@ -21,14 +21,15 @@ Usage (from backend/, with DB_READONLY_* configured):
 
 from datetime import timedelta
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import QuerySet
 from django.utils import timezone
+
 from eveuniverse.models import EveType
 
+from eveonline.helpers.production_import import validate_source_alias
 from eveonline.models import EveLocation
 from fittings.models import EveFitting
 from market.helpers.contract_match import fitting_type_quantities_bulk
@@ -110,7 +111,7 @@ class Command(BaseCommand):
         local = "default"
         history_days = options["history_days"]
         all_contracts = options["all_contracts"]
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
         if history_days < 0:
             raise CommandError("--history-days must be >= 0.")
 
@@ -202,15 +203,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Market ops import complete."))
         self._write_local_totals(local)
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _contract_queryset(self, source, all_contracts) -> QuerySet:
         qs = EveMarketContract.objects.using(source)

@@ -25,7 +25,7 @@ from campaigns.models import (
     SystemRole,
 )
 from campaigns.endpoints import serializers
-from campaigns.services import advantage, plan
+from campaigns.services import advantage, plan, stats
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.helpers import campaign_week_start, day_bounds, week_bounds
 from campaigns.tests.helpers import (
@@ -153,6 +153,13 @@ class CampaignApiTests(TestCase):
         row = response.json()["characters"][0]
         self.assertEqual(row["state"], "ready")
         self.assertEqual(row["action_url"], "")
+
+        # The detail page counts the same character as tracked. That used to
+        # read a stat column nothing wrote, so it was always 0.
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.user)
+        )
+        self.assertEqual(response.json()["characters_tracked"], 1)
 
     def test_a_basic_token_without_notifications_still_needs_an_update(self):
         token = Token.objects.create(
@@ -598,8 +605,9 @@ class CampaignApiTests(TestCase):
     def test_roster_rolls_pilots_up_by_primary_corporation(self):
         today = timezone.now().date()
 
-        def pilot(corporation_id, name, kills, last_active_day):
+        def pilot(user_id, corporation_id, name, kills, last_active_day):
             return {
+                "user_id": user_id,
                 "corporation_id": corporation_id,
                 "corporation_name": name,
                 "characters_included": 2,
@@ -614,23 +622,79 @@ class CampaignApiTests(TestCase):
 
         rows = serializers.roster_corporations(
             [
-                pilot(None, "", 9, today),
-                pilot(2, "Small", 50, None),
-                pilot(1, "Big", 4, today - timedelta(days=30)),
-                pilot(1, "Big", 6, today - timedelta(days=1)),
+                pilot(1, None, "", 9, today),
+                pilot(2, 2, "Small", 50, None),
+                pilot(3, 1, "Big", 2, today - timedelta(days=30)),
+                pilot(4, 1, "Big", 2, today - timedelta(days=1)),
             ],
             today,
+            # Both Big pilots were on mail 11 and in fleet 5.
+            mails_by_user={
+                1: {20: 7},
+                2: {30: 1},
+                3: {10: 100, 11: 100},
+                4: {11: 100, 12: 100},
+            },
+            fleets_by_user={3: {5}, 4: {5, 6}},
         )
 
         self.assertEqual([row["corporation_id"] for row in rows], [1, 2, None])
         big = rows[0]
         self.assertEqual(big["pilots"], 2)
         self.assertEqual(big["active_pilots"], 1)
-        self.assertEqual(big["kills"], 10)
+        self.assertEqual(big["kills"], 3)
+        self.assertEqual(big["isk_destroyed"], 300)
+        self.assertEqual(big["fleets_attended"], 2)
+        self.assertEqual(big["losses"], 2)
+        self.assertEqual(big["complexes"], 6)
         self.assertEqual(big["characters_included"], 4)
-        self.assertEqual(big["isk_destroyed"], 2000)
         self.assertEqual(big["last_active_day"], today - timedelta(days=1))
         self.assertIsNone(rows[1]["last_active_day"])
+        self.assertEqual(rows[1]["fleets_attended"], 0)
+
+    def test_roster_corporation_kills_match_the_corporation_board(self):
+        """Two alts of one pilot and a corp mate on one kill: the roster's
+        corporation row says one kill, like the board next to it."""
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            EveCorporation.objects.create(corporation_id=1, name="Big")
+        big_a = self._pilot_in("big_a", 4001, 1)
+        self._pilot_in("big_b", 4002, 1)
+        alt = EveCharacter.objects.create(
+            character_id=4011, character_name="Big A Alt", user=big_a
+        )
+        CampaignEnlistmentCharacter.objects.create(
+            enlistment=CampaignEnlistment.objects.get(
+                campaign=self.campaign, user=big_a
+            ),
+            character=alt,
+            included_from=self.campaign.start_at,
+        )
+        attribute_feed_killmail(
+            make_feed_killmail(
+                711,
+                victim_character_id=9999,
+                attacker_ids=[4001, 4011, 4002],
+            )
+        )
+        stats.materialise_recent(self.campaign)
+        stats.rebuild_stats(self.campaign)
+
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.staff)
+        )
+        big = next(
+            row
+            for row in response.json()["corporations"]
+            if row["corporation_id"] == 1
+        )
+        self.assertEqual(big["kills"], 1)
+        self.assertEqual(big["isk_destroyed"], 50_000_000)
+        board = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations"
+            "?metric=kills&period=all",
+            **auth_headers(self.user),
+        ).json()
+        self.assertEqual(board[0]["value"], big["kills"])
 
     def test_roster_carries_the_corporation_roll_up(self):
         response = self.client.get(

@@ -11,6 +11,7 @@ from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
+from app.dev_switches import fake_login_user_id
 from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
@@ -63,11 +64,7 @@ MOBILE_LOGIN_REDIRECT = "mobile://auth/callback"
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
+    if fake_login_user_id():
         return fake_login(request, redirect_url)
 
     redirect_url = safe_login_redirect_url(
@@ -153,11 +150,7 @@ class SessionSchema(BaseModel):
     ),
 )
 def login_eve(request, redirect_url: str):
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
+    if fake_login_user_id():
         return fake_login(request, redirect_url)
 
     redirect_url = safe_login_redirect_url(redirect_url, MOBILE_LOGIN_REDIRECT)
@@ -406,7 +399,7 @@ def sync_user(request, user_id: int):
 def fake_login(request, redirect_url):
     """Fake user login for local dev server only."""
 
-    user_id = int(settings.FAKE_LOGIN_USER_ID)
+    user_id = int(fake_login_user_id())
     logger.warning("*** FAKE USER LOGIN (id=%d) ***", user_id)
 
     django_user = User.objects.get(id=user_id)

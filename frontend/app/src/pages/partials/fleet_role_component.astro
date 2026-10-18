@@ -1,4 +1,5 @@
 ---
+import { login_redirect } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -8,7 +9,7 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
 const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+if (!user) return login_redirect(Astro)
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
 const readonly = JSON.parse(Astro.url.searchParams.get('readonly') ?? 'true') as boolean

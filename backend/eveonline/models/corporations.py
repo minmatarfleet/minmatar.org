@@ -7,6 +7,7 @@ from eveonline.client import EsiClient
 from eveonline.helpers.esi import parse_esi_date
 from eveonline.models.alliances import EveAlliance
 from eveonline.models.characters import EveCharacter
+from eveonline.models.contracts import EsiContractFields
 
 logger = logging.getLogger(__name__)
 
@@ -145,45 +146,12 @@ class EveCorporationMedia(models.Model):
         return f"{self.corporation} {self.kind}"
 
 
-class EveCorporationContract(models.Model):
+class EveCorporationContract(EsiContractFields):
     """Corporation contract from ESI (esi-contracts.read_corporation_contracts.v1)."""
 
-    contract_id = models.BigIntegerField(unique=True, primary_key=True)
     corporation = models.ForeignKey(
         EveCorporation, on_delete=models.CASCADE, related_name="contracts"
     )
-    type = models.CharField(max_length=32, db_index=True)
-    status = models.CharField(max_length=32, db_index=True)
-    availability = models.CharField(max_length=32, blank=True)
-    issuer_id = models.BigIntegerField()
-    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
-    assignee_id = models.BigIntegerField(null=True, blank=True)
-    acceptor_id = models.BigIntegerField(null=True, blank=True)
-    for_corporation = models.BooleanField(default=False)
-    date_issued = models.DateTimeField(null=True, blank=True)
-    date_expired = models.DateTimeField(null=True, blank=True)
-    date_accepted = models.DateTimeField(null=True, blank=True)
-    date_completed = models.DateTimeField(null=True, blank=True)
-    days_to_complete = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    reward = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    collateral = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    buyout = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    volume = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    start_location_id = models.BigIntegerField(null=True, blank=True)
-    end_location_id = models.BigIntegerField(null=True, blank=True)
-    title = models.CharField(blank=True, max_length=255)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["corporation", "status"])]

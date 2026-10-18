@@ -1,19 +1,26 @@
-"""GET /products/{product_id}/build - one run's materials, prices and margin."""
+"""
+GET /products/{product_id}/build - one run's materials, prices and margin.
+
+Base blueprint numbers (no ME/TE, facility bonuses, job fees, taxes or
+freight) priced like the planner prices materials and the product: Jita
+sell at the price_baseline book, else the Forge guide. The planner and
+order profit add the rest through plan_costing.
+"""
 
 from app.errors import ErrorResponse
-from eveuniverse.models import EveMarketPrice
 from industry.endpoints.products.schemas import (
     ProductBuild,
     ProductBuildMaterial,
 )
 from industry.helpers.build_planner import get_recipe
+from industry.helpers.cost_breakdown import jita_sell_unit_prices_by_type_id
 from industry.helpers.type_breakdown import ACTIVITY_REACTION
 from industry.models import IndustryProduct
 
 PATH = "{int:product_id}/build"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "Materials for one run of an industry product at average market prices",
+    "summary": "Materials for one run of an industry product at Jita sell prices",
     "response": {
         200: ProductBuild,
         404: ErrorResponse,
@@ -40,9 +47,9 @@ def get_product_build(request, product_id: int):
     material_ids = [type_id for type_id, _, _ in recipe.materials]
     prices = {
         type_id: float(price)
-        for type_id, price in EveMarketPrice.objects.filter(
-            eve_type_id__in=[*material_ids, recipe.product_type_id]
-        ).values_list("eve_type_id", "average_price")
+        for type_id, price in jita_sell_unit_prices_by_type_id(
+            [*material_ids, recipe.product_type_id]
+        ).items()
         if price
     }
     tracked = {

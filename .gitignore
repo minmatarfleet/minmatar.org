@@ -179,6 +179,7 @@ artifacts/
 
 # debugging / script outputs
 backend/scripts/outputs/
+backend/scripts/output/
 
 # MCP local secrets and OAuth tokens (JARs under mcps/ are tracked)
 mcps/.env

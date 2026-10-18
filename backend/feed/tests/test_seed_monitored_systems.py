@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 from django.test import TestCase
+
+from eveonline.tests.fake_esi_http import FakeEsi, make_response
 
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_esi,
@@ -19,44 +19,40 @@ class SeedMonitoredSystemsTestCase(TestCase):
             FeedMonitoredSystem.objects.filter(is_active=True).count(), 0
         )
 
-    @patch("feed.management.commands.seed_feed_monitored_systems.requests.get")
-    def test_seed_from_esi_resolves_region_via_constellation(
-        self, mock_get: MagicMock
-    ):
-        def fake_get(url, **kwargs):
-            response = MagicMock()
-            if url.endswith("/fw/systems/"):
-                response.status_code = 200
-                response.json.return_value = [
-                    {"solar_system_id": 30003067},
-                    {"solar_system_id": 30002957},
-                ]
-                return response
-            if url.endswith("/universe/systems/30003067/"):
-                response.status_code = 200
-                response.json.return_value = {
-                    "name": "Huola",
-                    "constellation_id": 20000448,
-                }
-                return response
-            if url.endswith("/universe/systems/30002957/"):
-                response.status_code = 200
-                response.json.return_value = {
-                    "name": "Other",
-                    "constellation_id": 20000001,
-                }
-                return response
-            if url.endswith("/universe/constellations/20000448/"):
-                response.status_code = 200
-                response.json.return_value = {"region_id": 10000038}
-                return response
-            if url.endswith("/universe/constellations/20000001/"):
-                response.status_code = 200
-                response.json.return_value = {"region_id": 99999999}
-                return response
-            raise AssertionError(f"Unexpected URL: {url}")
-
-        mock_get.side_effect = fake_get
+    def test_seed_from_esi_resolves_region_via_constellation(self):
+        fake = FakeEsi().install(self)
+        fake.add(
+            "GET",
+            "/fw/systems/",
+            make_response(
+                200,
+                [{"solar_system_id": 30003067}, {"solar_system_id": 30002957}],
+            ),
+        )
+        fake.add(
+            "GET",
+            "/universe/systems/30003067/",
+            make_response(
+                200, {"name": "Huola", "constellation_id": 20000448}
+            ),
+        )
+        fake.add(
+            "GET",
+            "/universe/systems/30002957/",
+            make_response(
+                200, {"name": "Other", "constellation_id": 20000001}
+            ),
+        )
+        fake.add(
+            "GET",
+            "/universe/constellations/20000448/",
+            make_response(200, {"region_id": 10000038}),
+        )
+        fake.add(
+            "GET",
+            "/universe/constellations/20000001/",
+            make_response(200, {"region_id": 99999999}),
+        )
 
         count = seed_from_esi()
 

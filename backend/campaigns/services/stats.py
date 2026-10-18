@@ -565,7 +565,8 @@ def corporation_leaderboard(
     counts the pilots who put a number on the board in the window, so a
     big corporation of idle pilots doesn't read as a busy one. Kill boards
     count each mail once per corporation: thirty members on one kill is
-    one kill, not thirty.
+    one kill, not thirty. The fleets board counts distinct fleets the same
+    way; the pilot board counts fleet-days (see fleets.attendance_for_day).
     """
     field = BOARD_METRICS.get(metric, "kills")
     queryset = CampaignParticipantDay.objects.filter(campaign=campaign)
@@ -575,13 +576,19 @@ def corporation_leaderboard(
 
     # Kill boards read the mails themselves, keeping each one's id so a
     # kill shared by several members counts once for their corporation.
+    # The fleets board does the same with fleet ids.
     mails_by_user: dict[int, dict[int, int]] = {}
+    fleets_by_user: dict[int, set[int]] = {}
     if metric in KILL_BOARD_FILTERS:
-        for user_id, mail_id, isk_value in _kills_in_period(
-            campaign, first_day
-        ).filter(**KILL_BOARD_FILTERS[metric]):
-            mails_by_user.setdefault(user_id, {})[mail_id] = isk_value
+        mails_by_user = kill_mails_by_user(
+            campaign, first_day, **KILL_BOARD_FILTERS[metric]
+        )
         by_user = {user_id: 0 for user_id in mails_by_user}
+    elif metric == "fleets":
+        fleets_by_user = fleets.fleet_ids_by_user(
+            campaign, day_bounds(first_day)[0] if first_day else None
+        )
+        by_user = {user_id: 0 for user_id in fleets_by_user}
     else:
         by_user = dict(
             queryset.values("user_id")
@@ -602,6 +609,7 @@ def corporation_leaderboard(
 
     corporations: dict[int | None, dict] = {}
     mails_by_corporation: dict[int | None, dict[int, int]] = {}
+    fleets_by_corporation: dict[int | None, set[int]] = {}
     for user_id, value in by_user.items():
         corporation_id = corporation_by_user.get(user_id)
         row = corporations.setdefault(
@@ -618,6 +626,9 @@ def corporation_leaderboard(
         mails_by_corporation.setdefault(corporation_id, {}).update(
             mails_by_user.get(user_id, {})
         )
+        fleets_by_corporation.setdefault(corporation_id, set()).update(
+            fleets_by_user.get(user_id, ())
+        )
 
     if metric in KILL_BOARD_FILTERS:
         for corporation_id, row in corporations.items():
@@ -625,6 +636,9 @@ def corporation_leaderboard(
             row["value"] = float(
                 sum(mails.values()) if metric == "isk" else len(mails)
             )
+    elif metric == "fleets":
+        for corporation_id, row in corporations.items():
+            row["value"] = float(len(fleets_by_corporation[corporation_id]))
 
     rows = sorted(
         corporations.values(),
@@ -677,6 +691,22 @@ def _kills_in_period(campaign, first_day: date | None):
     return participants.values_list(
         "user_id", "killmail_id", "killmail__isk_value"
     )
+
+
+def kill_mails_by_user(
+    campaign, first_day: date | None = None, **mail_filters
+) -> dict[int, dict[int, int]]:
+    """``{user_id: {killmail_id: isk_value}}`` for every scored kill.
+
+    Anything that pools pilots (a corporation, the whole roster) merges
+    these dicts, so a mail several of them were on counts once.
+    """
+    mails: dict[int, dict[int, int]] = {}
+    for user_id, mail_id, isk_value in _kills_in_period(
+        campaign, first_day
+    ).filter(**mail_filters):
+        mails.setdefault(user_id, {})[mail_id] = isk_value
+    return mails
 
 
 def primary_characters(user_ids) -> dict[int, tuple[int, str]]:

@@ -11,11 +11,12 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-import requests
 from django.utils import timezone
 
-from feed.constants import ESI_FW_SYSTEMS_URL, FEED_FW_ESI_USER_AGENT
+from feed.constants import ESI_FW_SYSTEMS_URL
 from feed.models import FeedEvent
+from eveonline import esi_budget as esi_gate
+from eveonline.esi_http import esi_request
 
 from campaigns.models import (
     Campaign,
@@ -23,7 +24,6 @@ from campaigns.models import (
     CampaignSystem,
     CampaignSystemSnapshot,
 )
-from campaigns.services import esi_gate
 from campaigns.services.jump_graph import classify_system
 
 logger = logging.getLogger(__name__)
@@ -55,21 +55,18 @@ def fetch_fw_systems(*, force: bool = False) -> list[dict]:
         logger.warning("Skipping FW systems poll, ESI budget low")
         return []
 
-    try:
-        response = requests.get(
-            ESI_FW_SYSTEMS_URL,
-            headers={"User-Agent": FEED_FW_ESI_USER_AGENT},
-            timeout=60,
-        )
-        esi_gate.observe_headers(dict(response.headers))
+    # The transport accounts errors against the app-wide budget; the
+    # factional-warfare bucket is ours to spend.
+    result = esi_request("GET", ESI_FW_SYSTEMS_URL, timeout=60, empty=[])
+    if result.status is not None:
         esi_gate.spend("factional-warfare")
-        response.raise_for_status()
-    except requests.RequestException as error:
-        esi_gate.record_error()
-        logger.warning("FW systems poll failed: %s", error)
+    if not result.ok:
+        logger.warning(
+            "FW systems poll failed: %s", result.error or result.status
+        )
         return []
 
-    return response.json() or []
+    return result.data or []
 
 
 def operational_state_for(

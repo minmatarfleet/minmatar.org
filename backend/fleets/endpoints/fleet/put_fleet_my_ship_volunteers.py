@@ -8,6 +8,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 from eveuniverse.models import EveType
+from fittings.eft import parse_eft_header
 
 from fleets.endpoints.helpers import (
     _fleet_authorized,
@@ -19,7 +20,6 @@ from fleets.endpoints.schemas import (
     SetMyShipVolunteersRequest,
 )
 from fleets.helpers.composition import resolve_composition_target
-from fleets.helpers.eft_items import parse_eft_header
 from fleets.helpers.fit_roles import canonical_bursts, fit_roles
 from fleets.helpers.fleet_window import forget_fleet_window
 from fleets.models import EveFleet, EveFleetShipVolunteer

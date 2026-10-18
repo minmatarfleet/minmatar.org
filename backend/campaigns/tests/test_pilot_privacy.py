@@ -161,11 +161,11 @@ class PublicCampaignPilotNameTests(TestCase):
 
 
 class EventTitleMigrationTests(TestCase):
-    """0029 rewrites stored titles and puts the old text back on reverse."""
+    """0031 rewrites stored titles and puts the old text back on reverse."""
 
     def setUp(self):
         self.migration = importlib.import_module(
-            "campaigns.migrations.0029_pilot_names_in_event_titles"
+            "campaigns.migrations.0031_pilot_names_in_event_titles"
         )
         self.campaign = make_campaign()
         self.user, self.character = enlist(self.campaign, HANDLE, 8101)

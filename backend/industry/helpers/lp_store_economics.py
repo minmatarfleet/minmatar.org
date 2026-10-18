@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.db import ProgrammingError
-from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
@@ -48,11 +47,11 @@ from industry.models import (
 )
 from market.helpers.pricing import (
     VOLUME_WINDOWS,
+    baseline_book,
     get_prices_by_type_id,
     get_volume_weighted_average_by_type_id,
     get_volume_windows_by_type_id,
 )
-from market.models import EveMarketItemLocationPrice
 
 # Forge 30d traded units below this (or missing history) = negligible LP
 # liquidity. Fuzzwork's "5% Volume" is order-book depth (qty within 5% of
@@ -182,22 +181,13 @@ def _baseline_location_prices(
     Return {type_id: (sell, buy)} from baseline EveLocation LocationPrice.
     Missing types omitted.
     """
-    unique = list({int(t) for t in type_ids})
-    if not unique:
-        return {}
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if baseline is None:
-        return {}
-    out: Dict[int, Tuple[Optional[int], Optional[int]]] = {}
-    for row in EveMarketItemLocationPrice.objects.filter(
-        location=baseline, item_id__in=unique
-    ).values_list("item_id", "sell_price", "buy_price"):
-        item_id, sell, buy = row
-        out[int(item_id)] = (
-            int(sell) if sell is not None else None,
-            int(buy) if buy is not None else None,
+    return {
+        type_id: (
+            int(row.sell) if row.sell is not None else None,
+            int(row.buy) if row.buy is not None else None,
         )
-    return out
+        for type_id, row in baseline_book(type_ids).items()
+    }
 
 
 def _resolve_sell_buy(

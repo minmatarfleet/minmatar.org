@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional
 
+from eveonline.killmail_classes import SMALL_GANG_MAX_ATTACKERS
+
 MIN_APPROVE_DAYS = 60
 RECENT_DAYS = 30
 FIRST_WEEK_DAYS = 7
@@ -27,7 +29,7 @@ Conf = Literal["high", "medium", "low", "—"]
 
 
 def gang_bucket(size: int) -> str:
-    if size <= 10:
+    if size <= SMALL_GANG_MAX_ATTACKERS:
         return "small"
     if size <= 24:
         return "medium"

@@ -18,12 +18,13 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import signals
 from django.utils import timezone
+
+from eveonline.helpers.production_import import validate_source_alias
 
 from eveonline.models import EveLocation
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
@@ -87,7 +88,7 @@ class Command(BaseCommand):
         source = options["source"]
         local = "default"
         days = options["days"]
-        self._validate_aliases(source, local)
+        validate_source_alias(source, local)
         if days < 1:
             raise CommandError("--days must be >= 1.")
 
@@ -280,15 +281,6 @@ class Command(BaseCommand):
                 f"{EveFleetInstanceMemberShipSnapshot.objects.using(local).filter(member_id__in=member_ids).count()} ship snapshots."
             )
         )
-
-    def _validate_aliases(self, source, local):
-        if source not in settings.DATABASES:
-            raise CommandError(
-                f'Database alias "{source}" is not configured. '
-                "Set production_readonly (see app settings / DB_READONLY_*)."
-            )
-        if source == local:
-            raise CommandError("Source and destination must differ.")
 
     def _ensure_location(self, location_id, source, local):
         existing = (

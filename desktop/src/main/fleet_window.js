@@ -7,14 +7,15 @@
 // (the roster and kill feed only for the FC). A fleet opened from the schedule, your live sign-up you
 // haven't joined, or the fleet you FC next each add one /{id}/window call. All send ETags, so an
 // unchanged fleet costs a 304 and no re-render. Recent and your sign-ups come from /window/mine every
-// two minutes. Polling stops while the window is closed or EVE isn't running, and backs off when the API
-// is down.
+// two minutes. Polling (poller.js) stops while the window is closed or EVE isn't running, and backs off
+// when the API is down.
 const { EventEmitter } = require('events')
-const { ApiError } = require('./api')
+const { ApiError, is_unauthorized } = require('./api')
+const { Poller, MAX_BACKOFF_MS } = require('./poller')
+const { REMINDERS_KEY, read_reminders } = require('./settings_schema')
 
 const POLL_MS = 30_000
 const MINE_POLL_MS = 120_000
-const MAX_BACKOFF_MS = 5 * 60_000
 const COMPOSITION_TTL_MS = 5 * 60_000
 const NOTICE_MS = 2500
 // Your own fleet shows its pre-flight on the Fleet tab this long before its start time.
@@ -22,7 +23,6 @@ const PREP_WINDOW_MS = 3 * 3600_000
 // "Remind me" fires this long before form-up, and not at all once the fleet is this far past its start.
 const REMIND_BEFORE_MS = 15 * 60_000
 const REMIND_LATE_MS = 10 * 60_000
-const REMINDERS_KEY = 'fleet_reminders'
 
 class FleetWindow extends EventEmitter {
     constructor({
@@ -42,14 +42,14 @@ class FleetWindow extends EventEmitter {
         this.mine_poll_ms = mine_poll_ms
         this.now = now
         this.timers = timers
+        this.poller = new Poller({ interval_ms: poll_ms, run: () => this.fetch_all(), on_unauthorized: () => this.emit('unauthorized'), now, timers })
         this.reset()
     }
 
     // Signed out: forget everything about this pilot.
     reset() {
-        this.stop()
+        this.poller.reset()
         this.timers.clearTimeout(this.notice_timer)
-        this.active = false
         this.current = null           // window payload for the fleet you are in (or just ran), or null
         this.windows = new Map()      // fleet id -> window payload for the other fleets on screen
         this.opened = null            // fleet id opened from the schedule
@@ -68,13 +68,10 @@ class FleetWindow extends EventEmitter {
         this.notice = null
         this.busy = null
         this.error = null
-        this.failures = 0
-        this.last_poll = -Infinity    // never polled: the first activation polls at once
         this.synced_at = null
         this.loaded = false
         this.compositions = new Map()
         this.published = null
-        this.polling = null
     }
 
     // ------------------------------------------------------------ inputs from main.js
@@ -104,59 +101,47 @@ class FleetWindow extends EventEmitter {
         this.publish()
     }
 
-    // ------------------------------------------------------------ polling
+    // ------------------------------------------------------------ polling (poller.js)
 
     // Poll only while the pilot can see the window. Coming back polls at once if the data is stale.
+    get active() {
+        return this.poller.active
+    }
+
     set_active(active) {
-        if (active === this.active) return
-        this.active = active
-        if (!active) return this.stop()
-        const age = this.now() - this.last_poll
-        this.schedule(age >= this.poll_ms ? 0 : this.poll_ms - age)
+        this.poller.set_active(active)
     }
 
     stop() {
-        this.timers.clearTimeout(this.timer)
-        this.timer = null
+        this.poller.cancel()
     }
 
     schedule(ms) {
-        this.stop()
-        this.timer = this.timers.setTimeout(() => this.poll(), ms)
+        this.poller.schedule(ms)
     }
 
     poll() {
-        this.stop()
-        if (!this.polling) this.polling = this.fetch_all().finally(() => { this.polling = null })
-        return this.polling
+        return this.poller.poll()
     }
 
+    // One poll. Resolves false when the API could not be reached (the poller backs off); a 401 throws.
     async fetch_all() {
-        this.last_poll = this.now()
-        let unauthorized = false
         try {
             const current = await this.api.current_fleet_window()
             this.current = current.body.window
             if (this.now() - this.mine_at >= this.mine_poll_ms) await this.fetch_mine()
             await this.fetch_watched()
-            this.failures = 0
             this.error = null
             this.loaded = true
             this.synced_at = new Date(this.now()).toISOString()
         } catch (err) {
-            if (err instanceof ApiError && err.status === 401) {
-                unauthorized = true
-                this.emit('unauthorized')
-                return
-            }
-            this.failures++
+            if (is_unauthorized(err)) throw err   // no publish: main signs out
             this.error = 'Could not reach Minmatar Fleet. Retrying…'
-        } finally {
-            if (!unauthorized) {
-                this.publish()
-                if (this.active) this.schedule(Math.min(MAX_BACKOFF_MS, this.poll_ms * 2 ** this.failures))
-            }
+            this.publish()
+            return false
         }
+        this.publish()
+        return true
     }
 
     // Recent and sign-ups are a nice-to-have on every tab: a failure here never fails the poll.
@@ -165,7 +150,7 @@ class FleetWindow extends EventEmitter {
         try {
             this.mine = (await this.api.my_fleets()).body
         } catch (err) {
-            if (err instanceof ApiError && err.status === 401) throw err
+            if (is_unauthorized(err)) throw err
         }
     }
 
@@ -271,8 +256,7 @@ class FleetWindow extends EventEmitter {
     }
 
     reminders() {
-        const list = this.store && this.store.get(REMINDERS_KEY)
-        return Array.isArray(list) ? list.filter(r => r && Number.isInteger(r.id)) : []
+        return read_reminders(this.store && this.store.get(REMINDERS_KEY))
     }
 
     view_of(win) {
@@ -496,7 +480,7 @@ class FleetWindow extends EventEmitter {
         this.flash(on ? 'Reminder off' : 'Reminder set for 15 min before')
     }
 
-    // Called every 30 s by main.js, whether or not the window is up.
+    // Called by main.js once a minute, whether or not the window is up.
     check_reminders() {
         const now = this.now()
         const list = this.reminders()
@@ -522,7 +506,7 @@ class FleetWindow extends EventEmitter {
             this.flash(done)
             return true
         } catch (err) {
-            if (err instanceof ApiError && err.status === 401) this.emit('unauthorized')
+            if (is_unauthorized(err)) this.emit('unauthorized')
             else this.flash(failed(err))
             return false
         } finally {

@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import Iterable
 
 from eveonline.client import EsiClient
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from eveonline.models import EveCharacter
 from eveuniverse.models import EveType
 
 from feed.models import FeedCharacterAffiliation
 
 CAPSULE_GROUP_NAME = "Capsule"
-KNOWN_CAPSULE_TYPE_IDS = frozenset({670})
+KNOWN_CAPSULE_TYPE_IDS = CAPSULE_TYPE_IDS
 
 _HULL_CLASS_PLURALS = {
     "Frigate": "frigates",

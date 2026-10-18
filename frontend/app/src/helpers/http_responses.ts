@@ -1,3 +1,5 @@
+import { i18n } from '@helpers/i18n'
+
 export const HTTP_404_Not_Found = (body:BodyInit | null = null):Response => {
     return new Response(body, {
         status: 404,
@@ -81,4 +83,55 @@ export const HTTP_502_Server_Error = (body:BodyInit | null = null):Response => {
         status: 502,
         statusText: 'Service Unavailable'
     });
+}
+
+/** htmx marks every request it sends with `HX-Request: true`. */
+export const is_htmx_request = (request: Request): boolean => {
+    return request.headers.get('HX-Request') === 'true'
+}
+
+/**
+ * Redirect from a partial. htmx follows a 302 inside its XHR and swaps the
+ * target page into the fragment, so answer an htmx request with 200 and
+ * `HX-Redirect`, which makes htmx navigate the whole window. Any other
+ * request (someone opening the partial URL directly) gets a normal 302.
+ */
+export const partial_redirect = (request: Request, location: string): Response => {
+    if (is_htmx_request(request)) {
+        return new Response('', {
+            status: 200,
+            headers: {
+                'Content-Type': 'text/html',
+                'HX-Redirect': location,
+            },
+        })
+    }
+
+    return new Response(null, {
+        status: 302,
+        headers: { Location: location },
+    })
+}
+
+/**
+ * The URL to come back to after logging in. For an htmx request that is the
+ * page the user is on (htmx sends it as `HX-Current-URL`; fall back to
+ * `Referer`), not the partial URL, which renders as an unstyled fragment.
+ */
+export const login_return_url = (request: Request): string => {
+    if (!is_htmx_request(request))
+        return request.url
+
+    return request.headers.get('HX-Current-URL')
+        || request.headers.get('Referer')
+        || request.url
+}
+
+/** Send a visitor without a session to the login notice, then back here. */
+export const login_redirect = (context: { request: Request, url: URL }): Response => {
+    const { translatePath } = i18n(context.url)
+    const auth_init = translatePath('/redirects/auth_init')
+    const return_to = encodeURIComponent(login_return_url(context.request))
+
+    return partial_redirect(context.request, `${auth_init}?redirect_url=${return_to}`)
 }

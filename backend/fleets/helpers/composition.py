@@ -6,9 +6,10 @@ doctrine (if any) and the fleet's own fittings (catalog picks or manual EFT).
 from dataclasses import dataclass, field
 
 from eveuniverse.models import EveType
+from fittings.eft import eft_item_names
 from fittings.models import EveDoctrineFitting, EveFitting
 
-from fleets.helpers.eft_items import eft_item_names, module_slots_for
+from fleets.helpers.eft_items import module_slots_for
 from fleets.helpers.fit_roles import FitRoles, fit_roles
 
 ROLE_ORDER = {"primary": 0, "secondary": 1, "support": 2, "utility": 3}

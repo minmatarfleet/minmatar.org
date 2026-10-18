@@ -254,7 +254,8 @@ class EsiFailureTests(TestCase):
 
     def test_the_snapshot_poll_survives_a_dead_endpoint(self):
         with mock.patch(
-            "requests.get", side_effect=requests.RequestException("boom")
+            "eveonline.esi_http.requests.request",
+            side_effect=requests.RequestException("boom"),
         ):
             self.assertEqual(snapshots.fetch_fw_systems(), [])
             self.assertEqual(

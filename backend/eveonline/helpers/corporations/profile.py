@@ -123,6 +123,12 @@ def missing_prime_time(corporation: EveCorporation) -> list[dict]:
 
 
 def corporation_health(corporation_id: int) -> dict:
+    """The corp's row from the alliance health snapshot.
+
+    ``active_90d`` is alliance-health activity: any fleet, kill or supply
+    signal in 90 days. The member tiers on the same page (summary.fleet_tier)
+    count fleets only, so a miner can be active here and inactive there.
+    """
     snapshot = AllianceHealthSnapshot.objects.order_by("-computed_at").first()
     if snapshot is None:
         return {}
@@ -138,7 +144,7 @@ def corporation_health(corporation_id: int) -> dict:
 
 
 def bot_invite_url() -> str:
-    configured = getattr(settings, "DISCORD_BOT_INVITE_URL", "") or ""
+    configured = settings.DISCORD_BOT_INVITE_URL or ""
     if configured:
         return configured
     client_id = getattr(settings, "DISCORD_CLIENT_ID", "") or ""

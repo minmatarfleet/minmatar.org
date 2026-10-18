@@ -140,4 +140,5 @@ def create_srp_request(request, payload: CreateSrpRequest):
         ),
         category=reimbursement.category,
         comments=reimbursement.comments,
+        combat_log_id=reimbursement.combat_log_id,
     )
