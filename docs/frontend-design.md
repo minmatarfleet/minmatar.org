@@ -62,6 +62,11 @@ Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx
 - `src/pages/account.astro`
 - `src/pages/industry/orders/planner.astro`
 
+These render server records client-side from JSON embedded in `x-data` (`x-for` over assets/blueprints) and must move to server-rendered partials with htmx filtering:
+
+- `src/pages/character/assets.astro` with `AssetsListAlpine`, `AssetsBlockAlpine`, `AssetLocationItemAlpine`, `AssetItemAlpine` (render through `src/pages/partials/assets_list_component.astro`)
+- `src/pages/industry/blueprints.astro` and `src/pages/industry/blueprints/copies.astro` with `BlueprintTableAlpine`, `BlueprintTableItemAlpine` (render through `src/pages/partials/blueprints_component.astro`)
+
 Migration pattern: move the rendering logic into `src/pages/partials/*_component.astro`, expose a `PARTIAL_URL`, and trigger it with `hx-get`/`hx-post` + `hx-swap`, using `hx-swap-oob` for independent regions.
 
 ## 2. Naming conventions
@@ -160,6 +165,22 @@ Rules:
 - Prefer composing existing primitives over adding bespoke layout CSS.
 - Pass spacing via tokens, not literal values.
 - Reuse `Button`, `Badge`, `Tag`, `Card`, `Input` etc. instead of restyling raw elements.
+
+### Shared blocks
+
+Reach for these before building a variant of your own (all in `src/components/blocks/`):
+
+| Block | Use it for |
+| --- | --- |
+| `DataGrid` | Grid "tables" of rows you render (`data-grid-row`, one child per column). Owns the header, the column template, sideways scroll and, with `stack`, the phone card captions (`data-label`). `variant`: `compact` (boards) or `ledger` (contract lists). |
+| `Table` | Older list-style rows (BlockList); not a column grid. |
+| `campaigns/etherium-reach/CampaignDataTable` | Real `<table>` rendered from row data (CSV export, search); used by the war reports and Alliance Health. |
+| `StatCard` | Big-number stat: label, value, hint (`value`/`hint` slots for tooltips). |
+| `ActionMenu` + `ActionMenuItem` | Every action dropdown. Items can be links (`href`), submit buttons, status lines (`text_only`) or two-step confirms (`confirm_label`). |
+| `SectionTabs` + `SectionTabPanel` | Page-level tabs synced with the URL hash; `hash_aliases` maps deep-link prefixes to a tab. |
+| `HtmxPager` | Paging a partial: `total_pages` (Previous/Next) or `has_more` (Newer/Older). |
+| `FilterChip` + `ChipGroup` | Filter chips over rendered content (`aria-pressed`) or filtered-view links (`aria-current`). |
+| `CorporationBadge` / `AllianceBadge` | Entity logo + name; the default slot renders at every size. |
 
 ## 5. Component conventions
 

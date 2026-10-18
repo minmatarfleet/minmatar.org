@@ -1,0 +1,110 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * Pager for a list fed by an htmx partial: each button asks the partial for
+ * another page and swaps it into `target`.
+ *
+ * - With `total_pages`: Previous / Next (disabled at either end) after a
+ *   status line (the `status` slot, or "Page N"). The `actions` slot adds
+ *   buttons before them, e.g. an export.
+ * - With `has_more` (no total known): Newer / Older around "Page N", each
+ *   shown only when that page exists; nothing renders on a lone first page.
+ *
+ * `request` adds attributes to every page request (hx-include, hx-select...);
+ * its hx-target/hx-swap win over `target`/`swap`.
+ */
+interface Props {
+    page:               number;
+    url_for:            (page:number) => string;
+    total_pages?:       number;
+    has_more?:          boolean;
+    target?:            string;
+    swap?:              string;
+    request?:           Record<string, string>;
+    /** Gap between the status and the buttons, and between the buttons. */
+    gap?:               string;
+    buttons_gap?:       string;
+    [propName: string]: any;
+}
+
+const {
+    page,
+    url_for,
+    total_pages,
+    has_more = false,
+    target,
+    swap = 'outerHTML',
+    request = {},
+    gap,
+    buttons_gap = 'var(--space-3xs)',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const hx = (to:number) => ({
+    'hx-get': url_for(to),
+    'hx-target': target,
+    'hx-swap': swap,
+    'hx-indicator': '.loader',
+    ...request,
+})
+
+const page_label = t('pager.page').replace('{page}', String(page))
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+{total_pages !== undefined ?
+    <FlexInline
+        gap={gap ?? 'var(--space-s)'}
+        justification='space-between'
+        class:list={['[ htmx-pager w-full items-center ]', Astro.props.class]}
+        {...attributes}
+    >
+        <slot name="status"><small class="[ htmx-pager-page ]">{page_label}</small></slot>
+        <FlexInline gap={buttons_gap}>
+            <slot name="actions" />
+            {total_pages > 1 && <>
+                <Button size='sm' color='transparent' type='button' disabled={page <= 1} {...hx(page - 1)}>
+                    {t('pager.previous')}
+                </Button>
+                <Button size='sm' color='transparent' type='button' disabled={page >= total_pages} {...hx(page + 1)}>
+                    {t('pager.next')}
+                </Button>
+            </>}
+        </FlexInline>
+    </FlexInline>
+: (page > 1 || has_more) &&
+    <FlexInline
+        gap={gap ?? 'var(--space-2xs)'}
+        justification='space-between'
+        class:list={['[ htmx-pager items-center ]', Astro.props.class]}
+        {...attributes}
+    >
+        <span>
+            {page > 1 &&
+                <Button size='sm' color='transparent' narrow={true} {...hx(page - 1)}>
+                    ← {t('pager.newer')}
+                </Button>
+            }
+        </span>
+        <small class="[ htmx-pager-page ]">{page_label}</small>
+        <span>
+            {has_more &&
+                <Button size='sm' color='transparent' narrow={true} {...hx(page + 1)}>
+                    {t('pager.older')} →
+                </Button>
+            }
+        </span>
+    </FlexInline>
+}
+
+<style lang="scss">
+    .htmx-pager-page {
+        color: var(--foreground);
+    }
+</style>

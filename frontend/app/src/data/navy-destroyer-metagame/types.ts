@@ -10,4 +10,4 @@ export type {
     GlossaryEntry,
     GuideSection,
     MatchupChart,
-} from '@/data/guides/ship-guide-types'
+} from '@/data/ship-guide/types'

@@ -39,3 +39,58 @@ test("confirm item only runs the action from the armed button", async () => {
   expect(result).toContain('x-on:click.outside="confirming = false"');
   expect(result).toContain('x-on:keydown.escape="confirming = false"');
 });
+
+test("href item renders one link carrying the attributes", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(ActionMenuItem, {
+    props: { href: "/fleets/upcoming/edit/7", "x-on:click": "close()" },
+    slots: { default: "Edit fleet" },
+  });
+
+  expect(result).not.toContain("<button");
+  expect(result).toMatch(/<a href="\/fleets\/upcoming\/edit\/7"[^>]*x-on:click="close\(\)"/);
+  expect(result).toContain("Edit fleet");
+});
+
+test("submit item keeps its type for forms", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(ActionMenuItem, {
+    props: { type: "submit" },
+    slots: { default: "Refresh MOTD" },
+  });
+
+  expect(result.match(/type="/g)).toHaveLength(1);
+  expect(result).toContain('type="submit"');
+});
+
+test("text-only item is a status line, not a control", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(ActionMenuItem, {
+    props: { variant: "success", text_only: true },
+    slots: { default: "Twitch connected" },
+  });
+
+  expect(result).not.toMatch(/<(button|a)[\s>]/);
+  expect(result).toContain("action-menu-item--success");
+  expect(result).toContain("action-menu-item--text");
+});
+
+test("tribe withdraw: htmx request sits on the confirm button only", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(ActionMenuItem, {
+    props: {
+      variant: "danger",
+      confirm_label: "Confirm",
+      "hx-delete": "/partials/tribe_group_status_component?membership_id=3",
+      "hx-target": "#tribe-group-status-1-2",
+    },
+    slots: { default: "Withdraw" },
+  });
+
+  const buttons = result.match(/<button[^>]*>/g) ?? [];
+  expect(buttons).toHaveLength(2);
+  expect(buttons[0]).not.toContain("hx-delete");
+  expect(buttons[1]).toContain("hx-delete");
+  expect(buttons[1]).toContain('hx-target="#tribe-group-status-1-2"');
+  expect(buttons[0]).toContain("confirming = true");
+});

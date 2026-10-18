@@ -85,7 +85,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 <Flexblock
@@ -122,8 +122,9 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     {readiness.characters.length === 0 ?
         <small>{t('campaigns.readiness.none')}</small>
         :
-        <CampaignTable
+        <DataGrid
             min_width={show_inclusion ? '42rem' : '36rem'}
+            stack={true}
             template={show_inclusion
                 ? 'minmax(12rem, 1fr) 7rem 9rem 8rem 8rem'
                 : 'minmax(12rem, 1fr) 7.5rem 9rem 10rem'}
@@ -138,8 +139,8 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             {readiness.characters.map(character => {
                 const status = status_for(character)
                 return (
-                <div class="[ campaign-table-row ]" role="row">
-                    <div class="[ campaign-cell-media ]" role="cell">
+                <div class="[ data-grid-row ]" role="row">
+                    <div class="[ data-grid-media ]" role="cell">
                         <img
                             loading='lazy'
                             width='32'
@@ -149,11 +150,11 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         />
                         <Flexblock gap='0' class="[ min-w-0 ]">
                             <span>{character.character_name}</span>
-                            {character.is_primary && <small class="[ campaign-table-muted ]">{t('campaigns.readiness.primary')}</small>}
+                            {character.is_primary && <small class="[ data-grid-muted ]">{t('campaigns.readiness.primary')}</small>}
                         </Flexblock>
                     </div>
                     {character.corporation_id ?
-                        <span role="cell" class="[ campaign-cell ]">
+                        <span role="cell" class="[ data-grid-cell ]">
                             <img
                                 loading='lazy'
                                 width='32'
@@ -163,7 +164,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             />
                         </span>
                         :
-                        <span role="cell" class="[ campaign-table-muted ]">—</span>
+                        <span role="cell" class="[ data-grid-muted ]">—</span>
                     }
                     <Tag
                         role="cell"
@@ -172,7 +173,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                         narrow={true}
                     />
                     {show_inclusion && (campaign_slug ?
-                        <span role="cell" class="[ campaign-cell ]" data-label={t('campaigns.readiness.in_campaign')}>
+                        <span role="cell" class="[ data-grid-cell ]" data-label={t('campaigns.readiness.in_campaign')}>
                             <Button
                                 size='sm'
                                 color={character.included ? 'transparent' : 'green'}
@@ -185,17 +186,17 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             </Button>
                         </span>
                         :
-                        <span role="cell" class="[ campaign-table-muted ]" data-label={t('campaigns.readiness.in_campaign')}>{character.included ? t('campaigns.readiness.included') : '—'}</span>
+                        <span role="cell" class="[ data-grid-muted ]" data-label={t('campaigns.readiness.in_campaign')}>{character.included ? t('campaigns.readiness.included') : '—'}</span>
                     )}
                     {mode === 'campaign' ? (
                         character.action_url ?
-                            <span role="cell" class="[ campaign-cell campaign-cell-action ]">
+                            <span role="cell" class="[ data-grid-cell campaign-readiness-action ]">
                                 <Button size='sm' color='green' narrow={true} href={build_action_url(character.action_url, include_on_return(character.character_id))}>
                                     {t('campaigns.readiness.add_to_campaign')}
                                 </Button>
                             </span>
                         : !character.included && campaign_slug ?
-                            <span role="cell" class="[ campaign-cell campaign-cell-action ]">
+                            <span role="cell" class="[ data-grid-cell campaign-readiness-action ]">
                                 <Button
                                     size='sm'
                                     color='green'
@@ -209,21 +210,21 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                                 </Button>
                             </span>
                         :
-                            <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.in_campaign_ok')}</small>
+                            <small role="cell" class="[ data-grid-muted ]">{t('campaigns.readiness.in_campaign_ok')}</small>
                     ) : (
                         character.action_url ?
-                            <span role="cell" class="[ campaign-cell ]">
+                            <span role="cell" class="[ data-grid-cell ]">
                                 <Button size='sm' color='fleet-red' href={build_action_url(character.action_url, RETURN_URL)}>
                                     {t('campaigns.readiness.update')}
                                 </Button>
                             </span>
                         :
-                            <small role="cell" class="[ campaign-table-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
+                            <small role="cell" class="[ data-grid-muted ]">{t('campaigns.readiness.nothing_to_do')}</small>
                     )}
                 </div>
                 )
             })}
-        </CampaignTable>
+        </DataGrid>
     }
 </Flexblock>
 
@@ -233,7 +234,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         height: var(--space-m);
     }
 
-    .campaign-cell-action :global(.button) {
+    .campaign-readiness-action :global(.button) {
         white-space: nowrap;
         padding-block: var(--space-3xs);
         font-size: var(--step--1);
@@ -241,33 +242,25 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
 
     /* Phones: one card per character instead of a sideways-scrolling row. */
     @media (max-width: 48rem) {
-        :global(.campaign-readiness .campaign-table) {
-            min-width: 0 !important;
-        }
-
-        :global(.campaign-readiness .campaign-table-head) {
-            display: none;
-        }
-
-        .campaign-table-row {
+        .data-grid-row {
             grid-template-columns: minmax(0, 1fr) auto;
             gap: var(--space-2xs) var(--space-s);
             padding-inline: 0;
             padding-block: var(--space-xs);
         }
 
-        .campaign-table-row > :nth-child(2) {
+        .data-grid-row > :nth-child(2) {
             justify-self: end;
         }
 
         /* Status and the in-campaign toggle share the second line. */
-        .campaign-table-row > :nth-child(3) {
+        .data-grid-row > :nth-child(3) {
             grid-row: 2;
             grid-column: 1;
             justify-self: start;
         }
 
-        .campaign-table-row > [data-label] {
+        .data-grid-row > [data-label] {
             grid-row: 2;
             grid-column: 1 / -1;
             display: flex;
@@ -276,27 +269,21 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             gap: var(--space-2xs);
         }
 
-        .campaign-table-row > [data-label]::before {
-            content: attr(data-label);
-            font-family: var(--heading-font);
-            font-size: var(--step--2);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--faded);
+        .data-grid-row > [data-label]::before {
             white-space: nowrap;
         }
 
-        .campaign-table-row > :last-child {
+        .data-grid-row > :last-child {
             grid-column: 1 / -1;
         }
 
         /* Without the in-campaign column a plain status note fits beside the tag. */
-        .campaign-table-row > small:last-child:nth-child(4) {
+        .data-grid-row > small:last-child:nth-child(4) {
             grid-row: 2;
             justify-self: end;
         }
 
-        .campaign-table-row > .campaign-cell:last-child :global(.button) {
+        .data-grid-row > .data-grid-cell:last-child :global(.button) {
             display: flex;
             justify-content: center;
             align-items: center;

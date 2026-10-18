@@ -1,6 +1,6 @@
 ---
 interface Props {
-    variant?:           'default' | 'primary' | 'danger';
+    variant?:           'default' | 'primary' | 'danger' | 'success' | 'muted';
     /**
      * Two-step confirm: the first click swaps the item for this label, and
      * only the second click runs the action (attributes go on that button).
@@ -9,12 +9,21 @@ interface Props {
      * Dropdown/ActionMenu - whenever the menu closes.
      */
     confirm_label?:     string;
+    /** Renders the item as a link. */
+    href?:              string;
+    /** Button type, e.g. 'submit' for an item inside a <form>. */
+    type?:              'button' | 'submit';
+    /** A status line in the menu, not an action: plain text, no hover. */
+    text_only?:         boolean;
     [propName: string]: any;
 }
 
 const {
     variant = 'default',
     confirm_label,
+    href,
+    type = 'button',
+    text_only = false,
     ...attributes
 } = Astro.props
 
@@ -23,11 +32,20 @@ delete attributes.class
 const item_class = [
     '[ action-menu-item ]',
     `action-menu-item--${variant}`,
+    { 'action-menu-item--text': text_only },
     Astro.props.class,
 ]
 ---
 
-{confirm_label ? (
+{text_only ? (
+    <span class:list={item_class} {...attributes}>
+        <slot />
+    </span>
+) : href ? (
+    <a href={href} class:list={item_class} {...attributes}>
+        <slot />
+    </a>
+) : confirm_label ? (
     <div
         class="[ action-menu-item__confirm ]"
         x-data="{ confirming: false }"
@@ -44,7 +62,7 @@ const item_class = [
             <slot />
         </button>
         <button
-            type="button"
+            type={type}
             class:list={[...item_class, 'is-confirm']}
             x-show="confirming"
             x-cloak
@@ -55,7 +73,7 @@ const item_class = [
         </button>
     </div>
 ) : (
-    <button type="button" class:list={item_class} {...attributes}>
+    <button type={type} class:list={item_class} {...attributes}>
         <slot />
     </button>
 )}
@@ -82,8 +100,8 @@ const item_class = [
         text-decoration: none;
         cursor: pointer;
 
-        &:hover,
-        &:focus-visible {
+        &:is(a, button):hover,
+        &:is(a, button):focus-visible {
             color: var(--foreground);
             background: color-mix(in srgb, var(--foreground) 8%, transparent);
         }
@@ -97,10 +115,29 @@ const item_class = [
             color: var(--fleet-yellow);
         }
 
+        &--success {
+            color: var(--green);
+        }
+
+        &--success:is(a, button):hover,
+        &--success:is(a, button):focus-visible {
+            background: color-mix(in srgb, var(--green) 25%, transparent);
+            color: var(--highlight);
+        }
+
         &--danger:hover,
         &--danger:focus-visible,
         &.is-confirm {
             color: var(--fleet-red);
+        }
+
+        &--muted {
+            color: color-mix(in srgb, var(--highlight) 65%, transparent);
+        }
+
+        &--text {
+            font-weight: 500;
+            cursor: default;
         }
     }
 

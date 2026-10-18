@@ -38,6 +38,7 @@ import Tag from '@components/blocks/Tag.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro';
+import StatusText from '@components/blocks/StatusText.astro';
 
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
@@ -153,7 +154,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             </TimeAlternator>
                         </Flexblock> :
                         <Flexblock gap='var(--space-2xs)'>
-                            <p class="[ timer-status-text ]">{t('expired')}</p>
+                            <StatusText tone='danger'>{t('expired')}</StatusText>
                             <small class="[ text-red ]">{eve_time_text}</small>
                         </Flexblock>
                     }
@@ -181,19 +182,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
 <style lang="scss">
     @use './_phone_media_card.scss' as *;
-
-    .timer-status-text {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        margin-left: -10px;
-        margin-right: -10px;
-        color: var(--fleet-red);
-		letter-spacing: 12px;
-        text-indent: 12px;
-		line-height: 1;
-        white-space: nowrap;
-        text-transform: uppercase;
-    }
 
     // Phones: compact media-object card. See _phone_media_card.scss.
     .structure-timer-list-item {

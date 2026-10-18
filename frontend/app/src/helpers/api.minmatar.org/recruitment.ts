@@ -1,5 +1,6 @@
 import type { CorporationForumPost, CorporationForumPostUpdate } from '@dtypes/api.minmatar.org'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
+import { get_shared_secret } from '@helpers/env'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/recruitment`
 
@@ -36,12 +37,16 @@ export async function update_corporation_forum_post(
 /**
  * Record a visit through a recruitment scout reply's tracked link. Never
  * throws: the visitor is redirected whether or not the click was saved.
+ *
+ * Server-side only: the API accepts clicks from the frontend server, which
+ * proves itself with the shared secret.
  */
 export async function record_scout_click(code: string, target: string, client_ip: string, user_agent: string) {
     const endpoint = `${API_ENDPOINT}/scout/clicks`
     try {
         await api_response(endpoint, {
             method: 'POST',
+            headers: { 'X-Shared-Secret': get_shared_secret() ?? '' },
             body: { code, target, client_ip, user_agent },
             signal: AbortSignal.timeout(1500),
         })

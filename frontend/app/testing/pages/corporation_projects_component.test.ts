@@ -2,6 +2,7 @@
 // (happy-dom drops the Cookie header from Request, and the partial reads auth_token from it.)
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test, vi } from "vitest";
+import * as jose from "jose";
 
 const get_corporation_projects = vi.fn();
 vi.mock("@helpers/api.minmatar.org/corporations", async (original) => ({
@@ -12,12 +13,14 @@ vi.mock("@helpers/api.minmatar.org/corporations", async (original) => ({
 import CorporationProjects from "@/pages/partials/corporation_projects_component.astro";
 
 const SLUG = "minmatar-fleet";
+// get_request_user decodes the cookie, so it has to be a JWT.
+const AUTH_TOKEN = new jose.UnsecuredJWT({ user_id: 1, username: "pilot" }).encode();
 const URL_BASE = "http://localhost:4321/partials/corporation_projects_component/?corporation_id=98000001&corporation=__SLUG__";
 
 async function render(slug: string) {
   const container = await AstroContainer.create();
   return container.renderToString(CorporationProjects, {
-    request: new Request(URL_BASE.replace("__SLUG__", slug), { headers: { cookie: "auth_token=token" } }),
+    request: new Request(URL_BASE.replace("__SLUG__", slug), { headers: { cookie: `auth_token=${AUTH_TOKEN}` } }),
   });
 }
 

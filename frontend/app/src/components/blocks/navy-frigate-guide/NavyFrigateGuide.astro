@@ -16,8 +16,10 @@ import {
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
-import NavyFrigateGuideMatchupChart from '@components/blocks/navy-frigate-guide/NavyFrigateGuideMatchupChart.astro'
-import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/NavyFrigateGuideShipSection.astro'
+import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
+import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
+import { getGuideFittingsForShip } from '@/data/navy-frigate-guide'
+import { resolveMatchupOpponentShip } from '@/data/navy-frigate-guide/opponent-ships'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 
@@ -110,7 +112,7 @@ try {
                     <div class="nfg-charts-grid">
                         {
                             matchupCharts.map((chart) => (
-                                <NavyFrigateGuideMatchupChart chart={chart} />
+                                <GuideMatchupChart chart={chart} />
                             ))
                         }
                     </div>
@@ -120,7 +122,14 @@ try {
             <div class="nfg-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <NavyFrigateGuideShipSection ship={ship} fittingLibrary={fittingLibrary} />
+                        <GuideShipSection
+                            ship={ship}
+                            fittings={getGuideFittingsForShip(ship.id)}
+                            fitting_library={fittingLibrary}
+                            hull_class="Frigate"
+                            id_prefix="nfg"
+                            resolve_opponent={resolveMatchupOpponentShip}
+                        />
                     ))
                 }
             </div>

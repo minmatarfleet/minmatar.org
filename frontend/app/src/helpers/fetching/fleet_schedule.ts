@@ -5,6 +5,7 @@ import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { get_fleet_commander_metrics, get_fleet_ship_volunteers, get_fleet_results, type FleetResult } from '@helpers/api.minmatar.org/fleets'
 import { unique_values } from '@helpers/array'
+import { fleet_phase } from '@helpers/fleet_phase'
 
 export interface FleetScheduleDoctrine {
     name:       string;
@@ -25,8 +26,7 @@ export interface FleetSchedule {
     fc_metrics:     FleetCommanderMetrics[];
 }
 
-const is_live = (fleet:FleetItem) =>
-    fleet.status !== 'cancelled' && Boolean(fleet.tracking) && !fleet.tracking?.end_time
+const is_live = (fleet:FleetItem) => fleet_phase(fleet) === 'active'
 
 export async function fetch_fleet_schedule(auth_token:string):Promise<FleetSchedule> {
     const fc_metrics = await get_fleet_commander_metrics(auth_token)

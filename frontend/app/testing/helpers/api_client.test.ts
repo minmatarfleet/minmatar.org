@@ -10,7 +10,7 @@ import {
 const URL = 'http://app:8000/api/things/1'
 
 function mock_fetch(...responses: (Response | Error)[]) {
-    const fetch_mock = vi.fn(async () => {
+    const fetch_mock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
         const next = responses.shift()
         if (next instanceof Error)
             throw next
@@ -66,9 +66,10 @@ describe('api_request', () => {
         await api_request(URL)
 
         for (const call of fetch_mock.mock.calls) {
-            expect(call[1].headers).toEqual({ 'Content-Type': 'application/json' })
-            expect(call[1].method).toBe('GET')
-            expect(call[1]).not.toHaveProperty('body')
+            const init = call[1] as RequestInit
+            expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+            expect(init.method).toBe('GET')
+            expect(init).not.toHaveProperty('body')
         }
     })
 

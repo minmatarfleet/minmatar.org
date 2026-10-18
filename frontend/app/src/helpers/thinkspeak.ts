@@ -1,5 +1,5 @@
 import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
-import { can_custom, type GateContext } from '@helpers/gates'
+import { can_custom, legacy_superuser, type GateContext } from '@helpers/gates'
 
 export const THINKSPEAK_GROUP_CODE = 'pulse.thinkspeak'
 export const THINKSPEAK_GROUP_NAME = 'Thinkspeak'
@@ -36,6 +36,6 @@ export async function can_manage_content(gates: GateContext, auth_token: string 
     if (!auth_token) return false
 
     return can_custom(gates, 'content.manage', async () =>
-        gates.is_superuser || await is_thinkspeak_member(auth_token)
+        legacy_superuser(gates) || await is_thinkspeak_member(auth_token)
     )
 }

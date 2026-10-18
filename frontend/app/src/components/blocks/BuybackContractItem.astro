@@ -50,7 +50,7 @@ import CharacterPicture from "@components/blocks/CharacterPicture.astro";
 import Tag from '@components/blocks/Tag.astro';
 ---
 
-<div class="[ buyback-contract-item ]" role="row">
+<div class="[ data-grid-row buyback-contract-item ]" role="row">
     <div
         class="[ buyback-contract-item__created ]"
         role="cell"
@@ -60,7 +60,7 @@ import Tag from '@components/blocks/Tag.astro';
         <span class="[ whitespace-nowrap ]">{issued_date}</span>
     </div>
 
-    <div class="[ buyback-contract-item__creator ]" role="cell" data-label={t('creator')}>
+    <div class="[ buyback-contract-item__creator ]" role="cell">
         <PilotBadge
             character_id={contract.issuer_id ?? 0}
             character_name={contract.issuer_character_name ?? 'Unknown'}
@@ -69,14 +69,13 @@ import Tag from '@components/blocks/Tag.astro';
         />
     </div>
 
-    <div class="[ buyback-contract-item__location ]" role="cell" data-label={t('location')}>
+    <div class="[ buyback-contract-item__location ]" role="cell">
         <span class="[ text-highlight ]">{contract.location_name}</span>
     </div>
 
     <div
         class="[ buyback-contract-item__status ]"
         role="cell"
-        data-label={t('status')}
         data-tippy-content={processing_tooltip}
     >
         <Tag
@@ -135,18 +134,7 @@ import Tag from '@components/blocks/Tag.astro';
 </div>
 
 <style lang="scss">
-    .buyback-contract-item {
-        display: grid;
-        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(10rem, 1.4fr) minmax(7rem, 0.9fr) minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.9fr) minmax(7rem, 1fr);
-        gap: var(--space-s);
-        align-items: center;
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
-        font-size: var(--step--1);
-        min-width: 70rem;
-    }
-
+    /* Columns, gaps and padding come from DataGrid (ledger); phones get cards. */
     a {
         color: var(--highlight);
     }
@@ -160,11 +148,6 @@ import Tag from '@components/blocks/Tag.astro';
                 "created size"
                 "price acceptor"
                 "title title";
-            gap: var(--space-2xs) var(--space-s);
-            align-items: start;
-            min-width: 0;
-            padding-block: var(--space-s);
-            padding-inline: 0;
         }
 
         .buyback-contract-item__creator { grid-area: creator; min-width: 0; }
@@ -175,14 +158,5 @@ import Tag from '@components/blocks/Tag.astro';
         .buyback-contract-item__price { grid-area: price; }
         .buyback-contract-item__acceptor { grid-area: acceptor; min-width: 0; }
         .buyback-contract-item__title { grid-area: title; }
-
-        .buyback-contract-item [data-label]:not(.buyback-contract-item__creator, .buyback-contract-item__status, .buyback-contract-item__location)::before {
-            content: attr(data-label);
-            display: block;
-            color: var(--faded);
-            font-size: var(--step--2);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
     }
 </style>

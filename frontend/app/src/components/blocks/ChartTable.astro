@@ -1,0 +1,35 @@
+---
+/**
+ * Screen-reader copy of a CSS chart: pair it with an `aria-hidden` plot so the values
+ * are readable without hover tooltips (see ProductWeeklyChart, CampaignCoverageChart).
+ */
+interface Props {
+    caption:    string;
+    /** Header for the row-label column first, then one per value column. */
+    columns:    string[];
+    rows:       { label: string; values: (string | number)[] }[];
+}
+
+const {
+    caption,
+    columns,
+    rows,
+} = Astro.props
+---
+
+<table class="[ visually-hidden ]">
+    <caption>{caption}</caption>
+    <thead>
+        <tr>
+            {columns.map(column => <th scope="col">{column}</th>)}
+        </tr>
+    </thead>
+    <tbody>
+        {rows.map(row =>
+            <tr>
+                <th scope="row">{row.label}</th>
+                {row.values.map(value => <td>{value}</td>)}
+            </tr>
+        )}
+    </tbody>
+</table>

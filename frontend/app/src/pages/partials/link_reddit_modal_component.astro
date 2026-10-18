@@ -4,6 +4,7 @@ import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
 import { set_reddit_username } from '@helpers/api.minmatar.org/creators'
+// no-error-refetch: mutation form; a failed save shows inline in the form.
 
 const { auth_token } = get_request_user(Astro)
 

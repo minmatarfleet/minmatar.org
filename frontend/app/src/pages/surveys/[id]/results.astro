@@ -234,7 +234,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
         display: flex;
         flex-direction: column;
         gap: var(--space-2xs);
-        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+        border-top: 1px solid var(--border-color);
         padding-top: var(--space-s);
     }
     .q-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); flex-wrap: wrap; }
@@ -243,7 +243,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
         font-size: 0.72em;
         color: var(--fleet-yellow);
         opacity: 0.7;
-        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.05));
+        background: color-mix(in srgb, var(--highlight) 5%, transparent);
         padding: 1px 6px;
         border-radius: 3px;
     }
@@ -272,8 +272,8 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
     .writein-list { margin: var(--space-2xs) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2xs); }
     .writein-list li { color: var(--foreground); opacity: 0.9; display: flex; align-items: center; gap: var(--space-2xs); }
     .wi-author { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
-    .wi-portrait { border-radius: 50%; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)); }
-    .wi-corp { border-radius: 3px; margin-left: -6px; border: 1px solid var(--background, #12100e); background: var(--background, #12100e); }
+    .wi-portrait { border-radius: 50%; border: 1px solid var(--border-color); }
+    .wi-corp { border-radius: 3px; margin-left: -6px; border: 1px solid var(--background); background: var(--background); }
     .wi-text { line-height: 1.4; }
     .muted { opacity: 0.5; }
     .note { opacity: 0.7; margin: 0; }
@@ -282,7 +282,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
         display: flex;
         flex-direction: column;
         gap: var(--space-2xs);
-        border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+        border-top: 1px solid var(--border-color);
         padding-top: var(--space-s);
     }
     .corp-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); }
@@ -290,7 +290,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
     .corp-row { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr auto; gap: var(--space-s); align-items: center; }
     @media (max-width: 40rem) { .corp-row { grid-template-columns: 1fr; } }
     .crow-label { font-size: 0.88em; }
-    .meter { height: 8px; border-radius: 999px; background: var(--fill-and-stroke, rgba(255, 255, 255, 0.08)); overflow: hidden; }
+    .meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--highlight) 8%, transparent); overflow: hidden; }
     .meter__fill { height: 100%; border-radius: 999px; }
     .crow-mean { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3ch; text-align: right; }
 </style>

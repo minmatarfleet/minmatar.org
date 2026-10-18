@@ -20,7 +20,7 @@ const {
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Grid from '@components/compositions/Grid.astro'
-import MetricStat from '@components/blocks/tribe_activity/MetricStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ActivityAllTime from '@components/blocks/tribe_activity/ActivityAllTime.astro'
 import ActivityContributors from '@components/blocks/tribe_activity/ActivityContributors.astro'
 import ActivityHullTiles from '@components/blocks/tribe_activity/ActivityHullTiles.astro'
@@ -73,7 +73,7 @@ const private_block_hidden = (activity.block === 'welcomed' && !highlights.welco
                     column_gap="var(--space-s)"
                 >
                     {metrics.map((metric) =>
-                        <MetricStat
+                        <StatCard
                             label={metric.label}
                             value={metric.value}
                             hint={metric.hint}

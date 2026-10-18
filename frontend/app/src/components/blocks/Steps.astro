@@ -20,7 +20,7 @@ import Markdown from '@components/blocks/Markdown.astro';
     <h3 class="[ text-step-2 ]">{step}</h3>
     <Flexblock gap='var(--space-3xs)'>
         <Markdown markdown={title} inline={true} inline_element='span' />
-        {subtitle && <small class="[ text-highlight ]">In-game</small>}
+        {subtitle && <small class="[ text-highlight ]">{subtitle}</small>}
     </Flexblock>
 </Flexblock>
 

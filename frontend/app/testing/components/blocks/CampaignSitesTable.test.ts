@@ -9,7 +9,6 @@ const site = (overrides: Partial<CampaignSite>): CampaignSite => ({
     site_kind: "complex",
     amount_lp: 52500,
     system: "Helgatild",
-    username: "thumper",
     character_id: 1,
     character_name: "thumper is sad",
     plex_class: "",

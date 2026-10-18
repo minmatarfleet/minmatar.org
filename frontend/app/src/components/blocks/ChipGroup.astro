@@ -1,0 +1,58 @@
+---
+/**
+ * A row of FilterChips. By default one line that scrolls sideways with an
+ * edge fade; `wrap` lets the chips wrap onto more lines instead.
+ */
+interface Props {
+    aria_label?:        string;
+    wrap?:              boolean;
+    [propName: string]: any;
+}
+
+const {
+    aria_label,
+    wrap = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+{wrap ?
+    <FlexInline
+        gap="var(--space-3xs)"
+        class:list={['[ chip-group chip-group--wrap ]', Astro.props.class]}
+        role="group"
+        aria-label={aria_label}
+        {...attributes}
+    >
+        <slot />
+    </FlexInline>
+    :
+    <XFadeScroll>
+        <FlexInline
+            gap="var(--space-3xs)"
+            class:list={['[ chip-group ]', Astro.props.class]}
+            role="group"
+            aria-label={aria_label}
+            {...attributes}
+        >
+            <slot />
+        </FlexInline>
+    </XFadeScroll>
+}
+
+<style lang="scss">
+    .chip-group {
+        flex-wrap: nowrap;
+        padding-block: var(--space-3xs);
+    }
+
+    .chip-group--wrap {
+        flex-wrap: wrap;
+        padding-block: 0;
+    }
+</style>

@@ -13,6 +13,7 @@ const can_view_fleets = can(gates, 'fleets.view')
 
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { fleet_phase } from '@helpers/fleet_phase'
 
 let fleets:FleetItem[] = []
 let active_fleet_index:number = -1 // No active fleet
@@ -23,7 +24,7 @@ if (can_view_fleets) {
         fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
         fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
         fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-        active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+        active_fleet_index = fleets.findIndex(fleet => fleet_phase(fleet) === 'active')
     } catch (error) {
         console.log('Error fetching fleet feed:', error instanceof Error ? error.message : error)
     }

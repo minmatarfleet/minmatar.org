@@ -7,7 +7,7 @@ import { get_route } from '@helpers/api.eveonline/routes'
 import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
 
 function mock_fetch(make: () => Response) {
-    const fetch_mock = vi.fn(async () => make())
+    const fetch_mock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => make())
     vi.stubGlobal('fetch', fetch_mock)
     return fetch_mock
 }

@@ -299,7 +299,7 @@ const page_title = 'Community Survey'
         position: relative;
         border-radius: 8px;
         overflow: hidden;
-        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+        border: 1px solid var(--border-color);
     }
     .survey-card::before {
         content: '';
@@ -355,7 +355,7 @@ const page_title = 'Community Survey'
         text-decoration: none;
         color: var(--foreground);
         background: transparent;
-        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+        border: 1px solid var(--border-color);
         border-radius: 4px;
         opacity: 0.75;
         cursor: pointer;
@@ -371,8 +371,8 @@ const page_title = 'Community Survey'
         display: flex;
         flex-direction: column;
         padding: var(--space-3xs);
-        background: var(--background, #12100e);
-        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+        background: var(--background);
+        border: 1px solid var(--border-color);
         border-radius: 6px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     }
@@ -391,20 +391,20 @@ const page_title = 'Community Survey'
         text-decoration: none;
         cursor: pointer;
     }
-    .menu-item:hover { background: var(--fill-and-stroke, rgba(255, 255, 255, 0.07)); color: var(--highlight); }
+    .menu-item:hover { background: color-mix(in srgb, var(--highlight) 7%, transparent); color: var(--highlight); }
     .menu-item--go { color: var(--green); }
 
     .action-bar { display: flex; flex-direction: column; gap: var(--space-3xs); }
-    .action-bar + .action-bar { border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: var(--space-m); }
+    .action-bar + .action-bar { border-top: 1px solid color-mix(in srgb, var(--highlight) 10%, transparent); padding-top: var(--space-m); }
     .action-bar__btns { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); }
     .action-bar__btns form { margin: 0; }
     .mbtn {
-        background: var(--fleet-red, #b04723);
-        color: #fff;
+        background: var(--fleet-red);
+        color: var(--highlight);
         border: 0;
         border-radius: 4px;
         padding: var(--space-2xs) var(--space-m);
-        font-family: var(--button-font, inherit);
+        font-family: var(--button-font);
         font-weight: 600;
         font-size: 0.85em;
         cursor: pointer;
@@ -412,8 +412,8 @@ const page_title = 'Community Survey'
         display: inline-flex;
         align-items: center;
     }
-    .mbtn--go { background: var(--green, #3d9a5f); }
-    .mbtn--ghost { background: transparent; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.25)); color: var(--foreground); }
+    .mbtn--go { background: var(--green); }
+    .mbtn--ghost { background: transparent; border: 1px solid var(--border-color); color: var(--foreground); }
     .mbtn--ghost:hover { border-color: var(--highlight); color: var(--highlight); }
 
     .create-title { text-transform: uppercase; }
@@ -422,15 +422,15 @@ const page_title = 'Community Survey'
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid color-mix(in srgb, var(--highlight) 10%, transparent);
         padding-top: var(--space-m);
     }
     .cp-title { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.62em; opacity: 0.5; }
     .cp-row { display: flex; align-items: center; gap: var(--space-2xs); }
     .cp-logo { border-radius: 3px; flex-shrink: 0; }
     .cp-name { flex: 0 0 10rem; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cp-meter { flex: 1; height: 8px; border-radius: 999px; background: var(--fill-and-stroke, rgba(255, 255, 255, 0.08)); overflow: hidden; }
-    .cp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--fleet-red, #b04723), var(--green, #3d9a5f)); }
+    .cp-meter { flex: 1; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--highlight) 8%, transparent); overflow: hidden; }
+    .cp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--fleet-red), var(--green)); }
     .cp-count { font-size: 0.78em; font-variant-numeric: tabular-nums; opacity: 0.7; min-width: 3.5rem; text-align: right; }
     @media (max-width: 34rem) { .cp-name { flex-basis: 6rem; } }
     .check { display: flex; align-items: center; gap: var(--space-3xs); }

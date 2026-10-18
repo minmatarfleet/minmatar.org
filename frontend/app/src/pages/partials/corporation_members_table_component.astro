@@ -35,6 +35,7 @@ import { query_string } from '@helpers/string'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 
@@ -568,42 +569,22 @@ const selected_template = t('corporations.members.selected')
         )
     }
 
-    <div class="cm-pager">
-        <span class="cm-muted">
+    <HtmxPager
+        class="cm-pager"
+        page={pagination.page}
+        total_pages={pagination.total_pages}
+        url_for={(to) => partial_url({ page: String(to) })}
+        request={{ ...hx_swap, 'hx-include': `#${FORM_ID}` }}
+        gap="var(--space-xs)"
+        buttons_gap="var(--space-2xs)"
+    >
+        <span slot="status" class="cm-muted">
             {range_start}–{range_end} / {pagination.total} · {t('corporations.members.sorted_by').replace('~SORT', sort_label(params.sort))}
         </span>
-        <span class="cm-pager__buttons">
-            <Button size="sm" color="transparent" href={export_url}>
-                {t('corporations.members.export_csv')}
-            </Button>
-            {pagination.total_pages > 1 &&
-                <>
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        type="button"
-                        disabled={!can_prev}
-                        hx-get={partial_url({ page: String(pagination.page - 1) })}
-                        hx-include={`#${FORM_ID}`}
-                        {...hx_swap}
-                    >
-                        {t('corporations.detail.previous')}
-                    </Button>
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        type="button"
-                        disabled={!can_next}
-                        hx-get={partial_url({ page: String(pagination.page + 1) })}
-                        hx-include={`#${FORM_ID}`}
-                        {...hx_swap}
-                    >
-                        {t('corporations.detail.next')}
-                    </Button>
-                </>
-            }
-        </span>
-    </div>
+        <Button slot="actions" size="sm" color="transparent" href={export_url}>
+            {t('corporations.members.export_csv')}
+        </Button>
+    </HtmxPager>
 </div>
 </div>
 
@@ -1167,19 +1148,9 @@ const selected_template = t('corporations.members.selected')
         gap: var(--space-2xs);
     }
 
+    /* Layout comes from HtmxPager. */
     .cm-pager {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-xs);
         font-size: var(--step--1);
-    }
-
-    .cm-pager__buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs);
     }
 
     // Phones: one compact row per person; the rest lives in the details.

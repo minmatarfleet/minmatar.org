@@ -100,6 +100,15 @@ export function legacy_allows(ctx: GateContext, gate: GateKey): boolean {
     return (legacy.perms ?? []).some((perm) => ctx.legacy_permissions.includes(perm))
 }
 
+/**
+ * The JWT superuser claim, for custom legacy checks (can_custom) whose old
+ * rule included it. Read it through here so gates.ts stays the one place
+ * that maps the claim.
+ */
+export function legacy_superuser(ctx: GateContext): boolean {
+    return ctx.is_superuser
+}
+
 export function feature_allows(ctx: GateContext, gate: GateKey): boolean {
     return ctx.features.includes(GATES[gate].feature)
 }
