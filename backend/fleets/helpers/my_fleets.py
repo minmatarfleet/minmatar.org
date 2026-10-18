@@ -68,8 +68,13 @@ def _recent_fleets(user, mine: set[int]) -> list:
     ).order_by("start_time"):
         latest[instance.eve_fleet_id] = instance
     order = sorted(ids, key=lambda i: latest[i].start_time, reverse=True)
-    fleets = EveFleet.objects.select_related("doctrine").in_bulk(
-        order[:RECENT_LIMIT]
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.visibility import visible_fleets_q
+
+    fleets = (
+        EveFleet.objects.filter(visible_fleets_q(user))
+        .select_related("doctrine")
+        .in_bulk(order[:RECENT_LIMIT])
     )
     return [
         (fleets[i], latest[i], i in commanded)

@@ -2,9 +2,11 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+from tribes.schemas import HostGroupRef
 
 
 class EveFleetType(str, Enum):
@@ -62,6 +64,10 @@ class EveFleetResponse(BaseModel):
     campaign_id: Optional[int] = None
     campaign_slug: Optional[str] = None
     roam_report_url: Optional[str] = None
+    # Tribe group fleets (docs/tribes/tribe-publishing.md).
+    host_group: Optional[HostGroupRef] = None
+    open_to_alliance: bool = False
+    on_schedule: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -102,6 +108,10 @@ class CreateEveFleetRequest(BaseModel):
     immediate_ping: bool = False
     status: Optional[str] = None
     campaign_id: Optional[int] = None
+    # A tribe group fleet: audience_id and immediate_ping are ignored.
+    host_group_id: Optional[int] = None
+    open_to_alliance: bool = False
+    on_schedule: bool = False
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -117,6 +127,29 @@ class UpdateEveFleetRequest(BaseModel):
     status: Optional[str] = None
     aar_link: Optional[str] = None
     campaign_id: Optional[int] = None
+    # Left out: unchanged. host_group_id null moves a group fleet back to
+    # an alliance audience (audience_id required).
+    host_group_id: Optional[int] = None
+    open_to_alliance: Optional[bool] = None
+    on_schedule: Optional[bool] = None
+
+
+class FleetPingPreviewRequest(BaseModel):
+    """The fleet form's fields that shape the start ping."""
+
+    type: EveFleetType
+    description: str = ""
+    objective: Optional[str] = None
+    location_id: Optional[int] = None
+    audience_id: Optional[int] = None
+    host_group_id: Optional[int] = None
+
+
+class FleetPingPreviewResponse(BaseModel):
+    """The start ping exactly as the bot would post it."""
+
+    channel_name: Optional[str] = None
+    payload: Dict[str, Any]
 
 
 class EveFleetMetric(BaseModel):

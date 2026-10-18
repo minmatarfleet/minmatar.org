@@ -18,6 +18,12 @@ from fleets.endpoints.catalog.post_create_fleet import (
     create_fleet,
     METHOD as post_create_fleet_method,
 )
+from fleets.endpoints.catalog.post_ping_preview import (
+    PATH as post_ping_preview_path,
+    ROUTE_SPEC as post_ping_preview_spec,
+    post_ping_preview,
+    METHOD as post_ping_preview_method,
+)
 
 _ROUTES = (
     (
@@ -37,6 +43,12 @@ _ROUTES = (
         post_create_fleet_path,
         post_create_fleet_spec,
         create_fleet,
+    ),
+    (
+        post_ping_preview_method,
+        post_ping_preview_path,
+        post_ping_preview_spec,
+        post_ping_preview,
     ),
 )
 

@@ -92,9 +92,13 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   manage (all for superusers).
 - Group fleet visibility: no host_group, or open_to_alliance, or
   host_group in `visible_group_ids`, or created_by user. Applied in
-  `groups.helpers.feature_access._evaluate_resource_match` (so every
-  single-fleet endpoint is covered) and as a queryset filter in every fleet
-  list (`fleets.helpers.visibility.visible_fleets_q(user)`).
+  `groups.helpers.feature_access.can_use_feature` for every fleet-scoped
+  feature check (`fleet_hidden_from`, before the RESOURCE_MATCH scope and
+  before the legacy-permission fallback, which would otherwise let
+  `fleets.view_evefleet` holders through), so every single-fleet endpoint
+  is covered, and as a queryset filter in every fleet list
+  (`fleets.helpers.visibility.visible_fleets_q(user)`).
+  Alliance metrics use `alliance_fleets_q()` (no host_group, or open).
 - Group post visibility: not members_only, or host_group in
   `visible_group_ids`, or author.
 - Editing a group post: its author, or anyone who can manage the group.
@@ -110,16 +114,29 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `on_schedule: bool = False`.
   - With `host_group_id`: needs `can_publish(..., "fleet")` (the
     `fleets.create` feature is not required); `audience_id` is ignored and
-    stored as None; type `strategic` is a 400; `open_to_alliance` needs
-    `group.allow_open_fleets` (400 otherwise); `on_schedule` is forced False
-    unless open; `immediate_ping` is ignored.
+    stored as None; type `strategic` (or a campaign type) is a 400;
+    `open_to_alliance` needs `group.allow_open_fleets` (400 otherwise);
+    `on_schedule` is forced False unless open; `immediate_ping` is ignored.
+  - On `UpdateEveFleetRequest` the three fields default to null and are
+    only applied when sent, so a PATCH that leaves them out keeps the
+    fleet's flags. A group fleet is edited by its FC, a Strategic FC or a
+    manager of the group. `host_group_id: null` moves a group fleet back to
+    an alliance audience (needs `audience_id` and `fleets.create`).
 - `EveFleetResponse` (and the v3 list items) gain
   `host_group: HostGroupRef | None`, `open_to_alliance: bool`,
   `on_schedule: bool`.
 - `GET /api/fleets/v3` returns group fleets the viewer can see, and takes an
   optional `host_group_id` to list one group's fleets.
 - `GET /api/fleets/{id}` on a members-only group fleet the viewer can't see:
-  `403 {detail, host_group}` (`RestrictedResponse`).
+  `403 {detail: "members_only", host_group}` (`RestrictedResponse`). Other
+  403s on this endpoint keep their `null` body.
+- `POST /api/fleets/ping-preview` (`FleetPingPreviewRequest` = type,
+  description, objective, location_id, audience_id, host_group_id) returns
+  `FleetPingPreviewResponse` = `{channel_name, payload}`: the exact start
+  ping payload, built by the same helper as `EveFleet.notify_discord`
+  (`fleets.helpers.start_ping.build_start_ping`). `channel_name` is null
+  when there is no channel. Needs `fleets.create`, or with
+  `host_group_id` the group's fleet publishing right.
 - Start ping for a group fleet: effective group channel, content = role
   mention, AUDIENCE line = group name. No channel → no ping.
 - `#schedule`: alliance part unchanged. If there are upcoming group fleets
@@ -131,10 +148,14 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   -# Open to the alliance: message the FC or apply on the group's page.
   ```
 
-  Omitted entirely when empty. Group page URL:
+  Omitted entirely when empty. The last part is the fleet's objective (or
+  its doctrine name; left out when neither is set). Lines that would take
+  the message past Discord's 2000 characters collapse into one
+  `…and N more` line. Group page URL:
   `/alliance/tribes/<tribe_id>/<group_id>/`.
 - Fleet metrics, FC metrics and results exclude group fleets that are not
-  open to the alliance.
+  open to the alliance. So does every "fleets led" number
+  (`fleets.helpers.metrics.led_fleets`) and the survey recent-fleets list.
 
 ### Posts
 
@@ -198,7 +219,9 @@ weekday as `starts_at` (e.g. 2nd Saturday).
 1. The audience on channel `1064548000397021224` named `#warzone-pings` is
    renamed `#pings`.
 2. Groups with no `discord_channel_id` are linked to their channel in the
-   Tribes category, matched by code (supply.* or the older industry.*):
+   Tribes category, matched by the slug after the tribe prefix (supply.*,
+   the older industry.*, or pulse.*: technology, readiness, thinkspeak and
+   fleet-commanders are `pulse.` groups):
    mining 1450351308027592715, freighters 1465125012901203983, market
    1490366732458528981, planetary-interaction 1480262027485380659,
    technology 1174095095537078312, readiness 1391028680934822018,

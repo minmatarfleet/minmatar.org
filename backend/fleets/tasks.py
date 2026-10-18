@@ -6,7 +6,11 @@ from django.conf import settings
 from celery_once import QueueOnce
 
 from app.celery import app
-from app.links import new_player_fleet_guide_url, upcoming_fleets_url
+from app.links import (
+    new_player_fleet_guide_url,
+    site_url,
+    upcoming_fleets_url,
+)
 from app.locks import DedupedTask, overlap_guard
 from discord.client import DiscordClient
 from discord.outbox import on_commit_enqueue
@@ -18,6 +22,7 @@ from fleets.helpers.active_clones import (
 from fleets.helpers.npsi_ingest import poll_npsi_sources
 from fleets.helpers.roam_report import publish_fleet_roam_report_impl
 from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet, EveFleetInstance
+from tribes.helpers.publishing import group_page_path
 
 discord_client = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -70,12 +75,19 @@ def update_fleet_schedule():
         # neither belongs on a schedule of upcoming fleets.
         .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .order_by("start_time")
-        .select_related("location", "audience", "created_by")
+        .select_related(
+            "location", "audience", "created_by", "host_group__tribe"
+        )
     )
 
     # Group fleets by location
     fleets_by_location = {}
+    tribe_fleets = []
     for fleet in fleets:
+        if fleet.host_group_id:
+            if fleet.open_to_alliance and fleet.on_schedule:
+                tribe_fleets.append(fleet)
+            continue
         if fleet.audience and fleet.audience.add_to_schedule:
             location_name = (
                 fleet.formup_location.location_name
@@ -103,6 +115,7 @@ def update_fleet_schedule():
                 )
                 # pylint: disable=inconsistent-quotes
                 message += f"- {fleet_emoji} {fleet.start_time.strftime('%Y-%m-%d %H:%M')} EVE (<t:{int(fleet.start_time.timestamp())}>) {fc_name}\n"
+    message += tribe_fleets_section(message, tribe_fleets)
     payload = {
         "content": message,
         "components": [
@@ -138,6 +151,59 @@ def update_fleet_schedule():
 
     # Post new message
     discord_client.create_message(FLEET_SCHEDULE_CHANNEL_ID, payload=payload)
+
+
+DISCORD_MESSAGE_LIMIT = 2000
+TRIBE_FLEETS_HEADING = "### Tribe fleets\n"
+TRIBE_FLEETS_FOOTER = (
+    "-# Open to the alliance: message the FC or apply on the group's page."
+)
+
+
+def _tribe_fleet_line(fleet) -> str:
+    group = fleet.host_group
+    fc_name = (
+        fleet.fleet_commander.character_name if fleet.fleet_commander else ""
+    )
+    group_url = site_url(group_page_path(group))
+    when = fleet.start_time.strftime("%Y-%m-%d %H:%M")
+    line = (
+        f"- {get_fleet_emoji(fleet.type)} {when} EVE "
+        f"(<t:{int(fleet.start_time.timestamp())}>) {fc_name} · "
+        f"[{group.name}](<{group_url}>) ({group.tribe.name})"
+    )
+    title = fleet.objective or (fleet.doctrine.name if fleet.doctrine else "")
+    if title:
+        line += f" · {title}"
+    return line + "\n"
+
+
+def tribe_fleets_section(message: str, tribe_fleets: list) -> str:
+    """The "### Tribe fleets" part of the #schedule message.
+
+    Empty when no open group fleet asked to be on the schedule, so the
+    message is unchanged. Lines that would take the message past Discord's
+    2000 characters become one "…and N more" line.
+    """
+    if not tribe_fleets:
+        return ""
+    head = ("" if message.endswith("\n") else "\n") + "\n"
+    head += TRIBE_FLEETS_HEADING
+    budget = DISCORD_MESSAGE_LIMIT - len(message) - len(head)
+    budget -= len(TRIBE_FLEETS_FOOTER)
+    lines = [_tribe_fleet_line(fleet) for fleet in tribe_fleets]
+    shown = []
+    for index, line in enumerate(lines):
+        left = len(lines) - index - 1
+        more = f"…and {left} more\n" if left else ""
+        if len("".join(shown)) + len(line) + len(more) > budget:
+            break
+        shown.append(line)
+    hidden = len(lines) - len(shown)
+    body = "".join(shown)
+    if hidden:
+        body += f"…and {hidden} more\n"
+    return head + body + TRIBE_FLEETS_FOOTER
 
 
 def queue_fleet_schedule_refresh() -> None:

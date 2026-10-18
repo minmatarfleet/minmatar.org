@@ -11,6 +11,7 @@ from eveonline.models import EveCorporation
 
 from fleets.endpoints.helpers import time_region
 from fleets.endpoints.schemas import EveFleetMetric
+from fleets.helpers.visibility import alliance_fleets_q
 from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
 
 PATH = "/metrics"
@@ -26,7 +27,10 @@ def get_fleet_metrics(request, fleet_id: Optional[int] = None):
     """All fleets of the last year, or just ``fleet_id`` (same filters)."""
     metrics = []
     one_year_ago = timezone.now() - timedelta(days=365)
-    fleets = EveFleet.objects.filter(start_time__gte=one_year_ago)
+    # Members-only tribe group fleets are not alliance fleets.
+    fleets = EveFleet.objects.filter(
+        alliance_fleets_q(), start_time__gte=one_year_ago
+    )
     if fleet_id is not None:
         fleets = fleets.filter(id=fleet_id)
     fleets = (

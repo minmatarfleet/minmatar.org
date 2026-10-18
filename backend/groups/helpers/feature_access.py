@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from django.db.models import Q
@@ -48,6 +49,23 @@ def _memoized(user, key: str, compute):
     if key not in memo:
         memo[key] = compute()
     return memo[key]
+
+
+@contextmanager
+def feature_batch(user):
+    """Share per-user lookups across many feature checks for one user.
+
+    Use it around a loop of can_use_feature calls (e.g. one per tribe
+    group) inside a single request; nothing outlives the block.
+    """
+    if _batch_memo.get() is not None or not getattr(user, "pk", None):
+        yield
+        return
+    token = _batch_memo.set({"user_pk": user.pk})
+    try:
+        yield
+    finally:
+        _batch_memo.reset(token)
 
 
 def clear_feature_cache() -> None:
@@ -280,6 +298,22 @@ def _user_auth_group_ids(user) -> set[int]:
     return set(ids)
 
 
+def fleet_hidden_from(user, fleet) -> bool:
+    """True for a members-only tribe group fleet this user may not see.
+
+    Checked before any fleet-scoped feature (fleets.view, srp.submit), so
+    neither the RESOURCE_MATCH scope nor a legacy permission can reveal it.
+    """
+    if fleet is None or not getattr(fleet, "host_group_id", None):
+        return False
+    # Imported here: tribes.helpers imports this module.
+    from tribes.helpers.publishing import (  # pylint: disable=import-outside-toplevel
+        fleet_visible_to,
+    )
+
+    return not fleet_visible_to(user, fleet)
+
+
 def _evaluate_resource_match(feature: _FeatureSnapshot, user, fleet) -> bool:
     if fleet is None:
         return _evaluate_affiliation(feature, user)
@@ -357,6 +391,8 @@ def can_use_feature(
         return False
     if user.is_superuser:
         return True
+    if fleet_hidden_from(user, fleet):
+        return False
 
     feature = _get_feature(code)
     if feature is None:
