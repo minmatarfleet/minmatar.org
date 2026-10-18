@@ -1,0 +1,514 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { DiscordChannelUI, DiscordPreviewEventUI } from '@dtypes/layout_components'
+import type { EventFormValues } from '@helpers/tribe_event_form'
+import { eve_iso, recurrence_labels } from '@helpers/tribe_event_form'
+import { eve_clock, eve_day_short } from '@helpers/date'
+
+/**
+ * Create or edit a tribe group event. The host is fixed to the group the
+ * pilot came from. The form posts to its own page; the Discord preview on the
+ * side is an htmx partial that re-renders on every change.
+ */
+interface Props {
+    mode:               'create' | 'edit';
+    values:             EventFormValues;
+    voice_channels:     DiscordChannelUI[];
+    /** False when the channel list did not load. */
+    voice_channels_ok:  boolean;
+    tribe_id:           number;
+    group_id:           number;
+    tribe_name:         string;
+    group_name:         string;
+    member_count:       number;
+    cover_url:          string;
+    channel_name:       string | null;
+    role_name:          string | null;
+    [propName: string]: any;
+}
+
+const {
+    mode,
+    values,
+    voice_channels,
+    voice_channels_ok,
+    tribe_id,
+    group_id,
+    tribe_name,
+    group_name,
+    member_count,
+    cover_url,
+    channel_name,
+    role_name,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fill = (text: string) => text.replaceAll('{group}', group_name)
+const group_href = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`)
+const repeat_templates = {
+    none: t('tribes.event_form.repeat.none'),
+    weekly: t('tribes.event_form.repeat.weekly'),
+    monthly: t('tribes.event_form.repeat.monthly'),
+}
+const starts_iso = eve_iso(values.eve_date, values.eve_time)
+const initial_repeats = recurrence_labels(starts_iso ? new Date(starts_iso) : null, repeat_templates)
+const role_label = role_name ?? fill(t('tribes.settings.discord.role_none'))
+const announce_text = channel_name
+    ? t('tribes.event_form.announce_desc').replace('{channel}', channel_name.replace(/^#/, '')).replace('{role}', role_label)
+    : fill(t('tribes.event_form.announce_no_channel'))
+
+// Rendered before the first preview arrives (and so the preview's CSS ships with the page).
+const initial_preview: DiscordPreviewEventUI | null = starts_iso && values.title
+    ? {
+        title: values.title,
+        when_label: t('tribes.event_form.when')
+            .replace('{date}', eve_day_short(lang, starts_iso, { weekday: true }))
+            .replace('{time}', eve_clock(starts_iso)),
+        where_label: values.where_kind === 'place'
+            ? values.location
+            : voice_channels.find((channel) => channel.id === values.voice_channel_id)?.name ?? '',
+        recurrence_label: values.recurrence === 'none' ? null : initial_repeats[values.recurrence],
+        cover_url,
+    }
+    : null
+
+const PREVIEW_URL = translatePath(`/partials/tribe_event_preview_component?tribe_id=${tribe_id}&group_id=${group_id}&mode=${mode}`)
+
+// Alpine: local form state only (where, visibility, the Repeats wording).
+const x_data = `{
+    where_kind: ${JSON.stringify(values.where_kind)},
+    visibility: ${JSON.stringify(values.members_only && values.where_kind === 'voice' ? 'on' : '')},
+    eve_date: ${JSON.stringify(values.eve_date)},
+    eve_time: ${JSON.stringify(values.eve_time)},
+    end_time: ${JSON.stringify(values.end_time)},
+    repeat_templates: ${JSON.stringify(repeat_templates)},
+    repeat_label(kind) {
+        const template = this.repeat_templates[kind]
+        const day = new Date(this.eve_date + 'T00:00:00Z')
+        const valid = !isNaN(day.getTime())
+        const weekday = valid ? day.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }) : ''
+        const nth = valid ? ['1st', '2nd', '3rd', '4th', '5th'][Math.floor((day.getUTCDate() - 1) / 7)] : ''
+        return template.replace('{nth}', nth).replace('{weekday}', weekday).replace(/,\\s*$/, '').replace(/\\s+/g, ' ').trim()
+    },
+}`
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
+import EventWherePicker from '@components/blocks/EventWherePicker.astro'
+import FlatPicker from '@components/blocks/FlatPicker.astro'
+import Input from '@components/blocks/Input.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Select from '@components/blocks/Select.astro'
+import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<form
+    id="tribe-event-form"
+    method="POST"
+    class:list={['[ tribe-event-form ]', Astro.props.class]}
+    x-data={x_data}
+    x-effect="if (where_kind === 'place') visibility = ''"
+    {...attributes}
+>
+    <Flexblock gap="var(--space-l)" class="[ tribe-event-form__main ]">
+        <section class="[ tribe-event-form__host ]" aria-labelledby="tribe-event-host-title">
+            <div class="[ tribe-event-form__host-text ]">
+                <h2 id="tribe-event-host-title">{t('tribes.event_form.host_title')}</h2>
+                <small>{t('tribes.event_form.host_hint')}</small>
+            </div>
+            <div class="[ tribe-event-form__host-group ]">
+                <img src={cover_url} alt="" width="48" height="48" loading="lazy" />
+                <span>
+                    <b>{group_name}</b>
+                    <small>{t('tribes.event_form.host_sub').replace('{tribe}', tribe_name).replace('{count}', String(member_count))}</small>
+                </span>
+                <a href={group_href}>{fill(t('tribes.event_form.back'))}</a>
+            </div>
+        </section>
+
+        <label class="[ tribe-event-form__field ]">
+            <span class="[ tribe-event-form__label ]">{t('tribes.event_form.title')}</span>
+            <Input type="text" name="title" value={values.title} maxlength="200" required />
+        </label>
+
+        <div class="[ tribe-event-form__field ]">
+            <span class="[ tribe-event-form__label ]" id="tribe-event-where">{t('tribes.event_form.where')}</span>
+            <EventWherePicker
+                voice_channels={voice_channels}
+                mode={values.where_kind}
+                voice_channel_id={values.voice_channel_id}
+                location={values.location}
+                x_model="where_kind"
+                aria-labelledby="tribe-event-where"
+            />
+            {!voice_channels_ok &&
+                <small class="[ tribe-event-form__warning ]" role="status">{t('tribes.event_form.no_voice_channels')}</small>
+            }
+        </div>
+
+        <div class="[ tribe-event-form__when ]">
+            <div class="[ tribe-event-form__field ]">
+                <label class="[ tribe-event-form__label ]" for="tribe-event-date">{t('tribes.event_form.date')}</label>
+                <FlatPicker
+                    id="tribe-event-date"
+                    name="eve_date"
+                    value={values.eve_date}
+                    x-model="eve_date"
+                    required
+                    options={{ minDate: 'today', dateFormat: 'Y-m-d' } as any}
+                />
+            </div>
+            <div class="[ tribe-event-form__field ]">
+                <label class="[ tribe-event-form__label ]" for="tribe-event-time">{t('tribes.event_form.starts')}</label>
+                <FlatPicker
+                    id="tribe-event-time"
+                    name="eve_time"
+                    value={values.eve_time}
+                    x-model="eve_time"
+                    required
+                    options={{ enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true } as any}
+                />
+            </div>
+            <div class="[ tribe-event-form__field ]">
+                <label class="[ tribe-event-form__label ]" for="tribe-event-end">{t('tribes.event_form.ends')}</label>
+                <FlatPicker
+                    id="tribe-event-end"
+                    name="end_time"
+                    value={values.end_time}
+                    x-model="end_time"
+                    x-bind:required="where_kind === 'place'"
+                    options={{ enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true } as any}
+                />
+            </div>
+            <small class="[ tribe-event-form__when-hint ]">{t('tribes.event_form.ends_hint')}</small>
+        </div>
+
+        <div class="[ tribe-event-form__field tribe-event-form__repeats ]">
+            <label class="[ tribe-event-form__label ]" for="tribe-event-repeats">{t('tribes.event_form.repeats')}</label>
+            <Select id="tribe-event-repeats" name="recurrence">
+                {(['none', 'weekly', 'monthly'] as const).map((kind) =>
+                    <option value={kind} selected={values.recurrence === kind} x-text={`repeat_label('${kind}')`}>
+                        {initial_repeats[kind]}
+                    </option>
+                )}
+            </Select>
+        </div>
+
+        <div class="[ tribe-event-form__about ]">
+            <div class="[ tribe-event-form__field ]">
+                <span class="[ tribe-event-form__label ]">{t('tribes.event_form.cover')}</span>
+                <img class="[ tribe-event-form__cover ]" src={cover_url} alt="" loading="lazy" />
+                <small>{fill(t('tribes.event_form.cover_note'))}</small>
+            </div>
+            <label class="[ tribe-event-form__field ]">
+                <span class="[ tribe-event-form__label ]">{t('tribes.event_form.description')}</span>
+                <Textarea name="description" rows="6" maxlength="1000">{values.description}</Textarea>
+                <small>{fill(t('tribes.event_form.description_hint'))}</small>
+            </label>
+        </div>
+
+        <fieldset class="[ tribe-event-form__visibility ]">
+            <legend class="[ tribe-event-form__label ]">{t('tribes.event_form.visibility')}</legend>
+            <FlexInline gap="var(--space-m)">
+                <RadioCheckInput
+                    type="radio"
+                    name="members_only"
+                    value=""
+                    checked={!values.members_only || values.where_kind === 'place'}
+                    label={t('tribes.event_form.visibility_alliance')}
+                    x-model="visibility"
+                />
+                <RadioCheckInput
+                    type="radio"
+                    name="members_only"
+                    value="on"
+                    checked={values.members_only && values.where_kind === 'voice'}
+                    disabled={values.where_kind === 'place'}
+                    label={fill(t('tribes.event_form.visibility_members'))}
+                    x-model="visibility"
+                    x-bind:disabled="where_kind === 'place'"
+                />
+            </FlexInline>
+            <small x-show="where_kind !== 'place'" style={values.where_kind === 'place' ? 'display: none' : undefined}>
+                {fill(t('tribes.event_form.visibility_members_hint'))}
+            </small>
+            <small x-show="where_kind === 'place'" style={values.where_kind === 'place' ? undefined : 'display: none'}>
+                {t('tribes.event_form.visibility_place_hint')}
+            </small>
+        </fieldset>
+
+        {mode === 'create' &&
+            <div class="[ tribe-event-form__announce ]">
+                <span class="[ tribe-event-form__label ]">{t('tribes.event_form.announce')}</span>
+                <SwitchSquare
+                    name="announce"
+                    checked={values.announce && Boolean(channel_name)}
+                    disabled={!channel_name}
+                    description={announce_text}
+                />
+            </div>
+        }
+
+        <FlexInline gap="var(--space-s)">
+            <Button type="submit" size="sm">
+                {mode === 'create' ? t('tribes.event_form.create') : t('tribes.event_form.save')}
+            </Button>
+            <Button href={`${group_href}#events`} size="sm" color="transparent">
+                {t('tribes.event_form.cancel')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+
+    <aside class="[ tribe-event-form__aside ]">
+        <div
+            class="[ tribe-event-form__preview ]"
+            hx-post={PREVIEW_URL}
+            hx-trigger="load, change from:#tribe-event-form delay:300ms, keyup changed from:#tribe-event-form delay:800ms"
+            hx-target="this"
+            hx-swap="innerHTML"
+            hx-vals={JSON.stringify({ role_name: role_name ?? '' })}
+            aria-live="polite"
+        >
+            {initial_preview ?
+                <DiscordEmbedPreview
+                    kind="event_announcement"
+                    channel_name={channel_name}
+                    role_name={role_name}
+                    content={null}
+                    event={initial_preview}
+                />
+                :
+                <p class="[ tribe-event-form__preview-note ]">{t('tribes.event_form.preview_incomplete')}</p>
+            }
+        </div>
+
+        <section class="[ tribe-event-form__shows ]" aria-labelledby="tribe-event-shows-title">
+            <h2 id="tribe-event-shows-title">{t('tribes.event_form.shows_title')}</h2>
+            <ul role="list">
+                <li>{t('tribes.event_form.shows.discord')}</li>
+                {channel_name &&
+                    <li>{t('tribes.event_form.shows.channel').replace('{channel}', channel_name.replace(/^#/, '')).replace('{role}', role_label)}</li>
+                }
+                <li>{fill(t('tribes.event_form.shows.page'))}</li>
+            </ul>
+        </section>
+    </aside>
+</form>
+
+<style lang="scss">
+    .tribe-event-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 28rem);
+        align-items: start;
+        gap: var(--space-xl);
+    }
+
+    .tribe-event-form__host {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+        border-left: 3px solid var(--fleet-yellow);
+    }
+
+    .tribe-event-form__host-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        h2 {
+            font-size: var(--step-1);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-event-form__host-group {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: var(--space-xl);
+            object-fit: cover;
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+
+        a {
+            margin-left: var(--space-xs);
+            white-space: nowrap;
+        }
+    }
+
+    .tribe-event-form__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        > small {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-event-form__label {
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .tribe-event-form__warning {
+        color: var(--fleet-yellow);
+    }
+
+    .tribe-event-form__when {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .tribe-event-form__when-hint {
+        grid-column: 1 / -1;
+        color: var(--text-muted);
+    }
+
+    .tribe-event-form__repeats {
+        max-width: 24rem;
+    }
+
+    .tribe-event-form__about {
+        display: grid;
+        grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+        gap: var(--space-s);
+    }
+
+    .tribe-event-form__cover {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border: 1px solid var(--hairline);
+    }
+
+    .tribe-event-form__visibility,
+    .tribe-event-form__announce {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin-inline: 0;
+        padding: var(--space-s);
+        border: 1px solid var(--hairline);
+        background-color: var(--surface-sunken);
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-event-form__visibility legend {
+        float: left;
+        width: 100%;
+        margin-bottom: var(--space-2xs);
+    }
+
+    .tribe-event-form__aside {
+        position: sticky;
+        top: var(--space-l);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .tribe-event-form__preview {
+        min-width: 0;
+    }
+
+    // The preview partial renders this note too; its own styles never reach the page.
+    .tribe-event-form__preview :global(.tribe-event-form__preview-note) {
+        margin: 0;
+        padding: var(--space-s);
+        border: 1px dashed var(--hairline-strong);
+        color: var(--text-muted);
+    }
+
+    .tribe-event-form__shows {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        h2 {
+            font-size: var(--step-0);
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding-left: var(--space-s);
+            font-size: var(--step--1);
+        }
+    }
+
+    @media (max-width: 64rem) {
+        .tribe-event-form {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .tribe-event-form__aside {
+            position: static;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .tribe-event-form__about {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .tribe-event-form__when {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .tribe-event-form__when > :first-child {
+            grid-column: 1 / -1;
+        }
+
+        .tribe-event-form__host-group a {
+            margin-left: 0;
+        }
+    }
+</style>
