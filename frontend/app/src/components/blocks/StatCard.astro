@@ -2,9 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+/**
+ * Big-number stat card: an uppercase label, the value, and an optional hint
+ * line. `value` and `hint` also come as named slots for markup such as
+ * tooltip spans.
+ */
 interface Props {
     label: string
-    value: string
+    value?: string | number
     hint?: string
     coming_soon?: boolean
     [propName: string]: any
@@ -19,23 +24,25 @@ const {
 } = Astro.props
 
 delete attributes.class
+
+const has_hint = Boolean(hint) || Astro.slots.has('hint')
 ---
 
 <article
-    class:list={['[ metric-stat ]', { 'metric-stat--soon': coming_soon }, Astro.props.class]}
+    class:list={['[ stat-card ]', { 'stat-card--soon': coming_soon }, Astro.props.class]}
     {...attributes}
 >
-    <p class="[ metric-stat__label ]">{label}</p>
+    <p class="[ stat-card__label ]">{label}</p>
     {coming_soon ?
-        <p class="[ metric-stat__soon ]">{t('tribes.activity.coming_soon')}</p>
+        <p class="[ stat-card__soon ]">{t('tribes.activity.coming_soon')}</p>
         :
-        <p class="[ metric-stat__value ]">{value}</p>
+        <p class="[ stat-card__value ]"><slot name="value">{value}</slot></p>
     }
-    {hint && <p class="[ metric-stat__hint ]">{hint}</p>}
+    {has_hint && <p class="[ stat-card__hint ]"><slot name="hint">{hint}</slot></p>}
 </article>
 
 <style lang="scss">
-    .metric-stat {
+    .stat-card {
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
@@ -44,17 +51,17 @@ delete attributes.class
         background: rgba(0, 0, 0, 0.22);
     }
 
-    .metric-stat--soon {
+    .stat-card--soon {
         border-style: dashed;
         border-color: rgba(255, 255, 255, 0.22);
         background: none;
 
-        .metric-stat__label {
+        .stat-card__label {
             color: var(--faded);
         }
     }
 
-    .metric-stat__label {
+    .stat-card__label {
         margin: 0;
         font-size: var(--step--1);
         letter-spacing: 0.08em;
@@ -62,7 +69,7 @@ delete attributes.class
         color: var(--fleet-yellow);
     }
 
-    .metric-stat__value {
+    .stat-card__value {
         margin: 0;
         font-family: var(--heading-font);
         font-size: clamp(2rem, 4.5vw, 3rem);
@@ -72,7 +79,13 @@ delete attributes.class
         color: var(--highlight);
     }
 
-    .metric-stat__soon {
+    /* A tooltip on the big number reads as help, not as a dotted link. */
+    .stat-card__value :global(span[data-tippy-content]:not([data-tippy-content=""])) {
+        border-bottom: none;
+        cursor: help;
+    }
+
+    .stat-card__soon {
         margin: 0;
         font-family: var(--heading-font);
         font-size: var(--step-1);
@@ -80,7 +93,7 @@ delete attributes.class
         color: var(--faded);
     }
 
-    .metric-stat__hint {
+    .stat-card__hint {
         margin: 0;
         font-size: var(--step--1);
         color: var(--faded);
