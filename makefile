@@ -1,7 +1,8 @@
 .PHONY: build build-tests run stop setup test front-end-unit-tests dev
 
+# make dev MOBILE=1 also starts the dormant Expo app in mobile/.
 dev:
-	./dev.sh
+	./dev.sh $(if $(MOBILE),--mobile)
 
 build: build-tests
 	docker compose \

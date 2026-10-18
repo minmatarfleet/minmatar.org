@@ -1,3 +1,15 @@
+"""Build an ``sde-<build>.sqlite`` from CCP's JSONL Static Data Export.
+
+This is how the SDE databases in ``frontend/app/src/data/`` are made. They
+are not tracked; the frontend (``src/helpers/sde_db.ts``), the report
+extractors in ``frontend/app/scripts/`` and the backend fixture exporters
+(``export_intel_fixtures``, ``export_warzone_jump_graph``) read them.
+
+    python sde/import_sde.py --download --output-dir frontend/app/src/data
+
+Standalone: no Django, standard library only.
+"""
+
 import argparse
 import io
 import json

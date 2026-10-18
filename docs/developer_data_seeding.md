@@ -86,7 +86,7 @@ From the **repo root**, run everything in one terminal:
 ./dev.sh
 ```
 
-This starts the API, Celery worker (all queues), Celery Beat, frontend, and mobile. Press **Ctrl+C** to stop all processes.
+This starts the API, Celery worker (all queues), Celery Beat and frontend (add `--mobile` for the dormant mobile app). Press **Ctrl+C** to stop all processes.
 
 The Discord bot is not included. Run it separately when needed (from `bot/`, after setting `bot/.env`):
 
