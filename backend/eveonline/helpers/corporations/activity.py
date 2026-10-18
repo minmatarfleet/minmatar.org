@@ -18,6 +18,11 @@ def activity_for_characters(
     characters: list[EveCharacter],
     kills: RecentKills | None = None,
 ) -> dict[int, dict]:
+    """Per character, on purpose: the Members table lists characters, and
+    each alt shows the fleets and mails it was on. The per-person figure
+    (alts folded, each fleet once) is about.member_facts'
+    ``person_fleets_90d``; summing these across a person's alts counts a
+    shared fleet or mail once per alt."""
     character_ids = [character.character_id for character in characters]
     user_ids = [
         character.user_id for character in characters if character.user_id

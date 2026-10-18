@@ -2,8 +2,6 @@
 
 from unittest.mock import patch
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, SimpleTestCase, TestCase
 from eveuniverse.models import (
@@ -34,21 +32,16 @@ from industry.helpers.reprocessing_skills import (
     SKILL_UBIQUITOUS_MOON_ORE_PROCESSING,
 )
 from industry.models import IndustryLoyaltyPoint, IndustryLpStoreOffer
+from app.testing import make_token
 
 BASE = "/api/industry/planner"
-
-
-def _token(user: User) -> str:
-    return jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 class PlannerFacilitiesEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="planner", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
     def test_facilities_public_without_auth(self):
         response = self.client.get(f"{BASE}/facilities")
@@ -187,7 +180,7 @@ class PlannerSystemEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="sysuser", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
     @patch("industry.helpers.facility_api.fetch_system_cost_indices")
     def test_system_amamake_resolves_facility(self, fetch_indices):
@@ -217,7 +210,7 @@ class PlannerPlanEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="planuser", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
         cat, _ = EveCategory.objects.get_or_create(
             id=6, defaults={"name": "Ship", "published": True}

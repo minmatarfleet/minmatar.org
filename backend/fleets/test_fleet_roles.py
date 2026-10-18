@@ -7,9 +7,10 @@ from django.test import Client, SimpleTestCase
 from django.utils import timezone
 
 from app.test import TestCase
+from app.testing import make_token
 from eveonline.models import EveCharacter
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
-from fleets.helpers.eft_items import parse_eft_items
+from fittings.eft import parse_eft_items
 from fleets.helpers.fit_roles import fit_roles
 from fleets.models import (
     EveFleetInstance,
@@ -18,7 +19,6 @@ from fleets.models import (
     EveFleetShipVolunteer,
     _motd_role_volunteers,
 )
-from fleets.test_ship_volunteers_refits import token_for
 from fleets.tests import (
     BASE_URL,
     disconnect_fleet_signals,
@@ -407,6 +407,6 @@ class FleetRolesRouterTestCase(TestCase):
         other = User.objects.create(username="other")
         response = self.client.get(
             f"{BASE_URL}/{self.fleet.id}/roles",
-            HTTP_AUTHORIZATION=f"Bearer {token_for(other)}",
+            HTTP_AUTHORIZATION=f"Bearer {make_token(other)}",
         )
         self.assertEqual(403, response.status_code)

@@ -2,8 +2,6 @@
 
 import uuid
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
@@ -13,16 +11,12 @@ from onboarding.models import (
     UserOnboardingAcknowledgment,
 )
 from users.helpers import add_user_permission
+from app.testing import make_token
 
 BASE = "/api/onboarding"
 SRP = OnboardingProgramType.SRP
 ORDERS = OnboardingProgramType.ORDERS
 SRP_PROGRAMS = "/api/srp/programs"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class OnboardingApiTestCase(TestCase):
@@ -32,7 +26,7 @@ class OnboardingApiTestCase(TestCase):
             username="onboarder",
             password="unused",
         )
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
         OnboardingProgram.objects.get_or_create(
             program_type=ORDERS,
@@ -126,7 +120,7 @@ class OnboardingApiTestCase(TestCase):
 
     def test_srp_programs_forbidden_without_onboarding_ack(self):
         other = User.objects.create_user(username="no_ack", password="unused")
-        token = _make_token(other)
+        token = make_token(other)
         auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
         add_user_permission(other, "view_evefleetshipreimbursement")
         r = self.client.get(SRP_PROGRAMS, **auth)
@@ -137,7 +131,7 @@ class OnboardingApiTestCase(TestCase):
         processor = User.objects.create_user(
             username="processor", password="unused"
         )
-        token = _make_token(processor)
+        token = make_token(processor)
         auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
         add_user_permission(processor, "view_evefleetshipreimbursement")
         add_user_permission(processor, "change_evefleetshipreimbursement")
@@ -150,7 +144,7 @@ class OnboardingApiTestCase(TestCase):
             password="unused",
             is_superuser=True,
         )
-        token = _make_token(admin)
+        token = make_token(admin)
         auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
         add_user_permission(admin, "view_evefleetshipreimbursement")
         r = self.client.get(SRP_PROGRAMS, **auth)

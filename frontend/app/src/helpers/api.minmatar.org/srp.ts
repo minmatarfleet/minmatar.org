@@ -53,7 +53,7 @@ export async function get_fleet_srp(access_token:string, srp_filter:SRPFilter) {
 
 export async function create_fleet_srp(access_token:string, srp_request:SRPRequest) {
     const fleet_id = srp_request.fleet_id
-    const combatlog_id = srp_request.combatlog_id
+    const combat_log_id = srp_request.combat_log_id
     
     const data = JSON.stringify({
         external_killmail_link: srp_request.external_killmail_link,
@@ -61,7 +61,7 @@ export async function create_fleet_srp(access_token:string, srp_request:SRPReque
         category: srp_request?.category ?? 'dps',
         comments: srp_request?.comments ?? '',
         ...(fleet_id && { fleet_id }),
-        ...(combatlog_id && { combatlog_id }),
+        ...(combat_log_id && { combat_log_id }),
     })
 
     const headers = {

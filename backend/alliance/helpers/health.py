@@ -30,6 +30,10 @@ from eveonline.models import (
     EveCorporation,
     EvePlayer,
 )
+from eveonline.killmail_classes import (
+    SMALL_GANG_MAX_ATTACKERS,
+    SOLO_MAX_ATTACKERS,
+)
 from fleets.models import EveFleetInstanceMember
 from freight.models import FreightContract
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, TRIBE_CHIEF_GROUP_NAME
@@ -365,6 +369,9 @@ def compute_alliance_health(  # noqa: C901
     hygiene_since = now - timedelta(days=HYGIENE_DAYS)
     hygiene_recent = now - timedelta(days=HYGIENE_RECENT_DAYS)
     hygiene_180 = now - timedelta(days=180)
+    # Fleets attended are distinct ESI fleet instances per person (alts
+    # folded). An EveFleet has had at most one instance in production, so
+    # this equals scheduled fleets; see fleets.helpers.metrics.
     fleets_90d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_30d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_180_times: dict[int, list[datetime]] = defaultdict(list)
@@ -415,21 +422,27 @@ def compute_alliance_health(  # noqa: C901
             .values_list("killmail_id", "n")
         ):
             attacker_counts[km_id] = n
+    # A person counts a mail once, however many of their alts were on it.
+    mails_by_user: dict[int, dict[int, datetime]] = defaultdict(dict)
     for cid, kt, km_id in kill_rows:
         uid = eve_to_user.get(cid)
         if uid is None or kt is None:
             continue
-        n = attacker_counts.get(km_id, 1)
-        if n == 1:
-            sig = "solo"
-        elif n <= 10:
-            sig = "small_gang"
-        else:
-            sig = "kill"
-        events.append((uid, kt, sig))
-        if kt >= hygiene_since:
+        mails_by_user[uid][km_id] = kt
+    for uid, mails in mails_by_user.items():
+        for km_id, kt in mails.items():
+            n = attacker_counts.get(km_id, 1)
+            if n <= SOLO_MAX_ATTACKERS:
+                sig = "solo"
+            elif n <= SMALL_GANG_MAX_ATTACKERS:
+                sig = "small_gang"
+            else:
+                sig = "kill"
+            events.append((uid, kt, sig))
+            if kt < hygiene_since:
+                continue
             kills_90d[uid] += 1
-            if n <= 10:
+            if n <= SMALL_GANG_MAX_ATTACKERS:
                 kills_small_90d[uid] += 1
             prev = last_kill_at.get(uid)
             if prev is None or kt > prev:

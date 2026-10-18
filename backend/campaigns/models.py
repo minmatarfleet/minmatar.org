@@ -1304,9 +1304,6 @@ class CampaignParticipantStat(models.Model):
     last_active_day = models.DateField(null=True, blank=True)
 
     rank_points = models.PositiveIntegerField(null=True, blank=True)
-    characters_included = models.PositiveSmallIntegerField(default=0)
-    characters_tracked = models.PositiveSmallIntegerField(default=0)
-    characters_lapsed = models.PositiveSmallIntegerField(default=0)
 
     active_hours_utc = models.JSONField(default=list, blank=True)
     observed_prime_time = models.CharField(

@@ -9,7 +9,7 @@ from esi.models import Token
 
 from eveonline.client import EsiClient
 from eveonline.helpers.db_sync import replace_with_bulk_create
-from eveonline.helpers.esi import parse_esi_date
+from eveonline.helpers.esi import esi_contract_defaults, parse_esi_date
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -427,47 +427,11 @@ def update_corporation_contracts(corporation_id: int) -> int:
     contracts_data = response.results() or []
     for raw in contracts_data:
         contract_id = raw["contract_id"]
-        price = raw.get("price")
-        if price is not None:
-            price = Decimal(str(price))
-        reward = raw.get("reward")
-        if reward is not None:
-            reward = Decimal(str(reward))
-        collateral = raw.get("collateral")
-        if collateral is not None:
-            collateral = Decimal(str(collateral))
-        buyout = raw.get("buyout")
-        if buyout is not None:
-            buyout = Decimal(str(buyout))
-        volume = raw.get("volume")
-        if volume is not None:
-            volume = Decimal(str(volume))
-
         EveCorporationContract.objects.update_or_create(
             contract_id=contract_id,
             defaults={
+                **esi_contract_defaults(raw),
                 "corporation_id": corporation.pk,
-                "type": raw.get("type", ""),
-                "status": raw.get("status", ""),
-                "availability": raw.get("availability", ""),
-                "issuer_id": raw.get("issuer_id"),
-                "issuer_corporation_id": raw.get("issuer_corporation_id"),
-                "assignee_id": raw.get("assignee_id"),
-                "acceptor_id": raw.get("acceptor_id"),
-                "for_corporation": raw.get("for_corporation", False),
-                "date_issued": parse_esi_date(raw.get("date_issued")),
-                "date_expired": parse_esi_date(raw.get("date_expired")),
-                "date_accepted": parse_esi_date(raw.get("date_accepted")),
-                "date_completed": parse_esi_date(raw.get("date_completed")),
-                "days_to_complete": raw.get("days_to_complete"),
-                "price": price,
-                "reward": reward,
-                "collateral": collateral,
-                "buyout": buyout,
-                "volume": volume,
-                "start_location_id": raw.get("start_location_id"),
-                "end_location_id": raw.get("end_location_id"),
-                "title": raw.get("title", ""),
             },
         )
     logger.info(

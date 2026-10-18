@@ -138,6 +138,8 @@ class PlanLeafMaterialSchema(Schema):
     type_id: int
     name: str
     quantity: int
+    # Unit price the planner buys at (Jita sell, else Forge guide). The
+    # name predates that; it used to be the CCP average price.
     average_price: float = 0.0
     estimated_buy_isk: float = 0.0
 

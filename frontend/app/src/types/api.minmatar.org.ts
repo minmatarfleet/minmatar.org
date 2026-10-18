@@ -1466,7 +1466,7 @@ export type SRPCategory = typeof srp_categories[number]
 export interface SRPRequest {
     external_killmail_link:     string;
     fleet_id?:                  number;
-    combatlog_id?:              number;
+    combat_log_id?:             number;
     is_corp_ship:               boolean;
     category?:                  SRPCategory;
     comments?:                  string;

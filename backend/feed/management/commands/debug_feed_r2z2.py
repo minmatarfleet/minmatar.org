@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Max, Min
 from django.utils import timezone
 
-from feed.constants import R2Z2_SEQUENCE_URL, R2Z2_USER_AGENT
+from feed.constants import R2Z2_SEQUENCE_URL
 from feed.helpers.ingest import (
     parse_r2z2_payload,
     upsert_feed_killmail_from_r2z2,
@@ -17,24 +17,15 @@ from feed.helpers.monitored_systems import (
     get_monitored_system_ids,
     is_monitored_system,
 )
+from feed.helpers.zkill_client import r2z2_sequence_url, zkill_get
 from feed.models import FeedKillmail, FeedMonitoredSystem, FeedR2z2Cursor
-
-R2Z2_BASE = "https://r2z2.zkillboard.com/ephemeral"
 
 ScanCounts = dict[str, int]
 SampleInsert = tuple[int, int, int] | None
 
 
-def _headers() -> dict[str, str]:
-    return {"User-Agent": R2Z2_USER_AGENT, "Accept": "application/json"}
-
-
 def _fetch_sequence_payload(sequence: int) -> requests.Response:
-    return requests.get(
-        f"{R2Z2_BASE}/{sequence}.json",
-        headers=_headers(),
-        timeout=30,
-    )
+    return zkill_get(r2z2_sequence_url(sequence), timeout=30)
 
 
 def _discard_reason(payload: dict, allowlist: frozenset[int]) -> str | None:
@@ -107,7 +98,7 @@ def _write_allowlist_state(
 
 
 def _fetch_latest_sequence() -> int:
-    response = requests.get(R2Z2_SEQUENCE_URL, headers=_headers(), timeout=30)
+    response = zkill_get(R2Z2_SEQUENCE_URL, timeout=30)
     response.raise_for_status()
     return int(response.json()["sequence"])
 

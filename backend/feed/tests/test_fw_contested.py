@@ -3,12 +3,16 @@ from __future__ import annotations
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+import requests
 from django.test import TestCase
 from django.utils import timezone
 
+from eveonline.esi_http import user_agent
+from eveonline.tests.fake_esi_http import FakeEsi, make_response
 from feed.constants import FACTION_AMARR
 from feed.helpers.fw_contested import (
     contested_percent_from_esi_entry,
+    fetch_fw_contested_from_esi,
     poll_monitored_contested_snapshots,
 )
 from feed.management.commands.seed_feed_monitored_systems import (
@@ -141,3 +145,35 @@ class FwContestedPollTestCase(TestCase):
             ).count(),
             1,
         )
+
+
+class FetchFwContestedTransportTest(TestCase):
+    def test_fw_systems_go_through_the_esi_transport(self):
+        fake = FakeEsi().install(self)
+        fake.add(
+            "GET",
+            "/fw/systems/",
+            make_response(
+                200,
+                [
+                    {
+                        "solar_system_id": 30003067,
+                        "victory_points": 50,
+                        "victory_points_threshold": 100,
+                        "contested": "contested",
+                        "occupier_faction_id": 500002,
+                        "owner_faction_id": 500002,
+                    }
+                ],
+            ),
+        )
+        rows = fetch_fw_contested_from_esi()
+        self.assertEqual(rows[30003067].contested_percent, 50.0)
+        self.assertEqual(fake.calls[0]["headers"]["User-Agent"], user_agent())
+
+    def test_fw_systems_error_raises(self):
+        FakeEsi().install(self).add(
+            "GET", "/fw/systems/", make_response(503, None)
+        )
+        with self.assertRaises(requests.HTTPError):
+            fetch_fw_contested_from_esi()

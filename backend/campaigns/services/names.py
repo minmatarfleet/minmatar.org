@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 
 from campaigns.models import CampaignKillmail, CampaignKillmailParticipant
-from campaigns.services import esi_gate
+from eveonline import esi_budget as esi_gate
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
 

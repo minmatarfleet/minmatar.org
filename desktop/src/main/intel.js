@@ -1,24 +1,25 @@
 // Intel window data: the shared intel sheet (pilot d-scan / Local reports) and the feed's capital
 // and Amarr fleet pings, plus the paste -> preview -> share flow and the report detail view.
-// Main process only; windows get view() through the normal state push.
+// Main process only; windows get view() through the normal state push. main.js polls refresh() every
+// REFRESH_MS while the Intel window is up (poller.js).
 const { IntelMap } = require('./intel_map')
+const { is_unauthorized } = require('./api')
 
 const REFRESH_MS = 30_000
 const NEW_FOR_MS = 5 * 60_000   // a row counts as new this long after it first shows up
 const MAX_PASTE_CHARS = 200_000  // same cap as the API
+const DEFAULT_RANGE = 5          // jumps, until the pilot picks another (saved in window.intel.range)
 
 class IntelController {
-    constructor({ api, web_url, on_change, on_unauthorized = () => {}, diag = () => {}, refresh_ms = REFRESH_MS, now = () => Date.now() }) {
+    constructor({ api, web_url, on_change, on_unauthorized = () => {}, diag = () => {}, now = () => Date.now() }) {
         this.api = api
         this.web_url = web_url
         this.on_change = on_change
         this.on_unauthorized = on_unauthorized
         this.diag = diag
-        this.refresh_ms = refresh_ms
         this.now = now
         this.map = new IntelMap()
         this.map_loading = null
-        this.timer = null
         this.reset()
     }
 
@@ -31,25 +32,13 @@ class IntelController {
         this.error = null
         this.updated_at = null
         this.origin = null            // { character, system } of the client in front
-        this.range = 5                // jumps; null = any distance
+        this.range = DEFAULT_RANGE    // jumps; null = any distance
         this.draft = null
         this.draft_text = null        // the paste stays here, never in the pushed state
         this.detail = null
     }
 
-    start() {
-        this.stop()
-        this.refresh()
-        this.timer = setInterval(() => this.refresh(), this.refresh_ms)
-    }
-
-    stop() {
-        clearInterval(this.timer)
-        this.timer = null
-    }
-
     sign_out() {
-        this.stop()
         this.reset()
     }
 
@@ -107,6 +96,7 @@ class IntelController {
         }))
     }
 
+    // Resolves true when the list loaded, false when it didn't (the poller backs off).
     async refresh() {
         this.loading = true
         this.changed()
@@ -121,10 +111,12 @@ class IntelController {
             this.loaded_once = true
             this.error = null
             this.updated_at = new Date(now).toISOString()
+            return true
         } catch (err) {
             this.diag({ t: 'intel-refresh-error', status: err.status, message: err.message })
-            if (err.status === 401) return this.on_unauthorized()
+            if (is_unauthorized(err)) { this.on_unauthorized(); return false }
             this.error = err.status === 403 ? 'Your account does not have access to intel.' : 'Could not reach Minmatar Fleet. Retrying…'
+            return false
         } finally {
             this.loading = false
             this.changed()
@@ -159,7 +151,7 @@ class IntelController {
             if (this.draft_text !== text) return   // pasted again meanwhile
             this.draft = { ...this.draft, status: 'ready', kind: preview.kind, lines: preview.lines, summary: preview.summary }
         } catch (err) {
-            if (err.status === 401) return this.on_unauthorized()
+            if (is_unauthorized(err)) return this.on_unauthorized()
             this.draft = { ...this.draft, status: 'error', error: err.detail || 'Could not read that paste.' }
         }
         this.changed()
@@ -196,7 +188,7 @@ class IntelController {
             this.refresh()
             return url
         } catch (err) {
-            if (err.status === 401) { this.on_unauthorized(); return null }
+            if (is_unauthorized(err)) { this.on_unauthorized(); return null }
             this.draft = { ...draft, status: 'ready', error: err.detail || 'Could not share. Try again.' }
             this.changed()
             return null
@@ -232,7 +224,7 @@ class IntelController {
                 url: this.report_url(report_id),
             }
         } catch (err) {
-            if (err.status === 401) return this.on_unauthorized()
+            if (is_unauthorized(err)) return this.on_unauthorized()
             this.detail = { status: 'error', report_id, error: err.status === 404 ? 'That report is gone.' : 'Could not load the report.' }
         }
         this.changed()
@@ -252,4 +244,4 @@ class IntelController {
     }
 }
 
-module.exports = { IntelController, REFRESH_MS, NEW_FOR_MS }
+module.exports = { IntelController, REFRESH_MS, NEW_FOR_MS, DEFAULT_RANGE }

@@ -1,7 +1,5 @@
 """Tests for TribeGroup.required_token_type gates and missing_token flags."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
@@ -17,13 +15,9 @@ from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
 )
+from app.testing import make_token
 
 BASE_URL = "/api/tribes"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def setUpModule():
@@ -121,7 +115,7 @@ class RequiredTokenGateTestCase(TestCase):
             codename="add_tribegroupmembership", content_type=content_type
         )
         self.user.user_permissions.add(perm)
-        self.auth = _make_token(self.user)
+        self.auth = make_token(self.user)
         self.character = EveCharacter.objects.create(
             character_id=42001,
             character_name="Gate Pilot",
@@ -230,7 +224,7 @@ class RequiredTokenMissingFlagTestCase(TestCase):
             required_token_type=TokenType.MARKET.value,
         )
         self.user = User.objects.create_user(username="tok_flag")
-        self.auth = _make_token(self.user)
+        self.auth = make_token(self.user)
         self.character = EveCharacter.objects.create(
             character_id=43001,
             character_name="Flag Pilot",

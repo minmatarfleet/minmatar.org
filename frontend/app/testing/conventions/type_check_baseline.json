@@ -67,5 +67,6 @@
     "testing/components/blocks/CorporationFinder.test.ts": 1,
     "testing/helpers/alliance_corporations_with_extraction.test.ts": 3,
     "testing/helpers/market_ops_redirect.test.ts": 2,
+    "testing/helpers/srp_create_request.test.ts": 2,
     "testing/helpers/tribe_group_apply_ui.test.ts": 2
 }

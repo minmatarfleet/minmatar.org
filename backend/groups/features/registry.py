@@ -272,6 +272,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="alliance.view_alliancehealth",
         deny_community_statuses=(),
     ),
+    "alliance.health.executor": FeatureDefinition(
+        code="alliance.health.executor",
+        label="Act on alliance health alliance-wide",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "See every corporation on the alliance health board and change "
+            "any member's community status."
+        ),
+        default_auth_group_names=_aff("People Team"),
+    ),
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",

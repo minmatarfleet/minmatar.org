@@ -31,6 +31,8 @@ from alliance.models import AllianceHealthSnapshot
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
     EveCorporation,
     EvePlayer,
 )
@@ -222,6 +224,43 @@ class AllianceHealthComputeTestCase(TestCase):
         self.assertEqual(quiet["character_id"], 900004)
         self.assertEqual(quiet["corporation_id"], 1000001)
         self.assertGreaterEqual(quiet["active_months"], 1)
+
+    def test_alts_on_one_mail_count_one_kill(self):
+        """Two alts of a trial pilot and a corp mate share one small-gang
+        kill: the trial pilot has one kill, not two."""
+        EveCharacter.objects.create(
+            character_id=900005,
+            character_name="Pilot Two Alt",
+            corporation_id=1000001,
+            user=self.user2,
+        )
+        mail = EveCharacterKillmail.objects.create(
+            id=7001,
+            killmail_id=7001,
+            killmail_hash="hash",
+            killmail_time=self.now - timedelta(days=3),
+            solar_system_id=30002537,
+            ship_type_id=587,
+            victim_character_id=12345,
+            attackers="[]",
+            items="[]",
+            character=self.char2,
+        )
+        for character_id in (900002, 900005, 900001):
+            EveCharacterKillmailAttacker.objects.create(
+                killmail=mail, character_id=character_id
+            )
+
+        payload = compute_alliance_health(now=self.now)
+
+        trial = next(
+            row
+            for row in payload["hygiene"]["trial"]["buckets"]["current"]
+            if row["user_id"] == self.user2.id
+        )
+        self.assertEqual(trial["kills"], 1)
+        self.assertEqual(trial["kills_small"], 1)
+        self.assertEqual(trial["slice_30d"], "1K")
 
     def test_save_snapshot(self):
         snap = save_snapshot(compute_alliance_health(now=self.now))
@@ -897,6 +936,9 @@ class AllianceHealthEndpointTestCase(TestCase):
         Group.objects.get_or_create(name="On Leave")
         people = User.objects.create_user(username="people_exec")
         people.groups.add(Group.objects.get(name="People Team"))
+        # Wire alliance.health.executor to the group now that it exists.
+        SyncFeatures().handle()
+        clear_feature_cache()
         token = jwt.encode(
             {"user_id": people.id},
             settings.SECRET_KEY,

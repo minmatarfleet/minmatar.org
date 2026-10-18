@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.utils import timezone
 
@@ -21,6 +19,9 @@ from campaigns.models import (
 )
 from eveonline.models import EveCharacter
 from feed.models import FeedKillmail
+
+# Re-exported: campaign tests import auth_headers from here.
+from app.testing import auth_headers  # pylint: disable=unused-import
 
 KAMELA = 30003069
 KOURMONEN = 30003068
@@ -117,14 +118,6 @@ def make_feed_killmail(
         },
         zkb_meta={"totalValue": isk_value, "solo": len(attackers) == 1},
     )
-
-
-def auth_headers(user: User) -> dict:
-    """Bearer header for a user, the way the site signs its own tokens."""
-    token = jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 def grant(user: User, *codenames: str) -> None:

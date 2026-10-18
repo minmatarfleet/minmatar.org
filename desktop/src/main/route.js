@@ -2,9 +2,8 @@
 // cached by ESI for 24 h). Gate distances don't change, so every pair is asked once per session;
 // names from the log engine are resolved to IDs once each. Follows docs/desktop/ccp-third-party-guidelines.md
 // rule 12 (identify the app, pin the API version, never re-ask inside the cache time).
-const { ESI_HEADERS } = require('./eve_settings')
+const { ESI, ESI_HEADERS, universe_ids, find_named } = require('./esi')
 
-const ESI = 'https://esi.evetech.net'
 const MAX_PAIRS = 500
 
 class RouteFinder {
@@ -19,20 +18,10 @@ class RouteFinder {
         const key = String(name || '').toLowerCase()
         if (!key) return null
         if (this.system_ids.has(key)) return this.system_ids.get(key)
-        let id = null
-        try {
-            const response = await this.fetch(`${ESI}/universe/ids`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...ESI_HEADERS },
-                body: JSON.stringify([name]),
-            })
-            if (!response.ok) return null   // not cached: try again next time
-            const body = await response.json()
-            const match = (body.systems || []).find(s => s.name.toLowerCase() === key)
-            id = match ? match.id : null
-        } catch (e) {
-            return null
-        }
+        const body = await universe_ids([name], this.fetch)
+        if (!body) return null   // not cached: try again next time
+        const match = find_named(body, 'systems', key)
+        const id = match ? match.id : null
         this.system_ids.set(key, id)
         return id
     }

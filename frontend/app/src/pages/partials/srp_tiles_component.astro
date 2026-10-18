@@ -1,4 +1,5 @@
 ---
+import { login_redirect, partial_redirect } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -11,7 +12,7 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
 import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
@@ -34,7 +35,7 @@ let srp_stats_history:SRPStatsHistory | null = null
 
 try {
     if (await should_redirect_to_srp_onboarding( auth_token as string, has_explicit_srp_change))
-        return Astro.redirect(translatePath('/ships/srp/onboarding/'))
+        return partial_redirect(Astro.request, translatePath('/ships/srp/onboarding/'))
 
     programs = await get_srp_programs(auth_token as string)
     srp_stats_history = await get_srp_stats_history(auth_token as string)
@@ -49,7 +50,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 
 if (fetching_error !== false && is_srp_onboarding_required_error(fetching_error))
-    return Astro.redirect(translatePath('/ships/srp/onboarding/'))
+    return partial_redirect(Astro.request, translatePath('/ships/srp/onboarding/'))
 
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'

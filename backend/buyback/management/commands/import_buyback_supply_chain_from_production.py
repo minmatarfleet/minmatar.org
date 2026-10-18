@@ -16,6 +16,8 @@ Usage (from backend/, with DB_READONLY_* configured):
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from eveonline.helpers.production_import import validate_source_alias
+
 
 class Command(BaseCommand):
     help = (
@@ -48,6 +50,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         source = options["source"]
+        validate_source_alias(source, "default")
         dry_run = options["dry_run"]
         history_days = (
             0 if options["skip_history"] else options["history_days"]
