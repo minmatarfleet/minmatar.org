@@ -172,6 +172,14 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `allow_alliance_posts = False` the post is stored members only. When a
   group post is first published with `announce`, the bot posts the title and
   link in the group's channel with the role mention (once; `announced_at`).
+  The create request's `host_group_id` replaces the `posts.create` check.
+  On `UpdateEvePostRequest` the three fields default to null and are only
+  applied when sent. A post with no host group is never members only.
+  Group posts are edited and deleted by their author or a manager of the
+  group (no `posts.edit`/`posts.delete` needed); alliance posts keep the
+  old rules. The list's `x-total-count` counts the posts the viewer can
+  see. Announcement text: `<@&role> New post from <group>: **<title>**`
+  and the post link on the next line.
 
 ### Tribe groups
 

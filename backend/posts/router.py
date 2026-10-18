@@ -5,21 +5,32 @@ import re
 
 from ninja import Router
 from pydantic import BaseModel
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.core.paginator import Paginator
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
+from authentication import AuthBearer, AuthOptional
 from campaigns.helpers import resolve_attachable_campaign
 
 from eveonline.helpers.characters.identity import (
     primary_characters_for_users,
 )
 
+from .announce import announce_group_post
 from .authors import author_fields_for_main, post_author_fields
 from .models import EvePost, EveTag
 from groups.helpers.feature_access import can_use_feature
+from tribes.helpers.permissions import user_can_manage_group
+from tribes.helpers.publishing import (
+    KIND_POST,
+    can_publish,
+    host_group_ref,
+    post_visible_to,
+    visible_group_ids,
+)
 from tribes.models import TribeGroup
+from tribes.schemas import HostGroupRef, RestrictedResponse, restricted
 
 
 def _tribe_group_ids(post: EvePost) -> List[int]:
@@ -37,6 +48,50 @@ def _set_tribe_groups(
     )
 
 
+def _host_fields(post: EvePost) -> dict:
+    return {
+        "host_group": (
+            host_group_ref(post.host_group) if post.host_group_id else None
+        ),
+        "members_only": bool(post.members_only),
+    }
+
+
+def _visible_posts_q(user) -> Q:
+    """Members-only group posts only for the group, its managers and the
+    author (docs/tribes/tribe-publishing.md)."""
+    q = Q(members_only=False)
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return q
+    if user.is_superuser:
+        return Q()
+    group_ids = visible_group_ids(user)
+    if group_ids:
+        q |= Q(host_group_id__in=group_ids)
+    return q | Q(user_id=user.pk)
+
+
+def _resolve_post_host(user, host_group_id: int):
+    """The group to post as, or a Ninja error tuple."""
+    group = (
+        TribeGroup.objects.filter(pk=host_group_id, is_active=True)
+        .select_related("tribe")
+        .first()
+    )
+    if group is None:
+        return 400, {"detail": f"No tribe group with id {host_group_id}"}
+    if not can_publish(user, group, KIND_POST):
+        return 403, {"detail": f"You can't post as {group.name}."}
+    return group
+
+
+def _may_edit_group_post(user, post: EvePost) -> bool:
+    """A group post's author, or anyone who can manage its group."""
+    if post.user_id == user.id:
+        return True
+    return user_can_manage_group(user, post.host_group)
+
+
 def _campaign_fields(post: EvePost) -> dict:
     return {
         "campaign_id": post.campaign_id,
@@ -49,6 +104,44 @@ def _assign_campaign(post: EvePost, campaign_id: int | None):
     if isinstance(resolved, tuple):
         return resolved
     post.campaign = resolved
+    return None
+
+
+def _update_denied(user, post: EvePost | None) -> tuple | None:
+    """Why the user may not update this post, or None."""
+    if post and post.host_group_id:
+        # A group post: its author or the group's managers.
+        if not _may_edit_group_post(user, post):
+            return 403, {"detail": "You can only update your own posts."}
+        return None
+    if not can_use_feature(user, "posts.edit"):
+        return 403, {"detail": "You do not have permission to update a post."}
+    if not post:
+        return 404, {"detail": "Post not found."}
+    if post.user_id != user.id:
+        return 403, {"detail": "You can only update your own posts."}
+    return None
+
+
+def _apply_post_host(user, post: EvePost, payload) -> tuple | None:
+    """Apply host_group_id / members_only from an update; None or error."""
+    fields = payload.model_fields_set
+    if "host_group_id" in fields and payload.host_group_id != (
+        post.host_group_id
+    ):
+        if payload.host_group_id:
+            group = _resolve_post_host(user, payload.host_group_id)
+            if isinstance(group, tuple):
+                return group
+            post.host_group = group
+        else:
+            post.host_group = None
+    if "members_only" in fields and payload.members_only is not None:
+        post.members_only = payload.members_only
+    if post.host_group_id is None:
+        post.members_only = False
+    elif not post.host_group.allow_alliance_posts:
+        post.members_only = True
     return None
 
 
@@ -92,6 +185,8 @@ class EvePostListResponse(BaseModel):
     author_character_name: str
     tag_ids: List[int]
     tribe_group_ids: List[int] = []
+    host_group: HostGroupRef | None = None
+    members_only: bool = False
 
 
 class EvePostResponse(BaseModel):
@@ -109,6 +204,8 @@ class EvePostResponse(BaseModel):
     tribe_group_ids: List[int] = []
     campaign_id: int | None = None
     campaign_slug: str | None = None
+    host_group: HostGroupRef | None = None
+    members_only: bool = False
 
 
 class EveTagResponse(BaseModel):
@@ -124,6 +221,11 @@ class CreateEvePostRequest(BaseModel):
     tag_ids: List[int]
     tribe_group_ids: List[int] = []
     campaign_id: int | None = None
+    # Post as a tribe group (needs the group's post right).
+    host_group_id: int | None = None
+    members_only: bool = False
+    # Announce in the group's channel when the post is published (once).
+    announce: bool = False
 
 
 class UpdateEvePostRequest(BaseModel):
@@ -134,9 +236,13 @@ class UpdateEvePostRequest(BaseModel):
     tag_ids: List[int] | None = None
     tribe_group_ids: List[int] | None = None
     campaign_id: int | None = None
+    # Left out: unchanged. host_group_id null makes it an alliance post.
+    host_group_id: int | None = None
+    members_only: bool | None = None
+    announce: bool | None = None
 
 
-@router.get("/posts", response=List[EvePostListResponse])
+@router.get("/posts", response=List[EvePostListResponse], auth=AuthOptional())
 def get_posts(
     request: HttpRequest,
     response: HttpResponse,
@@ -155,8 +261,10 @@ def get_posts(
             "user",
             "user__eveplayer",
             "user__eveplayer__primary_character",
+            "host_group__tribe",
         )
         .prefetch_related("tags", "tribe_groups")
+        .filter(_visible_posts_q(request.user))
     )
 
     if user_id:
@@ -166,7 +274,11 @@ def get_posts(
         posts = posts.filter(tags__id=tag_id)
 
     if tribe_group_id:
-        posts = posts.filter(tribe_groups__id=tribe_group_id).distinct()
+        # Hosted by the group, or tagged with it ("Also show on groups").
+        posts = posts.filter(
+            Q(tribe_groups__id=tribe_group_id)
+            | Q(host_group_id=tribe_group_id)
+        ).distinct()
 
     if campaign_id:
         posts = posts.filter(campaign_id=campaign_id)
@@ -177,7 +289,9 @@ def get_posts(
     if page_num:
         paginator = Paginator(posts, per_page=page_size)
         posts = paginator.get_page(page_num)
-        response["x-total-count"] = EvePost.objects.count()
+        response["x-total-count"] = EvePost.objects.filter(
+            _visible_posts_q(request.user)
+        ).count()
 
     posts = list(posts)
     mains = primary_characters_for_users(post.user_id for post in posts)
@@ -203,6 +317,7 @@ def get_posts(
                 author_character_name=author_character_name,
                 tag_ids=[tag.id for tag in post.tags.all()],
                 tribe_group_ids=_tribe_group_ids(post),
+                **_host_fields(post),
             )
         )
     return response
@@ -210,7 +325,12 @@ def get_posts(
 
 @router.get(
     "/posts/{post_id}",
-    response={200: EvePostResponse, 404: ErrorResponse},
+    response={
+        200: EvePostResponse,
+        403: RestrictedResponse,
+        404: ErrorResponse,
+    },
+    auth=AuthOptional(),
 )
 def get_post(request, post_id: int):
     post = (
@@ -220,12 +340,15 @@ def get_post(request, post_id: int):
             "user__eveplayer",
             "user__eveplayer__primary_character",
             "campaign",
+            "host_group__tribe",
         )
         .prefetch_related("tags", "tribe_groups")
         .first()
     )
     if post is None:
         return 404, {"detail": "Post not found"}
+    if not post_visible_to(request.user, post):
+        return restricted(host_group_ref(post.host_group))
 
     author_character_id, author_character_name = post_author_fields(post.user)
 
@@ -243,6 +366,7 @@ def get_post(request, post_id: int):
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
         **_campaign_fields(post),
+        **_host_fields(post),
     )
 
 
@@ -252,7 +376,13 @@ def get_post(request, post_id: int):
     auth=AuthBearer(),
 )
 def create_post(request, payload: CreateEvePostRequest):
-    if not can_use_feature(request.user, "posts.create"):
+    host_group = None
+    if payload.host_group_id:
+        # A group post needs the group's post right instead of posts.create.
+        host_group = _resolve_post_host(request.user, payload.host_group_id)
+        if isinstance(host_group, tuple):
+            return host_group
+    elif not can_use_feature(request.user, "posts.create"):
         return 403, {"detail": "You do not have permission to create a post."}
 
     if EvePost.objects.filter(title=payload.title).exists():
@@ -270,9 +400,16 @@ def create_post(request, payload: CreateEvePostRequest):
         content=payload.content,
         user=request.user,
         campaign=campaign,
+        host_group=host_group,
+        members_only=bool(
+            host_group
+            and (payload.members_only or not host_group.allow_alliance_posts)
+        ),
     )
     post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
     _set_tribe_groups(post, payload.tribe_group_ids)
+    if payload.announce:
+        announce_group_post(post)
     author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
@@ -289,6 +426,7 @@ def create_post(request, payload: CreateEvePostRequest):
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
         **_campaign_fields(post),
+        **_host_fields(post),
     )
 
 
@@ -303,14 +441,16 @@ def create_post(request, payload: CreateEvePostRequest):
     auth=AuthBearer(),
 )
 def update_post(request, post_id: int, payload: UpdateEvePostRequest):
-    if not can_use_feature(request.user, "posts.edit"):
-        return 403, {"detail": "You do not have permission to update a post."}
-
-    post = EvePost.objects.filter(id=post_id).first()
-    if not post:
-        return 404, {"detail": "Post not found."}
-    if post.user_id != request.user.id:
-        return 403, {"detail": "You can only update your own posts."}
+    post = (
+        EvePost.objects.filter(id=post_id)
+        .select_related("host_group__tribe")
+        .first()
+    )
+    error = _update_denied(request.user, post) or _apply_post_host(
+        request.user, post, payload
+    )
+    if error:
+        return error
 
     if payload.title:
         post.title = payload.title
@@ -337,6 +477,8 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
             return error
 
     post.save()
+    if payload.announce:
+        announce_group_post(post)
     author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
@@ -353,6 +495,7 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
         tag_ids=[tag.id for tag in post.tags.all()],
         tribe_group_ids=_tribe_group_ids(post),
         **_campaign_fields(post),
+        **_host_fields(post),
     )
 
 
@@ -362,10 +505,16 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     auth=AuthBearer(),
 )
 def delete_post(request, post_id: int):
+    post = EvePost.objects.filter(id=post_id).first()
+    if post and post.host_group_id:
+        # A group post: its author or the group's managers.
+        if not _may_edit_group_post(request.user, post):
+            return 403, {"detail": "You can only delete your own posts."}
+        post.delete()
+        return 204, None
+
     if not can_use_feature(request.user, "posts.delete"):
         return 403, {"detail": "You do not have permission to delete a post."}
-
-    post = EvePost.objects.filter(id=post_id).first()
     if not post:
         return 404, {"detail": "Post not found."}
     if post.user_id != request.user.id:
