@@ -130,6 +130,11 @@ def _member_windows(instance) -> dict[int, tuple[datetime, datetime]]:
     return windows
 
 
+# Public for the fleet fight timeline, which reads the same windows.
+def member_windows(instance) -> dict[int, tuple[datetime, datetime]]:
+    return _member_windows(instance)
+
+
 def _in_fleet(
     windows: dict[int, tuple[datetime, datetime]],
     character_id: int | None,
@@ -153,23 +158,34 @@ def _instance_bounds(
     return start, min(end + LAST_SEEN_GRACE, timezone.now())
 
 
-def match_fleet_killmails(
-    instance, known: dict[int, dict] | None = None
-) -> FleetKillSummary:
-    """Every feed killmail one of this instance's pilots was on.
+@dataclass
+class InstanceKillmail:
+    """A feed killmail one of the instance's pilots was on, before naming."""
 
-    ``known`` maps killmail id to a previously stored payload row; its names
-    are reused so a re-run does not ask ESI about the same victims again.
+    killmail: FeedKillmail
+    outcome: str
+    # In-fleet attackers; empty on a loss nobody in fleet shot back on.
+    pilots: set[int]
+
+
+def iter_instance_killmails(instance, windows=None):
+    """Yield every feed killmail this instance's pilots were on, in order.
+
+    A loss when the victim was in fleet at that moment, otherwise a kill when
+    any attacker was. ``windows`` defaults to the instance's member windows.
     """
-    windows = _member_windows(instance)
+    windows = _member_windows(instance) if windows is None else windows
     if not windows:
-        return FleetKillSummary()
-
+        return
     start, end = _instance_bounds(instance, windows)
-    matched: list[FleetKillmail] = []
-    for killmail in FeedKillmail.objects.filter(
-        killmail_time__gte=start, killmail_time__lte=end
-    ).order_by("killmail_time", "killmail_id"):
+    # The raw mail is the heaviest column and matching never reads it.
+    for killmail in (
+        FeedKillmail.objects.filter(
+            killmail_time__gte=start, killmail_time__lte=end
+        )
+        .defer("raw_killmail")
+        .order_by("killmail_time", "killmail_id")
+    ):
         moment = killmail.killmail_time
         pilots = {
             attacker.get("character_id")
@@ -182,18 +198,36 @@ def match_fleet_killmails(
             outcome = OUTCOME_KILL
         else:
             continue
+        yield InstanceKillmail(
+            killmail=killmail, outcome=outcome, pilots=pilots
+        )
+
+
+def killmail_isk(killmail: FeedKillmail) -> int:
+    return int((killmail.zkb_meta or {}).get("totalValue") or 0)
+
+
+def match_fleet_killmails(
+    instance, known: dict[int, dict] | None = None
+) -> FleetKillSummary:
+    """Every feed killmail one of this instance's pilots was on.
+
+    ``known`` maps killmail id to a previously stored payload row; its names
+    are reused so a re-run does not ask ESI about the same victims again.
+    """
+    matched: list[FleetKillmail] = []
+    for row in iter_instance_killmails(instance):
+        killmail = row.killmail
         matched.append(
             FleetKillmail(
                 killmail_id=killmail.killmail_id,
-                killmail_time=moment,
-                outcome=outcome,
+                killmail_time=killmail.killmail_time,
+                outcome=row.outcome,
                 solar_system_id=killmail.solar_system_id,
                 victim_ship_type_id=killmail.victim_ship_type_id,
                 victim_character_id=killmail.victim_character_id,
-                isk_value=int(
-                    (killmail.zkb_meta or {}).get("totalValue") or 0
-                ),
-                fleet_pilots=len(pilots),
+                isk_value=killmail_isk(killmail),
+                fleet_pilots=len(row.pilots),
                 is_capsule=killmail.victim_ship_type_id in CAPSULE_TYPE_IDS,
             )
         )

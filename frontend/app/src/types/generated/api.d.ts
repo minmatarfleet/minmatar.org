@@ -2368,6 +2368,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/fights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Fights
+         * @description Rounds of fighting, each with its kills, losses, who we fought and battle report links. Rebuilt every 30 s while the fleet is out and for two hours after. While the fleet is live only its managers and pilots may read it. status is building until the first build is done; ask again in a few seconds.
+         */
+        get: operations["fleets_endpoints_fleet_get_fleet_fights_get_fleet_fights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Reset Fleet Fights
+         * @description Drop every merge and split. Fleet managers only; returns the re-cut timeline.
+         */
+        delete: operations["fleets_endpoints_fleet_delete_fleet_fights_edits_reset_fleet_fights"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/edits/{edit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Undo Fleet Fights Edit
+         * @description Undo one merge or split. Fleet managers only; returns the re-cut timeline.
+         */
+        delete: operations["fleets_endpoints_fleet_delete_fleet_fights_edit_undo_fleet_fights_edit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge Fleet Fights
+         * @description Merge every round between start (the first mail of the first round) and end (the last mail of the last) into one. Replaces any split inside. Fleet managers only; returns the re-cut timeline.
+         */
+        post: operations["fleets_endpoints_fleet_post_fleet_fights_merge_merge_fleet_fights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Split Fleet Fights
+         * @description Start a new round at a time, usually the first mail after a quiet gap. Fleet managers only; returns the re-cut timeline.
+         */
+        post: operations["fleets_endpoints_fleet_post_fleet_fights_split_split_fleet_fights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/fitting-access": {
         parameters: {
             query?: never;
@@ -10051,6 +10151,65 @@ export interface components {
             source: string;
         };
         /**
+         * EveFleetFightsResponse
+         * @description A fleet's killmails cut into rounds. ``status`` is building (not
+         *     ready yet, ask again shortly), live, settling (ended, still filling in
+         *     late killmails) or settled.
+         */
+        EveFleetFightsResponse: {
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit?: boolean;
+            chart?: components["schemas"]["FleetFightChart"] | null;
+            /** Computed At */
+            computed_at?: string | null;
+            /**
+             * Edits
+             * @default []
+             */
+            edits?: components["schemas"]["FleetFightEdit"][];
+            /** End */
+            end?: string | null;
+            /**
+             * Events
+             * @default []
+             */
+            events?: components["schemas"]["FleetFightEvent"][];
+            /** Feed Behind Since */
+            feed_behind_since?: string | null;
+            /** Fleet Id */
+            fleet_id: number;
+            /**
+             * Live
+             * @default false
+             */
+            live?: boolean;
+            /**
+             * Round Count
+             * @default 0
+             */
+            round_count?: number;
+            /**
+             * Rounds
+             * @default []
+             */
+            rounds?: components["schemas"]["FleetFightRound"][];
+            /** Settled At */
+            settled_at?: string | null;
+            /**
+             * Skirmish Count
+             * @default 0
+             */
+            skirmish_count?: number;
+            /** Start */
+            start?: string | null;
+            /** Status */
+            status: string;
+            totals?: components["schemas"]["FleetFightTotals"] | null;
+        };
+        /**
          * EveFleetFilter
          * @enum {string}
          */
@@ -11431,6 +11590,264 @@ export interface components {
              */
             updated_at: string;
         };
+        /** FleetFightChart */
+        FleetFightChart: {
+            /** Bin Minutes */
+            bin_minutes: number;
+            /** Bins */
+            bins: number[][];
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
+        /** FleetFightEdit */
+        FleetFightEdit: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by?: string | null;
+            /** End */
+            end?: string | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
+        /** FleetFightEvent */
+        FleetFightEvent: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Count */
+            count: number;
+            /** Kind */
+            kind: string;
+            /** Ships */
+            ships: components["schemas"]["FleetFightEventShip"][];
+        };
+        /** FleetFightEventShip */
+        FleetFightEventShip: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+        };
+        /** FleetFightHostile */
+        FleetFightHostile: {
+            /** Group Id */
+            group_id?: number | null;
+            /** Isk Killed */
+            isk_killed: number;
+            /** Name */
+            name: string;
+            /** Pilots */
+            pilots: number;
+            /** Ships Killed */
+            ships_killed: number;
+        };
+        /** FleetFightHull */
+        FleetFightHull: {
+            /** Count */
+            count: number;
+            /** Isk */
+            isk: number;
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id?: number | null;
+        };
+        /** FleetFightKillmail */
+        FleetFightKillmail: {
+            /** Group Name */
+            group_name: string;
+            /** Isk */
+            isk: number;
+            /** Killmail Id */
+            killmail_id: number;
+            /** Outcome */
+            outcome: string;
+            /** Pending */
+            pending: boolean;
+            /** Pilots */
+            pilots: number;
+            /** Pod */
+            pod: boolean;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id?: number | null;
+            /** System Id */
+            system_id: number;
+            /** System Name */
+            system_name: string;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Victim Name */
+            victim_name: string;
+        };
+        /** FleetFightLinks */
+        FleetFightLinks: {
+            /** Brtools */
+            brtools: string;
+            /** Evekill */
+            evekill?: string | null;
+            /** Zkillboard */
+            zkillboard: string;
+        };
+        /** FleetFightMergeRequest */
+        FleetFightMergeRequest: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
+        /** FleetFightRound */
+        FleetFightRound: {
+            /** Biggest */
+            biggest: components["schemas"]["FleetFightKillmail"][];
+            /** Efficiency */
+            efficiency?: number | null;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Fighting */
+            fighting: boolean;
+            /** Hostile Pilots */
+            hostile_pilots: number;
+            /** Hostiles */
+            hostiles: components["schemas"]["FleetFightHostile"][];
+            /** Hulls Killed */
+            hulls_killed: components["schemas"]["FleetFightHull"][];
+            /** Hulls Lost */
+            hulls_lost: components["schemas"]["FleetFightHull"][];
+            /** Isk Destroyed */
+            isk_destroyed: number;
+            /** Isk Lost */
+            isk_lost: number;
+            /** Isk Pending */
+            isk_pending: number;
+            /** Killmails */
+            killmails: components["schemas"]["FleetFightKillmail"][];
+            /** Kind */
+            kind: string;
+            links: components["schemas"]["FleetFightLinks"];
+            /** Mails */
+            mails: number;
+            /** Merge Edit Ids */
+            merge_edit_ids: number[];
+            /** Minutes */
+            minutes: number;
+            /** Number */
+            number?: number | null;
+            /** Our Pilots */
+            our_pilots: number;
+            /** Pods Destroyed */
+            pods_destroyed: number;
+            /** Pods Lost */
+            pods_lost: number;
+            /** Ships Destroyed */
+            ships_destroyed: number;
+            /** Ships Lost */
+            ships_lost: number;
+            /** Split Edit Ids */
+            split_edit_ids: number[];
+            /** Split Gaps */
+            split_gaps: components["schemas"]["FleetFightSplitGap"][];
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /** Systems */
+            systems: components["schemas"]["FleetFightSystem"][];
+        };
+        /** FleetFightSplitGap */
+        FleetFightSplitGap: {
+            /**
+             * After
+             * Format: date-time
+             */
+            after: string;
+            /** After Kills */
+            after_kills: number;
+            /** After Losses */
+            after_losses: number;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Before Kills */
+            before_kills: number;
+            /** Before Losses */
+            before_losses: number;
+            /** Seconds */
+            seconds: number;
+        };
+        /** FleetFightSplitRequest */
+        FleetFightSplitRequest: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
+        /** FleetFightSystem */
+        FleetFightSystem: {
+            /** Id */
+            id: number;
+            /** Mails */
+            mails: number;
+            /** Name */
+            name: string;
+        };
+        /** FleetFightTotals */
+        FleetFightTotals: {
+            /** Efficiency */
+            efficiency?: number | null;
+            /** Isk Destroyed */
+            isk_destroyed: number;
+            /** Isk Lost */
+            isk_lost: number;
+            /** Isk Pending */
+            isk_pending: number;
+            /** Pods Destroyed */
+            pods_destroyed: number;
+            /** Pods Lost */
+            pods_lost: number;
+            /** Ships Destroyed */
+            ships_destroyed: number;
+            /** Ships Lost */
+            ships_lost: number;
+        };
         /** FleetWindowAfterAction */
         FleetWindowAfterAction: {
             /** Aar Link */
@@ -11513,6 +11930,23 @@ export interface components {
              */
             victim_name?: string;
         };
+        /** FleetWindowFightHostile */
+        FleetWindowFightHostile: {
+            /** Name */
+            name: string;
+            /** Pilots */
+            pilots: number;
+        };
+        /** FleetWindowFights */
+        FleetWindowFights: {
+            /** Earlier */
+            earlier: components["schemas"]["FleetWindowRound"][];
+            latest: components["schemas"]["FleetWindowLatestRound"];
+            /** Round Count */
+            round_count: number;
+            /** Skirmish Count */
+            skirmish_count: number;
+        };
         /** FleetWindowFleet */
         FleetWindowFleet: {
             /**
@@ -11554,6 +11988,43 @@ export interface components {
             type: string;
             /** Type Label */
             type_label: string;
+        };
+        /** FleetWindowLatestRound */
+        FleetWindowLatestRound: {
+            /** Bins */
+            bins: number[][];
+            /** Efficiency */
+            efficiency?: number | null;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Fighting */
+            fighting: boolean;
+            /** Hostiles */
+            hostiles: components["schemas"]["FleetWindowFightHostile"][];
+            /** Isk Destroyed */
+            isk_destroyed: number;
+            /** Isk Lost */
+            isk_lost: number;
+            /** Kills */
+            kills: number;
+            /** Kind */
+            kind: string;
+            /** Losses */
+            losses: number;
+            /** Minutes */
+            minutes: number;
+            /** Number */
+            number?: number | null;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /** Systems */
+            systems: string[];
         };
         /** FleetWindowLoss */
         FleetWindowLoss: {
@@ -11636,6 +12107,7 @@ export interface components {
              * @default []
              */
             feed?: components["schemas"]["FleetWindowFeedRow"][];
+            fights?: components["schemas"]["FleetWindowFights"] | null;
             fleet: components["schemas"]["FleetWindowFleet"];
             me: components["schemas"]["FleetWindowMe"];
             /** Mode */
@@ -11658,6 +12130,41 @@ export interface components {
             covered: boolean;
             /** Role */
             role: string;
+        };
+        /** FleetWindowRound */
+        FleetWindowRound: {
+            /** Efficiency */
+            efficiency?: number | null;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Fighting */
+            fighting: boolean;
+            /** Hostiles */
+            hostiles: components["schemas"]["FleetWindowFightHostile"][];
+            /** Isk Destroyed */
+            isk_destroyed: number;
+            /** Isk Lost */
+            isk_lost: number;
+            /** Kills */
+            kills: number;
+            /** Kind */
+            kind: string;
+            /** Losses */
+            losses: number;
+            /** Minutes */
+            minutes: number;
+            /** Number */
+            number?: number | null;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /** Systems */
+            systems: string[];
         };
         /**
          * FleetWindowShip
@@ -23483,6 +23990,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetCompositionEntryResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_get_fleet_fights_get_fleet_fights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetFightsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_delete_fleet_fights_edits_reset_fleet_fights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetFightsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_delete_fleet_fights_edit_undo_fleet_fights_edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+                edit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetFightsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_post_fleet_fights_merge_merge_fleet_fights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FleetFightMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetFightsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_post_fleet_fights_split_split_fleet_fights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FleetFightSplitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetFightsResponse"];
                 };
             };
             /** @description Forbidden */

@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils.dateparse import parse_datetime
 
 from feed.helpers.affiliations import apply_killmail_affiliations
+from feed.helpers.fleet_pilots import has_fleet_pilot
 from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.monitored_systems import is_monitored_system
 from feed.models import FeedKillmail
@@ -36,9 +37,13 @@ def upsert_feed_killmail_from_r2z2(
         return None
 
     solar_system_id = raw.get("solar_system_id")
-    if solar_system_id is None or not is_monitored_system(
+    if solar_system_id is None:
+        return None
+    # Outside the monitored systems, keep only mails a tracked fleet's pilot
+    # is on, so a fleet that roams out of the warzone keeps its fights.
+    if not is_monitored_system(
         solar_system_id, allowlist
-    ):
+    ) and not has_fleet_pilot(raw):
         return None
 
     killmail_id = raw.get("killmail_id") or payload.get("killmail_id")

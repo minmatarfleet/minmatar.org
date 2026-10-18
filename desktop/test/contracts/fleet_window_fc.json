@@ -17,6 +17,78 @@
     "with_fc": 3
   },
   "feed": [],
+  "fights": {
+    "earlier": [
+      {
+        "efficiency": 80,
+        "end": "2026-01-17T17:43:00Z",
+        "fighting": false,
+        "hostiles": [
+          {
+            "name": "Hostile Alliance",
+            "pilots": 1
+          }
+        ],
+        "isk_destroyed": 80000000,
+        "isk_lost": 20000000,
+        "kills": 4,
+        "kind": "round",
+        "losses": 1,
+        "minutes": 3,
+        "number": 1,
+        "start": "2026-01-17T17:40:00Z",
+        "systems": [
+          "Amamake"
+        ]
+      }
+    ],
+    "latest": {
+      "bins": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "efficiency": 75,
+      "end": "2026-01-17T17:59:00Z",
+      "fighting": true,
+      "hostiles": [
+        {
+          "name": "Hostile Alliance",
+          "pilots": 1
+        }
+      ],
+      "isk_destroyed": 60000000,
+      "isk_lost": 20000000,
+      "kills": 3,
+      "kind": "round",
+      "losses": 1,
+      "minutes": 3,
+      "number": 2,
+      "start": "2026-01-17T17:56:00Z",
+      "systems": [
+        "Amamake"
+      ]
+    },
+    "round_count": 2,
+    "skirmish_count": 0
+  },
   "fleet": {
     "description": "Armor roam",
     "doctrine_name": "Armor Damnations",

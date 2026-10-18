@@ -5,6 +5,8 @@
     --fw-warn: #e8a33a;
     --fw-danger: #ff6b5e;
     --fw-good: #4fbf4a;
+    --fw-kill: #7aa2f0;          /* kills read blue, losses red (alliance blue, lifted for text) */
+    --fw-kill-bar: #2051b5;
     --fw-card: rgba(255, 255, 255, 0.035);
     --fw-gutter: 14px;
 }
@@ -125,7 +127,7 @@
 .fw-kill__text > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fw-efficiency { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; }
 .fw-efficiency__bar { flex: 1; display: flex; height: 3px; background: #e0362a; }
-.fw-efficiency__bar > span { background: #a3a3a3; }
+.fw-efficiency__bar > span { background: var(--fw-kill-bar); }
 
 /* wrap-up */
 .fw-wrap { overflow: hidden; }
@@ -209,3 +211,26 @@
 .fw-bar-row .fw-count { font-size: 12px; }
 .fw-compact-alert { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 8px; background: rgba(232, 163, 58, 0.10); outline: 1px solid rgba(232, 163, 58, 0.35); font-size: 12px; white-space: nowrap; overflow: hidden; }
 .fw-compact-alert .eve-dim { overflow: hidden; text-overflow: ellipsis; }
+
+/* Fights: the round being fought, its per-minute bars, earlier rounds */
+.fw-kill-text, .fw-stat.fw-kill-text { color: var(--fw-kill); }
+.fw-stat.fw-danger { color: var(--fw-danger); }
+.fw-round { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--fw-card); border: 1px solid var(--eve-line); }
+.fw-round.is-fighting { background: rgba(224, 54, 42, 0.08); border-color: rgba(224, 54, 42, 0.35); }
+.fw-round__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fw-round__name { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; color: var(--eve-text-strong); }
+.fw-round__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eve-danger); animation: fw-round-pulse 1.6s ease-in-out infinite; }
+@keyframes fw-round-pulse { 50% { opacity: 0.35; } }
+.fw-round .fw-stats { margin: 0; }
+.fw-round .fw-efficiency { margin-top: 0; }
+.fw-round__bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; }
+.fw-round__bars > span { display: flex; flex-direction: column; }
+.fw-round__up, .fw-round__down { display: flex; height: 22px; }
+.fw-round__up { align-items: flex-end; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+.fw-round__down { align-items: flex-start; }
+.fw-round__up > span, .fw-round__down > span { width: 100%; }
+.fw-round__up > span { background: var(--fw-kill-bar); }
+.fw-round__down > span { background: var(--eve-accent); }
+.fw-round__vs { font-size: 12px; }
+.fw-round-row { grid-template-columns: minmax(0, 1fr) auto 36px; }
+.fw-round-row.is-skirmish .fw-row__name { color: var(--eve-text-dim); }

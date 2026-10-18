@@ -557,6 +557,61 @@ class EveFleetInstanceMemberShipSnapshot(models.Model):
         )
 
 
+class EveFleetFightTimeline(models.Model):
+    """A fleet's killmails cut into rounds, rewritten by every rebuild.
+
+    ``killmails`` keeps the matched mails (names, ships, ISK, who was on
+    them), so the timeline outlives the feed's 30-day killmail purge and an
+    FC edit can re-cut the rounds without matching again. ``payload`` is the
+    cut result the API serves. See fleets.helpers.fights.
+    """
+
+    eve_fleet = models.OneToOneField(
+        EveFleet, on_delete=models.CASCADE, related_name="fight_timeline"
+    )
+    killmails = models.JSONField(default=list, blank=True)
+    events = models.JSONField(default=list, blank=True)
+    names = models.JSONField(default=dict, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    battle_links = models.JSONField(default=dict, blank=True)
+    computed_at = models.DateTimeField(null=True, blank=True)
+    swept_at = models.DateTimeField(null=True, blank=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Fight timeline for fleet {self.eve_fleet_id}"
+
+
+class EveFleetFightEdit(models.Model):
+    """An FC's change to where rounds start and end.
+
+    Edits are points in time, not round numbers, so they still hold when a
+    late killmail lands. A merge removes the automatic cuts between ``start``
+    and ``end``; a split adds a cut at ``start``.
+    """
+
+    class Kind(models.TextChoices):
+        MERGE = "merge", "Merge"
+        SPLIT = "split", "Split"
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="fight_edits"
+    )
+    kind = models.CharField(max_length=8, choices=Kind.choices)
+    start = models.DateTimeField()
+    end = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"{self.kind} on fleet {self.eve_fleet_id} at {self.start}"
+
+
 class EveFleetInstanceMemberRole(models.Model):
     """
     Optional role assigned to a fleet instance member for critical fleet positions.

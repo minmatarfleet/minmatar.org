@@ -55,7 +55,10 @@ import {
 import {
     get_fleets_metrics,
     get_fleet_commander_metrics,
+    get_fleet_fights,
+    type FleetFights,
 } from '@helpers/api.minmatar.org/fleets'
+let fights: FleetFights | null = null
 let pilots: SummaryCharacter[] = []
 let roles: FleetRoleCoverage | null = null
 let ship_volunteers: FleetShipVolunteer[] = []
@@ -111,6 +114,7 @@ try {
         refits_result,
         fleets_metrics_result,
         fleet_commanders_metrics_result,
+        fights_result,
     ] = await Promise.allSettled([
         is_fleet_commander ? load_fc_view() : null,
         !history ? get_characters_summary_sorted(auth_token as string) : null,
@@ -120,7 +124,10 @@ try {
         !history ? get_fleet_refits(auth_token as string, fleet_id) : [],
         get_fleets_metrics(auth_token as string, fleet_id),
         get_fleet_commander_metrics(auth_token as string),
+        // Live fleets only: managers and pilots in fleet get the Fights tab.
+        !history && fleet?.tracking ? get_fleet_fights(auth_token as string, fleet_id) : null,
     ])
+    if (fights_result.status === 'fulfilled') fights = fights_result.value
 
     const fc_view = settled_value(fc_view_result)
     if (fc_view) {
@@ -278,6 +285,7 @@ const breadcrumbs = [
                 refits={refits}
                 composition={composition}
                 supply={supply}
+                fights={fights}
             />
         }
     </PageWide>

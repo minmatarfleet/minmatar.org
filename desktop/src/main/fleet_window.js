@@ -275,6 +275,7 @@ class FleetWindow extends EventEmitter {
             attention: win.attention,
             after_action: win.after_action,
             feed: win.feed || [],
+            fights: win.fights || null,
             loss: last && !this.done_losses.has(last.killmail_id) ? last : null,
             you: this.you(win),
             signed_up_key: signed_character ? (win.me.ship_volunteers[signed_character] || null) : null,

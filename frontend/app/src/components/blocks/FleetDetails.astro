@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply, FleetKills as FleetKillsData, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply, FleetKills as FleetKillsData, FleetSrpLoss, FleetFights as FleetFightsData } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
     fleet:                      FleetUI;
@@ -29,6 +29,8 @@ interface Props {
     /** A completed fleet's killmails, fetched by the page; null loads them through the partial. */
     fleet_kills?:               FleetKillsData | null;
     srp_losses?:                FleetSrpLoss[] | null;
+    /** The Fights tab; null when the viewer may not see it (a live fleet they are not in). */
+    fights?:                    FleetFightsData | null;
 }
 
 const {
@@ -50,6 +52,7 @@ const {
     supply,
     fleet_kills = null,
     srp_losses = null,
+    fights = null,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -81,12 +84,22 @@ import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
 import FleetKills from '@components/blocks/FleetKills.astro';
+import FleetFights from '@components/blocks/FleetFights.astro';
+
+// A finished fleet with no kills or losses has no Fights tab.
+const show_fights = Boolean(fights && (fights.status === 'building' || fights.live || fights.rounds.length > 0))
 
 // Pilots pick ships from the doctrine; a cancelled fleet takes no more picks.
 const fleet_tabs = [
     { id: 'overview', label: t('fleets.tabs.overview') },
     ...(!history && fleet.status !== 'cancelled' && composition.length > 0 && pilots.length > 0 ? [{ id: 'your-pilots', label: t('fleets.tabs.your_pilots') }] : []),
+    ...(show_fights ? [{ id: 'fights', label: t('fleets.tabs.fights') }] : []),
     ...(is_fleet_commander ? [{ id: 'fleet', label: t('fleets.tabs.fleet') }] : []),
+]
+
+const history_tabs = [
+    { id: 'overview', label: t('fleets.tabs.overview') },
+    ...(show_fights ? [{ id: 'fights', label: t('fleets.tabs.fights') }] : []),
 ]
 
 import { query_string } from '@helpers/string'
@@ -117,12 +130,6 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
             members_count={fleet_metrics?.members}
         />
 
-        {history && fleet.description &&
-                <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
-                    <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
-                    <Markdown markdown={fleet.description as string} />
-                </section>
-        }
     </Flexblock>
 
     {!history &&
@@ -144,40 +151,69 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
     }
 
     {history &&
-        <Wrapper
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
+        <SectionTabs
+            aria_label={t('fleets.tabs.label')}
+            id_prefix="fleet"
+            tabs={history_tabs}
         >
-            <AARLinkButton
-                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
-                fleet_id={fleet.id}
-                can_edit={can_remove_fleet}
-            />
-        </Wrapper>
-    }
+            <SectionTabPanel id="overview" id_prefix="fleet" is_default={true}>
+                <BlockList gap="var(--space-xl)">
+                    {fleet.description &&
+                        <section class="[ fleet-briefing ]" aria-labelledby="fleet-briefing-title">
+                            <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
+                            <Markdown markdown={fleet.description as string} />
+                        </section>
+                    }
 
-    {history && fleet.tracking &&
-        <Wrapper
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-        >
-            {fleet_kills ?
-                <FleetKills fleet_kills={fleet_kills} fleet_id={fleet.id} srp_losses={srp_losses} />
-                :
-                <div
-                    id="fleet-kills"
-                    hx-get={FLEET_KILLS_PARTIAL_URL}
-                    hx-trigger="load"
-                    hx-swap="outerHTML transition:true"
-                >
-                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
-                </div>
+                    <Wrapper
+                        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <AARLinkButton
+                            aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+                            fleet_id={fleet.id}
+                            can_edit={can_remove_fleet}
+                        />
+                    </Wrapper>
+
+                    {fleet.tracking &&
+                        <Wrapper
+                            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                            padding_block='0'
+                            padding_inline='0'
+                            max_width='var(--max-col-width)'
+                        >
+                            {fleet_kills ?
+                                <FleetKills fleet_kills={fleet_kills} fleet_id={fleet.id} srp_losses={srp_losses} />
+                                :
+                                <div
+                                    id="fleet-kills"
+                                    hx-get={FLEET_KILLS_PARTIAL_URL}
+                                    hx-trigger="load"
+                                    hx-swap="outerHTML transition:true"
+                                >
+                                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
+                                </div>
+                            }
+                        </Wrapper>
+                    }
+                </BlockList>
+            </SectionTabPanel>
+
+            {show_fights && fights &&
+                <SectionTabPanel id="fights" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <FleetFights fights={fights} fleet_id={fleet.id} />
+                    </Wrapper>
+                </SectionTabPanel>
             }
-        </Wrapper>
+        </SectionTabs>
     }
     
     {!history &&
@@ -257,6 +293,18 @@ const show_my_pilots = !history && fleet.status !== 'cancelled' && composition.l
                                 <p class="[ loading ]">{t('fleets.tabs.loading_picker')}</p>
                             </div>
                         </Flexblock>
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+
+            {show_fights && fights &&
+                <SectionTabPanel id="fights" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <FleetFights fights={fights} fleet_id={fleet.id} />
                     </Wrapper>
                 </SectionTabPanel>
             }

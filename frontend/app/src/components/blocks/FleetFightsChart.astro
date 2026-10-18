@@ -1,0 +1,321 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
+import { chart_bands, chart_bars, chart_position, chart_ticks, eve_clock } from '@helpers/fleet_fights'
+
+/**
+ * The fleet minute by minute: ships killed above the line (blue), lost below
+ * it (red), a band per round, and fleet events (joins, reships) along the
+ * bottom. Each band links to its round's report.
+ */
+interface Props {
+    fights:             FleetFights;
+    /** Round report URL for a 1-based position in the rounds list. */
+    round_href:         (position: number) => string;
+    [propName: string]: any;
+}
+
+const {
+    fights,
+    round_href,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const chart = fights.chart!
+const bars = chart_bars(chart)
+const bands = chart_bands(
+    chart,
+    fights.rounds,
+    { round: (number) => t('fleets.fights.round').replace('{number}', number.toString()), skirmish: 'S' },
+    fights.live,
+)
+const ticks = chart_ticks(chart)
+// Percent of the chart below which a band shows "R5" instead of "Round 5".
+const NARROW_BAND = 6
+
+const event_label = (event: FleetFights['events'][number]) => {
+    if (event.kind === 'start') return t('fleets.fights.event_start')
+    if (event.kind === 'end') return t('fleets.fights.event_end')
+    if (event.kind === 'joined') return t('fleets.fights.event_joined').replace('{count}', event.count.toString())
+    return t('fleets.fights.event_reship').replace('{ships}', event.ships.map(ship => `${ship.count} ${ship.name}`).join(', '))
+}
+// Labels need room: an event too close to the last labelled one, or to the
+// closing one, is a marker with a tooltip instead.
+const LABEL_GAP = 22
+const end_left = fights.events.some(event => event.kind === 'end') ? 100 : Infinity
+let last_labelled = -Infinity
+const events = fights.events.map(event => {
+    const left = chart_position(chart, event.at)
+    const room = event.kind === 'end' || event.kind === 'start' ||
+        (left - last_labelled >= LABEL_GAP && end_left - left >= LABEL_GAP)
+    if (room) last_labelled = left
+    return {
+        label: event_label(event),
+        time: eve_clock(event.at),
+        left,
+        room,
+        align: left < 12 ? 'start' : left > 88 ? 'end' : 'middle',
+    }
+})
+---
+
+<figure class:list={['[ fights-chart ]', Astro.props.class]} {...attributes}>
+    <div class="[ fights-chart__scroll ]">
+        <div class="[ fights-chart__body ]" role="img" aria-label={t('fleets.fights.chart_label')}>
+            <div class="[ fights-chart__plot ]">
+                {bands.map(band =>
+                    <a
+                        class:list={['[ fights-chart__band ]', `fights-chart__band--${band.kind}`, { 'fights-chart__band--live': band.live }]}
+                        href={round_href(band.index + 1)}
+                        style={`left: ${band.left}%; width: ${band.width}%`}
+                        aria-label={band.label}
+                    >
+                        <span>{band.width < NARROW_BAND ? band.short : band.label}</span>
+                    </a>
+                )}
+                <div class="[ fights-chart__bars ]" style={`grid-template-columns: repeat(${bars.length}, minmax(0, 1fr))`} aria-hidden="true">
+                    {bars.map(bar =>
+                        <span class="[ fights-chart__bar ]">
+                            <span class="[ fights-chart__up ]"><span style={`height: ${Math.round(bar.up * 100)}%`} /></span>
+                            <span class="[ fights-chart__down ]"><span style={`height: ${Math.round(bar.down * 100)}%`} /></span>
+                        </span>
+                    )}
+                </div>
+                {fights.live && <span class="[ fights-chart__now ]"><small>{t('fleets.fights.now')}</small></span>}
+            </div>
+            <div class="[ fights-chart__ticks ]" aria-hidden="true">
+                {ticks.map(tick => <small style={`left: ${tick.left}%`}>{tick.label}</small>)}
+            </div>
+            {events.length > 0 &&
+                <ol class="[ fights-chart__events ]" aria-label={t('fleets.fights.events_label')}>
+                    {events.map(event =>
+                        <li
+                            class:list={[`fights-chart__event--${event.align}`, { 'fights-chart__event--pin': !event.room }]}
+                            style={`left: ${event.left}%`}
+                            data-tippy-content={event.room ? undefined : `${event.time} · ${event.label}`}
+                            tabindex={event.room ? undefined : 0}
+                        >
+                            {event.room ?
+                                <><b>{event.time}</b><span>{event.label}</span></> :
+                                <span class="visually-hidden">{event.time} · {event.label}</span>
+                            }
+                        </li>
+                    )}
+                </ol>
+            }
+        </div>
+    </div>
+    <figcaption>
+        <span class="[ fights-chart__key fights-chart__key--kill ]" aria-hidden="true" />{t('fleets.fights.ships_killed')}
+        <span class="[ fights-chart__key fights-chart__key--loss ]" aria-hidden="true" />{t('fleets.fights.ships_lost')}
+        · {t('fleets.fights.chart_note').replace('{minutes}', chart.bin_minutes.toString())}
+    </figcaption>
+</figure>
+
+<style lang="scss">
+    .fights-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+
+        figcaption {
+            font-size: var(--step--1);
+        }
+    }
+
+    .fights-chart__scroll {
+        overflow-x: auto;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .fights-chart__body {
+        min-width: 48rem;
+        padding: var(--space-l) var(--space-s) var(--space-xs);
+    }
+
+    .fights-chart__plot {
+        position: relative;
+    }
+
+    .fights-chart__band {
+        position: absolute;
+        inset-block: calc(var(--space-l) * -1) calc(var(--space-3xs) * -1);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 7%, transparent);
+        border-top: 2px solid var(--fleet-yellow);
+        color: var(--highlight);
+        text-decoration: none;
+        transition: background-color var(--fast-transition);
+
+        span {
+            position: absolute;
+            top: var(--space-3xs);
+            left: var(--space-3xs);
+            font-size: var(--step--2);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        &:hover,
+        &:focus-visible {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+        }
+    }
+
+    .fights-chart__band--skirmish {
+        background-color: color-mix(in srgb, var(--highlight) 3%, transparent);
+        border-top-color: var(--hairline-strong);
+        color: var(--text-muted);
+    }
+
+    .fights-chart__band--live {
+        background-color: color-mix(in srgb, var(--fleet-red) 12%, transparent);
+        border-top-color: var(--fleet-red);
+    }
+
+    .fights-chart__bars {
+        position: relative;
+        display: grid;
+        gap: 1px;
+        pointer-events: none;
+    }
+
+    .fights-chart__bar {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fights-chart__up,
+    .fights-chart__down {
+        display: flex;
+        height: var(--space-xl);
+
+        span {
+            width: 100%;
+        }
+    }
+
+    .fights-chart__up {
+        align-items: flex-end;
+        border-bottom: 1px solid var(--hairline-strong);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fights-chart__down {
+        align-items: flex-start;
+
+        span {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .fights-chart__now {
+        position: absolute;
+        inset-block: calc(var(--space-l) * -1) calc(var(--space-3xs) * -1);
+        right: 0;
+        width: 2px;
+        background-color: var(--fleet-red);
+
+        small {
+            position: absolute;
+            bottom: calc(var(--space-m) * -1);
+            right: 0;
+            color: var(--fleet-red);
+            filter: brightness(1.5);
+            font-weight: 700;
+        }
+    }
+
+    .fights-chart__ticks {
+        position: relative;
+        height: var(--space-m);
+        margin-top: var(--space-2xs);
+
+        small {
+            position: absolute;
+            transform: translateX(-50%);
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .fights-chart__events {
+        position: relative;
+        height: var(--space-xl);
+        margin: var(--space-2xs) 0 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid var(--hairline-medium);
+
+        li {
+            position: absolute;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--space-2xs);
+            font-size: var(--step--1);
+            white-space: nowrap;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: -5px;
+                width: 9px;
+                height: 9px;
+                background-color: var(--text-muted);
+                transform: rotate(45deg);
+            }
+
+            b {
+                color: var(--highlight);
+                font-weight: 600;
+            }
+        }
+
+        .fights-chart__event--pin {
+            width: 1rem;
+            height: var(--space-s);
+            transform: translateX(-50%);
+
+            &::before { left: calc(50% - 4px); }
+        }
+
+        .fights-chart__event--start::before { left: -4px; }
+
+        .fights-chart__event--middle {
+            align-items: center;
+            transform: translateX(-50%);
+
+            &::before { left: calc(50% - 4px); }
+        }
+
+        .fights-chart__event--end {
+            align-items: flex-end;
+            transform: translateX(-100%);
+
+            &::before { right: -4px; }
+        }
+    }
+
+    .fights-chart__key {
+        display: inline-block;
+        width: 0.75em;
+        height: 0.75em;
+        margin: 0 var(--space-3xs) 0 var(--space-xs);
+
+        &:first-child {
+            margin-left: 0;
+        }
+    }
+
+    .fights-chart__key--kill { background-color: var(--alliance-blue); }
+    .fights-chart__key--loss { background-color: var(--fleet-red); }
+</style>

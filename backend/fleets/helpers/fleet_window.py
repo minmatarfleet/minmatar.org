@@ -46,6 +46,9 @@ AFTER_ACTION = timedelta(hours=3)
 RECENT_LOSS = timedelta(minutes=15)
 # The FC's kill feed: newest killmails, kills and losses together.
 FEED_LIMIT = 40
+# The Fights view: groups named per round, bars across the latest round.
+FIGHT_HOSTILES = 3
+FIGHT_BINS = 30
 
 TYPE_LABELS = {
     "strategic": "Strategic",
@@ -185,11 +188,20 @@ def _instance(fleet):
 
 
 def _stamp(fleet, instance) -> list:
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetFightTimeline
+
+    fights_at = (
+        EveFleetFightTimeline.objects.filter(eve_fleet=fleet)
+        .values_list("computed_at", flat=True)
+        .first()
+    )
     return [
         _iso(fleet.updated_at),
         instance.id if instance else None,
         _iso(instance.last_updated) if instance else None,
         _iso(instance.end_time) if instance else None,
+        _iso(fights_at),
     ]
 
 
@@ -364,6 +376,69 @@ def _loss_rows(report) -> list[dict]:
     ]
 
 
+def _compact_round(summary: dict) -> dict:
+    return {
+        "kind": summary["kind"],
+        "number": summary["number"],
+        "start": summary["start"],
+        "end": summary["end"],
+        "minutes": summary["minutes"],
+        "kills": summary["ships_destroyed"],
+        "losses": summary["ships_lost"],
+        "isk_destroyed": summary["isk_destroyed"],
+        "isk_lost": summary["isk_lost"],
+        "efficiency": summary["efficiency"],
+        "fighting": summary["fighting"],
+        "systems": [system["name"] for system in summary["systems"]],
+        "hostiles": [
+            {"name": hostile["name"], "pilots": hostile["pilots"]}
+            for hostile in summary["hostiles"][:FIGHT_HOSTILES]
+            if hostile["pilots"]
+        ],
+    }
+
+
+def _round_bins(summary: dict, now: datetime) -> list:
+    """Ships killed and lost per minute across one round."""
+    start = datetime.fromisoformat(summary["start"])
+    end = (
+        now if summary["fighting"] else datetime.fromisoformat(summary["end"])
+    )
+    count = max(1, int((end - start).total_seconds() // 60) + 1)
+    bins = [[0, 0] for _ in range(min(count, FIGHT_BINS))]
+    for row in summary["killmails"]:
+        if row["pod"]:
+            continue
+        minute = int(
+            (datetime.fromisoformat(row["time"]) - start).total_seconds() // 60
+        )
+        index = min(len(bins) - 1, minute * len(bins) // count)
+        bins[index][0 if row["outcome"] == "kill" else 1] += 1
+    return bins
+
+
+def _fights(fleet) -> dict | None:
+    """The fleet's rounds, for the Fights view: the latest one in full."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetFightTimeline
+
+    timeline = EveFleetFightTimeline.objects.filter(eve_fleet=fleet).first()
+    payload = timeline.payload if timeline else None
+    if not payload or not payload.get("rounds"):
+        return None
+    rounds = payload["rounds"]
+    latest = rounds[-1]
+    return {
+        "round_count": payload["round_count"],
+        "skirmish_count": payload["skirmish_count"],
+        "latest": {
+            **_compact_round(latest),
+            "bins": _round_bins(latest, timezone.now()),
+        },
+        "earlier": [_compact_round(r) for r in reversed(rounds[:-1])],
+    }
+
+
 def _build_shared(fleet, instance) -> dict:
     # pylint: disable=import-outside-toplevel
     from srp.models import EveFleetShipReimbursement
@@ -493,6 +568,7 @@ def _build_shared(fleet, instance) -> dict:
         ),
         "srp_killmails": sorted(srp_killmails),
         "after_action": after_action,
+        "fights": _fights(fleet) if instance else None,
     }
 
 
@@ -623,4 +699,6 @@ def fleet_window(fleet, user, shared=None) -> dict:
         ),
         "after_action": shared["after_action"] if is_fc else None,
         "feed": shared.get("feed", []) if is_fc else [],
+        # Rounds for the FC and pilots in the fleet, as on the web.
+        "fights": shared.get("fights") if mode in ("fc", "member") else None,
     }

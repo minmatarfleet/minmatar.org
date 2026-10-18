@@ -9069,6 +9069,149 @@
         "title": "EveFleetCompositionEntryResponse",
         "type": "object"
       },
+      "EveFleetFightsResponse": {
+        "description": "A fleet's killmails cut into rounds. ``status`` is building (not\nready yet, ask again shortly), live, settling (ended, still filling in\nlate killmails) or settled.",
+        "properties": {
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetFightChart"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
+          },
+          "edits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetFightEdit"
+            },
+            "title": "Edits",
+            "type": "array"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetFightEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "feed_behind_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feed Behind Since"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "live": {
+            "default": false,
+            "title": "Live",
+            "type": "boolean"
+          },
+          "round_count": {
+            "default": 0,
+            "title": "Round Count",
+            "type": "integer"
+          },
+          "rounds": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetFightRound"
+            },
+            "title": "Rounds",
+            "type": "array"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "skirmish_count": {
+            "default": 0,
+            "title": "Skirmish Count",
+            "type": "integer"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetFightTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fleet_id",
+          "status"
+        ],
+        "title": "EveFleetFightsResponse",
+        "type": "object"
+      },
       "EveFleetFilter": {
         "enum": [
           "active",
@@ -12617,6 +12760,666 @@
         "title": "FittingResponse",
         "type": "object"
       },
+      "FleetFightChart": {
+        "properties": {
+          "bin_minutes": {
+            "title": "Bin Minutes",
+            "type": "integer"
+          },
+          "bins": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Bins",
+            "type": "array"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "bin_minutes",
+          "bins"
+        ],
+        "title": "FleetFightChart",
+        "type": "object"
+      },
+      "FleetFightEdit": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "start",
+          "created_at"
+        ],
+        "title": "FleetFightEdit",
+        "type": "object"
+      },
+      "FleetFightEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightEventShip"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "count",
+          "ships"
+        ],
+        "title": "FleetFightEvent",
+        "type": "object"
+      },
+      "FleetFightEventShip": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "FleetFightEventShip",
+        "type": "object"
+      },
+      "FleetFightHostile": {
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          },
+          "isk_killed": {
+            "title": "Isk Killed",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "ships_killed": {
+            "title": "Ships Killed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "pilots",
+          "ships_killed",
+          "isk_killed"
+        ],
+        "title": "FleetFightHostile",
+        "type": "object"
+      },
+      "FleetFightHull": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "isk": {
+            "title": "Isk",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          }
+        },
+        "required": [
+          "name",
+          "count",
+          "isk"
+        ],
+        "title": "FleetFightHull",
+        "type": "object"
+      },
+      "FleetFightKillmail": {
+        "properties": {
+          "group_name": {
+            "title": "Group Name",
+            "type": "string"
+          },
+          "isk": {
+            "title": "Isk",
+            "type": "integer"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "boolean"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "pod": {
+            "title": "Pod",
+            "type": "boolean"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Type Id"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "integer"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          },
+          "time": {
+            "format": "date-time",
+            "title": "Time",
+            "type": "string"
+          },
+          "victim_name": {
+            "title": "Victim Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "time",
+          "outcome",
+          "system_id",
+          "system_name",
+          "ship_name",
+          "victim_name",
+          "group_name",
+          "isk",
+          "pending",
+          "pod",
+          "pilots"
+        ],
+        "title": "FleetFightKillmail",
+        "type": "object"
+      },
+      "FleetFightLinks": {
+        "properties": {
+          "brtools": {
+            "title": "Brtools",
+            "type": "string"
+          },
+          "evekill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evekill"
+          },
+          "zkillboard": {
+            "title": "Zkillboard",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zkillboard",
+          "brtools"
+        ],
+        "title": "FleetFightLinks",
+        "type": "object"
+      },
+      "FleetFightMergeRequest": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "FleetFightMergeRequest",
+        "type": "object"
+      },
+      "FleetFightRound": {
+        "properties": {
+          "biggest": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightKillmail"
+            },
+            "title": "Biggest",
+            "type": "array"
+          },
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fighting": {
+            "title": "Fighting",
+            "type": "boolean"
+          },
+          "hostile_pilots": {
+            "title": "Hostile Pilots",
+            "type": "integer"
+          },
+          "hostiles": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightHostile"
+            },
+            "title": "Hostiles",
+            "type": "array"
+          },
+          "hulls_killed": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightHull"
+            },
+            "title": "Hulls Killed",
+            "type": "array"
+          },
+          "hulls_lost": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightHull"
+            },
+            "title": "Hulls Lost",
+            "type": "array"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "isk_pending": {
+            "title": "Isk Pending",
+            "type": "integer"
+          },
+          "killmails": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightKillmail"
+            },
+            "title": "Killmails",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "links": {
+            "$ref": "#/components/schemas/FleetFightLinks"
+          },
+          "mails": {
+            "title": "Mails",
+            "type": "integer"
+          },
+          "merge_edit_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Merge Edit Ids",
+            "type": "array"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "our_pilots": {
+            "title": "Our Pilots",
+            "type": "integer"
+          },
+          "pods_destroyed": {
+            "title": "Pods Destroyed",
+            "type": "integer"
+          },
+          "pods_lost": {
+            "title": "Pods Lost",
+            "type": "integer"
+          },
+          "ships_destroyed": {
+            "title": "Ships Destroyed",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          },
+          "split_edit_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Split Edit Ids",
+            "type": "array"
+          },
+          "split_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightSplitGap"
+            },
+            "title": "Split Gaps",
+            "type": "array"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFightSystem"
+            },
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ships_destroyed",
+          "pods_destroyed",
+          "ships_lost",
+          "pods_lost",
+          "isk_destroyed",
+          "isk_lost",
+          "isk_pending",
+          "kind",
+          "start",
+          "end",
+          "minutes",
+          "systems",
+          "mails",
+          "our_pilots",
+          "hostile_pilots",
+          "hostiles",
+          "hulls_killed",
+          "hulls_lost",
+          "biggest",
+          "killmails",
+          "links",
+          "split_gaps",
+          "fighting",
+          "merge_edit_ids",
+          "split_edit_ids"
+        ],
+        "title": "FleetFightRound",
+        "type": "object"
+      },
+      "FleetFightSplitGap": {
+        "properties": {
+          "after": {
+            "format": "date-time",
+            "title": "After",
+            "type": "string"
+          },
+          "after_kills": {
+            "title": "After Kills",
+            "type": "integer"
+          },
+          "after_losses": {
+            "title": "After Losses",
+            "type": "integer"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "before_kills": {
+            "title": "Before Kills",
+            "type": "integer"
+          },
+          "before_losses": {
+            "title": "Before Losses",
+            "type": "integer"
+          },
+          "seconds": {
+            "title": "Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "after",
+          "seconds",
+          "before_kills",
+          "before_losses",
+          "after_kills",
+          "after_losses"
+        ],
+        "title": "FleetFightSplitGap",
+        "type": "object"
+      },
+      "FleetFightSplitRequest": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "at"
+        ],
+        "title": "FleetFightSplitRequest",
+        "type": "object"
+      },
+      "FleetFightSystem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mails": {
+            "title": "Mails",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mails"
+        ],
+        "title": "FleetFightSystem",
+        "type": "object"
+      },
+      "FleetFightTotals": {
+        "properties": {
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "isk_pending": {
+            "title": "Isk Pending",
+            "type": "integer"
+          },
+          "pods_destroyed": {
+            "title": "Pods Destroyed",
+            "type": "integer"
+          },
+          "pods_lost": {
+            "title": "Pods Lost",
+            "type": "integer"
+          },
+          "ships_destroyed": {
+            "title": "Ships Destroyed",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ships_destroyed",
+          "pods_destroyed",
+          "ships_lost",
+          "pods_lost",
+          "isk_destroyed",
+          "isk_lost",
+          "isk_pending"
+        ],
+        "title": "FleetFightTotals",
+        "type": "object"
+      },
       "FleetWindowAfterAction": {
         "properties": {
           "aar_link": {
@@ -12779,6 +13582,54 @@
           "outcome"
         ],
         "title": "FleetWindowFeedRow",
+        "type": "object"
+      },
+      "FleetWindowFightHostile": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "pilots"
+        ],
+        "title": "FleetWindowFightHostile",
+        "type": "object"
+      },
+      "FleetWindowFights": {
+        "properties": {
+          "earlier": {
+            "items": {
+              "$ref": "#/components/schemas/FleetWindowRound"
+            },
+            "title": "Earlier",
+            "type": "array"
+          },
+          "latest": {
+            "$ref": "#/components/schemas/FleetWindowLatestRound"
+          },
+          "round_count": {
+            "title": "Round Count",
+            "type": "integer"
+          },
+          "skirmish_count": {
+            "title": "Skirmish Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "round_count",
+          "skirmish_count",
+          "latest",
+          "earlier"
+        ],
+        "title": "FleetWindowFights",
         "type": "object"
       },
       "FleetWindowFleet": {
@@ -12952,6 +13803,110 @@
           "live"
         ],
         "title": "FleetWindowFleet",
+        "type": "object"
+      },
+      "FleetWindowLatestRound": {
+        "properties": {
+          "bins": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Bins",
+            "type": "array"
+          },
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fighting": {
+            "title": "Fighting",
+            "type": "boolean"
+          },
+          "hostiles": {
+            "items": {
+              "$ref": "#/components/schemas/FleetWindowFightHostile"
+            },
+            "title": "Hostiles",
+            "type": "array"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "start",
+          "end",
+          "minutes",
+          "kills",
+          "losses",
+          "isk_destroyed",
+          "isk_lost",
+          "fighting",
+          "systems",
+          "hostiles",
+          "bins"
+        ],
+        "title": "FleetWindowLatestRound",
         "type": "object"
       },
       "FleetWindowLoss": {
@@ -13165,6 +14120,16 @@
             "title": "Feed",
             "type": "array"
           },
+          "fights": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetWindowFights"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "fleet": {
             "$ref": "#/components/schemas/FleetWindowFleet"
           },
@@ -13233,6 +14198,99 @@
           "covered"
         ],
         "title": "FleetWindowRole",
+        "type": "object"
+      },
+      "FleetWindowRound": {
+        "properties": {
+          "efficiency": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efficiency"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "fighting": {
+            "title": "Fighting",
+            "type": "boolean"
+          },
+          "hostiles": {
+            "items": {
+              "$ref": "#/components/schemas/FleetWindowFightHostile"
+            },
+            "title": "Hostiles",
+            "type": "array"
+          },
+          "isk_destroyed": {
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "isk_lost": {
+            "title": "Isk Lost",
+            "type": "integer"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "start",
+          "end",
+          "minutes",
+          "kills",
+          "losses",
+          "isk_destroyed",
+          "isk_lost",
+          "fighting",
+          "systems",
+          "hostiles"
+        ],
+        "title": "FleetWindowRound",
         "type": "object"
       },
       "FleetWindowShip": {
@@ -36347,6 +37405,265 @@
           }
         ],
         "summary": "Get Fleet Composition",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights": {
+      "get": {
+        "description": "Rounds of fighting, each with its kills, losses, who we fought and battle report links. Rebuilt every 30 s while the fleet is out and for two hours after. While the fleet is live only its managers and pilots may read it. status is building until the first build is done; ask again in a few seconds.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_fights_get_fleet_fights",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetFightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Fights",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/edits": {
+      "delete": {
+        "description": "Drop every merge and split. Fleet managers only; returns the re-cut timeline.",
+        "operationId": "fleets_endpoints_fleet_delete_fleet_fights_edits_reset_fleet_fights",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetFightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Reset Fleet Fights",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/edits/{edit_id}": {
+      "delete": {
+        "description": "Undo one merge or split. Fleet managers only; returns the re-cut timeline.",
+        "operationId": "fleets_endpoints_fleet_delete_fleet_fights_edit_undo_fleet_fights_edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "edit_id",
+            "required": true,
+            "schema": {
+              "title": "Edit Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetFightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Undo Fleet Fights Edit",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/merge": {
+      "post": {
+        "description": "Merge every round between start (the first mail of the first round) and end (the last mail of the last) into one. Replaces any split inside. Fleet managers only; returns the re-cut timeline.",
+        "operationId": "fleets_endpoints_fleet_post_fleet_fights_merge_merge_fleet_fights",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetFightMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetFightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Merge Fleet Fights",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/split": {
+      "post": {
+        "description": "Start a new round at a time, usually the first mail after a quiet gap. Fleet managers only; returns the re-cut timeline.",
+        "operationId": "fleets_endpoints_fleet_post_fleet_fights_split_split_fleet_fights",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetFightSplitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetFightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Split Fleet Fights",
         "tags": [
           "Fleets"
         ]

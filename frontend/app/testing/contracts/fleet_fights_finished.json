@@ -1,0 +1,526 @@
+{
+  "can_edit": false,
+  "chart": {
+    "bin_minutes": 1,
+    "bins": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "end": "2026-01-17T17:59:00Z",
+    "start": "2026-01-17T17:35:00Z"
+  },
+  "computed_at": "2026-01-17T18:00:00Z",
+  "edits": [],
+  "end": "2026-01-17T17:59:00Z",
+  "events": [],
+  "feed_behind_since": null,
+  "fleet_id": 501,
+  "live": false,
+  "round_count": 2,
+  "rounds": [
+    {
+      "biggest": [
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 1,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:40:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 2,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:41:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 3,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:41:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 4,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:42:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "No alliance",
+          "isk": 20000000,
+          "killmail_id": 5,
+          "outcome": "loss",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:43:00Z",
+          "victim_name": ""
+        }
+      ],
+      "efficiency": 80,
+      "end": "2026-01-17T17:43:00Z",
+      "fighting": false,
+      "hostile_pilots": 1,
+      "hostiles": [
+        {
+          "group_id": 99000900,
+          "isk_killed": 80000000,
+          "name": "Hostile Alliance",
+          "pilots": 1,
+          "ships_killed": 4
+        }
+      ],
+      "hulls_killed": [
+        {
+          "count": 4,
+          "isk": 80000000,
+          "name": "Rifter",
+          "type_id": 587
+        }
+      ],
+      "hulls_lost": [
+        {
+          "count": 1,
+          "isk": 20000000,
+          "name": "Rifter",
+          "type_id": 587
+        }
+      ],
+      "isk_destroyed": 80000000,
+      "isk_lost": 20000000,
+      "isk_pending": 0,
+      "killmails": [
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 1,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:40:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 2,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:41:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 3,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:41:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 4,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:42:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "No alliance",
+          "isk": 20000000,
+          "killmail_id": 5,
+          "outcome": "loss",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:43:00Z",
+          "victim_name": ""
+        }
+      ],
+      "kind": "round",
+      "links": {
+        "brtools": "https://br.evetools.org/related/30002537/202601171700",
+        "evekill": null,
+        "zkillboard": "https://zkillboard.com/related/30002537/202601171700/"
+      },
+      "mails": 5,
+      "merge_edit_ids": [],
+      "minutes": 3,
+      "number": 1,
+      "our_pilots": 1,
+      "pods_destroyed": 0,
+      "pods_lost": 0,
+      "ships_destroyed": 4,
+      "ships_lost": 1,
+      "split_edit_ids": [],
+      "split_gaps": [],
+      "start": "2026-01-17T17:40:00Z",
+      "systems": [
+        {
+          "id": 30002537,
+          "mails": 5,
+          "name": "Amamake"
+        }
+      ]
+    },
+    {
+      "biggest": [
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 6,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:56:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "No alliance",
+          "isk": 20000000,
+          "killmail_id": 7,
+          "outcome": "loss",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:57:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 8,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:58:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 9,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:59:00Z",
+          "victim_name": ""
+        }
+      ],
+      "efficiency": 75,
+      "end": "2026-01-17T17:59:00Z",
+      "fighting": false,
+      "hostile_pilots": 1,
+      "hostiles": [
+        {
+          "group_id": 99000900,
+          "isk_killed": 60000000,
+          "name": "Hostile Alliance",
+          "pilots": 1,
+          "ships_killed": 3
+        }
+      ],
+      "hulls_killed": [
+        {
+          "count": 3,
+          "isk": 60000000,
+          "name": "Rifter",
+          "type_id": 587
+        }
+      ],
+      "hulls_lost": [
+        {
+          "count": 1,
+          "isk": 20000000,
+          "name": "Rifter",
+          "type_id": 587
+        }
+      ],
+      "isk_destroyed": 60000000,
+      "isk_lost": 20000000,
+      "isk_pending": 0,
+      "killmails": [
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 6,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:56:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "No alliance",
+          "isk": 20000000,
+          "killmail_id": 7,
+          "outcome": "loss",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:57:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 8,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:58:00Z",
+          "victim_name": ""
+        },
+        {
+          "group_name": "Hostile Alliance",
+          "isk": 20000000,
+          "killmail_id": 9,
+          "outcome": "kill",
+          "pending": false,
+          "pilots": 1,
+          "pod": false,
+          "ship_name": "Rifter",
+          "ship_type_id": 587,
+          "system_id": 30002537,
+          "system_name": "Amamake",
+          "time": "2026-01-17T17:59:00Z",
+          "victim_name": ""
+        }
+      ],
+      "kind": "round",
+      "links": {
+        "brtools": "https://br.evetools.org/related/30002537/202601171700",
+        "evekill": null,
+        "zkillboard": "https://zkillboard.com/related/30002537/202601171700/"
+      },
+      "mails": 4,
+      "merge_edit_ids": [],
+      "minutes": 3,
+      "number": 2,
+      "our_pilots": 1,
+      "pods_destroyed": 0,
+      "pods_lost": 0,
+      "ships_destroyed": 3,
+      "ships_lost": 1,
+      "split_edit_ids": [],
+      "split_gaps": [],
+      "start": "2026-01-17T17:56:00Z",
+      "systems": [
+        {
+          "id": 30002537,
+          "mails": 4,
+          "name": "Amamake"
+        }
+      ]
+    }
+  ],
+  "settled_at": null,
+  "skirmish_count": 0,
+  "start": "2026-01-17T17:35:00Z",
+  "status": "settling",
+  "totals": {
+    "efficiency": 78,
+    "isk_destroyed": 140000000,
+    "isk_lost": 40000000,
+    "isk_pending": 0,
+    "pods_destroyed": 0,
+    "pods_lost": 0,
+    "ships_destroyed": 7,
+    "ships_lost": 2
+  }
+}

@@ -146,6 +146,36 @@ from fleets.endpoints.fleet.get_fleet_kills import (
     get_fleet_kills,
     METHOD as get_fleet_kills_method,
 )
+from fleets.endpoints.fleet.get_fleet_fights import (
+    PATH as get_fleet_fights_path,
+    ROUTE_SPEC as get_fleet_fights_spec,
+    get_fleet_fights,
+    METHOD as get_fleet_fights_method,
+)
+from fleets.endpoints.fleet.post_fleet_fights_merge import (
+    PATH as post_fleet_fights_merge_path,
+    ROUTE_SPEC as post_fleet_fights_merge_spec,
+    merge_fleet_fights,
+    METHOD as post_fleet_fights_merge_method,
+)
+from fleets.endpoints.fleet.post_fleet_fights_split import (
+    PATH as post_fleet_fights_split_path,
+    ROUTE_SPEC as post_fleet_fights_split_spec,
+    split_fleet_fights,
+    METHOD as post_fleet_fights_split_method,
+)
+from fleets.endpoints.fleet.delete_fleet_fights_edit import (
+    PATH as delete_fleet_fights_edit_path,
+    ROUTE_SPEC as delete_fleet_fights_edit_spec,
+    undo_fleet_fights_edit,
+    METHOD as delete_fleet_fights_edit_method,
+)
+from fleets.endpoints.fleet.delete_fleet_fights_edits import (
+    PATH as delete_fleet_fights_edits_path,
+    ROUTE_SPEC as delete_fleet_fights_edits_spec,
+    reset_fleet_fights,
+    METHOD as delete_fleet_fights_edits_method,
+)
 from fleets.endpoints.fleet.get_fleet_my_pilots import (
     PATH as get_fleet_my_pilots_path,
     ROUTE_SPEC as get_fleet_my_pilots_spec,
@@ -273,6 +303,36 @@ _ROUTES = (
         get_fleet_kills_path,
         get_fleet_kills_spec,
         get_fleet_kills,
+    ),
+    (
+        get_fleet_fights_method,
+        get_fleet_fights_path,
+        get_fleet_fights_spec,
+        get_fleet_fights,
+    ),
+    (
+        post_fleet_fights_merge_method,
+        post_fleet_fights_merge_path,
+        post_fleet_fights_merge_spec,
+        merge_fleet_fights,
+    ),
+    (
+        post_fleet_fights_split_method,
+        post_fleet_fights_split_path,
+        post_fleet_fights_split_spec,
+        split_fleet_fights,
+    ),
+    (
+        delete_fleet_fights_edit_method,
+        delete_fleet_fights_edit_path,
+        delete_fleet_fights_edit_spec,
+        undo_fleet_fights_edit,
+    ),
+    (
+        delete_fleet_fights_edits_method,
+        delete_fleet_fights_edits_path,
+        delete_fleet_fights_edits_spec,
+        reset_fleet_fights,
     ),
     (
         get_fleet_supply_method,
