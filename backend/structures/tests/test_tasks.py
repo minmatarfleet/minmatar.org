@@ -9,10 +9,12 @@ from eveonline.client import EsiResponse
 from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 
 from structures.tasks import (
+    _campaign_esi_gate,
     fetch_structure_notifications,
     fetch_structure_notifications_for_character,
     process_structure_notifications,
     update_corporation_structures,
+    update_structures,
 )
 from structures.models import (
     EveStructurePing,
@@ -25,7 +27,7 @@ class StructureTaskTests(TestCase):
     """Task tests for structures and timers"""
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
+    @patch("structures.tasks.get_esi_downtime_countdown", return_value=0)
     @patch("structures.tasks.discord")
     @patch("structures.tasks.EsiClient")
     @patch(
@@ -98,7 +100,7 @@ class StructureTaskTests(TestCase):
         "structures.tasks.fetch_structure_notifications_for_character.apply_async"
     )
     @patch("structures.tasks.EsiClient")
-    def test_fetch_structure_notifications_retries_on_rate_limit(
+    def test_fetch_structure_notifications_waits_for_next_poll_on_rate_limit(
         self, esi_mock, apply_async_mock
     ):
         mock_response = MagicMock()
@@ -114,13 +116,14 @@ class StructureTaskTests(TestCase):
         found, new = fetch_structure_notifications(character)
 
         self.assertEqual((0, 0), (found, new))
-        apply_async_mock.assert_called_once_with(
-            args=[3001],
-            countdown=90,
-        )
+        # No retry is queued: the gate pauses this character and the next
+        # 10-minute poll tries again. Queued retries piled up in production.
+        apply_async_mock.assert_not_called()
+        gate = _campaign_esi_gate()
+        self.assertFalse(gate.can_spend("char-notification", 3001))
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
+    @patch("structures.tasks.get_esi_downtime_countdown", return_value=0)
     @patch("structures.tasks.esi_for")
     @patch("structures.tasks.get_director_with_scope")
     def test_update_corporation_structures(
@@ -174,7 +177,7 @@ class StructureTaskTests(TestCase):
         update_corporation_structures(corp.corporation_id)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
+    @patch("structures.tasks.get_esi_downtime_countdown", return_value=0)
     @patch("structures.tasks.esi_for")
     @patch("structures.tasks.get_director_with_scope")
     def test_update_corporation_structures_restores_soft_deleted(
@@ -240,3 +243,47 @@ class StructureTaskTests(TestCase):
         self.assertEqual("shield_vulnerable", restored.state)
         self.assertEqual("Home System", restored.system_name)
         self.assertEqual("Astrahus", restored.type_name)
+
+
+class StructureFanOutTests(TestCase):
+    """The fan-outs queue only work that will run."""
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.update_corporation_structures.delay")
+    @patch("structures.tasks.get_director_with_scope")
+    def test_update_structures_skips_corps_without_a_director(
+        self, get_director_mock, delay_mock
+    ):
+        alliance = EveAlliance.objects.create(alliance_id=99011978)
+        with_director = EveCorporation.objects.create(
+            corporation_id=3001, name="Has Director", alliance=alliance
+        )
+        EveCorporation.objects.create(
+            corporation_id=3002, name="No Director", alliance=alliance
+        )
+        director = EveCharacter.objects.create(
+            character_id=4001, character_name="Director"
+        )
+        get_director_mock.side_effect = lambda corp, scopes: (
+            director if corp.pk == with_director.pk else None
+        )
+
+        self.assertEqual(1, update_structures())
+
+        delay_mock.assert_called_once_with(3001)
+
+    @patch("structures.tasks.get_esi_downtime_countdown", return_value=300)
+    @patch(
+        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
+    )
+    @patch("structures.tasks.update_corporation_structures.apply_async")
+    def test_downtime_skips_instead_of_queueing_a_retry(
+        self, structures_mock, notifications_mock, downtime_mock
+    ):
+        self.assertEqual((0, 0), process_structure_notifications(5))
+        self.assertEqual(
+            (0, 0), fetch_structure_notifications_for_character(3001)
+        )
+        self.assertIsNone(update_corporation_structures(2001))
+        structures_mock.assert_not_called()
+        notifications_mock.assert_not_called()

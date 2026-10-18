@@ -57,6 +57,19 @@ services:
         depends_on:
             - app
 
+    # Ticks that run every minute or faster (zKill feed, fleet tracking,
+    # structure notifications, campaign lifecycle). Kept off "celery" so
+    # ESI fan-out queued there can't starve them.
+    celery-realtime:
+        build:
+            context: ./backend/.
+            dockerfile: Dockerfile
+        restart: always
+        env_file: .env
+        command: celery -A app worker -l info -Q realtime --concurrency 4
+        depends_on:
+            - app
+
     celery-market:
         build:
             context: ./backend/.

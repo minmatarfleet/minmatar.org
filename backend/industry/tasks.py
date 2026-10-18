@@ -3,6 +3,7 @@
 import logging
 
 from app.celery import app
+from app.locks import DedupedTask
 from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
@@ -297,7 +298,8 @@ def emit_order_job_notifications_for_jobs(created_job_ids: list[int]) -> int:
         raise
 
 
-@app.task()
+# Fanned out every 4 hours; one queued copy per character.
+@app.task(base=DedupedTask, expires=2 * 60 * 60, cooldown=60 * 60)
 def sync_industry_jobs_for_character(character_id: int) -> None:
     """Fetch and store industry jobs for a single character from ESI (EveCharacterIndustryJob)."""
     try:

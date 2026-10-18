@@ -8,7 +8,7 @@ from django.utils import timezone
 from celery_once import QueueOnce
 
 from app.celery import app
-from app.locks import overlap_guard
+from app.locks import DedupedTask, overlap_guard
 from feed.constants import (
     FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS,
     FEED_KILLMAIL_RETENTION_DAYS,
@@ -27,9 +27,7 @@ from feed.rollups.writer import write_rollup_results
 logger = logging.getLogger(__name__)
 
 
-@app.task(
-    base=QueueOnce, once={"graceful": True, "timeout": 60}, queue="celery"
-)
+@app.task(base=DedupedTask, queue="realtime", expires=60, cooldown=5)
 def poll_zkill_r2z2() -> dict:
     stats = poll_r2z2_batch()
     return stats

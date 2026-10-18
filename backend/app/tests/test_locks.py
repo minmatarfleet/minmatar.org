@@ -4,7 +4,17 @@ from django.core.cache import cache
 from django.test import SimpleTestCase
 
 from app.celery import app
-from app.locks import overlap_guard, single_flight
+from app.locks import DedupedTask, overlap_guard, single_flight
+
+
+@app.task(
+    base=DedupedTask,
+    expires=90,
+    cooldown=30,
+    name="app.tests.test_locks.deduped_probe",
+)
+def deduped_probe(item_id):
+    return item_id
 
 
 class SingleFlightTestCase(SimpleTestCase):
@@ -97,3 +107,52 @@ class GuardedTaskNamesTestCase(SimpleTestCase):
             fleet_tasks.update_fleet_instances.name,
             "fleets.tasks.update_fleet_instances",
         )
+
+
+class DedupedTaskTestCase(SimpleTestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_queues_one_copy_per_arguments(self):
+        eager = app.conf.task_always_eager
+        app.conf.task_always_eager = False
+        self.addCleanup(setattr, app.conf, "task_always_eager", eager)
+        with patch.object(app, "send_task") as send_task:
+            deduped_probe.delay(1)
+            deduped_probe.delay(1)
+            deduped_probe.delay(2)
+
+        self.assertEqual(
+            [call.args[1] for call in send_task.call_args_list],
+            [(1,), (2,)],
+        )
+        # The lock lives exactly as long as the queued message.
+        self.assertEqual(send_task.call_args.kwargs["expires"], 90)
+        self.assertEqual(deduped_probe.once["timeout"], 90)
+
+    def test_a_finished_run_frees_the_slot(self):
+        self.assertEqual(deduped_probe.delay(1).get(), 1)
+        self.assertEqual(deduped_probe.delay(1).get(), 1)
+
+    def test_worker_skips_a_copy_whose_call_just_started(self):
+        deduped_probe.push_request(called_directly=False)
+        try:
+            self.assertEqual(deduped_probe(1), 1)
+            self.assertIsNone(deduped_probe(1))
+            self.assertEqual(deduped_probe(2), 2)
+        finally:
+            deduped_probe.pop_request()
+
+    def test_direct_calls_ignore_the_cooldown(self):
+        self.assertEqual(deduped_probe(1), 1)
+        self.assertEqual(deduped_probe(1), 1)
+
+    def test_cache_outage_runs_the_copy(self):
+        deduped_probe.push_request(called_directly=False)
+        try:
+            with patch(
+                "app.locks.cache.add", side_effect=ConnectionError("down")
+            ):
+                self.assertEqual(deduped_probe(1), 1)
+        finally:
+            deduped_probe.pop_request()

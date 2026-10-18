@@ -106,7 +106,7 @@ echo "Starting app services (Ctrl+C to stop all)..."
 echo
 
 run api backend pipenv run python manage.py runserver
-run celery backend pipenv run celery -A app worker -l info -Q celery,eveonline,market
+run celery backend pipenv run celery -A app worker -l info -Q celery,eveonline,market,realtime
 run beat backend pipenv run celery -A app beat -l info
 run frontend frontend/app npm run dev
 if [[ "$WITH_MOBILE" == "1" ]]; then
