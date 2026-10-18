@@ -333,6 +333,36 @@ class HelpTicketBotOnlyTestCase(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(HelpTicket.objects.filter(thread_id=200).exists())
 
+    def test_member_cannot_read_bot_only_endpoints(self):
+        for path in (
+            "/open",
+            f"/{self.ticket.id}/",
+            "/panel-state",
+            "/panel-config",
+        ):
+            response = self.client.get(
+                f"{BASE_URL}{path}",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 403, path)
+            self.assertNotIn(b"thread_id", response.content, path)
+
+    def test_bot_can_still_read_them(self):
+        bot = User.objects.create_user(
+            username="bot", password="x", is_staff=True
+        )
+        for path in (
+            "/open",
+            f"/{self.ticket.id}/",
+            "/panel-state",
+            "/panel-config",
+        ):
+            response = self.client.get(
+                f"{BASE_URL}{path}",
+                HTTP_AUTHORIZATION=f"Bearer {_make_token(bot)}",
+            )
+            self.assertEqual(response.status_code, 200, path)
+
     def test_member_cannot_move_the_panel(self):
         response = self.client.put(
             f"{BASE_URL}/panel-state",
