@@ -11,6 +11,6 @@ def user_to_character_ref(user) -> CharacterRefSchema | None:
                 character_id=char.character_id,
                 character_name=char.character_name,
             )
-    except Exception:
+    except Exception:  # expected: user has no player/primary character
         pass
     return None

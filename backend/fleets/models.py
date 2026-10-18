@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
@@ -16,7 +16,6 @@ from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 
-discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 # ESI rejects fleet MOTDs longer than this (characters).
@@ -186,8 +185,9 @@ class EveFleet(models.Model):
             self.id,
             self.audience.discord_channel_id,
         )
-        discord.create_message(
+        queue_channel_message(
             self.audience.discord_channel_id,
+            context=f"fleet {self.id} start ping",
             payload=get_fleet_discord_notification(
                 fleet_id=self.id,
                 fleet_type=self.get_type_display(),

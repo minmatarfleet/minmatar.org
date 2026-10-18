@@ -1,5 +1,7 @@
 """PATCH /{int:request_id} — update SRP request status."""
 
+import logging
+
 from groups.helpers.feature_access import can_use_feature
 from django.utils import timezone
 
@@ -10,6 +12,8 @@ from srp.endpoints.requests.helpers import can_update
 from srp.endpoints.requests.schemas import SrpPatchResult, UpdateSrpRequest
 from srp.helpers import send_decision_notification
 from srp.models import EveFleetShipReimbursement
+
+logger = logging.getLogger(__name__)
 
 PATH = "/{int:request_id}"
 METHOD = "patch"
@@ -58,7 +62,11 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
         try:
             send_decision_notification(reimbursement)
             mail_result = "Success"
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "SRP decision mail failed for reimbursement %s",
+                reimbursement.pk,
+            )
             mail_result = f"Error sending mail: {err}"
     else:
         mail_result = "N/A"

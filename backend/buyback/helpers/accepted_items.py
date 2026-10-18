@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import timedelta
 from decimal import Decimal
@@ -24,6 +25,8 @@ from industry.helpers.type_breakdown import (
     type_ids_in_breakdown,
 )
 from industry.models import IndustryOrder
+
+logger = logging.getLogger(__name__)
 
 # Compressed belt/moon ores accepted for buyback. Highsec bases plus selected
 # lowsec/nullsec ores (isogen-bearing and Equinox) requested for alliance take.
@@ -161,11 +164,21 @@ def pi_type_ids_from_recent_orders(
                         item.quantity,
                         store=True,
                     )
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Buyback PI seed: no breakdown for type %s (order %s)",
+                        item.eve_type_id,
+                        order.pk,
+                        exc_info=True,
+                    )
                     continue
                 material_ids.update(type_ids_in_breakdown(tree))
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         # Industry tables may not exist yet during early buyback migrations.
+        logger.warning(
+            "Buyback PI seed: could not read recent industry orders",
+            exc_info=True,
+        )
         return set()
 
     if not material_ids:

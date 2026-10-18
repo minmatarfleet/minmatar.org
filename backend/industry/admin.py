@@ -1266,8 +1266,13 @@ class IndustryProductAdmin(admin.ModelAdmin):
                     obj.eve_type, quantity=1, store=True
                 )
                 obj.refresh_from_db()
-            except Exception:
-                pass
+            except Exception:  # pylint: disable=broad-exception-caught
+                # The save stands; the breakdown is rebuilt on next use.
+                logger.warning(
+                    "Could not precompute breakdown for type %s",
+                    obj.eve_type_id,
+                    exc_info=True,
+                )
 
 
 INDUSTRY_ORDERS_HIDDEN_MODELS = {

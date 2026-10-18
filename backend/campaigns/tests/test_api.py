@@ -220,6 +220,47 @@ class CampaignApiTests(TestCase):
         self.assertEqual(enlistment.status, "left")
         self.assertIsNotNone(enlistment.periods.first().left_at)
 
+    def test_re_enlisting_keeps_stored_notify_choices(self):
+        """The web client still sends notify_* defaults; nothing reads them,
+        so the API ignores them instead of overwriting what is stored."""
+        newcomer = User.objects.create(username="returning")
+        grant(newcomer, "view_campaign", "add_campaignenlistment")
+        url = f"{BASE}/{self.campaign.slug}/enlist"
+        body = {
+            "source": "web",
+            "notify_gang_forming": True,
+            "notify_standing_fleet": True,
+            "notify_activity_nearby": False,
+        }
+        response = self.client.post(
+            url,
+            data=body,
+            content_type="application/json",
+            **auth_headers(newcomer),
+        )
+        self.assertEqual(response.status_code, 200)
+        enlistment = CampaignEnlistment.objects.get(
+            campaign=self.campaign, user=newcomer
+        )
+        # New enlistments get the same defaults as before.
+        self.assertTrue(enlistment.notify_gang_forming)
+        self.assertTrue(enlistment.notify_standing_fleet)
+        self.assertFalse(enlistment.notify_activity_nearby)
+
+        CampaignEnlistment.objects.filter(pk=enlistment.pk).update(
+            notify_gang_forming=False, notify_activity_nearby=True
+        )
+        response = self.client.post(
+            url,
+            data=body,
+            content_type="application/json",
+            **auth_headers(newcomer),
+        )
+        self.assertEqual(response.status_code, 200)
+        enlistment.refresh_from_db()
+        self.assertFalse(enlistment.notify_gang_forming)
+        self.assertTrue(enlistment.notify_activity_nearby)
+
     def test_excluding_a_character_closes_its_inclusion_period(self):
         response = self.client.delete(
             f"{BASE}/{self.campaign.slug}/characters/3001",

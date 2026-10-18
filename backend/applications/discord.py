@@ -33,7 +33,7 @@ def _recruiter_role_mention(corporation) -> str:
         return ""
     try:
         discord_group = group.group.discord_group
-    except Exception:
+    except Exception:  # expected: group has no linked Discord role
         return ""
     if not discord_group or not discord_group.role_id:
         return ""

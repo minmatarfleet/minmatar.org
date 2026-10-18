@@ -9,4 +9,8 @@ class NotificationsConfig(AppConfig):
     def ready(self):
         # Register built-in notification types (side-effect import).
         # pylint: disable=import-outside-toplevel,unused-import
-        from notifications.types import fleets, industry  # noqa: F401
+        from notifications.types import (  # noqa: F401
+            fleets,
+            industry,
+            tribes,
+        )

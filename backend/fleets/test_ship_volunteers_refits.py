@@ -22,6 +22,9 @@ from fittings.models import (
     EveFitting,
     EveFittingRefit,
 )
+from fleets.helpers.cyno_notifications import (
+    build_cyno_assignment_message,
+)
 from fleets.helpers.eft_items import (
     eft_to_dna,
     eft_to_esi_fitting,
@@ -596,7 +599,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             fitting=cyno_fit,
         )
 
-    @patch("fleets.helpers.cyno_notifications.DiscordClient")
+    @patch("discord.outbox.DiscordClient")
     def test_fc_assigns_and_clears_cyno_system(self, discord_mock):
         add_user_permission(self.fc_user, "view_evefleet")
         DiscordUser.objects.create(
@@ -614,12 +617,13 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         )
         self.assertEqual(403, response.status_code)
 
-        response = self.fc_client.patch(
-            url,
-            {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                url,
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code, response.content)
         self.assertEqual("Sosala", response.json()["solar_system_name"])
         self.assertEqual(30003070, response.json()["solar_system_id"])
@@ -672,12 +676,13 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         self.assertEqual("Sosala", response.json()[0]["solar_system_name"])
 
         # Clear -> pilot is told the assignment was cleared.
-        response = self.fc_client.patch(
-            url,
-            {"solar_system_id": None, "solar_system_name": None},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                url,
+                {"solar_system_id": None, "solar_system_name": None},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code)
         self.assertIsNone(response.json()["solar_system_name"])
         self.assertEqual(2, send_dm.call_count)
@@ -685,18 +690,51 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         cynos = dict(_motd_role_volunteers(self.fleet))["Cynos"]
         self.assertEqual([(1001, "Pilot One")], cynos)
 
-    @patch("fleets.helpers.cyno_notifications.DiscordClient")
+    @patch("discord.outbox.send_discord_dm_task")
+    @patch("discord.outbox.DiscordClient")
+    def test_cyno_dm_is_queued_not_sent_in_request(
+        self, discord_mock, dm_task
+    ):
+        add_user_permission(self.fc_user, "view_evefleet")
+        DiscordUser.objects.create(
+            id=555, discord_tag="pilot#1", user=self.user
+        )
+        volunteer = self._cyno_volunteer()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.fc_client.patch(
+                f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
+        self.assertEqual(200, response.status_code)
+        # The request itself never talks to Discord.
+        discord_mock.assert_not_called()
+        dm_task.apply_async.assert_not_called()
+        self.assertEqual(1, len(callbacks))
+        callbacks[0]()
+        dm_task.apply_async.assert_called_once()
+        args = dm_task.apply_async.call_args.kwargs["args"]
+        volunteer.refresh_from_db()
+        self.assertEqual("555", args[0])
+        self.assertEqual(
+            [build_cyno_assignment_message(self.fleet, volunteer)], args[1]
+        )
+        discord_mock.assert_not_called()
+
+    @patch("discord.outbox.DiscordClient")
     def test_cyno_assignment_without_discord_link_still_saves(
         self, discord_mock
     ):
         add_user_permission(self.fc_user, "view_evefleet")
         volunteer = self._cyno_volunteer()
-        response = self.fc_client.patch(
-            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
-            {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code)
         volunteer.refresh_from_db()
         self.assertEqual("Sosala", volunteer.solar_system_name)

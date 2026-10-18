@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from buyback.helpers.demand import mineral_name_to_id_for_ores
@@ -9,6 +10,8 @@ from buyback.models import BuybackAcceptedItem
 from industry.helpers.compressed_ore import ore_materials_per_portion
 from industry.helpers.type_breakdown import type_ids_in_breakdown
 from industry.models import IndustryProduct
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -68,7 +71,12 @@ def used_in_for_accepted_type(
 
     try:
         materials = ore_materials_per_portion(type_name)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Buyback used-in: no ore materials for %s",
+            type_name,
+            exc_info=True,
+        )
         return list(material_used_in.get(type_id, []))
 
     if not materials:

@@ -22,6 +22,7 @@ its components count as demand).
 """
 
 import copy
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -33,6 +34,8 @@ from eveuniverse.models import (
 )
 
 from industry.models import IndustryProduct, Strategy
+
+logger = logging.getLogger(__name__)
 
 ACTIVITY_MANUFACTURING = 1
 ACTIVITY_REACTION = 11
@@ -53,7 +56,12 @@ def _ensure_industry_data_loaded_for_product(
         data_all = (
             EveIndustryActivityProduct.objects._fetch_sde_data_cached()  # pylint: disable=protected-access
         )
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Could not load SDE industry data for type %s",
+            product_eve_type.id,
+            exc_info=True,
+        )
         return
     product_id = product_eve_type.id
     for blueprint_type_id, products_list in data_all.items():

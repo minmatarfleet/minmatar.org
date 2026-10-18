@@ -72,7 +72,8 @@ def _log_staff_fallback(user) -> None:
     try:
         first_this_hour = cache.add(key, 1, STAFF_FALLBACK_LOG_SECONDS)
     except Exception:  # pylint: disable=broad-except
-        first_this_hour = True  # cache down: log rather than stay silent
+        # expected: cache down; the warning below is logged instead
+        first_this_hour = True
     if first_this_hour:
         logger.warning(
             "Service-account check passed by staff fallback "

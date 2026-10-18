@@ -46,6 +46,7 @@ positive average_price (proxy for Jita/universe market availability).
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
@@ -56,6 +57,8 @@ from eveuniverse.models import EveMarketPrice, EveType, EveTypeMaterial
 from industry.helpers.ore_variants import split_ore_variant
 from industry.helpers.producers import DEFAULT_REFINE_RATE, ORE_BATCH_SIZE
 from moons.models import ore_yield_map
+
+logger = logging.getLogger(__name__)
 
 MINERAL_NAMES = frozenset(
     {
@@ -374,8 +377,13 @@ def _portion_from_type_rows(ore_name: str) -> Dict[str, float]:
             continue
         try:
             _ensure_type_materials_loaded(ore.id)
-        except Exception:
-            pass
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Fall through to whatever rows are stored (or the fallbacks).
+            logger.warning(
+                "Could not load type materials for %s",
+                candidate,
+                exc_info=True,
+            )
         yields: Dict[str, float] = {}
         for material in EveTypeMaterial.objects.filter(
             eve_type_id=ore.id
@@ -902,8 +910,13 @@ def ice_materials_per_unit(ice_name: str) -> Dict[str, float]:
             continue
         try:
             _ensure_type_materials_loaded(ice.id)
-        except Exception:
-            pass
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Fall through to whatever rows are stored (or the fallbacks).
+            logger.warning(
+                "Could not load type materials for %s",
+                candidate,
+                exc_info=True,
+            )
         yields: Dict[str, float] = {}
         for material in EveTypeMaterial.objects.filter(
             eve_type_id=ice.id

@@ -6,7 +6,6 @@ from django.utils import timezone
 from ninja import Router
 
 from authentication import AuthBearer
-from discord.client import DiscordClient
 from tribes.endpoints.memberships.schemas import MembershipSchema
 from tribes.endpoints.memberships.serializers import serialize_membership
 from tribes.helpers import user_can_manage_group
@@ -64,27 +63,6 @@ def post_membership_approve(
         include_requirement_status=True,
         include_characters=True,
     )
-
-
-def _send_welcome_message(user, tg):
-    """Post a welcome message tagging the new member in the tribe channel."""
-    channel_id = tg.discord_channel_id or tg.tribe.discord_channel_id
-    if not channel_id:
-        return
-    try:
-        discord_user = getattr(user, "discord_user", None)
-        mention = f"<@{discord_user.id}>" if discord_user else user.username
-        DiscordClient().create_message(
-            channel_id,
-            message=f"Welcome {mention} to **{tg.name}**! o7",
-        )
-    except Exception:  # pylint: disable=broad-except
-        logger.warning(
-            "Failed to send welcome message for user %s joining group %s",
-            user,
-            tg,
-            exc_info=True,
-        )
 
 
 router.post(PATH, **ROUTE_SPEC)(post_membership_approve)

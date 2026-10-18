@@ -25,7 +25,11 @@ from tribes.helpers.offboarding import (
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
-from tribes.helpers.external_guild import reconcile_external_guilds
+from tribes.helpers.external_guild import (
+    on_membership_became_active,
+    on_membership_became_inactive,
+    reconcile_external_guilds,
+)
 from tribes.helpers.about import refresh_tribe_about
 from tribes.helpers.showcase import build_group_showcase
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
@@ -45,6 +49,7 @@ def _discord_mention(user) -> str | None:
     try:
         return f"<@{user.discord_user.id}>"
     except Exception:  # pylint: disable=broad-except
+        # expected: no Discord link
         return None
 
 
@@ -174,6 +179,32 @@ def remove_tribe_members_without_permission():
 def reconcile_tribe_external_guilds():
     """Desired-state poll for tribe secondary Discord guild seats."""
     return reconcile_external_guilds()
+
+
+@app.task(ignore_result=True)
+def sync_external_guild_for_membership(membership_id: int):
+    """Bring the membership's external Discord seat in line with its status.
+
+    Queued by the membership post_save signal so approving or removing a
+    member never waits on Discord. Reads the status when it runs, so a quick
+    approve-then-remove ends in the right state.
+    """
+    membership = (
+        TribeGroupMembership.objects.filter(pk=membership_id)
+        .select_related("user", "tribe_group")
+        .first()
+    )
+    if membership is None:
+        return
+    try:
+        if membership.status == TribeGroupMembership.STATUS_ACTIVE:
+            on_membership_became_active(membership)
+        elif membership.status == TribeGroupMembership.STATUS_INACTIVE:
+            on_membership_became_inactive(membership)
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            "External guild sync failed for membership %s", membership_id
+        )
 
 
 @app.task()
