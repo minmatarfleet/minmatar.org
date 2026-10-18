@@ -35,7 +35,15 @@ type GuideModule = {
     rawContent: () => string
 }
 
-const guideModules: Record<string, GuideModule> = {
+/** What Astro types a `*.md` import as: frontmatter is an untyped record. */
+type MarkdownModule = {
+    frontmatter: Record<string, any>
+    rawContent: () => string
+}
+
+// Every guide's frontmatter carries the GuideModule fields; narrow the type
+// once here instead of per import.
+const guideModules = ({
     'faction-warfare-basics': faction_warfare_basics,
     'faction-warfare-advantage': faction_warfare_advantage,
     'faction-warfare-plexing': faction_warfare_plexing,
@@ -59,7 +67,7 @@ const guideModules: Record<string, GuideModule> = {
     'onboarding-make-content': onboarding_make_content,
     'onboarding-trial-srp-help': onboarding_trial_srp_help,
     'onboarding-culture-map': onboarding_culture_map,
-}
+} satisfies Record<string, MarkdownModule>) as Record<string, GuideModule>
 
 export const guideCategories = ["Onboarding","Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
 

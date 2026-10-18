@@ -163,7 +163,6 @@ The merge is triggered lazily by the tracker rather than a login hook: the first
 | Anonymous stash | `frontend/app/src/helpers/pageProgress/localStore.ts` |
 | Dwell logic + tests | `frontend/app/src/helpers/pageProgress/dwellObserver.ts`, `frontend/app/testing/helpers/dwellObserver.test.ts` |
 | UI components | `frontend/app/src/components/blocks/PageProgress.astro`, `PageProgressTracker.astro` |
-| API client | `frontend/app/src/helpers/api.minmatar.org/pageProgress.ts` |
 | Models / helpers | `backend/page_progress/models.py`, `backend/page_progress/helpers.py` |
 | Endpoints | `backend/page_progress/endpoints/` |
 | Admin | `backend/page_progress/admin.py` |

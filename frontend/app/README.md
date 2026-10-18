@@ -24,7 +24,8 @@ Run from `frontend/app/`:
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Dev server on port 4321 |
-| `npm run check` | `astro check` at error severity. Must pass before a frontend change merges |
+| `npm run check` | Type-check ratchet (`scripts/check_ratchet.mjs`): runs `astro check` and fails only when a file has more errors than its entry in `testing/conventions/type_check_baseline.json` (new files: zero). Must pass before a frontend change merges |
+| `npm run check:baseline` | Rewrite that baseline after fixing errors, to lock the gain in (the baseline only shrinks) |
 | `npm run test` | vitest (tests live in `testing/`) |
 | `npm run build` | Type check, then production build |
 | `npm run warzone:extract` / `npm run amamake:extract` | Data extraction for the monthly Warzone and Amamake reports |

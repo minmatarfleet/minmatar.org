@@ -86,6 +86,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `fittings.doctrine.propose` | `staff` | — | staff permission |
 | `tech.ops` | `auth_group` | — | Technology Team auth group (no `on_leave` deny) |
 | `alliance.health` | `staff` | `alliance.view_alliancehealth` | staff permission (no `on_leave` deny) |
+| `alliance.health.executor` | `auth_group` | — | People Team auth group (every corporation on the health board, change any member's community status) |
 | `surveys.manage` | `staff` | `surveys.change_surveycampaign` | staff permission (no `on_leave` deny); response content stays superuser-only |
 
 ## Site gates
@@ -105,4 +106,5 @@ Added to move frontend gating off Django permission strings ([frontend-feature-g
 | `content.manage` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`), no `on_leave` deny |
 | `surveys.results.view` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
 | `site.debug_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
+| `site.all_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny; page finder and breadcrumbs list every page) |
 | `characters.lookup` | `auth_group` | — | — (superusers only; no `on_leave` deny) |

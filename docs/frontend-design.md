@@ -169,7 +169,7 @@ Rules:
 - A bordered panel is `ComponentBlock` (`src/components/blocks/ComponentBlock.astro`). `Card` is the picture card with hover actions (`CharacterCard`, `PictureCard`), not a general panel.
 - `backend/app/tests/test_docs.py` fails when this table and `src/components/compositions/` disagree.
 
-### Shared blocks
+## 4.1 Shared blocks
 
 Reach for these before building a variant of your own (all in `src/components/blocks/`):
 

@@ -19,7 +19,9 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | Document | Status | About |
 | --- | --- | --- |
 | [frontend-design.md](frontend-design.md) | current | Frontend source of truth: htmx/Alpine split, tokens, compositions, components |
+| [frontend-sde.md](frontend-sde.md) | current | The frontend's local SDE SQLite snapshot: where it lives, the pinned build, upgrading it |
 | [architecture/feed-and-rollups.md](architecture/feed-and-rollups.md) | current | Killmail feed: ingest, monitored systems, rollups and their readers |
+| [architecture/cached-aggregates.md](architecture/cached-aggregates.md) | current | Heavy aggregates: computed by Celery, read from the cache (`CachedRollup`), Redis-tolerant |
 | [market-pricing.md](market-pricing.md) | current | Which market price source to use where |
 | [industry/lp-buyback.md](industry/lp-buyback.md) | current | LP buyback orders: tiers, states, timers, Discord threads |
 | [fleet-ships-and-refits.md](fleet-ships-and-refits.md) | current | Fleet ship lists, refits and in-game fittings |

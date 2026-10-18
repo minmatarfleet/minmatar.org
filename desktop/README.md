@@ -70,6 +70,11 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 | `src/main/menu_fade.js` | Fade on right-click: which windows to hide around a context menu, and when to bring them back |
 | `src/main/mascot.js` | Where Sneak sits, from EVE's notification badge offset and UI scale |
 | `src/main/updater.js` | Auto-update from GitHub Releases |
+| `src/main/esi.js` | The public ESI calls the app makes itself (name lookups, jump counts): one User-Agent, pinned API version, session cache |
+| `src/main/ipc_commands.js` | Every command a window may send to the main process, and the checks on its values (`preload.js` keeps a tested copy) |
+| `src/main/poller.js` | One polling policy for every window: runs only while the window can show, refetches when stale, backs off on failure |
+| `src/main/settings_schema.js` | The account-saved settings keys, their shapes and defaults: a contract between app versions |
+| `src/main/web_routes.js` | Every website page the app opens, built from the configured website URL (the backend's are in `backend/app/links.py`) |
 | `src/renderer/` | EVE-styled windows (`eve-window.css`, shared chrome in `eve_window.js`), sign-in, fleets and campaigns UI |
 
 ## Updates and releases
