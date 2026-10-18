@@ -138,7 +138,7 @@ def corporation_health(corporation_id: int) -> dict:
 
 
 def bot_invite_url() -> str:
-    configured = getattr(settings, "DISCORD_BOT_INVITE_URL", "") or ""
+    configured = settings.DISCORD_BOT_INVITE_URL or ""
     if configured:
         return configured
     client_id = getattr(settings, "DISCORD_CLIENT_ID", "") or ""
