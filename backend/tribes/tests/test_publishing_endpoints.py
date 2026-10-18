@@ -62,7 +62,7 @@ class PublishingEndpointTests(TestCase):
             anonymous["discord_role_name"], "Tribe Group - Dreads"
         )
         self.assertEqual(
-            anonymous["effective_discord_channel_id"], GROUP_CHANNEL_ID
+            anonymous["effective_discord_channel_id"], str(GROUP_CHANNEL_ID)
         )
         self.assertTrue(anonymous["allow_alliance_posts"])
         self.assertFalse(anonymous["allow_open_fleets"])
@@ -135,14 +135,14 @@ class PublishingEndpointTests(TestCase):
         self.assertTrue(body["allow_open_fleets"])
         self.assertIsNone(body["discord_channel_id"])
         self.assertEqual(
-            body["effective_discord_channel_id"], TRIBE_CHANNEL_ID
+            body["effective_discord_channel_id"], str(TRIBE_CHANNEL_ID)
         )
         self.assertEqual(body["effective_discord_channel_name"], "capitals")
         # Untouched fields stay put.
         self.assertEqual(body["post_policy"], "chiefs")
 
         response = self.call(
-            "patch", path, self.chief, {"discord_channel_id": 9001}
+            "patch", path, self.chief, {"discord_channel_id": "9001"}
         )
         self.assertEqual(response.status_code, 400)
 

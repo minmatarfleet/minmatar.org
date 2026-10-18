@@ -149,7 +149,11 @@ def serialize_tribe_group(
         roster_hidden=bool(tg.roster_hidden),
         allow_alliance_posts=bool(tg.allow_alliance_posts),
         allow_open_fleets=bool(tg.allow_open_fleets),
-        effective_discord_channel_id=tg.effective_discord_channel_id,
+        effective_discord_channel_id=(
+            str(tg.effective_discord_channel_id)
+            if tg.effective_discord_channel_id
+            else None
+        ),
         discord_role_name=group_role_name(tg),
         **_viewer_flags(tg, request_user, member_group_ids, can_manage),
     )

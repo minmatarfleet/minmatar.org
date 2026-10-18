@@ -307,6 +307,14 @@ CELERYBEAT_TRIBES = [
             "schedule": crontab(minute=27, hour="*/3"),
         },
     ),
+    (
+        "[Tribes] Sync group event interest",
+        {
+            "task": "tribes.tasks.sync_tribe_event_interest",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)

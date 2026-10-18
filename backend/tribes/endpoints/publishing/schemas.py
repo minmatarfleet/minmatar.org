@@ -40,8 +40,9 @@ class TribeGroupPublishingSchema(BaseModel):
     event_publishers: List[PublisherSchema]
     allow_alliance_posts: bool
     allow_open_fleets: bool
-    discord_channel_id: Optional[int] = None
-    effective_discord_channel_id: Optional[int] = None
+    # Discord ids are strings: they don't fit a JavaScript number.
+    discord_channel_id: Optional[str] = None
+    effective_discord_channel_id: Optional[str] = None
     effective_discord_channel_name: Optional[str] = None
     discord_role_name: Optional[str] = None
 
@@ -57,7 +58,8 @@ class TribeGroupPublishingPatch(BaseModel):
     event_publisher_character_ids: Optional[List[int]] = None
     allow_alliance_posts: Optional[bool] = None
     allow_open_fleets: Optional[bool] = None
-    # null clears the group's channel (the tribe's channel is used).
+    # null clears the group's channel (the tribe's channel is used). A
+    # string of digits is accepted (Discord ids don't fit a JS number).
     discord_channel_id: Optional[int] = None
 
 
@@ -68,6 +70,7 @@ class PublishableGroupSchema(HostGroupRef):
 
 
 class DiscordChannelSchema(BaseModel):
-    id: int
+    # Discord ids are strings: they don't fit a JavaScript number.
+    id: str
     name: str
     type: str

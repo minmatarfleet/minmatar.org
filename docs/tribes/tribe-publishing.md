@@ -226,6 +226,37 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `user_count` back into `interested_count`. Announcement in the group
   channel: role mention, one line, the event link. The bot needs the
   Manage Events permission.
+- Validation: the start is in the future, the end (if any) after it; a
+  voice event needs a voice or stage channel (checked against the guild's
+  channel list when it can be fetched, which also fills
+  `voice_channel_name`); a place event needs `location` and `ends_at` and
+  can't be members only. `PATCH` takes `TribeEventPatch` (any of the
+  create fields except `announce`; `ends_at`/`voice_channel_id` may be
+  nulled) and only on scheduled events. The list takes optional auth and
+  also shows members-only events to their creator.
+- `TribeEventSchema` also carries `recurrence_label` ("Every 2nd Saturday
+  of the month"), `where_label` and `created_by` (`CharacterRefSchema`).
+- Announcement text: `<@&role> **<title>** · <t:start:F> (every …) ·
+  <where>` then the event link on its own line, posted once the Discord
+  event exists.
+- `POST /api/tribes/groups/{group_id}/events/announcement-preview`
+  (`can_publish event`, body `TribeEventCreate`, same validation) returns
+  `TribeEventAnnouncementPreview` = `{channel_name, content,
+  event_preview: {title, starts_at, where_label, recurrence_label}}`,
+  built by the same helper as the real announcement; `content` is null
+  when `announce` is off or there is no channel, and the event link is
+  `https://discord.com/events/<guild>/new` until Discord creates it.
+- `sync_tribe_event_interest` (beat, every 15 minutes) copies
+  `user_count`, moves a recurring event to Discord's next occurrence,
+  completes one-off events once they end (start + 2 hours without an end
+  time) and recurring ones whose Discord event is gone.
+
+Discord ids in the new response fields (`DiscordChannelSchema.id`,
+`effective_discord_channel_id`, the publishing schema's channel ids,
+`voice_channel_id`, `discord_event_id`) are strings, because Discord
+snowflakes don't fit a JavaScript number and the pickers send them back.
+Requests accept them as numbers or digit strings. The existing
+`TribeGroupSchema.discord_channel_id` stays a number.
 
 ## Launch data migrations (Discord is the source of truth)
 

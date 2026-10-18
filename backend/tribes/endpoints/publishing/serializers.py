@@ -29,6 +29,10 @@ def _publishers(users) -> list[PublisherSchema]:
     return sorted(rows, key=lambda row: row.character_name.lower())
 
 
+def _snowflake(value: int | None) -> str | None:
+    return str(value) if value else None
+
+
 def serialize_publishing(group: TribeGroup) -> TribeGroupPublishingSchema:
     effective_id = group.effective_discord_channel_id
     return TribeGroupPublishingSchema(
@@ -41,8 +45,8 @@ def serialize_publishing(group: TribeGroup) -> TribeGroupPublishingSchema:
         event_publishers=_publishers(group.event_publishers.all()),
         allow_alliance_posts=group.allow_alliance_posts,
         allow_open_fleets=group.allow_open_fleets,
-        discord_channel_id=group.discord_channel_id,
-        effective_discord_channel_id=effective_id,
+        discord_channel_id=_snowflake(group.discord_channel_id),
+        effective_discord_channel_id=_snowflake(effective_id),
         effective_discord_channel_name=channel_name(effective_id),
         discord_role_name=group_role_name(group),
     )

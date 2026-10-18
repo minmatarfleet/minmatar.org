@@ -39,7 +39,7 @@ def get_discord_channels(
             "channels."
         }
     return 200, [
-        DiscordChannelSchema(id=c["id"], name=c["name"], type=c["type"])
+        DiscordChannelSchema(id=str(c["id"]), name=c["name"], type=c["type"])
         for c in channels_of_kind(kind.value)
     ]
 

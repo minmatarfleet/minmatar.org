@@ -8,6 +8,8 @@ Tasks:
 - warm_tribe_group_showcases: Rebuild cached group Activity tabs.
 - refresh_tribe_group_showcase: Rebuild one group's Activity tab (cache miss).
 - warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages.
+- create/update/cancel_tribe_discord_event: Push a group event to Discord.
+- sync_tribe_event_interest: Read interested counts, complete past events.
 """
 
 import logging
@@ -32,6 +34,7 @@ from tribes.helpers.external_guild import (
     reconcile_external_guilds,
 )
 from tribes.helpers.about import refresh_tribe_about
+from tribes.helpers import event_sync
 from tribes.helpers.showcase import refresh_group_showcase
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 from tribes.reports.registry import REPORT_BINDINGS
@@ -259,3 +262,27 @@ def warm_tribe_about_pages():
             logger.error(
                 "Error warming about page for tribe %s: %s", tribe.slug, exc
             )
+
+
+@app.task(ignore_result=True)
+def create_tribe_discord_event(event_id: int):
+    """Create a group event's Discord scheduled event and announce it."""
+    return event_sync.create_discord_event(event_id)
+
+
+@app.task(ignore_result=True)
+def update_tribe_discord_event(event_id: int):
+    """Push an edited group event to its Discord scheduled event."""
+    return event_sync.update_discord_event(event_id)
+
+
+@app.task(ignore_result=True)
+def cancel_tribe_discord_event(event_id: int):
+    """Cancel a group event's Discord scheduled event."""
+    return event_sync.cancel_discord_event(event_id)
+
+
+@app.task()
+def sync_tribe_event_interest():
+    """Every 15 minutes: Discord interested counts and finished events."""
+    return event_sync.sync_event_interest()
