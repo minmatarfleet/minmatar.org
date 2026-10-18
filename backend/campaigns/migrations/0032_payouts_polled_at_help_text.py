@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("campaigns", "0030_remove_unwritten_stat_columns"),
+        ("campaigns", "0031_pilot_names_in_event_titles"),
     ]
 
     operations = [
