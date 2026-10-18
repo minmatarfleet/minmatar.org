@@ -1,0 +1,153 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { FleetItem, TribeVisibility } from '@dtypes/layout_components'
+import type { FleetScheduleDoctrine } from '@helpers/fetching/fleet_schedule'
+import { eve_day, eve_day_short } from '@helpers/date'
+import { group_by_eve_day } from '@helpers/tribe_group_page'
+
+/**
+ * A tribe group's Fleets tab: its upcoming fleets in the /fleets rows, by EVE
+ * day, each marked members only or open to the alliance. Every fleet here is
+ * the group's, so the rows carry no host chip. Outsiders only ever get the
+ * open ones from the API, and a line saying members-only fleets exist.
+ */
+interface Props {
+    fleets:                 FleetItem[];
+    visibility:             Record<number, TribeVisibility>;
+    doctrines:              Record<number, FleetScheduleDoctrine>;
+    group_id:               number;
+    group_name:             string;
+    /** Non-members: say that joining shows the members-only fleets too. */
+    show_members_only_note: boolean;
+    can_schedule:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    fleets,
+    visibility,
+    doctrines,
+    group_id,
+    group_name,
+    show_members_only_note,
+    can_schedule,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const today = eve_day(new Date())
+const tomorrow = eve_day(new Date(Date.now() + 24 * 60 * 60 * 1000))
+const day_label = (day: string) => {
+    const pretty = eve_day_short(lang, new Date(`${day}T12:00:00Z`), { weekday: true })
+    if (day === today) return `${t('fleets.schedule.today')} · ${pretty}`
+    if (day === tomorrow) return `${t('fleets.schedule.tomorrow')} · ${pretty}`
+    return pretty
+}
+const days = group_by_eve_day(fleets)
+const fill = (text: string) => text.replaceAll('{group}', group_name)
+const history_href = translatePath(`/fleets/history/?group=${group_id}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
+import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import LockIcon from '@components/icons/LockIcon.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ tribe-group-fleets ]', Astro.props.class]} {...attributes}>
+    {show_members_only_note &&
+        <p class="[ tribe-group-fleets__note ]">
+            <LockIcon size={16} />
+            <span>{fill(t('tribes.group.fleets.members_only_note'))}</span>
+        </p>
+    }
+
+    {days.length === 0 &&
+        <EmptyState
+            title={fill(t('tribes.group.fleets.empty'))}
+            hint={can_schedule ? t('tribes.group.fleets.empty_hint') : undefined}
+        />
+    }
+
+    {days.map((day) =>
+        <section class="[ tribe-group-fleets__day ]">
+            <h3>{day_label(day.key)}</h3>
+            <div role="list">
+                {day.fleets.map((fleet) =>
+                    <FleetScheduleRow
+                        role="listitem"
+                        fleet={fleet}
+                        doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+                        show_host={false}
+                    >
+                        <VisibilityTag slot="tags" visibility={visibility[fleet.id] ?? 'members_only'} size="sm" />
+                    </FleetScheduleRow>
+                )}
+            </div>
+        </section>
+    )}
+
+    <a class="[ tribe-group-fleets__history ]" href={history_href}>
+        <span>{fill(t('tribes.group.fleets.past_hint'))}</span>
+        <b>{fill(t('tribes.group.fleets.past'))} ›</b>
+    </a>
+</Flexblock>
+
+<style lang="scss">
+    .tribe-group-fleets__note {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--hairline);
+        background-color: var(--surface-sunken);
+        color: var(--foreground);
+
+        :global(svg) {
+            flex: none;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .tribe-group-fleets__day h3 {
+        margin-bottom: var(--space-2xs);
+        font-size: var(--step-0);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .tribe-group-fleets__history {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+        min-height: var(--space-xl);
+        padding: var(--space-2xs) var(--space-s);
+        border: 1px dashed var(--hairline-strong);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: border-color var(--fast-transition);
+
+        b {
+            color: var(--highlight);
+            white-space: nowrap;
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .tribe-group-fleets__history:hover {
+            border-color: var(--fleet-yellow);
+        }
+    }
+</style>

@@ -40,6 +40,7 @@ import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro'
 import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
 
 import FleetIcon from '@components/icons/FleetIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
@@ -122,6 +123,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     set:html={marked.parse(fleet.objective, { renderer })}
                 />
             }
+
+            <FleetHostTags fleet={fleet} linked={true} />
 
             <FlexInline class="[ flex-nowrap! items-center! ]" gap='var(--space-l)'>
                 <Flexblock gap='0'>

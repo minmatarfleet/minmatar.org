@@ -49,4 +49,16 @@
     --text-muted:           rgba(255, 255, 255, 0.55);
     --glow:                 rgba(255, 255, 255, 0.75);
     --surface-sunken:       rgba(0, 0, 0, 0.22);
+
+    // Discord's own UI colours, for previews and Discord buttons
+    --discord-blurple:      #5865f2;
+    --discord-surface:      #313338;
+    --discord-embed:        #2b2d31;
+    --discord-button:       #4e5058;
+    --discord-text:         #dbdee1;
+    --discord-heading:      #f2f3f5;
+    --discord-muted:        #949ba4;
+    --discord-link:         #00a8fc;
+    --discord-mention:      #dee0fc;
+    --discord-mention-bg:   rgba(88, 101, 242, 0.3);
 }

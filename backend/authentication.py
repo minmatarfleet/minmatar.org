@@ -129,6 +129,24 @@ class AuthOptional(AuthBearer):
         return self.authenticate(request, token)
 
 
+class AuthLenient(AuthBearer):
+    """Optional auth for public reads: a missing, malformed or expired
+    token reads as an anonymous visitor instead of a 401, so a stale
+    browser session never breaks a public page."""
+
+    def __call__(self, request: HttpRequest) -> Optional[Any]:
+        auth_value = request.headers.get(self.header)
+        user = None
+        if auth_value:
+            parts = auth_value.split(" ")
+            if parts[0].lower() == self.openapi_scheme:
+                user = self.authenticate(request, " ".join(parts[1:]))
+        if user is None:
+            user = AnonymousUser()
+            request.user = user
+        return user
+
+
 class UnauthorizedError(Exception):
     pass
 

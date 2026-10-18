@@ -119,10 +119,18 @@ const default_tab = tab_ids[0] ?? ''
         min-width: 0;
     }
 
+    // The strip scrolls sideways at every width instead of widening the page.
+    // The rule under the tabs is an inset shadow, not a border, so the active
+    // tab's underline still covers it while the scroll container clips its
+    // overflow (no negative margin, no 1px vertical scroll).
     .section-tabs-list {
         display: flex;
         gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color-hover);
+        box-shadow: inset 0 -1px 0 var(--border-color-hover);
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
     }
 
     .section-tab {
@@ -130,7 +138,6 @@ const default_tab = tab_ids[0] ?? ''
         background: transparent;
         border: 0;
         border-bottom: 3px solid transparent;
-        margin-block-end: -1px;
         padding: var(--space-2xs) var(--space-s);
         font-family: var(--heading-font);
         font-size: var(--step-1);
@@ -138,6 +145,8 @@ const default_tab = tab_ids[0] ?? ''
         letter-spacing: 0.02em;
         color: var(--foreground);
         cursor: pointer;
+        flex: 0 0 auto;
+        white-space: nowrap;
 
         &.is-active {
             color: var(--highlight);
@@ -157,16 +166,9 @@ const default_tab = tab_ids[0] ?? ''
     }
 
     @media screen and (max-width: 767px) {
-        // Tabs share the width while they fit; past that the strip scrolls
-        // sideways instead of widening the page.
-        // overflow-y: the -1px tab margin would otherwise make the strip
-        // scroll vertically by a pixel once overflow-x is auto.
+        // Tabs share the width while they fit.
         .section-tabs-list {
             gap: 0;
-            overflow-x: auto;
-            overflow-y: hidden;
-            overscroll-behavior-x: contain;
-            scrollbar-width: none;
         }
 
         .section-tab {

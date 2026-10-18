@@ -1,0 +1,119 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupRefUI } from '@dtypes/layout_components'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+import { tribe_group_path } from '@helpers/fleet_hosts'
+
+/**
+ * Under a group fleet's title: who hosts it, who can see it and where it
+ * pinged, with a link to the group's Fleets tab. Alliance fleets don't render it.
+ */
+interface Props {
+    group:              TribeGroupRefUI;
+    open_to_alliance:   boolean;
+    on_schedule?:       boolean;
+    member_count?:      number | null;
+    role_name?:         string | null;
+    [propName: string]: any;
+}
+
+const {
+    group,
+    open_to_alliance,
+    on_schedule = false,
+    member_count = null,
+    role_name = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const visible_line = open_to_alliance ? t('fleets.host.open_line') :
+    member_count ? t('fleets.host.members_only_count_line')
+        .replace('{count}', member_count.toString())
+        .replace('{group}', group.name) :
+    t('fleets.host.members_only_line').replace('{group}', group.name)
+const ping_line = role_name ? t('fleets.host.ping_line').replace('{role}', role_name) : t('fleets.host.ping_line_no_role')
+const detail = [ visible_line, ping_line, open_to_alliance && on_schedule ? t('fleets.host.schedule_line') : '' ]
+    .filter(Boolean)
+    .join(' ')
+const [ before_group, after_group ] = t('fleets.host.hosted_by').replace('{tribe}', group.tribe_name).split('{group}')
+---
+
+<div class:list={['[ fleet-host-strip ]', Astro.props.class]} {...attributes}>
+    <img
+        class="[ fleet-host-strip__crest ]"
+        src={tribe_group_cover(group.id)}
+        alt={t('tribes.publishing.crest_alt').replace('{group}', group.name)}
+        width="40"
+        height="40"
+        loading="lazy"
+        decoding="async"
+    />
+    <p class="[ fleet-host-strip__text ]">
+        <span>{before_group}<b>{group.name}</b>{after_group}</span>
+        <small>{detail}</small>
+    </p>
+    <a class="[ fleet-host-strip__link ]" href={translatePath(tribe_group_path(group, 'fleets'))}>
+        {t('fleets.host.group_page').replace('{group}', group.name)} ›
+    </a>
+</div>
+
+<style lang="scss">
+    .fleet-host-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        max-width: 100%;
+        padding: var(--space-2xs) var(--space-s) var(--space-2xs) var(--space-2xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 6%, transparent);
+    }
+
+    .fleet-host-strip__crest {
+        flex: none;
+        display: block;
+        width: 2.5rem;
+        height: 2.5rem;
+        object-fit: cover;
+    }
+
+    .fleet-host-strip__text {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 16rem;
+        min-width: 0;
+        margin: 0;
+        color: var(--foreground);
+
+        b {
+            color: var(--fleet-yellow);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .fleet-host-strip__link {
+        flex: none;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        text-decoration: none;
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 3px;
+        }
+    }
+
+    @media (hover: hover) {
+        .fleet-host-strip__link:hover {
+            color: var(--highlight);
+            text-decoration: underline;
+        }
+    }
+</style>

@@ -231,6 +231,8 @@ async function load_upcoming_fleets(api, web_url) {
                 doctrine: doctrine_names[i],
                 fc_character_id: character ? character.character_id : null,
                 fc_name: character ? character.character_name : (profile ? profile.username : 'Unknown FC'),
+                // A tribe group fleet names its group; alliance fleets (and older backends) have none.
+                host_group: fleet.host_group ? { id: fleet.host_group.id, name: fleet.host_group.name } : null,
                 url: web_routes.fleet(web_url, fleet.id),
             }
         })

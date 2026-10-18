@@ -71,6 +71,27 @@ export interface TribeAffiliationRef {
 
 export type TribeGroup = ApiResponse<'TribeGroupSchema'>
 
+// Tribe publishing (docs/tribes/tribe-publishing.md)
+export type HostGroupRef = ApiResponse<'HostGroupRef'>
+/** 403 body for a members-only fleet or post: names the group, hides the content. */
+export type RestrictedResponse = ApiResponse<'RestrictedResponse'>
+export type PublishingKind = ApiResponse<'PublishingKind'>
+export type PublishingPolicy = ApiResponse<'PublishingPolicy'>
+export type TribeGroupPublisher = ApiResponse<'PublisherSchema'>
+export type TribeGroupPublishing = ApiResponse<'TribeGroupPublishingSchema'>
+export type TribeGroupPublishingPatch = ApiRequest<'TribeGroupPublishingPatch'>
+export type PublishableGroup = ApiResponse<'PublishableGroupSchema'>
+export type DiscordChannelKind = ApiResponse<'DiscordChannelKind'>
+export type DiscordChannel = ApiResponse<'DiscordChannelSchema'>
+export type TribeEventRecurrence = ApiResponse<'EventRecurrence'>
+export type TribeEventWhereKind = ApiResponse<'EventWhereKind'>
+export type TribeEventStatus = ApiResponse<'EventStatus'>
+export type TribeEvent = ApiResponse<'TribeEventSchema'>
+export type TribeEventCreate = ApiRequest<'TribeEventCreate'>
+export type TribeEventPatch = ApiRequest<'TribeEventPatch'>
+export type TribeEventPreview = ApiResponse<'TribeEventPreviewSchema'>
+export type TribeEventAnnouncementPreview = ApiResponse<'TribeEventAnnouncementPreview'>
+
 export interface Tribe {
     id:                     number;
     name:                   string;
@@ -869,9 +890,14 @@ export interface FleetRequest {
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     campaign_id?:       number | null;
+    host_group_id?:     number | null;
+    open_to_alliance?:  boolean;
+    on_schedule?:       boolean;
 }
 
 export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>
+export type FleetPingPreviewRequest = ApiRequest<'FleetPingPreviewRequest'>
+export type FleetPingPreview = ApiResponse<'FleetPingPreviewResponse'>
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
@@ -979,6 +1005,9 @@ export interface PostParams {
     tag_ids?:           number[];
     tribe_group_ids?:   number[];
     campaign_id?:       number | null;
+    host_group_id?:     number | null;
+    members_only?:      boolean;
+    announce?:          boolean;
 }
 
 export interface PostTag {

@@ -552,6 +552,10 @@ export interface FleetItem {
     campaign_slug?:                 string | null;
     campaign_name?:                 string | null;
     aar_link?:                      string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:                    TribeGroupRefUI | null;
+    open_to_alliance?:              boolean;
+    on_schedule?:                   boolean;
 }
 
 import type { TrackingStatus } from '@dtypes/api.minmatar.org'
@@ -576,6 +580,10 @@ export interface FleetUI {
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:            TribeGroupRefUI | null;
+    open_to_alliance?:      boolean;
+    on_schedule?:           boolean;
 }
 
 export interface Tracking {
@@ -704,6 +712,9 @@ export interface PostListUI {
     tags:               string[];
     /** Never filled: the posts API has no image, so cards show the author. */
     image?:             string;
+    /** The tribe group a group post is published as; null or absent for alliance posts. */
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface PostUI {
@@ -717,6 +728,8 @@ export interface PostUI {
     content:            string;
     author:             CharacterBasic;
     tags:               string[];
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface CombatLogAnalysis {
@@ -937,4 +950,96 @@ export interface DisplayItem {
     used_in?: { type_id: number; name: string }[]
     used_in_is_ore?: boolean
     in_demand?: boolean
+}
+// Discord preview: the payload shape the bot sends (fleet ping) and the
+// event card Discord shows under an event announcement.
+export interface DiscordPreviewButtonUI {
+    label:      string;
+    url?:       string;
+    disabled?:  boolean;
+}
+
+export interface DiscordPreviewPayloadUI {
+    content?:       string | null;
+    embeds?:        {
+        title?:         string;
+        description?:   string;
+        author?:        { name?: string; icon_url?: string };
+        footer?:        { text?: string };
+    }[];
+    components?:    { components?: DiscordPreviewButtonUI[] }[];
+}
+
+export interface DiscordPreviewEventUI {
+    title:              string;
+    when_label:         string;
+    where_label:        string;
+    recurrence_label?:  string | null;
+    cover_url?:         string | null;
+    interested_count?:  number;
+}
+
+/* Tribe publishing: view models for the shared blocks (not API shapes). */
+
+/** A tribe group as other items refer to it. */
+export interface TribeGroupRefUI {
+    id:             number;
+    code:           string;
+    name:           string;
+    tribe_id:       number;
+    tribe_name:     string;
+}
+
+/** A group reference that also carries the crest the page chose for it. */
+export interface TribeGroupCrestUI extends TribeGroupRefUI {
+    crest_url?:     string;
+}
+
+export type TribeVisibility = 'members_only' | 'open'
+
+export interface HostOptionUI {
+    value:          string;
+    label:          string;
+    sub?:           string;
+    image_url:      string;
+}
+
+export interface PostTileUI {
+    id:                     number;
+    title:                  string;
+    excerpt:                string;
+    image_url:              string | null;
+    href:                   string;
+    author_character_id:    number;
+    author_character_name:  string;
+    /** ISO date. */
+    date:                   string;
+    members_only:           boolean;
+    /** The post belongs to a pilot and was tagged with this group, rather than published by it. */
+    tagged:                 boolean;
+}
+
+export type TribeEventWhereKind = 'stage' | 'voice' | 'place'
+export type TribeEventStatus = 'scheduled' | 'cancelled' | 'completed'
+
+export interface TribeEventRowUI {
+    id:                     number;
+    title:                  string;
+    cover_url:              string | null;
+    /** ISO time; null while the date is not set. */
+    starts_at:              string | null;
+    ends_at:                string | null;
+    where_kind:             TribeEventWhereKind;
+    where_label:            string;
+    recurrence_label:       string | null;
+    status:                 TribeEventStatus;
+    interested_count:       number;
+    discord_event_url:      string | null;
+    edit_href:              string | null;
+}
+
+export interface DiscordChannelUI {
+    id:             string;
+    name:           string;
+    type:           'text' | 'voice' | 'stage';
 }

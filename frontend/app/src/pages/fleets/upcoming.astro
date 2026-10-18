@@ -21,12 +21,15 @@ if (!can_view_fleets)
 
 import type { Alert } from '@dtypes/layout_components'
 import { fetch_fleet_schedule, type FleetSchedule as FleetScheduleData } from '@helpers/fetching/fleet_schedule'
+import { parse_host_filter } from '@helpers/fleet_hosts'
+
+const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 
 let fetch_fleets_error: Error | false = false
 let schedule: FleetScheduleData | null = null
 
 try {
-    schedule = await fetch_fleet_schedule(auth_token as string)
+    schedule = await fetch_fleet_schedule(auth_token as string, host_filter)
 } catch (error) {
     fetch_fleets_error = error
 }
@@ -159,6 +162,7 @@ const page_title = t('fleets.upcoming.page_title');
         </PageSubheader>
         
         <UpcomingFleetsUpdater
+            id="upcoming-fleets"
             refresh_rate_seconds={240}
             current_cover={get_location_cover(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg'}
         >

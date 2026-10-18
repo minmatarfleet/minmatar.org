@@ -33,9 +33,13 @@ def led_fleets(
     include_campaign: bool = False,
 ) -> QuerySet:
     """Fleets that count as led, starting in ``[start, end)``."""
-    fleets = EveFleet.objects.filter(created_by_id__isnull=False).exclude(
-        status="cancelled"
-    )
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.visibility import alliance_fleets_q
+
+    # Members-only tribe group fleets never count in alliance numbers.
+    fleets = EveFleet.objects.filter(
+        alliance_fleets_q(), created_by_id__isnull=False
+    ).exclude(status="cancelled")
     if not include_campaign:
         fleets = fleets.exclude(type__in=CAMPAIGN_FLEET_TYPES)
     if start is not None:

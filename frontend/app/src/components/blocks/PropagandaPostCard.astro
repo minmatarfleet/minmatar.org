@@ -24,10 +24,14 @@ import { get_player_icon } from '@helpers/eve_image_server'
 import { format_date } from '@helpers/date'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import PictureCard from '@components/blocks/PictureCard.astro';
 import PostActions from '@components/blocks/PostActions.astro';
 import Tag from '@components/blocks/Tag.astro';
+import PostByline from '@components/blocks/PostByline.astro';
+import TribeGroupChip from '@components/blocks/TribeGroupChip.astro';
+import VisibilityTag from '@components/blocks/VisibilityTag.astro';
 ---
 
 <div class="[ propaganda-post-card ]">
@@ -61,6 +65,13 @@ import Tag from '@components/blocks/Tag.astro';
                     text={t(dynamic_key(post.state)) ?? post.state}
                     color={post.state === 'published' ? 'green' : undefined}
                 />
+            }
+            {(is_editing && post.host_group) ?
+                <FlexInline gap='var(--space-3xs)'>
+                    <TribeGroupChip group={post.host_group} size="sm" max_width="12rem" />
+                    {post.members_only && <VisibilityTag visibility="members_only" size="sm" />}
+                </FlexInline> :
+                <PostByline post={post} />
             }
             <small>{format_date(lang, post.date_posted)}</small>
             <a href={post_href}>

@@ -20,11 +20,12 @@ if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import { fetch_fleet_schedule, type FleetSchedule as FleetScheduleData } from '@helpers/fetching/fleet_schedule'
+import { parse_host_filter } from '@helpers/fleet_hosts'
 
 let schedule: FleetScheduleData
 
 try {
-    schedule = await fetch_fleet_schedule(auth_token as string)
+    schedule = await fetch_fleet_schedule(auth_token as string, parse_host_filter(Astro.url.searchParams.get('host')))
 } catch (error) {
     return HTTP_500_Server_Error()
 }

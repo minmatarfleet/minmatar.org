@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeVisibility } from '@dtypes/layout_components'
+
+/** Who can see a group item. Only group fleets and posts carry it; alliance items never do. */
+interface Props {
+    visibility:     TribeVisibility;
+    size?:          'sm' | 'md';
+    [propName: string]: any;
+}
+
+const {
+    visibility,
+    size = 'md',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const members_only = visibility === 'members_only'
+const icon_size = size === 'sm' ? 11 : 13
+
+import Tag from '@components/blocks/Tag.astro'
+import LockIcon from '@components/icons/LockIcon.astro'
+import GlobeIcon from '@components/icons/GlobeIcon.astro'
+---
+
+<Tag
+    class:list={['[ visibility-tag ]', `visibility-tag--${size}`, Astro.props.class]}
+    variant="outline"
+    color={members_only ? 'fleet-yellow' : undefined}
+    text={members_only ? t('tribes.publishing.visibility.members_only') : t('tribes.publishing.visibility.open')}
+    {...attributes}
+>
+    <Fragment slot="icon">
+        {members_only ? <LockIcon size={icon_size} /> : <GlobeIcon size={icon_size} />}
+    </Fragment>
+</Tag>
+
+<style lang="scss" is:global>
+    .tag.visibility-tag {
+        font-weight: 600;
+        font-size: var(--step--2);
+        padding: var(--space-3xs) var(--space-2xs);
+        gap: var(--space-3xs);
+
+        &.visibility-tag--sm {
+            font-size: calc(var(--step--2) * 0.9);
+            padding: 0 var(--space-3xs-2xs);
+        }
+    }
+</style>

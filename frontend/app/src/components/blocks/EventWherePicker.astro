@@ -1,0 +1,161 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DiscordChannelUI } from '@dtypes/layout_components'
+
+/**
+ * Where an event happens: a Discord voice or stage channel, or a free-text
+ * location. Switching is local UI (Alpine); only the shown field is submitted.
+ *
+ * To react to the mode elsewhere in the form (for example turning off
+ * "members only" for a location), wrap the picker in your own `x-data` and
+ * pass its variable as `x_model`; otherwise the picker keeps its own state.
+ */
+interface Props {
+    voice_channels:         DiscordChannelUI[];
+    mode?:                  'voice' | 'place';
+    voice_channel_id?:      string;
+    location?:              string;
+    mode_name?:             string;
+    voice_channel_name?:    string;
+    location_name?:         string;
+    x_model?:               string;
+    [propName: string]: any;
+}
+
+const {
+    voice_channels,
+    mode = 'voice',
+    voice_channel_id,
+    location = '',
+    mode_name = 'where_kind',
+    voice_channel_name = 'voice_channel_id',
+    location_name = 'location',
+    x_model,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const mode_var = x_model ?? 'where_mode'
+const x_data = x_model ? undefined : `{ where_mode: ${JSON.stringify(mode)} }`
+
+const channel_label = (channel: DiscordChannelUI) =>
+    channel.type === 'stage' ? t('tribes.publishing.where.stage_suffix').replace('{name}', channel.name) : channel.name
+
+import Grid from '@components/compositions/Grid.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Select from '@components/blocks/Select.astro'
+import Input from '@components/blocks/Input.astro'
+---
+
+<fieldset
+    class:list={['[ event-where-picker ]', Astro.props.class]}
+    x-data={x_data}
+    {...attributes}
+>
+    <legend class="visually-hidden">{t('tribes.publishing.where.legend')}</legend>
+
+    <Grid
+        class="[ event-where-picker__options ]"
+        min_item_width="14rem"
+        row_gap="var(--space-2xs)"
+        column_gap="var(--space-2xs)"
+    >
+        <OptionCard
+            name={mode_name}
+            value="voice"
+            checked={mode === 'voice'}
+            input_attributes={{ 'x-model': mode_var }}
+        >
+            <span class="[ event-where-picker__text ]">
+                <b>{t('tribes.publishing.where.voice_title')}</b>
+                <small>{t('tribes.publishing.where.voice_sub')}</small>
+            </span>
+        </OptionCard>
+        <OptionCard
+            name={mode_name}
+            value="place"
+            checked={mode === 'place'}
+            input_attributes={{ 'x-model': mode_var }}
+        >
+            <span class="[ event-where-picker__text ]">
+                <b>{t('tribes.publishing.where.place_title')}</b>
+                <small>{t('tribes.publishing.where.place_sub')}</small>
+            </span>
+        </OptionCard>
+    </Grid>
+
+    <div
+        class="[ event-where-picker__field ]"
+        x-show={`${mode_var} === 'voice'`}
+        style={mode === 'voice' ? undefined : 'display: none'}
+    >
+        <Select
+            name={voice_channel_name}
+            aria-label={t('tribes.publishing.where.channel_label')}
+            disabled={mode !== 'voice'}
+            x-bind:disabled={`${mode_var} !== 'voice'`}
+        >
+            {voice_channels.map((channel) =>
+                <option value={channel.id} selected={channel.id === voice_channel_id}>{channel_label(channel)}</option>
+            )}
+        </Select>
+    </div>
+
+    <div
+        class="[ event-where-picker__field ]"
+        x-show={`${mode_var} === 'place'`}
+        style={mode === 'place' ? undefined : 'display: none'}
+    >
+        <Input
+            type="text"
+            name={location_name}
+            value={location}
+            maxlength="200"
+            aria-label={t('tribes.publishing.where.place_label')}
+            placeholder={t('tribes.publishing.where.place_placeholder')}
+            disabled={mode !== 'place'}
+            x-bind:disabled={`${mode_var} !== 'place'`}
+        />
+        <small class="[ event-where-picker__hint ]">{t('tribes.publishing.where.place_hint')}</small>
+    </div>
+</fieldset>
+
+<style lang="scss">
+    .event-where-picker {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .event-where-picker__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .event-where-picker__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .event-where-picker__hint {
+        color: var(--text-muted);
+    }
+</style>

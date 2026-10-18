@@ -7,6 +7,8 @@ interface Props {
     color?:                 TagColors | string;
     text_color?:            string;
     narrow?:                boolean;
+    /** `fill` is a solid tag; `outline` is a bordered tag with no background. */
+    variant?:               'fill' | 'outline';
     [propName: string]: any;
 }
 
@@ -16,8 +18,9 @@ const {
     color = 'fleet-red',
     text_color,
     narrow = false,
+    variant = 'fill',
     ...attributes
-} = Astro.props;
+} = Astro.props
 
 delete attributes.class
 
@@ -28,9 +31,26 @@ const optional_attributes = {
 }
 
 const badge_color = !text_color ? (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--background)') : text_color
+
+// An outline tag takes its colour only when the caller asks for one; otherwise it is neutral.
+const outline = variant === 'outline'
+const has_color = Astro.props.color !== undefined
+const outline_color = text_color ?? (has_color ? tag_color : 'var(--highlight)')
+const outline_border = has_color
+    ? `color-mix(in srgb, ${tag_color} 60%, transparent)`
+    : 'color-mix(in srgb, var(--highlight) 20%, transparent)'
 ---
 
-<span class:list={['tag w-fit', { narrow: narrow }, Astro.props.class]} {...optional_attributes} {...attributes}>{text}</span>
+{outline ?
+    <span
+        class:list={['tag tag--outline w-fit', { narrow: narrow }, Astro.props.class]}
+        style={`--outline_color: ${outline_color}; --outline_border: ${outline_border}`}
+        {...optional_attributes}
+        {...attributes}
+    ><slot name="icon" />{text}</span>
+    :
+    <span class:list={['tag w-fit', { narrow: narrow }, Astro.props.class]} {...optional_attributes} {...attributes}>{text}</span>
+}
 
 <style lang="scss" define:vars={{ tag_color, badge_color }}>
     span {
@@ -42,6 +62,15 @@ const badge_color = !text_color ? (color !== 'fleet-yellow' ? 'var(--highlight)'
 
         &.narrow {
             padding: 0px 3px;
+        }
+
+        &.tag--outline {
+            align-items: center;
+            gap: var(--space-3xs);
+            white-space: nowrap;
+            color: var(--outline_color);
+            background-color: transparent;
+            border: 1px solid var(--outline_border);
         }
     }
 </style>

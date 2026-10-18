@@ -1,0 +1,35 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+
+/**
+ * The group byline of a group post: the group's chip, then "by <author>".
+ * Alliance posts have no host group and render nothing.
+ */
+interface Props {
+    post:   Pick<PostListUI, 'host_group' | 'author'>;
+    [propName: string]: any;
+}
+
+const {
+    post,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const author_text = t('tribes.publishing.post.by_author').replace('{name}', post.author.character_name)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import TribeGroupChip from '@components/blocks/TribeGroupChip.astro'
+---
+
+{post.host_group &&
+    <FlexInline class:list={['[ post-byline ]', Astro.props.class]} gap='var(--space-2xs)' {...attributes}>
+        <TribeGroupChip group={post.host_group} size="sm" max_width="14rem" />
+        <small>{author_text}</small>
+    </FlexInline>
+}

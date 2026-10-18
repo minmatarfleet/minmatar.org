@@ -1,10 +1,11 @@
-import type { Post, PostParams, PostTag, PostRequest } from '@dtypes/api.minmatar.org'
+import type { Post, PostParams, PostTag, PostRequest, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/blog`
 
-export async function get_posts(post_request:PostRequest) {
+/** With a token, members-only tribe group posts the viewer may see are included. */
+export async function get_posts(post_request:PostRequest, access_token?:string | false | null) {
     const { user_id, tag_id, tribe_group_id, page_size, page_num, status } = post_request
 
     const query_params = {
@@ -21,7 +22,7 @@ export async function get_posts(post_request:PostRequest) {
     const ENDPOINT = `${API_ENDPOINT}/posts${query ? `?${query}` : ''}`
 
     try {
-        const response = await api_response(ENDPOINT)
+        const response = await api_response(ENDPOINT, { token: access_token })
 
         const total_posts = response.headers.get('x-total-count')
 
@@ -34,10 +35,31 @@ export async function get_posts(post_request:PostRequest) {
     }
 }
 
-export async function get_post(post_id:number) {
+export async function get_post(post_id:number, access_token?:string | false | null) {
     return await api_request<Post>(`${API_ENDPOINT}/posts/${post_id}`, {
+        token: access_token,
         error: 'Error fetching post',
     })
+}
+
+/**
+ * A post, or the group that hosts it when it is a members-only tribe group
+ * post the viewer can't see (403 RestrictedResponse).
+ */
+export async function get_post_access(post_id:number, access_token?:string | false | null):Promise<
+    { post: Post, restricted: null } | { post: null, restricted: RestrictedResponse }
+> {
+    const response = await api_response(`${API_ENDPOINT}/posts/${post_id}`, {
+        token: access_token,
+        error: 'Error fetching post',
+        allow: [403],
+    })
+    const body = await response.json()
+
+    if (response.status === 403)
+        return { post: null, restricted: body as RestrictedResponse }
+
+    return { post: body as Post, restricted: null }
 }
 
 export async function create_post(access_token:string, post:PostParams) {

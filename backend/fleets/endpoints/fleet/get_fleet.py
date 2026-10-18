@@ -1,8 +1,13 @@
 """GET /{fleet_id} — fleet detail for authorized viewers."""
 
-from authentication import AuthBearer
+from typing import Optional
 
-from fleets.endpoints.helpers import _fleet_authorized
+from authentication import AuthBearer
+from groups.helpers.feature_access import fleet_hidden_from
+from tribes.helpers.publishing import host_group_ref
+from tribes.schemas import RestrictedResponse, restricted
+
+from fleets.endpoints.helpers import _fleet_authorized, fleet_host_fields
 
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.models import EveFleet, EveFleetInstance
@@ -11,8 +16,15 @@ PATH = "/{fleet_id}"
 METHOD = "get"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
-    "response": {200: EveFleetResponse, 403: None, 404: None},
-    "description": "Get fleet by ID. Requires fleets.view_evefleet.",
+    "response": {
+        200: EveFleetResponse,
+        403: Optional[RestrictedResponse],
+        404: None,
+    },
+    "description": (
+        "Get fleet by ID. Requires fleets.view_evefleet. A members-only "
+        "tribe group fleet the viewer can't see is a 403 naming the group."
+    ),
 }
 
 
@@ -21,6 +33,8 @@ def get_fleet(request, fleet_id: int):
     if not fleet:
         return 404, None
     if not _fleet_authorized(request, fleet):
+        if fleet_hidden_from(request.user, fleet):
+            return restricted(host_group_ref(fleet.host_group))
         return 403, None
 
     tracking = None
@@ -50,6 +64,7 @@ def get_fleet(request, fleet_id: int):
         "campaign_id": fleet.campaign_id,
         "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         "roam_report_url": fleet.roam_report_url,
+        **fleet_host_fields(fleet),
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id

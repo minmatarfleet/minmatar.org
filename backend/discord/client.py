@@ -503,6 +503,30 @@ class DiscordClient(DiscordBaseClient):
             for channel in channels
         ]
 
+    def create_scheduled_event(self, payload: dict) -> dict:
+        """Create a guild scheduled event; returns the event object.
+
+        The bot needs the Manage Events permission.
+        """
+        return self.post(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events",
+            json=payload,
+        ).json()
+
+    def edit_scheduled_event(self, event_id, payload: dict) -> dict:
+        """Modify a guild scheduled event (status 4 cancels it)."""
+        return self.patch(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events/{event_id}",
+            json=payload,
+        ).json()
+
+    def list_scheduled_events(self, with_user_count: bool = True) -> list:
+        """The guild's scheduled events, with interested counts."""
+        query = "?with_user_count=true" if with_user_count else ""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events{query}"
+        )
+
     def get_bot_guilds(self):
         """Get all guilds the bot user is a member of."""
         guilds = self.get(f"{BASE_URL}/users/@me/guilds")

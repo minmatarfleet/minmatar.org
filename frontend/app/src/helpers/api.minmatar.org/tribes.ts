@@ -8,6 +8,16 @@ import type {
     TribeGroupShowcase,
     CharacterMembership,
     TribeExternalGuildJoin,
+    TribeGroupPublishing,
+    TribeGroupPublishingPatch,
+    PublishableGroup,
+    PublishingKind,
+    DiscordChannel,
+    DiscordChannelKind,
+    TribeEvent,
+    TribeEventCreate,
+    TribeEventPatch,
+    TribeEventAnnouncementPreview,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -230,5 +240,85 @@ export async function get_external_guild_join(
     return await api_request<TribeExternalGuildJoin>(`${API_ENDPOINT}/external-guild/join?${query}`, {
         token: access_token,
         error: 'Error starting external guild join',
+    })
+}
+
+// Tribe publishing (docs/tribes/tribe-publishing.md)
+
+/** Who may publish as the group and its Discord channel (group managers only). */
+export async function get_group_publishing(access_token:string, group_id:number) {
+    return await api_request<TribeGroupPublishing>(`${API_ENDPOINT}/groups/${group_id}/publishing`, {
+        token: access_token,
+        error: 'Error fetching group publishing settings',
+    })
+}
+
+/** Every field optional; left out means unchanged. `discord_channel_id: null` falls back to the tribe's channel. */
+export async function update_group_publishing(access_token:string, group_id:number, patch:TribeGroupPublishingPatch) {
+    return await api_request<TribeGroupPublishing>(`${API_ENDPOINT}/groups/${group_id}/publishing`, {
+        method: 'PATCH',
+        token: access_token,
+        body: patch,
+        error: 'Error updating group publishing settings',
+    })
+}
+
+/** Groups the viewer may post, schedule fleets or create events as. */
+export async function get_publishable_groups(access_token:string, kind:PublishingKind) {
+    return await api_request<PublishableGroup[]>(`${API_ENDPOINT}/publishable-groups?kind=${kind}`, {
+        token: access_token,
+        error: 'Error fetching publishable groups',
+    })
+}
+
+/** The guild's text channels, or voice channels (stage included). Ids are strings. */
+export async function get_discord_channels(access_token:string, kind:DiscordChannelKind = 'text') {
+    return await api_request<DiscordChannel[]>(`${API_ENDPOINT}/discord-channels?kind=${kind}`, {
+        token: access_token,
+        error: 'Error fetching Discord channels',
+    })
+}
+
+/** Upcoming events plus ones cancelled in the last 24 hours; members-only ones need a token. */
+export async function get_group_events(group_id:number, access_token?:string | false | null) {
+    return await api_request<TribeEvent[]>(`${API_ENDPOINT}/groups/${group_id}/events`, {
+        token: access_token,
+        error: 'Error fetching group events',
+    })
+}
+
+export async function create_group_event(access_token:string, group_id:number, event:TribeEventCreate) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/groups/${group_id}/events`, {
+        method: 'POST',
+        token: access_token,
+        body: event,
+        error: 'Error creating event',
+    })
+}
+
+/** The announcement a new event would post (same builder as the real one). */
+export async function preview_event_announcement(access_token:string, group_id:number, event:TribeEventCreate) {
+    return await api_request<TribeEventAnnouncementPreview>(`${API_ENDPOINT}/groups/${group_id}/events/announcement-preview`, {
+        method: 'POST',
+        token: access_token,
+        body: event,
+        error: 'Error previewing event announcement',
+    })
+}
+
+export async function update_tribe_event(access_token:string, event_id:number, patch:TribeEventPatch) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/events/${event_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: patch,
+        error: 'Error updating event',
+    })
+}
+
+export async function cancel_tribe_event(access_token:string, event_id:number) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/events/${event_id}/cancel`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error cancelling event',
     })
 }

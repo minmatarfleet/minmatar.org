@@ -26,6 +26,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [market-pricing.md](market-pricing.md) | current | Which market price source to use where |
 | [industry/lp-buyback.md](industry/lp-buyback.md) | current | LP buyback orders: tiers, states, timers, Discord threads |
 | [fleet-ships-and-refits.md](fleet-ships-and-refits.md) | current | Fleet ship lists, refits and in-game fittings |
+| [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
 | [page-progress/architecture.md](page-progress/architecture.md) | current | Page progress tracking: data model and API |
 | [page-progress/frontend.md](page-progress/frontend.md) | current | Wiring page progress into a page |
 | [notifications/README.md](notifications/README.md) | current | The notifications system |

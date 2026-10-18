@@ -49,7 +49,22 @@ FLEET_RESPONSE_RELATED = (
     "doctrine",
     "location",
     "audience",
+    "host_group__tribe",
 )
+
+
+def fleet_host_fields(fleet: EveFleet) -> dict:
+    """The tribe-group fields every fleet response carries."""
+    # pylint: disable=import-outside-toplevel
+    from tribes.helpers.publishing import host_group_ref
+
+    return {
+        "host_group": (
+            host_group_ref(fleet.host_group) if fleet.host_group_id else None
+        ),
+        "open_to_alliance": bool(fleet.open_to_alliance),
+        "on_schedule": bool(fleet.on_schedule),
+    }
 
 
 def _primary_character(user):
@@ -97,6 +112,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "doctrine_name": fleet.doctrine.name if fleet.doctrine else None,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
+        **fleet_host_fields(fleet),
     }
 
 
@@ -116,9 +132,10 @@ def _fleet_authorized(request, fleet: EveFleet) -> bool:
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
     """Queue a Discord pre-ping for a fleet; a worker posts it.
 
-    Returns False when the fleet has no audience channel to ping.
+    Returns False when the fleet has no audience channel to ping. Tribe
+    group fleets never pre-ping (docs/tribes/tribe-publishing.md rule 3).
     """
-    if not fleet.audience:
+    if fleet.host_group_id or not fleet.audience:
         return False
     if not fleet.audience.discord_channel_id:
         logger.error(

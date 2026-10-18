@@ -14,7 +14,7 @@ from fittings.models import EveDoctrine, EveFitting, EveFittingRefit
 from fleets.helpers.member_ships import apply_esi_fleet_member
 from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
-from fleets.notifications import get_fleet_discord_notification
+from fleets.helpers.start_ping import build_start_ping
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,25 @@ class EveFleet(models.Model):
     )
     status = models.CharField(
         max_length=32, choices=fleet_statuses, default="unknown"
+    )
+
+    # A tribe group fleet: audience is None, the start ping goes to the
+    # group's channel and members-only ones are hidden from everyone else.
+    # See docs/tribes/tribe-publishing.md.
+    host_group = models.ForeignKey(
+        "tribes.TribeGroup",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hosted_fleets",
+    )
+    open_to_alliance = models.BooleanField(
+        default=False,
+        help_text="Group fleet anyone in the alliance can see and join.",
+    )
+    on_schedule = models.BooleanField(
+        default=False,
+        help_text="Open group fleet listed in the #schedule message.",
     )
 
     campaign = models.ForeignKey(
@@ -172,38 +191,45 @@ class EveFleet(models.Model):
         fleet_instance.update_eve_fleet(self.disable_motd)
         return fleet_instance
 
+    def start_ping(self):
+        """The start ping (fleets.helpers.start_ping), or None."""
+        return build_start_ping(
+            fleet_id=self.id,
+            fleet_type_label=self.get_type_display(),
+            location_name=(
+                self.formup_location.location_name
+                if self.formup_location
+                else None
+            ),
+            audience=None if self.host_group_id else self.audience,
+            host_group=self.host_group,
+            fc_character=self.fleet_commander,
+            description=self.description,
+            doctrine=None if self.type == "strategic" else self.doctrine,
+        )
+
     def notify_discord(self) -> None:
         """
-        Send the fleet notification to the audience's Discord channel, if configured.
+        Send the start ping to the audience's Discord channel (a group
+        fleet: the group's channel), if configured.
         """
-        if not self.audience or not self.audience.discord_channel_id:
+        if not self.host_group_id and (
+            not self.audience or not self.audience.discord_channel_id
+        ):
             return
 
-        doctrine = None if self.type == "strategic" else self.doctrine
+        ping = self.start_ping()
+        if ping is None or not ping.channel_id:
+            return
         logger.info(
             "Sending fleet notification for fleet %s to discord channel %s",
             self.id,
-            self.audience.discord_channel_id,
+            ping.channel_id,
         )
         queue_channel_message(
-            self.audience.discord_channel_id,
+            ping.channel_id,
             context=f"fleet {self.id} start ping",
-            payload=get_fleet_discord_notification(
-                fleet_id=self.id,
-                fleet_type=self.get_type_display(),
-                fleet_location=(
-                    self.formup_location.location_name
-                    if self.formup_location
-                    else "Ask FC"
-                ),
-                fleet_audience=self.audience.name,
-                fleet_commander_name=self.fleet_commander.character_name,
-                fleet_commander_id=self.fleet_commander.character_id,
-                fleet_description=self.description,
-                fleet_voice_channel=None,
-                fleet_voice_channel_link=None,
-                fleet_doctrine=doctrine,
-            ),
+            payload=ping.payload,
         )
 
     def activate(self) -> None:

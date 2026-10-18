@@ -117,6 +117,25 @@ test('a backend that names FCs and doctrines needs one request for the schedule'
     assert.deepEqual(rows, await load_upcoming_fleets(old_api, 'https://web.example'))
 })
 
+test('overlay rows carry the tribe group hosting a fleet, and null for alliance fleets', async () => {
+    const hosted = FLEETS.map(fleet => ({
+        ...fleet,
+        host_group: fleet.id === 2 ? { id: 1, code: 'dreads', name: 'Dreads', tribe_id: 3, tribe_name: 'Capitals' } : null,
+    }))
+    const api = new ApiClient({
+        api_url: 'https://api.example',
+        get_token: () => 'jwt',
+        fetch_impl: fake_fetch({
+            '/api/fleets/v3?fleet_filter=active': hosted,
+            '/api/users/profiles?ids=11,10': PROFILES,
+            '/api/doctrines/5': { id: 5, name: 'Hurricanes' },
+        }),
+    })
+    const rows = await load_upcoming_fleets(api, 'https://web.example')
+    assert.equal(rows[0].host_group, null)
+    assert.deepEqual(rows[1].host_group, { id: 1, name: 'Dreads' })
+})
+
 test('API errors carry the HTTP status (401 -> sign in again, 403 -> no fleet access)', async () => {
     const api = new ApiClient({ api_url: 'https://api.example', get_token: () => 'jwt', fetch_impl: fake_fetch({ '/api/fleets/v3?fleet_filter=active': 403 }) })
     await assert.rejects(load_upcoming_fleets(api, 'https://web.example'), err => err instanceof ApiError && err.status === 403)

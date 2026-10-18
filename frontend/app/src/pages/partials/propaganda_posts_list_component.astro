@@ -5,12 +5,13 @@ const { t, translatePath } = i18n(Astro.url)
 import type { User } from '@dtypes/jwt'
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
-import { get_gates, can } from '@helpers/gates'
+const { auth_token, user } = get_request_user(Astro)
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
 const gates = await get_gates(Astro)
 
-const can_manage_posts = can(gates, 'posts.create')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 const post_editor = can_manage_posts ? (user as User).user_id : false
 
 import type { PostListUI } from '@dtypes/layout_components'
@@ -36,9 +37,9 @@ try {
     if (status === 'published')
         posts_grouped = await fetch_posts_grouped_by_tags({ status: 'published' })
     else if (post_editor && status === 'trash')
-        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' }, false, auth_token)
     else if (post_editor)
-        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor }, true)
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor }, true, auth_token)
     else
         throw new Error(t('invalid_post_fetching_parameters'), { cause: 400 })
 

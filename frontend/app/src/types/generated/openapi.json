@@ -7626,6 +7626,17 @@
             "title": "Hide Volunteers",
             "type": "boolean"
           },
+          "host_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Group Id"
+          },
           "immediate_ping": {
             "default": false,
             "title": "Immediate Ping",
@@ -7653,6 +7664,16 @@
               }
             ],
             "title": "Objective"
+          },
+          "on_schedule": {
+            "default": false,
+            "title": "On Schedule",
+            "type": "boolean"
+          },
+          "open_to_alliance": {
+            "default": false,
+            "title": "Open To Alliance",
+            "type": "boolean"
           },
           "start_time": {
             "format": "date-time",
@@ -7725,6 +7746,11 @@
       },
       "CreateEvePostRequest": {
         "properties": {
+          "announce": {
+            "default": false,
+            "title": "Announce",
+            "type": "boolean"
+          },
           "campaign_id": {
             "anyOf": [
               {
@@ -7739,6 +7765,22 @@
           "content": {
             "title": "Content",
             "type": "string"
+          },
+          "host_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Group Id"
+          },
+          "members_only": {
+            "default": false,
+            "title": "Members Only",
+            "type": "boolean"
           },
           "seo_description": {
             "title": "Seo Description",
@@ -8506,6 +8548,37 @@
           "action"
         ],
         "title": "DiscordAckLoyaltyMarketOrderRequest",
+        "type": "object"
+      },
+      "DiscordChannelKind": {
+        "enum": [
+          "text",
+          "voice"
+        ],
+        "title": "DiscordChannelKind",
+        "type": "string"
+      },
+      "DiscordChannelSchema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ],
+        "title": "DiscordChannelSchema",
         "type": "object"
       },
       "DiscordNpsiActionRequest": {
@@ -9886,6 +9959,16 @@
             "title": "Hide Volunteers",
             "type": "boolean"
           },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -9904,6 +9987,16 @@
               }
             ],
             "title": "Objective"
+          },
+          "on_schedule": {
+            "default": false,
+            "title": "On Schedule",
+            "type": "boolean"
+          },
+          "open_to_alliance": {
+            "default": false,
+            "title": "Open To Alliance",
+            "type": "boolean"
           },
           "roam_report_url": {
             "anyOf": [
@@ -10689,9 +10782,24 @@
             "title": "Date Posted",
             "type": "string"
           },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "image": {
             "title": "Image",
             "type": "string"
+          },
+          "members_only": {
+            "default": false,
+            "title": "Members Only",
+            "type": "boolean"
           },
           "post_id": {
             "title": "Post Id",
@@ -10789,6 +10897,21 @@
             "format": "date-time",
             "title": "Date Posted",
             "type": "string"
+          },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "members_only": {
+            "default": false,
+            "title": "Members Only",
+            "type": "boolean"
           },
           "post_id": {
             "title": "Post Id",
@@ -11137,6 +11260,32 @@
         ],
         "title": "EveTypeResponse",
         "type": "object"
+      },
+      "EventRecurrence": {
+        "enum": [
+          "none",
+          "weekly",
+          "monthly"
+        ],
+        "title": "EventRecurrence",
+        "type": "string"
+      },
+      "EventStatus": {
+        "enum": [
+          "scheduled",
+          "cancelled",
+          "completed"
+        ],
+        "title": "EventStatus",
+        "type": "string"
+      },
+      "EventWhereKind": {
+        "enum": [
+          "voice",
+          "place"
+        ],
+        "title": "EventWhereKind",
+        "type": "string"
       },
       "FacilityDetailSchema": {
         "properties": {
@@ -13420,6 +13569,94 @@
         "title": "FleetFightTotals",
         "type": "object"
       },
+      "FleetPingPreviewRequest": {
+        "description": "The fleet form's fields that shape the start ping.",
+        "properties": {
+          "audience_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience Id"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "host_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Group Id"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EveFleetType"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "FleetPingPreviewRequest",
+        "type": "object"
+      },
+      "FleetPingPreviewResponse": {
+        "description": "The start ping exactly as the bot would post it.",
+        "properties": {
+          "channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Name"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "payload"
+        ],
+        "title": "FleetPingPreviewResponse",
+        "type": "object"
+      },
       "FleetWindowAfterAction": {
         "properties": {
           "aar_link": {
@@ -15492,6 +15729,40 @@
           "opener_discord_id"
         ],
         "title": "HelpTicketResponse",
+        "type": "object"
+      },
+      "HostGroupRef": {
+        "description": "The tribe group a fleet, post or event is published as.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tribe_id",
+          "tribe_name"
+        ],
+        "title": "HostGroupRef",
         "type": "object"
       },
       "HygieneCounts": {
@@ -23754,6 +24025,90 @@
         "title": "ProfitSummaryTotalsResponse",
         "type": "object"
       },
+      "PublishableGroupSchema": {
+        "properties": {
+          "allow_alliance_posts": {
+            "title": "Allow Alliance Posts",
+            "type": "boolean"
+          },
+          "allow_open_fleets": {
+            "title": "Allow Open Fleets",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "member_count": {
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "tribe_id",
+          "tribe_name",
+          "member_count",
+          "allow_alliance_posts",
+          "allow_open_fleets"
+        ],
+        "title": "PublishableGroupSchema",
+        "type": "object"
+      },
+      "PublisherSchema": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name"
+        ],
+        "title": "PublisherSchema",
+        "type": "object"
+      },
+      "PublishingKind": {
+        "enum": [
+          "post",
+          "fleet",
+          "event"
+        ],
+        "title": "PublishingKind",
+        "type": "string"
+      },
+      "PublishingPolicy": {
+        "enum": [
+          "chiefs",
+          "chosen",
+          "members"
+        ],
+        "title": "PublishingPolicy",
+        "type": "string"
+      },
       "PutAllocationsRequest": {
         "properties": {
           "entries": {
@@ -24560,6 +24915,30 @@
           "candidate_fleets"
         ],
         "title": "ResolveKillmailResponse",
+        "type": "object"
+      },
+      "RestrictedResponse": {
+        "description": "403 for a members-only item: names the group, hides the content.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "RestrictedResponse",
         "type": "object"
       },
       "ResultsSchema": {
@@ -27044,6 +27423,424 @@
         "title": "TribeAboutSchema",
         "type": "object"
       },
+      "TribeEventAnnouncementPreview": {
+        "description": "The announcement exactly as the bot would post it (the event link\nis a placeholder until Discord creates the event).",
+        "properties": {
+          "channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Name"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "event_preview": {
+            "$ref": "#/components/schemas/TribeEventPreviewSchema"
+          }
+        },
+        "required": [
+          "event_preview"
+        ],
+        "title": "TribeEventAnnouncementPreview",
+        "type": "object"
+      },
+      "TribeEventCreate": {
+        "properties": {
+          "announce": {
+            "default": true,
+            "title": "Announce",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "location": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Location",
+            "type": "string"
+          },
+          "members_only": {
+            "default": false,
+            "title": "Members Only",
+            "type": "boolean"
+          },
+          "recurrence": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventRecurrence"
+              }
+            ],
+            "default": "none"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "where_kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventWhereKind"
+              }
+            ],
+            "default": "voice"
+          }
+        },
+        "required": [
+          "title",
+          "starts_at"
+        ],
+        "title": "TribeEventCreate",
+        "type": "object"
+      },
+      "TribeEventPatch": {
+        "description": "Every field optional; left out means unchanged.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "members_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members Only"
+          },
+          "recurrence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventRecurrence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "where_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventWhereKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "TribeEventPatch",
+        "type": "object"
+      },
+      "TribeEventPreviewSchema": {
+        "properties": {
+          "recurrence_label": {
+            "title": "Recurrence Label",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where_label": {
+            "title": "Where Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "starts_at",
+          "where_label",
+          "recurrence_label"
+        ],
+        "title": "TribeEventPreviewSchema",
+        "type": "object"
+      },
+      "TribeEventSchema": {
+        "properties": {
+          "announce": {
+            "title": "Announce",
+            "type": "boolean"
+          },
+          "can_manage": {
+            "default": false,
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterRefSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "discord_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Event Id"
+          },
+          "discord_event_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Event Url"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "interested_count": {
+            "default": 0,
+            "title": "Interested Count",
+            "type": "integer"
+          },
+          "location": {
+            "default": "",
+            "title": "Location",
+            "type": "string"
+          },
+          "members_only": {
+            "title": "Members Only",
+            "type": "boolean"
+          },
+          "recurrence": {
+            "$ref": "#/components/schemas/EventRecurrence"
+          },
+          "recurrence_label": {
+            "title": "Recurrence Label",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tribe_group": {
+            "$ref": "#/components/schemas/HostGroupRef"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "voice_channel_name": {
+            "default": "",
+            "title": "Voice Channel Name",
+            "type": "string"
+          },
+          "where_kind": {
+            "$ref": "#/components/schemas/EventWhereKind"
+          },
+          "where_label": {
+            "title": "Where Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tribe_group",
+          "title",
+          "description",
+          "starts_at",
+          "recurrence",
+          "recurrence_label",
+          "where_kind",
+          "where_label",
+          "members_only",
+          "announce",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TribeEventSchema",
+        "type": "object"
+      },
       "TribeGroupGrowthSchema": {
         "properties": {
           "counts": {
@@ -27067,6 +27864,221 @@
           "counts"
         ],
         "title": "TribeGroupGrowthSchema",
+        "type": "object"
+      },
+      "TribeGroupPublishingPatch": {
+        "description": "Every field optional; left out means unchanged.",
+        "properties": {
+          "allow_alliance_posts": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Alliance Posts"
+          },
+          "allow_open_fleets": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Open Fleets"
+          },
+          "discord_channel_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Channel Id"
+          },
+          "event_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_publisher_character_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Publisher Character Ids"
+          },
+          "fleet_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fleet_publisher_character_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Publisher Character Ids"
+          },
+          "post_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "post_publisher_character_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Publisher Character Ids"
+          }
+        },
+        "title": "TribeGroupPublishingPatch",
+        "type": "object"
+      },
+      "TribeGroupPublishingSchema": {
+        "properties": {
+          "allow_alliance_posts": {
+            "title": "Allow Alliance Posts",
+            "type": "boolean"
+          },
+          "allow_open_fleets": {
+            "title": "Allow Open Fleets",
+            "type": "boolean"
+          },
+          "discord_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Channel Id"
+          },
+          "discord_role_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Role Name"
+          },
+          "effective_discord_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Discord Channel Id"
+          },
+          "effective_discord_channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Discord Channel Name"
+          },
+          "event_policy": {
+            "$ref": "#/components/schemas/PublishingPolicy"
+          },
+          "event_publishers": {
+            "items": {
+              "$ref": "#/components/schemas/PublisherSchema"
+            },
+            "title": "Event Publishers",
+            "type": "array"
+          },
+          "fleet_policy": {
+            "$ref": "#/components/schemas/PublishingPolicy"
+          },
+          "fleet_publishers": {
+            "items": {
+              "$ref": "#/components/schemas/PublisherSchema"
+            },
+            "title": "Fleet Publishers",
+            "type": "array"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "integer"
+          },
+          "post_policy": {
+            "$ref": "#/components/schemas/PublishingPolicy"
+          },
+          "post_publishers": {
+            "items": {
+              "$ref": "#/components/schemas/PublisherSchema"
+            },
+            "title": "Post Publishers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_id",
+          "post_policy",
+          "fleet_policy",
+          "event_policy",
+          "post_publishers",
+          "fleet_publishers",
+          "event_publishers",
+          "allow_alliance_posts",
+          "allow_open_fleets"
+        ],
+        "title": "TribeGroupPublishingSchema",
         "type": "object"
       },
       "TribeGroupRankSchema": {
@@ -27293,6 +28305,16 @@
       },
       "TribeGroupSchema": {
         "properties": {
+          "allow_alliance_posts": {
+            "default": true,
+            "title": "Allow Alliance Posts",
+            "type": "boolean"
+          },
+          "allow_open_fleets": {
+            "default": false,
+            "title": "Allow Open Fleets",
+            "type": "boolean"
+          },
           "allowed_affiliations": {
             "default": [],
             "items": {
@@ -27306,9 +28328,24 @@
             "title": "Can Apply",
             "type": "boolean"
           },
+          "can_create_events": {
+            "default": false,
+            "title": "Can Create Events",
+            "type": "boolean"
+          },
           "can_manage": {
             "default": false,
             "title": "Can Manage",
+            "type": "boolean"
+          },
+          "can_post": {
+            "default": false,
+            "title": "Can Post",
+            "type": "boolean"
+          },
+          "can_schedule_fleets": {
+            "default": false,
+            "title": "Can Schedule Fleets",
             "type": "boolean"
           },
           "chief": {
@@ -27346,12 +28383,39 @@
             ],
             "title": "Discord Channel Id"
           },
+          "discord_role_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Role Name"
+          },
+          "effective_discord_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Discord Channel Id"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
           },
           "is_active": {
             "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_member": {
+            "default": false,
+            "title": "Is Member",
             "type": "boolean"
           },
           "member_count": {
@@ -27971,6 +29035,17 @@
             ],
             "title": "Hide Volunteers"
           },
+          "host_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Group Id"
+          },
           "location_id": {
             "anyOf": [
               {
@@ -27993,6 +29068,28 @@
               }
             ],
             "title": "Objective"
+          },
+          "on_schedule": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Schedule"
+          },
+          "open_to_alliance": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open To Alliance"
           },
           "start_time": {
             "anyOf": [
@@ -28065,6 +29162,17 @@
       },
       "UpdateEvePostRequest": {
         "properties": {
+          "announce": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announce"
+          },
           "campaign_id": {
             "anyOf": [
               {
@@ -28086,6 +29194,28 @@
               }
             ],
             "title": "Content"
+          },
+          "host_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Group Id"
+          },
+          "members_only": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members Only"
           },
           "seo_description": {
             "anyOf": [
@@ -29145,6 +30275,10 @@
     },
     "securitySchemes": {
       "AuthBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "AuthLenient": {
         "scheme": "bearer",
         "type": "http"
       },
@@ -30292,6 +31426,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Posts",
         "tags": [
           "Posts"
@@ -30426,6 +31565,16 @@
             },
             "description": "OK"
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestrictedResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
           "404": {
             "content": {
               "application/json": {
@@ -30437,6 +31586,11 @@
             "description": "Not Found"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Post",
         "tags": [
           "Posts"
@@ -36325,7 +37479,7 @@
     },
     "/api/fleets": {
       "post": {
-        "description": "Create a new fleet, type/location/audience is from other endpoints. Must have fleets.add_evefleet permission",
+        "description": "Create a new fleet, type/location/audience is from other endpoints. Must have fleets.add_evefleet permission, or, with host_group_id, be able to schedule fleets for that tribe group.",
         "operationId": "fleets_endpoints_catalog_post_create_fleet_create_fleet",
         "parameters": [],
         "requestBody": {
@@ -36889,6 +38043,64 @@
         ]
       }
     },
+    "/api/fleets/ping-preview": {
+      "post": {
+        "description": "The Discord start ping for these fleet details, built by the same code as the real ping (a group fleet: the group's channel and role). channel_name is null when there is no channel to ping. Needs fleets.create, or, with host_group_id, the group's fleet publishing right.",
+        "operationId": "fleets_endpoints_catalog_post_ping_preview_post_ping_preview",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetPingPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetPingPreviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Ping Preview",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/results": {
       "get": {
         "description": "ISK and ships destroyed and lost per fleet, read from the stored fleet_kills cards only. Fleets without a stored card are left out, so this never matches killmails live. fleet_ids is a comma-separated list of up to 100 ids.",
@@ -37081,7 +38293,7 @@
     },
     "/api/fleets/v3": {
       "get": {
-        "description": "List fleets matching the filter. Requires fleets.view_evefleet.",
+        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.",
         "operationId": "fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets",
         "parameters": [
           {
@@ -37101,6 +38313,22 @@
                 }
               ],
               "default": "recent"
+            }
+          },
+          {
+            "in": "query",
+            "name": "host_group_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Host Group Id"
             }
           }
         ],
@@ -37254,7 +38482,7 @@
         ]
       },
       "get": {
-        "description": "Get fleet by ID. Requires fleets.view_evefleet.",
+        "description": "Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group.",
         "operationId": "fleets_endpoints_fleet_get_fleet_get_fleet",
         "parameters": [
           {
@@ -37279,6 +38507,20 @@
             "description": "OK"
           },
           "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RestrictedResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
             "description": "Forbidden"
           },
           "404": {
@@ -37296,7 +38538,7 @@
         ]
       },
       "patch": {
-        "description": "Update the fleet details. Must be the fleet's FC or a Strategic FC.",
+        "description": "Update the fleet details. Must be the fleet's FC or a Strategic FC (a tribe group fleet: or a manager of the group).",
         "operationId": "fleets_endpoints_fleet_patch_fleet_update_fleet",
         "parameters": [
           {
@@ -49417,6 +50659,216 @@
         ]
       }
     },
+    "/api/tribes/discord-channels": {
+      "get": {
+        "description": "Text channels, or voice channels (stage channels included). For anyone who can manage a group or create events for one. Cached for 10 minutes.",
+        "operationId": "tribes_endpoints_publishing_get_discord_channels_get_discord_channels",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "text",
+                    "voice"
+                  ],
+                  "title": "DiscordChannelKind",
+                  "type": "string"
+                }
+              ],
+              "default": "text"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiscordChannelSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Discord channels for the group channel and event pickers.",
+        "tags": [
+          "Tribes - Publishing",
+          "Tribes - Publishing"
+        ]
+      }
+    },
+    "/api/tribes/events/{event_id}": {
+      "patch": {
+        "description": "The event's creator or a manager of its group.",
+        "operationId": "tribes_endpoints_events_patch_event_patch_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeEventPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeEventSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit a group event; the Discord event follows.",
+        "tags": [
+          "Tribes - Events",
+          "Tribes - Events"
+        ]
+      }
+    },
+    "/api/tribes/events/{event_id}/cancel": {
+      "post": {
+        "description": "The event's creator or a manager of its group.",
+        "operationId": "tribes_endpoints_events_post_event_cancel_post_event_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeEventSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Cancel a group event; the Discord event is cancelled too.",
+        "tags": [
+          "Tribes - Events",
+          "Tribes - Events"
+        ]
+      }
+    },
     "/api/tribes/external-guild/join": {
       "get": {
         "operationId": "tribes_endpoints_external_guild_get_external_guild_join_get_external_guild_join",
@@ -49540,6 +50992,398 @@
         "tags": [
           "Tribes - External Guild",
           "Tribes - External Guild"
+        ]
+      }
+    },
+    "/api/tribes/groups/{group_id}/events": {
+      "get": {
+        "description": "Scheduled events that aren't over, and ones cancelled in the last 24 hours. Members-only events are left out for viewers outside the group (their creator still sees them).",
+        "operationId": "tribes_endpoints_events_get_group_events_get_group_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TribeEventSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "A group's upcoming events.",
+        "tags": [
+          "Tribes",
+          "Tribes - Events"
+        ]
+      },
+      "post": {
+        "description": "Needs the group's event publishing right. The Discord event and the announcement are created by a worker after the save.",
+        "operationId": "tribes_endpoints_events_post_group_event_post_group_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeEventCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeEventSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create a group event (and its Discord scheduled event).",
+        "tags": [
+          "Tribes",
+          "Tribes - Events"
+        ]
+      }
+    },
+    "/api/tribes/groups/{group_id}/events/announcement-preview": {
+      "post": {
+        "description": "Built by the same code as the real announcement. content is null when announce is off or the group has no channel; the event link is a placeholder until Discord creates the event.",
+        "operationId": "tribes_endpoints_events_post_event_announcement_preview_post_event_announcement_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeEventCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeEventAnnouncementPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The announcement a new group event would post.",
+        "tags": [
+          "Tribes - Events",
+          "Tribes - Events"
+        ]
+      }
+    },
+    "/api/tribes/groups/{group_id}/publishing": {
+      "get": {
+        "description": "Managers of the group only.",
+        "operationId": "tribes_endpoints_publishing_get_group_publishing_get_group_publishing",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeGroupPublishingSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Who may publish as the group, and its Discord channel.",
+        "tags": [
+          "Tribes",
+          "Tribes - Publishing"
+        ]
+      },
+      "patch": {
+        "description": "Managers of the group only. Every field is optional. Chosen publishers are given as character ids of active members.",
+        "operationId": "tribes_endpoints_publishing_patch_group_publishing_patch_group_publishing",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeGroupPublishingPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeGroupPublishingSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change who may publish as the group, and its channel.",
+        "tags": [
+          "Tribes",
+          "Tribes - Publishing"
+        ]
+      }
+    },
+    "/api/tribes/publishable-groups": {
+      "get": {
+        "operationId": "tribes_endpoints_publishing_get_publishable_groups_get_publishable_groups",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "post",
+                "fleet",
+                "event"
+              ],
+              "title": "PublishingKind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PublishableGroupSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Tribe groups the viewer may post, schedule fleets or create events as.",
+        "tags": [
+          "Tribes - Publishing",
+          "Tribes - Publishing"
         ]
       }
     },

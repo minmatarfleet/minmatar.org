@@ -23,7 +23,7 @@ if (isNaN(fleet_id) || isNaN(position) || position < 1)
     return HTTP_404_Not_Found()
 
 import type { FleetUI } from '@dtypes/layout_components'
-import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_access } from '@helpers/fetching/fleets'
 import { get_fleet_fights, type FleetFights } from '@helpers/api.minmatar.org/fleets'
 
 let fleet:FleetUI | null = null
@@ -31,10 +31,21 @@ let fights:FleetFights | null = null
 let fetch_error:Error | false = false
 
 try {
-    ;[fleet, fights] = await Promise.all([
-        fetch_fleet_by_id(auth_token as string, fleet_id),
-        get_fleet_fights(auth_token as string, fleet_id),
+    const [access, fleet_fights] = await Promise.all([
+        fetch_fleet_access(auth_token as string, fleet_id),
+        // A members-only tribe fleet 403s here for outsiders; the fleet
+        // page below shows them the group's gate instead.
+        get_fleet_fights(auth_token as string, fleet_id).catch((error) => {
+            if (error?.cause === 403) return null
+            throw error
+        }),
     ])
+    // Members-only tribe fleet: the fleet page shows who to ask, and nothing
+    // about the fleet or its fights.
+    if (access.restricted?.host_group)
+        return Astro.redirect(translatePath(`/fleets/history/${fleet_id}`))
+    fleet = access.fleet
+    fights = fleet_fights
 } catch (error) {
     if (error?.cause === 403)
         return HTTP_403_Forbidden()

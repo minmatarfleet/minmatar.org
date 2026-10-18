@@ -7,12 +7,13 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import type { User } from '@dtypes/jwt'
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
-import { get_gates, can } from '@helpers/gates'
+const { auth_token, user } = get_request_user(Astro)
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
 const gates = await get_gates(Astro)
 
-const can_manage_posts = can(gates, 'posts.create')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 
 const post_editor = can_manage_posts ? (user as User).user_id : false
 
@@ -27,7 +28,7 @@ let post_fetching_error: Error | false = false
 let post_count = 0
 
 try {
-    const posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
+    const posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' }, false, auth_token)
     posts = posts_grouped.posts_by_tag
     post_count = posts_grouped.post_count
 } catch (error) {

@@ -1,7 +1,7 @@
 """GET /v3 — full fleet cards (requires fleets.view_evefleet)."""
 
 from datetime import timedelta
-from typing import List, Union
+from typing import List, Optional, Union
 
 from django.db.models import Q
 from django.utils import timezone
@@ -15,6 +15,7 @@ from fleets.endpoints.helpers import (
     make_fleet_response,
 )
 from fleets.endpoints.schemas import EveFleetFilter, EveFleetResponse
+from fleets.helpers.visibility import visible_fleets_q
 from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet
 
 PATH = "/v3"
@@ -26,12 +27,18 @@ ROUTE_SPEC = {
         403: ErrorResponse,
     },
     "auth": AuthBearer(),
-    "description": "List fleets matching the filter. Requires fleets.view_evefleet.",
+    "description": (
+        "List fleets matching the filter. Requires fleets.view_evefleet. "
+        "Tribe group fleets are included when the viewer can see them; "
+        "host_group_id lists one group's fleets."
+    ),
 }
 
 
 def get_v3_fleets(
-    request, fleet_filter: EveFleetFilter = EveFleetFilter.RECENT
+    request,
+    fleet_filter: EveFleetFilter = EveFleetFilter.RECENT,
+    host_group_id: Optional[int] = None,
 ) -> Union[List[EveFleetResponse], tuple[int, dict]]:
     denied = require_feature(request.user, "fleets.view")
     if denied:
@@ -66,8 +73,13 @@ def get_v3_fleets(
             start_time__gte=timezone.now() - timedelta(days=30)
         ).order_by("-start_time")
 
+    if host_group_id:
+        fleets = fleets.filter(host_group_id=host_group_id)
     fleets = (
-        fleets.filter(audience__hidden=False)
+        # Group fleets have no audience; an alliance fleet still needs a
+        # visible one, as before.
+        fleets.filter(Q(audience__hidden=False) | Q(host_group__isnull=False))
+        .filter(visible_fleets_q(request.user))
         .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .select_related(*FLEET_RESPONSE_RELATED)
     )

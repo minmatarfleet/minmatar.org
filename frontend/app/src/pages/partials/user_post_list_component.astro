@@ -16,11 +16,12 @@ import { fetch_user_posts } from '@helpers/fetching/posts'
 import { delete_post, update_post } from '@helpers/api.minmatar.org/posts'
 import { post_states } from '@dtypes/api.minmatar.org'
 import type { PostStates } from '@dtypes/api.minmatar.org'
-import { get_gates, can } from '@helpers/gates'
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
 const gates = await get_gates(Astro)
 
-const can_manage_posts = can(gates, 'posts.create')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
@@ -81,7 +82,7 @@ if (Astro.request.method === "PATCH") {
 try {
     posts = await fetch_user_posts({
         user_id: user.user_id,
-    })
+    }, auth_token)
     if (state === 'trash')
         posts = posts.filter(post => post.state === 'trash')
     else

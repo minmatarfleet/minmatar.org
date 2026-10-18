@@ -1,0 +1,115 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupRefUI } from '@dtypes/layout_components'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+
+/** Who a fleet, post or event belongs to: the group's crest and name, linking to its page. */
+interface Props {
+    group:          TribeGroupRefUI;
+    size?:          'sm' | 'md';
+    show_tribe?:    boolean;
+    /** Overrides the crest, which is the group's own cover image (the tribe fallback when it has none). */
+    crest_url?:     string;
+    /** CSS max-width where the name is cut with an ellipsis. */
+    max_width?:     string;
+    /** False inside a row that is already a link: the chip is then a plain span. */
+    linked?:        boolean;
+    [propName: string]: any;
+}
+
+const {
+    group,
+    size = 'md',
+    show_tribe = false,
+    crest_url,
+    max_width,
+    linked = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Element = linked ? 'a' : 'span'
+const crest = crest_url ?? tribe_group_cover(group.id)
+const crest_size = size === 'sm' ? 16 : 20
+const full_name = t('tribes.publishing.group_chip.title')
+    .replace('{group}', group.name)
+    .replace('{tribe}', group.tribe_name)
+---
+
+<Element
+    href={linked ? translatePath(`/alliance/tribes/${group.tribe_id}/${group.id}/`) : undefined}
+    class:list={['[ tribe-group-chip ]', `tribe-group-chip--${size}`, Astro.props.class]}
+    title={full_name}
+    style={max_width ? `max-width: ${max_width}` : undefined}
+    {...attributes}
+>
+    <img
+        src={crest}
+        alt=""
+        width={crest_size}
+        height={crest_size}
+        loading="lazy"
+        decoding="async"
+    />
+    <span class="[ tribe-group-chip__name ]">
+        {group.name}{show_tribe && <span class="[ tribe-group-chip__tribe ]"> · {group.tribe_name}</span>}
+    </span>
+</Element>
+
+<style lang="scss">
+    .tribe-group-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        max-width: 100%;
+        padding: 2px var(--space-2xs) 2px 2px;
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+        text-decoration: none;
+        transition: var(--fast-transition);
+
+        img {
+            flex: none;
+            display: block;
+            object-fit: cover;
+        }
+
+        &--sm {
+            gap: var(--space-3xs);
+            padding: 1px var(--space-3xs-2xs) 1px 1px;
+            font-size: var(--step--2);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 3px;
+        }
+    }
+
+    .tribe-group-chip:focus-visible {
+        border-color: var(--fleet-yellow);
+        color: var(--highlight);
+    }
+
+    @media (hover: hover) {
+        a.tribe-group-chip:hover {
+            border-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+    }
+
+    .tribe-group-chip__name {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tribe-group-chip__tribe {
+        color: var(--text-muted);
+    }
+</style>

@@ -8,6 +8,7 @@ from feed.models import FeedEventFleetLink
 
 from fleets.endpoints.helpers import _fleet_authorized
 from fleets.endpoints.schemas import EveFleetResultResponse
+from fleets.helpers.visibility import alliance_fleets_q
 from fleets.models import EveFleet, EveFleetInstance
 
 PATH = "/results"
@@ -37,9 +38,10 @@ def get_fleet_results(request, fleet_ids: str = ""):
 
     fleets = [
         fleet
-        for fleet in EveFleet.objects.filter(id__in=ids).select_related(
-            "audience"
-        )
+        # Members-only tribe group fleets are left out.
+        for fleet in EveFleet.objects.filter(
+            alliance_fleets_q(), id__in=ids
+        ).select_related("audience", "host_group__tribe")
         if _fleet_authorized(request, fleet)
     ]
     fleet_of_instance = dict(

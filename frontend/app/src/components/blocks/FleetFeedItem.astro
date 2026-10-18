@@ -20,6 +20,7 @@ import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import StylessButton from './StylessButton.astro';
+import FleetHostTags from '@components/blocks/FleetHostTags.astro';
 ---
 
 <StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
@@ -30,6 +31,7 @@ import StylessButton from './StylessButton.astro';
             heading={true}
         >
             <small class="[ text-nowrap! ]">{t(t_key('', fleet.type, '_fleet')) ?? fleet.type}</small>
+            <FleetHostTags fleet={fleet} />
         </PilotBadge>
         <div class="[ fleet-status-text-wrapper ]">
             <FleetPhaseLabel phase={phase} />

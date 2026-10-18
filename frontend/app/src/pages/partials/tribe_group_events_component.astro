@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import type { TribeEvent, TribeGroup } from '@dtypes/api.minmatar.org'
+import type { DiscordChannelUI } from '@dtypes/layout_components'
+import {
+    cancel_tribe_event,
+    get_discord_channels,
+    get_group_events,
+    get_tribe_group,
+} from '@helpers/api.minmatar.org/tribes'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+import { TRIBE_GROUP_EVENTS_ID, discord_channel_ui } from '@helpers/tribe_group_page'
+
+// The group page's Events tab. POST with event_id cancels that event first
+// (the Cancel button's confirm dialog), then the tab is rendered again.
+const { auth_token } = get_request_user(Astro)
+
+const params = Astro.url.searchParams
+const tribe_id = parseInt(params.get('tribe_id') ?? '')
+const group_id = parseInt(params.get('group_id') ?? '')
+const event_id = parseInt(params.get('event_id') ?? '')
+const delay = parseInt(params.get('delay') ?? '0') || 0
+
+if (!Number.isFinite(tribe_id) || !Number.isFinite(group_id))
+    return HTTP_400_Bad_Request()
+
+let cancel_error: string | null = null
+if (Astro.request.method === 'POST' && Number.isFinite(event_id)) {
+    try {
+        if (!auth_token) throw new Error('Not signed in', { cause: 401 })
+        await cancel_tribe_event(auth_token, event_id)
+    } catch (error) {
+        cancel_error = (error as Error).message
+    }
+}
+
+let group: TribeGroup | null = null
+let events: TribeEvent[] = []
+let voice_channels: DiscordChannelUI[] = []
+let fetch_error: Error | null = null
+
+try {
+    ;[group, events] = await Promise.all([
+        get_tribe_group(tribe_id, group_id, auth_token),
+        get_group_events(group_id, auth_token),
+    ])
+    if (auth_token && group?.can_create_events)
+        voice_channels = (await get_discord_channels(auth_token, 'voice').catch(() => [])).map(discord_channel_ui)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const PARTIAL_URL = translatePath(`/partials/tribe_group_events_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TribeGroupEvents from '@components/blocks/TribeGroupEvents.astro'
+---
+
+{fetch_error || !group ?
+    <div id={TRIBE_GROUP_EVENTS_ID}>
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error ?? new Error('Not found', { cause: 404 }),
+                delay,
+                target: `#${TRIBE_GROUP_EVENTS_ID}`,
+            }}
+        />
+    </div>
+    :
+    <TribeGroupEvents
+        events={events}
+        tribe_id={tribe_id}
+        group_id={group_id}
+        group_name={group.name}
+        cover_url={tribe_group_cover(group_id)}
+        can_create={Boolean(group.can_create_events)}
+        voice_channels={voice_channels}
+        error={cancel_error}
+    />
+}

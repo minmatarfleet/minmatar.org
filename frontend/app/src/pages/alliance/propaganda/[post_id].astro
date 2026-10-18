@@ -4,12 +4,15 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
+const { auth_token, user } = get_request_user(Astro)
 
 import { query_string } from '@helpers/string'
-import { fetch_post } from '@helpers/fetching/posts'
+import { fetch_post_access } from '@helpers/fetching/posts'
+import { get_group_apply_context } from '@helpers/fetching/group_apply_context'
+import { group_posts_href, host_group_ref_ui } from '@helpers/post_publishing'
 import type { PostUI } from '@dtypes/layout_components'
-import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
+import type { RestrictedResponse } from '@dtypes/api.minmatar.org'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 
 const param = Astro.params.post_id
 const slug = param?.split('-') ?? ''
@@ -20,20 +23,45 @@ if (isNaN(post_id))
 
 let post:PostUI | null = null
 let is_user_post:boolean = false
+let restricted:RestrictedResponse | null = null
 
 try {
-    post = await fetch_post(post_id)
+    // The token lets members of a group (and the author) read its members-only posts.
+    const access = await fetch_post_access(post_id, auth_token)
+    post = access.post
+    restricted = access.restricted
 
     is_user_post = (user ? user.user_id : 0) === post?.user_id
 
-    if (post?.state !== 'published' && !is_user_post)
+    if (post && post.state !== 'published' && !is_user_post)
         return HTTP_404_Not_Found()
 } catch (error) {
     return HTTP_404_Not_Found()
 }
 
-if (!post)
+// A members-only group post the viewer can't see: the gate names the group, nothing else.
+const gate_group = host_group_ref_ui(restricted?.host_group)
+
+if (restricted && !gate_group)
+    return HTTP_403_Forbidden()
+
+const gate_context = gate_group
+    ? await get_group_apply_context({
+        access_token: auth_token,
+        username: user ? user.username : null,
+        tribe_id: gate_group.tribe_id,
+        group_id: gate_group.id,
+    })
+    : null
+
+if (gate_group)
+    Astro.response.status = 403
+
+if (!post && !gate_group)
     return HTTP_404_Not_Found()
+
+const host_group = post?.host_group ?? null
+const group_href = host_group ? translatePath(group_posts_href(host_group)) : null
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
@@ -55,7 +83,12 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
-const page_title = post?.title ?? t('new_post')
+import MembersOnlyGate from '@components/blocks/MembersOnlyGate.astro'
+import TribeGroupApplyHint from '@components/blocks/TribeGroupApplyHint.astro'
+import TribeGroupChip from '@components/blocks/TribeGroupChip.astro'
+import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+
+const page_title = post?.title ?? gate_group?.name ?? t('new_post')
 const page_description = post?.excerpt ?? page_title
 
 const share_url = new URL(Astro.url.href)
@@ -69,88 +102,141 @@ if (user) share_url.searchParams.set('ref', user.user_id.toString())
         alert_dialog: true
     }}
 >
-    <PageLanding
-        wide={true}
-        cover={{
-            image: "/images/propaganda-cover.jpg",
-            image_990: "/images/propaganda-cover.jpg",
-            scrollable: true,
-            overlay: true
-        }}
-    >
-        <Flexblock gap='var(--space-2xl)'>
-            <FlexInline id="header-oob" class="[ !items-start ]" justification='space-between'>
-                <TextBox>
-                    <PageTitle is_landing={true}>{post?.title}</PageTitle>
-                </TextBox>
-                <FlexInline class="[ !items-start ]">
-                    <ClipboardButton
-                        id="share-post-button"
-                        size='lg'
-                        text={t('share_post')}
-                        copied_text={t('post_url_copied')}
-                        iconed={false}
-                    >
-                        {share_url.href}
-                    </ClipboardButton>
-                    {is_user_post &&
-                        <Button
-                            type="button"
-                            href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post?.post_id}` })}`}
+    {post &&
+        <PageLanding
+            wide={true}
+            cover={{
+                image: "/images/propaganda-cover.jpg",
+                image_990: "/images/propaganda-cover.jpg",
+                scrollable: true,
+                overlay: true
+            }}
+        >
+            <Flexblock gap='var(--space-2xl)'>
+                <FlexInline id="header-oob" class="[ !items-start ]" justification='space-between'>
+                    <TextBox>
+                        <PageTitle is_landing={true}>{post?.title}</PageTitle>
+                    </TextBox>
+                    <FlexInline class="[ !items-start ]">
+                        <ClipboardButton
+                            id="share-post-button"
+                            size='lg'
+                            text={t('share_post')}
+                            copied_text={t('post_url_copied')}
+                            iconed={false}
                         >
-                            {t('edit_post')}
-                        </Button>
-                    }
+                            {share_url.href}
+                        </ClipboardButton>
+                        {is_user_post &&
+                            <Button
+                                type="button"
+                                href={`${translatePath('/redirect')}?${query_string({ route: `/posts/${post?.post_id}` })}`}
+                            >
+                                {t('edit_post')}
+                            </Button>
+                        }
+                    </FlexInline>
                 </FlexInline>
-            </FlexInline>
-            <TextBox>
-                <BlockList gap='var(--space-xl)'>
-                    <PilotBadge
-                        character_id={post.author.character_id as number}
-                        character_name={post.author.character_name as string}
-                        heading={true}
-                    >
-                        <small>{format_date(lang, post.date_posted)}</small>
-                    </PilotBadge>
+                <TextBox>
+                    <BlockList gap='var(--space-xl)'>
+                        {host_group &&
+                            <div class="[ post-host-strip ]">
+                                <FlexInline gap='var(--space-2xs)'>
+                                    <small>{t('tribes.publishing.post.hosted_by')}</small>
+                                    <TribeGroupChip group={host_group} show_tribe={true} />
+                                    <VisibilityTag visibility={post.members_only ? 'members_only' : 'open'} />
+                                    <a href={group_href}>{t('tribes.publishing.post.more_posts').replace('{group}', host_group.name)}</a>
+                                </FlexInline>
+                            </div>
+                        }
 
-                    {post.excerpt &&
-                        <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post.excerpt as string, { renderer })}></Flexblock>
+                        <PilotBadge
+                            character_id={post.author.character_id as number}
+                            character_name={post.author.character_name as string}
+                            heading={true}
+                        >
+                            <small>{format_date(lang, post.date_posted)}</small>
+                        </PilotBadge>
+
+                        {post.excerpt &&
+                            <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post.excerpt as string, { renderer })}></Flexblock>
+                        }
+
+                        <div
+                            class="[ prose ]"
+                            set:html={marked.parse(post.content as string, { renderer })}
+                            x-data={`{
+                                init_zoom() {
+                                    mediumZoom('img[data-zoomable]', {
+                                        background: 'var(--solid-transparency-background)',
+                                        scrollOffset: 0,
+                                        margin: 24,
+                                        metaClick: false,
+                                    })
+                                }
+                            }`}
+                            x-init="init_zoom()"
+                        />
+
+                        <hr class="[ border-bottom ]" />
+
+                        <Button
+                            id="back-button-obb"
+                            class="[ w-fit! ]"
+                            href={(post?.members_only && group_href)
+                                ? group_href
+                                : post?.tags[0]
+                                    ? `${translatePath('/alliance/content/')}#${post.tags[0] === 'Propaganda' ? 'Propaganda_Poster' : post.tags[0].replaceAll(' ', '_')}`
+                                    : translatePath('/alliance/content/')}
+                        >
+                            {t('content.back_to_content')}
+                        </Button>
+                    </Flexblock>
+                </TextBox>
+            </Flexblock>
+        </PageLanding>
+    }
+    {(!post && gate_group) &&
+        <PageLanding
+            cover={{
+                image: "/images/propaganda-cover.jpg",
+                image_990: "/images/propaganda-cover.jpg",
+                scrollable: true,
+                overlay: true
+            }}
+        >
+            <MembersOnlyGate
+                group={gate_group}
+                kind="post"
+                back_href={translatePath(group_posts_href(gate_group))}
+                back_label={t('tribes.publishing.post.back_to_group').replace('{group}', gate_group.name)}
+            >
+                <Fragment slot="apply">
+                    {gate_context &&
+                        <TribeGroupApplyHint
+                            group={gate_context.group}
+                            tribe_id={gate_group.tribe_id}
+                            group_id={gate_group.id}
+                            is_auth={Boolean(user)}
+                            is_leader={gate_context.is_leader}
+                            user_on_trial={gate_context.user_on_trial}
+                            user_characters={gate_context.user_characters}
+                            available_characters={gate_context.available_characters}
+                            membership_by_group={gate_context.membership_by_group}
+                        />
                     }
-
-                    <div
-                        class="[ prose ]"
-                        set:html={marked.parse(post.content as string, { renderer })}
-                        x-data={`{
-                            init_zoom() {
-                                mediumZoom('img[data-zoomable]', {
-                                    background: 'var(--solid-transparency-background)',
-                                    scrollOffset: 0,
-                                    margin: 24,
-                                    metaClick: false,
-                                })
-                            }
-                        }`}
-                        x-init="init_zoom()"
-                    />
-
-                    <hr class="[ border-bottom ]" />
-
-                    <Button
-                        id="back-button-obb"
-                        class="[ w-fit! ]"
-                        href={post?.tags[0]
-                            ? `${translatePath('/alliance/content/')}#${post.tags[0] === 'Propaganda' ? 'Propaganda_Poster' : post.tags[0].replaceAll(' ', '_')}`
-                            : translatePath('/alliance/content/')}
-                    >
-                        {t('content.back_to_content')}
-                    </Button>
-                </Flexblock>
-            </TextBox>
-        </Flexblock>
-    </PageLanding>
+                </Fragment>
+            </MembersOnlyGate>
+        </PageLanding>
+    }
 </Viewport>
 
 <style lang="scss">
+    .post-host-strip {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
     .excerpt,
     :global(.excerpt p) {
         font-size: var(--step-1);
