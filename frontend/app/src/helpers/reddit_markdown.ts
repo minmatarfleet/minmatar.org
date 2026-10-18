@@ -1,16 +1,6 @@
 import { Marked } from 'marked'
+import { escape_html } from '@helpers/string'
 
-const HTML_ESCAPES: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-}
-
-function escape_html(text: string): string {
-    return text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char])
-}
 
 function is_web_url(href: string): boolean {
     return /^(https?:\/\/|mailto:)/i.test(href.trim())

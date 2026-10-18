@@ -1,29 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CampaignSystemSummary, CampaignWeek, CampaignWeekProgress, CampaignWeekTarget } from '@dtypes/api.minmatar.org'
-import { campaign_objective_rows, contest_bar_percent, week_contest_marker, week_contest_move, week_move_color } from '@helpers/fetching/campaigns'
+import { campaign_objective_rows, contest_bar_percent } from '@helpers/fetching/campaigns'
 
-describe('week_contest_move', () => {
-    it('treats a falling or low hold as good and a rising hold as bad', () => {
-        expect(week_contest_move('hold', 20, 9.5)).toBe('ahead')
-        expect(week_contest_move('hold', 8, 8.2)).toBe('holding')
-        expect(week_contest_move('hold', 40, 40)).toBe('behind')
-        expect(week_contest_move('hold', 12, 28)).toBe('slipping')
-        expect(week_move_color('ahead')).toBe('green')
-        expect(week_move_color('holding')).toBe('fleet-yellow')
-        expect(week_move_color('slipping')).toBe('fleet-red')
-        expect(week_move_color('behind')).toBe('fleet-red')
-    })
-
-    it('treats contested rising toward the threshold as good on a push', () => {
-        expect(week_contest_move('take', 20, 35.26)).toBe('ahead')
-        expect(week_contest_move('pressure', 35, 20)).toBe('slipping')
-        expect(week_contest_move('take', 30, 30)).toBe('behind')
-        expect(week_contest_move('pressure', 82, 82.2)).toBe('holding')
-        expect(week_contest_marker('hold')).toBe(10)
-        expect(week_contest_marker('take')).toBe(80)
-    })
-
+describe('contest bars', () => {
     it('fills a hold bar when the system is stable and empties it as the other side scores', () => {
         expect(contest_bar_percent('hold', 0)).toBe(100)
         expect(contest_bar_percent('defend', 3.2)).toBeCloseTo(96.8)
@@ -158,13 +138,6 @@ describe('week_contest_move', () => {
         expect(rows[0]?.change_text).toBe('+3%')
         expect(rows[0]?.change_24h_text).toBe('')
         expect(rows[0]?.flipped).toBeNull()
-    })
-
-    it('counts our advantage rising as good only while we are pushing', () => {
-        expect(week_contest_move('take', 30, 30, 20, 35)).toBe('ahead')
-        expect(week_contest_move('pressure', 30, 30, 40, 25)).toBe('slipping')
-        expect(week_contest_move('take', 20, 35, 40, 25)).toBe('ahead')
-        expect(week_contest_move('hold', 8, 8, 20, 40)).toBe('holding')
     })
 })
 

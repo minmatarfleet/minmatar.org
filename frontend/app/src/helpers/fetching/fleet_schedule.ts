@@ -79,11 +79,7 @@ export async function fetch_doctrine_names(fleets:FleetItem[]):Promise<Record<nu
     return doctrines
 }
 
-/** EVE (UTC) day key, e.g. 2026-10-17. */
-export const eve_day = (date:Date | string) => new Date(date).toISOString().slice(0, 10)
-
-/** HH:MM in EVE time. */
-export const eve_clock = (date:Date | string) => new Date(date).toISOString().slice(11, 16)
+export { eve_day, eve_clock } from '@helpers/date'
 
 export interface FleetHistory {
     /** Fleets that tracked, newest first. */

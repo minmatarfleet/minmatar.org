@@ -1,4 +1,5 @@
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+import { SHORT_AMOUNT, format_compact } from '@helpers/numbers'
 import {
     conversion_for_side,
     conversion_ordering_key,
@@ -53,13 +54,6 @@ export function offer_depth(weekly_lp: number): LoyaltyOfferDepth {
     return 'steady'
 }
 
-const SHORT_AMOUNT_UNITS: Array<[number, string]> = [
-    [1e12, 'T'],
-    [1e9, 'B'],
-    [1e6, 'M'],
-    [1e3, 'K'],
-]
-
 /**
  * Short figure for table cells: 113M, 14.9M, 600K, 950. One decimal below
  * 100 of a unit, none above, so columns stay three significant figures.
@@ -69,18 +63,7 @@ export function format_short_amount(value: number | null | undefined): string {
         return '—'
     if (value <= 0)
         return '0'
-    for (let index = 0; index < SHORT_AMOUNT_UNITS.length; index++) {
-        const [size, suffix] = SHORT_AMOUNT_UNITS[index]
-        if (value < size)
-            continue
-        const scaled = value / size
-        const text = scaled.toFixed(scaled >= 100 ? 0 : 1).replace(/\.0$/, '')
-        // 999.6K rounds to "1000K"; promote it to the next unit up.
-        if (Number(text) >= 1000 && index > 0)
-            return `${(value / SHORT_AMOUNT_UNITS[index - 1][0]).toFixed(1).replace(/\.0$/, '')}${SHORT_AMOUNT_UNITS[index - 1][1]}`
-        return `${text}${suffix}`
-    }
-    return String(Math.round(value))
+    return format_compact(value, SHORT_AMOUNT)
 }
 
 export interface LoyaltyOfferRequiredItem {
@@ -288,7 +271,7 @@ export function offer_lp_waterfall(
         quantity: offer.quantity,
         market_price: market_price_for_side(offer, side),
         input_cost_isk: offer.input_cost_isk,
-        input_freight_isk: offer.input_freight_isk,
+        costs: offer.conversion_costs?.[side],
         isk_cost: offer.isk_cost,
         other_cost: offer.other_cost,
         net_isk_per_lp: conversion_for_side(offer, side, true, true),

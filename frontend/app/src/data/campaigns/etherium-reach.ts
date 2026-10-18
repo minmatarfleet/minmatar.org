@@ -360,18 +360,7 @@ export function toBillions(isk: number): number {
     return Math.round((isk / 1_000_000_000) * 100) / 100
 }
 
-export function formatIsk(isk: number): string {
-    if (isk >= 1_000_000_000_000) {
-        return `${(isk / 1_000_000_000_000).toFixed(2)}T`
-    }
-    if (isk >= 1_000_000_000) {
-        return `${(isk / 1_000_000_000).toFixed(1)}B`
-    }
-    if (isk >= 1_000_000) {
-        return `${(isk / 1_000_000).toFixed(0)}M`
-    }
-    return `${(isk / 1_000).toFixed(0)}K`
-}
+export { formatIsk } from '@/data/campaigns/format'
 
 export type CampaignRowTone = 'info' | 'success' | 'warning' | 'danger' | undefined
 

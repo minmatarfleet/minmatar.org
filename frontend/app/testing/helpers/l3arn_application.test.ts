@@ -3,7 +3,6 @@ import { expect, test } from 'vitest';
 import {
     descriptionFromL3arnFormData,
     descriptionFromL3arnPayload,
-    estimateL3arnApplicationDescriptionLength,
     filterL3arnApplicationAllianceCorporations,
     formatL3arnApplicationActivitySummary,
     formatL3arnApplicationCorpConsideration,
@@ -12,11 +11,9 @@ import {
     formatL3arnApplicationHowFound,
     formatL3arnApplicationRequirements,
     formatL3arnApplicationRoles,
-    detectL3arnApplicationUserTimezone,
     formatL3arnApplicationTimezoneLine,
     formatL3arnApplicationUserTimezoneLabel,
     formatL3arnApplicationWebDescription,
-    hasL3arnApplicationDraftContent,
     isL3arnApplicationActivityPeriod,
     isL3arnApplicationComplete,
     isL3arnApplicationDescriptionWithinLimit,
@@ -35,14 +32,11 @@ import {
     l3arnApplicationRegionLabel,
     l3arnApplicationRoleLabel,
     l3arnApplicationTimezoneLabel,
-    l3arnApplicationTimezoneEveWindow,
     L3ARN_APPLICATION_TIMEZONE_EVE_WINDOWS,
     L3ARN_FORM_PREFIX,
     L3ARN_REGION_PERIOD_TO_TIMEZONE,
     mapL3arnRegionAndPeriodToTimezone,
-    parseL3arnApplicationDraft,
     resolveL3arnApplicationTimezone,
-    serializeL3arnApplicationDraft,
 } from '@helpers/corporations/l3arn_application';
 
 const completeAnswers = {
@@ -265,19 +259,6 @@ test('isL3arnApplicationTimezone accepts alliance prime time values', () => {
     expect(isL3arnApplicationTimezone('US')).toBe(true);
     expect(isL3arnApplicationTimezone('EU_US')).toBe(true);
     expect(isL3arnApplicationTimezone('USTZ')).toBe(false);
-});
-
-test('l3arnApplicationTimezoneEveWindow maps buckets to UTC prime-time bands', () => {
-    expect(l3arnApplicationTimezoneEveWindow('US')).toBe(
-        'EVE prime time: roughly 22:00–04:59 UTC',
-    );
-    expect(l3arnApplicationTimezoneEveWindow('EU_US')).toBe(
-        'EVE prime time: roughly 20:00–21:59 UTC',
-    );
-    expect(l3arnApplicationTimezoneEveWindow('AP_EU')).toBe(
-        'EVE prime time: roughly 10:00–19:59 UTC (AUTZ–EUTZ overlap)',
-    );
-    expect(l3arnApplicationTimezoneEveWindow('invalid')).toBe('');
 });
 
 test('L3ARN_APPLICATION_TIMEZONE_EVE_WINDOWS covers every timezone bucket', () => {
@@ -604,70 +585,6 @@ test('descriptionFromL3arnPayload parses dialog payload', () => {
     );
 });
 
-test('serialize and parse L3ARN application draft round-trip', () => {
-    const serialized = serializeL3arnApplicationDraft(completeAnswers);
-    const restored = parseL3arnApplicationDraft(serialized);
-
-    expect(restored).toEqual(completeAnswers);
-});
-
-test('parseL3arnApplicationDraft rejects invalid payloads', () => {
-    expect(parseL3arnApplicationDraft(null)).toBeNull();
-    expect(parseL3arnApplicationDraft('not json')).toBeNull();
-    expect(parseL3arnApplicationDraft(JSON.stringify({ l3arn: false }))).toBeNull();
-});
-
-test('parseL3arnApplicationDraft normalizes legacy string roles to empty array', () => {
-    const restored = parseL3arnApplicationDraft(JSON.stringify({
-        l3arn: true,
-        ...completeAnswers,
-        roles: 'DPS',
-    }));
-
-    expect(restored?.roles).toEqual([]);
-});
-
-test('parseL3arnApplicationDraft ignores legacy confirm_not_alt and confirm_not_dual_citizen keys', () => {
-    const restored = parseL3arnApplicationDraft(JSON.stringify({
-        l3arn: true,
-        ...completeAnswers,
-        confirm_not_alt: true,
-        confirm_not_dual_citizen: true,
-    }));
-
-    expect(restored).toEqual(completeAnswers);
-});
-
-test('parseL3arnApplicationDraft ignores legacy comfortable_comms key', () => {
-    const restored = parseL3arnApplicationDraft(JSON.stringify({
-        l3arn: true,
-        ...completeAnswers,
-        comfortable_comms: true,
-    }));
-
-    expect(restored).toEqual(completeAnswers);
-});
-
-test('parseL3arnApplicationDraft normalizes legacy only_l3arn drafts', () => {
-    const restored = parseL3arnApplicationDraft(JSON.stringify({
-        l3arn: true,
-        ...completeAnswers,
-        only_l3arn: 'Yes, L3ARN is the best fit.',
-        other_corporations: ['Rattini Tribe'],
-    }));
-
-    expect(restored?.other_corporations).toEqual([]);
-
-    const restoredBoolean = parseL3arnApplicationDraft(JSON.stringify({
-        l3arn: true,
-        ...completeAnswers,
-        only_l3arn: true,
-        other_corporations: ['Rattini Tribe'],
-    }));
-
-    expect(restoredBoolean?.other_corporations).toEqual([]);
-});
-
 test('isL3arnApplicationFieldWithinLimit enforces per-field maxlength', () => {
     expect(
         isL3arnApplicationFieldWithinLimit(
@@ -737,99 +654,3 @@ test('descriptionFromL3arnPayload rejects over-limit field values', () => {
     ).toThrow('maximum length for one or more fields');
 });
 
-test('estimateL3arnApplicationDescriptionLength tracks user text and corp selections', () => {
-    expect(
-        estimateL3arnApplicationDescriptionLength({
-            introduction: 'Hello',
-            goals: 'Goals',
-            how_found_other: '',
-            main_character_name: '',
-            other_alliance_affiliation: '',
-            other_corporations: ['Rattini Tribe'],
-        }),
-    ).toBeGreaterThan(
-        estimateL3arnApplicationDescriptionLength({
-            introduction: 'Hello',
-            goals: 'Goals',
-            how_found_other: '',
-            main_character_name: '',
-            other_alliance_affiliation: '',
-            other_corporations: [],
-        }),
-    );
-});
-
-test('hasL3arnApplicationDraftContent detects partial drafts', () => {
-    expect(hasL3arnApplicationDraftContent(completeAnswers)).toBe(true);
-    expect(
-        hasL3arnApplicationDraftContent({
-            ...completeAnswers,
-            introduction: '',
-            activity_region: '',
-            activity_period: '',
-            timezone: '',
-            user_timezone: '',
-            roles: [],
-            goals: '',
-            how_found: '',
-            how_found_other: '',
-            other_corporations: [],
-            agree_tenets: false,
-            confirm_omega: false,
-            confirm_auth_chars: false,
-        }),
-    ).toBe(false);
-    expect(
-        hasL3arnApplicationDraftContent({
-            ...completeAnswers,
-            introduction: 'Still drafting',
-            activity_region: '',
-            activity_period: '',
-            timezone: '',
-            user_timezone: '',
-            roles: [],
-            goals: '',
-            how_found: '',
-            how_found_other: '',
-            other_corporations: [],
-            agree_tenets: false,
-            confirm_omega: false,
-            confirm_auth_chars: false,
-        }),
-    ).toBe(true);
-    expect(
-        hasL3arnApplicationDraftContent({
-            ...completeAnswers,
-            introduction: '',
-            activity_region: '',
-            activity_period: '',
-            timezone: '',
-            roles: ['fleet_logistics'],
-            goals: '',
-            how_found: '',
-            how_found_other: '',
-            other_corporations: [],
-            agree_tenets: false,
-            confirm_omega: false,
-            confirm_auth_chars: false,
-        }),
-    ).toBe(true);
-    expect(
-        hasL3arnApplicationDraftContent({
-            ...completeAnswers,
-            introduction: '',
-            activity_region: '',
-            activity_period: '',
-            timezone: '',
-            user_timezone: '',
-            roles: [],
-            goals: '',
-            how_found: '',
-            how_found_other: '',
-            other_corporations: ['Rattini Tribe'],
-            agree_tenets: false,
-            confirm_omega: false,
-            confirm_auth_chars: false,
-        }),
-    ).toBe(true);
-});

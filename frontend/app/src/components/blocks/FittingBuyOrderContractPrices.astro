@@ -6,7 +6,7 @@ import type {
     FittingBuyContractFeeRates,
     FittingBuyContractPrice,
 } from '@helpers/api.minmatar.org/fitting_buy_orders'
-import { number_thousand_separator } from '@helpers/numbers'
+import { ISK_CONTRACT, format_compact, format_isk_full } from '@helpers/numbers'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -49,32 +49,11 @@ const to_number = (value: string | null | undefined) => {
     return Number.isNaN(num) ? null : num
 }
 
-const fmt_full = (value: string | null | undefined) => {
-    const num = to_number(value)
-    if (num == null)
-        return '—'
-    return number_thousand_separator(Math.round(num), lang)
-}
+const fmt_full = (value: string | null | undefined) => format_isk_full(to_number(value), lang)
 
-const fmt_compact = (value: string | number | null | undefined, signed = false) => {
-    const num = typeof value === 'number' ? value : to_number(value)
-    if (num == null)
-        return '—'
-    const abs = Math.abs(num)
-    const sign = num < 0 ? '−' : (signed && num > 0 ? '+' : '')
-    let body: string
-    if (abs >= 1e9)
-        body = `${(abs / 1e9).toFixed(2)}B`
-    else if (abs >= 1e8)
-        body = `${(abs / 1e6).toFixed(0)}M`
-    else if (abs >= 1e6)
-        body = `${(abs / 1e6).toFixed(1)}M`
-    else if (abs >= 1e3)
-        body = `${(abs / 1e3).toFixed(0)}k`
-    else
-        body = number_thousand_separator(Math.round(abs), lang)
-    return `${sign}${body}`
-}
+const ISK_CONTRACT_SIGNED = { ...ISK_CONTRACT, plus: '+' }
+const fmt_compact = (value: string | number | null | undefined, signed = false) =>
+    format_compact(typeof value === 'number' ? value : to_number(value), signed ? ISK_CONTRACT_SIGNED : ISK_CONTRACT)
 
 const fmt_pct = (rate: string | null | undefined) => {
     const num = to_number(rate)

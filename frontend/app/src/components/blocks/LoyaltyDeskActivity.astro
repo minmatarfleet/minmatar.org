@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
 import type { LoyaltyOrderStats } from '@dtypes/api.minmatar.org'
 import { format_number } from '@helpers/numbers'
 import { format_close_time } from '@helpers/loyalty_order_stats'
@@ -20,8 +21,7 @@ const { stats, week_stats = null, ...attributes } = Astro.props
 delete attributes.class
 
 const bars = weekly_bars(stats.weekly)
-const week_label = (week_start: string) =>
-    new Date(`${week_start}T00:00:00Z`).toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' })
+const week_label = (week_start: string) => eve_day_short(lang, `${week_start}T00:00:00Z`)
 const median_value = week_stats?.median_close_seconds ?? stats.median_close_seconds ?? null
 const footnote = week_stats && week_stats.completed > 0
     ? t('industry.loyalty.activity.within_day')

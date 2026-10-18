@@ -4,6 +4,7 @@ const { translatePath } = i18n(Astro.url)
 
 import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
 import { get_adjacent_issues } from '@/data/warzone'
+import { ISK_REPORT_MILLIONS, format_compact } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
@@ -51,12 +52,7 @@ function militia_label(id: WarzoneMilitiaId): string {
     return id === 'minmatar' ? 'Minmatar' : 'Amarr'
 }
 
-function format_isk(value: number): string {
-    if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
-    if (value >= 100_000_000_000) return `${Math.round(value / 1_000_000_000)}B`
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-    return `${(value / 1_000_000).toFixed(0)}M`
-}
+const format_isk = (value: number) => format_compact(value, ISK_REPORT_MILLIONS)
 
 function percent(part: number, total: number): number {
     return total === 0 ? 0 : Math.round((part / total) * 1000) / 10

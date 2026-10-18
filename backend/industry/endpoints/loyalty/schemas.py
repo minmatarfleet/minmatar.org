@@ -157,6 +157,14 @@ class LoyaltyLedgerEntryResponse(Schema):
     created_at: datetime
 
 
+class LoyaltyOfferConversionCosts(Schema):
+    """Per-LP costs inside one side's net conversion (plan_costing defaults)."""
+
+    sales_tax_isk_per_lp: Optional[float] = None
+    input_freight_isk_per_lp: Optional[float] = None
+    output_freight_isk_per_lp: Optional[float] = None
+
+
 class LoyaltyOfferResponse(Schema):
     offer_id: int
     corporation_id: int
@@ -177,6 +185,8 @@ class LoyaltyOfferResponse(Schema):
     conversion_isk_per_lp_sell: Optional[float] = None
     conversion_isk_per_lp_buy: Optional[float] = None
     conversion_isk_per_lp_avg_7d: Optional[float] = None
+    # Keyed by side: "sell", "buy", "avg_7d".
+    conversion_costs: dict[str, LoyaltyOfferConversionCosts] = {}
     volume_1d: Optional[int] = None
     volume_7d: Optional[int] = None
     volume_30d: Optional[int] = None

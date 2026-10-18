@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import {
-    clamp_sell_amount,
     initially_expanded,
     is_partly_claimed,
     order_claimers,
@@ -164,11 +163,5 @@ describe('loyalty desk helpers', () => {
         const older_move = { ...claimed, id: 8, created_at: '2026-10-01T00:00:00Z' }
         const newer_move = { ...claimed, id: 9, created_at: '2026-10-16T00:00:00Z' }
         expect(sort_my_orders([waiting, older_move, newer_move], SELLER).map((o) => o.id)).toEqual([9, 8, 7])
-    })
-
-    it('clamps sell amounts to 100K steps within the order limits', () => {
-        expect(clamp_sell_amount(0)).toBe(100_000)
-        expect(clamp_sell_amount(1_040_000)).toBe(1_000_000)
-        expect(clamp_sell_amount(9_000_000)).toBe(2_500_000)
     })
 })

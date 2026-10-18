@@ -116,3 +116,16 @@ export const b64_to_Uint8Array = (b64encoded_string:string):Uint8Array => {
 export const remove_trailing_slash = (str:string) => {
     return str.replace(/\/$/, '')
 }
+
+const HTML_ESCAPES: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+}
+
+/** Escape text for an HTML string (tippy allowHTML content, set:html). */
+export function escape_html(text: string): string {
+    return text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char])
+}

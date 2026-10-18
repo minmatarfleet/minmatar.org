@@ -3,6 +3,8 @@
  *
  * EFT exports list modules by slot group separated by blank lines
  * (low, mid, high, rig, then drones / cargo as "Name xN" lines).
+ * Same line rules as the backend parser (fittings/eft.py): "Module, Charge"
+ * is one module, a trailing "/offline" is dropped, "[Empty ...]" is a slot.
  */
 
 export type EftSlotGroup = 'low' | 'mid' | 'high' | 'rig' | 'other'
@@ -29,6 +31,8 @@ export interface ParsedEft {
 
 const SLOT_ORDER:EftSlotGroup[] = [ 'low', 'mid', 'high', 'rig' ]
 const QTY_RE = /^(.+?)\s+x(\d+)$/
+// A fitted-but-offline module ends in "/offline"; it is still fitted.
+const OFFLINE_RE = /\s*\/offline$/i
 
 export function parse_eft(eft:string | null | undefined):ParsedEft {
     const lines = (eft ?? '').replace(/\r/g, '').split('\n')
@@ -75,7 +79,7 @@ export function parse_eft(eft:string | null | undefined):ParsedEft {
             const qty = line.match(QTY_RE)
             if (qty) { result.cargo.push({ name: qty[1].trim(), quantity: parseInt(qty[2]) }); continue }
             // "Module, Charge": the loaded charge is not a swappable module.
-            const name = line.split(',', 1)[0].trim()
+            const name = line.replace(OFFLINE_RE, '').split(',', 1)[0].trim()
             result.modules.push({ index: index++, group, name })
         }
     }

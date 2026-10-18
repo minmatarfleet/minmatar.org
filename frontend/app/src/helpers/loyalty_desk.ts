@@ -228,8 +228,3 @@ export function desk_lanes(orders: LoyaltyMarketOrder[]): Record<LoyaltyLaneKey,
     return lanes
 }
 
-/** Round to a 100K LP step within 100K to 2.5M, like the sell form. */
-export function clamp_sell_amount(amount: number): number {
-    const stepped = Math.round(amount / SELL_LP_STEP) * SELL_LP_STEP
-    return Math.min(MAX_SELL_LP, Math.max(SELL_LP_STEP, stepped))
-}

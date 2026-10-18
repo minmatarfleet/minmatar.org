@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
@@ -34,7 +35,7 @@ const cancelled = fleet.status === 'cancelled'
 const counted_from = live && fleet.tracking?.start_time ? fleet.tracking.start_time : fleet.start_time
 const [ system, station ] = fleet.location?.split(' - ') ?? []
 
-const day = new Date(fleet.start_time).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+const day = eve_day_short(lang, fleet.start_time, { weekday: true })
 
 const length_minutes = fleet.tracking?.start_time && fleet.tracking?.end_time ?
     Math.round((new Date(fleet.tracking.end_time).getTime() - new Date(fleet.tracking.start_time).getTime()) / 60000) :
