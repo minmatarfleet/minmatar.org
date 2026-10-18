@@ -49,7 +49,10 @@ from industry.models import (
     IndustryLoyaltyPointMarketOrder,
     IndustryLoyaltyPointMarketOrderClaim,
 )
-from industry.tasks import resolve_lp_corporation_ids_task
+from industry.tasks import (
+    close_lp_buyback_discord_thread_task,
+    resolve_lp_corporation_ids_task,
+)
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 TLIB_CORP_ID = 1000182
@@ -1606,10 +1609,14 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             f"lp_buyback:lp:{order.pk}",
         )
 
-    @patch("industry.helpers.lp_buyback_discord.time.sleep")
+    @patch.object(
+        close_lp_buyback_discord_thread_task,
+        "apply_async",
+        wraps=close_lp_buyback_discord_thread_task.apply_async,
+    )
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_completed_posts_then_closes_thread(
-        self, discord_mock, sleep_mock
+        self, discord_mock, close_later
     ):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
@@ -1627,7 +1634,7 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         self.assertIn("ISK sent — order completed", payload["content"])
         self.assertIn("**800,000 ISK** for 1,000 LP", payload["content"])
         self.assertIn("<@1001>", payload["content"])
-        sleep_mock.assert_called_once_with(5)
+        close_later.assert_called_once_with(args=[555], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=555)
         self.assertEqual(
             [
@@ -1638,10 +1645,14 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             ["create_message", "close_thread"],
         )
 
-    @patch("industry.helpers.lp_buyback_discord.time.sleep")
+    @patch.object(
+        close_lp_buyback_discord_thread_task,
+        "apply_async",
+        wraps=close_lp_buyback_discord_thread_task.apply_async,
+    )
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_cancelled_posts_notice_then_closes_thread(
-        self, discord_mock, sleep_mock
+        self, discord_mock, close_later
     ):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
@@ -1661,7 +1672,7 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         self.assertIn(
             ":x: Order cancelled by **BearThatCares**", payload["content"]
         )
-        sleep_mock.assert_called_once_with(5)
+        close_later.assert_called_once_with(args=[777], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
         self.assertEqual(
             [

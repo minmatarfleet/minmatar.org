@@ -1,9 +1,9 @@
 import discord
 
+from app.custom_ids import HELP_TICKET_SELECT_CUSTOM_ID
+
 from .api import HelpTicketPanelConfig
 from .modals import HelpRequestModal
-
-HELP_TICKET_SELECT_CUSTOM_ID = "help_ticket_select"
 
 
 def build_panel_embed(config: HelpTicketPanelConfig) -> discord.Embed:

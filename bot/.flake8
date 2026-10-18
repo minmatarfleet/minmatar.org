@@ -1,0 +1,4 @@
+[flake8]
+# Matches the existing bot code; tighten together with a black config.
+max-line-length = 120
+exclude = .venv,__pycache__
