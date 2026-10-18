@@ -16,6 +16,7 @@ from .discord import (
     notify_application_accepted,
     notify_application_rejected,
     notify_application_thread_deleted,
+    notify_application_transferred,
 )
 from .models import EveCorporationApplication
 
@@ -94,3 +95,32 @@ def close_deleted_application_thread_task(discord_thread_id: int):
         notify_application_thread_deleted(discord_thread_id)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error closing discord thread: %s", e)
+
+
+@app.task()
+def notify_application_transferred_task(
+    application_id: int,
+    previous_corporation_id: int,
+    transferred_by_username: str,
+):
+    """Rename the forum thread and announce a transfer, off the request."""
+    application = EveCorporationApplication.objects.filter(
+        pk=application_id
+    ).first()
+    if application is None:
+        logger.warning(
+            "Application %s no longer exists; no transfer notice",
+            application_id,
+        )
+        return
+    try:
+        notify_application_transferred(
+            application,
+            previous_corporation_id=previous_corporation_id,
+            transferred_by_username=transferred_by_username,
+        )
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Could not post the transfer notice for application %s",
+            application_id,
+        )

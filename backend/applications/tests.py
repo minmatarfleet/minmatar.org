@@ -9,6 +9,7 @@ from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase
 from applications.discord import notify_application_transferred
+from applications.tasks import notify_application_transferred_task
 from applications.l3arn import (
     L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
     L3ARN_CORPORATION_NAME,
@@ -294,8 +295,8 @@ class EveCorporationApplicationTestCase(TestCase):
         application = EveCorporationApplication.objects.get(id=application.id)
         self.assertEqual(application.status, "pending")
 
-    @patch("applications.router.notify_application_transferred")
-    def test_transfer_corporation_application_success(self, notify_mock):
+    @patch("applications.router.notify_application_transferred_task")
+    def test_transfer_corporation_application_success(self, task_mock):
         source_corporation = EveCorporation.objects.create(
             corporation_id=123, name="Source Corporation"
         )
@@ -313,12 +314,13 @@ class EveCorporationApplicationTestCase(TestCase):
             codename="change_evecorporationapplication"
         )
         self.user.user_permissions.add(permission)
-        response = self.client.post(
-            f"{BASE_URL}corporations/{source_corporation.corporation_id}/applications/{application.id}/transfer",
-            data={"corporation_id": target_corporation.corporation_id},
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                f"{BASE_URL}corporations/{source_corporation.corporation_id}/applications/{application.id}/transfer",
+                data={"corporation_id": target_corporation.corporation_id},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
         self.assertEqual(response.status_code, 200)
         application = EveCorporationApplication.objects.get(id=application.id)
         self.assertEqual(
@@ -334,11 +336,36 @@ class EveCorporationApplicationTestCase(TestCase):
                 "corporation_id": target_corporation.corporation_id,
             },
         )
+        task_mock.delay.assert_called_once_with(
+            application.id,
+            source_corporation.corporation_id,
+            self.user.username,
+        )
+
+    @patch("applications.tasks.notify_application_transferred")
+    def test_transfer_notice_task_posts_and_survives_errors(self, notify_mock):
+        corporation = EveCorporation.objects.create(
+            corporation_id=456, name="Target Corporation"
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="Test application",
+            discord_thread_id=999,
+        )
+        notify_application_transferred_task(application.id, 123, "Recruiter")
         notify_mock.assert_called_once_with(
             application,
-            previous_corporation_id=source_corporation.corporation_id,
-            transferred_by_username=self.user.username,
+            previous_corporation_id=123,
+            transferred_by_username="Recruiter",
         )
+
+        notify_mock.side_effect = RuntimeError("discord down")
+        with self.assertLogs("applications.tasks", level="ERROR"):
+            notify_application_transferred_task(
+                application.id, 123, "Recruiter"
+            )
+        notify_application_transferred_task(987654, 123, "Recruiter")
 
     def test_transfer_corporation_application_failure_unauthorized(self):
         source_corporation = EveCorporation.objects.create(
