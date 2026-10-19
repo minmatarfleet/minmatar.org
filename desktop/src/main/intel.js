@@ -126,7 +126,8 @@ class IntelController {
 
     // ---------------------------------------------------------------- paste -> share
 
-    async paste(text, kind = null) {
+    // detected: { kind, count } when clipboard_watch.js opened this from a copy in EVE (the form's title).
+    async paste(text, kind = null, detected = null) {
         text = typeof text === 'string' ? text : ''
         if (!text.trim()) {
             this.draft = { status: 'error', error: 'The clipboard is empty. Copy a d-scan or Local first.' }
@@ -137,10 +138,12 @@ class IntelController {
             return this.changed()
         }
         this.draft_text = text
-        const keep = this.draft && this.draft.status !== 'error' ? this.draft : {}
+        // A new copy while the form is open keeps what the pilot typed; after a share it starts fresh.
+        const keep = this.draft && !['error', 'shared'].includes(this.draft.status) ? this.draft : {}
         this.draft = {
             status: 'loading',
             kind,
+            detected: detected || (keep.detected && kind ? keep.detected : null),
             system: keep.system_edited ? keep.system : (this.origin ? this.origin.system : ''),
             system_edited: !!keep.system_edited,
             note: keep.note || '',
@@ -156,6 +159,11 @@ class IntelController {
             this.draft = { ...this.draft, status: 'error', error: err.detail || 'Could not read that paste.' }
         }
         this.changed()
+    }
+
+    // Mid-share a new copy waits: the share in flight owns the draft.
+    get busy() {
+        return !!this.draft && this.draft.status === 'sharing'
     }
 
     set_kind(kind) {

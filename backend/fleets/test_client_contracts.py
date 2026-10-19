@@ -35,7 +35,12 @@ from fleets.test_fleet_roles import (
     GUARDIAN_EFT,
     GUARDIAN_ID,
 )
-from fleets.test_fleet_window import AMAMAKE, RIFTER_ID, no_kills
+from fleets.test_fleet_window import (
+    AMAMAKE,
+    RIFTER_ID,
+    cover_with_srp,
+    no_kills,
+)
 from fleets.tests import disconnect_fleet_signals, setup_fleet_reference_data
 from srp.models import EveFleetShipReimbursement
 from users.helpers import add_user_permission
@@ -261,6 +266,7 @@ class FleetContractTests(TestCase):
         )
 
     def test_my_fleets(self):
+        cover_with_srp(GUARDIAN_ID, "Guardian")
         self._live()
         EveFleetInstance.objects.filter(pk=900).update(
             end_time=self.now - timedelta(minutes=5)

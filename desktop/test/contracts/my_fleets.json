@@ -18,6 +18,7 @@
           "ship_type_id": 11987,
           "solar_system_name": "Amamake",
           "srp_amount": 0,
+          "srp_covered": true,
           "srp_status": "none"
         },
         {
@@ -28,6 +29,7 @@
           "ship_type_id": 11987,
           "solar_system_name": "Amamake",
           "srp_amount": 42000000,
+          "srp_covered": true,
           "srp_status": "approved"
         }
       ],

@@ -514,6 +514,8 @@ class FleetWindowLoss(BaseModel):
     isk_value: int
     solar_system_name: str
     srp_filed: bool
+    # False when SRP has no program for the hull: no File SRP button.
+    srp_covered: bool = True
 
 
 class FleetWindowFeedRow(BaseModel):
@@ -616,6 +618,8 @@ class MyFleetLoss(BaseModel):
     solar_system_name: str = ""
     srp_status: str  # none | pending | approved | rejected
     srp_amount: int = 0
+    # False when SRP has no program for the hull: not owed, no File SRP button.
+    srp_covered: bool = True
 
 
 class MyRecentFleet(BaseModel):

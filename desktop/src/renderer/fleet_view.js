@@ -16,6 +16,8 @@
     const ATTENTION_LABELS = {
         capsule: 'In a pod', off_doctrine: 'Off doctrine', docked: 'Docked', away: 'Not with the fleet', not_in_fleet: 'Signed up, not in fleet',
     }
+    // srp_covered is false when SRP has no program for the hull (older backends leave it out: covered).
+    const srp_covered = loss => loss.srp_covered !== false
     const SRP_LABELS = { none: 'SRP not filed', pending: 'SRP pending', approved: 'SRP paid', rejected: 'SRP rejected' }
     const pad = n => String(n).padStart(2, '0')
 
@@ -99,7 +101,8 @@
         const loss = v.loss, f = v.fleet
         const srp = loss.srp_filed
             ? '<span class="fw-done">SRP filed ✓</span>'
-            : button('fleet:srp', 'File SRP', { primary: true, id: loss.killmail_id })
+            : srp_covered(loss) ? button('fleet:srp', 'File SRP', { primary: true, id: loss.killmail_id }) : ''
+        const srp_note = loss.srp_filed ? '' : srp_covered(loss) ? ' · killmail ready for SRP' : ' · not covered by SRP'
         const reship = f.location_system_id
             ? button('fleet:destination', `Reship in ${f.location_system_name || 'staging'}`, { id: f.location_system_id }) : ''
         return `<section class="fw-loss" aria-label="Ship lost">
@@ -108,7 +111,7 @@
                     <div class="fw-loss__text">
                         <span class="fw-kicker fw-danger">Ship lost · ${eve_clock(loss.killmail_time)} EVE</span>
                         <span class="fw-loss__ship">${esc(loss.ship_name)}</span>
-                        <span class="fw-meta">${esc(loss.solar_system_name)} · ${isk(loss.isk_value)} ISK${loss.srp_filed ? '' : ' · killmail ready for SRP'}</span>
+                        <span class="fw-meta">${esc(loss.solar_system_name)} · ${isk(loss.isk_value)} ISK${srp_note}</span>
                     </div>
                     <button class="eve-icon-button fw-close" data-interactive data-fleet-command="fleet:dismiss-loss" data-id="${Number(loss.killmail_id)}" aria-label="Close. SRP stays in Recent" title="Close. SRP stays in Recent"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
                 </div>
@@ -565,18 +568,19 @@
     function recent_tab(s) {
         if (!s.recent) return { main: '<div class="fw-quiet">Loading your recent fleets…</div>', actions: '', site_id: null }
         const owed = []
-        for (const f of s.recent.fleets) for (const loss of f.my_losses) if (loss.srp_status === 'none') owed.push({ f, loss })
+        for (const f of s.recent.fleets) for (const loss of f.my_losses) if (loss.srp_status === 'none' && srp_covered(loss)) owed.push({ f, loss })
         const owed_html = owed.map(({ f, loss }) => `<div class="fw-owed">
                 ${ship_icon(loss.ship_type_id, 32)}
                 <span class="fw-row__name">File SRP · ${esc(loss.ship_name)}</span>
                 ${button('fleet:srp', 'File SRP', { primary: true, id: loss.killmail_id })}
                 <span class="fw-meta">${esc(f.title)} · ${esc(loss.solar_system_name)} · ${isk(loss.isk_value)} ISK · ${esc(fmt.day_label(loss.killmail_time))}</span>
             </div>`).join('')
+        const owes = l => l.srp_status === 'none' && srp_covered(l)
+        const srp_label = l => (l.srp_status === 'none' && !srp_covered(l) ? 'No SRP'
+            : SRP_LABELS[l.srp_status] + (l.srp_status === 'approved' && l.srp_amount ? ` ${isk(l.srp_amount)}` : ''))
         const rows = s.recent.fleets.map(f => {
-            const srp = f.my_losses.length
-                ? f.my_losses.map(l => SRP_LABELS[l.srp_status] + (l.srp_status === 'approved' && l.srp_amount ? ` ${isk(l.srp_amount)}` : '')).join(' · ')
-                : ''
-            const srp_tone = f.my_losses.some(l => l.srp_status === 'none') ? 'fw-warn' : f.my_losses.every(l => l.srp_status === 'approved') ? 'fw-good' : 'eve-dim'
+            const srp = f.my_losses.map(srp_label).join(' · ')
+            const srp_tone = f.my_losses.some(owes) ? 'fw-warn' : f.my_losses.every(l => l.srp_status === 'approved') ? 'fw-good' : 'eve-dim'
             const length = f.ended_at ? duration(Math.round((new Date(f.ended_at) - new Date(f.started_at)) / 1000)) : 'live'
             return `<button class="fw-recent" data-interactive data-fleet-command="fleet:open-site" data-id="${Number(f.fleet_id)}" title="Open on my.minmatar.org">
                 <span class="fw-row__name">${esc(f.title)}</span>

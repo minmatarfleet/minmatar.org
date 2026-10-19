@@ -109,6 +109,14 @@ test('a lost ship is a card above the fleet, with File SRP, Reship and a close t
     assert.match(fleet_tab(snapshot({ fleet: { ...v, loss: { ...LOSS, srp_filed: true } } })).main, /SRP filed ✓/)
 })
 
+test('a lost ship SRP does not cover has no File SRP', () => {
+    const v = fleet_view_of({ mode: 'member', you: KESRA, loss: { ...LOSS, srp_covered: false } })
+    const main = fleet_tab(snapshot({ fleet: v })).main
+    assert.doesNotMatch(main, /fleet:srp/)
+    assert.match(main, /not covered by SRP/)
+    assert.match(main, /Reship in Amamake/)
+})
+
 test('wrap-up: ISK, what is left, Done, and the next fleet below', () => {
     const v = fleet_view_of({ fleet: { ...FLEET, live: false, ended_at: '2026-10-16T21:48:00Z' }, after_action: { pilots: 38, duration_seconds: 7560, losses: 4, srp_filed: 3, aar_link: null } })
     const parts = fleet_tab(snapshot({ kind: 'wrapup', fleet: v, next: LIST[1] }))
@@ -203,6 +211,18 @@ test('Recent: SRP still owed first, then your last fleets with their SRP state',
     assert.match(parts.main, /you were FC/)
     assert.match(parts.main, /2h 05m/)
     assert.doesNotMatch(recent_tab(snapshot({ recent: { srp_owed: 0, fleets: [] } })).main, /Needs you/)
+})
+
+test('Recent: a loss SRP does not cover is not owed and has no File SRP', () => {
+    const recent = {
+        srp_owed: 0,
+        fleets: [{ fleet_id: 7, title: 'Roam', started_at: '2026-10-16T19:00:00Z', ended_at: '2026-10-16T21:05:00Z', live: false, was_fc: false, kills: 6, losses: 1,
+            my_losses: [{ killmail_id: 77, ship_type_id: 11198, ship_name: 'Stiletto', isk_value: 60e6, solar_system_name: 'Huola', killmail_time: '2026-10-16T20:01:00Z', srp_status: 'none', srp_amount: 0, srp_covered: false }] }],
+    }
+    const main = recent_tab(snapshot({ recent })).main
+    assert.doesNotMatch(main, /Needs you/)
+    assert.doesNotMatch(main, /fleet:srp/)
+    assert.match(main, /class="fw-tag eve-dim">No SRP</)
 })
 
 test('the return strip and the tab badges', () => {

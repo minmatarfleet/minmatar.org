@@ -17,6 +17,7 @@ const { mascot_rect } = require('./mascot')
 const { FleetWindow } = require('./fleet_window')
 const { RouteFinder } = require('./route')
 const { IntelController, DEFAULT_RANGE: INTEL_DEFAULT_RANGE, REFRESH_MS: INTEL_REFRESH_MS } = require('./intel')
+const { ClipboardWatch } = require('./clipboard_watch')
 const { Poller, window_data_wanted } = require('./poller')
 const { MenuFade, intersects } = require('./menu_fade')
 const { COMMANDS, id_of, fleet_ship, intel_range, window_toggle } = require('./ipc_commands')
@@ -61,6 +62,7 @@ let login_flow = null
 let reminder_timer = null
 let pollers = {}                 // window id -> Poller for that window's data (created at start-up)
 let intel_on = false             // the Intel window is enabled for the signed-in pilot
+let clipboard_watch = null       // spots a d-scan or Local copy while the Intel window is up (clipboard_watch.js)
 let fleet_snapshot = null        // what the Fleets window's fleet view shows (fleet_window.js), sent on its own channel
 let quitting = false
 let glass_ready = false
@@ -538,6 +540,7 @@ function update_polling() {
     if (!fleet_window) return
     fleet_window.set_active(window_wanted('fleets'))   // the fleet views (fleet_window.js)
     for (const poller of Object.values(pollers)) poller.sync()
+    if (clipboard_watch) clipboard_watch.set_active(window_wanted('intel'))
 }
 
 // The schedule feeds every Fleets tab (Upcoming, the Fleet tab's next fleet, which sign-up has formed);
@@ -858,16 +861,24 @@ on_command('campaigns:open', () => {
     // Same rule as fleets: only a URL we built.
     if (state.campaign) shell.openExternal(state.campaign.url)
 })
-// The paste button reads the clipboard here, on the pilot's click; Ctrl+V in a focused window sends the text.
+// Copying a d-scan or Local in EVE opens the report (clipboard_watch.js) without taking focus from EVE: the
+// pilot stays in the game, and the window only takes the keyboard when they click a field (intel:focus).
+// Ctrl+V in a focused window still works for anything the watch didn't recognise.
 // The draft starts on the system of the client in front (EVE's logs), which the pilot can overwrite.
-function start_draft(text) {
-    intel_typing(true)
+function start_draft(text, detected = null) {
     update_location()
     intel.set_origin(state.location)
-    intel.paste(text)
+    intel.paste(text, null, detected)
 }
-on_command('intel:paste', () => start_draft(clipboard.readText()))
-on_command('intel:paste-text', (event, text) => start_draft(text))
+function on_copied(text, detected) {
+    if (!intel.busy) start_draft(text, detected)
+}
+on_command('intel:paste-text', (event, text) => {
+    clipboard_watch.mark_used(text)
+    intel_typing(true)
+    start_draft(text)
+})
+on_command('intel:focus', () => { if (intel.draft) intel_typing(true) })
 on_command('intel:kind', (event, kind) => intel.set_kind(kind))
 on_command('intel:edit', (event, change) => change && intel.edit_draft(change))
 on_command('intel:share', async () => {
@@ -984,6 +995,7 @@ app.whenReady().then(async () => {
         on_unauthorized: session_expired,
         diag,
     })
+    clipboard_watch = new ClipboardWatch({ read: () => clipboard.readText(), on_copy: on_copied })
     create_pollers()
     settings = new Settings({
         defaults: TOGGLES,
@@ -1078,6 +1090,7 @@ app.on('before-quit', event => {
     }
     clearInterval(reminder_timer)
     for (const poller of Object.values(pollers)) poller.stop()
+    if (clipboard_watch) clipboard_watch.set_active(false)
     if (fleet_window) fleet_window.stop()
     if (settings) settings.stop()
     if (eve) eve.stop()
