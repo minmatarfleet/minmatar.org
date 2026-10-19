@@ -348,13 +348,8 @@ export interface ShipSelection {
     bursts?: BurstKind[] | null
 }
 
-export interface ShipSuggestion {
-    fitting_id?: number | null
-    fleet_fitting_id?: number | null
-    ship_name: string
-    /** Past fleets the character flew this hull in. */
-    fleets: number
-}
+/** The hull a character usually flies, as a composition entry; `fleets` = past fleets flown in it. */
+export type ShipSuggestion = ApiResponse<'ShipSuggestionResponse'>
 
 export interface MyFleetPilot {
     character_id: number
