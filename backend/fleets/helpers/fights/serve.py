@@ -29,6 +29,38 @@ def may_view(user, fleet, *, manager: bool, live: bool) -> bool:
     return flew_in(user, fleet)
 
 
+def pilot_numbers(fleet, rows: list[dict] | None) -> dict:
+    """How many flew with us against how many we fought.
+
+    Ours is everyone tracked in the fleet. Theirs is every hostile seen on
+    the fleet's killmails: attackers on our losses and victims of our kills.
+    None when there is nothing to count yet.
+    """
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.fights.rounds import OUTCOME_KILL
+    from fleets.models import EveFleetInstanceMember
+
+    ours = (
+        EveFleetInstanceMember.objects.filter(
+            eve_fleet_instance__eve_fleet=fleet
+        )
+        .values("character_id")
+        .distinct()
+        .count()
+    )
+    hostiles = None
+    if rows is not None:
+        seen = set()
+        for row in rows:
+            seen.update(
+                character for _, character in row.get("hostiles") or ()
+            )
+            if row["outcome"] == OUTCOME_KILL and row.get("victim"):
+                seen.add(row["victim"])
+        hostiles = len(seen)
+    return {"our_pilots": ours or None, "hostile_pilots": hostiles}
+
+
 def fights_response(fleet, *, can_edit: bool, live: bool) -> dict:
     # pylint: disable=import-outside-toplevel
     from fleets.models import EveFleetFightTimeline
@@ -56,6 +88,7 @@ def fights_response(fleet, *, can_edit: bool, live: bool) -> dict:
         "feed_behind_since": (
             fights.feed_behind_since(timezone.now()) if live else None
         ),
+        **pilot_numbers(fleet, timeline.killmails),
     }
 
 

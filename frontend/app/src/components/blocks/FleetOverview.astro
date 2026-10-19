@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
-import type { FleetCompositionEntry, FleetRoleCoverage, FleetShipVolunteer, FleetKills, FleetKillmail, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
+import type { FleetCompositionEntry, FleetRoleCoverage, FleetShipVolunteer, FleetKills, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { role_tally } from '@helpers/fleet_roles'
 import { get_item_icon } from '@helpers/eve_image_server'
 import { format_isk } from '@helpers/numbers'
@@ -65,12 +65,8 @@ const signed_text = signed_up === 0 ? t('fleets.before.nobody_yet') : signed_up 
 // The outcome of a finished fleet. Pods count towards ISK but not ships.
 const outcome = history && fleet_kills?.tracked ? (() => {
     const total = fleet_kills.isk_destroyed + fleet_kills.isk_lost
-    const biggest = fleet_kills.killmails
-        .filter(killmail => killmail.outcome === 'kill')
-        .reduce<FleetKillmail | null>((best, killmail) => !best || killmail.isk_value > best.isk_value ? killmail : best, null)
     return {
         efficiency: total > 0 ? Math.round(100 * fleet_kills.isk_destroyed / total) : null,
-        biggest,
     }
 })() : null
 const engagements = fights?.round_count ?? 0
@@ -83,6 +79,7 @@ const FLEET_KILLS_PARTIAL_URL = `${translatePath('/partials/fleet_kills_componen
 
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
 import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
+import FleetNumbers from '@components/blocks/FleetNumbers.astro'
 import FleetFormUp from '@components/blocks/FleetFormUp.astro'
 import Markdown from '@components/blocks/Markdown.astro'
 import Button from '@components/blocks/Button.astro'
@@ -192,20 +189,8 @@ import Button from '@components/blocks/Button.astro'
                             }
                         </div>
                         <div class="[ fleet-overview__card ]">
-                            <span class="[ fleet-overview__label ]">{t('fleets.kills.biggest')}</span>
-                            {outcome.biggest ?
-                                <span class="[ fleet-overview__biggest ]">
-                                    {outcome.biggest.victim_ship_type_id &&
-                                        <img src={get_item_icon(outcome.biggest.victim_ship_type_id, 64)} alt="" width="44" height="44" loading="lazy" />
-                                    }
-                                    <span>
-                                        <b>{outcome.biggest.victim_ship_name || t('fleets.kills.unknown_ship')}</b>
-                                        <small>{format_isk(outcome.biggest.isk_value)} · {outcome.biggest.solar_system_name}</small>
-                                    </span>
-                                </span>
-                                :
-                                <b>—</b>
-                            }
+                            <span class="[ fleet-overview__label ]">{t('fleets.numbers.title')}</span>
+                            <FleetNumbers our_pilots={fights?.our_pilots} hostile_pilots={fights?.hostile_pilots} />
                         </div>
                     </div>
 
@@ -401,22 +386,6 @@ import Button from '@components/blocks/Button.astro'
 
         span {
             background-color: var(--alliance-blue);
-        }
-    }
-
-    .fleet-overview__biggest {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-
-        > span {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        b {
-            font-size: var(--step-0);
         }
     }
 

@@ -67,14 +67,12 @@ const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composit
 
 
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 // import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
 import FleetFacts from '@components/blocks/FleetFacts.astro';
-import FleetMyPilots from '@components/blocks/FleetMyPilots.astro';
 import SectionTabs from '@components/blocks/SectionTabs.astro';
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
 import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro';
@@ -255,6 +253,7 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                                     readonly={true}
                                     can_manage={false}
                                     doctrine_name={fleet?.doctrine?.name ?? null}
+                                    show_volunteers={false}
                                 />
                             }
                         </BlockList>
@@ -328,20 +327,14 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                 >
                     <BlockList gap="var(--space-xl)">
                         {show_my_pilots &&
-                            <Flexblock gap="var(--space-l)">
-                                <FleetMyPilots
-                                    pilots={pilots}
-                                    volunteers={ship_volunteers}
-                                />
-
-                                <div
-                                    hx-get={PICK_SHIPS_URL}
-                                    hx-trigger="load"
-                                    hx-swap="innerHTML"
-                                >
-                                    <p class="[ loading ]">{t('fleets.tabs.loading_picker')}</p>
-                                </div>
-                            </Flexblock>
+                            <div
+                                id="fleet-ships-picker"
+                                hx-get={PICK_SHIPS_URL}
+                                hx-trigger="load"
+                                hx-swap="innerHTML"
+                            >
+                                <p class="[ loading ]">{t('fleets.tabs.loading_picker')}</p>
+                            </div>
                         }
 
                         {!has_ships && can_manage && !cancelled && !fleet.doctrine ?
@@ -478,7 +471,7 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
 </BlockList>
 <style lang="scss">
     /* The Ships tab's own picker carries the pick-ships button; one is enough. */
-    :global(body:has(#fleet-my-pilots) .fleet-ships-pick) {
+    :global(body:has(#fleet-ships-picker) .fleet-ships-pick) {
         display: none;
     }
 

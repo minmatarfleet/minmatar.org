@@ -184,3 +184,17 @@ export function ship_group_rank(group: string | undefined): number {
     const index = group ? SHIP_GROUP_ORDER.indexOf(group) : -1
     return index === -1 ? SHIP_GROUP_ORDER.length - 1.5 : index
 }
+
+export interface PilotOdds {
+    side:   'outnumbered' | 'outnumbering' | 'even';
+    /** The bigger side per pilot on the smaller, to one decimal: 3 for 150 vs 50. */
+    ratio:  number;
+}
+
+/** Who had the numbers, from our pilots and the hostiles we fought; null when either is unknown. */
+export function pilot_odds(ours: number | null | undefined, theirs: number | null | undefined): PilotOdds | null {
+    if (!ours || !theirs) return null
+    const ratio = Math.round(10 * Math.max(ours, theirs) / Math.min(ours, theirs)) / 10
+    if (ratio < 1.2) return { side: 'even', ratio: 1 }
+    return { side: theirs > ours ? 'outnumbered' : 'outnumbering', ratio }
+}

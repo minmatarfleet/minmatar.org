@@ -2777,7 +2777,7 @@ export interface paths {
         };
         /**
          * Get Fleet Public Kills
-         * @description What a finished fleet killed and lost, for a public page; no login needed. 404 until every tracked instance has ended, and always for cancelled fleets, members-only tribe group fleets and fleets for a hidden audience. Only what the killmails already show publicly: the roster, doctrine, staging and description are never included. Killmails are newest first; totals count capsules towards ISK but not ships.
+         * @description What a finished fleet killed and lost, for a public page; no login needed. 404 until every tracked instance has ended, and always for cancelled fleets, members-only tribe group fleets and fleets for a hidden audience. Only what the killmails already show publicly: the roster, doctrine, staging and description are never included. Killmails are newest first; totals count capsules towards ISK but not ships. our_pilots counts the pilots tracked in the fleet and hostile_pilots the hostiles on its killmails; both are null until there is something to count.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_public_kills_get_fleet_public_kills"];
         put?: never;
@@ -10464,12 +10464,16 @@ export interface components {
             feed_behind_since?: string | null;
             /** Fleet Id */
             fleet_id: number;
+            /** Hostile Pilots */
+            hostile_pilots?: number | null;
             links?: components["schemas"]["FleetFightLinks"] | null;
             /**
              * Live
              * @default false
              */
             live?: boolean;
+            /** Our Pilots */
+            our_pilots?: number | null;
             /**
              * Round Count
              * @default 0
@@ -12590,12 +12594,16 @@ export interface components {
             fleet_id: number;
             /** Fleet Type */
             fleet_type: string;
+            /** Hostile Pilots */
+            hostile_pilots?: number | null;
             /** Isk Destroyed */
             isk_destroyed: number;
             /** Isk Lost */
             isk_lost: number;
             /** Killmails */
             killmails: components["schemas"]["FleetPublicKillmail"][];
+            /** Our Pilots */
+            our_pilots?: number | null;
             /** Ships Destroyed */
             ships_destroyed: number;
             /** Ships Lost */

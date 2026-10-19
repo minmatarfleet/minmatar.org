@@ -9216,6 +9216,17 @@
             "title": "Fleet Id",
             "type": "integer"
           },
+          "hostile_pilots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostile Pilots"
+          },
           "links": {
             "anyOf": [
               {
@@ -9230,6 +9241,17 @@
             "default": false,
             "title": "Live",
             "type": "boolean"
+          },
+          "our_pilots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Our Pilots"
           },
           "round_count": {
             "default": 0,
@@ -14763,6 +14785,17 @@
             "title": "Fleet Type",
             "type": "string"
           },
+          "hostile_pilots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostile Pilots"
+          },
           "isk_destroyed": {
             "title": "Isk Destroyed",
             "type": "integer"
@@ -14777,6 +14810,17 @@
             },
             "title": "Killmails",
             "type": "array"
+          },
+          "our_pilots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Our Pilots"
           },
           "ships_destroyed": {
             "title": "Ships Destroyed",
@@ -40906,7 +40950,7 @@
     },
     "/api/fleets/{fleet_id}/public-kills": {
       "get": {
-        "description": "What a finished fleet killed and lost, for a public page; no login needed. 404 until every tracked instance has ended, and always for cancelled fleets, members-only tribe group fleets and fleets for a hidden audience. Only what the killmails already show publicly: the roster, doctrine, staging and description are never included. Killmails are newest first; totals count capsules towards ISK but not ships.",
+        "description": "What a finished fleet killed and lost, for a public page; no login needed. 404 until every tracked instance has ended, and always for cancelled fleets, members-only tribe group fleets and fleets for a hidden audience. Only what the killmails already show publicly: the roster, doctrine, staging and description are never included. Killmails are newest first; totals count capsules towards ISK but not ships. our_pilots counts the pilots tracked in the fleet and hostile_pilots the hostiles on its killmails; both are null until there is something to count.",
         "operationId": "fleets_endpoints_fleet_get_fleet_public_kills_get_fleet_public_kills",
         "parameters": [
           {

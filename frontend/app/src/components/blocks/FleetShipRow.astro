@@ -17,6 +17,8 @@ interface Props {
     readonly?:          boolean;
     /** Fleet commander: may remove any volunteer. */
     can_manage?:        boolean;
+    /** Off on a finished fleet: hides the pilot count and its list. */
+    show_volunteers?:   boolean;
 }
 
 const {
@@ -29,6 +31,7 @@ const {
     pilots,
     readonly = false,
     can_manage = false,
+    show_volunteers = true,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -102,7 +105,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
 ---
 
-<div id={id} class="[ fleet-ship-row ][ light-transparency ]" role="listitem" x-data="{ open: false }">
+<div id={id} class:list={[ '[ fleet-ship-row ][ light-transparency ]', { 'fleet-ship-row--no-volunteers': !show_volunteers } ]} role="listitem" x-data="{ open: false }">
     {fitting_href ?
         <StylessButton href={fitting_href} class="[ fleet-ship-row__ship ]">
             <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={40}>
@@ -165,6 +168,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
         }
     </div>
 
+    {show_volunteers &&
     <div class="[ fleet-ship-row__count-cell ]">
         <button
             type="button"
@@ -182,6 +186,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             </span>
         </button>
     </div>
+    }
 
     <div class="[ fleet-ship-row__tools ]">
         {(can_refit || can_remove_ship || (entry.source === 'manual' && entry.eft_format)) &&
@@ -223,7 +228,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 
     </div>
 
-    {volunteers.length > 0 &&
+    {show_volunteers && volunteers.length > 0 &&
         <div
             id={`${id}-volunteers`}
             class="[ fleet-ship-row__volunteers ]"
@@ -287,6 +292,17 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             .fleet-ship-row__availability { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
             .fleet-ship-row__meta { grid-column: 1 / -1; grid-row: 3; }
             .fleet-ship-row__meta:empty { display: none; }
+        }
+    }
+
+    // No pilot count column.
+    .fleet-ship-row--no-volunteers {
+        grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr) 240px 72px;
+
+        @media screen and (max-width: 1100px) {
+            grid-template-columns: minmax(0, 1fr) 72px;
+
+            .fleet-ship-row__tools { grid-column: 2; }
         }
     }
 

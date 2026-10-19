@@ -818,6 +818,9 @@ class EveFleetFightsResponse(BaseModel):
     events: List[FleetFightEvent] = []
     chart: FleetFightChart | None = None
     edits: List[FleetFightEdit] = []
+    # Pilots tracked in the fleet, and hostiles seen on its killmails.
+    our_pilots: int | None = None
+    hostile_pilots: int | None = None
 
 
 class FleetFightMergeRequest(BaseModel):
