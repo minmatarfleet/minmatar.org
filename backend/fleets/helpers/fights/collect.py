@@ -80,6 +80,7 @@ def _row_from_card(card: dict) -> dict:
         "pod": bool(card.get("is_capsule")),
         "pilots": [],
         "hostiles": [],
+        "alliances": [],
     }
 
 
@@ -100,6 +101,11 @@ def collect_rows(fleet) -> tuple[list[dict], Counter, list]:
             if killmail.killmail_id in rows:
                 continue
             hostiles = []
+            alliances = {
+                attacker.get("alliance_id")
+                for attacker in killmail.attacker_summary or []
+                if attacker.get("alliance_id")
+            }
             for attacker in killmail.attacker_summary or []:
                 character = attacker.get("character_id")
                 if not character:
@@ -121,6 +127,7 @@ def collect_rows(fleet) -> tuple[list[dict], Counter, list]:
                 "pod": killmail.victim_ship_type_id in CAPSULE_TYPE_IDS,
                 "pilots": sorted(item.pilots),
                 "hostiles": hostiles,
+                "alliances": sorted(alliances),
             }
             raw_needed.append(killmail.killmail_id)
         # Mails the feed has purged survive on the settled kills card.
@@ -135,6 +142,10 @@ def collect_rows(fleet) -> tuple[list[dict], Counter, list]:
         victim = (raw or {}).get("victim") or {}
         row = rows[killmail_id]
         row["victim_group"] = _group(victim)
+        if victim.get("alliance_id"):
+            row["alliances"] = sorted(
+                set(row["alliances"]) | {victim["alliance_id"]}
+            )
         if row["outcome"] == OUTCOME_LOSS:
             our_groups[_group(victim)] += 1
     our_groups.pop(None, None)
@@ -201,6 +212,11 @@ def resolve_names(
             known_characters,
         ),
         "our_groups": [g for g, _ in our_groups.most_common(OUR_GROUPS_KEPT)],
+        # Which group ids are alliances: ids alone can't tell for old ones.
+        "alliances": sorted(
+            {a for r in rows for a in r.get("alliances") or ()}
+            | set(prior.get("alliances") or ())
+        ),
     }
 
 

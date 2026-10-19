@@ -25,6 +25,8 @@ class FleetBattleSystem(BaseModel):
 
 class FleetBattleTotals(BaseModel):
     pilots: int
+    # Damage the team's pilots dealt on these mails.
+    damage: int = 0
     ships_lost: int
     pods_lost: int
     isk_lost: int
@@ -52,7 +54,9 @@ class FleetBattlePilot(BaseModel):
     character_id: int
     name: str
     corporation_id: Optional[int] = None
+    corporation_name: str = ""
     alliance_id: Optional[int] = None
+    alliance_name: str = ""
     group_id: Optional[int] = None
     ships: List[FleetBattleShip]
     kills: int

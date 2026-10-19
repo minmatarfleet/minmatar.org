@@ -694,6 +694,8 @@ class FleetFightHull(BaseModel):
 
 class FleetFightHostile(BaseModel):
     group_id: int | None = None
+    # "alliance" or "corporation", for the logo; older payloads lack it.
+    kind: str | None = None
     name: str
     pilots: int
     ships_killed: int

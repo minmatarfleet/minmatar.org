@@ -3,18 +3,23 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetFights, FleetFightRound, FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
+import type { BattlePilotRow } from '@dtypes/layout_components'
 import { format_isk } from '@helpers/numbers'
-import { get_item_icon, get_player_icon, get_group_logo } from '@helpers/eve_image_server'
-import { eve_clock } from '@helpers/fleet_fights'
+import { get_item_icon, get_corporation_logo, get_alliance_logo, get_group_logo } from '@helpers/eve_image_server'
+import { eve_clock, format_damage, ship_group_rank } from '@helpers/fleet_fights'
+import { get_ships_type } from '@helpers/sde/ships'
 import { query_string } from '@helpers/string'
 
 /**
- * One engagement's battle report, br.evetools style: a card per side with
- * its losses and the groups on it, every pilot on each side with the ships
- * they flew and lost, and every killmail in the engagement's systems from a
- * minute before it to a minute after. Moving a group to another side
- * re-renders the report (fleet_battle_report_component) and keeps the
- * choice in the URL, so the link shares the same sides.
+ * One engagement's battle report, laid out like br.evetools: a Team card
+ * per side (ISK lost, efficiency, ships lost, damage dealt, and its groups
+ * with « » to move them to the next team), then the Involved, Summary,
+ * Timeline, Damage and Composition views per team. Every mail in the
+ * engagement's systems from a minute before it to a minute after.
+ *
+ * Views, row expansion and display settings are local (Alpine over rendered
+ * rows). Moving a group re-renders the report from the API
+ * (fleet_battle_report_component), and the sides stay in the URL.
  */
 interface Props {
     report:             FleetBattleReport;
@@ -35,6 +40,10 @@ const {
 
 delete attributes.class
 
+const LETTERS = ['A', 'B', 'C']
+const MEMBERS_SHOWN = 10
+const CAPSULE_IDS = [670, 33328]
+
 const href = (at: number) => translatePath(`/fleets/history/${fleet_id}/rounds/${at}`)
 const back = translatePath(fights.live ? `/fleets/upcoming/${fleet_id}#aar` : `/fleets/history/${fleet_id}#aar`)
 const previous = position > 1 ? fights.rounds[position - 2] : null
@@ -42,209 +51,863 @@ const next = position < fights.rounds.length ? fights.rounds[position] : null
 const label = (round: FleetFightRound) => round.kind === 'round' ?
     t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
     t('fleets.fights.skirmish')
-
 const title = report.kind === 'round' ?
     t('fleets.fights.report_title').replace('{number}', (report.number ?? 0).toString()).replace('{total}', fights.round_count.toString()) :
     t('fleets.fights.report_skirmish').replace('{time}', eve_clock(report.start))
-const window_text = `${eve_clock(report.window_start)}–${eve_clock(report.window_end)} EVE`
-const systems = report.systems.map(system => system.name).join(', ')
 
-// Sides keep their colour whatever is moved: ours blue, then red, then purple.
-const LETTERS = ['A', 'B', 'C']
-const team_name = (index: number) => {
-    const team = report.teams.find(item => item.index === index)
-    return team?.ours ? t('fleets.report.our_side') : t('fleets.report.side').replace('{letter}', LETTERS[index] ?? `${index + 1}`)
+const day = new Date(report.window_start).toISOString().slice(0, 10)
+const total_isk = report.killmails.reduce((sum, mail) => sum + mail.isk, 0)
+const pilots_total = report.teams.reduce((sum, team) => sum + team.totals.pilots, 0)
+
+// Hull classes from the SDE, for sorting and the Summary groups.
+const type_ids = [...new Set([
+    ...report.teams.flatMap(team => team.pilots.flatMap(pilot => pilot.ships.map(ship => ship.type_id))),
+    ...report.killmails.map(mail => mail.ship_type_id),
+].filter((id): id is number => Boolean(id)))]
+let ship_groups = new Map<number, string>()
+try {
+    ship_groups = new Map((await get_ships_type(type_ids)).map(ship => [ship.ship_id, ship.type]))
+} catch (error) {
+    console.log(`Battle report ship groups: ${error.message}`)
 }
-const others = report.teams.filter(team => !team.ours).map(team => team.index).sort((a, b) => a - b)
-const team_class = (index: number) => {
-    if (report.teams.find(item => item.index === index)?.ours) return 'ours'
-    return others.indexOf(index) <= 0 ? 'enemy' : 'third'
-}
-// A group can go to any side, or open a third one.
-const side_choices = [...report.teams.map(team => team.index), ...(report.teams.length < 3 ? [Math.max(-1, ...report.teams.map(team => team.index)) + 1] : [])]
+const group_of = (type_id: number | null) => (type_id && ship_groups.get(type_id)) || t('fleets.report.other_ships')
+
+const mail_isk = new Map(report.killmails.map(mail => [mail.id, mail.isk]))
+const teams_sorted = [...report.teams].sort((a, b) => a.index - b.index)
+const last_index = Math.max(...teams_sorted.map(team => team.index))
+const can_open_team = teams_sorted.length < 3
 
 const PARTIAL_URL = translatePath('/partials/fleet_battle_report_component')
 const PAGE_URL = translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
+const move_query = (group: number, team: number) => query_string({ fleet_id, position, sides: report.sides, group, team })
+const page_query = (group: number, team: number) => query_string({ sides: report.sides, group, team })
 const RESET_URL = `${PARTIAL_URL}?${query_string({ fleet_id, position })}`
-const PILOTS_SHOWN = 25
-const GROUPS_SHOWN = 6
-const group_line = (pilots: number, lost: number) =>
-    (pilots === 1 ? t('fleets.report.group_line_one') : t('fleets.report.group_line').replace('{pilots}', pilots.toString()))
-        .replace('{lost}', lost.toString())
+
+const teams = teams_sorted.map(team => {
+    const name = t('fleets.report.team').replace('{letter}', LETTERS[team.index] ?? `${team.index + 1}`)
+    const max_damage = Math.max(0, ...team.pilots.map(pilot => pilot.damage))
+    const max_kills = Math.max(0, ...team.pilots.map(pilot => pilot.kills))
+
+    const members = team.groups.map(group => ({
+        ...group,
+        logo: get_group_logo(group.id, 32, group.kind),
+        left: team.index > 0 ? team.index - 1 : null,
+        right: team.index < last_index ? team.index + 1 : can_open_team ? last_index + 1 : null,
+    }))
+
+    const rows: (BattlePilotRow & { rank: number, damage_value: number })[] = team.pilots.map(pilot => {
+        const hulls = pilot.ships.filter(ship => ship.type_id && !CAPSULE_IDS.includes(ship.type_id))
+        const lost = hulls.filter(ship => ship.lost)
+        const main = lost[0] ?? hulls[0] ?? pilot.ships[0]
+        const pod = pilot.ships.find(ship => ship.lost && ship.type_id && CAPSULE_IDS.includes(ship.type_id))
+        const loss_value = lost.reduce((sum, ship) => sum + (mail_isk.get(ship.killmail_id ?? 0) ?? 0), 0)
+        return {
+            character_id: pilot.character_id,
+            name: pilot.name,
+            icon_type_id: main?.type_id ?? null,
+            ship: main?.name ?? '',
+            killmail_id: main?.lost ? main.killmail_id ?? null : null,
+            pod_killmail_id: pod?.killmail_id ?? null,
+            lost: lost.length > 0,
+            loss: lost.length > 1 ?
+                t('fleets.report.lost_many').replace('{count}', lost.length.toString()).replace('{isk}', format_isk(loss_value)) :
+                loss_value ? format_isk(loss_value) : '',
+            damage: pilot.damage ? `${format_damage(pilot.damage)} (${(100 * pilot.damage / Math.max(1, team.totals.damage)).toFixed(1)}%)` : '0',
+            damage_top: pilot.damage > 0 && pilot.damage === max_damage,
+            kills: pilot.kills,
+            kills_top: pilot.kills > 0 && pilot.kills === max_kills,
+            corporation_id: pilot.corporation_id ?? null,
+            corporation_name: pilot.corporation_name,
+            alliance_id: pilot.alliance_id ?? null,
+            alliance_name: pilot.alliance_name,
+            extras: hulls.map(ship => ({
+                type_id: ship.type_id as number,
+                name: ship.name,
+                lost: ship.lost,
+                killmail_id: ship.lost ? ship.killmail_id ?? null : null,
+                info: ship.lost ? t('fleets.report.one_lost').replace('{isk}', format_isk(mail_isk.get(ship.killmail_id ?? 0) ?? 0)) : '',
+            })),
+            rank: ship_group_rank(group_of(main?.type_id ?? null)),
+            damage_value: pilot.damage,
+        }
+    })
+    const involved = [...rows].sort((a, b) => a.rank - b.rank || Number(b.lost) - Number(a.lost) || b.damage_value - a.damage_value)
+    const by_damage = [...rows].sort((a, b) => b.damage_value - a.damage_value)
+
+    const types = new Map<number, { type_id: number, name: string, group: string, flying: number, lost: number, isk: number }>()
+    team.pilots.forEach(pilot => pilot.ships.forEach(ship => {
+        if (!ship.type_id) return
+        const entry = types.get(ship.type_id) ?? { type_id: ship.type_id, name: ship.name, group: group_of(ship.type_id), flying: 0, lost: 0, isk: 0 }
+        entry.flying += 1
+        if (ship.lost) {
+            entry.lost += 1
+            entry.isk += mail_isk.get(ship.killmail_id ?? 0) ?? 0
+        }
+        types.set(ship.type_id, entry)
+    }))
+    const summary = [...types.values()].sort((a, b) => ship_group_rank(a.group) - ship_group_rank(b.group) || b.flying - a.flying)
+    const summary_groups = [...summary.reduce((groups, entry) => {
+        const group = groups.get(entry.group) ?? { name: entry.group, flying: 0, lost: 0, isk: 0 }
+        group.flying += entry.flying
+        group.lost += entry.lost
+        group.isk += entry.isk
+        return groups.set(entry.group, group)
+    }, new Map<string, { name: string, flying: number, lost: number, isk: number }>()).values()]
+
+    const timeline = report.killmails.map(mail => mail.team === team.index ? mail : null)
+
+    type CorpCount = { id: number, name: string, pilots: number }
+    type GroupCount = { id: number, name: string, logo: string, pilots: number, corps: Map<number, CorpCount> }
+    const composition = [...team.pilots.reduce((groups, pilot) => {
+        const key = pilot.alliance_id ?? pilot.corporation_id ?? 0
+        const group = groups.get(key) ?? {
+            id: key,
+            name: pilot.alliance_id ? pilot.alliance_name : pilot.corporation_name,
+            logo: pilot.alliance_id ? get_alliance_logo(key, 64) : get_corporation_logo(key, 64),
+            pilots: 0,
+            corps: new Map<number, CorpCount>(),
+        }
+        group.pilots += 1
+        if (pilot.alliance_id && pilot.corporation_id) {
+            const corp = group.corps.get(pilot.corporation_id) ?? { id: pilot.corporation_id, name: pilot.corporation_name, pilots: 0 }
+            corp.pilots += 1
+            group.corps.set(pilot.corporation_id, corp)
+        }
+        return groups.set(key, group)
+    }, new Map<number, GroupCount>()).values()]
+        .map(group => ({ ...group, corps: [...group.corps.values()].sort((a, b) => b.pilots - a.pilots) }))
+        .sort((a, b) => b.pilots - a.pilots)
+
+    return {
+        ...team,
+        name,
+        members,
+        involved,
+        by_damage,
+        summary,
+        summary_groups,
+        timeline,
+        composition,
+    }
+})
+
+const views = [
+    { id: 'involved', label: t('fleets.report.involved') },
+    { id: 'summary', label: t('fleets.report.summary') },
+    { id: 'timeline', label: t('fleets.report.timeline') },
+    { id: 'damage', label: t('fleets.report.damage') },
+    { id: 'composition', label: t('fleets.report.composition') },
+]
+
+import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
 ---
 
-<div id="battle-report" class:list={['[ battle-report ]', Astro.props.class]} {...attributes}>
-    <nav class="[ battle-report__steps ]" aria-label={t('fleets.fights.rounds')}>
-        {previous ?
-            <a href={href(position - 1)}>‹ {label(previous)}</a> :
-            <a href={back}>‹ {t('fleets.fights.back')}</a>
-        }
-        <div>
-            <h2>{title}</h2>
-            <span>{window_text} · {systems}</span>
+<div
+    id="battle-report"
+    class:list={['[ br ]', Astro.props.class]}
+    x-data={`{
+        view: 'involved',
+        members_open: false,
+        settings_open: false,
+        extended: $persist(true).as('battle_report_extended'),
+        expand_ships: $persist(false).as('battle_report_expand_ships'),
+    }`}
+    x-on:keydown.escape="settings_open = false"
+    {...attributes}
+>
+    <header class="[ br__bar ]">
+        <div class="[ br__bar-group ]">
+            <a class="[ br__button ]" href={back}>‹ {t('fleets.fights.back')}</a>
+            <span class="[ br__step ]">
+                {previous ?
+                    <a class="[ br__arrow ]" href={href(position - 1)} aria-label={label(previous)}>‹</a> :
+                    <span class="[ br__arrow ]" aria-hidden="true">‹</span>
+                }
+                <b>{title}</b>
+                {next ?
+                    <a class="[ br__arrow ]" href={href(position + 1)} aria-label={label(next)}>›</a> :
+                    <span class="[ br__arrow ]" aria-hidden="true">›</span>
+                }
+            </span>
         </div>
-        {next ? <a href={href(position + 1)}>{label(next)} ›</a> : <span />}
+        <div class="[ br__bar-group ]">
+            <span class="[ br__status ]">{t('fleets.report.status').replace('{count}', report.killmails.length.toString())}</span>
+            {report.sides &&
+                <button type="button" class="[ br__button ]" hx-get={RESET_URL} hx-target="#battle-report" hx-swap="outerHTML">{t('fleets.report.reset')}</button>
+            }
+            <button type="button" class="[ br__button br__button--icon ]" aria-label={t('fleets.report.settings')} x-on:click="settings_open = true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+            </button>
+        </div>
+    </header>
+
+    <nav class="[ br__tabs ]" role="tablist" aria-label={t('fleets.report.views')}>
+        {views.map(view =>
+            <button
+                type="button"
+                role="tab"
+                class="[ br__tab ]"
+                aria-selected={view.id === 'involved' ? 'true' : 'false'}
+                x-bind:aria-selected={`String(view === '${view.id}')`}
+                x-on:click={`view = '${view.id}'`}
+            >{view.label}</button>
+        )}
     </nav>
 
-    {!report.complete &&
-        <p class="[ battle-report__partial ]" role="status">{t('fleets.report.partial')}</p>
-    }
-
-    <section class="[ battle-report__sides ]" aria-label={t('fleets.report.sides')}>
-        {report.teams.map(team =>
-            <article class:list={['[ battle-report__side ]', `battle-report__side--${team_class(team.index)}`]} aria-labelledby={`battle-side-${team.index}`}>
-                <header>
-                    <h3 id={`battle-side-${team.index}`}>{team_name(team.index)}</h3>
-                    <dl>
-                        <div>
-                            <dt>{t('fleets.report.isk_lost')}</dt>
-                            <dd><b>{format_isk(team.totals.isk_lost)}</b></dd>
-                        </div>
-                        <div>
-                            <dt>{t('fleets.report.ships_lost')}</dt>
-                            <dd><b>{team.totals.ships_lost}</b></dd>
-                        </div>
-                        <div>
-                            <dt>{t('fleets.report.pilots')}</dt>
-                            <dd><b>{team.totals.pilots}</b></dd>
-                        </div>
-                    </dl>
-                    {team.totals.efficiency !== null && team.totals.efficiency !== undefined &&
-                        <span
-                            class="[ battle-report__efficiency ]"
-                            role="img"
-                            aria-label={t('fleets.fights.efficiency_label').replace('{pct}', team.totals.efficiency.toString())}
-                        ><span style={`width: ${team.totals.efficiency}%`} /></span>
-                    }
-                </header>
-
-                <ul class="[ battle-report__groups ]" x-data="{ all: false }">
-                    {team.groups.map((group, index) =>
-                        <li
-                            x-show={index >= GROUPS_SHOWN ? 'all' : undefined}
-                            x-cloak={index >= GROUPS_SHOWN ? '' : undefined}
-                        >
-                            <img src={get_group_logo(group.id, 32)} alt="" width="28" height="28" loading="lazy" />
-                            <span class="[ battle-report__group-name ]">
-                                <b>{group.name}</b>
-                                <small>{group_line(group.pilots, group.ships_lost)}</small>
-                            </span>
-                            <form
-                                action={PAGE_URL}
-                                method="get"
-                                hx-get={PARTIAL_URL}
-                                hx-trigger="change"
-                                hx-target="#battle-report"
-                                hx-swap="outerHTML"
-                            >
-                                <input type="hidden" name="fleet_id" value={fleet_id} />
-                                <input type="hidden" name="position" value={position} />
-                                <input type="hidden" name="sides" value={report.sides} />
-                                <input type="hidden" name="group" value={group.id} />
-                                <label>
-                                    <span class="visually-hidden">{t('fleets.report.move').replace('{name}', group.name)}</span>
-                                    <select name="team">
-                                        {side_choices.map(index =>
-                                            <option value={index} selected={index === team.index}>
-                                                {report.teams.some(item => item.index === index) ? team_name(index) : t('fleets.report.new_side')}
-                                            </option>
-                                        )}
-                                    </select>
-                                </label>
-                                <noscript><button type="submit">{t('fleets.report.move_button')}</button></noscript>
-                            </form>
-                        </li>
-                    )}
-                    {team.groups.length > GROUPS_SHOWN &&
-                        <li class="[ battle-report__more ]">
-                            <button type="button" x-on:click="all = !all">
-                                <span x-show="!all">{t('fleets.report.more_groups').replace('{count}', (team.groups.length - GROUPS_SHOWN).toString())}</span>
-                                <span x-show="all" x-cloak>{t('fleets.after.show_fewer')}</span>
-                            </button>
-                        </li>
-                    }
-                </ul>
-
-                <ol class="[ battle-report__pilots ]" x-data="{ all: false }">
-                    {team.pilots.map((pilot, index) =>
-                        <li
-                            x-show={index >= PILOTS_SHOWN ? 'all' : undefined}
-                            x-cloak={index >= PILOTS_SHOWN ? '' : undefined}
-                            class:list={[{ 'battle-report__pilot--lost': pilot.ships.some(ship => ship.lost) }]}
-                        >
-                            <img class="[ battle-report__portrait ]" src={get_player_icon(pilot.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
-                            <span class="[ battle-report__pilot-name ]">
-                                <a href={`https://zkillboard.com/character/${pilot.character_id}/`} target="_blank" rel="noopener noreferrer">{pilot.name}</a>
-                                <small>{t('fleets.report.pilot_line').replace('{kills}', pilot.kills.toString()).replace('{damage}', pilot.damage.toLocaleString('en-US'))}</small>
-                            </span>
-                            <span class="[ battle-report__ships ]">
-                                {pilot.ships.filter(ship => ship.type_id).map(ship =>
-                                    ship.lost && ship.killmail_id ?
-                                        <a
-                                            href={`https://zkillboard.com/kill/${ship.killmail_id}/`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="[ battle-report__ship battle-report__ship--lost ]"
-                                            data-tippy-content={t('fleets.report.lost_ship').replace('{ship}', ship.name)}
-                                        >
-                                            <img src={get_item_icon(ship.type_id as number, 32)} alt={t('fleets.report.lost_ship').replace('{ship}', ship.name)} width="28" height="28" loading="lazy" />
-                                        </a>
-                                        :
-                                        <span class="[ battle-report__ship ]" data-tippy-content={ship.name}>
-                                            <img src={get_item_icon(ship.type_id as number, 32)} alt={ship.name} width="28" height="28" loading="lazy" />
-                                        </span>
-                                )}
-                            </span>
-                        </li>
-                    )}
-                    {team.pilots.length > PILOTS_SHOWN &&
-                        <li class="[ battle-report__more ]">
-                            <button type="button" x-on:click="all = !all">
-                                <span x-show="!all">{t('fleets.report.all_pilots').replace('{count}', team.pilots.length.toString())}</span>
-                                <span x-show="all" x-cloak>{t('fleets.after.show_fewer')}</span>
-                            </button>
-                        </li>
-                    }
-                </ol>
-            </article>
-        )}
-    </section>
-
-    {report.sides &&
-        <p class="[ battle-report__reset ]">
-            <button type="button" hx-get={RESET_URL} hx-target="#battle-report" hx-swap="outerHTML" hx-push-url={PAGE_URL}>
-                {t('fleets.report.reset')}
-            </button>
-        </p>
-    }
-
-    <section class="[ battle-report__mails ]" aria-labelledby="battle-mails">
-        <h2 id="battle-mails">{t('fleets.report.killmails').replace('{count}', report.killmails.length.toString())}</h2>
-        <ol>
-            {report.killmails.map(mail =>
-                <li class={`battle-report__mail--${team_class(mail.team)}`}>
-                    <time datetime={mail.time}>{mail.time.slice(11, 19)}</time>
-                    {mail.ship_type_id ? <img src={get_item_icon(mail.ship_type_id, 32)} alt="" width="32" height="32" loading="lazy" /> : <span />}
-                    <span class="[ battle-report__mail-what ]">
-                        <a href={`https://zkillboard.com/kill/${mail.id}/`} target="_blank" rel="noopener noreferrer">{mail.ship_name}{mail.pod ? ` (${t('fleets.fights.pod')})` : ''}</a>
-                        <small>{[mail.victim_name, team_name(mail.team), mail.final_blow?.name ? t('fleets.report.final_blow').replace('{name}', mail.final_blow.name) : '', mail.system_name].filter(Boolean).join(' · ')}</small>
-                    </span>
-                    <span class="[ battle-report__mail-isk ]">{format_isk(mail.isk)}</span>
-                </li>
+    <section class="[ br__info ]" aria-label={t('fleets.report.engagement')}>
+        <div>
+            <b>{day}, {eve_clock(report.window_start)} – {eve_clock(report.window_end)} ET</b>
+            <span>{t('fleets.report.duration').replace('{minutes}', report.minutes.toString())}</span>
+        </div>
+        <div>
+            <b>{t('fleets.report.totals').replace('{mails}', report.killmails.length.toString()).replace('{pilots}', pilots_total.toString()).replace('{isk}', format_isk(total_isk))}</b>
+            {!report.complete && <span>{t('fleets.report.partial')}</span>}
+        </div>
+        <div class="[ br__systems ]">
+            {report.systems.map(system =>
+                <a href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system.name.replace(/ /g, '_'))}`} target="_blank" rel="noopener noreferrer">{system.name} ↗</a>
             )}
-        </ol>
+        </div>
     </section>
+
+    <div class="[ br__scroll ]">
+        <div class="[ br__grid ]" style={`grid-template-columns: repeat(${teams.length}, minmax(min(85vw, 22rem), 35rem))`}>
+            {teams.map((team, column) =>
+                <section class="[ br__team ]" style={`grid-row: 1; grid-column: ${column + 1}`} aria-labelledby={`br-team-${team.index}`}>
+                    <h3 id={`br-team-${team.index}`}>{team.name} ({team.totals.pilots})</h3>
+                    <dl class="[ br__stats ]">
+                        <div><dt>{t('fleets.report.isk_lost')}</dt><dd>{format_isk(team.totals.isk_lost)}</dd></div>
+                        <div><dt>{t('fleets.report.efficiency')}</dt><dd>{team.totals.efficiency !== null && team.totals.efficiency !== undefined ? `${team.totals.efficiency}%` : '–'}</dd></div>
+                        <div><dt>{t('fleets.report.ships_lost')}</dt><dd>{t('fleets.report.ships').replace('{count}', team.totals.ships_lost.toString())}</dd></div>
+                        <div><dt>{t('fleets.report.inflicted')}</dt><dd>{format_damage(team.totals.damage)}</dd></div>
+                    </dl>
+                    <ul class="[ br__members ]">
+                        {team.members.map((member, index) =>
+                            <li
+                                x-show={team.members.length > MEMBERS_SHOWN && index >= MEMBERS_SHOWN - 1 ? 'members_open' : undefined}
+                                x-cloak={team.members.length > MEMBERS_SHOWN && index >= MEMBERS_SHOWN - 1 ? '' : undefined}
+                            >
+                                {member.left !== null ?
+                                    <a
+                                        class="[ br__move ]"
+                                        href={`${PAGE_URL}?${page_query(member.id, member.left)}`}
+                                        hx-get={`${PARTIAL_URL}?${move_query(member.id, member.left)}`}
+                                        hx-target="#battle-report"
+                                        hx-swap="outerHTML"
+                                        aria-label={t('fleets.report.move').replace('{name}', member.name).replace('{team}', LETTERS[member.left] ?? '')}
+                                    >«</a> :
+                                    <span />
+                                }
+                                <span class="[ br__member ]">
+                                    <img src={member.logo} alt="" width="22" height="22" loading="lazy" />
+                                    <span class="[ br__muted ]">({member.pilots})</span>
+                                    <a href={`https://zkillboard.com/${member.kind}/${member.id}/`} target="_blank" rel="noopener noreferrer">{member.name}</a>
+                                </span>
+                                {member.right !== null ?
+                                    <a
+                                        class="[ br__move ]"
+                                        href={`${PAGE_URL}?${page_query(member.id, member.right)}`}
+                                        hx-get={`${PARTIAL_URL}?${move_query(member.id, member.right)}`}
+                                        hx-target="#battle-report"
+                                        hx-swap="outerHTML"
+                                        aria-label={t('fleets.report.move').replace('{name}', member.name).replace('{team}', LETTERS[member.right] ?? '')}
+                                    >»</a> :
+                                    <span />
+                                }
+                            </li>
+                        )}
+                    </ul>
+                    {team.members.length > MEMBERS_SHOWN &&
+                        <button type="button" class="[ br__expand ]" x-on:click="members_open = !members_open" x-bind:aria-expanded="String(members_open)">
+                            <span x-show="!members_open">⌄ {t('fleets.report.more_groups').replace('{count}', (team.members.length - MEMBERS_SHOWN + 1).toString())}</span>
+                            <span x-show="members_open" x-cloak>⌃ {t('fleets.after.show_fewer')}</span>
+                        </button>
+                    }
+                </section>
+            )}
+
+            {teams.map((team, column) =>
+                <section class="[ br__view ]" style={`grid-row: 2; grid-column: ${column + 1}`} aria-label={team.name}>
+                    {[{ id: 'involved', rows: team.involved }, { id: 'damage', rows: team.by_damage }].map(list =>
+                        <div x-show={`view === '${list.id}'`} x-cloak={list.id === 'involved' ? undefined : ''}>
+                            <div class="[ br__head ]">
+                                <button
+                                    type="button"
+                                    class="[ br__expand br__expand--icon ]"
+                                    x-on:click="expand_ships = !expand_ships"
+                                    x-bind:aria-label={`expand_ships ? ${JSON.stringify(t('fleets.report.collapse_all_ships'))} : ${JSON.stringify(t('fleets.report.expand_all_ships'))}`}
+                                    aria-label={t('fleets.report.expand_all_ships')}
+                                ><span x-text="expand_ships ? '⌃' : '⌄'">⌄</span></button>
+                                <div class="[ br__head-cols ]">
+                                    <div class="[ br__head-gold ]"><span>{t('fleets.report.col_pilot')}</span><span>{t('fleets.report.col_used')}</span></div>
+                                    <div><span>{t('fleets.report.col_ship')}</span><span>{t('fleets.report.col_damage')}</span></div>
+                                </div>
+                                <span>{t('fleets.report.col_corp')}</span>
+                                <span>{t('fleets.report.col_ally')}</span>
+                            </div>
+                            {list.rows.map(row => <FleetBattlePilotRow row={row} />)}
+                        </div>
+                    )}
+
+                    <div x-show="view === 'summary'" x-cloak x-data="{ grouped: false }">
+                        <button type="button" class="[ br__summary-toggle ]" x-on:click="grouped = !grouped">
+                            <span x-show="!grouped">{t('fleets.report.ship_types_title')}</span>
+                            <span x-show="grouped" x-cloak>{t('fleets.report.ship_groups_title')}</span>
+                            <small>{t('fleets.report.click_to_change')}</small>
+                        </button>
+                        <div x-show="!grouped">
+                            {team.summary.map(entry =>
+                                <div class="[ br__sum ]">
+                                    <img src={get_item_icon(entry.type_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                                    <span class="[ br__sum-names ]"><b>{entry.name}</b><small>{entry.group}</small></span>
+                                    <span class="[ br__num ]">{entry.flying}</span>
+                                    <span class="[ br__red ]">{entry.lost || ''}</span>
+                                    <span class:list={['[ br__red ]', { 'br__red--bold': entry.isk >= 1_000_000_000 }]}>{entry.isk ? format_isk(entry.isk) : ''}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div x-show="grouped" x-cloak>
+                            {team.summary_groups.map(group =>
+                                <div class="[ br__sum br__sum--group ]">
+                                    <span class="[ br__sum-names ]"><b>{group.name}</b></span>
+                                    <span class="[ br__num ]">{group.flying}</span>
+                                    <span class="[ br__red ]">{group.lost || ''}</span>
+                                    <span class:list={['[ br__red ]', { 'br__red--bold': group.isk >= 1_000_000_000 }]}>{group.isk ? format_isk(group.isk) : ''}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div x-show="view === 'timeline'" x-cloak>
+                        {team.timeline.map(mail => mail ?
+                            <div class="[ br__tl br__tl--loss ]">
+                                <a href={`https://zkillboard.com/kill/${mail.id}/`} target="_blank" rel="noopener noreferrer" aria-label={t('fleets.report.killmail_of').replace('{ship}', mail.ship_name).replace('{pilot}', mail.victim_name)}>
+                                    {mail.ship_type_id && <img src={get_item_icon(mail.ship_type_id, 64)} alt="" width="36" height="36" loading="lazy" />}
+                                </a>
+                                <span class="[ br__tl-body ]">
+                                    <span><b>{mail.victim_name}</b><time datetime={mail.time}>{mail.time.slice(11, 19)}</time></span>
+                                    <span><span>{mail.ship_name}</span><b>{format_isk(mail.isk)}</b></span>
+                                </span>
+                                {mail.victim_corporation_id ? <img src={get_corporation_logo(mail.victim_corporation_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                                {mail.victim_alliance_id ? <img src={get_alliance_logo(mail.victim_alliance_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                            </div>
+                            :
+                            <div class="[ br__tl ]" aria-hidden="true" />
+                        )}
+                    </div>
+
+                    <div x-show="view === 'composition'" x-cloak>
+                        {team.composition.map(group =>
+                            <div class="[ br__ally ]">
+                                <span class="[ br__ally-head ]">
+                                    <img src={group.logo} alt="" width="40" height="40" loading="lazy" />
+                                    <span>({group.pilots}) {group.name}</span>
+                                </span>
+                                {group.corps.length > 0 &&
+                                    <ul>
+                                        {group.corps.map(corp =>
+                                            <li><img src={get_corporation_logo(corp.id, 32)} alt="" width="20" height="20" loading="lazy" />({corp.pilots}) {corp.name}</li>
+                                        )}
+                                    </ul>
+                                }
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+        </div>
+    </div>
+
+    <div class="[ br__backdrop ]" x-show="settings_open" x-cloak x-on:click.self="settings_open = false">
+        <section class="[ br__dialog ]" role="dialog" aria-modal="true" aria-labelledby="br-settings-title">
+            <header>
+                <h2 id="br-settings-title">{t('fleets.report.settings')}</h2>
+                <button type="button" class="[ br__button br__button--icon ]" aria-label={t('fleets.report.close_settings')} x-on:click="settings_open = false">✕</button>
+            </header>
+            {[{ key: 'extended', label: t('fleets.report.setting_extended') }, { key: 'expand_ships', label: t('fleets.report.setting_expand') }].map(setting =>
+                <button type="button" role="switch" class="[ br__switch ]" x-bind:aria-checked={`String(${setting.key})`} x-on:click={`${setting.key} = !${setting.key}`}>
+                    <span class="[ br__switch-track ]" aria-hidden="true"><span /></span>
+                    <span>{setting.label}</span>
+                </button>
+            )}
+        </section>
+    </div>
 </div>
 
 <style lang="scss">
-    .battle-report {
-        --side-ours: var(--alliance-blue);
-        --side-enemy: var(--fleet-red);
-        --side-third: var(--militia-purple);
-
+    .br {
         display: flex;
         flex-direction: column;
-        gap: var(--space-l);
+        font-size: var(--step--1);
+
+        :global(button:focus-visible),
+        :global(a:focus-visible) {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .br__bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-m);
+        padding: var(--space-2xs) var(--space-s);
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--hairline-medium);
+    }
+
+    .br__bar-group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .br__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--foreground);
+        }
+    }
+
+    .br__button--icon {
+        width: 2.75rem;
+        padding: 0;
+    }
+
+    .br__step {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .br__arrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        color: var(--foreground);
+        font-size: var(--step-1);
+        text-decoration: none;
+    }
+
+    span.br__arrow {
+        opacity: 0.3;
+    }
+
+    .br__status {
+        color: var(--highlight);
+        font-weight: 700;
+    }
+
+    .br__tabs {
+        display: flex;
+        overflow-x: auto;
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--hairline-medium);
+    }
+
+    .br__tab {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        color: var(--foreground);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        text-transform: uppercase;
+        white-space: nowrap;
+        cursor: pointer;
+
+        &[aria-selected='true'] {
+            color: var(--highlight);
+            border-bottom-color: var(--fleet-red);
+        }
+    }
+
+    .br__info {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-s) var(--space-l);
+        padding: var(--space-s) 0;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .br__systems {
+        align-items: flex-end;
+
+        a {
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            color: var(--highlight);
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+    }
+
+    .br__scroll {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: var(--space-l);
+    }
+
+    .br__grid {
+        display: grid;
+        grid-template-rows: auto auto;
+        gap: var(--space-s) var(--space-l);
+        justify-content: center;
+
+        > section {
+            min-width: 0;
+            scroll-snap-align: start;
+        }
+    }
+
+    .br__team {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+            text-align: center;
+        }
+    }
+
+    .br__stats {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0;
+        padding: 0 var(--space-xs);
+
+        div {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-s);
+        }
+
+        dt {
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .br__members {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+            align-items: center;
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+    }
+
+    .br__move {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        color: var(--text-muted);
+        font-size: var(--step-1);
+        text-decoration: none;
+
+        &:hover {
+            color: var(--foreground);
+        }
+    }
+
+    .br__member {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+        white-space: nowrap;
+
+        a {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--foreground);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .br__muted {
+        color: var(--text-muted);
+    }
+
+    .br__expand {
+        min-height: 1.75rem;
+        width: 100%;
+        background-color: color-mix(in srgb, var(--component-background) 80%, var(--background));
+        border: 0;
+        color: var(--text-muted);
+        font: inherit;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--foreground);
+        }
+    }
+
+    .br__head {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 36px 36px;
+        align-items: center;
+        min-height: 2.75rem;
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--background);
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .br__expand--icon {
+        width: 2rem;
+        min-height: 2rem;
+        margin-inline: auto;
+    }
+
+    .br__head-cols {
+        display: flex;
+        flex-direction: column;
+        padding: 0 var(--space-xs);
+
+        div {
+            display: flex;
+            justify-content: space-between;
+        }
+    }
+
+    .br__head-gold {
+        color: var(--foreground);
+        font-weight: 700;
+    }
+
+    .br__summary-toggle {
+        width: 100%;
+        min-height: 2.75rem;
+        background-color: var(--component-background);
+        border: 0;
+        border-bottom: 1px solid var(--background);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        small {
+            margin-left: var(--space-3xs);
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+    }
+
+    .br__sum {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 2.5rem 2.5rem 4.5rem;
+        align-items: center;
+        min-height: 2.75rem;
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--background);
+        font-variant-numeric: tabular-nums;
+
+        img {
+            margin-inline: auto;
+        }
+    }
+
+    .br__sum--group {
+        grid-template-columns: minmax(0, 1fr) 2.5rem 2.5rem 4.5rem;
+        padding-left: var(--space-xs);
+    }
+
+    .br__sum-names {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 0 var(--space-xs);
+
+        b {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .br__num,
+    .br__red {
+        padding-right: var(--space-xs);
+        text-align: right;
+        color: var(--highlight);
+    }
+
+    .br__red {
+        color: color-mix(in srgb, var(--fleet-red) 60%, white);
+    }
+
+    .br__red--bold {
+        font-weight: 700;
+    }
+
+    .br__tl {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 36px 36px;
+        align-items: center;
+        height: 2.75rem;
+        background-color: color-mix(in srgb, var(--component-background) 60%, var(--background));
+        border-bottom: 1px solid var(--background);
+
+        img {
+            display: block;
+            margin-inline: auto;
+        }
+    }
+
+    .br__tl--loss {
+        background-color: color-mix(in srgb, var(--fleet-red) 30%, var(--component-background));
+    }
+
+    .br__tl-body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 0 var(--space-xs);
+
+        > span {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-xs);
+            white-space: nowrap;
+        }
+
+        b {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--highlight);
+        }
+
+        > span:first-child b {
+            color: var(--foreground);
+        }
+
+        time {
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .br__ally {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs);
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--background);
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin: 0;
+            padding: 0 0 0 calc(40px + var(--space-xs));
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2xs);
+        }
+    }
+
+    .br__ally-head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .br__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: var(--space-3xl) var(--space-s) 0;
+        background-color: color-mix(in srgb, var(--background) 70%, transparent);
+    }
+
+    .br__dialog {
+        z-index: var(--dialog-z-index);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        width: min(35rem, 100%);
+        padding: 0 var(--space-s) var(--space-s);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-strong);
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-xs) 0;
+            border-bottom: 1px solid var(--hairline-medium);
+        }
 
         h2 {
             margin: 0;
@@ -253,334 +916,56 @@ const group_line = (pilots: number, lost: number) =>
         }
     }
 
-    .battle-report__steps {
+    .br__switch {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-columns: 3.25rem minmax(0, 1fr);
         align-items: center;
-        gap: var(--space-s);
+        gap: var(--space-xs);
+        min-height: 3rem;
+        background: transparent;
+        border: 0;
+        color: var(--foreground);
+        font: inherit;
+        font-size: var(--step-0);
+        text-align: left;
+        cursor: pointer;
 
-        > div {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
+        &[aria-checked='true'] .br__switch-track {
+            background-color: var(--green);
 
-        > a:last-child {
-            justify-self: end;
-        }
-
-        a {
-            font-weight: 700;
-        }
-    }
-
-    @media (max-width: 40rem) {
-        .battle-report__steps {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            grid-template-areas:
-                'title title'
-                'back next';
-
-            > div {
-                grid-area: title;
-            }
-
-            > :first-child {
-                grid-area: back;
-            }
-
-            > :last-child {
-                grid-area: next;
+            span {
+                transform: translateX(1.25rem);
+                background-color: var(--highlight);
             }
         }
     }
 
-    .battle-report__partial {
-        margin: 0;
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--border-color-hover);
-    }
-
-    .battle-report__sides {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
-        gap: var(--space-s);
-        align-items: stretch;
-    }
-
-    .battle-report__side {
-        --side: var(--side-enemy);
-
+    .br__switch-track {
         display: flex;
-        flex-direction: column;
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
-        border-top: 3px solid var(--side);
-
-        > header {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2xs);
-            padding: var(--space-s) var(--space-m);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        h3 {
-            margin: 0;
-            font-size: var(--step-1);
-            color: var(--highlight);
-        }
-
-        dl {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: var(--space-xs);
-            margin: 0;
-        }
-
-        dt {
-            font-size: var(--step--2);
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        dd {
-            margin: 0;
-
-            b {
-                font-family: var(--heading-font);
-                font-size: var(--step-2);
-                font-weight: 400;
-                color: var(--highlight);
-            }
-        }
-    }
-
-    .battle-report__side--ours { --side: var(--side-ours); }
-    .battle-report__side--third { --side: var(--side-third); }
-
-    .battle-report__efficiency {
-        display: flex;
-        height: var(--space-3xs);
+        align-items: center;
+        width: 2.75rem;
+        height: 1.5rem;
+        padding: 0 3px;
+        border-radius: 999px;
         background-color: var(--hairline-strong);
 
         span {
-            background-color: var(--side);
+            width: 1.125rem;
+            height: 1.125rem;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            transition: transform var(--fast-transition);
         }
     }
 
-    .battle-report__groups,
-    .battle-report__pilots {
-        display: flex;
-        flex-direction: column;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    .battle-report__groups {
-        gap: 1px;
-        padding: var(--space-2xs) var(--space-m);
-        border-bottom: 1px solid var(--border-color);
-
-        li {
-            display: grid;
-            grid-template-columns: 28px minmax(0, 1fr) auto;
-            align-items: center;
-            gap: var(--space-xs);
-            padding: var(--space-3xs) 0;
+    @media (max-width: 48rem) {
+        .br__grid {
+            justify-content: start;
+            column-gap: var(--space-s);
         }
 
-        select {
-            min-height: 2.75rem;
-            max-width: 9rem;
-            padding: 0 var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--hairline-strong);
-            color: var(--foreground);
-            font: inherit;
-            font-size: var(--step--1);
-
-            &:focus-visible {
-                outline: 2px solid var(--fleet-yellow);
-                outline-offset: 2px;
-            }
-        }
-    }
-
-    .battle-report__group-name,
-    .battle-report__pilot-name {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-
-        b,
-        a {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: var(--highlight);
-        }
-    }
-
-    .battle-report__pilot-name a {
-        text-decoration: none;
-
-        &:hover,
-        &:focus-visible {
-            text-decoration: underline;
-        }
-    }
-
-    .battle-report__pilots {
-        padding: var(--space-2xs) var(--space-m) var(--space-s);
-
-        li {
-            display: grid;
-            grid-template-columns: 32px minmax(0, 1fr) auto;
-            align-items: center;
-            gap: var(--space-xs);
-            padding: var(--space-3xs) 0;
-            border-bottom: 1px solid var(--hairline-medium);
-        }
-    }
-
-    .battle-report__ships {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: var(--space-3xs);
-    }
-
-    .battle-report__ship {
-        display: inline-flex;
-        border: 1px solid transparent;
-    }
-
-    .battle-report__ship--lost {
-        border-color: var(--fleet-red);
-        background-color: color-mix(in srgb, var(--fleet-red) 25%, transparent);
-
-        &:focus-visible {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-    }
-
-    .battle-report__groups li.battle-report__more,
-    .battle-report__pilots li.battle-report__more {
-        grid-template-columns: 1fr;
-        border-bottom: 0;
-
-        button {
-            min-height: 2.75rem;
-            padding: 0;
-            background: transparent;
-            border: 0;
-            color: var(--foreground);
-            font: inherit;
-            font-weight: 700;
-            text-align: left;
-            cursor: pointer;
-
-            &:focus-visible {
-                outline: 2px solid var(--fleet-yellow);
-                outline-offset: 2px;
-            }
-        }
-    }
-
-    .battle-report__reset {
-        margin: 0;
-
-        button {
-            min-height: 2.75rem;
-            padding: 0 var(--space-s);
-            background: transparent;
-            border: 1px solid var(--hairline-strong);
-            color: var(--foreground);
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-
-            &:hover,
-            &:focus-visible {
-                border-color: var(--foreground);
-            }
-        }
-    }
-
-    .battle-report__mails {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-
-        ol {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        li {
-            --side: var(--side-enemy);
-
-            display: grid;
-            grid-template-columns: 4.5rem 32px minmax(0, 1fr) auto;
-            align-items: center;
-            gap: var(--space-xs);
-            padding: var(--space-3xs) var(--space-xs);
-            background-color: var(--component-background);
-            border-left: 3px solid var(--side);
-            font-variant-numeric: tabular-nums;
-            time {
-                font-size: var(--step--1);
-            }
-        }
-
-        .battle-report__mail--ours { --side: var(--side-ours); }
-        .battle-report__mail--third { --side: var(--side-third); }
-    }
-
-    .battle-report__mail-what {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-
-        a {
-            color: var(--highlight);
-            text-decoration: none;
-
-            &:hover,
-            &:focus-visible {
-                text-decoration: underline;
-            }
-        }
-
-        small {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-    }
-
-    .battle-report__mail-isk {
-        color: var(--highlight);
-        text-align: right;
-    }
-
-    @media (max-width: 30rem) {
-        .battle-report__mails li {
-            grid-template-columns: 32px minmax(0, 1fr) auto;
-
-            time {
-                display: none;
-            }
+        .br__systems {
+            align-items: flex-start;
         }
     }
 </style>

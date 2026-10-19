@@ -37,7 +37,7 @@ from feed.helpers.fleet_kills import OUTCOME_LOSS, killmail_isk
 from feed.models import FeedKillmail
 from fleets.helpers.fights.collect import _named, lookup_entity_names
 from fleets.helpers.fights.rounds import parse_time
-from fleets.helpers.fights.timeline import FIRST_ALLIANCE_ID
+from fleets.helpers.fights.rounds import FIRST_ALLIANCE_ID
 
 WINDOW_PAD = timedelta(minutes=1)
 MAX_TEAMS = 3
@@ -266,7 +266,24 @@ def group_of(corporation: int | None, alliance: int | None) -> int | None:
     return alliance or corporation or None
 
 
-def group_kind(group: int) -> str:
+def alliance_ids(rows: Iterable[dict]) -> set[int]:
+    """Every id that appears as an alliance on these mails."""
+    found = set()
+    for row in rows:
+        if row["victim"]["alliance"]:
+            found.add(row["victim"]["alliance"])
+        found.update(a[ALLIANCE] for a in row["attackers"] if a[ALLIANCE])
+    return found
+
+
+def group_kind(group: int, alliances: set[int] | None = None) -> str:
+    """Alliance or corporation, from the mails when we have them.
+
+    Ids alone can't tell: alliances made before 2010 share the id range
+    with corporations and characters, so the threshold is only a fallback.
+    """
+    if alliances is not None:
+        return "alliance" if group in alliances else "corporation"
     return "alliance" if group >= FIRST_ALLIANCE_ID else "corporation"
 
 
@@ -580,7 +597,9 @@ def _team_pilots(pilots: list[_Pilot], names: dict) -> list[dict]:
             "character_id": pilot.character,
             "name": _name(names, "characters", pilot.character, ""),
             "corporation_id": pilot.corporation,
+            "corporation_name": _name(names, "groups", pilot.corporation, ""),
             "alliance_id": pilot.alliance,
+            "alliance_name": _name(names, "groups", pilot.alliance, ""),
             "group_id": group_of(pilot.corporation, pilot.alliance),
             "ships": [
                 {
@@ -610,7 +629,11 @@ def _team_pilots(pilots: list[_Pilot], names: dict) -> list[dict]:
 
 
 def _team_groups(
-    groups: list[int], pilots: list[_Pilot], lost: list[dict], names: dict
+    groups: list[int],
+    pilots: list[_Pilot],
+    lost: list[dict],
+    names: dict,
+    alliances: set[int],
 ) -> list[dict]:
     pilot_counts = Counter(
         group_of(pilot.corporation, pilot.alliance) for pilot in pilots
@@ -625,9 +648,12 @@ def _team_groups(
     result = [
         {
             "id": group,
-            "kind": group_kind(group),
+            "kind": group_kind(group, alliances),
             "name": _name(
-                names, "groups", group, f"Unknown {group_kind(group)}"
+                names,
+                "groups",
+                group,
+                f"Unknown {group_kind(group, alliances)}",
             ),
             "pilots": pilot_counts.get(group, 0),
             "ships_lost": ships_lost.get(group, 0),
@@ -664,6 +690,7 @@ def build_report(timeline, position: int, sides: str | None = None):
     names = _report_names(timeline)
     ours = our_characters(timeline.killmails or [])
     teams, normalised = assign_sides(rows, ours, sides)
+    alliances = alliance_ids(rows)
 
     pilots = _pilots(rows)
     pilot_teams = {
@@ -700,6 +727,7 @@ def build_report(timeline, position: int, sides: str | None = None):
                 "ours": index == OUR_TEAM,
                 "totals": {
                     "pilots": len(by_team[index]),
+                    "damage": sum(p.damage for p in by_team[index]),
                     **_team_totals(index, rows, row_teams, shooters),
                 },
                 "groups": _team_groups(
@@ -707,6 +735,7 @@ def build_report(timeline, position: int, sides: str | None = None):
                     by_team[index],
                     lost,
                     names,
+                    alliances,
                 ),
                 "pilots": _team_pilots(by_team[index], names),
             }
