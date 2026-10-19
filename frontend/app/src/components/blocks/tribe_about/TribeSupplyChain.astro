@@ -1,18 +1,15 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, lang, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { TribeAboutGroup, TribeAboutSupply } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { format_number } from '@helpers/numbers'
 import { fill_template } from '@helpers/tribe_activity'
 import {
     SUPPLY_FLOW,
     TRIBE_ABOUT_STAGES,
     group_has_year,
-    month_short,
     order_groups,
-    trim_leading_zeros,
 } from '@helpers/tribe_about'
 
 interface Props {
@@ -34,24 +31,10 @@ const chain = order_groups(groups, SUPPLY_FLOW).map((group) => {
     }
 })
 
-const mining_bars = trim_leading_zeros(supply?.mining_by_month ?? [], (row) => row.volume_m3).map((row) => ({
-    label: month_short(row.month, lang),
-    value: row.volume_m3,
-    title: fill_template(t('tribes.about.supply.month_m3'), {
-        month: month_short(row.month, lang),
-        m3: format_number(row.volume_m3),
-    }),
-}))
-const best_mining = (supply?.mining_by_month ?? []).reduce(
-    (best, row) => (row.volume_m3 > (best?.volume_m3 ?? 0) ? row : best),
-    null as { month: string, volume_m3: number } | null,
-)
 const hulls = groups.find((group) => group.code === 'supply.market')?.highlights?.hulls ?? []
 
 import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
-import TribeHullList from '@components/blocks/tribe_about/TribeHullList.astro'
-import TribeMonthBars from '@components/blocks/tribe_about/TribeMonthBars.astro'
-import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astro'
+import TribeSupplyGoods from '@components/blocks/tribe_about/TribeSupplyGoods.astro'
 ---
 
 <TribeAboutSection
@@ -107,47 +90,7 @@ import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astr
     </ol>
 </TribeAboutSection>
 
-{(mining_bars.length > 0 || (supply?.ores.length ?? 0) > 0 || hulls.length > 0) &&
-    <TribeAboutSection
-        title={t('tribes.about.supply.goods_title')}
-        caption={t('tribes.about.supply.goods_caption')}
-    >
-        <div class="[ tribe-about-row ]">
-            {mining_bars.length > 0 &&
-                <article class="[ tribe-about-card ]">
-                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.supply.mined_by_month')}</h3>
-                    <TribeMonthBars
-                        bars={mining_bars}
-                        note={best_mining
-                            ? fill_template(t('tribes.about.supply.best_month'), {
-                                month: month_short(best_mining.month, lang),
-                                m3: format_number(best_mining.volume_m3),
-                            })
-                            : undefined}
-                    />
-                </article>
-            }
-            {(supply?.ores.length ?? 0) > 0 &&
-                <article class="[ tribe-about-card ]">
-                    <TribeRankedBars
-                        title={t('tribes.about.supply.ores')}
-                        rows={(supply?.ores ?? []).map((ore) => ({
-                            label: ore.name,
-                            value: ore.volume_m3,
-                            display: `${format_number(ore.volume_m3)} m³`,
-                        }))}
-                    />
-                </article>
-            }
-            {hulls.length > 0 &&
-                <article class="[ tribe-about-card ]">
-                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.supply.hulls')}</h3>
-                    <TribeHullList hulls={hulls} />
-                </article>
-            }
-        </div>
-    </TribeAboutSection>
-}
+<TribeSupplyGoods supply={supply} hulls={hulls} />
 
 <style lang="scss">
     .chain {

@@ -3,13 +3,20 @@ import {
     format_number,
     number_thousand_separator,
 } from '@helpers/numbers'
-import type { TribeAboutGroup } from '@dtypes/api.minmatar.org'
+import type { TribeAboutGroup, TribeGroupAbout } from '@dtypes/api.minmatar.org'
 import { fill_template } from '@helpers/tribe_activity'
 import { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
 type Translate = (key: UiKey) => string
 type Totals = Record<string, number | string>
+
+/** One number in an About intro's vitals grid. */
+export type TribeAboutVital = {
+    value: string
+    label: string
+    detail?: string
+}
 
 /** How one group's year reads on its tribe's About page. */
 export type TribeAboutStage = {
@@ -269,4 +276,40 @@ export function month_short(month: string, lang: string): string {
         month: 'short',
         timeZone: 'UTC',
     })
+}
+
+export function month_long(month: string, lang: string): string {
+    const [year, mm] = month.split('-').map(Number)
+    return new Date(Date.UTC(year, mm - 1, 1)).toLocaleDateString(lang, {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+}
+
+/**
+ * The numbers beside a group's About write-up. Until the group's year is
+ * built it is only the headcount the group page already has.
+ */
+export function group_about_vitals(
+    t: Translate,
+    about: TribeGroupAbout | null,
+    member_count: number,
+    tribe_name: string,
+): TribeAboutVital[] {
+    if (!about?.ready)
+        return [{ value: count(member_count), label: t('tribes.about.group.members') }]
+    return [
+        { value: count(about.people), label: t('tribes.about.group.members') },
+        {
+            value: count(about.joined_recent),
+            label: t('tribes.about.group.joined'),
+            detail: t('tribes.about.group.joined_detail'),
+        },
+        {
+            value: count(about.in_other_groups),
+            label: fill_template(t('tribes.about.group.other_groups'), { tribe: tribe_name }),
+        },
+        { value: count(about.corporation_count), label: t('tribes.about.corporations') },
+    ]
 }

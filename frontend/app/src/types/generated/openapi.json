@@ -29114,6 +29114,141 @@
         "title": "TribeEventSchema",
         "type": "object"
       },
+      "TribeGroupAboutSchema": {
+        "description": "A year of one group. ``ready`` is false until the cache is built.",
+        "properties": {
+          "capitals": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capitals"
+          },
+          "code": {
+            "default": "",
+            "title": "Code",
+            "type": "string"
+          },
+          "corporation_count": {
+            "default": 0,
+            "title": "Corporation Count",
+            "type": "integer"
+          },
+          "corporations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TribeAboutCorporationSchema"
+            },
+            "title": "Corporations",
+            "type": "array"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "integer"
+          },
+          "growth": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TribeAboutGrowthSchema"
+              }
+            ],
+            "default": {
+              "counts": [],
+              "months": []
+            }
+          },
+          "in_other_groups": {
+            "default": 0,
+            "title": "In Other Groups",
+            "type": "integer"
+          },
+          "joined_recent": {
+            "default": 0,
+            "title": "Joined Recent",
+            "type": "integer"
+          },
+          "people": {
+            "default": 0,
+            "title": "People",
+            "type": "integer"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "ready": {
+            "default": false,
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "supply": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supply"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TribeAboutGroupSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "group_id",
+          "tribe_id"
+        ],
+        "title": "TribeGroupAboutSchema",
+        "type": "object"
+      },
       "TribeGroupGrowthSchema": {
         "properties": {
           "counts": {
@@ -53080,6 +53215,65 @@
           }
         ],
         "summary": "Tribe group detail with requirements.",
+        "tags": [
+          "Tribes - Groups",
+          "Tribes - Groups"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/groups/{group_id}/about": {
+      "get": {
+        "operationId": "tribes_endpoints_groups_get_tribe_group_about_get_tribe_group_about",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeGroupAboutSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Group About tab: a year of totals and records; named pilots for roster viewers.",
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"

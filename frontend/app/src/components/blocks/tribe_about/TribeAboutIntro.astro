@@ -1,43 +1,14 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
-
-import type { Tribe, TribeAbout } from '@dtypes/api.minmatar.org'
-import { number_thousand_separator } from '@helpers/numbers'
+import type { TribeAboutVital } from '@helpers/tribe_about'
 
 interface Props {
-    tribe: Tribe
-    about: TribeAbout | null
+    /** One plain-text line above the write-up. */
+    lede?: string
+    markdown?: string
+    vitals: TribeAboutVital[]
 }
 
-const { tribe, about } = Astro.props
-
-interface Vital {
-    value: string
-    label: string
-    detail?: string
-}
-
-const ready = Boolean(about?.ready)
-const vitals: Vital[] = [
-    {
-        value: number_thousand_separator(ready ? about!.people : tribe.total_member_count),
-        label: t('tribes.about.people'),
-        detail: t('tribes.about.people_detail'),
-    },
-    {
-        value: String(tribe.group_count),
-        label: t('tribes.about.groups'),
-    },
-    ready && {
-        value: number_thousand_separator(about!.multi_group_people),
-        label: t('tribes.about.multi_group'),
-    },
-    ready && {
-        value: String(about!.corporation_count),
-        label: t('tribes.about.corporations'),
-    },
-].filter(Boolean) as Vital[]
+const { lede, markdown, vitals } = Astro.props
 
 import TextBox from '@components/layout/TextBox.astro'
 import Markdown from '@components/blocks/Markdown.astro'
@@ -45,10 +16,10 @@ import Markdown from '@components/blocks/Markdown.astro'
 
 <section class="[ intro ]">
     <div class="[ words ]">
-        {tribe.description && <p class="[ lede ]">{tribe.description}</p>}
-        {tribe.content &&
+        {lede && <p class="[ lede ]">{lede}</p>}
+        {markdown &&
             <TextBox max_width="100%">
-                <Markdown markdown={tribe.content} />
+                <Markdown markdown={markdown} />
             </TextBox>
         }
     </div>

@@ -28,6 +28,7 @@ import type {
     TribeGroupShowcase,
     TribeEvent,
     TribeGroupPublishing,
+    TribeGroupAbout as TribeGroupAboutData,
 } from '@dtypes/api.minmatar.org'
 import type { DiscordChannelUI, FleetItem, PostTileUI, TribeVisibility } from '@dtypes/layout_components'
 import type { GuideMeta } from '@/data/guides/types'
@@ -38,6 +39,7 @@ import {
     get_membership_characters_available,
     get_tribe_group_roster,
     get_tribe_group_showcase,
+    get_tribe_group_about,
     get_group_events,
     get_group_publishing,
     get_discord_channels,
@@ -75,6 +77,7 @@ let available_characters: TribeAvailableCharacter[] = []
 const membership_by_group = new Map<number, TribeMembership | null>()
 let roster: TribeGroupRosterEntry[] | null = null
 let showcase: TribeGroupShowcase | null = null
+let group_about: TribeGroupAboutData | null = null
 let guides: GuideMeta[] = []
 let posts: PostTileUI[] = []
 let fleets: FleetItem[] = []
@@ -98,7 +101,7 @@ try {
     const post_href = (post_id: number) => translatePath(`/alliance/propaganda/${post_id}`)
     const can_view_fleets = Boolean(auth_token) && can(gates, 'fleets.view')
     const manages = Boolean(auth_token && tribe_group.can_manage)
-    const [posts_page, group_fleets, group_events, voice_list, loaded_publishing, text_list] = await Promise.all([
+    const [posts_page, group_fleets, group_events, voice_list, loaded_publishing, text_list, loaded_about] = await Promise.all([
         // With a token the API adds members-only posts the viewer may read.
         get_posts({ tribe_group_id: group_id, status: 'published', page_num: 1, page_size: 12 }, auth_token)
             .catch(() => ({ total_posts: 0, posts: [] })),
@@ -113,7 +116,10 @@ try {
             : Promise.resolve([]),
         manages ? get_group_publishing(auth_token as string, group_id).catch(() => null) : Promise.resolve(null),
         manages ? get_discord_channels(auth_token as string, 'text').catch(() => null) : Promise.resolve(null),
+        // Cached by Celery; until it exists the About tab shows the write-up and headcount.
+        get_tribe_group_about(tribe_id, group_id, auth_token).catch(() => null),
     ])
+    group_about = loaded_about
     posts = sort_newest_first(posts_page.posts as unknown as GroupPostSource[])
         .map((post) => post_tile(post, group_id, post_href(post.post_id)))
     const listed_fleets = group_fleets.filter((fleet) => fleet.fleet_commander)
@@ -226,7 +232,8 @@ function tribe_tab_label(tab: TribeGroupTab) {
 // Settings needs the publishing settings, which only the API's managers get.
 const show_settings = Boolean(tribe_group?.can_manage && publishing)
 const tribe_tab_ids = tribe_group_tab_ids({
-    has_about: Boolean(about_markdown),
+    // The year's numbers always have something to say, even with no write-up.
+    has_about: true,
     has_guides: guides.length > 0,
     has_activity: Boolean(activity),
     fleet_count: fleets.length,
@@ -254,19 +261,18 @@ import Viewport from '@layouts/Viewport.astro'
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import PageLanding from '@components/page/PageLanding.astro'
 import PageTitle from '@components/page/PageTitle.astro'
-import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import Markdown from '@components/blocks/Markdown.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro'
 import RequirementSwiper from '@components/blocks/RequirementSwiper.astro'
 import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 import TribeGroupActivity from '@components/blocks/TribeGroupActivity.astro'
+import TribeGroupAbout from '@components/blocks/tribe_about/TribeGroupAbout.astro'
 import TribeGroupMembersGallery from '@components/blocks/TribeGroupMembersGallery.astro'
 import TribeGroupActions from '@components/blocks/TribeGroupActions.astro'
 import TribeGroupApplyHint from '@components/blocks/TribeGroupApplyHint.astro'
@@ -365,13 +371,17 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                             tabs={tribe_tabs}
                             hash_aliases={TRIBE_GROUP_HASH_ALIASES}
                         >
-                            {about_markdown &&
-                                <SectionTabPanel id="about" id_prefix="tribe-group" is_default={default_tribe_tab === 'about'}>
-                                    <TextBox max_width="100%">
-                                        <Markdown markdown={about_markdown} />
-                                    </TextBox>
-                                </SectionTabPanel>
-                            }
+                            <SectionTabPanel id="about" id_prefix="tribe-group" is_default={default_tribe_tab === 'about'}>
+                                <TribeGroupAbout
+                                    markdown={about_markdown}
+                                    group_name={tribe_group.name}
+                                    group_code={tribe_group.code}
+                                    member_count={tribe_group.member_count}
+                                    tribe_id={tribe_id}
+                                    tribe_name={tribe?.name ?? tribe_group.tribe_name}
+                                    about={group_about}
+                                />
+                            </SectionTabPanel>
 
                             <SectionTabPanel id="requirements" id_prefix="tribe-group" is_default={default_tribe_tab === 'requirements'}>
                                 <Flexblock gap="var(--space-m)" class="[ tribe-group-requirements ]">

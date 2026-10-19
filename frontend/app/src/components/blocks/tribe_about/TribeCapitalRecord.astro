@@ -1,0 +1,193 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeAboutCapitals } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { format_date_short } from '@helpers/date'
+import { fill_template } from '@helpers/tribe_activity'
+import { month_short, trim_leading_zeros } from '@helpers/tribe_about'
+
+interface Props {
+    /** A tribe's whole capital line, or one group's slice of it. */
+    capitals: TribeAboutCapitals
+    kills_title?: string
+    kills_caption?: string
+    ping_caption?: string
+}
+
+const {
+    capitals,
+    kills_title = t('tribes.about.capitals.kills_title'),
+    kills_caption = t('tribes.about.capitals.kills_caption'),
+    ping_caption = t('tribes.about.capitals.ping_caption'),
+} = Astro.props
+
+const count = (value: number) => number_thousand_separator(Math.round(value))
+
+const month_bars = trim_leading_zeros(capitals.kills_by_month, (row) => row.kills).map((row) => ({
+    label: month_short(row.month, lang),
+    value: row.kills,
+    title: fill_template(t('tribes.about.capitals.month_kills'), {
+        month: month_short(row.month, lang),
+        n: count(row.kills),
+    }),
+}))
+const best_month = capitals.kills_by_month.reduce(
+    (best, row) => (row.kills > (best?.kills ?? 0) ? row : best),
+    null as { month: string, kills: number } | null,
+)
+const first_kill = capitals.first_kill
+    ? new Date(capitals.first_kill).toLocaleDateString(lang, { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    : ''
+
+const peak_hour = Math.max(1, ...capitals.hours)
+const record = capitals.record_turnout
+
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeKillList from '@components/blocks/tribe_about/TribeKillList.astro'
+import TribeMonthBars from '@components/blocks/tribe_about/TribeMonthBars.astro'
+import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astro'
+---
+
+<TribeAboutSection title={kills_title} caption={kills_caption}>
+    <dl class="[ tribe-about-stats ]">
+        <div>
+            <dt>{t('tribes.about.capitals.year_kills')}</dt>
+            <dd>{count(capitals.year_kills)}</dd>
+        </div>
+        <div>
+            <dt>{t('tribes.about.capitals.capital_kills')}</dt>
+            <dd>{count(capitals.capital_kills_year)}</dd>
+        </div>
+        <div>
+            <dt>{first_kill
+                ? fill_template(t('tribes.about.capitals.all_time_since'), { date: first_kill })
+                : t('tribes.about.capitals.all_time')}
+            </dt>
+            <dd>{count(capitals.all_time_kills)}</dd>
+        </div>
+    </dl>
+
+    <div class="[ tribe-about-row ]">
+        <article class="[ tribe-about-card ]">
+            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.by_month')}</h3>
+            <TribeMonthBars
+                bars={month_bars}
+                note={best_month && best_month.kills > 0
+                    ? fill_template(t('tribes.about.capitals.best_month'), {
+                        month: month_short(best_month.month, lang),
+                        n: count(best_month.kills),
+                    })
+                    : undefined}
+            />
+        </article>
+        <article class="[ tribe-about-card ]">
+            <TribeRankedBars
+                title={t('tribes.about.capitals.targets')}
+                rows={capitals.victim_classes.map((row) => ({ label: row.name, value: row.kills, display: count(row.kills) }))}
+            />
+        </article>
+        <article class="[ tribe-about-card ]">
+            <TribeRankedBars
+                title={t('tribes.about.capitals.systems')}
+                rows={capitals.systems.map((row) => ({ label: row.name, value: row.kills, display: count(row.kills) }))}
+            />
+        </article>
+    </div>
+
+    {capitals.recent_capital_kills.length > 0 &&
+        <article class="[ tribe-about-card ]">
+            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.recent_capitals')}</h3>
+            <TribeKillList
+                columns={3}
+                kills={capitals.recent_capital_kills.map((kill) => ({
+                    killmail_id: kill.killmail_id,
+                    ship_type_id: kill.ship_type_id,
+                    ship_name: kill.ship_name,
+                    meta: `${kill.system} · ${format_date_short(lang, kill.killed_at)}`,
+                }))}
+            />
+        </article>
+    }
+</TribeAboutSection>
+
+<TribeAboutSection
+    title={t('tribes.about.capitals.ping_title')}
+    caption={ping_caption}
+>
+    <div class="[ tribe-about-row ]">
+        <article class="[ tribe-about-card ]">
+            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.record_turnout')}</h3>
+            {record ?
+                <>
+                    <p class="[ tribe-about-record ]">
+                        {fill_template(t('tribes.about.capitals.pilots'), { n: count(record.pilots) })}
+                    </p>
+                    <p class="[ tribe-about-detail ]">
+                        {[record.systems.join(', '), record.date ? format_date_short(lang, record.date) : '']
+                            .filter(Boolean).join(' · ')}
+                    </p>
+                </>
+                :
+                <p class="[ tribe-about-detail ]">{t('tribes.about.quiet_year')}</p>
+            }
+        </article>
+        <article class="[ tribe-about-card ]">
+            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.fleets_year')}</h3>
+            <p class="[ tribe-about-record ]">{count(capitals.fleets_year)}</p>
+            <p class="[ tribe-about-detail ]">
+                {fill_template(t('tribes.about.capitals.typical_turnout'), { n: count(capitals.median_turnout) })}
+            </p>
+        </article>
+        <article class="[ tribe-about-card ]">
+            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.hours')}</h3>
+            <ol class="[ hours ]">
+                {capitals.hours.map((fleets, hour) => (
+                    <li
+                        style={`--level: ${fleets / peak_hour}`}
+                        title={fill_template(t('tribes.about.capitals.hour_fleets'), {
+                            hour: String(hour).padStart(2, '0'),
+                            n: count(fleets),
+                        })}
+                    >
+                        <span class="[ visually-hidden ]">
+                            {fill_template(t('tribes.about.capitals.hour_fleets'), {
+                                hour: String(hour).padStart(2, '0'),
+                                n: count(fleets),
+                            })}
+                        </span>
+                    </li>
+                ))}
+            </ol>
+            <p class="[ hours__axis ]" aria-hidden="true">
+                <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+            </p>
+            <p class="[ tribe-about-detail ]">{t('tribes.about.capitals.hours_caption')}</p>
+        </article>
+    </div>
+</TribeAboutSection>
+
+<style lang="scss">
+    .hours {
+        display: grid;
+        grid-template-columns: repeat(24, minmax(0, 1fr));
+        gap: 1px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            block-size: var(--space-xl);
+            background: color-mix(in srgb, var(--fleet-yellow) calc(var(--level) * 100%), var(--background));
+        }
+    }
+
+    .hours__axis {
+        display: flex;
+        justify-content: space-between;
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+</style>

@@ -7,7 +7,8 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { strip_markdown } from '@helpers/string'
 import { get_tribe, get_tribe_about } from '@helpers/api.minmatar.org/tribes'
 import { TRIBES_COVER_FALLBACK } from '@helpers/tribe_covers'
-import { PULSE_ORDER } from '@helpers/tribe_about'
+import { PULSE_ORDER, type TribeAboutVital } from '@helpers/tribe_about'
+import { number_thousand_separator } from '@helpers/numbers'
 import { fill_template } from '@helpers/tribe_activity'
 import type { Tribe, TribeAbout } from '@dtypes/api.minmatar.org'
 
@@ -27,6 +28,26 @@ try {
 // The About rollup is cached by Celery; until it exists the page shows the tribe without it.
 const about: TribeAbout | null = await get_tribe_about(tribe_id, auth_token).catch(() => null)
 const ready = Boolean(about?.ready)
+
+const vitals = [
+    {
+        value: number_thousand_separator(ready ? about!.people : tribe.total_member_count),
+        label: t('tribes.about.people'),
+        detail: t('tribes.about.people_detail'),
+    },
+    {
+        value: String(tribe.group_count),
+        label: t('tribes.about.groups'),
+    },
+    ready && {
+        value: number_thousand_separator(about!.multi_group_people),
+        label: t('tribes.about.multi_group'),
+    },
+    ready && {
+        value: String(about!.corporation_count),
+        label: t('tribes.about.corporations'),
+    },
+].filter(Boolean) as TribeAboutVital[]
 
 const tribes_url = translatePath('/alliance/tribes/')
 const groups_url = translatePath(`/alliance/tribes/?tribe=${encodeURIComponent(tribe.slug)}`)
@@ -58,6 +79,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import TribeAboutBody from '@components/blocks/tribe_about/TribeAboutBody.astro'
 import TribeAboutIntro from '@components/blocks/tribe_about/TribeAboutIntro.astro'
 import TribeCapitalLine from '@components/blocks/tribe_about/TribeCapitalLine.astro'
 import TribeSupplyChain from '@components/blocks/tribe_about/TribeSupplyChain.astro'
@@ -79,7 +101,7 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
         }}
         wide={true}
     >
-        <Flexblock gap="var(--space-2xl)" class="[ tribe-about ]">
+        <TribeAboutBody gap="var(--space-2xl)">
             <FlexInline class="[ w-full !items-start ]" justification="space-between">
                 <Flexblock gap="var(--space-s)">
                     <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
@@ -101,7 +123,7 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
                 <Button href={groups_url} size="sm">{t('tribes.about.browse_groups')}</Button>
             </FlexInline>
 
-            <TribeAboutIntro tribe={tribe} about={about} />
+            <TribeAboutIntro lede={tribe.description} markdown={tribe.content} vitals={vitals} />
 
             {ready && about ?
                 <>
@@ -141,7 +163,7 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
                 :
                 <p class="[ tribe-about-pending ]">{t('tribes.about.pending')}</p>
             }
-        </Flexblock>
+        </TribeAboutBody>
     </PageLanding>
 </Viewport>
 
@@ -186,79 +208,5 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
     .tribe-about-pending {
         padding: var(--space-m);
         box-shadow: inset 0 0 0 1px var(--border-color-hover);
-    }
-</style>
-
-<style lang="scss" is:global>
-    // Shared by the tribe_about blocks so every card on the page has one anatomy.
-    .tribe-about {
-        .tribe-about-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-            gap: var(--space-s);
-        }
-
-        .tribe-about-card {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-s);
-            min-inline-size: 0;
-            padding: var(--space-m);
-            background: var(--component-background);
-        }
-
-        .tribe-about-eyebrow {
-            margin: 0;
-            font-family: var(--default-font);
-            font-size: var(--step--1);
-            font-weight: normal;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--fleet-yellow);
-        }
-
-        .tribe-about-record {
-            margin: 0;
-            font-family: var(--heading-font);
-            font-size: var(--step-3);
-            line-height: 1.1;
-            color: var(--highlight);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .tribe-about-detail {
-            margin: 0;
-            font-size: var(--step--1);
-        }
-
-        .tribe-about-stats {
-            margin: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
-            gap: 1px;
-            background: var(--border-color-hover);
-            border: 1px solid var(--border-color-hover);
-
-            > div {
-                display: flex;
-                flex-direction: column-reverse;
-                gap: var(--space-3xs);
-                padding: var(--space-s) var(--space-m);
-                background: var(--component-background);
-            }
-
-            dt {
-                font-size: var(--step--1);
-            }
-
-            dd {
-                margin: 0;
-                font-family: var(--heading-font);
-                font-size: var(--step-3);
-                line-height: 1;
-                color: var(--highlight);
-                font-variant-numeric: tabular-nums;
-            }
-        }
     }
 </style>

@@ -35,8 +35,12 @@ from fleets.models import (
 )
 from tribes.helpers import about as about_helpers
 from tribes.helpers.about import (
+    GROUP_ABOUT,
     capitals_block,
+    compute_group_about,
     compute_tribe_about,
+    group_about,
+    refresh_tribe_about,
     tribe_about,
 )
 from tribes.helpers.growth import tribe_membership_growth
@@ -239,6 +243,41 @@ class CapitalsAboutTestCase(TestCase):
         self.assertIsNotNone(about["capitals"])
         self.assertIsNone(about["supply"])
 
+    def test_group_about_tells_the_group_year(self):
+        about = compute_group_about(self.dreads)
+
+        self.assertEqual(about["people"], 2)
+        self.assertEqual(about["joined_recent"], 2)
+        self.assertEqual(about["in_other_groups"], 0)
+        self.assertEqual(about["year"]["totals"]["total_kills"], 2)
+        self.assertEqual(len(about["year"]["top_pilots"]), 2)
+        self.assertEqual(len(about["capitals"]["hangar"]), 1)
+        self.assertEqual(about["capitals"]["year_kills"], 1)
+        self.assertIsNone(about["supply"])
+
+    @factory.django.mute_signals(
+        django_signals.pre_save, django_signals.post_save
+    )
+    def test_group_about_counts_people_in_other_groups(self):
+        carriers = TribeGroup.objects.create(
+            tribe=self.tribe, name="Carriers", code="capitals.carriers"
+        )
+        _join(carriers, self.users[0], self.chars[0])
+
+        about = compute_group_about(self.dreads)
+
+        self.assertEqual(about["in_other_groups"], 1)
+
+    def test_tribe_refresh_also_fills_group_tabs(self):
+        about = refresh_tribe_about(self.tribe)
+
+        cached = GROUP_ABOUT.get(group_id=self.dreads.pk)
+        self.assertIsNotNone(cached)
+        self.assertEqual(cached["group_id"], self.dreads.pk)
+        self.assertEqual(
+            cached["year"]["totals"], about["groups"][0]["totals"]
+        )
+
 
 class TribeGrowthTestCase(TestCase):
     def test_person_in_two_groups_counts_once(self):
@@ -292,6 +331,138 @@ class TribeAboutCacheTestCase(TestCase):
 
         self.assertIsNotNone(about)
         self.assertEqual(about["slug"], "pulse")
+
+
+class GroupAboutCacheTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.group = TribeGroup.objects.create(
+            tribe=tribe, name="Technology", code="pulse.technology"
+        )
+
+    def test_miss_queues_one_refresh(self):
+        with patch.object(about_helpers, "_queue_group_refresh") as queue:
+            self.assertIsNone(group_about(self.group.pk))
+            self.assertIsNone(group_about(self.group.pk))
+        queue.assert_called_once_with(self.group.pk)
+
+    def test_eager_refresh_fills_the_cache(self):
+        about = group_about(self.group.pk)
+
+        self.assertIsNotNone(about)
+        self.assertEqual(about["code"], "pulse.technology")
+
+
+class GroupAboutEndpointTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        self.client = Client()
+        self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.open_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Technology", code="pulse.technology"
+        )
+        self.hidden_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Fishermen",
+            code="pulse.fishermen",
+            roster_hidden=True,
+        )
+        self.alliance = User.objects.create_user(username="ally")
+        _grant_alliance_perm(self.alliance)
+
+    def _payload(self, group):
+        return {
+            "group_id": group.pk,
+            "tribe_id": self.tribe.pk,
+            "code": group.code,
+            "generated_at": timezone.now().isoformat(),
+            "people": 1,
+            "joined_recent": 1,
+            "in_other_groups": 0,
+            "growth": {"months": [], "counts": []},
+            "corporations": [
+                {
+                    "corporation_id": 1,
+                    "name": "Corp",
+                    "ticker": "C",
+                    "people": 1,
+                }
+            ],
+            "corporation_count": 1,
+            "year": {
+                "id": group.pk,
+                "code": group.code,
+                "name": group.name,
+                "member_count": 1,
+                "manual": False,
+                "totals": {"kills": 3},
+                "highlights": {},
+                "top_pilots": [
+                    {"character_id": 1, "character_name": "Pilot", "value": 3}
+                ],
+            },
+            "capitals": None,
+            "supply": None,
+        }
+
+    def _get(self, group, user=None):
+        headers = {}
+        if user:
+            headers["HTTP_AUTHORIZATION"] = f"Bearer {make_token(user)}"
+        with patch(
+            "tribes.endpoints.groups.get_tribe_group_about.group_about",
+            return_value=self._payload(group),
+        ):
+            response = self.client.get(
+                f"{BASE_URL}/{self.tribe.pk}/groups/{group.pk}/about",
+                **headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def test_guest_gets_totals_without_names(self):
+        about = self._get(self.open_group)
+
+        self.assertTrue(about["ready"])
+        self.assertEqual(about["year"]["totals"]["kills"], 3)
+        self.assertEqual(about["year"]["top_pilots"], [])
+        self.assertEqual(len(about["corporations"]), 1)
+
+    def test_alliance_member_sees_names(self):
+        about = self._get(self.open_group, self.alliance)
+
+        self.assertEqual(
+            about["year"]["top_pilots"][0]["character_name"], "Pilot"
+        )
+
+    def test_hidden_roster_keeps_names_and_corporations(self):
+        about = self._get(self.hidden_group, self.alliance)
+
+        self.assertEqual(about["year"]["top_pilots"], [])
+        self.assertEqual(about["corporations"], [])
+        self.assertEqual(about["year"]["totals"]["kills"], 3)
+
+    def test_not_ready_until_cached(self):
+        with patch(
+            "tribes.endpoints.groups.get_tribe_group_about.group_about",
+            return_value=None,
+        ):
+            response = self.client.get(
+                f"{BASE_URL}/{self.tribe.pk}/groups/{self.open_group.pk}/about"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["ready"])
+
+    def test_group_of_another_tribe_is_404(self):
+        response = self.client.get(
+            f"{BASE_URL}/999999/groups/{self.open_group.pk}/about"
+        )
+
+        self.assertEqual(response.status_code, 404)
 
 
 class TribeAboutEndpointTestCase(TestCase):

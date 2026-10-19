@@ -295,6 +295,23 @@ export interface TribeAbout {
     supply:             TribeAboutSupply | null;
 }
 
+/**
+ * A year of one group, for its About tab; ``ready`` is false until the cache
+ * is built. The blocks the schema leaves as dicts share the tribe's shapes.
+ */
+export type TribeGroupAbout = Omit<
+    ApiResponse<'TribeGroupAboutSchema'>,
+    'growth' | 'corporations' | 'year' | 'capitals' | 'supply'
+> & {
+    growth:             TribeAbout['growth'];
+    corporations:       TribeAboutCorporation[];
+    year:               TribeAboutGroup | null;
+    /** The group's own slice of the capital line (capital groups only). */
+    capitals:           TribeAboutCapitals | null;
+    /** Ore by month and kind (Mining only). */
+    supply:             TribeAboutSupply | null;
+}
+
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
 
 export interface TribeMembershipCharacter {
