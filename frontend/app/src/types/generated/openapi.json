@@ -15386,6 +15386,11 @@
             "title": "Solar System Name",
             "type": "string"
           },
+          "srp_covered": {
+            "default": true,
+            "title": "Srp Covered",
+            "type": "boolean"
+          },
           "srp_filed": {
             "title": "Srp Filed",
             "type": "boolean"
@@ -21249,6 +21254,11 @@
             "default": 0,
             "title": "Srp Amount",
             "type": "integer"
+          },
+          "srp_covered": {
+            "default": true,
+            "title": "Srp Covered",
+            "type": "boolean"
           },
           "srp_status": {
             "title": "Srp Status",
