@@ -30,8 +30,13 @@ def upsert_feed_killmail_from_r2z2(
     *,
     allowlist: frozenset[int] | None = None,
     source: str = "stream",
+    fleet_pilots: frozenset[int] | None = None,
 ) -> FeedKillmail | None:
-    """Ingest R2Z2 payload; returns None if discarded."""
+    """Ingest R2Z2 payload; returns None if discarded.
+
+    ``fleet_pilots`` replaces the recent fleet pilots for a mail from an
+    older fleet, such as the fleet history backfill.
+    """
     raw, zkb, sequence_id = parse_r2z2_payload(payload)
     if is_npc_kill(zkb):
         return None
@@ -43,7 +48,7 @@ def upsert_feed_killmail_from_r2z2(
     # is on, so a fleet that roams out of the warzone keeps its fights.
     if not is_monitored_system(
         solar_system_id, allowlist
-    ) and not has_fleet_pilot(raw):
+    ) and not has_fleet_pilot(raw, fleet_pilots):
         return None
 
     killmail_id = raw.get("killmail_id") or payload.get("killmail_id")
@@ -124,8 +129,12 @@ def upsert_feed_killmail_from_raw(
     zkb_meta: dict[str, Any] | None = None,
     allowlist: frozenset[int] | None = None,
     source: str = "stream",
+    fleet_pilots: frozenset[int] | None = None,
 ) -> FeedKillmail | None:
     payload = {"killmail": raw, "zkb": zkb_meta or raw.get("zkb") or {}}
     return upsert_feed_killmail_from_r2z2(
-        payload, allowlist=allowlist, source=source
+        payload,
+        allowlist=allowlist,
+        source=source,
+        fleet_pilots=fleet_pilots,
     )

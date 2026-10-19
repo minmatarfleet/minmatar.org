@@ -145,7 +145,7 @@ def _in_fleet(
     return was_present(windows[character_id], moment)
 
 
-def _instance_bounds(
+def instance_bounds(
     instance, windows: dict[int, tuple[datetime, datetime]]
 ) -> tuple[datetime, datetime]:
     start = instance.start_time - JOIN_GRACE
@@ -177,7 +177,7 @@ def iter_instance_killmails(instance, windows=None):
     windows = _member_windows(instance) if windows is None else windows
     if not windows:
         return
-    start, end = _instance_bounds(instance, windows)
+    start, end = instance_bounds(instance, windows)
     # The raw mail is the heaviest column and matching never reads it.
     for killmail in (
         FeedKillmail.objects.filter(
