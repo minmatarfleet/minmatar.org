@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { NewsletterIssue } from '@/data/newsletter/types'
 import { get_site_origin } from '@helpers/seo'
+import { pageProgressFromSections } from '@helpers/pageProgress'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -11,6 +12,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import NewsletterIssueBlock from '@components/blocks/newsletter/NewsletterIssue.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
 
 interface Props {
     issue: NewsletterIssue
@@ -25,6 +27,15 @@ const meta_description = t(t_key('', i18n_prefix, '.meta_description'))
 const site_origin = get_site_origin(Astro.url.origin)
 const canonical_url = new URL(translatePath(canonical_path), site_origin).href
 const meta_image = new URL(issue.cover_image, site_origin).href
+
+// Same read tracking as the guides: one tracked section per newsletter section.
+const progress_sections = issue.sections.map((section) => ({ id: section.id, title: section.title }))
+const progress = pageProgressFromSections({
+    page_key: `newsletter/${issue.slug}`,
+    page_title: t(t_key('', i18n_prefix, '.page_title')),
+    sections: progress_sections,
+    version_source: JSON.stringify(progress_sections),
+})
 ---
 
 <Viewport
@@ -48,7 +59,7 @@ const meta_image = new URL(issue.cover_image, site_origin).href
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-l)" class="[ nl-page ]">
+        <Flexblock gap="var(--space-l)" class="[ nl-page ]" data-page-progress-root>
             <TextBox class="[ nl-hero ]">
                 <Flexblock gap="var(--space-s)">
                     <div class="[ nl-hero__eyebrow ]">
@@ -59,6 +70,7 @@ const meta_image = new URL(issue.cover_image, site_origin).href
                         <span class="[ nl-hero__title ]">{t('newsletter.title_lead')} <span>{t('newsletter.title_accent')}</span></span>
                     </PageTitle>
                     <p class="[ nl-hero__dek ]">{issue.dek}</p>
+                    <PageProgress {...progress} />
                 </Flexblock>
             </TextBox>
 

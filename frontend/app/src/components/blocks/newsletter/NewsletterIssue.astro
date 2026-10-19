@@ -68,7 +68,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 </nav>
 
 {issue.sections.map((section) => (
-    <section id={section.id} class:list={['[ nl-section ]', `nl-section--${section.kind}`]}>
+    <section id={section.id} data-section-id={section.id} class:list={['[ nl-section ]', `nl-section--${section.kind}`]}>
         {section.kind !== 'video' &&
             <Flexblock gap="var(--space-2xs)">
                 <span class="[ nl-kicker ]">{section.kicker}</span>
