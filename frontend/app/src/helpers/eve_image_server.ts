@@ -20,10 +20,12 @@ export const get_corporation_logo = (id:number, size:EvEImageServiceSize = 32):s
     return `https://images.evetech.net/corporations/${id}/logo?size=${size}`;
 }
 
-// Alliance ids start here; anything lower is a corporation.
+// Alliances from 2010 on start here. Older ones share the range with
+// corporations, so the API's `kind` decides whenever it is sent.
 const FIRST_ALLIANCE_ID = 99000000
 
 /** The logo for a killmail group: an alliance, or a corporation outside one. */
-export const get_group_logo = (id:number, size:EvEImageServiceSize = 32):string => {
-    return id >= FIRST_ALLIANCE_ID ? get_alliance_logo(id, size) : get_corporation_logo(id, size)
+export const get_group_logo = (id:number, size:EvEImageServiceSize = 32, kind?:string | null):string => {
+    const alliance = kind ? kind === 'alliance' : id >= FIRST_ALLIANCE_ID
+    return alliance ? get_alliance_logo(id, size) : get_corporation_logo(id, size)
 }

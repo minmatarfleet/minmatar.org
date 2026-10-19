@@ -63,16 +63,16 @@ const battle_report = (fights: any) => ({
     teams: [
         {
             index: 0, ours: true,
-            totals: { pilots: 1, ships_lost: 1, pods_lost: 0, isk_lost: 250000000, isk_destroyed: 0, efficiency: 0 },
+            totals: { pilots: 1, damage: 0, ships_lost: 1, pods_lost: 0, isk_lost: 250000000, isk_destroyed: 0, efficiency: 0 },
             groups: [{ id: 99011978, kind: 'alliance', name: 'Minmatar Fleet Alliance', pilots: 1, ships_lost: 1, isk_lost: 250000000 }],
-            pilots: [{ character_id: 1001, name: 'Pilot One', corporation_id: 98000001, alliance_id: 99011978, group_id: 99011978,
+            pilots: [{ character_id: 1001, name: 'Pilot One', corporation_id: 98000001, corporation_name: 'Rattini Tribe', alliance_id: 99011978, alliance_name: 'Minmatar Fleet Alliance', group_id: 99011978,
                 ships: [{ type_id: 11987, name: 'Guardian', lost: true, killmail_id: 7001 }], kills: 0, damage: 0 }],
         },
         {
             index: 1, ours: false,
-            totals: { pilots: 1, ships_lost: 0, pods_lost: 0, isk_lost: 0, isk_destroyed: 250000000, efficiency: 100 },
-            groups: [{ id: 99000002, kind: 'alliance', name: 'Hostile Alliance', pilots: 1, ships_lost: 0, isk_lost: 0 }],
-            pilots: [{ character_id: 2001, name: 'Hostile One', corporation_id: 98000002, alliance_id: 99000002, group_id: 99000002,
+            totals: { pilots: 1, damage: 1200, ships_lost: 0, pods_lost: 0, isk_lost: 0, isk_destroyed: 250000000, efficiency: 100 },
+            groups: [{ id: 1988009451, kind: 'alliance', name: 'Hostile Alliance', pilots: 1, ships_lost: 0, isk_lost: 0 }],
+            pilots: [{ character_id: 2001, name: 'Hostile One', corporation_id: 98000002, corporation_name: 'Hostile Corp', alliance_id: 1988009451, alliance_name: 'Hostile Alliance', group_id: 1988009451,
                 ships: [{ type_id: 587, name: 'Rifter', lost: false, killmail_id: null }], kills: 1, damage: 1200 }],
         },
     ],
@@ -82,14 +82,18 @@ const battle_report = (fights: any) => ({
 })
 
 describe('FleetBattleReport', () => {
-    test('shows a card per side with groups that can move, and every killmail', async () => {
+    test('lays out br.evetools style: team cards with « » moves and the five views', async () => {
         const fights = contract('fleet_fights_finished')
         const html = await render(FleetBattleReport, { report: battle_report(fights), fights, position: 1, fleet_id: 501 })
-        expect(html).toContain('Our side')
-        expect(html).toContain('Side B')
-        expect(html).toContain('Hostile Alliance')
-        expect(html.match(/name="team"/g)).toHaveLength(2)
+        expect(html).toContain('Team A')
+        expect(html).toContain('Team B')
+        for (const view of ['Involved', 'Summary', 'Timeline', 'Damage', 'Composition'])
+            expect(html).toContain(`>${view}</button>`)
+        // Team A moves right; Team B moves left or opens Team C.
+        expect(html.match(/class="\[ br__move \]/g)).toHaveLength(3)
         expect(html).toContain('fleet_battle_report_component')
+        // An alliance from before 2010 still gets its alliance logo.
+        expect(html).toContain('images.evetech.net/alliances/1988009451/logo')
         expect(html).toContain('https://zkillboard.com/kill/7001/')
         expect(html).toContain('/fleets/history/501/rounds/2')
         // Exact to the engagement: no outside battle report tools.

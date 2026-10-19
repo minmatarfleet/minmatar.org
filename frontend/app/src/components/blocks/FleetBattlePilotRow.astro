@@ -1,0 +1,210 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { BattlePilotRow } from '@dtypes/layout_components'
+import { get_item_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server'
+
+/**
+ * One pilot on a battle report side, br.evetools style: the hull (the one
+ * they lost, if any) linking to its killmail, name and loss value, ship and
+ * damage [kills], corporation and alliance logos. A pilot in several hulls
+ * opens to one line per hull.
+ */
+interface Props {
+    row:                BattlePilotRow;
+    [propName: string]: any;
+}
+
+const { row, ...attributes } = Astro.props
+
+delete attributes.class
+
+const zkill = (id: number) => `https://zkillboard.com/kill/${id}/`
+const multiple = row.extras.length > 1
+---
+
+<div class:list={['[ br-pilot ]', Astro.props.class]} x-data="{ open: null }" {...attributes}>
+    <div class:list={['[ br-pilot__row ]', { 'br-pilot__row--lost': row.lost }]}>
+        {row.icon_type_id ?
+            (row.killmail_id ?
+                <a href={zkill(row.killmail_id)} target="_blank" rel="noopener noreferrer" aria-label={t('fleets.report.killmail_of').replace('{ship}', row.ship).replace('{pilot}', row.name)}>
+                    <img src={get_item_icon(row.icon_type_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                </a> :
+                <img src={get_item_icon(row.icon_type_id, 64)} alt="" width="36" height="36" loading="lazy" />) :
+            <span />
+        }
+        <div class="[ br-pilot__body ]">
+            <div class="[ br-pilot__line ]">
+                <span class="[ br-pilot__name ]">
+                    <a href={`https://zkillboard.com/character/${row.character_id}/`} target="_blank" rel="noopener noreferrer">{row.name}</a>
+                    {row.pod_killmail_id && <a class="[ br-pilot__pod ]" href={zkill(row.pod_killmail_id)} target="_blank" rel="noopener noreferrer">[pod]</a>}
+                </span>
+                {row.loss && <span class="[ br-pilot__loss ]">{row.loss}</span>}
+            </div>
+            <div class="[ br-pilot__line ]">
+                <span class="[ br-pilot__ship ]">{row.ship}</span>
+                <span class="[ br-pilot__damage ]" x-show="extended">
+                    <span class:list={[{ 'br-pilot__top': row.damage_top }]}>{row.damage}</span>
+                    <span class:list={[{ 'br-pilot__top': row.kills_top }]}>[{row.kills}]</span>
+                </span>
+            </div>
+        </div>
+        {row.corporation_id ?
+            <img src={get_corporation_logo(row.corporation_id, 64)} alt={row.corporation_name} data-tippy-content={row.corporation_name || undefined} width="32" height="32" loading="lazy" /> :
+            <span />
+        }
+        {row.alliance_id ?
+            <img src={get_alliance_logo(row.alliance_id, 64)} alt={row.alliance_name} data-tippy-content={row.alliance_name || undefined} width="32" height="32" loading="lazy" /> :
+            <span />
+        }
+    </div>
+
+    {multiple &&
+        <>
+            <div class="[ br-pilot__extras ]" x-show="open ?? expand_ships" x-cloak>
+                {row.extras.map(extra =>
+                    <div class:list={['[ br-pilot__extra ]', { 'br-pilot__extra--lost': extra.lost }]}>
+                        {extra.killmail_id ?
+                            <a href={zkill(extra.killmail_id)} target="_blank" rel="noopener noreferrer" aria-label={t('fleets.report.killmail_of').replace('{ship}', extra.name).replace('{pilot}', row.name)}>
+                                <img src={get_item_icon(extra.type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                            </a> :
+                            <img src={get_item_icon(extra.type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                        }
+                        <span class="[ br-pilot__ship ]">{extra.name}</span>
+                        <span class="[ br-pilot__damage ]">{extra.info}</span>
+                    </div>
+                )}
+            </div>
+            <button
+                type="button"
+                class="[ br-pilot__more ]"
+                x-on:click="open = !(open ?? expand_ships)"
+                x-bind:aria-expanded="String(open ?? expand_ships)"
+            >
+                <span x-show="!(open ?? expand_ships)">⌄ {t('fleets.report.ship_types').replace('{count}', row.extras.length.toString())}</span>
+                <span x-show="open ?? expand_ships" x-cloak>⌃ {t('fleets.report.collapse_ships')}</span>
+            </button>
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .br-pilot__row,
+    .br-pilot__extra {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 36px 36px;
+        align-items: center;
+        min-height: 2.75rem;
+        background-color: var(--component-background);
+        border-bottom: 1px solid var(--background);
+
+        img {
+            display: block;
+            margin-inline: auto;
+        }
+    }
+
+    .br-pilot__row--lost {
+        background-color: color-mix(in srgb, var(--fleet-red) 30%, var(--component-background));
+    }
+
+    .br-pilot__extra {
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        gap: 0 var(--space-xs);
+        padding: 0 var(--space-xs) 0 var(--space-m);
+        background-color: color-mix(in srgb, var(--component-background) 70%, var(--background));
+    }
+
+    .br-pilot__extra--lost {
+        background-color: color-mix(in srgb, var(--fleet-red) 22%, var(--component-background));
+    }
+
+    .br-pilot__body {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+        padding: var(--space-3xs) var(--space-xs);
+    }
+
+    .br-pilot__line {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .br-pilot__name {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 700;
+
+        a {
+            color: var(--foreground);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .br-pilot__name .br-pilot__pod {
+        color: color-mix(in srgb, var(--fleet-red) 60%, white);
+        font-size: var(--step--1);
+    }
+
+    .br-pilot__loss {
+        color: var(--highlight);
+        font-weight: 600;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br-pilot__ship {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+
+    .br-pilot__damage {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br-pilot__top {
+        color: color-mix(in srgb, var(--green) 55%, white);
+        font-weight: 700;
+    }
+
+    .br-pilot__more {
+        display: block;
+        width: 100%;
+        min-height: 1.75rem;
+        background-color: color-mix(in srgb, var(--component-background) 80%, var(--background));
+        border: 0;
+        border-bottom: 1px solid var(--background);
+        color: var(--text-muted);
+        font: inherit;
+        font-size: var(--step--1);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--foreground);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+    }
+</style>

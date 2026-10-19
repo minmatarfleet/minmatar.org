@@ -11,7 +11,7 @@ import { get_group_logo } from '@helpers/eve_image_server'
  * with fifty groups still fits on one line.
  */
 interface Props {
-    groups:             { id: number | null, name: string }[];
+    groups:             { id: number | null, name: string, kind?: string | null }[];
     max?:               number;
     size?:              number;
     [propName: string]: any;
@@ -36,7 +36,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
 <span class:list={['[ group-logos ]', Astro.props.class]} {...attributes}>
     {shown.map(group =>
         <img
-            src={get_group_logo(group.id as number, image_size)}
+            src={get_group_logo(group.id as number, image_size, group.kind)}
             alt={group.name}
             data-tippy-content={group.name}
             width={size}
