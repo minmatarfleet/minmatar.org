@@ -24,6 +24,8 @@ export interface NewsletterFigure {
     height: number
     alt: string
     caption: string
+    /** Let a landscape image use the full column instead of the text width. */
+    wide?: boolean
 }
 
 /** A member credited for reporting or asking for an item. */

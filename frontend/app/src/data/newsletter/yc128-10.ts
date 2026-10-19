@@ -83,6 +83,7 @@ export const YC128_10: NewsletterIssue = {
                     height: 633,
                     alt: 'Three overlay windows over an EVE scene: the Fleet window on its Upcoming tab, a campaign, and Intel with two shared d-scans.',
                     caption: `Fleet, Campaigns and Intel windows. ${TEST_DATA}`,
+                    wide: true,
                 },
             ],
             list: [

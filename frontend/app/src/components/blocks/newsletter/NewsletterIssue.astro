@@ -91,7 +91,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
                 }
                 {figure_list(section.figures).map((figure) =>
-                    <figure class="[ nl-shot ]">
+                    <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
                         <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
                         <figcaption>{figure.caption}</figcaption>
                     </figure>
@@ -192,7 +192,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {figure_list(section.figures).length > 0 &&
                     <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]}>
                         {figure_list(section.figures).map((figure) =>
-                            <figure class="[ nl-shot ]">
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
                                 <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
@@ -232,7 +232,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {figure_list(section.figures_after_orders).length > 0 &&
                     <div class="[ nl-figures nl-figures--pair ]">
                         {figure_list(section.figures_after_orders).map((figure) =>
-                            <figure class="[ nl-shot ]">
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
                                 <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
@@ -446,7 +446,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-list {
         list-style: none;
-        margin: 0;
+        margin-inline: 0;
 
         li {
             position: relative;
@@ -539,14 +539,18 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     }
 
     .nl-shot {
-        margin: 0;
+        margin-inline: 0;
         display: grid;
         gap: var(--space-2xs);
+        width: 100%;
+        max-width: var(--max-landing-width);
 
         img {
             display: block;
             width: 100%;
             height: auto;
+            padding: var(--space-2xs);
+            background: var(--component-background);
             border: 1px solid var(--hairline-strong);
         }
 
@@ -560,6 +564,11 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         display: grid;
         gap: var(--space-m);
         align-items: start;
+    }
+
+    .nl-shot--wide,
+    .nl-figures--pair .nl-shot {
+        max-width: none;
     }
 
     .nl-figures--pair {
@@ -588,7 +597,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     /* Two-column briefs */
     .nl-hits {
         list-style: none;
-        margin: 0;
+        margin-inline: 0;
         padding: 0;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -678,7 +687,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-nights {
         list-style: none;
-        margin: 0;
+        margin-inline: 0;
         padding: 0;
 
         li {
@@ -736,7 +745,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-fcs {
         list-style: none;
-        margin: 0;
+        margin-inline: 0;
         padding: 0;
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
