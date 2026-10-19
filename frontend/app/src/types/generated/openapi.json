@@ -13156,6 +13156,11 @@
             ],
             "title": "Alliance Id"
           },
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
           "character_id": {
             "title": "Character Id",
             "type": "integer"
@@ -13170,6 +13175,11 @@
               }
             ],
             "title": "Corporation Id"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
           },
           "damage": {
             "title": "Damage",
@@ -13408,6 +13418,11 @@
       },
       "FleetBattleTotals": {
         "properties": {
+          "damage": {
+            "default": 0,
+            "title": "Damage",
+            "type": "integer"
+          },
           "efficiency": {
             "anyOf": [
               {
@@ -13605,6 +13620,17 @@
           "isk_killed": {
             "title": "Isk Killed",
             "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
           },
           "name": {
             "title": "Name",

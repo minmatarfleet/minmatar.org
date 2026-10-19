@@ -54,6 +54,7 @@ from industry.tasks import (
     resolve_lp_corporation_ids_task,
 )
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.tests.publishing_fixtures import ROLE_ID, make_tribe_group
 
 TLIB_CORP_ID = 1000182
 
@@ -1281,6 +1282,31 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         self.assertIn(f"<t:{due}:R>", order_starter_message(self.order))
         self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
         self.assertNotIn("Express", order_starter_message(self.order))
+
+    def test_express_starter_pings_conversion_team(self):
+        team = make_tribe_group(
+            "Loyalty Points",
+            "supply.loyalty-points",
+            role_id=ROLE_ID,
+        )
+        no_role = make_tribe_group(
+            "LP Trainees", "supply.lp-trainees", tribe=team.tribe, role_id=None
+        )
+        SyncPilotFeaturesCommand().handle()
+        manage = PilotFeature.objects.get(code="industry.loyalty.manage")
+        manage.tribe_groups.set([team, no_role])
+
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+        first_line = order_starter_message(self.order).split("\n")[0]
+        self.assertEqual(first_line, f"test <@&{ROLE_ID}>")
+
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.STANDARD
+        self.assertNotIn(f"<@&{ROLE_ID}>", order_starter_message(self.order))
+
+        manage.is_active = False
+        manage.save()
+        self.order.tier = IndustryLoyaltyPointMarketOrder.Tier.EXPRESS
+        self.assertNotIn(f"<@&{ROLE_ID}>", order_starter_message(self.order))
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_notify_order_created_skips_order_with_thread(self, discord_mock):

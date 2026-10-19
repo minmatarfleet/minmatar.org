@@ -158,12 +158,6 @@ def submit_doctrine_change_request(
             f"You need fittings.change_doctrine_{tier} to propose this change."
         )
 
-    existing = pending_doctrine_request_exists(doctrine)
-    if existing:
-        raise ValueError(
-            f"A pending change request already exists (id={existing.pk})."
-        )
-
     if ensure_doctrine_row and not doctrine.pk:
         doctrine.name = payload["name"]
         doctrine.type = payload["type"]
@@ -171,6 +165,13 @@ def submit_doctrine_change_request(
         if not doctrine.latest_version:
             doctrine.latest_version = str(uuid.uuid4())
         doctrine.save_without_versioning()
+
+    if doctrine.pk:
+        existing = pending_doctrine_request_exists(doctrine)
+        if existing:
+            raise ValueError(
+                f"A pending change request already exists (id={existing.pk})."
+            )
 
     return EveDoctrineChangeRequest.objects.create(
         doctrine=doctrine,

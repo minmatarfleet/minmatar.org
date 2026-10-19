@@ -112,10 +112,10 @@ export function round_bars(round: FleetFightRound, end: string = round.end): Cha
 }
 
 /** Who an engagement was against, most involved first, for GroupLogos. */
-export function round_opponents(round: FleetFightRound): { id: number | null, name: string }[] {
+export function round_opponents(round: FleetFightRound): { id: number | null, name: string, kind: string | null }[] {
     return round.hostiles
         .filter(hostile => hostile.pilots > 0 || hostile.ships_killed > 0)
-        .map(hostile => ({ id: hostile.group_id ?? null, name: hostile.name }))
+        .map(hostile => ({ id: hostile.group_id ?? null, name: hostile.name, kind: hostile.kind ?? null }))
 }
 
 export function seconds_since(moment: string, now: Date = new Date()): number {
@@ -160,6 +160,29 @@ export function move_to_side(sides: string, group: number, team: number): string
     }
     if (Number.isInteger(group) && group > 0 && Number.isInteger(team) && team >= 0) moves.set(group, team)
     return [...moves.entries()].sort((a, b) => a[0] - b[0]).map(([id, index]) => `${id}:${index}`).join(',')
+}
+
+/** Damage the way br.evetools shows it: 108.7k, 1.56m. */
+export function format_damage(damage: number): string {
+    if (damage >= 1_000_000) return `${(damage / 1_000_000).toFixed(2)}m`
+    if (damage >= 1_000) return `${(damage / 1_000).toFixed(1)}k`
+    return damage.toString()
+}
+
+// Battle report rows sort by hull class, biggest first, like br.evetools.
+const SHIP_GROUP_ORDER = [
+    'Titan', 'Supercarrier', 'Carrier', 'Force Auxiliary', 'Dreadnought', 'Lancer Dreadnought',
+    'Black Ops', 'Marauder', 'Battleship', 'Attack Battlecruiser', 'Command Ship', 'Combat Battlecruiser',
+    'Strategic Cruiser', 'Heavy Assault Cruiser', 'Heavy Interdiction Cruiser', 'Logistics', 'Recon Ship',
+    'Force Recon Ship', 'Combat Recon Ship', 'Flag Cruiser', 'Cruiser', 'Command Destroyer', 'Tactical Destroyer',
+    'Interdictor', 'Destroyer', 'Assault Frigate', 'Logistics Frigate', 'Electronic Attack Ship', 'Stealth Bomber',
+    'Covert Ops', 'Interceptor', 'Frigate', 'Shuttle', 'Corvette', 'Capsule',
+]
+
+/** Where a hull group sorts in a battle report: lower is bigger. */
+export function ship_group_rank(group: string | undefined): number {
+    const index = group ? SHIP_GROUP_ORDER.indexOf(group) : -1
+    return index === -1 ? SHIP_GROUP_ORDER.length - 1.5 : index
 }
 
 export interface PilotOdds {

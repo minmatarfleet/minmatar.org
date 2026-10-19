@@ -11983,10 +11983,20 @@ export interface components {
         FleetBattlePilot: {
             /** Alliance Id */
             alliance_id?: number | null;
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
             /** Character Id */
             character_id: number;
             /** Corporation Id */
             corporation_id?: number | null;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
             /** Damage */
             damage: number;
             /** Group Id */
@@ -12077,6 +12087,11 @@ export interface components {
         };
         /** FleetBattleTotals */
         FleetBattleTotals: {
+            /**
+             * Damage
+             * @default 0
+             */
+            damage?: number;
             /** Efficiency */
             efficiency?: number | null;
             /** Isk Destroyed */
@@ -12155,6 +12170,8 @@ export interface components {
             group_id?: number | null;
             /** Isk Killed */
             isk_killed: number;
+            /** Kind */
+            kind?: string | null;
             /** Name */
             name: string;
             /** Pilots */

@@ -1045,3 +1045,24 @@ export interface DiscordChannelUI {
     name:           string;
     type:           'text' | 'voice' | 'stage';
 }
+
+/** One pilot row on a battle report side (FleetBattlePilotRow). */
+export interface BattlePilotRow {
+    character_id:       number;
+    name:               string;
+    icon_type_id:       number | null;
+    ship:               string;
+    killmail_id:        number | null;
+    pod_killmail_id:    number | null;
+    lost:               boolean;
+    loss:               string;
+    damage:             string;
+    damage_top:         boolean;
+    kills:              number;
+    kills_top:          boolean;
+    corporation_id:     number | null;
+    corporation_name:   string;
+    alliance_id:        number | null;
+    alliance_name:      string;
+    extras:             { type_id: number, name: string, lost: boolean, killmail_id: number | null, info: string }[];
+}
