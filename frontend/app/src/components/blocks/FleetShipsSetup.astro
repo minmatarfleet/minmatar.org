@@ -9,6 +9,9 @@ import { query_string } from '@helpers/string'
 /**
  * The Ships tab for the FC when the fleet has no ships yet: pick a doctrine
  * here, or build a custom lineup from catalog fits and pasted EFT.
+ *
+ * Carries the #fleet-ships id so the Manage doctrine modal's first add swaps
+ * this card out for the ships list, same as it does once ships exist.
  */
 interface Props {
     fleet_id:   number;
@@ -32,7 +35,7 @@ const ADD_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_co
 import Button from '@components/blocks/Button.astro'
 ---
 
-<section class="[ fleet-ships-setup ]" aria-labelledby="fleet-ships-setup-title">
+<section id="fleet-ships" class="[ fleet-ships-setup ]" aria-labelledby="fleet-ships-setup-title">
     <header>
         <h2 id="fleet-ships-setup-title">{t('fleets.ships_setup.title')}</h2>
     </header>
