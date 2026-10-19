@@ -31,7 +31,8 @@ test('recent: the paste bar, nearest rows first four, and a Show all link', asyn
     const items = ['r:a', 'r:b', 'r:c', 'r:d', 'r:e'].map(id => item(id))
     const intel = await intel_state(items)
     const html = recent_view(intel, intel.items)
-    assert.match(html, /Paste d-scan or local/)
+    assert.match(html, /Copy d-scan or Local<\/span><kbd>Ctrl C<\/kbd>/)
+    assert.doesNotMatch(html, /data-action="paste"/)
     assert.match(html, /in <b>Amamake<\/b>/)
     assert.equal((html.match(/class="intel-row"/g) || []).length, RECENT_ROWS)
     assert.match(html, /Show all 5 →/)
@@ -39,6 +40,13 @@ test('recent: the paste bar, nearest rows first four, and a Show all link', asyn
     // Four hulls on the strip, the fifth behind "+5".
     assert.match(html, /aria-label="5 more ships: Hull 5 5">\+5</)
     assert.match(html, /5 more ships/)
+})
+
+test('draft: titled from the copy that opened it, then from the preview', () => {
+    assert.match(draft_view({ draft: { status: 'loading', kind: null, detected: { kind: 'dscan', count: 38 } } }), /<h2>Scan detected · 38 items<\/h2>/)
+    assert.match(draft_view({ draft: { status: 'loading', kind: null, detected: { kind: 'local', count: 1 } } }), /<h2>Local detected · 1 pilot<\/h2>/)
+    assert.match(draft_view({ draft: { status: 'ready', kind: 'dscan', lines: 40, summary: { ships: 1, capsules: 0, other: 0, hulls: [] } } }), /<h2>Scan detected · 40 items<\/h2>/)
+    assert.match(draft_view({ draft: { status: 'loading', kind: null } }), /<h2>New report<\/h2>/)
 })
 
 test('rows escape what pilots typed', async () => {
@@ -74,14 +82,14 @@ test('nothing yet, nothing in range, and offline', async () => {
 test('draft: preview counts, then the shared state', () => {
     const summary = { ships: 3, capsules: 1, other: 2, classes: [{ name: 'Battleship', count: 3, hulls: [] }], hulls: [{ type_id: 641, name: 'Megathron', count: 3 }] }
     const ready = draft_view({ draft: { status: 'ready', kind: 'dscan', lines: 6, summary } })
-    assert.match(ready, /auto-detected · 6 lines/)
+    assert.match(ready, /<h2>Scan detected · 6 items<\/h2>/)
     assert.match(ready, /<b>3<\/b> battleships/)
     assert.match(ready, /3 ships · 1 capsule · 2 other/)
     assert.match(ready, /data-action="share" >Share to intel/)
     const shared = draft_view({ draft: { status: 'shared', kind: 'dscan', lines: 6, summary, report_id: 'abc' } })
     assert.match(shared, /Shared · link copied/)
     assert.match(shared, /data-report="abc"/)
-    assert.match(draft_view({ draft: { status: 'error', error: 'The clipboard is empty.' } }), /Paste again/)
+    assert.match(draft_view({ draft: { status: 'error', error: 'The clipboard is empty.' } }), /Copy a d-scan or Local in EVE to try again/)
 })
 
 test('report: d-scan tabs and a resolved Local', () => {

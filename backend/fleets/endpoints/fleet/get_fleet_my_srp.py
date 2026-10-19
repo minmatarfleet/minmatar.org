@@ -5,7 +5,8 @@ from typing import List
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 from feed.helpers.fleet_kills import OUTCOME_LOSS, fleet_kill_report
-from srp.models import EveFleetShipReimbursement, ShipReimbursementProgram
+from srp.helpers import srp_program_amounts
+from srp.models import EveFleetShipReimbursement
 
 from fleets.endpoints.helpers import _fleet_authorized
 from fleets.endpoints.schemas import EveFleetSrpLossResponse
@@ -22,21 +23,6 @@ ROUTE_SPEC = {
         "filed is true once a reimbursement exists for the killmail."
     ),
 }
-
-
-def _latest_amounts(type_ids: set[int]) -> dict[int, int]:
-    amounts: dict[int, int] = {}
-    for program in ShipReimbursementProgram.objects.filter(
-        eve_type_id__in=type_ids
-    ).prefetch_related("amounts"):
-        latest = max(
-            program.amounts.all(),
-            key=lambda row: (row.created_at, row.id),
-            default=None,
-        )
-        if latest and latest.srp_value > 0:
-            amounts[program.eve_type_id] = latest.srp_value
-    return amounts
 
 
 def get_fleet_my_srp(request, fleet_id: int):
@@ -58,7 +44,9 @@ def get_fleet_my_srp(request, fleet_id: int):
     if not losses:
         return []
 
-    amounts = _latest_amounts({row["victim_ship_type_id"] for row in losses})
+    amounts = srp_program_amounts(
+        {row["victim_ship_type_id"] for row in losses}
+    )
     filed = set(
         EveFleetShipReimbursement.objects.filter(
             killmail_id__in=[row["killmail_id"] for row in losses]

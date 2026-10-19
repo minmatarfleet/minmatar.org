@@ -86,6 +86,7 @@ def _recent_fleets(user, mine: set[int]) -> list:
 def recent_fleets(user) -> dict:
     """The Recent tab: last fleets, newest first, and SRP still owed."""
     # pylint: disable=import-outside-toplevel
+    from srp.helpers import srp_program_amounts
     from srp.models import EveFleetShipReimbursement
 
     cached = cache_get(_recent_key(user.id))
@@ -146,13 +147,21 @@ def recent_fleets(user) -> dict:
         .values_list("killmail_id", "status", "amount")
     ):
         srp[killmail_id] = (status, amount)
+    covered = srp_program_amounts(
+        loss["ship_type_id"]
+        for row in rows
+        for loss in row["my_losses"]
+        if loss["ship_type_id"]
+    )
     owed = 0
     for row in rows:
         for loss in row["my_losses"]:
             status, amount = srp.get(loss["killmail_id"], ("none", 0))
             loss["srp_status"] = status
             loss["srp_amount"] = int(amount or 0)
-            owed += status == "none"
+            # Only hulls with an SRP program can be filed (and count as owed).
+            loss["srp_covered"] = loss["ship_type_id"] in covered
+            owed += status == "none" and loss["srp_covered"]
 
     result = {"fleets": rows, "srp_owed": owed}
     cache_set(_recent_key(user.id), result, RECENT_CACHE_SECONDS)

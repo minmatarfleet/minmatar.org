@@ -441,6 +441,7 @@ def _fights(fleet) -> dict | None:
 
 def _build_shared(fleet, instance) -> dict:
     # pylint: disable=import-outside-toplevel
+    from srp.helpers import srp_program_amounts
     from srp.models import EveFleetShipReimbursement
 
     fc = fleet.fleet_commander
@@ -567,6 +568,16 @@ def _build_shared(fleet, instance) -> dict:
             _absent_volunteers(fleet, pilots) if live else []
         ),
         "srp_killmails": sorted(srp_killmails),
+        # Hulls among the losses that SRP pays for (the loss card's File SRP).
+        "srp_covered_types": sorted(
+            srp_program_amounts(
+                {
+                    loss["ship_type_id"]
+                    for loss in losses
+                    if loss["ship_type_id"]
+                }
+            )
+        ),
         "after_action": after_action,
         "fights": _fights(fleet) if instance else None,
     }
@@ -646,6 +657,8 @@ def _attention(shared) -> list[dict]:
 def _last_loss(shared, mine: set[int]):
     since = timezone.now() - RECENT_LOSS
     srp = set(shared["srp_killmails"])
+    # A window cached before srp_covered_types existed offers SRP as before.
+    covered = shared.get("srp_covered_types")
     for loss in shared["losses"]:  # newest first
         if datetime.fromisoformat(loss["killmail_time"]) < since:
             break
@@ -655,6 +668,8 @@ def _last_loss(shared, mine: set[int]):
                     k: v for k, v in loss.items() if k != "victim_character_id"
                 },
                 "srp_filed": loss["killmail_id"] in srp,
+                "srp_covered": covered is None
+                or loss["ship_type_id"] in covered,
             }
     return None
 

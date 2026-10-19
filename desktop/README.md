@@ -67,6 +67,7 @@ Flags: `--api=<url>` / `--web=<url>` (or `MINMATAR_API_URL` / `MINMATAR_WEB_URL`
 | `src/main/settings.js` | Account-saved settings: load with retry, merge writes with backoff |
 | `src/main/config.js` | API and website URLs (`--api` / `--web`, defaults to production) |
 | `src/main/intel.js` + `src/main/intel_map.js` | Intel window data and share flow; jump counts from the SDE gate graph on this PC |
+| `src/main/clipboard_watch.js` | Opens the Intel report when a d-scan or Local is copied in EVE (only while Intel is up; other clipboard text is never kept) |
 | `src/main/menu_fade.js` | Fade on right-click: which windows to hide around a context menu, and when to bring them back |
 | `src/main/mascot.js` | Where Sneak sits, from EVE's notification badge offset and UI scale |
 | `src/main/updater.js` | Auto-update from GitHub Releases |

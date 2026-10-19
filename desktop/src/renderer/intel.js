@@ -81,8 +81,7 @@ document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]')
     if (!target) return
     const { action } = target.dataset
-    if (action === 'paste') send('intel:paste')
-    else if (action === 'all' || action === 'recent') { view = action; render() }
+    if (action === 'all' || action === 'recent') { view = action; render() }
     else if (action === 'show') { show = target.dataset.show; render() }
     else if (action === 'kind') send('intel:kind', target.dataset.kind)
     else if (action === 'share') share()
@@ -110,6 +109,14 @@ document.addEventListener('keydown', event => {
     if (!draft) return
     if (event.key === 'Escape') { event.preventDefault(); send('intel:discard') }
     else if (event.key === 'Enter' && draft.status === 'ready') { event.preventDefault(); share() }
+})
+
+// A copy opens the form without taking focus from EVE; clicking a field asks for the keyboard.
+document.addEventListener('pointerdown', event => {
+    const field = event.target.closest && event.target.closest('.intel-form input')
+    if (!field || field.disabled) return
+    send('intel:focus')
+    setTimeout(() => field.focus(), 50)
 })
 
 // Ctrl+V while the window has focus (unpinned, or while writing a report). Outside the form's fields.

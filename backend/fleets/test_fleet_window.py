@@ -33,7 +33,12 @@ from fleets.tests import (
     make_test_fleet,
     setup_fleet_reference_data,
 )
-from srp.models import EveFleetShipReimbursement
+from eveuniverse.models import EveCategory, EveGroup, EveType
+from srp.models import (
+    EveFleetShipReimbursement,
+    ShipReimbursementProgram,
+    ShipReimbursementProgramAmount,
+)
 from users.helpers import add_user_permission
 
 RIFTER_ID = 587
@@ -54,6 +59,28 @@ def no_kills(fleet):
         "ships_lost": 0,
         "pods_lost": 0,
     }
+
+
+def cover_with_srp(type_id, name, amount=100_000_000):
+    category, _ = EveCategory.objects.get_or_create(
+        id=6, defaults={"name": "Ship", "published": True}
+    )
+    group, _ = EveGroup.objects.get_or_create(
+        id=832,
+        defaults={
+            "name": "Logistics",
+            "eve_category": category,
+            "published": True,
+        },
+    )
+    eve_type, _ = EveType.objects.get_or_create(
+        id=type_id,
+        defaults={"name": name, "eve_group": group, "published": True},
+    )
+    program = ShipReimbursementProgram.objects.create(eve_type=eve_type)
+    ShipReimbursementProgramAmount.objects.create(
+        program=program, srp_value=amount
+    )
 
 
 def loss_row(killmail_id, character_id, minutes_ago=2, outcome="loss"):
@@ -328,6 +355,21 @@ class FleetWindowTestCase(TestCase):
         loss = body["me"]["last_loss"]
         self.assertEqual(77, loss["killmail_id"])
         self.assertFalse(loss["srp_filed"])
+        # No SRP program for the Guardian: the card offers no File SRP.
+        self.assertFalse(loss["srp_covered"])
+
+    def test_a_recent_loss_on_a_covered_hull_offers_srp(self):
+        cover_with_srp(GUARDIAN_ID, "Guardian")
+        self._live_fleet()
+        report = no_kills(self.fleet)
+        report["killmails"] = [loss_row(77, 1001)]
+        with patch(
+            "fleets.helpers.fleet_window.fleet_kill_report",
+            lambda fleet: report,
+        ):
+            body = self._window()
+
+        self.assertTrue(body["me"]["last_loss"]["srp_covered"])
 
     def test_unchanged_window_answers_304(self):
         self._live_fleet()
@@ -430,6 +472,7 @@ class FleetWindowTestCase(TestCase):
         return response.json()
 
     def test_recent_lists_fleets_flown_with_srp_owed(self):
+        cover_with_srp(GUARDIAN_ID, "Guardian")
         self._live_fleet()
         EveFleetInstance.objects.filter(pk=self.instance.pk).update(
             end_time=timezone.now()
@@ -469,6 +512,26 @@ class FleetWindowTestCase(TestCase):
             },
         )
         self.assertEqual(1, body["srp_owed"])
+        self.assertTrue(all(loss["srp_covered"] for loss in row["my_losses"]))
+
+    def test_recent_does_not_owe_srp_for_hulls_srp_does_not_cover(self):
+        self._live_fleet()
+        EveFleetInstance.objects.filter(pk=self.instance.pk).update(
+            end_time=timezone.now()
+        )
+        report = no_kills(self.fleet)
+        report["killmails"] = [loss_row(77, 1001)]
+        report["ships_lost"] = 1
+        with patch(
+            "fleets.helpers.my_fleets.fleet_kill_report",
+            lambda fleet: report,
+        ):
+            body = self._mine()
+
+        ((loss,),) = [row["my_losses"] for row in body["fleets"]]
+        self.assertEqual("none", loss["srp_status"])
+        self.assertFalse(loss["srp_covered"])
+        self.assertEqual(0, body["srp_owed"])
 
     def test_recent_is_empty_for_someone_who_never_flew(self):
         body = self._mine()

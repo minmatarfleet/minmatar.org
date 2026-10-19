@@ -160,6 +160,20 @@ test('a rejected share shows the API\'s reason and keeps the draft', async () =>
     assert.equal(c.draft.error, 'Pick the system this is from.')
 })
 
+test('a new copy keeps what the pilot typed, but starts fresh after a share', async () => {
+    const { c } = controller(fake_api())
+    await c.paste('597\tA\tPunisher\t1 km', null, { kind: 'dscan', count: 1 })
+    assert.deepEqual(c.draft.detected, { kind: 'dscan', count: 1 })
+    c.edit_draft({ note: 'on the gate' })
+    await c.paste('597\tA\tPunisher\t1 km\n597\tB\tPunisher\t2 km', null, { kind: 'dscan', count: 2 })
+    assert.equal(c.draft.note, 'on the gate')
+    assert.deepEqual(c.draft.detected, { kind: 'dscan', count: 2 })
+    await c.share()
+    assert.equal(c.busy, false)
+    await c.paste('Ardo Kesh\nJo Smith', null, { kind: 'local', count: 2 })
+    assert.equal(c.draft.note, '')
+})
+
 test('an empty clipboard says so instead of calling the API', async () => {
     const api = fake_api()
     const { c } = controller(api)

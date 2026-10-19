@@ -68,13 +68,24 @@
 
     // ---------------------------------------------------------------- views
 
+    // Copying in EVE is the whole step: main's clipboard_watch.js opens the report from the copy.
     function paste_bar(intel) {
         const where = intel.origin ? `in <b>${esc(intel.origin.system)}</b>` : ''
-        return `<button class="intel-paste" data-action="paste" data-interactive title="Copy a d-scan or Local member list in EVE, then click here">
+        return `<div class="intel-paste" title="Select all in the Directional Scanner or Local's member list and copy it">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 2.5h-2v12h9v-12h-2M5.5 1.5h5v2.5h-5z"/></svg>
-        <span>Paste d-scan or local</span><kbd>Ctrl V</kbd>
+        <span>Copy d-scan or Local</span><kbd>Ctrl C</kbd>
         <span class="intel-paste__where">${where}</span>
-    </button>`
+    </div>`
+    }
+
+    // "Scan detected · 38 items" when the copy opened the form; the preview's count once it has one.
+    function draft_title(d) {
+        const kind = d.kind || (d.detected && d.detected.kind)
+        if (!kind) return 'New report'
+        const count = d.lines || (d.detected && d.detected.count)
+        const label = kind === 'local' ? 'Local detected' : 'Scan detected'
+        if (!count) return label
+        return `${label} · ${kind === 'local' ? plural(count, 'pilot') : plural(count, 'item')}`
     }
 
     function empty(intel, text) {
@@ -129,20 +140,21 @@
     function draft_view(intel) {
         const d = intel.draft
         if (d.status === 'error' && !d.kind) {
-            return `<div class="intel-back" data-interactive><h2>New report</h2></div>
+            return `<div class="intel-back" data-interactive><h2>${esc(draft_title(d))}</h2></div>
             <p class="eve-error">${esc(d.error)}</p>
-            <div class="intel-actions" data-interactive><button class="intel-button" data-action="discard">Close</button><button class="intel-button intel-button--primary" data-action="paste">Paste again</button></div>`
+            <p class="intel-hint">Copy a d-scan or Local in EVE to try again.</p>
+            <div class="intel-actions" data-interactive><button class="intel-button" data-action="discard">Close</button></div>`
         }
         const shared = d.status === 'shared'
         const tab = kind => `<button class="intel-chip" data-action="kind" data-kind="${kind}" aria-pressed="${d.kind === kind}" ${shared ? 'disabled' : ''}>${kind === 'dscan' ? 'D-scan' : 'Local'}</button>`
         const meta = d.summary ? (d.kind === 'dscan' ? `${plural(d.summary.ships, 'ship')} · ${d.summary.other + d.summary.capsules} other` : plural(d.summary.pilots, 'pilot')) : ''
         return `<div class="intel-back" data-interactive>
             <button class="eve-icon-button" data-action="discard" aria-label="Discard" title="Discard (Esc)"><svg viewBox="0 0 12 12"><path d="M7.5 2.5L4 6l3.5 3.5"/></svg></button>
-            <h2>New report</h2>
+            <h2>${esc(draft_title(d))}</h2>
         </div>
         <div class="intel-form" data-interactive>
             <span>Type</span>
-            <span class="intel-toolbar"><span class="intel-chips" role="group" aria-label="Report type">${tab('dscan')}${tab('local')}</span><span class="intel-meta">${d.lines ? `auto-detected · ${plural(d.lines, 'line')}` : ''}</span></span>
+            <span class="intel-toolbar"><span class="intel-chips" role="group" aria-label="Report type">${tab('dscan')}${tab('local')}</span></span>
             <label for="system">System</label>
             <input id="system" data-field="system" autocomplete="off" spellcheck="false" placeholder="System name" ${shared ? 'disabled' : ''}>
             <label for="note">Note</label>

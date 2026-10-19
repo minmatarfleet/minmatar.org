@@ -4,16 +4,15 @@
 .intel-title { display: flex; align-items: center; gap: 8px; color: var(--eve-text-strong); font-size: 15px; }
 .intel-range { -webkit-app-region: no-drag; height: 20px; padding: 0 7px; border: 1px solid rgba(255, 255, 255, 0.14); background: none; color: var(--eve-text-dim); font-size: 11px; }
 .intel-range:hover { color: var(--eve-text-strong); }
-.intel-range:focus-visible, .intel-button:focus-visible, .intel-row__open:focus-visible, .intel-more:focus-visible, .intel-chip:focus-visible, .intel-paste:focus-visible, .intel-tab:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 1px; }
+.intel-range:focus-visible, .intel-button:focus-visible, .intel-row__open:focus-visible, .intel-more:focus-visible, .intel-chip:focus-visible, .intel-tab:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 1px; }
 .intel-live::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--eve-live); vertical-align: 1px; }
 .intel-live.is-error::before { background: var(--eve-danger); }
 
 /* paste bar */
 .intel-paste { height: 44px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px dashed rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.03); color: var(--eve-text-strong); text-align: left; }
-.intel-paste:hover { border-color: var(--eve-gold); background: rgba(241, 217, 160, 0.06); }
 .intel-paste svg { width: 16px; height: 16px; flex: none; stroke: var(--eve-text-dim); stroke-width: 1.2; fill: none; }
-.intel-paste kbd { padding: 1px 5px; font: inherit; font-size: 11px; color: var(--eve-text-dim); border: 1px solid rgba(255, 255, 255, 0.16); }
-.intel-paste__where { margin-left: auto; font-size: 12px; color: var(--eve-text-dim); }
+.intel-paste kbd { white-space: nowrap; padding: 1px 5px; font: inherit; font-size: 11px; color: var(--eve-text-dim); border: 1px solid rgba(255, 255, 255, 0.16); }
+.intel-paste__where { margin-left: auto; white-space: nowrap; font-size: 12px; color: var(--eve-text-dim); }
 .intel-paste__where b, .intel-gold { font-weight: 400; color: var(--eve-gold); }
 
 /* section headings */

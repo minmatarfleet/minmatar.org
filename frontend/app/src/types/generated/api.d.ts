@@ -12835,6 +12835,11 @@ export interface components {
             ship_type_id?: number | null;
             /** Solar System Name */
             solar_system_name: string;
+            /**
+             * Srp Covered
+             * @default true
+             */
+            srp_covered?: boolean;
             /** Srp Filed */
             srp_filed: boolean;
         };
@@ -15245,6 +15250,11 @@ export interface components {
              * @default 0
              */
             srp_amount?: number;
+            /**
+             * Srp Covered
+             * @default true
+             */
+            srp_covered?: boolean;
             /** Srp Status */
             srp_status: string;
         };
