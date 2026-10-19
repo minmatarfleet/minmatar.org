@@ -1,0 +1,1009 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type {
+    NewsletterIssue,
+    NewsletterCta,
+    NewsletterFigure,
+    NewsletterItem,
+    NewsletterVideo,
+} from '@/data/newsletter/types'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+
+interface Props {
+    issue: NewsletterIssue
+}
+
+const { issue } = Astro.props
+
+function is_external(href: string): boolean {
+    return href.startsWith('http://') || href.startsWith('https://')
+}
+
+function resolve_href(href: string): string {
+    return is_external(href) ? href : translatePath(href)
+}
+
+type CtaLink = NewsletterCta['links'][number]
+const cta_links = (cta?: NewsletterCta): CtaLink[] => cta?.links ?? []
+const figure_list = (figures?: NewsletterFigure[]): NewsletterFigure[] => figures ?? []
+const item_list = (items?: NewsletterItem[]): NewsletterItem[] => items ?? []
+// Portrait screenshots get a narrower column so one image doesn't fill the screen.
+const is_tall = (figure: NewsletterFigure): boolean => figure.height > figure.width * 1.05
+
+// Columns sized by each image's aspect ratio, so paired screenshots render at the same height.
+const pair_columns = (figures?: NewsletterFigure[]): string =>
+    figure_list(figures)
+        .map((figure) => `minmax(0, ${(figure.width / figure.height).toFixed(4)}fr)`)
+        .join(' ')
+const lead_video: NewsletterVideo | undefined = issue.lead_video
+---
+
+{lead_video &&
+    <section class="[ nl-watch ]" aria-labelledby="nl-watch-title">
+        <a class="[ nl-watch__thumb ]" href={lead_video.url} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${lead_video.title} on YouTube`}>
+            <img src={lead_video.thumbnail} width="1280" height="720" alt={lead_video.thumbnail_alt} loading="eager" />
+            <span class:list={['[ nl-watch__play ]', `nl-watch__play--${lead_video.play_position ?? 'center'}`]} aria-hidden="true"></span>
+        </a>
+        <Flexblock gap="var(--space-s)" class="[ nl-watch__text ]">
+            <span class="[ nl-kicker ]">{lead_video.kicker}</span>
+            <h2 id="nl-watch-title" class="[ nl-h2 ]">{lead_video.title}</h2>
+            <p>{lead_video.text}</p>
+            <div class="[ nl-cta ]">
+                {cta_links(lead_video.cta).map((link) =>
+                    <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                )}
+            </div>
+        </Flexblock>
+    </section>
+}
+
+<nav class="[ nl-toc ]" aria-label="Sections">
+    {issue.sections.map((section) => <a href={`#${section.id}`}>{section.toc_label}</a>)}
+</nav>
+
+{issue.sections.map((section) => (
+    <section id={section.id} data-section-id={section.id} class:list={['[ nl-section ]', `nl-section--${section.kind}`]}>
+        {section.kind !== 'video' &&
+            <Flexblock gap="var(--space-2xs)">
+                <span class="[ nl-kicker ]">{section.kicker}</span>
+                <h2 class:list={['[ nl-h2 ]', { 'nl-h2--feature': section.kind === 'feature' }]}>{section.title}</h2>
+            </Flexblock>
+        }
+
+        {section.kind === 'feature' && (
+            <Flexblock gap="var(--space-m)">
+                {section.lede && <p class="[ nl-lede ]">{section.lede}</p>}
+                {section.panel &&
+                    <div class="[ nl-panel ]">
+                        <h3 class="[ nl-h3 ]">{section.panel.title}</h3>
+                        {section.panel.paragraphs.map((paragraph) => <p set:html={paragraph} />)}
+                        {section.panel.pilots &&
+                            <div class="[ nl-pilots ]">
+                                {section.panel.pilots.map((pilot) =>
+                                    <div class="[ nl-pilot ]">
+                                        <img src={get_player_icon(pilot.character_id, 64)} width="40" height="40" alt="" loading="lazy" />
+                                        <div><b>{pilot.character_name}</b><span>{pilot.note}</span></div>
+                                    </div>
+                                )}
+                            </div>
+                        }
+                    </div>
+                }
+                {section.callout &&
+                    <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
+                }
+                {figure_list(section.figures).map((figure) =>
+                    <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                        <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                        <figcaption>{figure.caption}</figcaption>
+                    </figure>
+                )}
+                {section.list &&
+                    <ul class="[ nl-panel nl-list ]">
+                        {section.list.map((item) => <li><b>{item.title}</b> <span set:html={item.text} /></li>)}
+                    </ul>
+                }
+                {section.aside &&
+                    <p class="[ nl-aside ]"><b>{section.aside.tag}:</b> <span set:html={section.aside.text} /></p>
+                }
+                {section.cta &&
+                    <div class="[ nl-cta ]">
+                        {cta_links(section.cta).map((link) =>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                        )}
+                        {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                    </div>
+                }
+            </Flexblock>
+        )}
+
+        {section.kind === 'rollup' && (
+            <Flexblock gap="var(--space-m)">
+                <div class="[ nl-stats ]">
+                    {section.stats.map((stat) => <div class="[ nl-stat ]"><b>{stat.value}</b><span>{stat.label}</span></div>)}
+                </div>
+                <h3 class="[ nl-h3 ]">{section.nights_title}</h3>
+                <ol class="[ nl-nights ]">
+                    {section.nights.map((night) =>
+                        <li>
+                            <span class="[ nl-nights__when ]">{night.date_label}</span>
+                            <span class="[ nl-nights__what ]"><b>{night.title}</b><span class="[ nl-nights__fc ]"><img src={get_player_icon(night.fc_character_id, 64)} width="22" height="22" alt="" loading="lazy" />{night.fc_name} · {night.pilots} pilots</span></span>
+                            <span class="[ nl-nights__res ]"><span><span class="[ nl-kill ]">{night.isk_destroyed}</span> killed</span><span><span class="[ nl-loss ]">{night.isk_lost}</span> lost</span></span>
+                        </li>
+                    )}
+                </ol>
+                <h3 class="[ nl-h3 ]">{section.fcs_title}</h3>
+                <ul class="[ nl-fcs ]">
+                    {section.fcs.map((fc) =>
+                        <li class:list={['[ nl-fc ]', { 'nl-fc--new': fc.first_fleets }]}>
+                            <img src={get_player_icon(fc.character_id, 64)} width="44" height="44" alt="" loading="lazy" />
+                            <div>
+                                <b>{fc.character_name}</b>
+                                <span>{fc.fleets} {fc.fleets === 1 ? 'fleet' : 'fleets'}{fc.first_fleets && <> · <span class="[ nl-fc__new ]">{fc.fleets === 1 ? 'first fleet' : 'first fleets'}</span></>}</span>
+                            </div>
+                        </li>
+                    )}
+                </ul>
+                {section.welcome &&
+                    <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.welcome.tag}</span><span set:html={section.welcome.text} /></p>
+                }
+                {section.cta &&
+                    <div class="[ nl-cta ]">
+                        {cta_links(section.cta).map((link) =>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                        )}
+                    </div>
+                }
+            </Flexblock>
+        )}
+
+        {section.kind === 'video' && (
+            <div class="[ nl-watch nl-watch--inline ]">
+                <a class="[ nl-watch__thumb ]" href={section.video.url} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${section.video.title} on YouTube`}>
+                    <img src={section.video.thumbnail} width="1280" height="720" alt={section.video.thumbnail_alt} loading="lazy" />
+                </a>
+                <Flexblock gap="var(--space-s)" class="[ nl-watch__text ]">
+                    <span class="[ nl-kicker ]">{section.video.kicker}</span>
+                    <h2 class="[ nl-h2 ]">{section.video.title}</h2>
+                    <p>{section.video.text}</p>
+                    {section.video.copy_username &&
+                        <Flexblock gap="var(--space-2xs)">
+                            <p>{section.video.copy_username.label}</p>
+                            <div class="[ nl-copy ]">
+                                <code>{section.video.copy_username.username}</code>
+                                <ClipboardButton id={`nl-copy-${section.id}`} text="Copy username" copied_text="Copied">{section.video.copy_username.username}</ClipboardButton>
+                            </div>
+                        </Flexblock>
+                    }
+                    <div class="[ nl-cta ]">
+                        {cta_links(section.video.cta).map((link) =>
+                            <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                        )}
+                    </div>
+                </Flexblock>
+            </div>
+        )}
+
+        {section.kind === 'hits' && (
+            <Flexblock gap="var(--space-m)">
+                {section.callout &&
+                    <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
+                }
+                {figure_list(section.figures).length > 0 &&
+                    <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]} style={figure_list(section.figures).length > 1 ? `--nl_pair_columns: ${pair_columns(section.figures)}` : undefined}>
+                        {figure_list(section.figures).map((figure) =>
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
+                        )}
+                    </div>
+                }
+                {section.orders &&
+                    <Flexblock gap="var(--space-s)">
+                        <h3 class="[ nl-h3 ]">{section.orders.title}</h3>
+                        <div class="[ nl-orders ]">
+                            {section.orders.orders.map((order) =>
+                                <div class="[ nl-order ]">
+                                    <img class="[ nl-order__ship ]" src={get_item_icon(order.type_id, 64)} width="48" height="48" alt="" loading="lazy" />
+                                    <div class="[ nl-order__body ]">
+                                        <div class="[ nl-order__head ]">
+                                            <b>{order.ship} <span>×{order.quantity}</span></b>
+                                            <span class:list={['[ nl-chip ]', `nl-chip--${order.status}`]}>{order.status_label}</span>
+                                        </div>
+                                        <div class="[ nl-bar ]"><i style={`width: ${order.progress}%`}></i></div>
+                                        <div class="[ nl-order__foot ]">
+                                            <div class="[ nl-order__builders ]">
+                                                {order.builders.slice(0, 6).map((builder) =>
+                                                    <img src={get_player_icon(builder.character_id, 64)} width="28" height="28" alt={builder.character_name} title={builder.character_name} loading="lazy" />
+                                                )}
+                                                {order.builders.length > 6 && <span>+{order.builders.length - 6}</span>}
+                                            </div>
+                                            {order.note && <p>{order.note}</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </Flexblock>
+                }
+                {figure_list(section.figures_after_orders).length > 0 &&
+                    <div class="[ nl-figures nl-figures--pair ]" style={`--nl_pair_columns: ${pair_columns(section.figures_after_orders)}`}>
+                        {figure_list(section.figures_after_orders).map((figure) =>
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
+                        )}
+                    </div>
+                }
+                <ul class="[ nl-hits ]">
+                    {item_list(section.items).map((item) =>
+                        <li>
+                            <b>{item.title}</b>
+                            <span set:html={item.text} />
+                            {item.credit &&
+                                <span class="[ nl-credit ]">
+                                    <img src={get_player_icon(item.credit.character_id, 64)} width="28" height="28" alt="" loading="lazy" />
+                                    {item.credit.verb} <b>{item.credit.character_name}</b>
+                                </span>
+                            }
+                        </li>
+                    )}
+                </ul>
+                {section.cta &&
+                    <div class="[ nl-cta ]">
+                        {cta_links(section.cta).map((link) =>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                        )}
+                        {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                    </div>
+                }
+            </Flexblock>
+        )}
+
+        {section.kind === 'reading' && (
+            <div class="[ nl-shelf ]">
+                {section.books.map((book) =>
+                    <a class="[ nl-book ]" href={resolve_href(book.href)}>
+                        {book.tag && <span class="[ nl-book__tag ]">{book.tag}</span>}
+                        <h3 class="[ nl-h3 ]">{book.title}</h3>
+                        <span>{book.text}</span>
+                    </a>
+                )}
+            </div>
+        )}
+    </section>
+))}
+
+<footer class="[ nl-footer ]">
+    <span class="[ nl-footer__sign ]">o7</span>
+    <p>{issue.footer.thanks}</p>
+    {issue.footer.help && <p set:html={issue.footer.help} />}
+</footer>
+
+<style lang="scss">
+    .nl-kicker {
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--fleet-red);
+    }
+
+    .nl-h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--highlight);
+        text-wrap: balance;
+    }
+
+    .nl-h2--feature {
+        font-size: var(--step-4);
+    }
+
+    .nl-h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        letter-spacing: 0.02em;
+    }
+
+    .nl-lede {
+        font-size: var(--step-1);
+        color: var(--highlight);
+        max-width: var(--max-landing-width);
+    }
+
+    .nl-fine {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    /* Video blocks */
+    .nl-watch {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+        gap: var(--space-l);
+        align-items: center;
+        padding-block: var(--space-l);
+        border-bottom: 1px solid var(--hairline-strong);
+    }
+
+    .nl-watch--inline {
+        border-bottom: 0;
+        padding-block: 0;
+    }
+
+    .nl-watch__thumb {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        border: 1px solid var(--hairline-strong);
+    }
+
+    .nl-watch__thumb img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .nl-watch__play {
+        position: absolute;
+        width: var(--space-2xl);
+        height: var(--space-2xl);
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--black) 62%, transparent);
+        display: grid;
+        place-items: center;
+        transition: transform var(--fast-transition);
+
+        &::after {
+            content: "";
+            margin-left: var(--space-3xs);
+            border-style: solid;
+            border-width: var(--space-xs) 0 var(--space-xs) var(--space-s);
+            border-color: transparent transparent transparent var(--highlight);
+        }
+    }
+
+    .nl-watch__play--center {
+        inset: 0;
+        margin: auto;
+    }
+
+    .nl-watch__play--top-right {
+        top: 21%;
+        right: 9%;
+        transform: translateY(-50%);
+    }
+
+    @media (hover: hover) {
+        .nl-watch__thumb:hover .nl-watch__play--top-right,
+        .nl-watch__thumb:focus-visible .nl-watch__play--top-right {
+            transform: translateY(-50%) scale(1.06);
+        }
+    }
+
+    .nl-watch__text {
+        min-width: 0;
+    }
+
+    @media (max-width: 44rem) {
+        .nl-watch {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    /* Contents strip */
+    .nl-toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        padding-block: var(--space-s);
+        border-bottom: 1px solid var(--hairline);
+
+        a {
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            color: var(--foreground);
+            padding: var(--space-3xs) var(--space-xs);
+            border: 1px solid var(--hairline-strong);
+            transition: color var(--fast-transition), border-color var(--fast-transition);
+        }
+
+        a:hover,
+        a:focus-visible {
+            color: var(--highlight);
+            border-color: var(--fleet-red);
+        }
+    }
+
+    /* Sections */
+    .nl-section {
+        display: grid;
+        gap: var(--space-m);
+        padding-block: var(--space-xl) var(--space-l);
+        scroll-margin-top: var(--space-xl);
+    }
+
+    .nl-section + .nl-section {
+        border-top: 2px solid var(--hairline-strong);
+    }
+
+    .nl-panel {
+        display: grid;
+        gap: var(--space-xs);
+        max-width: var(--max-landing-width);
+        padding: var(--space-s) var(--space-m);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .nl-list {
+        list-style: none;
+        margin-inline: 0;
+
+        li {
+            position: relative;
+            padding-left: var(--space-s);
+        }
+
+        li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.65em;
+            width: 6px;
+            height: 6px;
+            background: var(--fleet-red);
+            transform: rotate(45deg);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .nl-pilots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-l);
+    }
+
+    .nl-pilot,
+    .nl-fc {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+
+        img {
+            border-radius: 50%;
+            flex: none;
+        }
+
+        div {
+            display: grid;
+            min-width: 0;
+            line-height: 1.3;
+        }
+
+        b {
+            color: var(--highlight);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        span {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .nl-callout {
+        display: grid;
+        gap: var(--space-3xs);
+        max-width: var(--max-landing-width);
+        padding: var(--space-xs) var(--space-s);
+        background: var(--component-background);
+        border-left: 4px solid var(--fleet-yellow);
+
+        :global(q) {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+    }
+
+    .nl-callout__tag {
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--fleet-red);
+    }
+
+    .nl-aside {
+        max-width: var(--max-landing-width);
+        padding: var(--space-xs) var(--space-s);
+        border-left: 4px solid var(--fleet-red);
+        background: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .nl-shot {
+        margin-inline: 0;
+        display: grid;
+        gap: var(--space-2xs);
+        width: 100%;
+        max-width: var(--max-landing-width);
+
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
+            padding: var(--space-2xs);
+            background: var(--component-background);
+            border: 1px solid var(--hairline-strong);
+        }
+
+        figcaption {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .nl-figures {
+        display: grid;
+        gap: var(--space-m);
+        align-items: start;
+    }
+
+    .nl-shot--tall {
+        max-width: 40rem;
+    }
+
+    .nl-shot--wide,
+    .nl-figures--pair .nl-shot {
+        max-width: none;
+    }
+
+    /* Wide composites stay legible on phones: scroll sideways instead of shrinking. */
+    @media (max-width: 40rem) {
+        .nl-shot--wide .nl-shot__frame {
+            overflow-x: auto;
+        }
+
+        .nl-shot--wide img {
+            width: 44rem;
+            max-width: none;
+        }
+    }
+
+    .nl-cta :global(.nl-btn--secondary),
+    .nl-watch__text :global(.nl-btn--secondary) {
+        border: 1px solid var(--fleet-yellow) !important;
+    }
+
+    .nl-book__tag {
+        width: fit-content;
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 var(--space-2xs);
+        border: 1px solid var(--fleet-red);
+        color: var(--fleet-red);
+    }
+
+    .nl-figures--pair {
+        grid-template-columns: var(--nl_pair_columns, repeat(2, minmax(0, 1fr)));
+    }
+
+    @media (max-width: 40rem) {
+        .nl-figures--pair {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .nl-cta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+    }
+
+    .nl-cta__note {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        flex: 1 1 18rem;
+    }
+
+    /* Two-column briefs */
+    .nl-hits {
+        list-style: none;
+        margin-inline: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 var(--space-l);
+
+        li {
+            display: grid;
+            align-content: start;
+            gap: var(--space-3xs);
+            padding-block: var(--space-s);
+            border-top: 1px solid var(--hairline-strong);
+            min-width: 0;
+        }
+
+        li > b {
+            color: var(--highlight);
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .nl-hits {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .nl-credit {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-top: var(--space-2xs);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+
+        img {
+            border-radius: 50%;
+            border: 1px solid var(--hairline-strong);
+        }
+
+        b {
+            color: var(--foreground);
+        }
+    }
+
+    /* October rollup */
+    .nl-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border-block: 1px solid var(--hairline-strong);
+    }
+
+    .nl-stat {
+        display: grid;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-s) var(--space-s) 0;
+
+        & + & {
+            padding-left: var(--space-s);
+            border-left: 1px solid var(--hairline-strong);
+        }
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-4);
+            line-height: 1;
+            color: var(--highlight);
+        }
+
+        span {
+            font-size: var(--step--2);
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .nl-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .nl-stat:nth-child(3) {
+            padding-left: 0;
+            border-left: 0;
+        }
+
+        .nl-stat:nth-child(n + 3) {
+            border-top: 1px solid var(--hairline-strong);
+        }
+    }
+
+    .nl-nights {
+        list-style: none;
+        margin-inline: 0;
+        padding: 0;
+
+        li {
+            display: grid;
+            grid-template-columns: 6rem minmax(0, 1fr) auto;
+            gap: var(--space-3xs) var(--space-s);
+            align-items: baseline;
+            padding-block: var(--space-xs);
+            border-top: 1px solid var(--hairline-strong);
+        }
+    }
+
+    .nl-nights__when {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .nl-nights__what {
+        display: grid;
+
+        b {
+            color: var(--highlight);
+        }
+
+        span {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .nl-nights__fc {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-top: var(--space-3xs);
+
+        img {
+            border-radius: 50%;
+            flex: none;
+        }
+    }
+
+    .nl-nights__res {
+        display: grid;
+        justify-items: end;
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+    }
+
+    .nl-kill {
+        color: var(--security-status-1);
+    }
+
+    .nl-loss {
+        color: var(--fleet-red);
+    }
+
+    @media (max-width: 34rem) {
+        .nl-nights li {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .nl-nights__res {
+            display: flex;
+            gap: var(--space-s);
+        }
+    }
+
+    .nl-fcs {
+        list-style: none;
+        margin-inline: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-xs);
+    }
+
+    .nl-fc {
+        padding: var(--space-2xs) var(--space-xs);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .nl-fc--new {
+        border-color: var(--fleet-red);
+    }
+
+    .nl-fc__new {
+        color: var(--fleet-red) !important;
+        font-weight: 600;
+    }
+
+    @media (max-width: 40rem) {
+        .nl-fcs {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    /* Orders: one card per ship, two per row */
+    .nl-orders {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-xs);
+    }
+
+    .nl-order {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-xs) var(--space-s);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        &:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .nl-order__ship {
+        background: var(--black);
+    }
+
+    .nl-order__body {
+        display: grid;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        p {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .nl-order__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .nl-order__builders {
+        display: flex;
+        align-items: center;
+
+        img {
+            border-radius: 50%;
+            border: 2px solid var(--component-background);
+            margin-left: -6px;
+        }
+
+        img:first-child {
+            margin-left: 0;
+        }
+
+        span {
+            margin-left: var(--space-3xs);
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .nl-order__head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-3xs) var(--space-s);
+        align-items: center;
+
+        b {
+            color: var(--highlight);
+        }
+
+        b span {
+            color: var(--foreground);
+            font-weight: 400;
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .nl-orders {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .nl-chip {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0 var(--space-2xs);
+        white-space: nowrap;
+    }
+
+    .nl-chip--delivered {
+        background: var(--foreground);
+        color: var(--black);
+    }
+
+    .nl-chip--in_progress {
+        border: 1px solid var(--fleet-red);
+        color: var(--fleet-red);
+    }
+
+    .nl-bar {
+        height: 6px;
+        background: var(--hairline-strong);
+        overflow: hidden;
+
+        i {
+            display: block;
+            height: 100%;
+            background: var(--fleet-red);
+        }
+    }
+
+    @media (max-width: 34rem) {
+        .nl-order__head {
+            grid-template-columns: minmax(0, 1fr);
+            justify-items: start;
+        }
+    }
+
+    /* Copy username */
+    .nl-copy {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+
+        code {
+            padding: var(--space-3xs) var(--space-xs);
+            background: var(--component-background);
+            border: 1px solid var(--hairline-strong);
+            color: var(--highlight);
+            user-select: all;
+        }
+    }
+
+    /* Reading */
+    .nl-shelf {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-s);
+    }
+
+    .nl-book {
+        display: grid;
+        align-content: start;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        background: var(--component-background);
+        border-top: 3px solid var(--foreground);
+        text-decoration: none;
+        color: var(--foreground);
+        transition: border-color var(--fast-transition);
+
+        &:hover,
+        &:focus-visible {
+            border-top-color: var(--fleet-red);
+        }
+    }
+
+    @media (max-width: 46rem) {
+        .nl-shelf {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .nl-footer {
+        display: grid;
+        gap: var(--space-xs);
+        padding-block: var(--space-l);
+        border-top: 2px solid var(--hairline-strong);
+        color: var(--text-muted);
+    }
+
+    .nl-footer__sign {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        color: var(--highlight);
+    }
+</style>
