@@ -359,7 +359,7 @@ export const YC128_10: NewsletterIssue = {
         },
     ],
     footer: {
-        thanks: 'Built this month by bearthatcares, Beautiful Mim and Marcelo Paez Sequeira. Thanks to everyone who reported bugs.',
+        thanks: 'Built this month by BearThatCares, Beautiful Mim and Marcelo Paez Sequeira. Thanks to everyone who reported bugs.',
         data_note: 'The desktop app screenshot uses sample data. October numbers are live data up to 19 October.',
         help: `Found something broken, or want something built? Open a ticket in ${HELP_LINK} on the alliance Discord.`,
     },
