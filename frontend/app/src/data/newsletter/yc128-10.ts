@@ -284,7 +284,7 @@ export const YC128_10: NewsletterIssue = {
                     width: 1210,
                     height: 1250,
                     alt: 'A product page with a one-line verdict and a weekly chart of builds against losses and sales.',
-                    caption: 'Product pages open on a verdict, here the Typhoon.',
+                    caption: "The supply chain's product pages open on a verdict, here the Typhoon.",
                 },
                 {
                     src: `${IMG}/lp.webp`,
@@ -295,7 +295,7 @@ export const YC128_10: NewsletterIssue = {
                 },
             ],
             items: [
-                { title: 'Product pages', text: 'Each item shows a verdict, who builds it, who needs it, and a Build tab of orders still looking for a builder.' },
+                { title: 'Supply chain, rebuilt', text: 'Every hull and item in the <a href="/industry/products/">supply chain</a> has its own page: a verdict on whether builds keep up with losses and sales, who builds it, who needs it, and a Build tab of orders still looking for a builder.' },
                 { title: 'LP buyback, rebuilt', text: 'TLF only. Standard pays more, Express pays within 24 hours, and your order page tells you exactly what to do next.' },
                 {
                     title: 'BUILD packs on order claims',

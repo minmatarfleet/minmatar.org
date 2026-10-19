@@ -33,6 +33,12 @@ type CtaLink = NewsletterCta['links'][number]
 const cta_links = (cta?: NewsletterCta): CtaLink[] => cta?.links ?? []
 const figure_list = (figures?: NewsletterFigure[]): NewsletterFigure[] => figures ?? []
 const item_list = (items?: NewsletterItem[]): NewsletterItem[] => items ?? []
+
+// Columns sized by each image's aspect ratio, so paired screenshots render at the same height.
+const pair_columns = (figures?: NewsletterFigure[]): string =>
+    figure_list(figures)
+        .map((figure) => `minmax(0, ${(figure.width / figure.height).toFixed(4)}fr)`)
+        .join(' ')
 const lead_video: NewsletterVideo | undefined = issue.lead_video
 ---
 
@@ -190,7 +196,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
                 }
                 {figure_list(section.figures).length > 0 &&
-                    <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]}>
+                    <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]} style={figure_list(section.figures).length > 1 ? `--nl_pair_columns: ${pair_columns(section.figures)}` : undefined}>
                         {figure_list(section.figures).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
                                 <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
@@ -228,7 +234,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     </Flexblock>
                 }
                 {figure_list(section.figures_after_orders).length > 0 &&
-                    <div class="[ nl-figures nl-figures--pair ]">
+                    <div class="[ nl-figures nl-figures--pair ]" style={`--nl_pair_columns: ${pair_columns(section.figures_after_orders)}`}>
                         {figure_list(section.figures_after_orders).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
                                 <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
@@ -570,7 +576,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     }
 
     .nl-figures--pair {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: var(--nl_pair_columns, repeat(2, minmax(0, 1fr)));
     }
 
     @media (max-width: 40rem) {
