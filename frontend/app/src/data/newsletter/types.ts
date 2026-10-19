@@ -99,13 +99,16 @@ export interface NewsletterFc {
 }
 
 export interface NewsletterOrder {
-    type_ids: number[]
-    title: string
+    /** One ship line of an industry order. */
+    type_id: number
+    ship: string
+    quantity: number
     status: 'delivered' | 'in_progress'
     status_label: string
-    /** 0–100 */
+    /** Share delivered, 0–100. */
     progress: number
     note: string
+    builders: { character_id: number; character_name: string }[]
 }
 
 interface NewsletterSectionBase {
@@ -133,7 +136,7 @@ export interface NewsletterHitsSection extends NewsletterSectionBase {
     callout?: NewsletterCallout
     /** One figure spans the column; two sit side by side. */
     figures?: NewsletterFigure[]
-    orders?: { title: string; orders: NewsletterOrder[]; builders: string[]; cta?: NewsletterCta }
+    orders?: { title: string; orders: NewsletterOrder[] }
     figures_after_orders?: NewsletterFigure[]
     items: NewsletterItem[]
     cta?: NewsletterCta

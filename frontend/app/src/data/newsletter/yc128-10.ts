@@ -265,23 +265,18 @@ export const YC128_10: NewsletterIssue = {
             orders: {
                 title: "This month's orders",
                 orders: [
-                    { type_ids: [644, 24692, 17732, 17726], title: 'Typhoon ×150 · Abaddon ×100 · Tempest Fleet Issue ×50 · Apocalypse Navy Issue ×50', status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '350 hulls from 13 builders' },
-                    { type_ids: [639], title: 'Tempest ×40', status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '3 builders' },
-                    { type_ids: [73794], title: 'Thrasher Fleet Issue ×40', status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '2 builders' },
-                    { type_ids: [37604, 23757, 24483], title: 'Apostle ×8 · Archon ×3 · Nidhoggur ×3', status: 'in_progress', status_label: '12 of 14 · due 30 Oct', progress: 86, note: '5 builders' },
-                    { type_ids: [644, 24692], title: 'Typhoon ×50 · Abaddon ×50', status: 'in_progress', status_label: '80 of 100 claimed · due 25 Oct', progress: 0, note: '20 hulls still need a builder' },
+                    { type_id: 24692, ship: 'Abaddon', quantity: 50, status: 'in_progress', status_label: '30 of 50 claimed · due 25 Oct', progress: 0, note: '20 still need a builder', builders: [{ character_id: 1999902865, character_name: "PanykButton" }, { character_id: 2121171605, character_name: "Digital Blink" }] },
+                    { type_id: 644, ship: 'Typhoon', quantity: 50, status: 'in_progress', status_label: 'All claimed · due 25 Oct', progress: 0, note: '3 builders on it', builders: [{ character_id: 1999902865, character_name: "PanykButton" }, { character_id: 95168669, character_name: "Jenna Addams" }, { character_id: 2121171605, character_name: "Digital Blink" }] },
+                    { type_id: 23757, ship: 'Archon', quantity: 3, status: 'in_progress', status_label: '1 of 3 delivered · due 30 Oct', progress: 33, note: '2 builders on it', builders: [{ character_id: 94992234, character_name: "Hasine en Tilavine" }, { character_id: 2121171605, character_name: "Digital Blink" }] },
+                    { type_id: 644, ship: 'Typhoon', quantity: 150, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '10 builders', builders: [{ character_id: 684108979, character_name: "Zigg Omelo" }, { character_id: 2115377871, character_name: "AlphaOne Stenier-Tian" }, { character_id: 1954244983, character_name: "Azure Opiate" }, { character_id: 154198067, character_name: "Barret Smythe" }, { character_id: 2112954532, character_name: "Kel'dar Atram" }, { character_id: 2121171605, character_name: "Digital Blink" }, { character_id: 95991877, character_name: "Lance Adoudel" }, { character_id: 2119219735, character_name: "Inner Okel" }, { character_id: 332402304, character_name: "Gin Taylor" }, { character_id: 93389269, character_name: "Kayra Nathuul" }] },
+                    { type_id: 24692, ship: 'Abaddon', quantity: 100, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '5 builders', builders: [{ character_id: 684108979, character_name: "Zigg Omelo" }, { character_id: 1954244983, character_name: "Azure Opiate" }, { character_id: 154198067, character_name: "Barret Smythe" }, { character_id: 2112954532, character_name: "Kel'dar Atram" }, { character_id: 1505390444, character_name: "Entitiez" }] },
+                    { type_id: 17732, ship: 'Tempest Fleet Issue', quantity: 50, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '5 builders', builders: [{ character_id: 684108979, character_name: "Zigg Omelo" }, { character_id: 2121171605, character_name: "Digital Blink" }, { character_id: 95468500, character_name: "SoulStorm" }, { character_id: 95991877, character_name: "Lance Adoudel" }, { character_id: 2119219735, character_name: "Inner Okel" }] },
+                    { type_id: 17726, ship: 'Apocalypse Navy Issue', quantity: 50, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '4 builders', builders: [{ character_id: 684108979, character_name: "Zigg Omelo" }, { character_id: 2112954532, character_name: "Kel'dar Atram" }, { character_id: 95434311, character_name: "Jyll Ataru" }, { character_id: 2121171605, character_name: "Digital Blink" }] },
+                    { type_id: 639, ship: 'Tempest', quantity: 40, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '3 builders', builders: [{ character_id: 95434311, character_name: "Jyll Ataru" }, { character_id: 2112954532, character_name: "Kel'dar Atram" }, { character_id: 332402304, character_name: "Gin Taylor" }] },
+                    { type_id: 73794, ship: 'Thrasher Fleet Issue', quantity: 40, status: 'delivered', status_label: 'Delivered 13 Oct', progress: 100, note: '2 builders', builders: [{ character_id: 332402304, character_name: "Gin Taylor" }, { character_id: 2117683314, character_name: "Teirg Askold" }] },
+                    { type_id: 37604, ship: 'Apostle', quantity: 8, status: 'delivered', status_label: 'Delivered', progress: 100, note: '3 builders', builders: [{ character_id: 95168669, character_name: "Jenna Addams" }, { character_id: 90250022, character_name: "Zack Prof" }, { character_id: 94992234, character_name: "Hasine en Tilavine" }] },
+                    { type_id: 24483, ship: 'Nidhoggur', quantity: 3, status: 'delivered', status_label: 'Delivered', progress: 100, note: '1 builder', builders: [{ character_id: 92977686, character_name: "Wolf Pappotte" }] },
                 ],
-                builders: [
-                    'AlphaOne Stenier-Tian', 'Azure Opiate', 'Barret Smythe', 'Digital Blink', 'Entitiez', 'Gin Taylor',
-                    'Hasine en Tilavine', 'Inner Okel', 'Jenna Addams', 'Jyll Ataru', 'Kayra Nathuul', "Kel'dar Atram",
-                    'Lance Adoudel', 'PanykButton', 'SoulStorm', 'Teirg Askold', 'Wolf Pappotte', 'Zack Prof', 'Zigg Omelo',
-                ],
-                cta: {
-                    links: [
-                        { label: 'Claim a build', href: '/industry/orders/' },
-                        { label: 'Sell LP', href: '/industry/loyalty/', secondary: true },
-                    ],
-                },
             },
             figures_after_orders: [
                 {
@@ -313,6 +308,12 @@ export const YC128_10: NewsletterIssue = {
                     credit: { character_id: 2112954532, character_name: "Kel'dar Atram", verb: 'Reported by' },
                 },
             ],
+            cta: {
+                links: [
+                    { label: 'Claim a build', href: '/industry/orders/' },
+                    { label: 'Sell LP', href: '/industry/loyalty/', secondary: true },
+                ],
+            },
         },
         {
             kind: 'hits',
@@ -326,7 +327,7 @@ export const YC128_10: NewsletterIssue = {
                 {
                     title: 'SRP fixes',
                     text: "Attached combat logs stay linked, and a killmail that can't be used now says why.",
-                    credit: { character_id: 2117059479, character_name: 'MiniSpartan', verb: 'Reported the blank warning:' },
+                    credit: { character_id: 2117059479, character_name: 'MiniSpartan', verb: 'Reported by' },
                 },
                 { title: 'Easier to use', text: 'Every page shows where you are, phones get buttons and tables that fit, and we fixed bugs found in a sweep of about 400 pages.' },
             ],

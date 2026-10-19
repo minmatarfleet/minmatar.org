@@ -205,28 +205,26 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                         <div class="[ nl-orders ]">
                             {section.orders.orders.map((order) =>
                                 <div class="[ nl-order ]">
-                                    <div class="[ nl-order__ships ]">
-                                        {order.type_ids.map((type_id) => <img src={get_item_icon(type_id, 64)} width="36" height="36" alt="" loading="lazy" />)}
-                                    </div>
+                                    <img class="[ nl-order__ship ]" src={get_item_icon(order.type_id, 64)} width="48" height="48" alt="" loading="lazy" />
                                     <div class="[ nl-order__body ]">
                                         <div class="[ nl-order__head ]">
-                                            <b>{order.title}</b>
+                                            <b>{order.ship} <span>×{order.quantity}</span></b>
                                             <span class:list={['[ nl-chip ]', `nl-chip--${order.status}`]}>{order.status_label}</span>
                                         </div>
                                         <div class="[ nl-bar ]"><i style={`width: ${order.progress}%`}></i></div>
-                                        <p>{order.note}</p>
+                                        <div class="[ nl-order__foot ]">
+                                            <div class="[ nl-order__builders ]">
+                                                {order.builders.slice(0, 6).map((builder) =>
+                                                    <img src={get_player_icon(builder.character_id, 64)} width="28" height="28" alt={builder.character_name} title={builder.character_name} loading="lazy" />
+                                                )}
+                                                {order.builders.length > 6 && <span>+{order.builders.length - 6}</span>}
+                                            </div>
+                                            <p>{order.note}</p>
+                                        </div>
                                     </div>
                                 </div>
                             )}
                         </div>
-                        <p class="[ nl-fine ]">Building for us this month: {section.orders.builders.join(', ').replace(/, ([^,]*)$/, ' and $1')}.</p>
-                        {section.orders.cta &&
-                            <div class="[ nl-cta ]">
-                                {cta_links(section.orders.cta).map((link) =>
-                                    <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
-                                )}
-                            </div>
-                        }
                     </Flexblock>
                 }
                 {figure_list(section.figures_after_orders).length > 0 &&
@@ -773,35 +771,29 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         }
     }
 
-    /* Orders */
+    /* Orders: one card per ship, two per row */
     .nl-orders {
         display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--space-xs);
-        max-width: var(--max-text-width);
     }
 
     .nl-order {
         display: grid;
-        grid-template-columns: 7.75rem minmax(0, 1fr);
+        grid-template-columns: 48px minmax(0, 1fr);
         gap: var(--space-s);
         align-items: center;
         padding: var(--space-xs) var(--space-s);
         background: var(--component-background);
         border: 1px solid var(--border-color);
+
+        &:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
     }
 
-    .nl-order__ships {
-        display: flex;
-
-        img {
-            border: 2px solid var(--component-background);
-            margin-left: -8px;
-            background: var(--black);
-        }
-
-        img:first-child {
-            margin-left: 0;
-        }
+    .nl-order__ship {
+        background: var(--black);
     }
 
     .nl-order__body {
@@ -815,14 +807,54 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         }
     }
 
+    .nl-order__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .nl-order__builders {
+        display: flex;
+        align-items: center;
+
+        img {
+            border-radius: 50%;
+            border: 2px solid var(--component-background);
+            margin-left: -6px;
+        }
+
+        img:first-child {
+            margin-left: 0;
+        }
+
+        span {
+            margin-left: var(--space-3xs);
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
     .nl-order__head {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: var(--space-3xs) var(--space-s);
-        align-items: start;
+        align-items: center;
 
         b {
             color: var(--highlight);
+        }
+
+        b span {
+            color: var(--foreground);
+            font-weight: 400;
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .nl-orders {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 
@@ -857,12 +889,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     }
 
     @media (max-width: 34rem) {
-        .nl-order,
         .nl-order__head {
             grid-template-columns: minmax(0, 1fr);
-        }
-
-        .nl-order__head {
             justify-items: start;
         }
     }
