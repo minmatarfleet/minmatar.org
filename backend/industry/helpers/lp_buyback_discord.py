@@ -22,6 +22,8 @@ from industry.helpers.lp_market_orders import (
     remaining_quantity,
 )
 from industry.models import IndustryLoyaltyPointMarketOrder
+from tribes.helpers.publishing import group_role_mention
+from tribes.models import TribeGroup
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -67,6 +69,20 @@ def _user_mention(user) -> str:
         return f"<@{user.discord_user.id}>"
     except Exception:
         return user.username
+
+
+def conversion_team_mentions() -> list[str]:
+    """Role pings for every tribe group that can claim buyback orders."""
+    groups = (
+        TribeGroup.objects.filter(
+            pilotfeature__code="industry.loyalty.manage",
+            pilotfeature__is_active=True,
+        )
+        .select_related("group__discord_group")
+        .order_by("pk")
+    )
+    mentions = (group_role_mention(group) for group in groups)
+    return [mention for mention in mentions if mention]
 
 
 def _display_name(user) -> str:
@@ -151,8 +167,12 @@ def order_thread_title(order: IndustryLoyaltyPointMarketOrder) -> str:
 
 def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     side_label = "Sell" if order.side == order.Side.SELL else "Buy"
+    mentions = [_user_mention(order.created_by)]
+    if order.tier == order.Tier.EXPRESS:
+        # Express orders are on a clock; the whole Conversion Team hears.
+        mentions.extend(conversion_team_mentions())
     parts = [
-        _user_mention(order.created_by),
+        " ".join(mention for mention in mentions if mention),
         "",
         f"**{side_label}** {order.quantity:,} "
         f"{order.loyalty_point.name} @ {order.isk_per_lp} ISK/LP",
