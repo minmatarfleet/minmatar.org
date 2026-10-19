@@ -224,6 +224,20 @@
         "keywords": ["warzone", "frontline report", "September YC128", "Amamake", "Kamela", "Kourmonen", "faction warfare"]
     },
     {
+        "slug": "newsletter",
+        "path": "/newsletter/",
+        "publish": true,
+        "description": "page_finder.newsletter.description",
+        "keywords": ["newsletter", "Fleet Newsletter", "Minmatar Fleet", "what's new", "updates", "YC128"]
+    },
+    {
+        "slug": "newsletter.yc128_10",
+        "path": "/newsletter/yc128-10/",
+        "publish": true,
+        "description": "page_finder.newsletter.yc128_10.description",
+        "keywords": ["newsletter", "October YC128", "campaigns", "desktop app", "after-action report", "tribes", "Minmatar Fleet"]
+    },
+    {
         "slug": "amamake_market",
         "path": "/amamake-market/",
         "publish": true,
