@@ -339,7 +339,7 @@ export const YC128_10: NewsletterIssue = {
             title: 'No stupid questions',
             callout: {
                 tag: 'New channel',
-                text: `<a href="${QUESTIONS_URL}">#questions</a> is for anything you want to know about the game or the alliance. If you see someone confused on comms, point them there and we'll answer after fleet. Leadership sees it as an early step on a longer road to better onboarding, which a lot of you raised in the Q3 survey. In its first evening it covered:`,
+                text: `We are on the start of a very long journey for better onboarding, which most of you raised in the Q3 survey. For the short term, we hope that <a href="${QUESTIONS_URL}">#questions</a> is for anything you want to know about the game or the alliance until we work out some of the larger pieces. In its first evening it covered:`,
             },
             items: [
                 { title: 'How do I file SRP?', text: 'The <a href="/ships/srp/">SRP page</a> lists the covered ships and what you get back. Press Add killmail on the right program and follow the steps.' },
