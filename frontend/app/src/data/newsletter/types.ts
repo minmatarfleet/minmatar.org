@@ -86,6 +86,7 @@ export interface NewsletterNight {
     date_label: string
     title: string
     fc_name: string
+    fc_character_id: number
     pilots: number
     isk_destroyed: string
     isk_lost: string
@@ -107,7 +108,8 @@ export interface NewsletterOrder {
     status_label: string
     /** Share delivered, 0–100. */
     progress: number
-    note: string
+    /** Short call-out, e.g. how many still need a builder. */
+    note?: string
     builders: { character_id: number; character_name: string }[]
 }
 
@@ -147,11 +149,9 @@ export interface NewsletterRollupSection extends NewsletterSectionBase {
     stats: NewsletterStat[]
     nights_title: string
     nights: NewsletterNight[]
-    nights_note: string
     fcs_title: string
     fcs: NewsletterFc[]
     welcome?: NewsletterCallout
-    footnote: string
     cta?: NewsletterCta
 }
 
@@ -162,7 +162,7 @@ export interface NewsletterVideoSection extends NewsletterSectionBase {
 
 export interface NewsletterReadingSection extends NewsletterSectionBase {
     kind: 'reading'
-    books: { title: string; text: string; href: string }[]
+    books: { title: string; text: string; href: string; tag?: string }[]
 }
 
 export type NewsletterSection =
@@ -186,7 +186,6 @@ export interface NewsletterIssue {
     sections: NewsletterSection[]
     footer: {
         thanks: string
-        data_note: string
         /** html */
         help?: string
     }

@@ -33,6 +33,8 @@ type CtaLink = NewsletterCta['links'][number]
 const cta_links = (cta?: NewsletterCta): CtaLink[] => cta?.links ?? []
 const figure_list = (figures?: NewsletterFigure[]): NewsletterFigure[] => figures ?? []
 const item_list = (items?: NewsletterItem[]): NewsletterItem[] => items ?? []
+// Portrait screenshots get a narrower column so one image doesn't fill the screen.
+const is_tall = (figure: NewsletterFigure): boolean => figure.height > figure.width * 1.05
 
 // Columns sized by each image's aspect ratio, so paired screenshots render at the same height.
 const pair_columns = (figures?: NewsletterFigure[]): string =>
@@ -54,7 +56,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             <p>{lead_video.text}</p>
             <div class="[ nl-cta ]">
                 {cta_links(lead_video.cta).map((link) =>
-                    <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
+                    <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
                 )}
             </div>
         </Flexblock>
@@ -97,8 +99,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
                 }
                 {figure_list(section.figures).map((figure) =>
-                    <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
-                        <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
+                    <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                        <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
                         <figcaption>{figure.caption}</figcaption>
                     </figure>
                 )}
@@ -113,7 +115,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {section.cta &&
                     <div class="[ nl-cta ]">
                         {cta_links(section.cta).map((link) =>
-                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
                         )}
                         {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
                     </div>
@@ -131,12 +133,11 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     {section.nights.map((night) =>
                         <li>
                             <span class="[ nl-nights__when ]">{night.date_label}</span>
-                            <span class="[ nl-nights__what ]"><b>{night.title}</b><span>{night.fc_name} · {night.pilots} pilots</span></span>
-                            <span class="[ nl-nights__res ]"><span class="[ nl-kill ]">{night.isk_destroyed}</span> / <span class="[ nl-loss ]">{night.isk_lost}</span></span>
+                            <span class="[ nl-nights__what ]"><b>{night.title}</b><span class="[ nl-nights__fc ]"><img src={get_player_icon(night.fc_character_id, 64)} width="22" height="22" alt="" loading="lazy" />{night.fc_name} · {night.pilots} pilots</span></span>
+                            <span class="[ nl-nights__res ]"><span><span class="[ nl-kill ]">{night.isk_destroyed}</span> killed</span><span><span class="[ nl-loss ]">{night.isk_lost}</span> lost</span></span>
                         </li>
                     )}
                 </ol>
-                <p class="[ nl-fine ]">{section.nights_note}</p>
                 <h3 class="[ nl-h3 ]">{section.fcs_title}</h3>
                 <ul class="[ nl-fcs ]">
                     {section.fcs.map((fc) =>
@@ -152,11 +153,10 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {section.welcome &&
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.welcome.tag}</span><span set:html={section.welcome.text} /></p>
                 }
-                <p class="[ nl-fine ]">{section.footnote}</p>
                 {section.cta &&
                     <div class="[ nl-cta ]">
                         {cta_links(section.cta).map((link) =>
-                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
                         )}
                     </div>
                 }
@@ -183,7 +183,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     }
                     <div class="[ nl-cta ]">
                         {cta_links(section.video.cta).map((link) =>
-                            <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
+                            <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
                         )}
                     </div>
                 </Flexblock>
@@ -198,8 +198,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {figure_list(section.figures).length > 0 &&
                     <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]} style={figure_list(section.figures).length > 1 ? `--nl_pair_columns: ${pair_columns(section.figures)}` : undefined}>
                         {figure_list(section.figures).map((figure) =>
-                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
-                                <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -225,7 +225,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                                                 )}
                                                 {order.builders.length > 6 && <span>+{order.builders.length - 6}</span>}
                                             </div>
-                                            <p>{order.note}</p>
+                                            {order.note && <p>{order.note}</p>}
                                         </div>
                                     </div>
                                 </div>
@@ -236,8 +236,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {figure_list(section.figures_after_orders).length > 0 &&
                     <div class="[ nl-figures nl-figures--pair ]" style={`--nl_pair_columns: ${pair_columns(section.figures_after_orders)}`}>
                         {figure_list(section.figures_after_orders).map((figure) =>
-                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide }]}>
-                                <img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" />
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -260,7 +260,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {section.cta &&
                     <div class="[ nl-cta ]">
                         {cta_links(section.cta).map((link) =>
-                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'}>{link.label}</Button>
+                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
                         )}
                         {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
                     </div>
@@ -272,6 +272,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             <div class="[ nl-shelf ]">
                 {section.books.map((book) =>
                     <a class="[ nl-book ]" href={resolve_href(book.href)}>
+                        {book.tag && <span class="[ nl-book__tag ]">{book.tag}</span>}
                         <h3 class="[ nl-h3 ]">{book.title}</h3>
                         <span>{book.text}</span>
                     </a>
@@ -284,13 +285,12 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 <footer class="[ nl-footer ]">
     <span class="[ nl-footer__sign ]">o7</span>
     <p>{issue.footer.thanks}</p>
-    <p>{issue.footer.data_note}</p>
     {issue.footer.help && <p set:html={issue.footer.help} />}
 </footer>
 
 <style lang="scss">
     .nl-kicker {
-        font-size: var(--step--2);
+        font-size: var(--step--1);
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--fleet-red);
@@ -525,7 +525,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     }
 
     .nl-callout__tag {
-        font-size: var(--step--2);
+        font-size: var(--step--1);
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: var(--fleet-red);
@@ -570,9 +570,40 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         align-items: start;
     }
 
+    .nl-shot--tall {
+        max-width: 40rem;
+    }
+
     .nl-shot--wide,
     .nl-figures--pair .nl-shot {
         max-width: none;
+    }
+
+    /* Wide composites stay legible on phones: scroll sideways instead of shrinking. */
+    @media (max-width: 40rem) {
+        .nl-shot--wide .nl-shot__frame {
+            overflow-x: auto;
+        }
+
+        .nl-shot--wide img {
+            width: 44rem;
+            max-width: none;
+        }
+    }
+
+    .nl-cta :global(.nl-btn--secondary),
+    .nl-watch__text :global(.nl-btn--secondary) {
+        border: 1px solid var(--fleet-yellow) !important;
+    }
+
+    .nl-book__tag {
+        width: fit-content;
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 var(--space-2xs);
+        border: 1px solid var(--fleet-red);
+        color: var(--fleet-red);
     }
 
     .nl-figures--pair {
@@ -723,10 +754,24 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         }
     }
 
+    .nl-nights__fc {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-top: var(--space-3xs);
+
+        img {
+            border-radius: 50%;
+            flex: none;
+        }
+    }
+
     .nl-nights__res {
+        display: grid;
+        justify-items: end;
         font-size: var(--step--1);
-        text-align: right;
         font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
     }
 
     .nl-kill {
@@ -743,7 +788,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         }
 
         .nl-nights__res {
-            text-align: left;
+            display: flex;
+            gap: var(--space-s);
         }
     }
 
