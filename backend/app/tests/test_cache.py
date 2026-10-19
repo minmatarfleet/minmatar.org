@@ -58,7 +58,7 @@ class CachedRollupKeysTestCase(SimpleTestCase):
 
     def test_tribe_about(self):
         rollup = about.ABOUT
-        self.assertEqual(rollup.key(tribe_id=3), "tribes:about:v1:3")
+        self.assertEqual(rollup.key(tribe_id=3), "tribes:about:v2:3")
         self.assertEqual(
             rollup.lock_key(tribe_id=3), "tribes:about:refreshing:3"
         )

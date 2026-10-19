@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { Tribe, TribeAbout } from '@dtypes/api.minmatar.org'
-import { number_thousand_separator } from '@helpers/numbers'
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
 
 interface Props {
     tribe: Tribe
@@ -25,17 +25,18 @@ const vitals: Vital[] = [
         label: t('tribes.about.people'),
         detail: t('tribes.about.people_detail'),
     },
-    {
-        value: String(tribe.group_count),
-        label: t('tribes.about.groups'),
+    ready && {
+        value: number_thousand_separator(about!.character_count),
+        label: t('tribes.about.characters'),
     },
     ready && {
-        value: number_thousand_separator(about!.multi_group_people),
-        label: t('tribes.about.multi_group'),
-    },
-    ready && {
-        value: String(about!.corporation_count),
+        value: number_thousand_separator(about!.corporation_count),
         label: t('tribes.about.corporations'),
+    },
+    ready && {
+        value: format_isk(about!.isk_destroyed),
+        label: t('tribes.about.isk_destroyed'),
+        detail: t('tribes.about.isk_destroyed_detail'),
     },
 ].filter(Boolean) as Vital[]
 

@@ -18585,6 +18585,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * Character Count
+             * @default 0
+             */
+            character_count?: number;
+            /**
              * Corporation Count
              * @default 0
              */
@@ -18608,6 +18613,11 @@ export interface components {
              *     }
              */
             growth?: components["schemas"]["TribeAboutGrowthSchema"];
+            /**
+             * Isk Destroyed
+             * @default 0
+             */
+            isk_destroyed?: number;
             /**
              * Multi Group People
              * @default 0
