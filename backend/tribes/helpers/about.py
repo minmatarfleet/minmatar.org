@@ -27,8 +27,11 @@ from django.utils import timezone
 
 from app.cache import CachedRollup
 from app.eve_time import month_key
+from eveonline.helpers.killmail_text import parse_killmail_list
 from eveonline.models import (
+    EveCharacter,
     EveCharacterAsset,
+    EveCharacterKillmail,
     EveCharacterKillmailAttacker,
     EveCharacterMiningEntry,
     EveCorporation,
@@ -36,6 +39,7 @@ from eveonline.models import (
 from eveonline.models.characters import EvePlayer
 from eveuniverse.models import EveSolarSystem, EveType
 from fleets.models import EveFleetInstanceMember
+from market.helpers.pricing import get_prices_by_type_id
 from tribes.helpers.growth import (
     group_membership_growth,
     tribe_membership_growth,
@@ -62,7 +66,7 @@ logger = logging.getLogger(__name__)
 ABOUT_PERIOD = "12m"
 ABOUT_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_ABOUT_KEY = "tribes:about:v1:{tribe_id}"
+_ABOUT_KEY = "tribes:about:v2:{tribe_id}"
 _LOCK_KEY = "tribes:about:refreshing:{tribe_id}"
 _GROUP_ABOUT_KEY = "tribes:group-about:v1:{group_id}"
 _GROUP_LOCK_KEY = "tribes:group-about:refreshing:{group_id}"
@@ -138,6 +142,61 @@ def _people(tribe: Tribe) -> dict[str, int]:
         "people": len(per_user),
         "multi_group_people": sum(1 for n in per_user.values() if n > 1),
     }
+
+
+def _character_ids(tribe: Tribe) -> list[int]:
+    """EVE ids of every character the tribe's people have registered."""
+    user_ids = _active_memberships(tribe).values_list("user_id", flat=True)
+    return list(
+        EveCharacter.objects.filter(user_id__in=user_ids).values_list(
+            "character_id", flat=True
+        )
+    )
+
+
+def _count_items(items, quantities: Counter) -> None:
+    for item in items or []:
+        # Blueprint copies have no market price.
+        if item.get("singleton") != 2 and item.get("item_type_id"):
+            quantities[item["item_type_id"]] += (
+                item.get("quantity_destroyed") or 0
+            ) + (item.get("quantity_dropped") or 0)
+        _count_items(item.get("items"), quantities)
+
+
+def _isk_destroyed(char_eve_ids: list[int]) -> int:
+    """Every kill one of these characters was on, valued like zKill does.
+
+    Hull plus destroyed and dropped items at the baseline guide price, each
+    killmail once. Covers what our ESI killmail sync has stored, so the
+    total starts when each character was registered. Ships our own
+    characters lost are left out.
+    """
+    if not char_eve_ids:
+        return 0
+    rows = (
+        EveCharacterKillmail.objects.filter(
+            pk__in=EveCharacterKillmailAttacker.objects.filter(
+                character_id__in=char_eve_ids
+            ).values("killmail_id")
+        )
+        .exclude(victim_character_id__in=char_eve_ids)
+        .values_list("killmail_id", "ship_type_id", "items")
+        .iterator(chunk_size=2000)
+    )
+    quantities: Counter = Counter()
+    seen: set[int] = set()
+    for killmail_id, ship_type_id, items in rows:
+        if killmail_id in seen:
+            continue
+        seen.add(killmail_id)
+        quantities[ship_type_id] += 1
+        _count_items(parse_killmail_list(items), quantities)
+    prices = get_prices_by_type_id(list(quantities))
+    return sum(
+        prices.get(type_id, 0) * quantity
+        for type_id, quantity in quantities.items()
+    )
 
 
 def _corporations(user_ids) -> tuple[list[dict[str, Any]], int]:
@@ -379,8 +438,8 @@ def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
 
     # Fleets: distinct pilots in a qualifying hull per fleet.
     turnout: dict[int, set[int]] = defaultdict(set)
-    fleet_info: dict[int, dict] = {}
-    for fleet_id, char_id, start, system in (
+    fleet_start: dict[int, Any] = {}
+    for fleet_id, char_id, start in (
         EveFleetInstanceMember.objects.filter(
             character_id__in=char_eve_ids,
             ship_type_id__in=list(hull_groups),
@@ -389,31 +448,19 @@ def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
             "eve_fleet_instance_id",
             "character_id",
             "eve_fleet_instance__start_time",
-            "solar_system_name",
         )
         .iterator()
     ):
         turnout[fleet_id].add(char_id)
-        info = fleet_info.setdefault(fleet_id, {"start": start, "systems": []})
-        if system and system not in info["systems"]:
-            info["systems"].append(system)
+        fleet_start.setdefault(fleet_id, start)
     year_fleets = [
         fid
-        for fid, info in fleet_info.items()
-        if info["start"] and info["start"] >= year_ago
+        for fid, start in fleet_start.items()
+        if start and start >= year_ago
     ]
-    record = None
-    if turnout:
-        record_id = max(turnout, key=lambda fid: len(turnout[fid]))
-        info = fleet_info[record_id]
-        record = {
-            "pilots": len(turnout[record_id]),
-            "date": info["start"].isoformat() if info["start"] else None,
-            "systems": info["systems"][:3],
-        }
     hours = [0] * 24
     for fid in year_fleets:
-        hours[fleet_info[fid]["start"].hour] += 1
+        hours[fleet_start[fid].hour] += 1
 
     return {
         "hangar": hangar,
@@ -452,7 +499,6 @@ def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
             if year_fleets
             else 0
         ),
-        "record_turnout": record,
         "hours": hours,
     }
 
@@ -518,6 +564,7 @@ def compute_tribe_about(
     corporations, corporation_count = _corporations(
         set(_active_memberships(tribe).values_list("user_id", flat=True))
     )
+    char_eve_ids = _character_ids(tribe)
     payload: dict[str, Any] = {
         "tribe_id": tribe.pk,
         "slug": tribe.slug,
@@ -528,6 +575,8 @@ def compute_tribe_about(
         "growth": tribe_membership_growth(tribe, now=now),
         "corporations": corporations,
         "corporation_count": corporation_count,
+        "character_count": len(char_eve_ids),
+        "isk_destroyed": _isk_destroyed(char_eve_ids),
         "groups": [
             _tribe_group_entry(group, years.get(group.pk)) for group in groups
         ],

@@ -59,6 +59,11 @@ import NpsiIcon from '@components/icons/NpsiIcon.astro';
         height: var(--flag-size);
         line-height: 0;
 
+        // The flag is an icon, not text: skip the global dotted tooltip underline.
+        &[data-tippy-content] {
+            border-bottom: none;
+        }
+
         :global(svg) {
             width: 100%;
             height: 100%;

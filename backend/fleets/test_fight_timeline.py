@@ -17,9 +17,16 @@ from app.testing import make_token
 from eveonline.models import EveCharacter
 from feed.helpers.fleet_pilots import invalidate_fleet_pilot_cache
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
-from feed.models import FeedKillmail, FeedMonitoredSystem, FeedR2z2Cursor
+from feed.models import (
+    FeedEventFleetLink,
+    FeedKillmail,
+    FeedMonitoredSystem,
+    FeedR2z2Cursor,
+)
 from feed.tests.helpers import make_killmail_payload
+from fleets.helpers.fights import backfill as fleet_backfill
 from fleets.helpers.fights import timeline as fights
+from fleets.helpers.fights.backfill import backfill_fleets
 from fleets.helpers.fights.collect import collect_events
 from fleets.helpers.fights.rounds import (
     build_payload,
@@ -560,3 +567,148 @@ class FleetPilotIngestTests(TestCase):
 
         self.assertIsNotNone(upsert_feed_killmail_from_r2z2(ours))
         self.assertIsNone(upsert_feed_killmail_from_r2z2(theirs))
+
+
+class ZkillResponse:
+    status_code = 200
+
+    def __init__(self, data):
+        self.data = data
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self.data
+
+
+@patch("fleets.helpers.fights.collect.resolve_entity_names", lambda ids: {})
+@patch("feed.helpers.fleet_kills.resolve_character_names", lambda ids: {})
+@patch("fleets.helpers.fights.timeline.lookup_evekill_battles", lambda t: {})
+class FleetHistoryBackfillTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        invalidate_fleet_pilot_cache()
+        disconnect_fleet_signals()
+        FeedMonitoredSystem.objects.create(solar_system_id=LANTORN)
+        self.now = timezone.now()
+        self.start = self.now - timedelta(days=10)
+        self.end = self.start + timedelta(hours=2)
+        self.fleet = self.make_fleet(1, self.start, self.end)
+        for pilot in (2001, 2002, 2003):
+            member(
+                self.fleet.evefleetinstance_set.get(),
+                pilot,
+                self.start,
+                self.end,
+            )
+
+    def tearDown(self):
+        invalidate_fleet_pilot_cache()
+
+    def make_fleet(self, instance_id, start, end, fleet_type="non_strategic"):
+        fleet = EveFleet.objects.create(
+            start_time=start, type=fleet_type, created_by=self.user
+        )
+        instance = EveFleetInstance.objects.create(
+            id=instance_id, eve_fleet=fleet
+        )
+        EveFleetInstance.objects.filter(pk=instance.pk).update(
+            start_time=start, end_time=end, last_updated=end or self.now
+        )
+        return fleet
+
+    def at(self, minutes):
+        return self.start + timedelta(minutes=minutes)
+
+    def zkill_entry(self, killmail_id, minutes, attacker_id_base):
+        raw = make_killmail_payload(
+            killmail_id,
+            solar_system_id=JITA,
+            killmail_time=self.at(minutes),
+            attacker_id_base=attacker_id_base,
+            attacker_count=2,
+        )["killmail"]
+        raw["killmail_time"] = raw["killmail_time"].replace("+00:00", "Z")
+        return {**raw, "zkb": {"hash": f"h{killmail_id}", "totalValue": 9}}
+
+    def test_fleets_pick_ended_unsettled_ones_only(self):
+        self.make_fleet(2, self.now - timedelta(hours=1), None)
+        self.make_fleet(
+            3, self.now - timedelta(hours=2), self.now - timedelta(hours=1)
+        )
+        self.make_fleet(4, self.start, self.end, fleet_type="standing")
+        settled = self.make_fleet(5, self.start, self.end)
+        EveFleetFightTimeline.objects.create(
+            eve_fleet=settled, settled_at=self.now
+        )
+        self.make_fleet(6, self.now - timedelta(days=40), self.end)
+
+        since = self.now - timedelta(days=30)
+        self.assertEqual(
+            [self.fleet.id], [f.id for f in backfill_fleets(since)]
+        )
+        self.assertEqual(
+            {self.fleet.id, settled.id},
+            {f.id for f in backfill_fleets(since, force=True)},
+        )
+
+    def test_zkill_months_fill_missed_mails_then_settle(self):
+        killmail(100, self.at(10), victim=4000, attackers=[2001, 5000])
+        entries = [
+            self.zkill_entry(300, 200, 2001),  # after the fleet
+            self.zkill_entry(301, 30, 2001),  # missed, outside the warzone
+            self.zkill_entry(302, 31, 9000),  # nobody from the fleet
+            {
+                "killmail_id": 100,
+                "killmail_time": self.at(10).isoformat(),
+                "victim": {"character_id": 4000},
+                "attackers": [{"character_id": 2001}],
+                "zkb": {"hash": "h100", "totalValue": 1},
+            },
+            self.zkill_entry(303, -60 * 24, 2001),  # older: stop paging
+        ]
+        # The alliance's month; the fleet's other groups have nothing.
+        month = (
+            f"allianceID/99011978/year/{self.start.year}"
+            f"/month/{self.start.month}/"
+        )
+        urls = []
+
+        def get(url):
+            urls.append(url)
+            first = month in url and url.endswith("/page/1/")
+            return ZkillResponse(entries if first else [])
+
+        with patch("fleets.helpers.fights.backfill.zkill_get", get), patch(
+            "fleets.helpers.fights.backfill.time.sleep"
+        ):
+            stats = fleet_backfill.backfill(backfill_fleets(self.start))
+
+        self.assertEqual(1, stats["zkill"]["added"])
+        self.assertEqual(1, stats["zkill"]["known"])
+        self.assertEqual(3, stats["zkill"]["outside"])
+        self.assertFalse(
+            any("/page/2/" in url for url in urls if month in url)
+        )
+        self.assertTrue(FeedKillmail.objects.filter(killmail_id=301).exists())
+        self.assertFalse(FeedKillmail.objects.filter(killmail_id=302).exists())
+
+        timeline = EveFleetFightTimeline.objects.get(eve_fleet=self.fleet)
+        self.assertIsNotNone(timeline.settled_at)
+        self.assertIsNotNone(timeline.swept_at)
+        self.assertEqual([100, 301], [r["id"] for r in timeline.killmails])
+        self.assertEqual(
+            {"cards": 1, "killmails": 2},
+            {
+                key: stats["fleets"][self.fleet.id][key]
+                for key in ("cards", "killmails")
+            },
+        )
+        self.assertTrue(
+            FeedEventFleetLink.objects.filter(
+                fleet_instance_id=1, feed_event__rollup_code="fleet_kills"
+            ).exists()
+        )
+        self.assertEqual([], backfill_fleets(self.start))

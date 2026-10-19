@@ -268,7 +268,6 @@ export interface TribeAboutCapitals {
     systems:                { name: string, kills: number }[];
     fleets_year:            number;
     median_turnout:         number;
-    record_turnout:         { pilots: number, date: string | null, systems: string[] } | null;
     hours:                  number[];
 }
 
@@ -290,6 +289,8 @@ export interface TribeAbout {
     growth:             { months: { month: string, label: string }[], counts: number[] };
     corporations:       TribeAboutCorporation[];
     corporation_count:  number;
+    character_count:    number;
+    isk_destroyed:      number;
     groups:             TribeAboutGroup[];
     capitals:           TribeAboutCapitals | null;
     supply:             TribeAboutSupply | null;

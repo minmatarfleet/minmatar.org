@@ -26,7 +26,12 @@ from eveonline.models import (
     EveCharacterKillmailAttacker,
 )
 from eveonline.models.characters import EvePlayer
-from eveuniverse.models import EveCategory, EveGroup, EveType
+from eveuniverse.models import (
+    EveCategory,
+    EveGroup,
+    EveMarketPrice,
+    EveType,
+)
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -225,10 +230,49 @@ class CapitalsAboutTestCase(TestCase):
             block["recent_capital_kills"][0]["ship_name"], "Moros"
         )
         self.assertEqual(block["fleets_year"], 1)
-        self.assertEqual(block["record_turnout"]["pilots"], 2)
-        self.assertEqual(block["record_turnout"]["systems"], ["Amamake"])
+        self.assertEqual(block["median_turnout"], 2)
+        self.assertNotIn("record_turnout", block)
         self.assertEqual(sum(block["hours"]), 1)
         self.assertEqual(len(block["kills_by_month"]), 12)
+
+    def test_isk_destroyed_values_each_kill_once(self):
+        EveMarketPrice.objects.create(
+            eve_type_id=MOROS, average_price=2_000_000_000
+        )
+        EveMarketPrice.objects.create(
+            eve_type_id=REVELATION, average_price=1_500_000_000
+        )
+        # A dropped Revelation (cargo) counts; a blueprint copy does not.
+        EveCharacterKillmail.objects.filter(killmail_id=777001).update(
+            items=(
+                '[{"item_type_id": 19720, "quantity_dropped": 1, '
+                '"singleton": 0}, {"item_type_id": 19724, '
+                '"quantity_destroyed": 1, "singleton": 2}]'
+            )
+        )
+        # Our own pilot dying is not ISK destroyed.
+        loss = EveCharacterKillmail.objects.create(
+            id=600,
+            killmail_id=777002,
+            killmail_hash="hash",
+            killmail_time=timezone.now(),
+            solar_system_id=30002537,
+            ship_type_id=REVELATION,
+            victim_character_id=self.chars[0].character_id,
+            attackers="[]",
+            items="[]",
+            character=self.chars[0],
+        )
+        EveCharacterKillmailAttacker.objects.create(
+            killmail=loss,
+            character_id=self.chars[1].character_id,
+            ship_type_id=REVELATION,
+        )
+
+        about = compute_tribe_about(self.tribe)
+
+        self.assertEqual(about["character_count"], 2)
+        self.assertEqual(about["isk_destroyed"], 3_500_000_000)
 
     def test_compute_includes_people_groups_and_capitals(self):
         about = compute_tribe_about(self.tribe)
