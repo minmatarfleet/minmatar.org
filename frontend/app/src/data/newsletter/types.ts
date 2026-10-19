@@ -185,6 +185,6 @@ export interface NewsletterIssue {
         thanks: string
         data_note: string
         /** html */
-        help: string
+        help?: string
     }
 }

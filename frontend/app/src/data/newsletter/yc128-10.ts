@@ -8,7 +8,6 @@ const IMG = `/images/newsletter/${SLUG}`
 const HELP_URL = 'https://discord.com/channels/1041384161505722368/1183401618943791186'
 const HELP_LINK = `<a href="${HELP_URL}">#help</a>`
 const AAR_URL = '/fleets/history/2405/#fights'
-const TEST_DATA = 'Shown with test data.'
 
 export const YC128_10: NewsletterIssue = {
     slug: SLUG,
@@ -80,9 +79,9 @@ export const YC128_10: NewsletterIssue = {
                 {
                     src: `${IMG}/desktop.webp`,
                     width: 1600,
-                    height: 633,
-                    alt: 'Three overlay windows over an EVE scene: the Fleet window on its Upcoming tab, a campaign, and Intel with two shared d-scans.',
-                    caption: `Fleet, Campaigns and Intel windows. ${TEST_DATA}`,
+                    height: 630,
+                    alt: "Three overlay windows over an EVE scene: the Fleet window's Upcoming tab with this week's fleets, the Aldodan campaign's eight systems and their weekly moves, and the Intel window ready for a paste.",
+                    caption: 'The Fleet, Campaigns and Intel windows.',
                     wide: true,
                 },
             ],
@@ -96,8 +95,8 @@ export const YC128_10: NewsletterIssue = {
                 text: `The app is brand new, so expect rough edges and changes from week to week. If something breaks, tell us in ${HELP_LINK}.`,
             },
             cta: {
-                links: [{ label: 'Try the early version', href: 'https://github.com/minmatarfleet/minmatar.org/releases/latest' }],
-                note: 'Windows only. It updates itself.',
+                links: [{ label: 'Download the early version', href: 'https://github.com/minmatarfleet/minmatar.org/releases/download/v0.11.0/MinmatarFleet-0.11.0-x64.exe' }],
+                note: 'Windows installer. It updates itself after that.',
             },
         },
         {
@@ -360,7 +359,6 @@ export const YC128_10: NewsletterIssue = {
     ],
     footer: {
         thanks: 'Built this month by BearThatCares, Beautiful Mim and Marcelo Paez Sequeira. Thanks to everyone who reported bugs.',
-        data_note: 'The desktop app screenshot uses sample data. October numbers are live data up to 19 October.',
-        help: `Found something broken, or want something built? Open a ticket in ${HELP_LINK} on the alliance Discord.`,
+        data_note: 'Fleet, campaign and order numbers are as of 19 October.',
     },
 }

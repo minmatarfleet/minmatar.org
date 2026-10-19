@@ -281,7 +281,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     <span class="[ nl-footer__sign ]">o7</span>
     <p>{issue.footer.thanks}</p>
     <p>{issue.footer.data_note}</p>
-    <p set:html={issue.footer.help} />
+    {issue.footer.help && <p set:html={issue.footer.help} />}
 </footer>
 
 <style lang="scss">
