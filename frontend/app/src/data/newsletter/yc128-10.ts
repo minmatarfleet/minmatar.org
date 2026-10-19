@@ -197,7 +197,7 @@ export const YC128_10: NewsletterIssue = {
             title: 'Every fleet gets an after-action report',
             callout: {
                 tag: 'You asked · Q3 survey',
-                text: 'Some of you asked for <q>debriefs</q>. Every finished fleet now gets one.',
+                text: 'Some of you asked for more <q>debriefs</q>. Now every fleet builds a timeline as it progresses to help fleet commanders tell their story.',
             },
             figures: [
                 {
