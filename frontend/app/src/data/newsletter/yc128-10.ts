@@ -7,6 +7,7 @@ export const COVER_IMAGE = '/images/home-vard-cover-eve.jpg'
 const IMG = `/images/newsletter/${SLUG}`
 const HELP_URL = 'https://discord.com/channels/1041384161505722368/1183401618943791186'
 const HELP_LINK = `<a href="${HELP_URL}">#help</a>`
+const QUESTIONS_URL = 'https://discord.com/channels/1041384161505722368/1561471935462903839'
 const AAR_URL = '/fleets/history/2405/#fights'
 
 export const YC128_10: NewsletterIssue = {
@@ -329,6 +330,24 @@ export const YC128_10: NewsletterIssue = {
                 { title: 'Easier to use', text: 'Every page shows where you are, phones get buttons and tables that fit, and a lot of small bugs are gone.' },
             ],
             cta: { links: [{ label: 'Check your characters', href: '/account/' }] },
+        },
+        {
+            kind: 'hits',
+            id: 'questions',
+            toc_label: 'Questions',
+            kicker: 'Alliance Discord',
+            title: 'No stupid questions',
+            callout: {
+                tag: 'New channel',
+                text: `<a href="${QUESTIONS_URL}">#questions</a> is for anything you want to know about the game or the alliance. If you see someone confused on comms, point them there and we'll answer after fleet. Leadership sees it as an early step on a longer road to better onboarding, which a lot of you raised in the Q3 survey. In its first evening it covered:`,
+            },
+            items: [
+                { title: 'How do I file SRP?', text: 'The <a href="/ships/srp/">SRP page</a> lists the covered ships and what you get back. Press Add killmail on the right program and follow the steps.' },
+                { title: 'How do I move to another corp?', text: 'Message your CEO and the CEO of the corp you want to join, then move over.' },
+                { title: 'Where do projectiles actually hit?', text: 'Mostly in falloff, since optimal is tiny. The answers came with videos on turrets, missiles and heat.' },
+                { title: 'Does overheating a rack follow the modules I moved?', text: "No. Heat goes by rack (high, mid or low slots), not by where the icon sits. You can also bind keys to heat single modules." },
+            ],
+            cta: { links: [{ label: 'Ask in #questions', href: QUESTIONS_URL }] },
         },
         {
             kind: 'feature',
