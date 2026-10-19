@@ -1,0 +1,88 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, translatePath } = i18n(Astro.url)
+
+import type { TribeShowcaseWork } from '@dtypes/api.minmatar.org'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    work: TribeShowcaseWork[]
+}
+
+const { work: pieces } = Astro.props
+
+// Site posts open here; videos and streams open where they were published.
+const work = pieces
+    .map((piece) => ({
+        ...piece,
+        href: piece.post_id ? translatePath(`/alliance/propaganda/${piece.post_id}`) : piece.url,
+        external: !piece.post_id,
+    }))
+    .filter((piece) => piece.href)
+---
+
+{work.length > 0 &&
+    <ul class="[ work ]">
+        {work.map((piece) => (
+            <li>
+                <a
+                    href={piece.href}
+                    target={piece.external ? '_blank' : undefined}
+                    rel={piece.external ? 'noopener noreferrer' : undefined}
+                >
+                    <span class="[ work__title ]">{piece.title.trim()}</span>
+                    <span class="[ work__meta ]">
+                        {[piece.author, format_date_short(lang, piece.published_at)].filter(Boolean).join(' · ')}
+                    </span>
+                </a>
+            </li>
+        ))}
+    </ul>
+}
+
+<style lang="scss">
+    .work {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        a {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-2xs) var(--space-xs);
+            box-shadow: inset 0 0 0 1px var(--border-color-hover);
+            color: var(--foreground);
+            text-decoration: none;
+            transition: box-shadow var(--fast-transition);
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+    }
+
+    @media (hover: hover) {
+        .work a:hover {
+            box-shadow: inset 0 0 0 1px var(--highlight);
+        }
+    }
+
+    .work__title {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        color: var(--highlight);
+    }
+
+    .work__meta {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

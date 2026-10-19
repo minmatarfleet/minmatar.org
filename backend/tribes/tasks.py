@@ -7,7 +7,8 @@ Tasks:
 - ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
 - warm_tribe_group_showcases: Rebuild cached group Activity tabs.
 - refresh_tribe_group_showcase: Rebuild one group's Activity tab (cache miss).
-- warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages.
+- warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages
+  and their groups' About tabs; refresh_tribe_group_about rebuilds one group.
 - create/update/cancel_tribe_discord_event: Push a group event to Discord.
 - sync_tribe_event_interest: Read interested counts, complete past events.
 """
@@ -33,7 +34,7 @@ from tribes.helpers.external_guild import (
     on_membership_became_inactive,
     reconcile_external_guilds,
 )
-from tribes.helpers.about import refresh_tribe_about
+from tribes.helpers.about import refresh_group_about, refresh_tribe_about
 from tribes.helpers import event_sync
 from tribes.helpers.showcase import refresh_group_showcase
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
@@ -249,11 +250,19 @@ def refresh_tribe_about_page(tribe_id: int):
 
 
 @app.task()
+def refresh_tribe_group_about(group_id: int):
+    """Rebuild one group's About tab cache (queued on a cache miss)."""
+    group = TribeGroup.objects.filter(pk=group_id, is_active=True).first()
+    if group:
+        refresh_group_about(group)
+
+
+@app.task()
 def warm_tribe_about_pages():
     """
-    Rebuild every tribe's About page. It scans a year of killmails, fleets
-    and group reports, so no page view ever computes it. The cache lasts
-    six hours; this runs every three.
+    Rebuild every tribe's About page and its groups' About tabs. They scan
+    a year of killmails, fleets and group reports, so no page view ever
+    computes them. The cache lasts six hours; this runs every three.
     """
     for tribe in Tribe.objects.filter(is_active=True):
         try:

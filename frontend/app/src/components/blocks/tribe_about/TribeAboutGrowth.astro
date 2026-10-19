@@ -8,10 +8,16 @@ import { fill_template } from '@helpers/tribe_activity'
 import { month_short, trim_leading_zeros } from '@helpers/tribe_about'
 
 interface Props {
-    about: TribeAbout
+    about: Pick<TribeAbout, 'growth' | 'corporations'>
+    title?: string
+    caption?: string
 }
 
-const { about } = Astro.props
+const {
+    about,
+    title = t('tribes.about.growth.title'),
+    caption = t('tribes.about.growth.caption'),
+} = Astro.props
 
 const months = about.growth.months.map((month, index) => ({
     month: month.month,
@@ -41,10 +47,7 @@ import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astr
 ---
 
 {(bars.length > 1 || about.corporations.length > 0) &&
-    <TribeAboutSection
-        title={t('tribes.about.growth.title')}
-        caption={t('tribes.about.growth.caption')}
-    >
+    <TribeAboutSection title={title} caption={caption}>
         <div class="[ tribe-about-row ]">
             {bars.length > 1 &&
                 <article class="[ tribe-about-card ]">

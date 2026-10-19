@@ -1,5 +1,6 @@
 import type {
     TribeAbout,
+    TribeGroupAbout,
     Tribe,
     TribeGroup,
     TribeMembership,
@@ -43,6 +44,17 @@ export async function get_tribe_about(
     return await api_request<TribeAbout>(`${API_ENDPOINT}/${tribe_id}/about`, {
         token: access_token,
         error: 'Error fetching tribe about',
+    })
+}
+
+export async function get_tribe_group_about(
+    tribe_id: number,
+    group_id: number,
+    access_token?: string | false | null,
+): Promise<TribeGroupAbout> {
+    return await api_request<TribeGroupAbout>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/about`, {
+        token: access_token,
+        error: 'Error fetching tribe group about',
     })
 }
 

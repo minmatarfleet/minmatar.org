@@ -69,3 +69,26 @@ class TribeAboutSchema(BaseModel):
     # Tribe-specific blocks; see tribes.helpers.about.
     capitals: Optional[dict] = None
     supply: Optional[dict] = None
+
+
+class TribeGroupAboutSchema(BaseModel):
+    """A year of one group. ``ready`` is false until the cache is built."""
+
+    group_id: int
+    tribe_id: int
+    code: str = ""
+    ready: bool = False
+    generated_at: Optional[str] = None
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    people: int = 0
+    # New active members in the last tribes.helpers.about.JOINED_WINDOW_DAYS.
+    joined_recent: int = 0
+    in_other_groups: int = 0
+    growth: TribeAboutGrowthSchema = TribeAboutGrowthSchema()
+    corporations: list[TribeAboutCorporationSchema] = []
+    corporation_count: int = 0
+    year: Optional[TribeAboutGroupSchema] = None
+    # Group-specific blocks, same shapes as the tribe's; see tribes.helpers.about.
+    capitals: Optional[dict] = None
+    supply: Optional[dict] = None

@@ -6173,6 +6173,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/{tribe_id}/groups/{group_id}/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Group About tab: a year of totals and records; named pilots for roster viewers. */
+        get: operations["tribes_endpoints_groups_get_tribe_group_about_get_tribe_group_about"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/{tribe_id}/groups/{group_id}/growth": {
         parameters: {
             query?: never;
@@ -18806,6 +18823,73 @@ export interface components {
             where_kind: components["schemas"]["EventWhereKind"];
             /** Where Label */
             where_label: string;
+        };
+        /**
+         * TribeGroupAboutSchema
+         * @description A year of one group. ``ready`` is false until the cache is built.
+         */
+        TribeGroupAboutSchema: {
+            /** Capitals */
+            capitals?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Code
+             * @default
+             */
+            code?: string;
+            /**
+             * Corporation Count
+             * @default 0
+             */
+            corporation_count?: number;
+            /**
+             * Corporations
+             * @default []
+             */
+            corporations?: components["schemas"]["TribeAboutCorporationSchema"][];
+            /** Generated At */
+            generated_at?: string | null;
+            /** Group Id */
+            group_id: number;
+            /**
+             * @default {
+             *       "counts": [],
+             *       "months": []
+             *     }
+             */
+            growth?: components["schemas"]["TribeAboutGrowthSchema"];
+            /**
+             * In Other Groups
+             * @default 0
+             */
+            in_other_groups?: number;
+            /**
+             * Joined Recent
+             * @default 0
+             */
+            joined_recent?: number;
+            /**
+             * People
+             * @default 0
+             */
+            people?: number;
+            /** Period End */
+            period_end?: string | null;
+            /** Period Start */
+            period_start?: string | null;
+            /**
+             * Ready
+             * @default false
+             */
+            ready?: boolean;
+            /** Supply */
+            supply?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tribe Id */
+            tribe_id: number;
+            year?: components["schemas"]["TribeAboutGroupSchema"] | null;
         };
         /** TribeGroupGrowthSchema */
         TribeGroupGrowthSchema: {
@@ -33728,6 +33812,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TribeGroupSchema"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_groups_get_tribe_group_about_get_tribe_group_about: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeGroupAboutSchema"];
                 };
             };
             /** @description Not Found */

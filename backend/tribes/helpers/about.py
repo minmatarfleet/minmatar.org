@@ -8,6 +8,10 @@ miss, queues one refresh and renders without it (see ``tribe_about``).
 Shared blocks (people, growth, corporations, each group's year and its top
 pilots) work for any tribe. The Capitals and Supply tribes get one extra
 block each that tells their own story; Pulse's story is its groups.
+
+Each group's About tab is the same story told for one group: its year,
+its people, and the capital or ore block scoped to its roster. The tribe
+refresh builds and caches them too, so the year reports run once.
 """
 
 from __future__ import annotations
@@ -18,7 +22,7 @@ from datetime import date, timedelta
 from statistics import median
 from typing import Any
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from app.cache import CachedRollup
@@ -36,7 +40,10 @@ from eveonline.models.characters import EvePlayer
 from eveuniverse.models import EveSolarSystem, EveType
 from fleets.models import EveFleetInstanceMember
 from market.helpers.pricing import get_prices_by_type_id
-from tribes.helpers.growth import tribe_membership_growth
+from tribes.helpers.growth import (
+    group_membership_growth,
+    tribe_membership_growth,
+)
 from tribes.helpers.showcase import (
     PRIVATE_HIGHLIGHT_KEYS,
     _enrich_contributors,
@@ -61,8 +68,15 @@ ABOUT_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
 _ABOUT_KEY = "tribes:about:v2:{tribe_id}"
 _LOCK_KEY = "tribes:about:refreshing:{tribe_id}"
+_GROUP_ABOUT_KEY = "tribes:group-about:v1:{group_id}"
+_GROUP_LOCK_KEY = "tribes:group-about:refreshing:{group_id}"
 
 TOP_PILOTS = 3
+# A group's own About tab has room for more of its pilots.
+GROUP_TOP_PILOTS = 5
+# "New members" window. Every membership was migrated in March 2026, so a
+# 12-month count would just repeat the headcount.
+JOINED_WINDOW_DAYS = 90
 TOP_CORPORATIONS = 6
 
 # The number each group's top pilots are ranked by.
@@ -185,11 +199,8 @@ def _isk_destroyed(char_eve_ids: list[int]) -> int:
     )
 
 
-def _corporations(tribe: Tribe) -> tuple[list[dict[str, Any]], int]:
-    """Where the tribe's people come from, by their main's corporation."""
-    user_ids = set(
-        _active_memberships(tribe).values_list("user_id", flat=True)
-    )
+def _corporations(user_ids) -> tuple[list[dict[str, Any]], int]:
+    """Where these people come from, by their main's corporation."""
     corp_ids = Counter(
         corp_id
         for corp_id in EvePlayer.objects.filter(
@@ -247,7 +258,9 @@ def _year_highlights(group: TribeGroup) -> dict[str, Any]:
     }
 
 
-def _top_pilots(group: TribeGroup, rows: list[dict]) -> list[dict[str, Any]]:
+def _top_pilots(
+    group: TribeGroup, rows: list[dict], limit: int = TOP_PILOTS
+) -> list[dict[str, Any]]:
     metric = GROUP_LEADER_METRIC.get(group.code or "")
     if not metric:
         return []
@@ -266,11 +279,13 @@ def _top_pilots(group: TribeGroup, rows: list[dict]) -> list[dict[str, Any]]:
             "character_name": c["character_name"],
             "value": c["metric_value"],
         }
-        for c in ranked[:TOP_PILOTS]
+        for c in ranked[:limit]
     ]
 
 
-def _group_year(group: TribeGroup) -> dict[str, Any]:
+def _group_year(
+    group: TribeGroup, top_pilots: int = TOP_PILOTS
+) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "id": group.pk,
         "code": group.code or "",
@@ -296,7 +311,9 @@ def _group_year(group: TribeGroup) -> dict[str, Any]:
         entry["manual"] = True
         return entry
     entry["totals"] = result.totals or {}
-    entry["top_pilots"] = _top_pilots(group, list(result.rows or []))
+    entry["top_pilots"] = _top_pilots(
+        group, list(result.rows or []), top_pilots
+    )
     try:
         entry["highlights"] = _year_highlights(group)
     except Exception:  # pylint: disable=broad-exception-caught
@@ -527,13 +544,26 @@ def supply_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
     }
 
 
-def compute_tribe_about(tribe: Tribe) -> dict[str, Any]:
+def _tribe_group_entry(
+    group: TribeGroup, year: dict[str, Any] | None
+) -> dict[str, Any]:
+    year = year or _group_year(group)
+    return {**year, "top_pilots": year["top_pilots"][:TOP_PILOTS]}
+
+
+def compute_tribe_about(
+    tribe: Tribe, years: dict[int, dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """The tribe's year. ``years`` reuses group years already computed."""
     now = timezone.now()
     groups = list(
         TribeGroup.objects.filter(tribe=tribe, is_active=True).order_by("name")
     )
+    years = years or {}
     period = parse_period(ABOUT_PERIOD)
-    corporations, corporation_count = _corporations(tribe)
+    corporations, corporation_count = _corporations(
+        set(_active_memberships(tribe).values_list("user_id", flat=True))
+    )
     char_eve_ids = _character_ids(tribe)
     payload: dict[str, Any] = {
         "tribe_id": tribe.pk,
@@ -547,7 +577,9 @@ def compute_tribe_about(tribe: Tribe) -> dict[str, Any]:
         "corporation_count": corporation_count,
         "character_count": len(char_eve_ids),
         "isk_destroyed": _isk_destroyed(char_eve_ids),
-        "groups": [_group_year(group) for group in groups],
+        "groups": [
+            _tribe_group_entry(group, years.get(group.pk)) for group in groups
+        ],
         "capitals": None,
         "supply": None,
     }
@@ -558,15 +590,93 @@ def compute_tribe_about(tribe: Tribe) -> dict[str, Any]:
     return payload
 
 
+def compute_group_about(
+    group: TribeGroup, year: dict[str, Any] | None = None, now=None
+) -> dict[str, Any]:
+    """One group's year: its numbers, its people, and its own block."""
+    now = now or timezone.now()
+    joined_since = now - timedelta(days=JOINED_WINDOW_DAYS)
+    period = parse_period(ABOUT_PERIOD)
+    memberships = TribeGroupMembership.objects.filter(
+        tribe_group=group, status=TribeGroupMembership.STATUS_ACTIVE
+    )
+    user_ids = set(memberships.values_list("user_id", flat=True))
+    joined = set(
+        memberships.filter(
+            Q(approved_at__gte=joined_since)
+            | Q(approved_at__isnull=True, created_at__gte=joined_since)
+        ).values_list("user_id", flat=True)
+    )
+    in_other_groups = set(
+        TribeGroupMembership.objects.filter(
+            tribe_group__tribe_id=group.tribe_id,
+            tribe_group__is_active=True,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+            user_id__in=user_ids,
+        )
+        .exclude(tribe_group=group)
+        .values_list("user_id", flat=True)
+    )
+    corporations, corporation_count = _corporations(user_ids)
+    code = group.code or ""
+    capitals = None
+    if code.startswith("capitals."):
+        capitals = capitals_block([group], now) or None
+    supply = None
+    if code == "supply.mining":
+        supply = supply_block([group], now) or None
+    return {
+        "group_id": group.pk,
+        "tribe_id": group.tribe_id,
+        "code": code,
+        "generated_at": now.isoformat(),
+        "period_start": period.start.isoformat(),
+        "period_end": period.end.isoformat(),
+        "people": len(user_ids),
+        "joined_recent": len(joined),
+        "in_other_groups": len(in_other_groups),
+        "growth": group_membership_growth(group, now=now),
+        "corporations": corporations,
+        "corporation_count": corporation_count,
+        "year": year or _group_year(group, GROUP_TOP_PILOTS),
+        "capitals": capitals,
+        "supply": supply,
+    }
+
+
 def refresh_tribe_about(tribe: Tribe) -> dict[str, Any]:
-    about = compute_tribe_about(tribe)
+    """Rebuild the tribe's About page and every group's About tab."""
+    now = timezone.now()
+    groups = list(TribeGroup.objects.filter(tribe=tribe, is_active=True))
+    years = {
+        group.pk: _group_year(group, GROUP_TOP_PILOTS) for group in groups
+    }
+    about = compute_tribe_about(tribe, years)
     ABOUT.store(about, tribe_id=tribe.pk)
+    for group in groups:
+        try:
+            refresh_group_about(group, years[group.pk], now)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Group about: refresh failed for %s", group.code)
+    return about
+
+
+def refresh_group_about(
+    group: TribeGroup, year: dict[str, Any] | None = None, now=None
+) -> dict[str, Any]:
+    about = compute_group_about(group, year, now)
+    GROUP_ABOUT.store(about, group_id=group.pk)
     return about
 
 
 def tribe_about(tribe_id: int) -> dict[str, Any] | None:
     """Cached About payload, or None after queueing a refresh."""
     return ABOUT.get_or_queue(tribe_id=tribe_id)
+
+
+def group_about(group_id: int) -> dict[str, Any] | None:
+    """Cached group About payload, or None after queueing a refresh."""
+    return GROUP_ABOUT.get_or_queue(group_id=group_id)
 
 
 def _queue_refresh(tribe_id: int) -> None:
@@ -578,6 +688,14 @@ def _queue_refresh(tribe_id: int) -> None:
     refresh_tribe_about_page.apply_async(args=[tribe_id])
 
 
+def _queue_group_refresh(group_id: int) -> None:
+    from tribes.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_tribe_group_about,
+    )
+
+    refresh_tribe_group_about.apply_async(args=[group_id])
+
+
 ABOUT = CachedRollup(
     key=_ABOUT_KEY,
     ttl=ABOUT_TTL_SECONDS,
@@ -586,4 +704,13 @@ ABOUT = CachedRollup(
     # Late-bound so tests can patch _queue_refresh.
     # pylint: disable-next=unnecessary-lambda
     enqueue=lambda tribe_id: _queue_refresh(tribe_id),
+)
+
+GROUP_ABOUT = CachedRollup(
+    key=_GROUP_ABOUT_KEY,
+    ttl=ABOUT_TTL_SECONDS,
+    lock_key=_GROUP_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    # pylint: disable-next=unnecessary-lambda
+    enqueue=lambda group_id: _queue_group_refresh(group_id),
 )
