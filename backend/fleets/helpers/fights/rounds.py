@@ -49,6 +49,11 @@ ZKILL_MAX_TEAM = 10
 # Chart bars: one per minute up to this many, then wider bins.
 CHART_MAX_BINS = 150
 
+# Alliance ids from 2010 on start here. Older alliances share the id range
+# with corporations, so the mails' own alliance ids (names["alliances"])
+# decide when we have them.
+FIRST_ALLIANCE_ID = 99000000
+
 OUTCOME_KILL = "kill"
 OUTCOME_LOSS = "loss"
 
@@ -189,6 +194,17 @@ def _hulls(rows: list[dict], names: dict) -> list[dict]:
     return sorted(hulls.values(), key=lambda h: (-h["isk"], -h["count"]))
 
 
+def group_kind(group: int | None, names: dict) -> str:
+    """ "alliance" or "corporation" for a group id on these mails."""
+    if not group:
+        return "corporation"
+    if "alliances" in names:
+        return (
+            "alliance" if group in set(names["alliances"]) else ("corporation")
+        )
+    return "alliance" if group >= FIRST_ALLIANCE_ID else "corporation"
+
+
 def _hostiles(rows: list[dict], names: dict) -> list[dict]:
     """Who we fought: pilots on our losses, and what we killed of theirs."""
     pilots: dict[int, set] = defaultdict(set)
@@ -207,6 +223,7 @@ def _hostiles(rows: list[dict], names: dict) -> list[dict]:
     result = [
         {
             "group_id": group or None,
+            "kind": group_kind(group, names),
             "name": _name(names, "groups", group or None, "No alliance"),
             "pilots": len(pilots.get(group, ())),
             "ships_killed": killed.get(group, 0),

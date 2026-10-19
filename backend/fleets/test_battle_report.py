@@ -13,6 +13,7 @@ from app.test import TestCase
 from app.testing import make_token
 from feed.helpers.fleet_pilots import invalidate_fleet_pilot_cache
 from feed.models import FeedKillmail
+from fleets.helpers.fights import battle, rounds
 from fleets.helpers.fights import timeline as fights
 from fleets.helpers.fights.battle import assign_sides
 from fleets.models import (
@@ -438,3 +439,36 @@ class BattleReportTests(TestCase):
             links["brtools"],
         )
         self.assertIsNone(links["evekill"])
+
+
+class GroupKindTests(SimpleTestCase):
+    """Old alliances have ids below 99,000,000; the mails say which is which."""
+
+    OLD_ALLIANCE = 1988009451
+    OLD_CORP = 1026712316
+
+    def _mail(self):
+        mail = row(1, (10, 98000001), [(20, 99000002)])
+        mail["victim"]["alliance"] = self.OLD_ALLIANCE
+        mail["attackers"].append([21, self.OLD_CORP, None, RIFTER, 50, False])
+        return mail
+
+    def test_an_old_alliance_on_the_mails_is_an_alliance(self):
+        alliances = battle.alliance_ids([self._mail()])
+        self.assertEqual(
+            "alliance", battle.group_kind(self.OLD_ALLIANCE, alliances)
+        )
+        self.assertEqual(
+            "corporation", battle.group_kind(self.OLD_CORP, alliances)
+        )
+
+    def test_hostiles_take_their_kind_from_the_timeline_names(self):
+        timeline_names = {"alliances": [self.OLD_ALLIANCE]}
+        self.assertEqual(
+            "alliance", rounds.group_kind(self.OLD_ALLIANCE, timeline_names)
+        )
+        self.assertEqual(
+            "corporation", rounds.group_kind(99000002, timeline_names)
+        )
+        # Payloads from before the list existed fall back to the id range.
+        self.assertEqual("alliance", rounds.group_kind(99000002, {}))

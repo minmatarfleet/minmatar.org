@@ -207,6 +207,7 @@
         {
           "group_id": 99000900,
           "isk_killed": 80000000,
+          "kind": "alliance",
           "name": "Hostile Alliance",
           "pilots": 1,
           "ships_killed": 4
@@ -405,6 +406,7 @@
         {
           "group_id": 99000900,
           "isk_killed": 60000000,
+          "kind": "alliance",
           "name": "Hostile Alliance",
           "pilots": 1,
           "ships_killed": 3

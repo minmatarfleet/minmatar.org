@@ -36,7 +36,11 @@ from fleets.helpers.fights.collect import (
     collect_rows,
     resolve_names,
 )
-from fleets.helpers.fights.rounds import build_payload, parse_time
+from fleets.helpers.fights.rounds import (
+    build_payload,
+    group_kind,
+    parse_time,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +56,6 @@ SWEEP_GROUPS = 3
 SWEEP_MAX_PAGES = 5
 SWEEP_SLEEP_SECONDS = 1.1
 ZKILL_MAX_PAST_SECONDS = 7 * 24 * 3600
-# Alliance ids start here; anything lower is a corporation.
-FIRST_ALLIANCE_ID = 99000000
 EVEKILL_BATTLE_URL = "https://eve-kill.com/api/battle/killmail/{killmail_id}"
 
 
@@ -205,9 +207,9 @@ def feed_behind_since(now: datetime | None = None) -> str | None:
 # ------------------------------------------------------------------ sweep
 
 
-def _zkill_entity_path(group_id: int) -> str:
-    kind = "allianceID" if group_id >= FIRST_ALLIANCE_ID else "corporationID"
-    return f"{kind}/{group_id}"
+def _zkill_entity_path(group_id: int, names: dict) -> str:
+    kind = group_kind(group_id, names)
+    return f"{kind}ID/{group_id}"
 
 
 def _sweep_entry(entry: dict, start: datetime) -> str:
@@ -255,7 +257,7 @@ def sweep(fleet, *, now: datetime | None = None) -> dict:
     for group_id in (timeline.names.get("our_groups") or [])[:SWEEP_GROUPS]:
         for page in range(1, SWEEP_MAX_PAGES + 1):
             url = (
-                f"{ZKILL_API_BASE}/{_zkill_entity_path(group_id)}"
+                f"{ZKILL_API_BASE}/{_zkill_entity_path(group_id, timeline.names)}"
                 f"/pastSeconds/{past_seconds}/page/{page}/"
             )
             try:
