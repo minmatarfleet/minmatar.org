@@ -47,7 +47,6 @@ const first_kill = capitals.first_kill
     : ''
 
 const peak_hour = Math.max(1, ...capitals.hours)
-const record = capitals.record_turnout
 
 import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
 import TribeHullList from '@components/blocks/tribe_about/TribeHullList.astro'
@@ -147,22 +146,6 @@ import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astr
     caption={t('tribes.about.capitals.ping_caption')}
 >
     <div class="[ tribe-about-row ]">
-        <article class="[ tribe-about-card ]">
-            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.record_turnout')}</h3>
-            {record ?
-                <>
-                    <p class="[ tribe-about-record ]">
-                        {fill_template(t('tribes.about.capitals.pilots'), { n: count(record.pilots) })}
-                    </p>
-                    <p class="[ tribe-about-detail ]">
-                        {[record.systems.join(', '), record.date ? format_date_short(lang, record.date) : '']
-                            .filter(Boolean).join(' · ')}
-                    </p>
-                </>
-                :
-                <p class="[ tribe-about-detail ]">{t('tribes.about.quiet_year')}</p>
-            }
-        </article>
         <article class="[ tribe-about-card ]">
             <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.capitals.fleets_year')}</h3>
             <p class="[ tribe-about-record ]">{count(capitals.fleets_year)}</p>

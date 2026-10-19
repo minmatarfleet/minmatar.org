@@ -62,6 +62,9 @@ class TribeAboutSchema(BaseModel):
     growth: TribeAboutGrowthSchema = TribeAboutGrowthSchema()
     corporations: list[TribeAboutCorporationSchema] = []
     corporation_count: int = 0
+    character_count: int = 0
+    # Lifetime, valued from our stored ESI killmails.
+    isk_destroyed: int = 0
     groups: list[TribeAboutGroupSchema] = []
     # Tribe-specific blocks; see tribes.helpers.about.
     capitals: Optional[dict] = None
