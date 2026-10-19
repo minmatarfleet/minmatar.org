@@ -210,7 +210,7 @@ export const ui = {
         'newsletter.title_accent': 'Newsletter',
         'newsletter.yc128_10.page_title': 'Fleet Newsletter · October YC 128',
         'newsletter.yc128_10.meta_title': 'Fleet Newsletter · October YC 128 | {site}',
-        'newsletter.yc128_10.meta_description': "What's new on my.minmatar.org in October YC 128: Faction Warfare campaigns, the desktop overlay, after-action reports for every fleet, tribe fleets and posts, and this month's FCs and builders.",
+        'newsletter.yc128_10.meta_description': "Minmatar Fleet's monthly roundup: live Faction Warfare campaigns, a desktop overlay for EVE, after-action reports for every fleet, and October's FCs and biggest fights. Plus the Town Hall #37 highlights.",
         'warzone.latest.page_title': 'Frontline Report',
         'warzone.page_title': 'Frontline Report',
         'amamake_market.yc128_08.name': 'Amamake Economic Report · August YC128',

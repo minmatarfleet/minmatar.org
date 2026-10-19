@@ -15,6 +15,7 @@ export const YC128_10: NewsletterIssue = {
     permalink_path: PERMALINK_PATH,
     published_at: new Date('2026-10-20T00:00:00Z'),
     cover_image: COVER_IMAGE,
+    share_image: `/images/newsletter/${SLUG}/share.jpg`,
     eyebrow: "What's new on my.minmatar.org",
     period_label: 'October YC 128',
     dek: 'Campaigns, a desktop overlay, after-action reports for every fleet, and a lot for tribes. Several of the biggest pieces are things you asked for in the Q3 survey.',

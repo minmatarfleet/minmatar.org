@@ -26,13 +26,28 @@ const meta_title = t(t_key('', i18n_prefix, '.meta_title')).replace('{site}', t(
 const meta_description = t(t_key('', i18n_prefix, '.meta_description'))
 const site_origin = get_site_origin(Astro.url.origin)
 const canonical_url = new URL(translatePath(canonical_path), site_origin).href
-const meta_image = new URL(issue.cover_image, site_origin).href
+const meta_image = new URL(issue.share_image, site_origin).href
+const page_title = t(t_key('', i18n_prefix, '.page_title'))
+
+const structured_data = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: page_title,
+    description: meta_description,
+    image: meta_image,
+    datePublished: issue.published_at.toISOString(),
+    url: canonical_url,
+    mainEntityOfPage: canonical_url,
+    author: { '@type': 'Organization', name: 'Minmatar Fleet Alliance', url: site_origin },
+    publisher: { '@type': 'Organization', name: 'Minmatar Fleet Alliance', url: site_origin },
+    inLanguage: 'en',
+}
 
 // Same read tracking as the guides: one tracked section per newsletter section.
 const progress_sections = issue.sections.map((section) => ({ id: section.id, title: section.title }))
 const progress = pageProgressFromSections({
     page_key: `newsletter/${issue.slug}`,
-    page_title: t(t_key('', i18n_prefix, '.page_title')),
+    page_title,
     sections: progress_sections,
     version_source: JSON.stringify(progress_sections),
 })
@@ -49,6 +64,8 @@ const progress = pageProgressFromSections({
         confirm_dialog: true,
     }}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
     <PageLanding
         wide={true}
         cover={{

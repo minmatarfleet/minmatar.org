@@ -177,6 +177,8 @@ export interface NewsletterIssue {
     permalink_path: string
     published_at: Date
     cover_image: string
+    /** 1200x630 card used for link previews (Discord, Reddit, search). */
+    share_image: string
     /** Masthead line above the title, e.g. "What's new on my.minmatar.org". */
     eyebrow: string
     period_label: string
