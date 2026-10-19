@@ -28588,6 +28588,11 @@
             ],
             "title": "Capitals"
           },
+          "character_count": {
+            "default": 0,
+            "title": "Character Count",
+            "type": "integer"
+          },
           "corporation_count": {
             "default": 0,
             "title": "Corporation Count",
@@ -28630,6 +28635,11 @@
               "counts": [],
               "months": []
             }
+          },
+          "isk_destroyed": {
+            "default": 0,
+            "title": "Isk Destroyed",
+            "type": "integer"
           },
           "multi_group_people": {
             "default": 0,
