@@ -372,13 +372,7 @@ export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export type CorporationLeadershipRole = 'ceo' | 'director' | 'recruiter' | 'steward'
 
-export interface CorporationLeadershipMember {
-    character_id:           number;
-    character_name:         string;
-    role:                   CorporationLeadershipRole | string;
-    prime_time?:            string | null;
-    observed_prime_times?:  string[];
-}
+export type CorporationLeadershipMember = ApiResponse<'CorporationLeadershipResponse'>
 
 export interface TimezoneBucketCount {
     bucket:     string;

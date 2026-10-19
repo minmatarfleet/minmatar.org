@@ -2664,6 +2664,7 @@ export const ui = {
         'corporations.detail.characters_count': 'COUNT characters',
         'corporations.detail.humans_count': 'COUNT humans',
         'corporations.detail.tz_not_set': 'TZ not set',
+        'corporations.detail.tz_missing': 'Missing TZ',
         'corporations.detail.role_ceo': 'CEO',
         'corporations.detail.role_director': 'Director',
         'corporations.detail.role_recruiter': 'Recruiter',

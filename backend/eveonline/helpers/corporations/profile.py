@@ -17,6 +17,7 @@ from eveonline.models import (
     EveCorporation,
     EveCorporationMedia,
 )
+from groups.models import UserCommunityStatus
 
 _YOUTUBE_ID = re.compile(
     r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([A-Za-z0-9_-]{6,})"
@@ -77,12 +78,30 @@ def apply_cached_timezones(rows: list[dict], stats: dict) -> None:
         )
 
 
+def apply_on_leave(rows: list[dict]) -> None:
+    """Mark leaders whose community status is On Leave (one query)."""
+    user_ids = {row["user_id"] for row in rows if row.get("user_id")}
+    on_leave = (
+        set(
+            UserCommunityStatus.objects.filter(
+                user_id__in=user_ids,
+                status=UserCommunityStatus.STATUS_ON_LEAVE,
+            ).values_list("user_id", flat=True)
+        )
+        if user_ids
+        else set()
+    )
+    for row in rows:
+        row["on_leave"] = row.get("user_id") in on_leave
+
+
 def public_profile(corporation: EveCorporation) -> dict:
     """Profile payload. Heavy 90-day stats come from the Celery-filled cache
     and are absent (empty/None) until the first refresh finishes."""
     leaders = leadership_rows(corporation)
     stats = corporation_stats(corporation.corporation_id) or {}
     apply_cached_timezones(leaders, stats)
+    apply_on_leave(leaders)
     return {
         "ticker": corporation.ticker or None,
         "member_count": corporation.member_count,
@@ -228,6 +247,7 @@ def _public_leader(row: dict) -> dict:
         "role": row["role"],
         "prime_time": row.get("prime_time"),
         "observed_prime_times": row.get("observed_prime_times") or [],
+        "on_leave": bool(row.get("on_leave")),
     }
 
 

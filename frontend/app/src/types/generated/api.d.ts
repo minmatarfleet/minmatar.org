@@ -9083,6 +9083,11 @@ export interface components {
              * @default []
              */
             observed_prime_times?: string[];
+            /**
+             * On Leave
+             * @default false
+             */
+            on_leave?: boolean;
             /** Prime Time */
             prime_time?: string | null;
             /** Role */

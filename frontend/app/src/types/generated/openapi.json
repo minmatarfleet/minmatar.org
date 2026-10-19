@@ -5821,6 +5821,11 @@
             "title": "Observed Prime Times",
             "type": "array"
           },
+          "on_leave": {
+            "default": false,
+            "title": "On Leave",
+            "type": "boolean"
+          },
           "prime_time": {
             "anyOf": [
               {

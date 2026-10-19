@@ -9,7 +9,7 @@ import {
     ranked_mix_rows,
     tenure_parts,
 } from '@helpers/corporations/about'
-import { prime_codes } from '@helpers/corporations/leadership'
+import { leader_timezones, prime_codes } from '@helpers/corporations/leadership'
 
 describe('corporation About helpers', () => {
     it('rounds shares so a card always adds up to 100', () => {
@@ -72,5 +72,14 @@ describe('corporation About helpers', () => {
     it('folds fleet-time buckets into three recruit-facing zones', () => {
         expect(prime_codes({ prime_time: null, observed_prime_times: ['EU', 'AP', 'EU_US'] })).toEqual(['EU', 'AU', 'US'])
         expect(prime_codes({ prime_time: 'AP', observed_prime_times: [] })).toEqual(['AU'])
+    })
+
+    it('picks leader timezones: on leave, calculated, declared, then missing', () => {
+        expect(leader_timezones({ on_leave: true, prime_time: 'EU', observed_prime_times: ['EU'] })).toEqual({ kind: 'on_leave' })
+        expect(leader_timezones({ on_leave: false, prime_time: 'EU', observed_prime_times: ['US'] })).toEqual({ kind: 'observed', codes: ['US'], declared: null })
+        expect(leader_timezones({ on_leave: false, prime_time: 'EU', observed_prime_times: ['US', 'EU'] })).toEqual({ kind: 'observed', codes: ['US', 'EU'], declared: 'EU' })
+        expect(leader_timezones({ on_leave: false, prime_time: 'AP', observed_prime_times: ['US', 'EU'] })).toEqual({ kind: 'observed', codes: ['US', 'EU'], declared: null })
+        expect(leader_timezones({ on_leave: false, prime_time: 'AP', observed_prime_times: [] })).toEqual({ kind: 'declared', code: 'AP' })
+        expect(leader_timezones({ on_leave: false, prime_time: null, observed_prime_times: [] })).toEqual({ kind: 'missing' })
     })
 })

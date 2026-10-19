@@ -9,7 +9,6 @@
     "src/components/blocks/CampaignPostCard.astro": 2,
     "src/components/blocks/capital-guide/CapitalClassGuide.astro": 2,
     "src/components/blocks/capital-guide/CapitalGuideMetaBlocks.astro": 1,
-    "src/components/blocks/CorporationLeadership.astro": 2,
     "src/components/blocks/EvatiInfo.astro": 1,
     "src/components/blocks/FittingBuyOrderShopping.astro": 21,
     "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro": 4,
