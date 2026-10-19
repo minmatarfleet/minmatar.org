@@ -348,12 +348,17 @@ export interface ShipSelection {
     bursts?: BurstKind[] | null
 }
 
+/** The hull a character usually flies, as a composition entry; `fleets` = past fleets flown in it. */
+export type ShipSuggestion = ApiResponse<'ShipSuggestionResponse'>
+
 export interface MyFleetPilot {
     character_id: number
     character_name: string
     /** Joined a tracked fleet in the last 30 days. */
     recent_fleets: boolean
     selection: ShipSelection | null
+    /** What they usually fly, until the caller first saves on this fleet. */
+    suggestion?: ShipSuggestion | null
 }
 
 export async function get_fleet_my_pilots(access_token: string, fleet_id: number): Promise<MyFleetPilot[]> {

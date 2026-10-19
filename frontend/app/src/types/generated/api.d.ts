@@ -2677,7 +2677,7 @@ export interface paths {
         };
         /**
          * Get Fleet My Pilots
-         * @description The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for.
+         * @description The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for. Until the caller has volunteered any character, recent characters carry a suggestion: the composition hull they flew most in past fleets.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_my_pilots_get_fleet_my_pilots"];
         put?: never;
@@ -15257,6 +15257,7 @@ export interface components {
             /** Recent Fleets */
             recent_fleets: boolean;
             selection?: components["schemas"]["ShipSelection"] | null;
+            suggestion?: components["schemas"]["ShipSuggestionResponse"] | null;
         };
         /** MyFleetSignup */
         MyFleetSignup: {
@@ -17885,6 +17886,20 @@ export interface components {
             fitting_id?: number | null;
             /** Fleet Fitting Id */
             fleet_fitting_id?: number | null;
+        };
+        /**
+         * ShipSuggestionResponse
+         * @description The hull a character usually flies, as a composition entry.
+         */
+        ShipSuggestionResponse: {
+            /** Fitting Id */
+            fitting_id?: number | null;
+            /** Fleet Fitting Id */
+            fleet_fitting_id?: number | null;
+            /** Fleets */
+            fleets: number;
+            /** Ship Name */
+            ship_name: string;
         };
         /** Signals30 */
         Signals30: {

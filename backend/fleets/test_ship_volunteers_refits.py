@@ -445,6 +445,115 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         )
         self.assertEqual(400, response.status_code)
 
+    # --- ship suggestions -------------------------------------------------
+
+    def _flew(self, ship_type_id, doctrine=None, days_ago=7, snapshots=()):
+        """A past tracked fleet Pilot One joined in ``ship_type_id``."""
+        from fleets.models import (  # pylint: disable=import-outside-toplevel
+            EveFleetInstanceMember,
+            EveFleetInstanceMemberShipSnapshot,
+        )
+
+        when = timezone.now() - timedelta(days=days_ago)
+        past = make_test_fleet("Past", self.fc_user, start=when)
+        past.doctrine = doctrine
+        past.save()
+        instance = EveFleetInstance.objects.create(
+            id=9000 + EveFleetInstance.objects.count(),
+            eve_fleet=past,
+            boss_id=1234,
+        )
+        member = EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=instance,
+            character_id=1001,
+            character_name="Pilot One",
+            role="squad_member",
+            role_name="Squad Member",
+            ship_type_id=ship_type_id,
+            ship_name="",
+            solar_system_id=1,
+            solar_system_name="X",
+            squad_id=1,
+            wing_id=1,
+        )
+        EveFleetInstanceMember.objects.filter(id=member.id).update(
+            join_time=when
+        )
+        for hull in snapshots:
+            EveFleetInstanceMemberShipSnapshot.objects.create(
+                member=member,
+                ship_type_id=hull,
+                ship_name="",
+                solar_system_id=1,
+                solar_system_name="X",
+            )
+        return past
+
+    def _my_pilots(self):
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        return {p["character_id"]: p for p in response.json()}
+
+    def test_my_pilots_suggests_hull_flown_before_until_saved(self):
+        EveCharacter.objects.create(
+            character_id=1002, character_name="Pilot Two", user=self.user
+        )
+        self._flew(24702, doctrine=self.doctrine)
+
+        pilots = self._my_pilots()
+        suggestion = pilots[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+        self.assertEqual("Hurricane", suggestion["ship_name"])
+        self.assertEqual(1, suggestion["fleets"])
+        self.assertIsNone(pilots[1001]["selection"])
+        # No tracked fleets: nothing to go on.
+        self.assertIsNone(pilots[1002]["suggestion"])
+
+        # Once anything is saved the picker shows what was saved, only.
+        self._volunteer(self.fitting.id, character_id=1002)
+        self.assertIsNone(self._my_pilots()[1001]["suggestion"])
+
+    def test_suggestion_ignores_hulls_outside_composition(self):
+        self._flew(587)  # Rifter, not in the doctrine
+        self.assertIsNone(self._my_pilots()[1001]["suggestion"])
+
+    def test_suggestion_prefers_same_doctrine_and_reads_snapshots(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.other_fitting, role="support"
+        )
+        # Scythe in two fleets on other doctrines...
+        self._flew(631, days_ago=3)
+        self._flew(631, days_ago=5)
+        # ...but a Hurricane on this doctrine, before getting podded.
+        self._flew(670, doctrine=self.doctrine, days_ago=20, snapshots=[24702])
+
+        suggestion = self._my_pilots()[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+
+    def test_suggestion_picks_last_volunteered_fit_on_shared_hull(self):
+        alt_fitting = EveFitting.objects.create(
+            name="Hurricane [Arty]",
+            ship_id=24702,
+            description="",
+            eft_format=BASE_EFT.replace("FL33T", "Arty"),
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=alt_fitting, role="primary"
+        )
+        past = self._flew(24702, doctrine=self.doctrine)
+        # "[Arty]" sorts first, so without history it would be suggested.
+        self.assertEqual(
+            alt_fitting.id, self._my_pilots()[1001]["suggestion"]["fitting_id"]
+        )
+
+        EveFleetShipVolunteer.objects.create(
+            eve_fleet=past, character_id=1001, fitting=self.fitting
+        )
+        suggestion = self._my_pilots()[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+
     def test_ship_volunteer_rejects_fitting_outside_doctrine(self):
         response = self._volunteer(self.other_fitting.id)
         self.assertEqual(400, response.status_code)

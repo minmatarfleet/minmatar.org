@@ -21291,6 +21291,16 @@
                 "type": "null"
               }
             ]
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShipSuggestionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -27116,6 +27126,47 @@
           "character_id"
         ],
         "title": "ShipSelection",
+        "type": "object"
+      },
+      "ShipSuggestionResponse": {
+        "description": "The hull a character usually flies, as a composition entry.",
+        "properties": {
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "fleet_fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Fitting Id"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ship_name",
+          "fleets"
+        ],
+        "title": "ShipSuggestionResponse",
         "type": "object"
       },
       "Signals30": {
@@ -40807,7 +40858,7 @@
     },
     "/api/fleets/{fleet_id}/my-pilots": {
       "get": {
-        "description": "The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for.",
+        "description": "The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for. Until the caller has volunteered any character, recent characters carry a suggestion: the composition hull they flew most in past fleets.",
         "operationId": "fleets_endpoints_fleet_get_fleet_my_pilots_get_fleet_my_pilots",
         "parameters": [
           {

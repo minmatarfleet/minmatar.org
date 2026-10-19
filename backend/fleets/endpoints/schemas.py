@@ -362,11 +362,22 @@ class ShipSelection(BaseModel):
     bursts: Optional[List[str]] = None
 
 
+class ShipSuggestionResponse(BaseModel):
+    """The hull a character usually flies, as a composition entry."""
+
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    ship_name: str
+    fleets: int
+
+
 class MyFleetPilotResponse(BaseModel):
     character_id: int
     character_name: str
     recent_fleets: bool
     selection: Optional[ShipSelection] = None
+    # Pre-pick until the caller has saved a ship on this fleet. Not saved.
+    suggestion: Optional[ShipSuggestionResponse] = None
 
 
 class SetMyShipVolunteersRequest(BaseModel):
