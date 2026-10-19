@@ -34,6 +34,7 @@ class CorporationLeadershipResponse(Schema):
     role: str
     prime_time: Optional[str] = None
     observed_prime_times: List[str] = []
+    on_leave: bool = False
 
 
 class TimezoneBucketCount(Schema):

@@ -35,7 +35,6 @@
       "TribeRequirementQualification": "closest backend schema RequirementQualificationSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeAvailableCharacter": "closest backend schema AvailableCharacterSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeExternalGuildJoin": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type",
-      "CorporationLeadershipMember": "closest backend schema CorporationLeadershipResponse, no field or null drift found; alias it when its domain is next changed",
       "TimezoneBucketCount": "closest backend schema TimezoneBucketCount, no field or null drift found; alias it when its domain is next changed",
       "WeekdayCount": "closest backend schema WeekdayCount, no field or null drift found; alias it when its domain is next changed",
       "CorporationMediaItem": "closest backend schema CorporationMediaResponse, no field or null drift found; alias it when its domain is next changed",
