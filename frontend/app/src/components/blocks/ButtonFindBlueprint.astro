@@ -10,6 +10,8 @@ interface Props {
     size?:          ButtonSizes;
     hidden?:        boolean;
     id?:            string;
+    /** Plain trigger, for a host inside ActionMenu. */
+    styless?:       boolean;
 }
 
 const {
@@ -17,6 +19,7 @@ const {
     size = 'sm',
     hidden = false,
     id,
+    styless = false,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -39,6 +42,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
     narrow={false}
     size={size}
     hidden={hidden}
+    styless={styless}
     color='fleet-red'
     max_width='520px'
 >

@@ -53,17 +53,14 @@ import Tag from '@components/blocks/Tag.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import TippyDelivery from '@components/blocks/TippyDelivery.astro';
 import Progress from '@components/blocks/Progress.astro';
-import Button from '@components/blocks/Button.astro';
 import ButtonClaimOrder from '@components/blocks/ButtonClaimOrder.astro';
-import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import ButtonFindBlueprint from '@components/blocks/ButtonFindBlueprint.astro';
-import Dropdown from '@components/blocks/Dropdown.astro';
+import ActionMenu from '@components/blocks/ActionMenu.astro';
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 
 import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
-import IndustryIcon from '@components/icons/IndustryIcon.astro';
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
 <Flexblock
@@ -210,28 +207,21 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                     </FlexInline>
 
                     <div class="[ shrink-0 ml-[var(--space-s)] ]">
-                        <Dropdown variant="button" color="fleet-red" size="sm">
-                            <span slot="button">{t('actions')}</span>
-
-                            <Flexblock gap='var(--space-3xs)' class="[ order-breakdown-actions ]">
-                                {(item.unassigned_quantity > 0 || user_assignment) &&
-                                    <>{claim_disabled_reason ?
-                                        <span
-                                            class="[ inline-flex w-full ]"
-                                            data-tippy-content={claim_disabled_reason}
-                                        >
-                                            <Button
-                                                size='sm'
-                                                color='green'
-                                                disabled
-                                                off_disable={true}
-                                            >
-                                                <AddIcon slot="icon" />
-                                                {t('claim')}
-                                            </Button>
-                                        </span>
-                                        :
+                        <ActionMenu variant="button" color="fleet-red" size="sm">
+                            {(item.unassigned_quantity > 0 || user_assignment) &&
+                                <>{claim_disabled_reason ?
+                                    <span
+                                        class="[ block w-full ]"
+                                        data-tippy-content={claim_disabled_reason}
+                                    >
+                                        <ActionMenuItem variant="success" disabled>
+                                            {t('claim')}
+                                        </ActionMenuItem>
+                                    </span>
+                                    :
+                                    <div class:list={['[ action-menu-item-host ]', { 'action-menu-item-host--success': !user_assignment }]}>
                                         <ButtonClaimOrder
+                                            styless={true}
                                             target_id={hx_swap_target}
                                             reclaim={Boolean(user_assignment)}
                                             order_id={order_id}
@@ -241,61 +231,54 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                             has_blueprints={user_assignment?.has_blueprints ?? false}
                                             render={claim_render}
                                         />
-                                    }</>
-                                }
+                                    </div>
+                                }</>
+                            }
 
-                                {user_assignment &&
-                                    <>{!user_assignment.delivered_at ?
-                                        <Button
-                                            size='sm'
-                                            color='green'
-                                            href={translatePath(`/industry/orders/contract?${query_string({
-                                                order_id: order_id,
-                                                item_id: item.id,
-                                                assignment_id: user_assignment.id,
-                                            })}`)}
-                                        >
-                                            {t('delivery_contract')}
-                                        </Button> :
-                                        <ButtonConfirm
-                                            label={t('revert_delivery')}
-                                            size='sm'
-                                        >
-                                            <Button
-                                                size='sm'
-                                                hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
-                                                    order_id: order_id,
-                                                    item_id: item.id,
-                                                    assignment_id: user_assignment.id,
-                                                    delivery: false,
-                                                    ...claim_query,
-                                                })}`}
-                                                hx-target={`#${hx_swap_target}`}
-                                                hx-indicator=".loader"
-                                                hx-swap="outerHTML transition:true"
-                                                x-on:click="$el.setAttribute('disabled','')"
-                                            >
-                                                {t('confirm')}
-                                            </Button>
-                                        </ButtonConfirm>
-                                    }</>
-                                }
+                            {user_assignment &&
+                                <>{!user_assignment.delivered_at ?
+                                    <ActionMenuItem
+                                        variant="success"
+                                        href={translatePath(`/industry/orders/contract?${query_string({
+                                            order_id: order_id,
+                                            item_id: item.id,
+                                            assignment_id: user_assignment.id,
+                                        })}`)}
+                                    >
+                                        {t('delivery_contract')}
+                                    </ActionMenuItem> :
+                                    <ActionMenuItem
+                                        confirm_label={t('confirm')}
+                                        hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
+                                            order_id: order_id,
+                                            item_id: item.id,
+                                            assignment_id: user_assignment.id,
+                                            delivery: false,
+                                            ...claim_query,
+                                        })}`}
+                                        hx-target={`#${hx_swap_target}`}
+                                        hx-indicator=".loader"
+                                        hx-swap="outerHTML transition:true"
+                                        x-on:click="$el.setAttribute('disabled','')"
+                                    >
+                                        {t('revert_delivery')}
+                                    </ActionMenuItem>
+                                }</>
+                            }
 
-                                <ButtonFindBlueprint item_name={item.eve_type_name} />
+                            <div class="[ action-menu-item-host ]">
+                                <ButtonFindBlueprint styless={true} item_name={item.eve_type_name} />
+                            </div>
 
-                                <Button
-                                    size='sm'
-                                    color='fleet-red'
-                                    href={translatePath(`/industry/orders/planner?${query_string({
-                                        order_id: order_id,
-                                        item_id: item.id,
-                                    })}`)}
-                                >
-                                    <IndustryIcon slot="icon" size={24} />
-                                    {t('planner')}
-                                </Button>
-                            </Flexblock>
-                        </Dropdown>
+                            <ActionMenuItem
+                                href={translatePath(`/industry/orders/planner?${query_string({
+                                    order_id: order_id,
+                                    item_id: item.id,
+                                })}`)}
+                            >
+                                {t('planner')}
+                            </ActionMenuItem>
+                        </ActionMenu>
                     </div>
                 </FlexInline>
             </FixedFluid>
@@ -306,20 +289,6 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 <style lang="scss">
     .order-breakdown-assign-footer {
         margin-top: var(--space-m);
-    }
-
-    .order-breakdown-actions {
-        width: 100%;
-
-        > :global(*) {
-            width: 100%;
-        }
-
-        :global(button),
-        :global(a.button) {
-            width: 100%;
-            box-sizing: border-box;
-        }
     }
 
     /* Phones: claimers get a full-width row (icon + portraits side by side),

@@ -17,6 +17,8 @@ interface Props {
     hidden?:        boolean;
     id?:            string;
     render?:        'order_item' | 'breakdown';
+    /** Plain trigger, for a host inside ActionMenu. */
+    styless?:       boolean;
 }
 
 const {
@@ -31,6 +33,7 @@ const {
     hidden = false,
     id,
     render = 'order_item',
+    styless = false,
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
@@ -84,6 +87,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
     narrow={false}
     size={size}
     hidden={hidden}
+    styless={styless}
     max_width='520px'
     disable_when_open={true}
 >

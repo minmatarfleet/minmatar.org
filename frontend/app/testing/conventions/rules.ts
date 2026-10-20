@@ -195,6 +195,18 @@ export const RULES: ConventionRule[] = [
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], /(?<![\w.$])t\((?:[^()]|\([^()]*\))*?\bas\s+any\s*\)/g),
     },
     {
+        id: 'hand_rolled_action_menu',
+        kind: 'absolute',
+        why: 'Action dropdowns are <ActionMenu> with <ActionMenuItem> children (links, submits, two-step confirms, text_only status lines); a component with its own trigger goes in <div class="action-menu-item-host">. Do not fill a raw <Dropdown> with an actions list or hand-roll an actions popup.',
+        find: (file) => {
+            if (!is_astro(file) || file.path === 'src/components/blocks/ActionMenu.astro') return []
+            const template = [astro_template(file.text)]
+            const dropdowns = hits_in(file, template, /<Dropdown\b[\s\S]*?<\/Dropdown>/g, (m) => /\bt\(\s*['"]actions['"]\s*\)/.test(m[0]))
+            const popups = hits_in(file, template, /<[a-zA-Z]+\b(?=[^>]*aria-haspopup="(?:true|menu)")(?=[^>]*aria-label="[^"]*\bactions\b[^"]*")[^>]*>/gi)
+            return [...dropdowns, ...popups]
+        },
+    },
+    {
         id: 'cdn_unpinned',
         kind: 'absolute',
         why: 'External scripts and styles name an exact version (pkg@1.2.3), so an upstream release cannot reach production without a deploy.',
