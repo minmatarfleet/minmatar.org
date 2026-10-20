@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
@@ -37,15 +37,14 @@ const SET_MAIN_CHARACTER_PARTIAL_URL = translatePath('/partials/set_primary_char
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 import Button from '@components/blocks/Button.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
-import CorporationBadge from '@components/blocks/CorporationBadge.astro';
-import AllianceBadge from '@components/blocks/AllianceBadge.astro';
 import Tag from '@components/blocks/Tag.astro';
+import ActionMenu from '@components/blocks/ActionMenu.astro';
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro';
+import EmptyState from '@components/blocks/EmptyState.astro';
 
 delete attributes.class
 ---
@@ -56,13 +55,11 @@ delete attributes.class
     x_model="enabled"
     class:list={['pilot-list', Astro.props.class]}
     {...attributes}
-    gap='var(--space-s)'
     x-data={`{
         pilots: ${JSON.stringify(pilots)},
         primary_pilot: ${primary_pilot_id},
         character_name_slugs: {},
         enabled: true,
-        show_details: false,
         add_pilot(accepted) {
             if (accepted) window.location.href = "${ADD_CHARACTER_URL}"
         },
@@ -76,134 +73,138 @@ delete attributes.class
     }`}
     x-init="pilot_list_init()"
 >
-    <Flexblock gap='var(--component-block-gap)'>
+    <Flexblock gap='0'>
         <FlexInline
             justification='space-between'
             gap="var(--space-s)"
-            class="[ items-center ]"
+            class="[ pilot-list__head ][ items-center ]"
         >
-            <Flexblock gap="var(--space-3xs)">
-                <h2>{t('pilot')}s</h2>
-                <small class="!mt-[var(--space-3xs)]">
-                    {pilots.length} {pilots.length != 1 ? t('pilots').toLowerCase() : t('pilot').toLowerCase()}
-                </small>
-            </Flexblock>
-            
-            <FlexInline>
+            <FlexInline gap="var(--space-xs)" class="[ items-baseline ]">
+                <h2>{t('account.tab.characters')}</h2>
+                <small class="[ pilot-list__muted ]">{pilots.length === 1 ? t('account.characters_count_one') : t('account.characters_count').replace('{count}', pilots.length.toString())}</small>
+            </FlexInline>
+
+            {!readonly &&
                 <Button
                     size='sm'
                     type="button"
-                    x-on:click="show_details = !show_details"
-                    x-text={`show_details ? '${t('hide_details')}' : '${t('show_details')}'`}
-                >
-                    {t('show_details')}
-                </Button>
-                {!readonly &&
-                    <Button
-                        size='sm'
-                        type="button"
-                        color='green'
-                        x-data={`{
-                            show_add_pilot_disclaimer() {
-                                const root_data = Alpine.$data(document.body)
-                                if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
-                                if (pilots.length == 0) {
-                                    return root_data.show_alert_dialog({
-                                        title: ${JSON.stringify(t('add_primary_pilot_dialog_title'))},
-                                        accept_label: ${JSON.stringify(t('scope_groups.continue'))},
-                                        cancel_label: ${JSON.stringify(t('cancel'))},
-                                        show_cancel: true,
-                                        partial: ${JSON.stringify(`${translatePath('/partials/add_pilot_dialog/')}?${query_string({
-                                            is_main: JSON.stringify(true),
-                                        })}`)},
-                                    }).then((accepted) => add_pilot(accepted))
-                                }
+                    x-data={`{
+                        show_add_pilot_disclaimer() {
+                            const root_data = Alpine.$data(document.body)
+                            if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
+                            if (pilots.length == 0) {
                                 return root_data.show_alert_dialog({
-                                    title: ${JSON.stringify(t('add_pilot_dialog_title'))},
+                                    title: ${JSON.stringify(t('add_primary_pilot_dialog_title'))},
                                     accept_label: ${JSON.stringify(t('scope_groups.continue'))},
                                     cancel_label: ${JSON.stringify(t('cancel'))},
                                     show_cancel: true,
                                     partial: ${JSON.stringify(`${translatePath('/partials/add_pilot_dialog/')}?${query_string({
-                                        is_main: JSON.stringify(false),
+                                        is_main: JSON.stringify(true),
                                     })}`)},
                                 }).then((accepted) => add_pilot(accepted))
                             }
-                        }`}
-                        x-on:click="show_add_pilot_disclaimer"
-                    >
-                        {pilots.length === 0 &&
-                            t('add_primary_pilot')
+                            return root_data.show_alert_dialog({
+                                title: ${JSON.stringify(t('add_pilot_dialog_title'))},
+                                accept_label: ${JSON.stringify(t('scope_groups.continue'))},
+                                cancel_label: ${JSON.stringify(t('cancel'))},
+                                show_cancel: true,
+                                partial: ${JSON.stringify(`${translatePath('/partials/add_pilot_dialog/')}?${query_string({
+                                    is_main: JSON.stringify(false),
+                                })}`)},
+                            }).then((accepted) => add_pilot(accepted))
                         }
-                        {pilots.length > 0 &&
-                            t('add_pilot')
-                        }
-                    </Button>
-                }
-            </FlexInline>
+                    }`}
+                    x-on:click="show_add_pilot_disclaimer"
+                >
+                    {pilots.length === 0 &&
+                        t('add_primary_pilot')
+                    }
+                    {pilots.length > 0 &&
+                        t('add_pilot')
+                    }
+                </Button>
+            }
         </FlexInline>
 
-        <Flexblock gap='var(--space-3xs)'>
+        {pilots.length > 0 &&
+            <div class="[ pilot-list__row pilot-list__columns ]" aria-hidden="true">
+                <span>{t('account.column_character')}</span>
+                <span>{t('account.column_corporation')}</span>
+                <span>{t('account.column_esi')}</span>
+                <span></span>
+            </div>
+        }
+
+        <ul class="[ pilot-list__rows ]" role="list">
             {pilots.map((pilot) =>
-                <FixedFluid width='64px' class="[ pilot-item ]" x-bind:class={`{ 'blink-animation': remove_request_ongoing.includes(${pilot.character_id}) }`}>
-                    <CharacterPicture
-                        character_id={pilot.character_id}
-                        character_name={pilot.character_name}
-                    />
-                    <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
-                        <Flexblock gap='0' class="[ grow ]">
-                            <FlexInline gap='var(--space-2xs)'>
-                                <span
-                                    class="truncate cursor-pointer text-[var(--highlight)]"
+                <li
+                    class="[ pilot-list__row pilot-item ]"
+                    x-bind:class={`{ 'blink-animation': remove_request_ongoing.includes(${pilot.character_id}) }`}
+                >
+                    <div class="[ pilot-list__who ]">
+                        <CharacterPicture
+                            character_id={pilot.character_id}
+                            character_name={pilot.character_name}
+                            size={64}
+                        />
+                        <Flexblock gap='0' class="[ min-w-0 ]">
+                            <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
+                                <button
+                                    type="button"
+                                    class="[ pilot-list__name ][ truncate ]"
                                     set:text={pilot.character_name}
                                     x-data={`{
-                                        show_character_modal() {
-                                            show_modal({
-                                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                                    character_id: pilot.character_id.toString(),
-                                                })}'
-                                            })
-                                        }
+                                    show_character_modal() {
+                                        show_modal({
+                                            partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                                                character_id: pilot.character_id.toString(),
+                                            })}'
+                                        })
+                                    }
                                     }`}
                                     x-on:click="show_character_modal()"
                                 />
-                                {pilot.token_status === 'SUSPENDED' &&
-                                    <Tag text={t('suspended')} />
+                                {pilot.is_primary &&
+                                    <span class="[ pilot-list__main ]" title={t('main_character')}>{t('account.main_tag')}</span>
                                 }
                             </FlexInline>
-                            <small class="truncate">
-                                {pilot.is_primary ?
-                                    t('main_character') :
-                                    t('alt_character')
-                                }
-                            </small>
-                            <Flexblock x-show="show_details" gap='var(--space-3xs)' style="display: none">
-                                {pilot.corp_id !== null &&
-                                    <CorporationBadge
-                                        corporation={{
-                                            id: pilot.corp_id,
-                                            name: pilot.corp_name ?? undefined,
-                                            size: 'xs',
-                                        }}
-                                    />
-                                }
-                                {pilot.alliance_id &&
-                                    <AllianceBadge
-                                        alliance={{
-                                            id: pilot.alliance_id,
-                                            name: pilot.alliance_name ?? undefined,
-                                            size: 'xs',
-                                        }}
-                                    />
-                                }
-                            </Flexblock>
+                            {(pilot.role_titles ?? []).length > 0 &&
+                                <small class="[ pilot-list__muted ][ truncate ]">{(pilot.role_titles ?? []).join(' · ')}</small>
+                            }
+                            {pilot.flags.includes('NO_TAGS') &&
+                                <small class="[ pilot-list__attention ]">{t('account.no_roles_yet')}</small>
+                            }
                         </Flexblock>
-                        <FlexInline>
-                            {!readonly && !pilot.is_primary &&
-                                <Button
-                                    class="[ action-button ]"
-                                    size='sm'
-                                    type="button"
-                                    x-data={`{
+                    </div>
+
+                    <Flexblock gap='0' class="[ pilot-list__corp ][ min-w-0 ]">
+                        <span class="[ truncate ]">{pilot.corp_name ?? '—'}</span>
+                        <small class="[ pilot-list__muted ][ truncate ]">{pilot.alliance_name ?? t('account.no_alliance')}</small>
+                    </Flexblock>
+
+                    <div class="[ pilot-list__esi ]" aria-label={t('account.column_esi')}>
+                        {pilot.token_status === 'SUSPENDED' &&
+                            <Tag text={t('account.token_suspended')} color='security-status-point-4' text_color='var(--background)' />
+                        }
+                        {(pilot.actual_groups ?? []).map((group) =>
+                            <Tag text={t(dynamic_key(group)) ?? group} color='hairline-strong' text_color='var(--highlight)' />
+                        )}
+                        {(pilot.actual_groups ?? []).length === 0 &&
+                            <small class="[ pilot-list__muted ]">{t('account.public_only')}</small>
+                        }
+                    </div>
+
+                    <div class="[ pilot-list__actions ]">
+                        {!readonly &&
+                            <ActionMenu
+                                variant="button"
+                                color="transparent"
+                                size="sm"
+                                trigger_label={t('account.more_actions').replace('CHARACTER_NAME', pilot.character_name)}
+                            >
+                                {!pilot.is_primary &&
+                                    <ActionMenuItem
+                                        x-data={`{
                                         show_set_main_dialog() {
                                             const root_data = Alpine.$data(document.body)
                                             if (!root_data || !root_data.show_confirm_dialog) return Promise.resolve(false)
@@ -226,22 +227,19 @@ delete attributes.class
                                             })
                                         }
                                     }`}
-                                    x-on:click="show_set_main_dialog"
-                                >
-                                    {t('set_primary_pilot')}
-                                </Button>
-                            }
-
-                            {!readonly && pilot.token_status === 'ACTIVE' &&
-                                <FixESITokenButton character={pilot} />
-                            }
-
-                            {!readonly &&
-                                <Button
-                                    class="[ action-button ]"
-                                    size='sm'
-                                    type="button"
-                                    narrow={true}
+                                        x-on:click="close(); show_set_main_dialog()"
+                                    >
+                                        {t('set_primary_pilot')}
+                                    </ActionMenuItem>
+                                }
+                                <ActionMenuItem href={translatePath(`/account/tags/${pilot.character_id}`)}>
+                                    {t('account.edit_roles')}
+                                </ActionMenuItem>
+                                <div class="[ action-menu-item-host ]">
+                                    <FixESITokenButton character={pilot} fix={pilot.token_status !== 'ACTIVE'} />
+                                </div>
+                                <ActionMenuItem
+                                    variant="danger"
                                     x-data={`{
                                         show_remove_character_dialog() {
                                             const root_data = Alpine.$data(document.body)
@@ -266,25 +264,23 @@ delete attributes.class
                                             }).then((character_id) => start_remove_animation(character_id))
                                         }
                                     }`}
-                                    x-on:click="show_remove_character_dialog()"
+                                    x-on:click="close(); show_remove_character_dialog()"
                                 >
-                                    <TrashIcon slot="icon" />
-                                </Button>
-                            }
-
-                            {!readonly && pilot.token_status !== 'ACTIVE' &&
-                                <FixESITokenButton character={pilot} fix={true} />
-                            }
-                        </FlexInline>
-                    </FlexInline>
-                </FixedFluid>
+                                    {t('account.remove_character')}
+                                </ActionMenuItem>
+                            </ActionMenu>
+                        }
+                    </div>
+                </li>
             )}
-            {pilots.length == 0 &&
+        </ul>
+        {pilots.length == 0 &&
+            <div class="[ pilot-list__fallback ]">
                 <slot>
-                    {t('empty_pilots_text')}
+                    <EmptyState title={t('empty_pilots_text')} />
                 </slot>
-            }
-        </Flexblock>
+            </div>
+        }
     </Flexblock>
 </DisableBlock>
 
@@ -292,85 +288,129 @@ delete attributes.class
     .pilot-list {
         transition: var(--slow-transition);
 
-        img {
-            object-fit: cover;
-            width: 100%;
-            height: 100%;
-        }
-
         &.disabled {
             pointer-events: none;
             opacity: 0.25;
         }
     }
 
-    // Phones: each pilot is its own block (divider between pilots) with that pilot's
-    // actions in one row underneath it, remove (✕) last, so a tap is never ambiguous.
-    @media (max-width: 48rem) {
-        .pilot-item {
-            display: grid;
-            grid-template-columns: 64px minmax(0, 1fr);
-            column-gap: var(--space-s);
-            row-gap: var(--space-xs);
-            align-items: center;
-            padding-block: var(--space-s);
-            border-block-start: 1px solid var(--border-color);
+    .pilot-list__head {
+        padding-block-end: var(--space-s);
+    }
 
-            &:first-child {
-                border-block-start: none;
-                padding-block-start: 0;
-            }
+    .pilot-list__muted {
+        color: var(--text-muted);
+    }
 
-            > :global(picture) {
-                inline-size: 64px;
-                block-size: 64px;
-            }
+    .pilot-list__attention {
+        color: var(--security-status-point-4);
+    }
 
-            > :global(.flex-inline) {
-                display: contents;
-            }
+    .pilot-list__rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
 
-            > :global(.flex-inline > .flex-inline) {
-                grid-column: 1 / -1;
-                flex-wrap: wrap;
-                gap: var(--space-2xs);
-            }
+    .pilot-list__row {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 2.4fr) 8rem;
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-xs);
+        border-block-start: 1px solid var(--border-color);
+    }
 
-            > :global(.flex-inline > .flex-inline:not(:has(*))) {
-                display: none;
-            }
+    .pilot-list__columns {
+        padding-block: var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+    }
 
-            > :global(.flex-inline > .flex-inline .button) {
-                padding-inline: var(--space-xs);
-            }
+    .pilot-list__who {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: var(--space-xs);
+        align-items: center;
 
-            > :global(.flex-inline > .flex-inline > :last-child) {
-                margin-inline-start: auto;
-            }
+        > :global(picture),
+        > :global(img) {
+            inline-size: 48px;
+            block-size: 48px;
+        }
+
+        :global(img) {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
         }
     }
-</style>
 
-<style lang="scss" is:global>
-    .pilot-list {
-        .pilot-item {
-            @media (hover: hover) {
-                .action-button {
-                    transition: var(--fast-transition);
-                    opacity: 0;
-                }
+    .pilot-list__name {
+        all: unset;
+        cursor: pointer;
+        color: var(--highlight);
+        font-weight: 600;
 
-                &:has(.open) .action-button {
-                    opacity: 1;
-                }
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
 
-                &:hover,
-                &:focus-within {
-                    .action-button {
-                        opacity: 1;
-                    }
-                }
-            }
+    .pilot-list__main {
+        padding: 0 var(--space-3xs);
+        border: 1px solid color-mix(in srgb, var(--foreground) 55%, transparent);
+        font-size: var(--step--2);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .pilot-list__esi {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        align-items: center;
+    }
+
+    .pilot-list__actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .pilot-list__fallback {
+        padding-block: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
+    }
+
+    // Phones: one card per character; corp, ESI and the actions stack under the name.
+    @media (max-width: 48rem) {
+        .pilot-list__columns {
+            display: none;
+        }
+
+        .pilot-list__row {
+            grid-template-columns: minmax(0, 1fr) 8rem;
+            row-gap: var(--space-2xs);
+            align-items: start;
+        }
+
+        .pilot-list__who {
+            grid-column: 1;
+        }
+
+        .pilot-list__actions {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .pilot-list__corp,
+        .pilot-list__esi {
+            grid-column: 1 / -1;
+            padding-inline-start: calc(48px + var(--space-xs));
         }
     }
 </style>

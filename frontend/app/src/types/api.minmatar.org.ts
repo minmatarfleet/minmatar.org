@@ -1275,10 +1275,12 @@ export type ESITokenStatus = typeof esi_token_status[number]
 
 export const character_errors = [ 'MAIN_NOT_IN_FL33T', 'NO_TOKEN_LEVEL', 'ESI_SUSPENDED', 'NO_MAIN_SET', 'NO_TAGS' ] as const
 export type CharacterErrors = typeof character_errors[number]
-/** UserCharacter, plus the ESI scope groups get_characters_summary_sorted (fetching/characters.ts) adds from the token info. */
+/** UserCharacter, plus the ESI scope groups get_characters_summary_sorted (fetching/characters.ts) adds from the token info, and the role titles get_account_characters adds. */
 export type SummaryCharacter = ApiResponse<'UserCharacter'> & {
     requested_groups?:  string[];
     actual_groups?:     string[];
+    /** Character role titles, added by get_account_characters for the account page. */
+    role_titles?:       string[];
 }
 
 export type CharacterESITokens = ApiResponse<'CharacterTokenInfo'>

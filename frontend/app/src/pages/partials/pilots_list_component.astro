@@ -13,7 +13,7 @@ if (!auth_token || !user) return login_redirect(Astro)
 import type { Alert } from '@dtypes/layout_components'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import {  delete_characters } from '@helpers/api.minmatar.org/characters'
-import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { get_account_characters } from '@helpers/fetching/characters'
 import { query_string } from '@helpers/string';
 
 let redirect:string | false = false
@@ -61,7 +61,7 @@ let pilots:SummaryCharacter[] = []
 let get_characters_error: Error | false = false
 let readonly = false
 try {
-    const character_summary = await get_characters_summary_sorted(auth_token as string)
+    const character_summary = await get_account_characters(auth_token as string)
     pilots = character_summary?.characters ?? []
 } catch (error) {
     get_characters_error = error

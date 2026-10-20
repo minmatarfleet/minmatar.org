@@ -1,18 +1,18 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { lang, translatePath } = i18n(Astro.url)
 
 import { get_request_user } from '@helpers/request_user'
 import { login_redirect } from '@helpers/http_responses'
 
 const { auth_token, user } = get_request_user(Astro)
 
-
 if (!auth_token || !user) return login_redirect(Astro)
 
-import { get_referral_stats } from '@helpers/fetching/referrals'
+import { get_external_referrals, get_referral_stats } from '@helpers/fetching/referrals'
 import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
 
+const external_referrals = get_external_referrals(user.user_id, lang)
 let referral_stats:ReferralLinkStatsUI[] = []
 let get_referral_stats_error: Error | false = false
 
@@ -22,26 +22,26 @@ try {
     get_referral_stats_error = error
 }
 
-const total_clicks = referral_stats.reduce((c, stat) => c + stat.count, 0)
-
-const REFERRAL_STATS_PARTIAL_URL = translatePath('/partials/referral_stats_component/')
+const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import ReferralStats from '@components/blocks/ReferralStats.astro';
+import AccountReferrals from '@components/blocks/AccountReferrals.astro';
 ---
-
-<div x-init={`total_clicks = ${total_clicks}; $el.remove()`} />
 
 {get_referral_stats_error ?
     <ErrorRefetch
         args={{
-            partial: REFERRAL_STATS_PARTIAL_URL,
+            partial: ACCOUNT_REFERRALS_PARTIAL_URL,
             error: get_referral_stats_error,
             delay: delay,
         }}
     />
     :
-    <ReferralStats referral_stats={referral_stats} />
+    <AccountReferrals
+        links={external_referrals}
+        stats={referral_stats}
+        ref_code={`?ref=${user.user_id}`}
+    />
 }

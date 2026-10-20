@@ -14,6 +14,7 @@
 			return {
 				features: Array.isArray(features) ? features : [],
 				saving: false,
+				saved: false,
 				error: '',
 				async setChannel(type_key, channel, enabled) {
 					this.saving = true
@@ -35,6 +36,7 @@
 						})
 						if (response.ok) {
 							this.features = await response.json()
+							this.saved = true
 						} else {
 							this.error = save_error
 						}
@@ -62,8 +64,10 @@
 									'Authorization': 'Bearer ' + auth_token,
 								},
 							})
-							if (pref_res.ok) this.features = await pref_res.json()
-							else this.error = save_error
+							if (pref_res.ok) {
+								this.features = await pref_res.json()
+								this.saved = true
+							} else this.error = save_error
 						} else {
 							this.error = save_error
 						}

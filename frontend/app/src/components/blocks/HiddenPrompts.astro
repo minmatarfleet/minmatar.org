@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import RifterIcon from '@components/icons/RifterIcon.astro'
+
+// Prompts a pilot dismissed with "don't show again". The flags live in
+// localStorage: show_color_blind_prompt on the page body, the other two
+// persisted here under the same keys the prompts themselves use.
+---
+
+<Flexblock
+    gap="0"
+    class="[ hidden-prompts ][ w-full ]"
+    x-data={`{
+        show: false,
+        show_rendering_options: $persist(true),
+        hide_external_link_disclaimer: $persist(false),
+        get hidden_count() {
+            return [!this.show_color_blind_prompt, !this.show_rendering_options, this.hide_external_link_disclaimer].filter(Boolean).length
+        },
+        reset_all() {
+            this.show_color_blind_prompt = true
+            this.show_rendering_options = true
+            this.hide_external_link_disclaimer = false
+        },
+    }`}
+    x-init="show = true"
+>
+    <FlexInline justification="space-between" gap="var(--space-s)" class="[ hidden-prompts__head ][ items-center ]">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('account.hidden_prompts')}</h2>
+            <small class="[ hidden-prompts__muted ]">{t('account.hidden_prompts_description')}</small>
+        </Flexblock>
+        <Button size="sm" color="transparent" type="button" x-show="show && hidden_count > 0" style="display: none" x-on:click="reset_all()">
+            {t('account.reset_all')}
+        </Button>
+    </FlexInline>
+
+    <FlexInline x-init="$el.remove()" class="[ items-center ]" gap="var(--space-3xs)">
+        <RifterIcon class="small" />
+        <p class="[ loading ]">{t('loading')}</p>
+    </FlexInline>
+
+    <div x-show="show" style="display: none">
+        <SettingRow
+            title={t('disable_color_blind_prompt')}
+            description={t('disable_color_blind_prompt_description')}
+            x-show="!show_color_blind_prompt"
+        >
+            <Button size="sm" color="transparent" type="button" x-on:click="show_color_blind_prompt = true">{t('reset')}</Button>
+        </SettingRow>
+        <SettingRow
+            title={t('disable_ships_renders_prompt')}
+            description={t('disable_ships_renders_prompt_description')}
+            x-show="!show_rendering_options"
+        >
+            <Button size="sm" color="transparent" type="button" x-on:click="show_rendering_options = true">{t('reset')}</Button>
+        </SettingRow>
+        <SettingRow
+            title={t('disable_external_link_prompt')}
+            description={t('disable_external_link_prompt_description')}
+            x-show="hide_external_link_disclaimer"
+        >
+            <Button size="sm" color="transparent" type="button" x-on:click="hide_external_link_disclaimer = false">{t('reset')}</Button>
+        </SettingRow>
+        <div class="[ hidden-prompts__none ]" x-show="hidden_count === 0">
+            <EmptyState title={t('no_options_to_reset')} />
+        </div>
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    .hidden-prompts__head {
+        padding-block-end: var(--space-s);
+    }
+
+    .hidden-prompts__muted {
+        color: var(--text-muted);
+    }
+
+    .hidden-prompts__none {
+        padding-block-start: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
+    }
+</style>

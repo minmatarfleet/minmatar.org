@@ -17,7 +17,7 @@ const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_components'
-import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
+import { get_account_characters, get_character_error_ui } from '@helpers/fetching/characters'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 import { get_notification_preferences } from '@helpers/api.minmatar.org/notification_preferences'
 import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
@@ -35,7 +35,7 @@ const gates = await get_gates(Astro)
 const can_use_push_notifications = can(gates, 'notifications.push#strict')
 
 try {
-    const character_summary = await get_characters_summary_sorted(auth_token as string)
+    const character_summary = await get_account_characters(auth_token as string)
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
 
@@ -65,10 +65,30 @@ try {
     console.log(error)
 }
 
+const main_character = pilots.find((pilot) => pilot.is_primary) ?? null
+const has_notifications = can_use_push_notifications || notification_features.length > 0
+
+// Tabs follow SectionTabs: /account/#notifications opens that tab.
+const tabs = [
+    {
+        id: 'characters',
+        label: t('account.tab.characters'),
+        ...(character_errors.length > 0 && {
+            meta: t('account.to_fix').replace('{count}', character_errors.length.toString()),
+            flag: 'attention' as const,
+        }),
+    },
+    ...(has_notifications ? [{ id: 'notifications', label: t('account.tab.notifications') }] : []),
+    { id: 'display', label: t('account.tab.display') },
+    { id: 'referrals', label: t('account.tab.referrals') },
+    { id: 'account', label: t('account.tab.account') },
+]
+
 const DELETE_ACCOUNT_URL = translatePath('/api/auth')
 const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
 const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
+const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
 
 const fix_esi_token_error = Astro.url.searchParams.get('error') as string
 
@@ -77,28 +97,29 @@ import Viewport from '@layouts/Viewport.astro';
 import PageDefault from '@components/page/PageDefault.astro';
 import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Context from '@components/layout/Context.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 
-import TextGroup from '@components/blocks/TextGroup.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import Tippy from '@components/blocks/Tippy.astro';
 
+import SectionTabs from '@components/blocks/SectionTabs.astro';
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import PilotsList from '@components/blocks/PilotsList.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PushNotifications from '@components/blocks/PushNotifications.astro';
 import NotificationPreferences from '@components/blocks/NotificationPreferences.astro';
 import AccessibilityOptions from '@components/blocks/AccessibilityOptions.astro';
+import HiddenPrompts from '@components/blocks/HiddenPrompts.astro';
+import SettingRow from '@components/blocks/SettingRow.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import CopyToken from '@components/blocks/CopyToken.astro';
 import CharacterErrors from '@components/blocks/CharacterErrors.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
@@ -123,15 +144,31 @@ const page_title = t('account.page_title');
             overlay: true
         }}
         x-init={`typeof set_character_errors_count === 'function' && set_character_errors_count(${character_errors.length})`}
-    >        
+    >
         {fix_esi_token_error &&
             <div class="[ toast ][ animate-fade-in-up ]" set:html={t(dynamic_key(fix_esi_token_error)) ?? fix_esi_token_error} x-on:click="$el.remove()"></div>
         }
 
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <PageTitle>
-                {page_title}
-            </PageTitle>
+        <!-- Masthead: the same on every tab -->
+        <FlexInline slot="header" justification='space-between' class="[ account-masthead ][ w-full ]">
+            <FlexInline gap='var(--space-m)' class="[ items-center ][ min-w-0 ]">
+                {main_character &&
+                    <div class="[ account-masthead__picture ]">
+                        <CharacterPicture
+                            character_id={main_character.character_id}
+                            character_name={main_character.character_name}
+                            size={128}
+                        />
+                    </div>
+                }
+                <Flexblock gap='var(--space-3xs)' class="[ min-w-0 ]">
+                    <small class="[ account-masthead__eyebrow ]">{t('account.eyebrow')}</small>
+                    <PageTitle>
+                        {main_character?.character_name ?? user.username}
+                    </PageTitle>
+                    <small>{user.username} · {roles_semantic_list}</small>
+                </Flexblock>
+            </FlexInline>
             <PageActions>
                 <Button href={translatePath('/auth/logout/')}>
                     <LogoutIcon slot="icon" />
@@ -140,323 +177,262 @@ const page_title = t('account.page_title');
             </PageActions>
         </FlexInline>
 
-        <PageSubheader slot="subheader">
-            <Button
-                href={translatePath('/account/referrals/')}
-                size='sm'
+        <div class="[ account-page ]">
+            <SectionTabs
+                aria_label={t('account.tabs_label')}
+                id_prefix="account"
+                tabs={tabs}
             >
-                {t('referral_links')}
-            </Button>
-            <Button
-                href="https://discord.com/invite/3hZfahmkFx"
-                size='sm'
-                external={true}
-            >
-                {t('fleet_discord')}
-            </Button>
-            <Button
-                href="https://discord.com/invite/fVQapuzmcb"
-                size='sm'
-                external={true}
-            >
-                {t('militia_discord')}
-            </Button>
-        </PageSubheader>
-        
-        <Flexblock>            
-            <ComponentBlock width='narrow'>
-                <FlexInline justification='space-between'>
-                    <VerticalCenter>
-                        <TextGroup title={t('account_name')}>
-                            <FlexInline slot="outside" gap='var(--space-2xs)'>{user.username} <CopyToken /></FlexInline>
-                        </TextGroup>
-                    </VerticalCenter>
-                    <VerticalCenter>
-                        <TextGroup title={t('status')}>
-                            {roles_semantic_list}
-                        </TextGroup>
-                    </VerticalCenter>
-                    <FlexInline class="[ items-center ]">
-                        <Button
-                            size='sm'
-                            type="button"
-                            hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
-                            hx-swap="outerHTML transition:true"
-                            hx-disabled-elt="this"
-                        >
-                            {t('refresh_discord_roles')}
-                        </Button>
-                        <Tippy
-                            data-tippy-placement="top"
-                            partial={`${translatePath('/partials/normal_tooltip')}?description=clear_cache_description`}
-                            height='70px'
-                            width='340px'
-                            element='div'
-                            show_delay={2000}
-                        >
-                            <Button
-                                size='sm'
-                                type="button"
-                                x-bind:disabled="disabled"
-                                x-data={`{
-                                    disabled: false,
-                                    async clear_cache() {
-                                        this.disabled = true
-                                        
-                                        await fetch(
-                                            '${CLEAR_ACCOUNT_CACHE_URL}', {
-                                                method: 'DELETE'
-                                            }
-                                        )
+                <SectionTabPanel id="characters" id_prefix="account" is_default={true}>
+                    <Context gap='var(--space-l)'>
+                        {character_errors.length > 0 &&
+                            <CharacterErrors character_errors={character_errors} />
+                        }
 
-                                        navigate('${translatePath('/account/')}')
-                                    }
-                                }`}
-                                x-on:click="clear_cache()"
-                            >
-                                {t('clear_account_cache')}
-                            </Button>
-                        </Tippy>
-                    </FlexInline>
-                </FlexInline>
-            </ComponentBlock>
+                        <ComponentBlock
+                            x-data={`{
+                                remove_request_ongoing: [],
+                                start_remove_animation(character_id) {
+                                    if (!character_id) return
+                                    this.remove_request_ongoing.push(character_id)
+                                },
+                                stop_remove_animation(character_id) {
+                                    if (!character_id) return
+                                    this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
+                                },
+                            }`}
+                        >
+                            {get_characters_error ?
+                                <PilotsList
+                                    pilots={pilots}
+                                    readonly={readonly}
+                                >
+                                    <ErrorRefetch
+                                        args={{
+                                            partial: PILOTS_LIST_PARTIAL_URL,
+                                            error: get_characters_error,
+                                            delay: 0,
+                                            target: '#pilots-list',
+                                        }}
+                                    />
+                                </PilotsList>
+                                :
+                                <PilotsList
+                                    pilots={pilots}
+                                    readonly={readonly}
+                                />
+                            }
+                        </ComponentBlock>
+                    </Context>
+                </SectionTabPanel>
 
-            <Context>
-                {character_errors.length > 0 &&
-                    <CharacterErrors character_errors={character_errors} />
+                {has_notifications &&
+                    <SectionTabPanel id="notifications" id_prefix="account">
+                        <Flexblock gap='var(--space-l)'>
+                            {can_use_push_notifications &&
+                                <ComponentBlock>
+                                    <PushNotifications notification_subscriptions={notification_subscriptions} />
+                                </ComponentBlock>
+                            }
+
+                            {notification_features.length > 0 &&
+                                <ComponentBlock>
+                                    <NotificationPreferences
+                                        features={notification_features}
+                                        auth_token={auth_token as string}
+                                    />
+                                </ComponentBlock>
+                            }
+                        </Flexblock>
+                    </SectionTabPanel>
                 }
 
-                <ComponentBlock 
-                    width='narrow'
-                    x-data={`{
-                        remove_request_ongoing: [],
-                        start_remove_animation(character_id) {
-                            if (!character_id) return
-                            this.remove_request_ongoing.push(character_id)
-                        },
-                        stop_remove_animation(character_id) {
-                            if (!character_id) return
-                            this.remove_request_ongoing = this.remove_request_ongoing.filter(value => value !== character_id)
-                        },
-                    }`}
-                >
-                    {get_characters_error ?
-                        <PilotsList
-                            pilots={pilots}
-                            readonly={readonly}
-                        >
-                            <ErrorRefetch
-                                args={{
-                                    partial: PILOTS_LIST_PARTIAL_URL,
-                                    error: get_characters_error,
-                                    delay: 0,
-                                    target: '#pilots-list',
-                                }}
-                            />
-                        </PilotsList>
-                        :
-                        <PilotsList
-                            pilots={pilots}
-                            readonly={readonly}
-                        />
-                    }
-                </ComponentBlock>
-            </Context>
+                <SectionTabPanel id="display" id_prefix="account">
+                    <Flexblock gap='var(--space-l)'>
+                        <small class="[ account-page__muted ]">{t('account.display_local')}</small>
 
-            <ComponentBlock width='narrow'>
-                <AccessibilityOptions color_blind={false} />
-            </ComponentBlock>
+                        <ComponentBlock>
+                            <AccessibilityOptions color_blind={false} />
+                        </ComponentBlock>
 
-            {can_use_push_notifications &&
-                <ComponentBlock width='narrow'>
-                    <PushNotifications notification_subscriptions={notification_subscriptions} />
-                </ComponentBlock>
-            }
-
-            {notification_features.length > 0 &&
-                <ComponentBlock width='narrow'>
-                    <NotificationPreferences
-                        features={notification_features}
-                        auth_token={auth_token as string}
-                    />
-                </ComponentBlock>
-            }
-
-            <ComponentBlock width='narrow'>
-                <Flexblock gap='var(--space-l)' class="[ w-full ]">
-                    <h2>{t('reset_suppress_message_settings')}</h2>
-
-                    <FlexInline x-init="$el.remove()" class="[ items-center ]" gap='var(--space-3xs)'>
-                        <RifterIcon class="small" />
-                        <p class="[ loading ]">{t('loading')}</p>
-                    </FlexInline>
-
-                    <div
-                        x-data={`{ show: false }`}
-                        x-show="show"
-                        x-init="show = true"
-                        style="display: none;"
-                    >
-                        <BlockList
-                            gap='var(--space-l)'
-                            class="[ w-full ]"
-                        >
-                            <div 
-                                x-show="!show_color_blind_prompt"
-                            >
-                                <FlexInline>
-                                    <div class="basis-[450px]">
-                                        <TextGroup title={t('disable_color_blind_prompt')}>
-                                            <small>{t('disable_color_blind_prompt_description')}</small>
-                                        </TextGroup>
-                                    </div>
-                                    
-                                    <Button
-                                        size='sm'
-                                        x-on:click=`show_color_blind_prompt = true`
-                                    >
-                                        {t('reset')}
-                                    </Button>
-                                </FlexInline>
-                            </div>
-                            <div 
-                                x-data={`{
-                                    show_rendering_options: $persist(true),
-                                }`}
-                                x-show="!show_rendering_options"
-                            >
-                                <FlexInline>
-                                    <div class="basis-[450px]">
-                                        <TextGroup title={t('disable_ships_renders_prompt')}>
-                                            <small>{t('disable_ships_renders_prompt_description')}</small>
-                                        </TextGroup>
-                                    </div>
-                                    
-                                    <Button
-                                        size='sm'
-                                        x-on:click=`show_rendering_options = true`
-                                    >
-                                        {t('reset')}
-                                    </Button>
-                                </FlexInline>
-                            </div>
-                            <div 
-                                x-data={`{
-                                    hide_external_link_disclaimer: $persist(false),
-                                }`}
-                                x-show="hide_external_link_disclaimer"
-                            >
-                                <FlexInline>
-                                    <div class="basis-[450px]">
-                                        <TextGroup title={t('disable_external_link_prompt')}>
-                                            <small>{t('disable_external_link_prompt_description')}</small>
-                                        </TextGroup>
-                                    </div>
-                                    
-                                    <Button
-                                        size='sm'
-                                        x-on:click=`hide_external_link_disclaimer = false`
-                                    >
-                                        {t('reset')}
-                                    </Button>
-                                </FlexInline>
-                            </div>
-                            <p class="[ no-options-text ]">{t('no_options_to_reset')}</p>
-                        </BlockList>
-                    </div>
-                </Flexblock>
-            </ComponentBlock>
-
-            <Context>
-                <ComponentBlock
-                    width='narrow'
-                    x-data={`{
-                        danger_zone_enable: false,
-                    }`}
-                >
-                    <Flexblock gap='var(--space-l)' class="[ w-full ]">
-                        <h2>{t('danger_zone')}</h2>
-
-                        <SwitchSquare
-                            class="[ w-full ]"
-                            x-model="danger_zone_enable"
-                            label={t('enable_danger_zone_switch_title')}
-                            description={t('enable_danger_zone_switch_description')}
-                        />
-
-                        <DisableBlock x_model="danger_zone_enable">
-                            <FlexInline
-                                justification='space-between'
-                                x-data={`{
-                                    async delete_account(proceed) {
-                                        if (!proceed) return
-                                        
-                                        const response = await fetch(
-                                            '${DELETE_ACCOUNT_URL}', {
-                                                method: 'DELETE'
-                                            }
-                                        )
-
-                                        if (!response.ok) {
-                                            const root_data = Alpine.$data(document.body)
-                                            if (root_data && root_data.show_alert_dialog) {
-                                                root_data.show_alert_dialog({
-                                                    title: '${t('delete_account_dialog_title')}',
-                                                    content: '${t('delete_account_error')}'
-                                                })
-                                            }
-                                            return
-                                        }
-
-                                        const json = await response.json()
-                                        if (json.redirect)
-                                            navigate(json.redirect)
-                                    },
-                                    show_unregister_account_dialog() {
-                                        const root_data = Alpine.$data(document.body)
-                                        if (!root_data || !root_data.show_confirm_dialog) return
-                                        root_data.show_confirm_dialog({
-                                            title: '${t('delete_account_dialog_title')}',
-                                            content: '${t('delete_account_dialog_text')}'
-                                        }).then((accepted) => this.delete_account(accepted))
-                                    }
-                                }`}
-                            >
-                                <TextGroup title={t('delete_account_title')}>
-                                    <small>{t('unregister_account_description')}</small>
-                                </TextGroup>
-                                <Button
-                                    type="button"
-                                    size='sm'
-                                    x-on:click="show_unregister_account_dialog()"
-                                >
-                                    {t('delete_account')}
-                                </Button>
-                            </FlexInline>
-                        </DisableBlock>
-
-                        <FlexInline justification='space-between'>
-                            <TextGroup title={t('auth_third_party_link_link')}>
-                                <small>{t('auth_third_party_link_description')}</small>
-                            </TextGroup>
-                            <Button
-                                href="https://developers.eveonline.com/authorized-apps"
-                                size='sm'
-                                external={true}
-                            >
-                                {t('auth_third_party_link_link')}
-                            </Button>
-                        </FlexInline>
+                        <ComponentBlock>
+                            <HiddenPrompts />
+                        </ComponentBlock>
                     </Flexblock>
-                </ComponentBlock>
-            </Context>
-        </Flexblock>
+                </SectionTabPanel>
+
+                <SectionTabPanel id="referrals" id_prefix="account">
+                    <LazyPartial url={ACCOUNT_REFERRALS_PARTIAL_URL} trigger="reveal">
+                        <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
+                            <RifterIcon class="small" />
+                            <p class="[ loading ]">{t('loading')}</p>
+                        </FlexInline>
+                    </LazyPartial>
+                </SectionTabPanel>
+
+                <SectionTabPanel id="account" id_prefix="account">
+                    <Flexblock gap='var(--space-l)'>
+                        <ComponentBlock>
+                            <Flexblock gap='0'>
+                                <h2 class="[ account-page__heading ]">{t('account.discord')}</h2>
+                                <SettingRow
+                                    title={t('account.discord_roles')}
+                                    description={t('account.discord_refresh_description')}
+                                >
+                                    <Button
+                                        size='sm'
+                                        type="button"
+                                        hx-post={REFRESH_DISCORD_ROLES_PARTIAL_URL}
+                                        hx-swap="outerHTML transition:true"
+                                        hx-disabled-elt="this"
+                                    >
+                                        {t('refresh_discord_roles')}
+                                    </Button>
+                                </SettingRow>
+                                <SettingRow
+                                    title={t('fleet_discord')}
+                                    description={t('account.fleet_discord_description')}
+                                >
+                                    <Button href="https://discord.com/invite/3hZfahmkFx" size='sm' color='transparent' external={true}>
+                                        {t('account.join')}
+                                    </Button>
+                                </SettingRow>
+                                <SettingRow
+                                    title={t('militia_discord')}
+                                    description={t('account.militia_discord_description')}
+                                >
+                                    <Button href="https://discord.com/invite/fVQapuzmcb" size='sm' color='transparent' external={true}>
+                                        {t('account.join')}
+                                    </Button>
+                                </SettingRow>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <ComponentBlock>
+                            <Flexblock gap='0'>
+                                <h2 class="[ account-page__heading ]">{t('account.access_troubleshooting')}</h2>
+                                <SettingRow
+                                    title={t('auth_third_party_link_link')}
+                                    description={t('account.third_party_description')}
+                                >
+                                    <Button href="https://developers.eveonline.com/authorized-apps" size='sm' color='transparent' external={true}>
+                                        {t('account.open')}
+                                    </Button>
+                                </SettingRow>
+                                <SettingRow
+                                    title={t('account.auth_token')}
+                                    description={t('account.auth_token_description')}
+                                >
+                                    <ClipboardButton id="copy-auth-token" color='transparent'>{auth_token}</ClipboardButton>
+                                </SettingRow>
+                                <SettingRow
+                                    title={t('clear_account_cache')}
+                                    description={t('clear_cache_description')}
+                                >
+                                    <Button
+                                        size='sm'
+                                        type="button"
+                                        color='transparent'
+                                        x-bind:disabled="disabled"
+                                        x-data={`{
+                                            disabled: false,
+                                            async clear_cache() {
+                                                this.disabled = true
+
+                                                await fetch(
+                                                    '${CLEAR_ACCOUNT_CACHE_URL}', {
+                                                        method: 'DELETE'
+                                                    }
+                                                )
+
+                                                navigate('${translatePath('/account/')}#account')
+                                            }
+                                        }`}
+                                        x-on:click="clear_cache()"
+                                    >
+                                        {t('clear_account_cache')}
+                                    </Button>
+                                </SettingRow>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <ComponentBlock
+                            x-data={`{
+                                danger_zone_enable: false,
+                            }`}
+                        >
+                            <Flexblock gap='0' class="[ w-full ]">
+                                <h2 class="[ account-page__heading ]">{t('danger_zone')}</h2>
+
+                                <div class="[ account-page__switch ]">
+                                    <SwitchSquare
+                                        class="[ w-full ]"
+                                        x-model="danger_zone_enable"
+                                        label={t('enable_danger_zone_switch_title')}
+                                        description={t('enable_danger_zone_switch_description')}
+                                    />
+                                </div>
+
+                                <DisableBlock x_model="danger_zone_enable">
+                                    <SettingRow
+                                        title={t('delete_account_title')}
+                                        description={t('account.delete_account_description')}
+                                        x-data={`{
+                                            async delete_account(proceed) {
+                                                if (!proceed) return
+
+                                                const response = await fetch(
+                                                    '${DELETE_ACCOUNT_URL}', {
+                                                        method: 'DELETE'
+                                                    }
+                                                )
+
+                                                if (!response.ok) {
+                                                    const root_data = Alpine.$data(document.body)
+                                                    if (root_data && root_data.show_alert_dialog) {
+                                                        root_data.show_alert_dialog({
+                                                            title: '${t('delete_account_dialog_title')}',
+                                                            content: '${t('delete_account_error')}'
+                                                        })
+                                                    }
+                                                    return
+                                                }
+
+                                                const json = await response.json()
+                                                if (json.redirect)
+                                                    navigate(json.redirect)
+                                            },
+                                            show_unregister_account_dialog() {
+                                                const root_data = Alpine.$data(document.body)
+                                                if (!root_data || !root_data.show_confirm_dialog) return
+                                                root_data.show_confirm_dialog({
+                                                    title: '${t('delete_account_dialog_title')}',
+                                                    content: '${t('delete_account_dialog_text')}'
+                                                }).then((accepted) => this.delete_account(accepted))
+                                            }
+                                        }`}
+                                    >
+                                        <Button
+                                            type="button"
+                                            size='sm'
+                                            x-on:click="show_unregister_account_dialog()"
+                                        >
+                                            {t('delete_account')}
+                                        </Button>
+                                    </SettingRow>
+                                </DisableBlock>
+                            </Flexblock>
+                        </ComponentBlock>
+                    </Flexblock>
+                </SectionTabPanel>
+            </SectionTabs>
+        </div>
     </PageDefault>
 </Viewport>
 
 <script is:inline>
     const show_rendering_options = localStorage.getItem('_x_show_rendering_options')
-    
+
     if (show_rendering_options === 'undefined') {
         localStorage.setItem('_x_show_rendering_options', 'true')
         location.reload()
@@ -464,11 +440,39 @@ const page_title = t('account.page_title');
 </script>
 
 <style lang="scss">
-    h3 {
-        margin-block-start: var(--space-l);
+    .account-page {
+        max-inline-size: var(--max-col-width);
     }
 
-    :not([style="display: none;"]) ~ .no-options-text {
-        display: none;
+    .account-masthead__eyebrow {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+    }
+
+    .account-masthead__picture {
+        inline-size: var(--space-3xl);
+        block-size: var(--space-3xl);
+        flex: none;
+
+        :global(img) {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .account-page__heading {
+        padding-block-end: var(--space-s);
+    }
+
+    .account-page__muted {
+        color: var(--text-muted);
+    }
+
+    .account-page__switch {
+        padding-block: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
     }
 </style>

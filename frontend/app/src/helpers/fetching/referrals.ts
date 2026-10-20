@@ -92,6 +92,7 @@ export const get_referral_stats = async (access_token:string, user_id:number, la
         const external_referral = site_referral === undefined ? external_referrals.find(page => page.name === stat.name) : null
 
         const referral_link = {
+            name: stat.name,
             title: site_referral ? (t(t_key('', stat.name, '.page_title')) ?? stat.name) : external_referral ? external_referral.title : stat.name,
             count: stat.referrals,
         } as ReferralLinkStatsUI
