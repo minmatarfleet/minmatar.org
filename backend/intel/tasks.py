@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import logging
 
+from datetime import timedelta
+
 from django.db.models import F
+from django.utils import timezone
 
 from app.celery import app
 from intel.affiliations import resolve, score, sightings
@@ -22,6 +25,17 @@ def collect_intel_sightings() -> dict:
     return stats
 
 
+STUCK_AFTER = timedelta(hours=1)
+
+
+def requeue_stuck() -> int:
+    """Investigations a dead worker left half done go back in the queue."""
+    return IntelEntity.objects.filter(
+        status=IntelEntity.Status.INVESTIGATING,
+        updated_at__lt=timezone.now() - STUCK_AFTER,
+    ).update(status=IntelEntity.Status.QUEUED, updated_at=timezone.now())
+
+
 def next_queued(limit: int = INVESTIGATIONS_PER_RUN) -> list[IntelEntity]:
     return list(
         IntelEntity.objects.filter(status=IntelEntity.Status.QUEUED).order_by(
@@ -34,7 +48,12 @@ def next_queued(limit: int = INVESTIGATIONS_PER_RUN) -> list[IntelEntity]:
 # and never overlaps the next.
 @app.task(expires=10 * 60, exclusive=20 * 60)
 def investigate_queued_groups() -> dict:
-    stats = {"investigated": 0, "failed": 0, "suggested": 0}
+    stats = {
+        "requeued": requeue_stuck(),
+        "investigated": 0,
+        "failed": 0,
+        "suggested": 0,
+    }
     for entity in next_queued():
         result = investigate(entity)
         if result.get("failed"):

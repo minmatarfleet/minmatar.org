@@ -217,7 +217,7 @@ def investigate(
         ).values_list("month", flat=True)
     )
     IntelEntity.objects.filter(pk=entity.pk).update(
-        status=IntelEntity.Status.INVESTIGATING
+        status=IntelEntity.Status.INVESTIGATING, updated_at=timezone.now()
     )
     subject = (entity.kind, entity.eve_id)
     factions: Counter = Counter()

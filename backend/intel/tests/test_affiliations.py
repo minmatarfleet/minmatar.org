@@ -453,6 +453,15 @@ class LocalBlocTests(TestCase):
         corporations = {row["id"]: row for row in summary["corporations"]}
         self.assertEqual(corporations[98000020]["name"], "Loners")
 
+        # pylint: disable=import-outside-toplevel
+        from intel.services.recent import report_summary_line
+
+        report = IntelReport(kind=IntelReport.Kind.LOCAL, summary=summary)
+        self.assertEqual(
+            report_summary_line(report),
+            "4 pilots · 4 neutral · 3 Snuffed Bloc",
+        )
+
 
 class AffiliationApiTests(TestCase):
     def setUp(self):
@@ -573,3 +582,22 @@ class AffiliationApiTests(TestCase):
         self.assertEqual(rows[0]["character_name"], "Ours")
         self.assertEqual(rows[0]["shared"], 12)
         self.assertEqual(rows[0]["bloc"]["name"], "Group 99000001")
+
+
+class TaskTests(TestCase):
+    def test_a_dead_workers_investigation_goes_back_in_the_queue(self):
+        # pylint: disable=import-outside-toplevel
+        from intel import tasks
+
+        stuck = group(MAIN, status=IntelEntity.Status.INVESTIGATING)
+        fresh = group(PET, status=IntelEntity.Status.INVESTIGATING)
+        IntelEntity.objects.filter(pk=stuck.pk).update(
+            updated_at=timezone.now() - timedelta(hours=2)
+        )
+        with patch.object(tasks, "investigate", return_value={}) as run:
+            stats = tasks.investigate_queued_groups()
+        self.assertEqual(stats["requeued"], 1)
+        run.assert_called_once()
+        self.assertEqual(run.call_args[0][0].pk, stuck.pk)
+        fresh.refresh_from_db()
+        self.assertEqual(fresh.status, IntelEntity.Status.INVESTIGATING)
