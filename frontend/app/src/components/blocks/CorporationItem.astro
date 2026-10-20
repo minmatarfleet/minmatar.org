@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { Alert, CorporationObject } from '@dtypes/layout_components'
 
@@ -9,6 +9,8 @@ interface Props {
     is_user_corporation?:   boolean;
     alert?:                 Alert | false;
     disable_applications?:  boolean;
+    // Link the name to the corporation's page (where pilots apply).
+    link_to_page?:          boolean;
 }
 
 const {
@@ -16,7 +18,13 @@ const {
     alert = false,
     is_user_corporation = false,
     disable_applications = false,
+    link_to_page = false,
 } = Astro.props
+
+import { corporation_path } from '@helpers/corporations/detail';
+const corporation_url = link_to_page
+    ? translatePath(corporation_path(corporation.corporation_id, corporation.corporation_name))
+    : null
 
 import { get_corporation_logo, get_alliance_logo } from '@helpers/eve_image_server';
 
@@ -45,9 +53,15 @@ import Tag from '@components/blocks/Tag.astro';
     <FlexInline justification='space-between' class="[ items-center ]">
         <Flexblock gap='0' class="[ grow basis-[220px] ]">
             <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
-                <span class="[ text-[var(--highlight)] ]">
-                    {corporation.corporation_name}
-                </span>
+                {corporation_url ?
+                    <a class="[ text-[var(--highlight)] ]" href={corporation_url}>
+                        {corporation.corporation_name}
+                    </a>
+                    :
+                    <span class="[ text-[var(--highlight)] ]">
+                        {corporation.corporation_name}
+                    </span>
+                }
                 {corporation.trial &&
                     <Tag text={t('trial')} color='fleet-yellow' narrow />
                 }

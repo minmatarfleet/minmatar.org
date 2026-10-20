@@ -6,14 +6,12 @@ import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
     
 }
 
 const {
     corporation,
-    is_user_corporation = false,
     picture_placement = 'left',
 } = Astro.props
 
@@ -27,7 +25,6 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     ceo_image='/images/corporations/straylight/ceo.webp'
     ceo_character_id={CHAD_VANGAALEN_ID}
     corporation={corporation}
-    is_user_corporation={is_user_corporation}
     picture_placement='left'
     mirror_slide={picture_placement === 'right'}
 >

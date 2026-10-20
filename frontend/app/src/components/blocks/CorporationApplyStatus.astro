@@ -1,0 +1,179 @@
+---
+import { open_application_elsewhere_message } from '@helpers/corporations/open_application'
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { Alert, CorporationObject } from '@dtypes/layout_components'
+
+// The apply control beside the corporation page header. It always renders:
+// when the viewer can't apply it shows disabled, with the reason as a tooltip.
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    alert?:                 Alert | false;
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    alert = false,
+} = Astro.props
+
+const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
+const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+
+import { hours_diff, from_now_diff } from '@helpers/date'
+const hours_since_last_app = hours_diff(corporation?.application_updated as Date, new Date())
+const REAPPLY_PERIOD_HOURS = 1
+const ACCEPT_PERIOD_HOURS = 72
+const is_re_applicable = (hours_since_last_app >= REAPPLY_PERIOD_HOURS)
+const is_acceptance_period_passed = (hours_since_last_app >= ACCEPT_PERIOD_HOURS)
+let reapplication_date = new Date(corporation?.application_updated as Date)
+reapplication_date.setHours(reapplication_date.getHours() + REAPPLY_PERIOD_HOURS);
+const TIME_TO_REAPPLY = from_now_diff(lang, reapplication_date)
+const APPLICATION_DENIED_TOOLTIP = t('application_denied_tooltip').replace('TIME_TO_REAPPLY', TIME_TO_REAPPLY)
+const open_elsewhere = corporation?.open_application_corporation_name
+    ? open_application_elsewhere_message(
+        t('open_application_elsewhere'),
+        corporation.open_application_corporation_name,
+    )
+    : null
+
+// Why the apply button is disabled.
+const unavailable_reason = is_user_corporation
+    ? t('joined_corporation_tooltip')
+    : open_elsewhere
+        ? open_elsewhere
+        : corporation?.status === 'pending'
+        ? t('pending_application_tooltip')
+        : corporation?.status === 'accepted' && !is_acceptance_period_passed
+            ? t('application_accepted_tooltip')
+            : corporation?.status === 'rejected' && !is_re_applicable
+                ? APPLICATION_DENIED_TOOLTIP
+                : corporation?.status === 'error'
+                    ? t('error_reload')
+                    : null
+
+import Button from '@components/blocks/Button.astro';
+import ButtonCorpApply from '@components/blocks/ButtonCorpApply.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import Tag from '@components/blocks/Tag.astro';
+import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
+import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+---
+
+<div
+    class="[ apply-status ]"
+    id={`corporation-status-${corporation.corporation_id}`}
+    x-data={`{
+        init() {
+            ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        }
+    }`}
+>
+    {(corporation?.status != null && !corporation.active) ?
+        <ButtonCeoToken
+            corporation={corporation}
+            dialog_title={t('add_ceo_token_dialog_title')}
+        >
+            {t('add_ceo_token')}
+        </ButtonCeoToken>
+    :
+    (!is_user_corporation && corporation?.status == 'available' && !primary_character_id) ?
+        <ButtonAddPrimary
+            color='green'
+            dialog_title={t('corporation_join_request_dialog_title')}
+        >
+            {t('enlist_today')}
+        </ButtonAddPrimary>
+    :
+    !open_elsewhere && (
+        (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
+        (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
+        (!is_user_corporation && is_re_applicable && corporation?.status === 'rejected')
+    ) ?
+        <ButtonCorpApply corporation={corporation} />
+    :
+    corporation?.status == 'unauth' ?
+        <ButtonAuth
+            color='green'
+            dialog_title={t('corporation_join_request_dialog_title')}
+        >
+            {t('enlist_today')}
+        </ButtonAuth>
+    :
+        <span
+            class="[ unavailable ]"
+            data-tippy-content={unavailable_reason ?? undefined}
+            x-init={unavailable_reason ? 'tippy($el, tippy_options)' : undefined}
+            tabindex={unavailable_reason ? '0' : undefined}
+        >
+            <Button color="green" disabled={true} type="button">
+                {t('enlist_today')}
+            </Button>
+        </span>
+    }
+
+    {is_user_corporation ?
+        ''
+    :
+    open_elsewhere ?
+        <small class="[ status-text ]">{open_elsewhere}</small>
+    :
+    corporation?.status === 'accepted' && !is_acceptance_period_passed ?
+        <small class="[ status-text ]">{t('application_accepted_tooltip')}</small>
+    :
+    corporation?.status === 'rejected' && !is_re_applicable ?
+        <Markdown
+            class="[ status-text ]"
+            markdown={APPLICATION_DENIED_TOOLTIP}
+            inline={true}
+            inline_element='small'
+        />
+    :
+    corporation?.status == 'pending' ?
+        <small class="[ status-text ]">{t('pending_application_tooltip')}</small>
+    :
+    corporation?.status == 'error' &&
+        <Tag
+            data-tippy-content={t('error_reload')}
+            x-init="tippy($el, tippy_options)"
+            text={t('error_status_corp')}
+        />
+    }
+</div>
+
+<style lang="scss">
+    // Right-aligned under the button beside the header; left-aligned once the
+    // header stacks on narrow screens.
+    .apply-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+        text-align: end;
+
+        @media (max-width: 48rem) {
+            align-items: flex-start;
+            text-align: start;
+        }
+    }
+
+    .status-text {
+        max-width: 22rem;
+        color: var(--highlight);
+    }
+
+    // A disabled button, not a dotted help term (beats the global tooltip underline).
+    .apply-status .unavailable {
+        display: inline-flex;
+        cursor: not-allowed;
+        border-bottom: none;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+</style>

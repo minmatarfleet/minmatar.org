@@ -3,25 +3,30 @@ import { i18n } from '@helpers/i18n'
 const { t, lang } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import type { CorporationObject } from '@dtypes/layout_components'
 import { get_corporation_logo } from '@helpers/eve_image_server'
 import { month_year } from '@helpers/corporations/about'
+import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
 
 interface Props {
     corporation: CorporationInfo
-    // Link to the Apply tab, or null when the viewer can't apply (already a member).
-    apply_href?: string | null
+    // The viewer's application state for this corporation.
+    apply_corporation: CorporationObject
+    is_user_corporation?: boolean
     [propName: string]: any
 }
 
 const {
     corporation,
-    apply_href = null,
+    apply_corporation,
+    is_user_corporation = false,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Button from '@components/blocks/Button.astro'
+import CorporationApplyStatus from '@components/blocks/CorporationApplyStatus.astro'
 
 const alliance_name = corporation.alliance_name || corporation.faction_name
 const founded = month_year(corporation.about?.founded, lang)
@@ -43,38 +48,29 @@ const meta = [
     />
     <div class="masthead-copy">
         <PageTitle is_landing={true}>{corporation.corporation_name}</PageTitle>
-        <FlexInline class="meta" gap="var(--space-2xs)">
+        <FlexInline class="meta" gap="var(--space-3xs) var(--space-2xs)">
             {corporation.ticker &&
                 <Tag color="alliance-blue" text={corporation.ticker} />
             }
-            {meta.map((item, index) => (
-                <>
-                    {index > 0 && <span class="dot" aria-hidden="true">·</span>}
-                    <small>{item}</small>
-                </>
-            ))}
+            {meta.map((item) => <small class="meta-item">{item}</small>)}
         </FlexInline>
     </div>
-    {(corporation.discord_invite_url || apply_href) &&
-        <FlexInline class="actions" gap="var(--space-xs)">
-            {corporation.discord_invite_url &&
-                <Button
-                    href={corporation.discord_invite_url}
-                    external={true}
-                    new_tab={true}
-                    size="sm"
-                    color="transparent"
-                >
-                    {t('corporations.detail.discord')}
-                </Button>
-            }
-            {apply_href &&
-                <Button href={apply_href} size="sm">
-                    {t('corporations.detail.apply')}
-                </Button>
-            }
-        </FlexInline>
-    }
+    <div class="actions" id={CORPORATION_APPLY_ID}>
+        {corporation.discord_invite_url &&
+            <Button
+                href={corporation.discord_invite_url}
+                external={true}
+                new_tab={true}
+                color="transparent"
+            >
+                {t('corporations.detail.discord')}
+            </Button>
+        }
+        <CorporationApplyStatus
+            corporation={apply_corporation}
+            is_user_corporation={is_user_corporation}
+        />
+    </div>
 </div>
 
 <style lang="scss">
@@ -109,17 +105,29 @@ const meta = [
         align-items: center;
     }
 
-    .dot {
+    // The dot travels with the item after it, so a wrapped line never ends on one.
+    .meta-item {
+        white-space: nowrap;
+    }
+
+    .meta-item + .meta-item::before {
+        content: '·';
+        margin-inline-end: var(--space-2xs);
         color: var(--faded);
     }
 
     .actions {
         flex: 0 0 auto;
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-xs);
+        scroll-margin-block-start: var(--space-2xl);
     }
 
     @media (max-width: 48rem) {
         .actions {
             width: 100%;
+            flex-wrap: wrap;
         }
     }
 </style>

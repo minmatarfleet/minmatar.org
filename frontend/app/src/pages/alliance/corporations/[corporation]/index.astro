@@ -61,7 +61,8 @@ const open_applications = auth_token
     : null
 const user_corporation_id = user ? await get_user_corporation_id(user.user_id) : null
 const is_user_corporation = user_corporation_id === corporation.corporation_id
-// Members don't get an Apply call to action; everyone else does.
+// Members don't get the Fly with us pitch; everyone else does. The header's
+// apply button shows for everyone, disabled for members.
 const apply_href = is_user_corporation ? null : '#apply'
 
 let apply_corporation: CorporationObject = {
@@ -191,7 +192,11 @@ const breadcrumbs = [
     <Flexblock gap="var(--space-2xl)">
         <Flexblock gap="var(--space-m)">
             <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
-            <CorporationDetailHero corporation={corporation} apply_href={apply_href} />
+            <CorporationDetailHero
+                corporation={corporation}
+                apply_corporation={apply_corporation}
+                is_user_corporation={is_user_corporation}
+            />
         </Flexblock>
 
         {tabs.length > 0 &&
@@ -311,8 +316,6 @@ const breadcrumbs = [
                     <CorporationApplicationProcess
                         process={corporation.application_process}
                         requirements={requirements}
-                        apply_corporation={apply_corporation}
-                        is_user_corporation={is_user_corporation}
                         open_applications={open_applications}
                     />
                 </SectionTabPanel>

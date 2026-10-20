@@ -1,10 +1,10 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test, vi } from "vitest";
-import CorporationSlideStatus from "@components/blocks/CorporationSlideStatus.astro";
+import CorporationApplyStatus from "@components/blocks/CorporationApplyStatus.astro";
 
-test("CorporationSlideStatus defaults", async () => {
+test("CorporationApplyStatus defaults", async () => {
   const container = await AstroContainer.create();
-  const result = await container.renderToString(CorporationSlideStatus, {
+  const result = await container.renderToString(CorporationApplyStatus, {
     props: {
       corporation: {
         corporation_id: 87,

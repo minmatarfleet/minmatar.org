@@ -75,14 +75,12 @@ const vitals: Vital[] = [
             <dl class="vitals">
                 {vitals.map((vital) => (
                     <div class="vital">
-                        <dt class="vital-label">
-                            {vital.label}
-                            {vital.detail && <span class="vital-detail"> · {vital.detail}</span>}
-                        </dt>
+                        <dt class="vital-label">{vital.label}</dt>
                         <dd class="vital-value">
                             {vital.value}
                             {vital.unit && <span class="vital-unit">{vital.unit}</span>}
                         </dd>
+                        {vital.detail && <dd class="vital-detail">{vital.detail}</dd>}
                     </div>
                 ))}
             </dl>
@@ -95,7 +93,7 @@ const vitals: Vital[] = [
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
         gap: var(--space-xl);
-        align-items: stretch;
+        align-items: start;
     }
 
     .words {
@@ -112,46 +110,59 @@ const vitals: Vital[] = [
         max-width: var(--max-text-width);
     }
 
+    // The same cards as By the numbers: eyebrow, big number, quiet detail line.
     .vitals {
         margin: 0;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-auto-rows: 1fr;
-        gap: 1px;
-        background: var(--border-color-hover);
-        border: 1px solid var(--border-color-hover);
+        gap: var(--space-s);
     }
 
-    // Number above its label; the dt stays first in the source for screen readers.
     .vital {
+        container-type: inline-size;
         display: flex;
-        flex-direction: column-reverse;
-        justify-content: center;
+        flex-direction: column;
         gap: var(--space-3xs);
-        padding: var(--space-s) var(--space-m);
+        padding: var(--space-m);
         background: var(--component-background);
+        min-width: 0;
+
+        dd {
+            margin: 0;
+        }
+
+        @media (max-width: 30rem) {
+            padding: var(--space-s);
+        }
     }
 
-    .vital-value {
-        margin: 0;
+    .vital-label {
         font-family: var(--heading-font);
-        font-size: var(--step-4);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    // Scales with the card, so four digits or a unit never clip on a phone.
+    .vital-value {
+        font-family: var(--heading-font);
+        font-size: min(var(--step-4), 28cqi);
         line-height: 1;
+        white-space: nowrap;
         color: var(--highlight);
         font-variant-numeric: tabular-nums;
     }
 
     .vital-unit {
         margin-inline-start: var(--space-3xs);
-        font-size: var(--step-1);
-        text-transform: lowercase;
-    }
-
-    .vital-label {
-        font-size: var(--step--1);
+        font-size: 0.45em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
     }
 
     .vital-detail {
+        font-size: var(--step--1);
         color: var(--faded);
     }
 </style>
