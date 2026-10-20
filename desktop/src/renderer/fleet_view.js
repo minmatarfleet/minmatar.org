@@ -565,33 +565,57 @@
 
     // ------------------------------------------------------------ Recent tab
 
+    const owes = l => l.srp_status === 'none' && srp_covered(l)
+    const srp_label = l => (l.srp_status === 'none' && !srp_covered(l) ? 'No SRP'
+        : SRP_LABELS[l.srp_status] + (l.srp_status === 'approved' && l.srp_amount ? ` ${isk(l.srp_amount)}` : ''))
+
+    // Your losses' SRP in one tag: the same state twice reads "No SRP ×2", not "No SRP · No SRP".
+    function srp_tag(losses) {
+        if (!losses.length) return ''
+        const counts = new Map()
+        for (const l of losses) counts.set(srp_label(l), (counts.get(srp_label(l)) || 0) + 1)
+        const text = [...counts].map(([label, n]) => n > 1 ? `${label} ×${n}` : label).join(' · ')
+        const tone = losses.some(owes) ? 'fw-warn' : losses.every(l => l.srp_status === 'approved') ? 'fw-good' : 'eve-dim'
+        return `<span class="fw-tag ${tone}" title="${esc(text)}">${esc(text)}</span>`
+    }
+
+    // Kills blue, losses red; a zero stays dim so colour only marks what happened.
+    const tally = (n, label, tone) => `<span class="${n ? tone : 'eve-dim'}">${label}</span>`
+
+    function recent_row(f) {
+        const length = f.ended_at ? duration(Math.round((new Date(f.ended_at) - new Date(f.started_at)) / 1000)) : null
+        const who = f.was_fc ? 'you were FC' : f.fc_name ? `FC ${esc(f.fc_name)}` : ''
+        const total = (f.isk_destroyed || 0) + (f.isk_lost || 0)
+        const pct = total ? Math.round(f.isk_destroyed / total * 100) : null
+        const badge = f.type ? ` <span class="fleet-type fleet-type--${esc(f.type)}">${esc(f.type_label)}</span>` : ''
+        const bar = pct == null ? ''
+            : `<span class="fw-efficiency__bar" role="img" aria-label="ISK efficiency ${pct} percent: ${isk(f.isk_destroyed)} destroyed, ${isk(f.isk_lost)} lost"><span data-pct="${pct}"></span></span><span>${pct}%</span>`
+        const srp = srp_tag(f.my_losses)
+        return `<button class="fw-list-row fw-recent" data-interactive data-fleet-command="fleet:open-site" data-id="${Number(f.fleet_id)}" title="Open on my.minmatar.org">
+                ${portrait(f.fc_character_id, 32)}
+                <span class="fw-row__name">${esc(f.title)}${badge}</span>
+                ${f.live ? '<span class="fw-live-tag">● Live</span>' : `<span class="fw-count">${tally(f.kills, plural(f.kills, 'kill'), 'fw-kill-text')}<span class="fw-stat__sep"> · </span>${tally(f.losses, `${f.losses} lost`, 'fw-danger')}</span>`}
+                <span class="fw-meta">${[`${eve_clock(f.started_at)} EVE`, length, who].filter(Boolean).join(' · ')}</span>
+                ${bar || srp ? `<span class="fw-recent__foot">${bar}${srp}</span>` : ''}
+            </button>`
+    }
+
     function recent_tab(s) {
         if (!s.recent) return { main: '<div class="fw-quiet">Loading your recent fleets…</div>', actions: '', site_id: null }
         const owed = []
-        for (const f of s.recent.fleets) for (const loss of f.my_losses) if (loss.srp_status === 'none' && srp_covered(loss)) owed.push({ f, loss })
+        for (const f of s.recent.fleets) for (const loss of f.my_losses) if (owes(loss)) owed.push({ f, loss })
         const owed_html = owed.map(({ f, loss }) => `<div class="fw-owed">
                 ${ship_icon(loss.ship_type_id, 32)}
-                <span class="fw-row__name">File SRP · ${esc(loss.ship_name)}</span>
+                <span class="fw-row__name">${esc(loss.ship_name)}</span>
                 ${button('fleet:srp', 'File SRP', { primary: true, id: loss.killmail_id })}
-                <span class="fw-meta">${esc(f.title)} · ${esc(loss.solar_system_name)} · ${isk(loss.isk_value)} ISK · ${esc(fmt.day_label(loss.killmail_time))}</span>
+                <span class="fw-meta">${esc(fmt.day_label(loss.killmail_time))} · ${isk(loss.isk_value)} ISK · ${esc(f.title)} · ${esc(loss.solar_system_name)}</span>
             </div>`).join('')
-        const owes = l => l.srp_status === 'none' && srp_covered(l)
-        const srp_label = l => (l.srp_status === 'none' && !srp_covered(l) ? 'No SRP'
-            : SRP_LABELS[l.srp_status] + (l.srp_status === 'approved' && l.srp_amount ? ` ${isk(l.srp_amount)}` : ''))
-        const rows = s.recent.fleets.map(f => {
-            const srp = f.my_losses.map(srp_label).join(' · ')
-            const srp_tone = f.my_losses.some(owes) ? 'fw-warn' : f.my_losses.every(l => l.srp_status === 'approved') ? 'fw-good' : 'eve-dim'
-            const length = f.ended_at ? duration(Math.round((new Date(f.ended_at) - new Date(f.started_at)) / 1000)) : 'live'
-            return `<button class="fw-recent" data-interactive data-fleet-command="fleet:open-site" data-id="${Number(f.fleet_id)}" title="Open on my.minmatar.org">
-                <span class="fw-row__name">${esc(f.title)}</span>
-                <span class="fw-count">${plural(f.kills, 'kill')} · ${f.losses} lost</span>
-                <span class="fw-meta">${esc(fmt.day_label(f.started_at))} · ${esc(length)}${f.was_fc ? ' · you were FC' : ''}${f.my_losses.length ? ` · you lost ${f.my_losses.length}` : ''}</span>
-                <span class="fw-tag ${srp_tone}">${esc(srp)}</span>
-            </button>`
-        }).join('')
+        // Grouped by day like Upcoming; group_by_day reads start_time.
+        const days = fmt.group_by_day(s.recent.fleets.map(f => ({ ...f, start_time: f.started_at })))
+        const rows = days.map(group => section(group.label, String(group.fleets.length), group.label === 'Live now' ? 'live' : '')
+            + group.fleets.map(recent_row).join('')).join('')
         return {
-            main: `${owed.length ? section('Needs you', '', 'warn') + owed_html : ''}
-                ${section('Your last fleets', 'last 30 days')}
+            main: `${owed.length ? section('SRP to file', plural(owed.length, 'loss', 'losses'), 'warn') + owed_html : ''}
                 ${rows || '<div class="fw-quiet">No fleets in the last 30 days.</div>'}`,
             actions: '',
             site_id: null,

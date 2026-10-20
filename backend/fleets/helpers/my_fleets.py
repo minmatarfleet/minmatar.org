@@ -73,7 +73,7 @@ def _recent_fleets(user, mine: set[int]) -> list:
 
     fleets = (
         EveFleet.objects.filter(visible_fleets_q(user))
-        .select_related("doctrine")
+        .select_related("doctrine", "created_by")
         .in_bulk(order[:RECENT_LIMIT])
     )
     return [
@@ -101,6 +101,7 @@ def recent_fleets(user) -> dict:
     rows = []
     for fleet, instance, was_fc in _recent_fleets(user, mine):
         report = fleet_kill_report(fleet)
+        fc = fleet.fleet_commander
         losses = [
             row
             for row in report["killmails"]
@@ -112,7 +113,10 @@ def recent_fleets(user) -> dict:
             {
                 "fleet_id": fleet.id,
                 "title": _title(fleet),
+                "type": fleet.type,
                 "type_label": TYPE_LABELS.get(fleet.type, fleet.type),
+                "fc_character_id": fc.character_id if fc else None,
+                "fc_name": fc.character_name if fc else None,
                 "started_at": instance.start_time,
                 "ended_at": instance.end_time,
                 "live": instance.end_time is None,

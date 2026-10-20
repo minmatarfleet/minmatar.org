@@ -3,6 +3,8 @@
     {
       "aar_link": null,
       "ended_at": "2026-01-17T17:55:00Z",
+      "fc_character_id": 5000,
+      "fc_name": "The FC",
       "fleet_id": 501,
       "isk_destroyed": 0,
       "isk_lost": 0,
@@ -35,6 +37,7 @@
       ],
       "started_at": "2026-01-17T17:35:00Z",
       "title": "Armor Damnations",
+      "type": "non_strategic",
       "type_label": "Non-Strategic",
       "was_fc": false
     }

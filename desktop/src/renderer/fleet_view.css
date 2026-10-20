@@ -160,15 +160,15 @@
 /* next fleet, idle */
 .fw-idle { display: flex; flex-direction: column; gap: 4px; padding: 24px 2px 0; }
 .fw-idle .fw-meta { white-space: normal; }
-.fw-next, .fw-list-row, .fw-recent, .fw-owed { display: grid; width: 100%; border: 0; text-align: left; color: inherit; font: inherit; cursor: default; }
+.fw-next, .fw-list-row, .fw-owed { display: grid; width: 100%; border: 0; text-align: left; color: inherit; font: inherit; cursor: default; }
 .fw-next { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; padding: 12px; background: var(--fw-card); }
 .fw-next .fw-portrait { grid-row: span 2; }
 .fw-next .fw-meta { grid-column: 2 / 4; margin: 0; }
 .fw-next__title { min-width: 0; font-size: 15px; font-weight: 500; color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fw-next .fw-clock { font-size: 15px; }
 .fw-next__signed { grid-column: 2 / 4; margin-top: 4px; font-size: 12px; color: var(--eve-gold); }
-.fw-next:hover, .fw-list-row:hover, .fw-recent:hover { background: var(--eve-hover); }
-.fw-next:focus-visible, .fw-list-row:focus-visible, .fw-recent:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+.fw-next:hover, .fw-list-row:hover { background: var(--eve-hover); }
+.fw-next:focus-visible, .fw-list-row:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
 
 /* the schedule */
 .fw-list-row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; margin-bottom: 4px; padding: 8px 10px; background: var(--fw-card); }
@@ -200,8 +200,11 @@
 .fw-owed .fw-icon { grid-row: span 2; }
 .fw-owed .fw-button { grid-row: span 2; grid-column: 3; }
 .fw-owed .fw-meta { margin: 0; }
-.fw-recent { grid-template-columns: minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; padding: 8px 0; background: none; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.fw-recent .fw-meta { margin: 0; }
+/* a finished fleet is a schedule row (.fw-list-row): the meta line runs full width, the ISK bar and SRP under it */
+.fw-recent .fw-meta { grid-column: 2 / 4; }
+.fw-recent__foot { grid-column: 2 / 4; display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--eve-text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fw-recent__foot .fw-efficiency__bar { flex: 0 0 40%; height: 2px; }   /* one length on every row, whatever the SRP tag */
+.fw-recent__foot .fw-tag { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
 
 /* FC at minimum size */
 .fw-compact-count { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 10px; font-size: 12px; }

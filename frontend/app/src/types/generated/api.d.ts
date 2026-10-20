@@ -15779,6 +15779,10 @@ export interface components {
             aar_link?: string | null;
             /** Ended At */
             ended_at?: string | null;
+            /** Fc Character Id */
+            fc_character_id?: number | null;
+            /** Fc Name */
+            fc_name?: string | null;
             /** Fleet Id */
             fleet_id: number;
             /** Isk Destroyed */
@@ -15803,6 +15807,11 @@ export interface components {
             started_at: string;
             /** Title */
             title: string;
+            /**
+             * Type
+             * @default
+             */
+            type?: string;
             /** Type Label */
             type_label: string;
             /** Was Fc */
