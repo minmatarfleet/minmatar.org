@@ -52,6 +52,12 @@ class CorporationRedditPost(Schema):
     recent_changes: list[ScheduleChange] = []
     approved: bool
     approved_at: Optional[datetime] = None
+    # The CEO's edits to an approved post, waiting for a superuser; the
+    # approved words keep going out meanwhile.
+    change_pending: bool = False
+    change_submitted_at: Optional[datetime] = None
+    # Set when their last change was rejected (may be empty: no note).
+    change_rejected_note: Optional[str] = None
     # ready | not_approved | no_account | account_invalid | unscheduled
     automatic_status: str
     last_post_at: Optional[datetime] = None

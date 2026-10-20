@@ -109,8 +109,9 @@ class RedditPostTemplate(models.Model):
     approved = models.BooleanField(
         default=False,
         help_text=(
-            "Superuser approval for automatic posting. Cleared when the CEO "
-            "edits the title or content."
+            "Superuser approval of this title and content for automatic "
+            "posting. Once approved, the CEO's edits wait as a change "
+            "request and the approved words keep going out."
         ),
     )
     approved_by = models.ForeignKey(
@@ -144,6 +145,80 @@ class RedditPostTemplate(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+
+class RedditPostChangeRequest(models.Model):
+    """
+    A CEO's title and body waiting for a superuser.
+
+    Once a template is approved, the CEO's edits land here instead of on the
+    template, so the approved words keep going out until a superuser
+    approves the change. A template that was never approved takes the CEO's
+    edits straight away and also gets a request, so it shows up for review.
+    Autosave updates the one pending request in place.
+    """
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+    STATUS_CHOICES = [
+        (PENDING, "Pending"),
+        (APPROVED, "Approved"),
+        (REJECTED, "Rejected"),
+        (WITHDRAWN, "Withdrawn"),
+    ]
+
+    template = models.ForeignKey(
+        RedditPostTemplate,
+        on_delete=models.CASCADE,
+        related_name="change_requests",
+    )
+    title = models.CharField(max_length=250)
+    content = models.TextField()
+    status = models.CharField(
+        max_length=12, choices=STATUS_CHOICES, default=PENDING
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    notified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When reviewers were last told about it on Discord.",
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text="Shown to the CEO when a change is rejected.",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["template"],
+                condition=models.Q(status="pending"),
+                name="reddit_one_pending_change_per_template",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.template} ({self.get_status_display()})"
 
 
 class RedditSchedule(models.Model):

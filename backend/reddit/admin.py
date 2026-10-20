@@ -1,15 +1,20 @@
+import difflib
+
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
-from django.db.models import Max
+from django.db.models import Exists, Max, OuterRef
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import format_html, format_html_join
 
-from reddit import rotation, schedule
+from reddit import approval, rotation, schedule
 from reddit.client import RedditClient
 from reddit.markdown import blocking_problems
 from reddit.models import (
     RedditAccount,
     RedditPost,
+    RedditPostChangeRequest,
     RedditPostTemplate,
     RedditSchedule,
     RedditScheduleChange,
@@ -50,7 +55,12 @@ class RedditPostTemplateAdminForm(forms.ModelForm):
             )
 
     def clean_content(self):
-        content = self.cleaned_data["content"]
+        content = approval.normalize_text(self.cleaned_data["content"])
+        # The textarea sends CRLF; an unchanged body is not a change.
+        if self.instance.pk and content == approval.normalize_text(
+            self.instance.content
+        ):
+            return self.instance.content
         # Only on change, so older posts can still be rescheduled as-is.
         if "content" in self.changed_data:
             problems = blocking_problems(content)
@@ -63,15 +73,6 @@ class RedditPostTemplateAdminForm(forms.ModelForm):
                     ]
                 )
         return content
-
-
-def _record_approval(template, user):
-    if template.approved:
-        template.approved_by = user
-        template.approved_at = timezone.now()
-    else:
-        template.approved_by = None
-        template.approved_at = None
 
 
 class RedditPostInline(admin.TabularInline):
@@ -108,6 +109,7 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
         "posting_window",
         "delivery_method",
         "approved",
+        "change_pending",
         "discord_channel",
         "last_delivered_at",
     ]
@@ -125,20 +127,45 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
     readonly_fields = [
         "approved_by",
         "approved_at",
+        "pending_change_link",
         "updated_at",
     ]
     inlines = [RedditPostInline]
 
     def get_queryset(self, request):
+        pending = RedditPostChangeRequest.objects.filter(
+            template=OuterRef("pk"), status=RedditPostChangeRequest.PENDING
+        )
         return (
             super()
             .get_queryset(request)
-            .annotate(last_delivered_at=Max("posts__delivered_at"))
+            .annotate(
+                last_delivered_at=Max("posts__delivered_at"),
+                change_pending=Exists(pending),
+            )
         )
 
     @admin.display(ordering="last_delivered_at")
     def last_delivered_at(self, obj):
         return obj.last_delivered_at
+
+    @admin.display(boolean=True, ordering="change_pending")
+    def change_pending(self, obj):
+        return obj.change_pending
+
+    @admin.display(description="Waiting for review")
+    def pending_change_link(self, obj):
+        change = approval.pending_change(obj)
+        if change is None:
+            return "-"
+        url = reverse(
+            "admin:reddit_redditpostchangerequest_change", args=[change.pk]
+        )
+        return format_html(
+            '<a href="{}">Review the CEO\'s change from {}</a>',
+            url,
+            f"{change.created_at:%d %b %H:%M}",
+        )
 
     actions = [
         "action_approve",
@@ -160,21 +187,19 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if "approved" in form.changed_data:
-            _record_approval(obj, request.user)
+            approval.approval_saved(obj, request.user)
         super().save_model(request, obj, form, change)
         # Priority, pausing and the window show in the drafts straight away.
         schedule.refresh_drafts()
 
-    @admin.action(description="Approve for automatic posting")
+    @admin.action(description="Approve post or waiting change")
     def action_approve(self, request, queryset):
         if not request.user.is_superuser:
             return
-        count = 0
-        for template in queryset.filter(approved=False):
-            template.approved = True
-            _record_approval(template, request.user)
-            template.save()
-            count += 1
+        count = sum(
+            approval.approve_template(template, request.user)
+            for template in queryset
+        )
         self.message_user(
             request, f"Approved {count} post(s).", messages.SUCCESS
         )
@@ -245,6 +270,196 @@ class RedditPostTemplateAdmin(admin.ModelAdmin):
                 f"Skipped {skipped} (no channel or no last post).",
                 messages.WARNING,
             )
+
+
+def _diff_html(old: str, new: str):
+    old_lines = approval.normalize_text(old).splitlines()
+    new_lines = approval.normalize_text(new).splitlines()
+    rows = []
+    for line in difflib.unified_diff(
+        old_lines, new_lines, "approved", "requested", lineterm="", n=2
+    ):
+        if line.startswith(("---", "+++")):
+            continue
+        if line.startswith("+"):
+            style = "color: var(--message-success-bg, #2e7d32)"
+        elif line.startswith("-"):
+            style = "color: var(--error-fg, #ba2121)"
+        elif line.startswith("@@"):
+            style = "color: var(--body-quiet-color, #666)"
+        else:
+            style = ""
+        rows.append((style, line))
+    if not rows:
+        return "No change to the body."
+    return format_html(
+        '<pre style="white-space: pre-wrap; max-width: 60rem">{}</pre>',
+        format_html_join("\n", '<span style="{}">{}</span>', rows),
+    )
+
+
+class ChangeReviewForm(forms.ModelForm):
+    """Approve or reject a waiting change from its page."""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+    decision = forms.ChoiceField(
+        choices=[
+            ("", "Leave it waiting"),
+            (APPROVE, "Approve: post these words from now on"),
+            (REJECT, "Reject: keep posting the approved words"),
+        ],
+        required=False,
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = RedditPostChangeRequest
+        fields = ["review_note"]
+
+
+@admin.register(RedditPostChangeRequest)
+class RedditPostChangeRequestAdmin(admin.ModelAdmin):
+    """CEO edits to approved Reddit posts, and new posts, waiting for a
+    superuser. The approved words keep going out until a change is
+    approved."""
+
+    form = ChangeReviewForm
+    list_display = [
+        "corporation",
+        "title",
+        "status",
+        "submitted_by",
+        "created_at",
+        "updated_at",
+        "reviewed_by",
+    ]
+    list_filter = ["status"]
+    list_select_related = ["template__corporation", "submitted_by"]
+    search_fields = ["title", "template__corporation__name"]
+    actions = ["action_approve", "action_reject"]
+    readonly_fields = [
+        "template",
+        "status",
+        "submitted_by",
+        "created_at",
+        "updated_at",
+        "notified_at",
+        "reviewed_by",
+        "reviewed_at",
+        "approved_title",
+        "title",
+        "content_changes",
+        "content",
+    ]
+    fieldsets = [
+        (
+            None,
+            {
+                "fields": [
+                    "template",
+                    "status",
+                    "submitted_by",
+                    "created_at",
+                    "updated_at",
+                ]
+            },
+        ),
+        (
+            "What changes",
+            {
+                "fields": [
+                    "approved_title",
+                    "title",
+                    "content_changes",
+                    "content",
+                ]
+            },
+        ),
+        (
+            "Review",
+            {
+                "fields": [
+                    "decision",
+                    "review_note",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "notified_at",
+                ]
+            },
+        ),
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        if not request.user.is_superuser:
+            return False
+        return obj is None or obj.status == RedditPostChangeRequest.PENDING
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        if self.has_change_permission(request, obj):
+            return fieldsets
+        # Read-only: the decision field only exists on the form.
+        return [
+            (
+                name,
+                {"fields": [f for f in options["fields"] if f != "decision"]},
+            )
+            for name, options in fieldsets
+        ]
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("action_approve", None)
+            actions.pop("action_reject", None)
+        return actions
+
+    @admin.display(ordering="template__corporation__name")
+    def corporation(self, obj):
+        return obj.template.corporation
+
+    @admin.display(description="Approved title")
+    def approved_title(self, obj):
+        if not obj.template.approved:
+            return "(Never approved)"
+        return obj.template.title
+
+    @admin.display(description="Body changes")
+    def content_changes(self, obj):
+        if not obj.template.approved:
+            return "First approval: the whole body is new."
+        return _diff_html(obj.template.content, obj.content)
+
+    def save_model(self, request, obj, form, change):
+        decision = form.cleaned_data.get("decision")
+        note = form.cleaned_data.get("review_note", "")
+        if decision == ChangeReviewForm.REJECT:
+            approval.reject(obj, request.user, note)
+            return
+        if "review_note" in form.changed_data:
+            RedditPostChangeRequest.objects.filter(pk=obj.pk).update(
+                review_note=note
+            )
+        if decision == ChangeReviewForm.APPROVE:
+            approval.approve(obj, request.user)
+
+    @admin.action(description="Approve")
+    def action_approve(self, request, queryset):
+        count = sum(approval.approve(c, request.user) for c in queryset)
+        self.message_user(
+            request, f"Approved {count} change(s).", messages.SUCCESS
+        )
+
+    @admin.action(description="Reject")
+    def action_reject(self, request, queryset):
+        count = sum(approval.reject(c, request.user) for c in queryset)
+        self.message_user(
+            request, f"Rejected {count} change(s).", messages.SUCCESS
+        )
 
 
 class SlotForm(forms.ModelForm):

@@ -467,20 +467,36 @@ const status_text = (() => {
                             <div>
                                 <dt>{t('corporations.settings.approval')}</dt>
                                 <dd>
-                                    {settings.approved ?
-                                        <Tag
-                                            text={settings.approved_at
-                                                ? t('corporations.settings.approved_on').replace('~DATE', format_eve_datetime(settings.approved_at, lang))
-                                                : t('corporations.settings.approved')}
-                                            color="green"
-                                        />
-                                        :
-                                        <Tag text={t('corporations.settings.awaiting_approval')} color="fleet-yellow" />
-                                    }
+                                    <FlexInline gap="var(--space-2xs)">
+                                        {settings.approved ?
+                                            <Tag
+                                                text={settings.approved_at
+                                                    ? t('corporations.settings.approved_on').replace('~DATE', format_eve_datetime(settings.approved_at, lang))
+                                                    : t('corporations.settings.approved')}
+                                                color="green"
+                                            />
+                                            :
+                                            <Tag text={t('corporations.settings.awaiting_approval')} color="fleet-yellow" />
+                                        }
+                                        {settings.change_pending &&
+                                            <Tag text={t('corporations.settings.change_pending')} color="fleet-yellow" />
+                                        }
+                                    </FlexInline>
                                 </dd>
                             </div>
                         </dl>
-                        <small class="[ corp-settings__muted ]">{t('corporations.settings.approval_note')}</small>
+                        {settings.change_rejected_note != null &&
+                            <p class="[ corp-settings__warning ]">
+                                {settings.change_rejected_note
+                                    ? t('corporations.settings.change_rejected_note').replace('~NOTE', settings.change_rejected_note)
+                                    : t('corporations.settings.change_rejected')}
+                            </p>
+                        }
+                        <small class="[ corp-settings__muted ]">
+                            {settings.change_pending
+                                ? t('corporations.settings.change_pending_note')
+                                : t('corporations.settings.approval_note')}
+                        </small>
                     </Flexblock>
                     }
                 </section>

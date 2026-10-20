@@ -9482,6 +9482,15 @@ export interface components {
             approved_at?: string | null;
             /** Automatic Status */
             automatic_status: string;
+            /**
+             * Change Pending
+             * @default false
+             */
+            change_pending?: boolean;
+            /** Change Rejected Note */
+            change_rejected_note?: string | null;
+            /** Change Submitted At */
+            change_submitted_at?: string | null;
             /** Content */
             content: string;
             /** Corporation Id */

@@ -330,14 +330,15 @@ class SaveSettingsTestCase(CorporationPostTestCase):
         self.assertTrue(post.in_rotation)
         self.assertTrue(post.posts.exists())
 
-    def test_editing_words_withdraws_approval(self):
+    def test_editing_an_approved_post_waits_for_review(self):
         post = self.make_post(approved=True, approved_by=self.user)
         save_post_settings(
             self.corporation, "New title", post.content, "automatic"
         )
         post.refresh_from_db()
-        self.assertFalse(post.approved)
-        self.assertIsNone(post.approved_by)
+        self.assertTrue(post.approved)
+        self.assertEqual("Join the Rat", post.title)
+        self.assertEqual("New title", post.change_requests.get().title)
 
     def test_changing_only_delivery_keeps_approval(self):
         post = self.make_post(approved=True)

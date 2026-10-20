@@ -6742,6 +6742,34 @@
             "title": "Automatic Status",
             "type": "string"
           },
+          "change_pending": {
+            "default": false,
+            "title": "Change Pending",
+            "type": "boolean"
+          },
+          "change_rejected_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Rejected Note"
+          },
+          "change_submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Submitted At"
+          },
           "content": {
             "title": "Content",
             "type": "string"
