@@ -39,6 +39,7 @@ from fleets.helpers.refits import (
     parse_cargo_modules,
     refit_cargo_diff,
 )
+from fleets.endpoints.schemas import CreateEveFleetRequest
 from fleets.models import (
     EveFleet,
     EveFleetFitting,
@@ -96,6 +97,46 @@ def ensure_hurricane_type():
         id=24702,
         defaults={"name": "Hurricane", "published": True, "eve_group": group},
     )
+
+
+def ensure_rifter_type():
+    """A frigate outside every test doctrine, plus Tritanium (not a ship)."""
+    from eveuniverse.models import (  # pylint: disable=import-outside-toplevel
+        EveCategory,
+        EveGroup,
+        EveType,
+    )
+
+    ensure_hurricane_type()
+    ship = EveCategory.objects.get(id=6)
+    frigate, _ = EveGroup.objects.get_or_create(
+        id=25,
+        defaults={"name": "Frigate", "published": True, "eve_category": ship},
+    )
+    material, _ = EveCategory.objects.get_or_create(
+        id=4, defaults={"name": "Material", "published": True}
+    )
+    mineral, _ = EveGroup.objects.get_or_create(
+        id=18,
+        defaults={
+            "name": "Mineral",
+            "published": True,
+            "eve_category": material,
+        },
+    )
+    EveType.objects.get_or_create(
+        id=34,
+        defaults={
+            "name": "Tritanium",
+            "published": True,
+            "eve_group": mineral,
+        },
+    )
+    rifter, _ = EveType.objects.get_or_create(
+        id=587,
+        defaults={"name": "Rifter", "published": True, "eve_group": frigate},
+    )
+    return rifter
 
 
 def mock_esi_fittings(test_case, fitting_id=555):
@@ -866,7 +907,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         )
         self.assertEqual(400, response.status_code)
 
-    def test_hidden_roster_is_visible_only_to_strategic_fc(self):
+    def test_hidden_roster_is_visible_to_its_fc_and_strategic_fcs(self):
         self.fleet.hide_volunteers = True
         self.fleet.save()
         EveFleetShipVolunteer.objects.create(
@@ -894,11 +935,23 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             [1001], [row["character_id"] for row in response.json()]
         )
 
+        # Another pilot sees nobody else's names.
+        pilot = User.objects.create(username="other-pilot")
+        add_user_permission(pilot, "view_evefleet")
+        auth = self._auth(make_token(pilot))
+        self.assertEqual([], Client().get(ship_url, **auth).json())
+        self.assertEqual([], Client().get(role_url, **auth).json())
+
+        # The fleet's own FC sees everyone who signed up for it.
         add_user_permission(self.fc_user, "view_evefleet")
         response = self.fc_client.get(ship_url, **self._auth(self.fc_token))
-        self.assertEqual([], response.json())
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
         response = self.fc_client.get(role_url, **self._auth(self.fc_token))
-        self.assertEqual([], response.json())
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
 
         strategic = User.objects.create(username="strategic")
         add_user_permission(strategic, "view_evefleet")
@@ -913,7 +966,133 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             [1001], [row["character_id"] for row in response.json()]
         )
 
+    def test_new_fleets_hide_their_roster(self):
+        fleet = EveFleet.objects.create(
+            start_time=timezone.now(),
+            description="Default",
+            type="training",
+            created_by=self.fc_user,
+        )
+        self.assertTrue(fleet.hide_volunteers)
+        default = CreateEveFleetRequest.model_fields["hide_volunteers"]
+        self.assertTrue(default.default)
+
+    def test_editing_the_fleet_keeps_ship_volunteers(self):
+        self.assertEqual(200, self._volunteer(self.fitting.id).status_code)
+        add_user_permission(self.fc_user, "add_evefleet")
+        # What the website's edit form sends after a time/briefing change.
+        response = self.fc_client.patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {
+                "doctrine_id": self.doctrine.id,
+                "description": "New briefing",
+                "objective": "",
+                "start_time": (
+                    timezone.now() + timedelta(hours=3)
+                ).isoformat(),
+                "type": self.fleet.type,
+                "audience_id": self.fleet.audience_id,
+                "location_id": self.fleet.location_id or 0,
+                "disable_motd": False,
+                "hide_volunteers": True,
+            },
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        picks = {
+            row["character_id"]: row["selection"] for row in response.json()
+        }
+        self.assertEqual(self.fitting.id, picks[1001]["fitting_id"])
+
+    def test_strategic_fc_sees_a_fleet_outside_their_audience(self):
+        # No fleets.view at all: only Strategic FC.
+        strategic = User.objects.create(username="strategic-outsider")
+        add_user_permission(strategic, "manage_any_fleet")
+        auth = self._auth(make_token(strategic))
+
+        outsider = User.objects.create(username="outsider")
+        response = Client().get(
+            f"{BASE_URL}/{self.fleet.id}",
+            **self._auth(make_token(outsider)),
+        )
+        self.assertEqual(403, response.status_code)
+
+        for path in ("", "/ship-volunteers", "/composition", "/roles"):
+            response = Client().get(
+                f"{BASE_URL}/{self.fleet.id}{path}", **auth
+            )
+            self.assertEqual(200, response.status_code, path)
+
+        response = Client().get(f"{BASE_URL}/v3?fleet_filter=upcoming", **auth)
+        self.assertEqual(200, response.status_code, response.content)
+        self.assertIn(self.fleet.id, [row["id"] for row in response.json()])
+
+    def test_volunteering_an_off_doctrine_hull(self):
+        rifter = ensure_rifter_type()
+        url = f"{BASE_URL}/{self.fleet.id}/my-ship-volunteers"
+        response = self.client.put(
+            url,
+            {
+                "selections": [
+                    {"character_id": 1001, "ship_type_id": rifter.id}
+                ]
+            },
+            "application/json",
+            **self._auth(),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        body = response.json()[0]
+        self.assertEqual("Rifter", body["fitting_name"])
+        self.assertEqual(587, body["ship_id"])
+        self.assertTrue(body["off_doctrine"])
+        self.assertIsNone(body["fitting_id"])
+
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        pick = response.json()[0]["selection"]
+        self.assertEqual(587, pick["ship_type_id"])
+
+        # Switching back to a doctrine fit replaces the hull.
+        self.assertEqual(200, self._volunteer(self.fitting.id).status_code)
+        self.assertEqual(
+            [self.fitting.id],
+            list(
+                EveFleetShipVolunteer.objects.filter(
+                    eve_fleet=self.fleet
+                ).values_list("fitting_id", flat=True)
+            ),
+        )
+
+    def test_off_doctrine_hull_must_be_a_ship(self):
+        ensure_rifter_type()
+        url = f"{BASE_URL}/{self.fleet.id}/my-ship-volunteers"
+        for selection in (
+            {"character_id": 1001, "ship_type_id": 34},
+            {
+                "character_id": 1001,
+                "ship_type_id": 587,
+                "fitting_id": self.fitting.id,
+            },
+        ):
+            response = self.client.put(
+                url,
+                {"selections": [selection]},
+                "application/json",
+                **self._auth(),
+            )
+            self.assertEqual(400, response.status_code, selection)
+        self.assertFalse(
+            EveFleetShipVolunteer.objects.filter(eve_fleet=self.fleet).exists()
+        )
+
     def test_hidden_roster_omitted_from_motd(self):
+        self.fleet.hide_volunteers = False
+        self.fleet.save()
         set_primary_character(self.fc_user, self.fc_character)
         self._cyno_volunteer()
         instance = EveFleetInstance.objects.create(

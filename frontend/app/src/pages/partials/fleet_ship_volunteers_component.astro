@@ -19,6 +19,7 @@ import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 import { BURST_KINDS, bursts_from_counts } from '@helpers/fleet_roles'
+import { get_ship_hulls } from '@helpers/sde/ships'
 import {
     get_fleet_ship_volunteers,
     get_fleet_composition,
@@ -58,12 +59,25 @@ if (Astro.request.method === 'POST' && Astro.url.searchParams.get('action') === 
             }
         }
         const selections:ShipSelection[] = []
+        // "Another ship": the pilot typed a hull that isn't on the FC's list.
+        const hulls = new Map((await get_ship_hulls()).map(hull => [hull.name.toLowerCase(), hull.type_id]))
         for (const [field, raw] of data.entries()) {
             const match = field.match(/^ship_(\d+)$/)
             if (!match) continue
             const character_id = parseInt(match[1])
             const value = String(raw)
-            const key_match = value.match(/^([fm]):(\d+)$/)
+            if (value === 'other') {
+                const typed = String(data.get(`other_ship_${character_id}`) ?? '').trim()
+                const ship_type_id = hulls.get(typed.toLowerCase())
+                if (!ship_type_id) throw new Error(t('pick_ships_other_ship_unknown').replace('{ship}', typed))
+                selections.push({ character_id, ship_type_id })
+                continue
+            }
+            const key_match = value.match(/^([fms]):(\d+)$/)
+            if (key_match?.[1] === 's') {
+                selections.push({ character_id, ship_type_id: parseInt(key_match[2]) })
+                continue
+            }
             selections.push({
                 character_id,
                 fitting_id: key_match?.[1] === 'f' ? parseInt(key_match[2]) : null,

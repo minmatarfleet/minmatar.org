@@ -50,7 +50,8 @@ const {
     eve_date,
     eve_time,
     disable_motd,
-    hide_volunteers = false,
+    // New fleets hide who signed up from pilots.
+    hide_volunteers = true,
     lang,
     host_groups: host_groups_prop = [],
     selected_host: selected_host_prop = ALLIANCE_HOST,
@@ -119,6 +120,11 @@ const no_doctrine_option = {
 const doctrines_select_options = [  no_doctrine_option  ].concat(
     doctrines.map( (i):SelectOptions => { return { label: i.name, value: i.id } } )
 )
+// Keep the fleet's doctrine selectable even if it is missing from the list,
+// so saving other changes never drops it.
+const fleet_doctrine_id = fleet?.doctrine_id ?? fleet?.doctrine?.id
+if (fleet_doctrine_id && !doctrines.some(doctrine => doctrine.id === fleet_doctrine_id))
+    doctrines_select_options.push({ label: fleet?.doctrine?.name ?? t('fleets.settings.current_doctrine'), value: fleet_doctrine_id })
 
 // An alliance with nothing running gets no dropdown at all, and the page
 // then posts no `campaign_id`, which leaves the fleet's campaign untouched.
@@ -204,7 +210,9 @@ if (fleet) {
 
 // A group fleet can't be Strategic, so a new one opens on Non-strategic.
 const default_fleet_type = fleet?.type ?? (initial_is_group ? 'non_strategic' : fleet_types_select_options[0].value)
-const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
+// The fleet's own doctrine id, not the fetched doctrine: when that fetch
+// fails the form must not fall back to "No doctrine" and clear it on save.
+const default_doctrine = fleet?.doctrine_id ?? fleet?.doctrine?.id ?? doctrines_select_options[0].value
 // The fleet's own campaign wins; a new fleet takes the one the page asked for.
 const wanted_campaign_id = fleet?.campaign_id ?? default_campaign_id
 const default_campaign = campaigns_select_options.find(

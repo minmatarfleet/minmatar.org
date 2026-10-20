@@ -188,6 +188,8 @@ class FleetShipVolunteerInline(admin.TabularInline):
         "character_id",
         "fitting",
         "fleet_fitting",
+        "ship_type_id",
+        "ship_name",
         "bursts",
         "solar_system_name",
         "solar_system_id",

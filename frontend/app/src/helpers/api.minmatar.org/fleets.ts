@@ -278,8 +278,12 @@ export interface FleetShipVolunteer {
     character_name: string
     fitting_id: number | null
     fleet_fitting_id: number | null
+    /** The fit's name; for an off-doctrine hull, the hull's name. */
     fitting_name: string
     ship_id: number
+    /** Set when the pilot brings a hull outside the composition. */
+    ship_type_id?: number | null
+    off_doctrine?: boolean
     /** Command bursts this pilot runs online. */
     bursts: BurstKind[]
     solar_system_id?: number | null
@@ -344,6 +348,8 @@ export interface ShipSelection {
     character_id: number
     fitting_id?: number | null
     fleet_fitting_id?: number | null
+    /** A hull outside the composition, instead of a fit. */
+    ship_type_id?: number | null
     /** Bursts to run online; omitted = the fit's online bursts. */
     bursts?: BurstKind[] | null
 }

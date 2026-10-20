@@ -13,6 +13,7 @@ from fleets.endpoints.helpers import (
     _fleet_manager,
     is_strategic_fc,
     make_role_volunteer_response,
+    sees_all_volunteers,
 )
 from fleets.endpoints.schemas import EveFleetRoleVolunteerResponse
 from fleets.helpers.participants import (
@@ -146,7 +147,7 @@ def get_fleet_participants(
 
     own_ids = {c.character_id for c in user_characters(request.user)}
     strategic = is_strategic_fc(request.user)
-    see_all = not fleet.hide_volunteers or strategic
+    see_all = sees_all_volunteers(request.user, fleet)
 
     def visible(character_id):
         return see_all or character_id in own_ids

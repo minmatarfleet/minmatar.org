@@ -1,16 +1,15 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { lang } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
 import type { CommandStep } from '@helpers/fleet_command'
 import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
-import { query_string } from '@helpers/string'
 
 /**
- * The Command tab, for the fleet's FC and strategic FCs: start or stop the
- * fleet, the setup steps in order, and the fleet's own settings (who sees
- * names, edit, refresh the MOTD, cancel). It replaces the Actions menu.
+ * The Checklist tab, for the fleet's FC and strategic FCs: start or stop the
+ * fleet and the setup steps in order. The fleet's own settings (who sees
+ * names, edit, refresh the MOTD, cancel) are on the Settings tab.
  */
 interface Props {
     fleet:                  FleetUI;
@@ -27,22 +26,11 @@ const {
 const history = Boolean(fleet.tracking?.end_time)
 const cancelled = fleet.status === 'cancelled'
 const tracking_active = Boolean(fleet.tracking?.start_time) && !history
-const editable = !history && !cancelled
-const can_cancel = !history && !fleet.tracking
 
 const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
-// The state partial reloads the page on success; errors surface as an alert
-// and its fallback markup lands in the hidden sink below.
-const STATE_URL = `${translatePath('/partials/fleet_state_button_component')}?${query_string({
-    fleet_id: fleet.id,
-    status: cancelled ? 'pending' : 'cancelled',
-})}`
-const HIDE_NAMES_URL = `${translatePath('/partials/fleet_hide_names_component')}?${query_string({ fleet_id: fleet.id })}`
-
 import FleetStatus from '@components/blocks/FleetStatus.astro'
 import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro'
-import Button from '@components/blocks/Button.astro'
 ---
 
 <div class="[ fleet-command ]">
@@ -65,65 +53,6 @@ import Button from '@components/blocks/Button.astro'
             refresh={tracking_active}
         />
     }
-
-    <section class="[ fleet-command__card ]" aria-labelledby="fleet-command-fleet-title">
-        <h2 id="fleet-command-fleet-title">{t('fleets.command.this_fleet')}</h2>
-
-        {editable &&
-            <form
-                class="[ fleet-command__toggle ]"
-                hx-post={HIDE_NAMES_URL}
-                hx-trigger="change"
-                hx-target="find .fleet-command__saved"
-                hx-swap="innerHTML"
-            >
-                <label>
-                    <input type="checkbox" name="hide_volunteers" checked={fleet.hide_volunteers} />
-                    <span>
-                        <span class="[ fleet-command__toggle-label ]">{t('fleets.command.hide_names')}</span>
-                        <small>{t('fleets.command.hide_names_hint')}</small>
-                    </span>
-                </label>
-                <span class="[ fleet-command__saved ]" role="status"></span>
-            </form>
-        }
-
-        {editable && <small>{t('fleets.command.edit_hint')}</small>}
-
-        <div class="[ fleet-command__actions ]">
-            {editable &&
-                <Button href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)} size="sm" color="transparent">
-                    {t('edit_fleet')}
-                </Button>
-            }
-            {tracking_active &&
-                <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)}>
-                    <Button type="submit" size="sm" color="transparent">{t('refresh_motd')}</Button>
-                </form>
-            }
-            {can_cancel &&
-                <Button
-                    type="button"
-                    size="sm"
-                    color="transparent"
-                    class="[ fleet-command__cancel ]"
-                    x-on:click={`show_confirm_dialog({
-                        title: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_title') : t('cancel_fleet_dialog_title'))},
-                        content: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_text') : t('cancel_fleet_dialog_text'))},
-                        hx: {
-                            method: 'patch',
-                            url: ${JSON.stringify(STATE_URL)},
-                            target: '#fleet-command-sink',
-                            swap: 'innerHTML'
-                        }
-                    })`}
-                >
-                    {cancelled ? t('restore_fleet') : t('cancel_fleet')}
-                </Button>
-            }
-        </div>
-        <div id="fleet-command-sink" hidden></div>
-    </section>
 </div>
 
 <style lang="scss">
@@ -132,55 +61,5 @@ import Button from '@components/blocks/Button.astro'
         flex-direction: column;
         gap: var(--space-l);
         max-width: var(--max-col-width);
-    }
-
-    .fleet-command__card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
-
-        h2 {
-            font-size: var(--step-1);
-        }
-    }
-
-    .fleet-command__toggle {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs) var(--space-m);
-        align-items: center;
-        justify-content: space-between;
-
-        label {
-            display: flex;
-            gap: var(--space-xs);
-            align-items: flex-start;
-            cursor: pointer;
-
-            > span {
-                display: flex;
-                flex-direction: column;
-            }
-        }
-
-        input {
-            width: 1.25rem;
-            height: 1.25rem;
-            margin-top: 2px;
-            accent-color: var(--fleet-red);
-        }
-    }
-
-    .fleet-command__toggle-label {
-        color: var(--highlight);
-    }
-
-    .fleet-command__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-xs);
     }
 </style>

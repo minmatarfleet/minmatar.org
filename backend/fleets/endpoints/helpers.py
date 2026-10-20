@@ -121,12 +121,15 @@ def time_region(time: datetime) -> str:
 
 
 def _fleet_authorized(request, fleet: EveFleet) -> bool:
-    """True if user can view this fleet (and thus list/volunteer for roles)."""
+    """
+    True if user can view this fleet (and thus list/volunteer for roles).
+    Strategic FCs see every fleet, whatever its audience or host group.
+    """
     if can_use_feature(request.user, "fleets.view", fleet=fleet):
         return True
     if request.user == fleet.created_by:
         return True
-    return False
+    return is_strategic_fc(request.user)
 
 
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
@@ -247,12 +250,24 @@ def is_strategic_fc(user) -> bool:
     return can_use_feature(user, "fleets.manage_any")
 
 
+def sees_all_volunteers(user, fleet: EveFleet) -> bool:
+    """
+    True if this user sees every name on the fleet's roster: always when the
+    roster is shown, else only the fleet's own FC and Strategic FCs.
+    """
+    if not fleet.hide_volunteers:
+        return True
+    if user is not None and user == fleet.created_by:
+        return True
+    return is_strategic_fc(user)
+
+
 def limit_volunteers_to_viewer(request, fleet, volunteers):
     """
-    When the fleet hides its roster, only a Strategic FC sees every signup.
-    Everyone else sees volunteers for their own characters.
+    When the fleet hides its roster, only its FC and Strategic FCs see every
+    signup. Everyone else sees volunteers for their own characters.
     """
-    if not fleet.hide_volunteers or is_strategic_fc(request.user):
+    if sees_all_volunteers(request.user, fleet):
         return volunteers
     own_ids = {
         character.character_id for character in user_characters(request.user)
@@ -313,6 +328,8 @@ def make_ship_volunteer_response(volunteer, reveal_system: bool = False):
         fleet_fitting_id=volunteer.fleet_fitting_id,
         fitting_name=volunteer.target_name,
         ship_id=volunteer.target_ship_id,
+        ship_type_id=volunteer.ship_type_id,
+        off_doctrine=volunteer.is_off_doctrine,
         bursts=list(volunteer.bursts or []),
         solar_system_id=volunteer.solar_system_id if reveal_system else None,
         solar_system_name=(

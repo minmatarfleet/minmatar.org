@@ -75,6 +75,7 @@ describe('fetch_fleet_by_id', () => {
             start_time: '2026-10-17T20:00:00Z',
             type: 'strategic',
             doctrine: DOCTRINE,
+            doctrine_id: 3,
             tracking: null,
             audience: 'Alliance',
             disable_motd: false,

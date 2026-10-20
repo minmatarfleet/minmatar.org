@@ -143,6 +143,8 @@ def make_test_fleet(
         created_by=fc_user,
         audience=EveFleetAudience.objects.first(),
         location=location,
+        # New fleets hide their roster; these fixtures predate that.
+        hide_volunteers=False,
     )
 
 

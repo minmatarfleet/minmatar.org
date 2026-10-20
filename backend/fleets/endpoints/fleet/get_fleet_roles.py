@@ -6,8 +6,8 @@ from eveonline.helpers.characters import user_characters
 from fleets.endpoints.helpers import (
     _fleet_authorized,
     _system_reveal_predicate,
-    is_strategic_fc,
     make_role_volunteer_response,
+    sees_all_volunteers,
 )
 from fleets.endpoints.schemas import (
     EveFleetLinkCoverage,
@@ -57,7 +57,7 @@ def get_fleet_roles(request, fleet_id: int):
         return 403, None
 
     own_ids = {c.character_id for c in user_characters(request.user)}
-    see_all = not fleet.hide_volunteers or is_strategic_fc(request.user)
+    see_all = sees_all_volunteers(request.user, fleet)
 
     def visible(character_id):
         return see_all or character_id in own_ids

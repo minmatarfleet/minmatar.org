@@ -113,12 +113,8 @@ def fleet_role_pilots(fleet, visible=lambda character_id: True):
     ).order_by("id"):
         if not visible(volunteer.character_id):
             continue
-        key = (
-            f"f:{volunteer.fitting_id}"
-            if volunteer.fitting_id
-            else f"m:{volunteer.fleet_fitting_id}"
-        )
-        entry = by_key.get(key)
+        # An off-doctrine hull has no fit, so no roles to fill.
+        entry = by_key.get(volunteer.target_key)
         if entry is None:
             continue  # fit dropped from the composition since
         pilots[volunteer.character_id] = RolePilot(

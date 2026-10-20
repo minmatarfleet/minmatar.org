@@ -33,11 +33,11 @@ const mine = [...characters].filter(id => my_ids.has(id)).length
 
 const groups = [...volunteers.reduce((by_fit, volunteer) => {
     const key = volunteer.fleet_fitting_id ? `m:${volunteer.fleet_fitting_id}` : `f:${volunteer.fitting_id ?? volunteer.fitting_name}`
-    const group = by_fit.get(key) ?? { name: volunteer.fitting_name, ship_id: volunteer.ship_id, pilots: [] as FleetShipVolunteer[] }
+    const group = by_fit.get(key) ?? { name: volunteer.fitting_name, ship_id: volunteer.ship_id, off_doctrine: Boolean(volunteer.off_doctrine), pilots: [] as FleetShipVolunteer[] }
     group.pilots.push(volunteer)
     by_fit.set(key, group)
     return by_fit
-}, new Map<string, { name:string, ship_id:number, pilots:FleetShipVolunteer[] }>()).values()]
+}, new Map<string, { name:string, ship_id:number, off_doctrine:boolean, pilots:FleetShipVolunteer[] }>()).values()]
     .map(group => ({
         ...group,
         // Your own characters first, then by name.
@@ -67,7 +67,10 @@ const summary = characters.size === 1 ? t('fleets.signups.summary_one') : t('fle
             {groups.map(group =>
                 <li>
                     <img src={get_item_icon(group.ship_id, 64)} alt="" width="40" height="40" loading="lazy" />
-                    <span class="[ fleet-signups__fit ]">{group.name}</span>
+                    <span class="[ fleet-signups__fit ]">
+                        {group.name}
+                        {group.off_doctrine && <small class="[ fleet-signups__off ]">{t('fleets.signups.off_doctrine')}</small>}
+                    </span>
                     <b class="[ fleet-signups__count ]">{group.pilots.length}</b>
                     {!hide_names &&
                         <span class="[ fleet-signups__names ]" x-data="{ all: false }">
@@ -130,6 +133,11 @@ const summary = characters.size === 1 ? t('fleets.signups.summary_one') : t('fle
 
     .fleet-signups__fit {
         color: var(--highlight);
+    }
+
+    .fleet-signups__off {
+        display: block;
+        color: var(--fleet-yellow);
     }
 
     .fleet-signups__count {

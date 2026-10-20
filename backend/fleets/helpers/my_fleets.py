@@ -198,6 +198,8 @@ def my_signups(user) -> list[dict]:
             "fitting__ship_id",
             "fleet_fitting__name",
             "fleet_fitting__ship_id",
+            "ship_name",
+            "ship_type_id",
         )
     )
     return [
@@ -207,9 +209,11 @@ def my_signups(user) -> list[dict]:
             "character_name": row["character_name"],
             "fit_name": row["fitting__name"]
             or row["fleet_fitting__name"]
+            or row["ship_name"]
             or "",
             "ship_type_id": row["fitting__ship_id"]
-            or row["fleet_fitting__ship_id"],
+            or row["fleet_fitting__ship_id"]
+            or row["ship_type_id"],
         }
         for row in rows
     ]
