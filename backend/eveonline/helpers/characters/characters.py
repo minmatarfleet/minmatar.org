@@ -7,6 +7,7 @@ from django.utils import timezone
 from pydantic import BaseModel
 
 from audit.models import AuditEntry
+from discord.models import DiscordUser
 from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.helpers.characters.identity import primary_character_for_user
@@ -122,46 +123,74 @@ def _available_player_nickname(
     return f"{base}__u{user.pk}__2"[:255]
 
 
-def _release_nickname(holder: EvePlayer, desired: str) -> None:
-    if (
-        desired
-        and holder.nickname
-        and holder.nickname.casefold() == desired.casefold()
-    ):
-        holder.nickname = _fallback_player_nickname(holder, avoid=desired)
+class PrimaryCharacterHeld(Exception):
+    """Another account still has this character as its main.
 
-
-def _release_character_from_other_players(
-    character: EveCharacter, user: User
-) -> None:
-    """Drop a stale primary pointer so this character can be claimed.
-
-    EvePlayer.primary_character is one-to-one, and nickname is unique.
-    A previous account can still point at the character, or still hold its
-    name, after the character moved. Saving the new primary then raises
-    IntegrityError (500) on either key.
+    Setting the main must not move it. The message names both Discord
+    accounts and tells the pilot to delete the one that already has it.
     """
-    desired = (character.character_name or "").strip()
-    holders = EvePlayer.objects.filter(primary_character=character).exclude(
-        user=user
-    )
-    for holder in holders:
-        holder.primary_character = None
-        _release_nickname(holder, desired)
-        holder.save()
 
-    if not desired:
-        return
-    name_holders = EvePlayer.objects.filter(nickname__iexact=desired).exclude(
-        user=user
+    def __init__(self, holder: User, claimer: User):
+        self.holder = holder
+        self.claimer = claimer
+        super().__init__(main_held_message(holder, claimer))
+
+
+def discord_login_name(user: User) -> str | None:
+    """Discord username for a website account, without a #0 discriminator."""
+    tag = (
+        DiscordUser.objects.filter(user=user)
+        .values_list("discord_tag", flat=True)
+        .first()
     )
-    for holder in name_holders:
-        _release_nickname(holder, desired)
-        holder.save()
+    if not tag:
+        return None
+    name, _, discriminator = tag.partition("#")
+    if discriminator in ("", "0"):
+        return name or tag
+    return tag
+
+
+def main_held_message(holder: User, claimer: User) -> str:
+    """Name both Discord logins and point at deleting the account that has the main."""
+    held = discord_login_name(holder)
+    current = discord_login_name(claimer) or claimer.username
+    if held:
+        return (
+            f"This character is already the main on the Discord account {held}. "
+            f"You are trying to move it to {current}. "
+            f"Log in as {held} on the Minmatar Fleet website, open Account, "
+            "and delete that account. Then sign in as "
+            f"{current} and set your main again."
+        )
+    return (
+        "This character is already the main on a website account with no "
+        f"Discord login (username {holder.username}). "
+        f"You are trying to move it to {current}. "
+        "Log in as that website account on the Minmatar Fleet website, "
+        "open Account, and delete it. Then sign in as "
+        f"{current} and set your main again."
+    )
+
+
+def other_main_holder(character: EveCharacter, user: User) -> User | None:
+    """The other website user who still has this character as their main."""
+    player = (
+        EvePlayer.objects.filter(primary_character=character)
+        .exclude(user=user)
+        .select_related("user")
+        .first()
+    )
+    if player is None or player.user_id is None:
+        return None
+    return player.user
 
 
 def set_primary_character(user: User, character: EveCharacter):
     """Sets the primary character for a user"""
+    holder = other_main_holder(character, user)
+    if holder is not None:
+        raise PrimaryCharacterHeld(holder, user)
     with transaction.atomic():
         current_primary = user_primary_character(user)
         if current_primary and (current_primary != character):
@@ -179,8 +208,6 @@ def set_primary_character(user: User, character: EveCharacter):
             if old_player and old_player.primary_character == current_primary:
                 old_player.primary_character = None
                 old_player.save()
-
-        _release_character_from_other_players(character, user)
 
         character.user = user
         character.save()

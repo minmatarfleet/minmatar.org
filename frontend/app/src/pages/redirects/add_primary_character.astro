@@ -7,5 +7,10 @@ Astro.cookies.delete('primary_pilot', { path: '/' })
 const redirect = Astro.cookies.has('redirect_after_add_primary_pilot') ? Astro.cookies.get('redirect_after_add_primary_pilot')?.value : translatePath('/account/')
 Astro.cookies.delete('redirect_after_add_primary_pilot', { path: '/' })
 
-return Astro.redirect(redirect)
+const next = new URL(redirect, Astro.url)
+Astro.url.searchParams.forEach((value, key) => {
+    next.searchParams.set(key, value)
+})
+
+return Astro.redirect(`${next.pathname}${next.search}`)
 ---

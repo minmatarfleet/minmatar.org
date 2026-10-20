@@ -1,16 +1,32 @@
-"""Setting a main must not 500 when another account still holds the name."""
+"""Setting a main must not take it off another account."""
 
 from django.contrib.auth.models import User
+from django.http import HttpRequest
 from django.test import TestCase
 
-from eveonline.helpers.characters import set_primary_character
+from discord.models import DiscordUser
+from eveonline.endpoints.characters._helpers import (
+    handle_add_character_esi_callback,
+)
+from eveonline.helpers.characters import (
+    PrimaryCharacterHeld,
+    set_primary_character,
+)
 from eveonline.models import EveCharacter, EvePlayer
+from eveonline.scopes import TokenType
+from esi.models import Token
 
 
-class SetPrimaryNicknameTestCase(TestCase):
-    def test_releases_stale_primary_and_nickname(self):
+class SetPrimaryHeldTestCase(TestCase):
+    def test_refuses_to_take_another_accounts_main(self):
         previous = User.objects.create(username="previous-account")
         claimer = User.objects.create(username="claimer-account")
+        DiscordUser.objects.create(
+            id=101, discord_tag="held-pilot#0", user=previous
+        )
+        DiscordUser.objects.create(
+            id=202, discord_tag="current-pilot#1234", user=claimer
+        )
         character = EveCharacter.objects.create(
             character_id=9001,
             character_name="Moved Pilot",
@@ -23,16 +39,20 @@ class SetPrimaryNicknameTestCase(TestCase):
         )
         EvePlayer.objects.create(user=claimer, nickname="claimer-account")
 
-        set_primary_character(claimer, character)
+        with self.assertRaises(PrimaryCharacterHeld) as raised:
+            set_primary_character(claimer, character)
 
+        message = str(raised.exception)
+        self.assertIn("held-pilot", message)
+        self.assertIn("current-pilot#1234", message)
+        self.assertIn("delete that account", message)
         stale.refresh_from_db()
         claimer_player = EvePlayer.objects.get(user=claimer)
-        self.assertIsNone(stale.primary_character_id)
-        self.assertNotEqual(stale.nickname.casefold(), "moved pilot")
-        self.assertEqual(claimer_player.primary_character_id, character.pk)
-        self.assertEqual(claimer_player.nickname, "Moved Pilot")
+        self.assertEqual(stale.primary_character_id, character.pk)
+        self.assertEqual(stale.nickname, "Moved Pilot")
+        self.assertIsNone(claimer_player.primary_character_id)
 
-    def test_frees_nickname_when_primary_pointer_is_already_clear(self):
+    def test_keeps_another_accounts_nickname(self):
         previous = User.objects.create(username="old-nick")
         claimer = User.objects.create(username="new-main")
         character = EveCharacter.objects.create(
@@ -49,6 +69,46 @@ class SetPrimaryNicknameTestCase(TestCase):
 
         stale.refresh_from_db()
         claimer_player = EvePlayer.objects.get(user=claimer)
-        self.assertNotEqual(stale.nickname.casefold(), "moved pilot")
-        self.assertEqual(claimer_player.nickname, "Moved Pilot")
+        self.assertEqual(stale.nickname, "moved pilot")
         self.assertEqual(claimer_player.primary_character_id, character.pk)
+        self.assertNotEqual(claimer_player.nickname.casefold(), "moved pilot")
+
+    def test_add_character_does_not_move_a_main(self):
+        previous = User.objects.create(username="previous-account")
+        claimer = User.objects.create(username="claimer-account")
+        DiscordUser.objects.create(
+            id=303, discord_tag="held-pilot#0", user=previous
+        )
+        DiscordUser.objects.create(
+            id=404, discord_tag="current-pilot#0", user=claimer
+        )
+        character = EveCharacter.objects.create(
+            character_id=77,
+            character_name="Moved Pilot",
+            user=previous,
+        )
+        EvePlayer.objects.create(
+            user=previous,
+            nickname="Moved Pilot",
+            primary_character=character,
+        )
+        token = Token.objects.create(
+            user=claimer,
+            character_id=77,
+            character_name="Moved Pilot",
+        )
+        request = HttpRequest()
+        request.user = claimer
+        request.session = self.client.session
+        request.session["redirect_url"] = "https://my.minmatar.org/account/"
+
+        response = handle_add_character_esi_callback(
+            request, token, TokenType.BASIC
+        )
+
+        character.refresh_from_db()
+        self.assertEqual(character.user_id, previous.id)
+        self.assertIn("error=main_held", response.url)
+        self.assertIn("held=held-pilot", response.url)
+        self.assertIn("current=current-pilot", response.url)
+        self.assertFalse(Token.objects.filter(pk=token.pk).exists())

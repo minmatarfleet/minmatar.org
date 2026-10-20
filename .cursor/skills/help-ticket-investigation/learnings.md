@@ -45,9 +45,9 @@ do not duplicate it — one clarifying clause at most.
 **Verdict:** bug
 **Discord:** fix + PR URL
 **PR:** fix+skill
-**Symptom vs cause:** Set main and Add your main both returned 500. Another account still held the character name on `EvePlayer.nickname` and still pointed `primary_character` at the moved character. Alliance Discord roles stayed empty because affiliation needs a main.
-**Durable rule:** A 500 on `/characters/primary` or `/characters/add` during set-main is `IntegrityError` on nickname or the primary one-to-one. `set_primary_character` must free both before saving the claimer.
-**Skill update:** added the set-main 500 row above the unlinked-account row.
+**Symptom vs cause:** Set main and Add your main both returned 500. Another account still had the character as `EvePlayer.primary_character` and held the unique nickname. Moving the main would let one login take another account’s identity.
+**Durable rule:** Refuse with `PrimaryCharacterHeld`. Name the Discord login that has the main and the one they are using, and tell them to delete the website account that already has it. Do not clear the other account’s main.
+**Skill update:** set-main row now describes the refuse-and-name-both-Discords check.
 
 ## 2026-10-20 — Alts category for doctrine ships
 

@@ -6,7 +6,9 @@ Ownership rule (use these helpers instead of re-deriving it):
   website user who finished SSO (``owner_for_added_character``), not to
   whoever django-esi stored on the token. Re-adding the character from a
   different account moves it: ``apply_token_to_existing_character`` swaps
-  the token and sets ``character.user`` to the new owner.
+  the token and sets ``character.user`` to the new owner. A character that
+  is already another account's main is not moved; the pilot is told which
+  Discord account has it and to delete that website account.
   ``orphan_character`` clears the user and deletes the tokens together.
 * ``Token.user`` is what django-esi recorded at SSO time. Nothing keeps it
   in step with a transfer (only mobile login re-syncs it, and only when

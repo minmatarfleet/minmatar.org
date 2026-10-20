@@ -15,7 +15,10 @@ from applications.models import EveCorporationApplication
 from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
 from eveonline.endpoints.characters.schemas import UserCharacter
 from eveonline.helpers.characters import (
+    PrimaryCharacterHeld,
+    discord_login_name,
     merge_scope_groups,
+    other_main_holder,
     scope_groups_granted,
     set_primary_character,
     user_primary_character,
@@ -246,6 +249,9 @@ def apply_token_to_existing_character(
     character, token, token_type, user=None, extra_groups=()
 ):
     owner = user if user is not None else token.user
+    holder = other_main_holder(character, owner)
+    if holder is not None:
+        raise PrimaryCharacterHeld(holder, owner)
     group_name = token_type_str(token_type)
     merged_groups = merge_scope_groups(
         getattr(character, "esi_scope_groups", None),
@@ -307,34 +313,58 @@ def handle_add_character_esi_callback(request, token, token_type):
     extra_groups = parse_scope_groups(
         ",".join(request.session.pop("add_scope_groups", None) or [])
     )
-    if EveCharacter.objects.filter(character_id=token.character_id).exists():
-        character = EveCharacter.objects.get(character_id=token.character_id)
-        apply_token_to_existing_character(
-            character, token, token_type, user=owner, extra_groups=extra_groups
+    try:
+        if EveCharacter.objects.filter(
+            character_id=token.character_id
+        ).exists():
+            character = EveCharacter.objects.get(
+                character_id=token.character_id
+            )
+            apply_token_to_existing_character(
+                character,
+                token,
+                token_type,
+                user=owner,
+                extra_groups=extra_groups,
+            )
+        else:
+            character = EveCharacter.objects.create(
+                character_id=token.character_id,
+                character_name=token.character_name,
+                esi_token_level=token_type_str(token_type),
+                esi_scope_groups=scope_groups_granted(
+                    token, token_type, extra_groups
+                ),
+                token=token,
+                user=owner,
+            )
+            AuditEntry.objects.create(
+                user=request.user,
+                character=character,
+                category="character_added",
+                summary=(
+                    f"User {request.user.username} added character "
+                    f"{character.character_name}"
+                ),
+            )
+        EveCharacterLog.objects.create(
+            username=request.user.username,
+            character_name=character.character_name,
         )
-    else:
-        character = EveCharacter.objects.create(
-            character_id=token.character_id,
-            character_name=token.character_name,
-            esi_token_level=token_type_str(token_type),
-            esi_scope_groups=scope_groups_granted(
-                token, token_type, extra_groups
-            ),
-            token=token,
-            user=owner,
+        if user_primary_character(request.user) is None:
+            set_primary_character(request.user, character)
+    except PrimaryCharacterHeld as held:
+        if token.pk and not EveCharacter.objects.filter(token=token).exists():
+            token.delete()
+        return redirect(
+            redirect_with_params(
+                request.session["redirect_url"],
+                error="main_held",
+                held=discord_login_name(held.holder) or held.holder.username,
+                current=discord_login_name(held.claimer)
+                or held.claimer.username,
+            )
         )
-        AuditEntry.objects.create(
-            user=request.user,
-            character=character,
-            category="character_added",
-            summary=f"User {request.user.username} added character {character.character_name}",
-        )
-    EveCharacterLog.objects.create(
-        username=request.user.username,
-        character_name=character.character_name,
-    )
-    if user_primary_character(request.user) is None:
-        set_primary_character(request.user, character)
     maybe_populate_ceo_corporation(
         character,
         (

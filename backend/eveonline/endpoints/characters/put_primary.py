@@ -1,7 +1,10 @@
 """PUT /primary - set primary character. One file, one endpoint."""
 
 from authentication import AuthBearer
-from eveonline.helpers.characters import set_primary_character
+from eveonline.helpers.characters import (
+    PrimaryCharacterHeld,
+    set_primary_character,
+)
 from eveonline.models import EveCharacter
 
 PATH = "primary"
@@ -9,7 +12,7 @@ METHOD = "put"
 ROUTE_SPEC = {
     "summary": "Set primary character",
     "auth": AuthBearer(),
-    "response": {200: None, 403: dict, 404: dict},
+    "response": {200: None, 403: dict, 404: dict, 409: dict},
 }
 
 
@@ -21,5 +24,8 @@ def put_primary_character(request, character_id: int):
         return 403, {
             "detail": "You do not have permission to set this character as primary."
         }
-    set_primary_character(request.user, character)
+    try:
+        set_primary_character(request.user, character)
+    except PrimaryCharacterHeld as held:
+        return 409, {"detail": str(held)}
     return 200, None

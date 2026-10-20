@@ -11,6 +11,7 @@ from discord.client import DiscordClient
 from discord.exceptions import DiscordRoleAssignmentError
 from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
+    PrimaryCharacterHeld,
     set_primary_character,
     user_primary_character,
 )
@@ -176,7 +177,14 @@ def _maybe_set_sole_primary_character(user):
     )
     if len(characters) != 1:
         return None
-    set_primary_character(user, characters[0])
+    try:
+        set_primary_character(user, characters[0])
+    except PrimaryCharacterHeld:
+        logger.info(
+            "Not setting a main for user %s; another account already has it",
+            user.pk,
+        )
+        return None
     return user_primary_character(user)
 
 
