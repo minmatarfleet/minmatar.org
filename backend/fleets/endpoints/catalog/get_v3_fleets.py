@@ -12,6 +12,7 @@ from groups.helpers.feature_access import require_feature
 
 from fleets.endpoints.helpers import (
     FLEET_RESPONSE_RELATED,
+    is_strategic_fc,
     make_fleet_response,
 )
 from fleets.endpoints.schemas import EveFleetFilter, EveFleetResponse
@@ -41,7 +42,7 @@ def get_v3_fleets(
     host_group_id: Optional[int] = None,
 ) -> Union[List[EveFleetResponse], tuple[int, dict]]:
     denied = require_feature(request.user, "fleets.view")
-    if denied:
+    if denied and not is_strategic_fc(request.user):
         return denied
 
     if fleet_filter == EveFleetFilter.ACTIVE:
@@ -75,11 +76,14 @@ def get_v3_fleets(
 
     if host_group_id:
         fleets = fleets.filter(host_group_id=host_group_id)
-    fleets = (
+    if not is_strategic_fc(request.user):
         # Group fleets have no audience; an alliance fleet still needs a
-        # visible one, as before.
-        fleets.filter(Q(audience__hidden=False) | Q(host_group__isnull=False))
-        .filter(visible_fleets_q(request.user))
+        # visible one, as before. Strategic FCs see every fleet.
+        fleets = fleets.filter(
+            Q(audience__hidden=False) | Q(host_group__isnull=False)
+        )
+    fleets = (
+        fleets.filter(visible_fleets_q(request.user))
         .exclude(type__in=CAMPAIGN_FLEET_TYPES)
         .select_related(*FLEET_RESPONSE_RELATED)
     )

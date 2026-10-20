@@ -106,7 +106,7 @@ class CreateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: Optional[int] = None
     disable_motd: bool = False
-    hide_volunteers: bool = False
+    hide_volunteers: bool = True
     immediate_ping: bool = False
     status: Optional[str] = None
     campaign_id: Optional[int] = None
@@ -247,8 +247,12 @@ class EveFleetShipVolunteerResponse(BaseModel):
     character_name: str
     fitting_id: Optional[int] = None
     fleet_fitting_id: Optional[int] = None
+    # The fit's name; for an off-doctrine hull, the hull's name.
     fitting_name: str
     ship_id: int
+    # Set when the pilot brings a hull outside the composition.
+    ship_type_id: Optional[int] = None
+    off_doctrine: bool = False
     # Command bursts the pilot will run online (kinds, canonical order).
     bursts: List[str] = []
     # FC-assigned cyno system; only serialized for the FC and the pilot.
@@ -353,11 +357,15 @@ class EveFleetSupplyResponse(BaseModel):
 
 
 class ShipSelection(BaseModel):
-    """Which composition entry a character brings (both ids null = not flying)."""
+    """
+    Which composition entry a character brings, or ``ship_type_id``: a hull
+    outside the composition. All three null = not flying.
+    """
 
     character_id: int
     fitting_id: Optional[int] = None
     fleet_fitting_id: Optional[int] = None
+    ship_type_id: Optional[int] = None
     # Command bursts to run online. Omitted: the fit's online bursts.
     bursts: Optional[List[str]] = None
 

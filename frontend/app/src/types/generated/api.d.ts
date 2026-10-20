@@ -2698,7 +2698,7 @@ export interface paths {
         get?: never;
         /**
          * Set My Ship Volunteers
-         * @description Replace the caller's ship volunteers for this fleet: one ship per character. A selection with neither fitting_id nor fleet_fitting_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts.
+         * @description Replace the caller's ship volunteers for this fleet: one ship per character. ship_type_id instead brings a hull outside the composition. A selection with none of fitting_id, fleet_fitting_id or ship_type_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts.
          */
         put: operations["fleets_endpoints_fleet_put_fleet_my_ship_volunteers_set_my_ship_volunteers"];
         post?: never;
@@ -9783,7 +9783,7 @@ export interface components {
             doctrine_id?: number | null;
             /**
              * Hide Volunteers
-             * @default false
+             * @default true
              */
             hide_volunteers?: boolean;
             /** Host Group Id */
@@ -10919,8 +10919,15 @@ export interface components {
             fleet_fitting_id?: number | null;
             /** Id */
             id: number;
+            /**
+             * Off Doctrine
+             * @default false
+             */
+            off_doctrine?: boolean;
             /** Ship Id */
             ship_id: number;
+            /** Ship Type Id */
+            ship_type_id?: number | null;
             /** Solar System Id */
             solar_system_id?: number | null;
             /** Solar System Name */
@@ -17885,7 +17892,8 @@ export interface components {
         };
         /**
          * ShipSelection
-         * @description Which composition entry a character brings (both ids null = not flying).
+         * @description Which composition entry a character brings, or ``ship_type_id``: a hull
+         *     outside the composition. All three null = not flying.
          */
         ShipSelection: {
             /** Bursts */
@@ -17896,6 +17904,8 @@ export interface components {
             fitting_id?: number | null;
             /** Fleet Fitting Id */
             fleet_fitting_id?: number | null;
+            /** Ship Type Id */
+            ship_type_id?: number | null;
         };
         /**
          * ShipSuggestionResponse

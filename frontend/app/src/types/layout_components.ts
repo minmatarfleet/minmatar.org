@@ -476,6 +476,12 @@ export interface ShipFitting {
 
 export type ShipsMetaType = 'Tech I' | 'Tech II' | 'Faction' | 'Tech III'
 
+/** A ship hull a pilot can bring off doctrine. */
+export interface ShipHull {
+    type_id:    number;
+    name:       string;
+}
+
 export interface ShipInfo {
     name:    string;
     type:    string;
@@ -570,6 +576,8 @@ export interface FleetUI {
     fleet_commander_name:   string;
     location:               string;
     doctrine:               DoctrineType;
+    /** The fleet's doctrine id, set even when its doctrine failed to load. */
+    doctrine_id?:           number | null;
     tracking:               Tracking;
     audience:               string;
     disable_motd:           boolean;

@@ -83,6 +83,7 @@ import FleetOverview from '@components/blocks/FleetOverview.astro';
 import FleetSignups from '@components/blocks/FleetSignups.astro';
 import FleetShipsSetup from '@components/blocks/FleetShipsSetup.astro';
 import FleetCommand from '@components/blocks/FleetCommand.astro';
+import FleetSettings from '@components/blocks/FleetSettings.astro';
 import FleetParticipantsDone from '@components/blocks/FleetParticipantsDone.astro';
 import FleetAfterAction from '@components/blocks/FleetAfterAction.astro';
 import FleetKillFeed from '@components/blocks/FleetKillFeed.astro';
@@ -141,6 +142,8 @@ const fleet_tabs = [
         label: t('fleets.tabs.command'),
         ...(cancelled ? {} : next_step ? { meta: next_step.label, flag: 'attention' as const } : { meta: t('fleets.tabs.all_set') }),
     }] : []),
+    // Edit, who sees names, MOTD and cancel: easy to find on their own tab.
+    ...(show_command ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
 ]
 
 const participant_tabs = [
@@ -463,6 +466,12 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                         steps={steps}
                         is_fleet_commander={is_fleet_commander}
                     />
+                </SectionTabPanel>
+            }
+
+            {show_command &&
+                <SectionTabPanel id="settings" id_prefix="fleet">
+                    <FleetSettings fleet={fleet} />
                 </SectionTabPanel>
             }
         </SectionTabs>

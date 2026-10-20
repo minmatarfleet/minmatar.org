@@ -71,7 +71,9 @@ class EveFleet(models.Model):
         default=None,
     )
     disable_motd = models.BooleanField(null=True, default=False)
-    hide_volunteers = models.BooleanField(default=False)
+    # Pilots see their own sign-ups and the counts; names show only to the
+    # fleet's FC and Strategic FCs. On by default.
+    hide_volunteers = models.BooleanField(default=True)
 
     fleet_statuses = (
         ("pending", "Pending"),
@@ -907,6 +909,10 @@ class EveFleetShipVolunteer(models.Model):
     # "information", ...). Defaults to the fit's online bursts; the pilot can
     # switch to any fitted ones (see fleets.helpers.fit_roles).
     bursts = models.JSONField(default=list, blank=True)
+    # A hull outside the composition: the pilot brings this ship instead of
+    # one of the FC's fits. Set instead of ``fitting`` / ``fleet_fitting``.
+    ship_type_id = models.BigIntegerField(null=True, blank=True)
+    ship_name = models.CharField(max_length=255, blank=True, default="")
     # FC-assigned cyno system for a cyno fit. Private: shown only to the FC
     # and the pilot, DM'd on Discord, never in the MOTD.
     solar_system_id = models.BigIntegerField(null=True, blank=True)
@@ -925,11 +931,26 @@ class EveFleetShipVolunteer(models.Model):
                 fields=["eve_fleet", "character_id", "fleet_fitting"],
                 name="fleets_ship_volunteer_fleet_fitting_unique",
             ),
+            models.UniqueConstraint(
+                fields=["eve_fleet", "character_id", "ship_type_id"],
+                name="fleets_ship_volunteer_hull_unique",
+            ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(fitting__isnull=False, fleet_fitting__isnull=True)
+                    models.Q(
+                        fitting__isnull=False,
+                        fleet_fitting__isnull=True,
+                        ship_type_id__isnull=True,
+                    )
                     | models.Q(
-                        fitting__isnull=True, fleet_fitting__isnull=False
+                        fitting__isnull=True,
+                        fleet_fitting__isnull=False,
+                        ship_type_id__isnull=True,
+                    )
+                    | models.Q(
+                        fitting__isnull=True,
+                        fleet_fitting__isnull=True,
+                        ship_type_id__isnull=False,
                     )
                 ),
                 name="fleets_ship_volunteer_one_target",
@@ -941,24 +962,45 @@ class EveFleetShipVolunteer(models.Model):
         ordering = ["eve_fleet", "fitting", "fleet_fitting", "id"]
 
     @property
+    def is_off_doctrine(self) -> bool:
+        return bool(self.ship_type_id)
+
+    @property
+    def target_key(self) -> str:
+        """Matches ``CompositionEntry.key``; ``s:<type id>`` for a hull."""
+        if self.fitting_id:
+            return f"f:{self.fitting_id}"
+        if self.fleet_fitting_id:
+            return f"m:{self.fleet_fitting_id}"
+        return f"s:{self.ship_type_id}"
+
+    @property
     def target_name(self) -> str:
-        return (
-            self.fitting.name if self.fitting_id else self.fleet_fitting.name
-        )
+        if self.fitting_id:
+            return self.fitting.name
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.name
+        return self.ship_name
 
     @property
     def target_ship_id(self) -> int:
-        return (
-            self.fitting.ship_id
-            if self.fitting_id
-            else self.fleet_fitting.ship_id
-        )
+        if self.fitting_id:
+            return self.fitting.ship_id
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.ship_id
+        return self.ship_type_id
 
     @property
     def target_eft(self) -> str:
         if self.fitting_id:
             return self.fitting.eft_format
-        return self.fleet_fitting.effective_eft
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.effective_eft
+        # No fit: the hull alone, so callers that read the EFT header still
+        # find the ship.
+        return (
+            f"[{self.ship_name}, {self.ship_name}]" if self.ship_name else ""
+        )
 
     def __str__(self):
         return f"{self.character_name} — {self.target_name}"

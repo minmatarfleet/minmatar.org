@@ -14,6 +14,16 @@ from django.db.models import Q
 from tribes.helpers.publishing import visible_group_ids
 
 
+def _is_strategic_fc(user) -> bool:
+    """Strategic FCs see every fleet (fleets.endpoints.helpers)."""
+    # Imported here: the feature registry imports fleet models.
+    from groups.helpers.feature_access import (  # pylint: disable=import-outside-toplevel
+        can_use_feature,
+    )
+
+    return can_use_feature(user, "fleets.manage_any")
+
+
 def alliance_fleets_q() -> Q:
     """Fleets that are not members-only group fleets."""
     return Q(host_group__isnull=True) | Q(open_to_alliance=True)
@@ -24,7 +34,7 @@ def visible_fleets_q(user) -> Q:
     q = alliance_fleets_q()
     if not getattr(user, "is_authenticated", False) or not user.pk:
         return q
-    if user.is_superuser:
+    if user.is_superuser or _is_strategic_fc(user):
         return Q()
     group_ids = visible_group_ids(user)
     if group_ids:

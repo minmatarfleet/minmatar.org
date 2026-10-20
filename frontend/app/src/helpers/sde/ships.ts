@@ -2,7 +2,7 @@ import { sde_db } from '@helpers/sde_db';
 import { eq, and, or, sql, inArray } from 'drizzle-orm';
 import * as schema from '@/models/sde/schema.ts';
 
-import type { ShipFittingCapabilities, ShipInfo, ShipType, ShipMeta } from '@dtypes/layout_components'
+import type { ShipFittingCapabilities, ShipInfo, ShipType, ShipMeta, ShipHull } from '@dtypes/layout_components'
 
 export async function get_ship_fitting_capabilities(ship_name:string) {
     console.log(`Requesting: sde_db.get_ship_fitting_capabilities(${ship_name})`)
@@ -155,4 +155,27 @@ export async function get_ships_meta(ships_id:number[]) {
             meta: i.metaGroupName ?? 'Tech I',
         } as ShipMeta
     })
+}
+/** Every published ship hull, by name: the choices for an off-doctrine pick. */
+export async function get_ship_hulls():Promise<ShipHull[]> {
+    const q = await sde_db.select({
+        typeId: schema.invTypes.typeId,
+        typeName: schema.invTypes.typeName,
+    })
+    .from(schema.invTypes)
+    .innerJoin(
+        schema.invGroups,
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
+    )
+    .where(
+        and(
+            eq(schema.invGroups.categoryId, 6),
+            eq(schema.invTypes.published, '1'),
+        )
+    )
+    .orderBy(schema.invTypes.typeName)
+
+    return q
+        .filter(row => row.typeName)
+        .map(row => ({ type_id: row.typeId, name: row.typeName as string }))
 }

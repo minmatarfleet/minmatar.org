@@ -69,17 +69,14 @@ def missing_signups(fleet) -> list[dict]:
     ).order_by("character_name"):
         if volunteer.character_id in present:
             continue
-        key = (
-            f"f:{volunteer.fitting_id}"
-            if volunteer.fitting_id
-            else f"m:{volunteer.fleet_fitting_id}"
-        )
-        entry = by_key.get(key)
+        entry = by_key.get(volunteer.target_key)
         rows.append(
             {
                 "character_id": volunteer.character_id,
                 "character_name": volunteer.character_name,
-                "ship_name": entry.ship_name if entry else "",
+                "ship_name": (
+                    entry.ship_name if entry else volunteer.ship_name
+                ),
                 "cyno": bool(entry and entry.roles.cyno),
             }
         )

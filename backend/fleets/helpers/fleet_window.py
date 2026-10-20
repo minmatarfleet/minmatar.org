@@ -304,14 +304,13 @@ def _volunteer_keys(fleet) -> dict[int, str]:
     # pylint: disable=import-outside-toplevel
     from fleets.models import EveFleetShipVolunteer
 
+    # Off-doctrine hulls key as "s:<type id>" and match no doctrine row.
     return {
-        character_id: (
-            f"f:{fitting_id}" if fitting_id else f"m:{fleet_fitting_id}"
-        )
-        for character_id, fitting_id, fleet_fitting_id in (
-            EveFleetShipVolunteer.objects.filter(eve_fleet=fleet).values_list(
-                "character_id", "fitting_id", "fleet_fitting_id"
-            )
+        volunteer.character_id: volunteer.target_key
+        for volunteer in EveFleetShipVolunteer.objects.filter(
+            eve_fleet=fleet
+        ).only(
+            "character_id", "fitting_id", "fleet_fitting_id", "ship_type_id"
         )
     }
 

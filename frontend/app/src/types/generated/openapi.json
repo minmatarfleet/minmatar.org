@@ -7627,7 +7627,7 @@
             "title": "Doctrine Id"
           },
           "hide_volunteers": {
-            "default": false,
+            "default": true,
             "title": "Hide Volunteers",
             "type": "boolean"
           },
@@ -10391,9 +10391,25 @@
             "title": "Id",
             "type": "integer"
           },
+          "off_doctrine": {
+            "default": false,
+            "title": "Off Doctrine",
+            "type": "boolean"
+          },
           "ship_id": {
             "title": "Ship Id",
             "type": "integer"
+          },
+          "ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Type Id"
           },
           "solar_system_id": {
             "anyOf": [
@@ -27089,7 +27105,7 @@
         "type": "object"
       },
       "ShipSelection": {
-        "description": "Which composition entry a character brings (both ids null = not flying).",
+        "description": "Which composition entry a character brings, or ``ship_type_id``: a hull\noutside the composition. All three null = not flying.",
         "properties": {
           "bursts": {
             "anyOf": [
@@ -27130,6 +27146,17 @@
               }
             ],
             "title": "Fleet Fitting Id"
+          },
+          "ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Type Id"
           }
         },
         "required": [
@@ -40916,7 +40943,7 @@
     },
     "/api/fleets/{fleet_id}/my-ship-volunteers": {
       "put": {
-        "description": "Replace the caller's ship volunteers for this fleet: one ship per character. A selection with neither fitting_id nor fleet_fitting_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts.",
+        "description": "Replace the caller's ship volunteers for this fleet: one ship per character. ship_type_id instead brings a hull outside the composition. A selection with none of fitting_id, fleet_fitting_id or ship_type_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts.",
         "operationId": "fleets_endpoints_fleet_put_fleet_my_ship_volunteers_set_my_ship_volunteers",
         "parameters": [
           {

@@ -149,6 +149,7 @@ async function fleet_ui(access_token:string, fleet:Fleet):Promise<FleetUI> {
         start_time: fleet.start_time as unknown as Date,
         type: fleet.type,
         doctrine: fleet?.doctrine_id ? doctrine : null,
+        doctrine_id: fleet?.doctrine_id ?? null,
         tracking: fleet.tracking as unknown as FleetItem['tracking'],  // same: the view-model's Dates are ISO strings
         audience: fleet.audience,
         disable_motd: fleet.disable_motd,
