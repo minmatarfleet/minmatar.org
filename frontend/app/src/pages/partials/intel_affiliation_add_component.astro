@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a form save; a failed save shows in the form it swaps back.
+// POST adds an affiliation by hand, then reloads the bloc or profile page.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST') return HTTP_400_Bad_Request()
+
+import type { IntelBlocSummary, IntelEntityRef } from '@dtypes/api.minmatar.org'
+import { add_affiliation, get_blocs } from '@helpers/api.minmatar.org/intel_affiliations'
+import { fill, intel_bloc_path, intel_entity_path, parse_entity_kind, parse_id, parse_relation } from '@helpers/intel_affiliations'
+
+const params = Astro.url.searchParams
+const return_to = params.get('return_to') === 'entity' ? 'entity' : 'bloc'
+const fixed_bloc_id = parse_id(params.get('bloc_id'))
+const fixed_kind = parse_entity_kind(params.get('kind'))
+const fixed_eve_id = parse_id(params.get('eve_id'))
+const entity: IntelEntityRef | null = fixed_kind && fixed_eve_id ?
+    { kind: fixed_kind, id: fixed_eve_id, name: params.get('name') ?? '' } :
+    null
+
+const form = await Astro.request.formData()
+const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+const values = {
+    kind: text('kind'),
+    name: text('name'),
+    bloc_id: text('bloc_id'),
+    new_bloc_name: text('new_bloc_name'),
+    relation: text('relation'),
+    note: text('note'),
+}
+
+const kind = entity ? entity.kind as ReturnType<typeof parse_entity_kind> : parse_entity_kind(values.kind)
+const relation = parse_relation(values.relation)
+const bloc_id = fixed_bloc_id ?? parse_id(values.bloc_id)
+let error: string | null = null
+
+if (!kind || !relation) {
+    error = fill(t('intel.affiliations.add.error'), { error: t('intel.affiliations.add.missing') })
+} else if (!entity && !values.name) {
+    error = fill(t('intel.affiliations.add.error'), { error: t('intel.affiliations.add.missing_name') })
+} else if (!bloc_id && !values.new_bloc_name) {
+    error = fill(t('intel.affiliations.add.error'), { error: t('intel.affiliations.add.missing_bloc') })
+} else {
+    try {
+        const affiliation = await add_affiliation(auth_token, {
+            kind,
+            relation,
+            note: values.note,
+            ...(entity ? { eve_id: entity.id } : { name: values.name }),
+            ...(bloc_id ? { bloc_id } : { new_bloc_name: values.new_bloc_name }),
+        })
+        const next = return_to === 'entity' ?
+            intel_entity_path(affiliation.entity.kind, affiliation.entity.id) :
+            intel_bloc_path(affiliation.bloc.id)
+        return partial_redirect(Astro.request, translatePath(next))
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        error = fill(t('intel.affiliations.add.error'), { error: (failure as Error).message })
+    }
+}
+
+let blocs: IntelBlocSummary[] = []
+if (!fixed_bloc_id)
+    blocs = await get_blocs(auth_token).catch(() => [])
+
+import IntelAffiliationAddForm from '@components/blocks/IntelAffiliationAddForm.astro'
+---
+
+<IntelAffiliationAddForm
+    bloc_id={fixed_bloc_id}
+    blocs={blocs}
+    entity={entity}
+    return_to={return_to}
+    values={values}
+    error={error}
+/>

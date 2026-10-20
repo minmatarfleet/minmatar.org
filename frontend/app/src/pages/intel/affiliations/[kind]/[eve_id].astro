@@ -1,0 +1,397 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+import type { IntelBlocSummary, IntelEntityProfile } from '@dtypes/api.minmatar.org'
+import { get_blocs, get_intel_entity } from '@helpers/api.minmatar.org/intel_affiliations'
+import {
+    groups_first,
+    intel_bloc_path,
+    intel_entity_image,
+    intel_entity_path,
+    is_group_kind,
+    parse_entity_kind,
+    parse_id,
+} from '@helpers/intel_affiliations'
+import { query_string } from '@helpers/string'
+
+const kind = parse_entity_kind(Astro.params.kind)
+const eve_id = parse_id(Astro.params.eve_id)
+if (!kind || !eve_id) return HTTP_404_Not_Found()
+
+let profile: IntelEntityProfile | null = null
+let blocs: IntelBlocSummary[] = []
+let error_message: string | null = null
+
+try {
+    ;[profile, blocs] = await Promise.all([
+        get_intel_entity(auth_token, kind, eve_id),
+        get_blocs(auth_token),
+    ])
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    error_message = error?.cause === 404 ? t('intel.affiliations.entity.not_found') : error.message
+}
+
+const is_group = is_group_kind(kind)
+const affiliations = profile ? groups_first(profile.affiliations) : []
+const has_live_affiliation = affiliations.some(row => row.status !== 'rejected' && !row.ended)
+
+// Alliance history rows carry ids only; name them from the partners and the
+// evidence (a former member's row names the alliance) when we can.
+const known_names = new Map<number, string>()
+for (const row of profile?.affiliations ?? []) {
+    const evidence = row.evidence as { partner?: { kind?: string, id?: number }, partner_name?: string }
+    if (evidence.partner?.kind === 'alliance' && evidence.partner.id && evidence.partner_name)
+        known_names.set(evidence.partner.id, evidence.partner_name)
+}
+for (const row of profile?.partners ?? [])
+    if (row.kind === 'alliance') known_names.set(row.id, row.name)
+const alliance_history = (profile?.alliance_history ?? []).map(row => {
+    const alliance_id = typeof row.alliance_id === 'number' ? row.alliance_id : null
+    return {
+        alliance_id,
+        name: alliance_id ? known_names.get(alliance_id) ?? `#${alliance_id}` : t('intel.affiliations.entity.no_alliance'),
+        start_date: typeof row.start_date === 'string' ? row.start_date.slice(0, 10) : '',
+    }
+}).sort((a, b) => b.start_date.localeCompare(a.start_date))
+
+const date = (iso: string | null) => (iso ? iso.slice(0, 10) : t('intel.affiliations.entity.never'))
+const INVESTIGATE_URL = `${translatePath('/partials/intel_entity_investigate_component')}?${query_string({ kind, eve_id })}`
+const zkillboard_url = `https://zkillboard.com/${kind}/${eve_id}/`
+
+const page_title = profile?.name ?? t('intel.affiliations.page_title')
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: t('intel.affiliations.page_title'), accumulated_path: '/intel/affiliations/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import IntelAffiliationAddForm from '@components/blocks/IntelAffiliationAddForm.astro'
+import IntelAffiliationRow from '@components/blocks/IntelAffiliationRow.astro'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+import IntelPartnersTable from '@components/blocks/IntelPartnersTable.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.intel.affiliations.description')}>
+    <PageWide
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover-990.jpg',
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <FlexInline gap="var(--space-s)" class="[ intel-entity__header ]">
+                <img src={intel_entity_image(kind, eve_id, 128)} alt="" width="64" height="64" />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>{page_title}</PageTitle>
+                    <FlexInline gap="var(--space-2xs)" class="[ intel-entity__subtitle ]">
+                        <span>{t(t_key('intel.affiliations.kind.', kind))}</span>
+                        {profile &&
+                            <Fragment>
+                                <span>·</span>
+                                <span class={`[ intel-entity__status intel-entity__status--${profile.status} ]`}>{t(t_key('intel.affiliations.entity_status.', profile.status)) ?? profile.status}</span>
+                                <span>·</span>
+                                {profile.bloc ?
+                                    <IntelBlocTag bloc={profile.bloc} href={translatePath(intel_bloc_path(profile.bloc.id))} /> :
+                                    <span>{t('intel.affiliations.entity.no_bloc')}</span>
+                                }
+                            </Fragment>
+                        }
+                    </FlexInline>
+                </Flexblock>
+            </FlexInline>
+        </FlexInline>
+
+        {error_message || !profile ?
+            <Flexblock gap="var(--space-s)">
+                <p class="[ intel-entity__error ]" role="alert">{error_message}</p>
+                {error_message && is_group &&
+                    <div class="[ intel-entity__investigate ]">
+                        <Button size="sm" hx-post={INVESTIGATE_URL} hx-target="this" hx-swap="outerHTML">{t('intel.affiliations.entity.investigate')}</Button>
+                    </div>
+                }
+            </Flexblock>
+            :
+            <Flexblock gap="var(--space-l)" class="[ intel-entity ]">
+                <small class="[ intel-entity__sensitive ]">{t('intel.affiliations.sensitive')}</small>
+
+                <FlexInline gap="var(--space-m)" class="[ intel-entity__facts-row ]">
+                    {is_group ?
+                    <dl class="[ intel-entity__facts ]">
+                        <div><dt>{t('intel.affiliations.entity.investigated_at')}</dt><dd>{date(profile.investigated_at)}</dd></div>
+                        <div><dt>{t('intel.affiliations.entity.sightings')}</dt><dd>{profile.sightings}</dd></div>
+                        <div><dt>{t('intel.affiliations.entity.kills_sampled')}</dt><dd class="[ intel-entity__kills ]">{profile.kills_sampled}</dd></div>
+                        <div><dt>{t('intel.affiliations.entity.losses_sampled')}</dt><dd class="[ intel-entity__losses ]">{profile.losses_sampled}</dd></div>
+                        <div><dt>{t('intel.affiliations.entity.months_sampled')}</dt><dd>{profile.months_sampled}</dd></div>
+                    </dl>
+                    :
+                    <dl class="[ intel-entity__facts ]">
+                        <div><dt>{t('intel.affiliations.entity.sightings')}</dt><dd>{profile.sightings}</dd></div>
+                    </dl>
+                    }
+                    <FlexInline gap="var(--space-xs)" class="[ intel-entity__actions ]">
+                        {is_group &&
+                            <div class="[ intel-entity__investigate ]">
+                                <Button size="sm" hx-post={INVESTIGATE_URL} hx-target="this" hx-swap="outerHTML" hx-disabled-elt="this">{t('intel.affiliations.entity.investigate')}</Button>
+                            </div>
+                        }
+                        <Button size="sm" color="transparent" href={zkillboard_url} new_tab={true}>{t('intel.affiliations.entity.zkillboard')}</Button>
+                    </FlexInline>
+                </FlexInline>
+
+                <section class="[ intel-entity__section ]" aria-labelledby="intel-entity-affiliations">
+                    <h2 id="intel-entity-affiliations">{t('intel.affiliations.entity.affiliations')} <span>{affiliations.length}</span></h2>
+                    <Flexblock gap="var(--space-2xs)">
+                        {affiliations.length === 0 && <EmptyState title={t('intel.affiliations.entity.no_affiliations')} />}
+                        {affiliations.map(row => <IntelAffiliationRow affiliation={row} show_entity={false} />)}
+                    </Flexblock>
+                    {!has_live_affiliation &&
+                        <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)" width="narrow" class="[ intel-entity__add ]">
+                            <Flexblock gap="var(--space-xs)">
+                                <h2>{t('intel.affiliations.add.title')}</h2>
+                                <IntelAffiliationAddForm
+                                    entity={{ kind, id: eve_id, name: profile.name }}
+                                    blocs={blocs}
+                                    return_to="entity"
+                                />
+                            </Flexblock>
+                        </ComponentBlock>
+                    }
+                </section>
+
+                <section class="[ intel-entity__section ]" aria-labelledby="intel-entity-partners">
+                    <h2 id="intel-entity-partners">
+                        {is_group ? t('intel.affiliations.entity.partners') : t('intel.affiliations.entity.partners_character')}
+                        <span>{profile.partners.length}</span>
+                    </h2>
+                    {profile.partners.length === 0 ?
+                        <EmptyState title={t('intel.affiliations.entity.partners_empty')} /> :
+                        <IntelPartnersTable rows={profile.partners} show_share={is_group} />
+                    }
+                    {is_group && profile.partners.length > 0 && <p class="[ intel-entity__hint ]">{t('intel.affiliations.share_hint')}</p>}
+                </section>
+
+                {is_group &&
+                    <section class="[ intel-entity__section ]" aria-labelledby="intel-entity-characters">
+                        <h2 id="intel-entity-characters">{t('intel.affiliations.entity.characters')} <span>{profile.characters.length}</span></h2>
+                        {profile.characters.length === 0 ?
+                            <EmptyState title={t('intel.affiliations.entity.partners_empty')} /> :
+                            <IntelPartnersTable rows={profile.characters} />
+                        }
+                    </section>
+                }
+
+                {kind === 'corporation' && alliance_history.length > 0 &&
+                    <section class="[ intel-entity__section ]" aria-labelledby="intel-entity-history">
+                        <h2 id="intel-entity-history">{t('intel.affiliations.entity.alliance_history')}</h2>
+                        <ol class="[ intel-entity__history ]">
+                            {alliance_history.map(row =>
+                                <li>
+                                    <span class="[ intel-entity__date ]">{row.start_date}</span>
+                                    {row.alliance_id ?
+                                        <a href={translatePath(intel_entity_path('alliance', row.alliance_id))}>
+                                            <img src={intel_entity_image('alliance', row.alliance_id, 32)} alt="" width="20" height="20" loading="lazy" />
+                                            {row.name}
+                                        </a> :
+                                        <span class="[ intel-entity__muted ]">{row.name}</span>
+                                    }
+                                </li>
+                            )}
+                        </ol>
+                    </section>
+                }
+            </Flexblock>
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .intel-entity__header {
+        flex-wrap: nowrap;
+
+        img {
+            flex: none;
+            width: var(--space-2xl);
+            height: var(--space-2xl);
+            outline: 1px solid var(--border-color-hover);
+            outline-offset: -1px;
+        }
+    }
+
+    .intel-entity__subtitle {
+        align-items: center;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .intel-entity__status--done {
+        color: var(--green);
+        filter: brightness(1.4);
+    }
+
+    .intel-entity__status--failed {
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+
+    .intel-entity__status--queued,
+    .intel-entity__status--investigating {
+        color: var(--fleet-yellow);
+    }
+
+    .intel-entity__sensitive {
+        font-size: var(--step--1);
+        color: var(--fleet-red);
+        filter: brightness(1.4);
+    }
+
+    .intel-entity__error {
+        color: var(--highlight);
+    }
+
+    .intel-entity__facts-row {
+        align-items: flex-end;
+        justify-content: space-between;
+        padding-block: var(--space-xs);
+        border-block: 1px solid var(--border-color-hover);
+    }
+
+    .intel-entity__facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-l);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-1);
+            line-height: 1.2;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .intel-entity__kills {
+            color: var(--alliance-blue);
+            filter: brightness(1.8);
+        }
+
+        .intel-entity__losses {
+            color: var(--fleet-red);
+            filter: brightness(1.3);
+        }
+    }
+
+    .intel-entity__actions {
+        align-items: center;
+    }
+
+    .intel-entity__investigate :global(.intel-investigate-status) {
+        font-size: var(--step--1);
+        color: var(--green);
+        filter: brightness(1.4);
+    }
+
+    .intel-entity__investigate :global(.intel-investigate-status--error) {
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+
+    .intel-entity__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        h2 {
+            margin: 0;
+            font-size: var(--step--1);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--faded);
+
+            span {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .intel-entity__add {
+        margin-block-start: var(--space-xs);
+    }
+
+    .intel-entity__hint {
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    .intel-entity__history {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-s);
+        }
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            color: var(--highlight);
+            text-decoration: none;
+        }
+    }
+
+    .intel-entity__date {
+        min-width: 6rem;
+        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .intel-entity__muted {
+        color: var(--text-muted);
+    }
+</style>

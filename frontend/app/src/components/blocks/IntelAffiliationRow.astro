@@ -1,0 +1,279 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelAffiliation } from '@dtypes/api.minmatar.org'
+import {
+    INTEL_RELATIONS,
+    affiliation_why,
+    fill,
+    format_month_span,
+    format_share,
+    intel_bloc_path,
+    intel_entity_image,
+    intel_entity_path,
+} from '@helpers/intel_affiliations'
+import { query_string } from '@helpers/string'
+
+/**
+ * One affiliation: subject -> bloc, relation, status, confidence, the
+ * plain-English evidence, and Confirm / Reject. The decision posts to
+ * intel_affiliation_decision_component, which answers with this row again.
+ */
+interface Props {
+    affiliation:        IntelAffiliation;
+    /** Leave out the subject (on its own profile page). */
+    show_entity?:       boolean;
+    /** Leave out the bloc (on the bloc's page). */
+    show_bloc?:         boolean;
+    status_message?:    { kind: 'success' | 'error'; text: string } | null;
+    [propName: string]: any;
+}
+
+const {
+    affiliation,
+    show_entity = true,
+    show_bloc = true,
+    status_message = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const PARTIAL_URL = translatePath('/partials/intel_affiliation_decision_component')
+const decision_url = `${PARTIAL_URL}?${query_string({
+    affiliation_id: affiliation.id,
+    kind: affiliation.entity.kind,
+    eve_id: affiliation.entity.id,
+    show_entity: show_entity ? 1 : 0,
+    show_bloc: show_bloc ? 1 : 0,
+})}`
+
+const { entity, bloc, status } = affiliation
+const why = affiliation_why(affiliation, t).join(' · ')
+const span = format_month_span(affiliation.first_month, affiliation.last_month)
+const decided = affiliation.decided_by && affiliation.decided_at ?
+    fill(t('intel.affiliations.decided'), {
+        status: t(t_key('intel.affiliations.status.', status)) ?? status,
+        name: affiliation.decided_by,
+        date: affiliation.decided_at.slice(0, 10),
+    }) : ''
+const status_label = affiliation.ended && status !== 'rejected' ?
+    t('intel.affiliations.ended') :
+    t(t_key('intel.affiliations.status.', status)) ?? status
+const status_class = affiliation.ended && status !== 'rejected' ? 'ended' : status
+const confirm_label = status === 'confirmed' ? t('intel.affiliations.save_relation') : t('intel.affiliations.confirm')
+const relation_id = `intel-affiliation-${affiliation.id}-relation`
+
+import Button from '@components/blocks/Button.astro'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+---
+
+<article
+    id={`intel-affiliation-${affiliation.id}`}
+    class:list={['[ intel-affiliation ]', `intel-affiliation--${status_class}`, Astro.props.class]}
+    {...attributes}
+>
+    <div class="[ intel-affiliation__head ]">
+        {show_entity &&
+            <a class="[ intel-affiliation__subject ]" href={translatePath(intel_entity_path(entity.kind, entity.id))}>
+                <img src={intel_entity_image(entity.kind, entity.id, 64)} alt="" width="32" height="32" loading="lazy" />
+                <span>{entity.name}</span>
+            </a>
+        }
+        {show_entity && show_bloc && <span class="[ intel-affiliation__arrow ]" aria-hidden="true">→</span>}
+        {show_bloc &&
+            <IntelBlocTag
+                bloc={{ ...bloc, likely: status === 'suggested' }}
+                marker={false}
+                href={translatePath(intel_bloc_path(bloc.id))}
+            />
+        }
+        <span class="[ intel-affiliation__relation ]">{t(t_key('intel.affiliations.relation.', affiliation.relation)) ?? affiliation.relation}</span>
+        <span class={`[ intel-affiliation__status intel-affiliation__status--${status_class} ]`}>{status_label}</span>
+        {affiliation.source === 'inferred' &&
+            <span class="[ intel-affiliation__confidence ]" title={t('intel.affiliations.confidence_hint')}>
+                {fill(t('intel.affiliations.confidence'), { percent: format_share(affiliation.confidence) })}
+            </span>
+        }
+    </div>
+
+    {why && <p class="[ intel-affiliation__why ]">{why}</p>}
+
+    {(span || decided || affiliation.note) &&
+        <p class="[ intel-affiliation__meta ]">
+            {[span, decided].filter(Boolean).join(' · ')}
+            {affiliation.note && <q>{affiliation.note}</q>}
+        </p>
+    }
+
+    <form
+        class="[ intel-affiliation__actions ]"
+        hx-post={decision_url}
+        hx-target="closest .intel-affiliation"
+        hx-swap="outerHTML"
+        hx-disabled-elt="find button"
+    >
+        <label class="[ visually-hidden ]" for={relation_id}>{t('intel.affiliations.relation_label')}</label>
+        <select id={relation_id} name="relation" class="[ intel-affiliation__select ]">
+            {INTEL_RELATIONS.map(relation =>
+                <option value={relation} selected={relation === affiliation.relation}>{t(t_key('intel.affiliations.relation.', relation))}</option>
+            )}
+        </select>
+        <Button size="sm" narrow={true} color="green" type="submit" name="status" value="confirmed">{confirm_label}</Button>
+        {status !== 'rejected' &&
+            <Button size="sm" narrow={true} color="transparent" type="submit" name="status" value="rejected">{t('intel.affiliations.reject')}</Button>
+        }
+        {status_message &&
+            <span class:list={['[ intel-affiliation__message ]', `intel-affiliation__message--${status_message.kind}`]} role="status">{status_message.text}</span>
+        }
+    </form>
+</article>
+
+<style lang="scss">
+    .intel-affiliation {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--hairline-medium);
+        border-inline-start: 3px solid var(--fleet-yellow);
+        background-color: var(--surface-sunken);
+    }
+
+    .intel-affiliation--confirmed {
+        border-inline-start-color: var(--green);
+    }
+
+    .intel-affiliation--rejected {
+        border-inline-start-color: var(--fleet-red);
+    }
+
+    .intel-affiliation--ended {
+        border-inline-start-color: var(--hairline-strong);
+    }
+
+    .intel-affiliation__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-xs);
+        min-width: 0;
+    }
+
+    .intel-affiliation__subject {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+        color: var(--highlight);
+        text-decoration: none;
+
+        img {
+            flex: none;
+            width: 2rem;
+            height: 2rem;
+            outline: 1px solid var(--border-color-hover);
+            outline-offset: -1px;
+        }
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        &:hover span,
+        &:focus-visible span {
+            text-decoration: underline;
+        }
+    }
+
+    .intel-affiliation__arrow {
+        color: var(--text-muted);
+    }
+
+    .intel-affiliation__relation,
+    .intel-affiliation__status,
+    .intel-affiliation__confidence {
+        font-size: var(--step--1);
+    }
+
+    .intel-affiliation__relation {
+        color: var(--highlight);
+    }
+
+    .intel-affiliation__status {
+        font-size: var(--step--2);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .intel-affiliation__status--confirmed {
+        color: var(--green);
+        filter: brightness(1.4);
+    }
+
+    .intel-affiliation__status--rejected {
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+
+    .intel-affiliation__status--ended {
+        color: var(--text-muted);
+    }
+
+    .intel-affiliation__confidence {
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .intel-affiliation__why {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .intel-affiliation__meta {
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--text-muted);
+
+        q {
+            margin-inline-start: var(--space-2xs);
+            color: var(--highlight);
+        }
+    }
+
+    .intel-affiliation__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-block-start: var(--space-3xs);
+    }
+
+    .intel-affiliation__select {
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--form-color);
+        color-scheme: dark;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color-hover);
+    }
+
+    .intel-affiliation__message {
+        font-size: var(--step--1);
+    }
+
+    .intel-affiliation__message--success {
+        color: var(--green);
+        filter: brightness(1.4);
+    }
+
+    .intel-affiliation__message--error {
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+</style>

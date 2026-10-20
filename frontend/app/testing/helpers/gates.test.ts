@@ -81,6 +81,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'moons.view': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('moons.view_evemoon')),
     'moons.view#strict': (_is_superuser, user_permissions) => user_permissions.includes('moons.view_evemoon'),
     'moons.manage#strict': (_is_superuser, user_permissions) => user_permissions.includes('moons.add_evemoon'),
+    'intel.affiliations': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('intel.change_intelaffiliation'),
     'applications.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('applications.change_evecorporationapplication'),
     'characters.view_staff': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('eveonline.view_evecharacter')),
     'corporations.members.view_all': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.view_evecorporation'),

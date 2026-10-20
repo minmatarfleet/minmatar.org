@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a decision; a failed save shows on the row it swaps back.
+// POST confirms or rejects one affiliation and answers with its row.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST') return HTTP_400_Bad_Request()
+
+import type { IntelAffiliation } from '@dtypes/api.minmatar.org'
+import { decide_affiliation, get_intel_entity } from '@helpers/api.minmatar.org/intel_affiliations'
+import { fill, parse_decision, parse_entity_kind, parse_id, parse_relation } from '@helpers/intel_affiliations'
+
+const params = Astro.url.searchParams
+const affiliation_id = parse_id(params.get('affiliation_id'))
+const show_entity = params.get('show_entity') !== '0'
+const show_bloc = params.get('show_bloc') !== '0'
+if (!affiliation_id) return HTTP_400_Bad_Request()
+
+const form = await Astro.request.formData()
+const status = parse_decision(form.get('status') as string | null)
+const relation = parse_relation(form.get('relation') as string | null)
+if (!status) return HTTP_400_Bad_Request()
+
+let affiliation: IntelAffiliation | null = null
+let status_message: { kind: 'success' | 'error'; text: string } | null = null
+
+try {
+    affiliation = await decide_affiliation(auth_token, affiliation_id, {
+        status,
+        ...(status === 'confirmed' && relation ? { relation } : {}),
+    })
+} catch (error) {
+    if ((error as Error).cause === 403) return HTTP_403_Forbidden()
+    status_message = { kind: 'error', text: fill(t('intel.affiliations.decision_error'), { error: (error as Error).message }) }
+}
+
+// A failed save re-renders the row as it was, from the subject's profile.
+if (!affiliation) {
+    const kind = parse_entity_kind(params.get('kind'))
+    const eve_id = parse_id(params.get('eve_id'))
+    if (kind && eve_id) {
+        const profile = await get_intel_entity(auth_token, kind, eve_id).catch(() => null)
+        affiliation = profile?.affiliations.find(row => row.id === affiliation_id) ?? null
+    }
+}
+
+import IntelAffiliationRow from '@components/blocks/IntelAffiliationRow.astro'
+---
+
+{affiliation ?
+    <IntelAffiliationRow
+        affiliation={affiliation}
+        show_entity={show_entity}
+        show_bloc={show_bloc}
+        status_message={status_message}
+    />
+    :
+    <p class="[ intel-affiliation-error ]" role="alert">{status_message?.text}</p>
+}

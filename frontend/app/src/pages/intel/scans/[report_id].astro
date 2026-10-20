@@ -11,9 +11,11 @@ if (!auth_token || !user)
     return HTTP_404_Not_Found()
 
 import { get_intel_report } from '@helpers/api.minmatar.org/intel'
+import { get_gates, can } from '@helpers/gates'
 import type { IntelReport } from '@dtypes/api.minmatar.org'
 
 const report_id = Astro.params.report_id ?? ''
+const link_blocs = can(await get_gates(Astro), 'intel.affiliations')
 
 let report:IntelReport | null = null
 let error_message:string | null = null
@@ -68,7 +70,7 @@ const page_title = report ? `${kind_label} · ${report.system_name}` : t('intel.
 
         {error_message
             ? <p>{error_message}</p>
-            : <IntelReportView report={report as IntelReport} />
+            : <IntelReportView report={report as IntelReport} link_blocs={link_blocs} />
         }
     </PageWide>
 </Viewport>

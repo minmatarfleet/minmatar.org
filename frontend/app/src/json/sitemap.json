@@ -918,6 +918,23 @@
         }
     },
     {
+        "slug": "intel.affiliations",
+        "alt": "icon.intel.alt",
+        "path": "/intel/affiliations/",
+        "publish": true,
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.intel.affiliations.description",
+        "keywords": [
+            "intel",
+            "blocs",
+            "pets",
+            "alts"
+        ],
+        "permissions": {
+            "gate": "intel.affiliations"
+        }
+    },
+    {
         "slug": "intel.combatlog",
         "alt": "icon.log.alt",
         "path": "/intel/combatlog/",

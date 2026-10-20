@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// Name search over the affiliation database (GET ?q=, 3+ characters).
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+import type { IntelEntitySearchResult } from '@dtypes/api.minmatar.org'
+import { search_intel_entities } from '@helpers/api.minmatar.org/intel_affiliations'
+
+const query = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100)
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0') || 0
+
+let results: IntelEntitySearchResult[] = []
+let data_fetching_error: any = null
+
+if (query.length >= 3) {
+    try {
+        results = await search_intel_entities(auth_token, query)
+    } catch (error) {
+        data_fetching_error = error
+    }
+}
+
+const PARTIAL_URL = translatePath('/partials/intel_affiliation_search_component')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import IntelEntitySearchResults from '@components/blocks/IntelEntitySearchResults.astro'
+---
+
+{data_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: `${PARTIAL_URL}?q=${encodeURIComponent(query)}`,
+            error: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <IntelEntitySearchResults results={results} query={query} />
+}

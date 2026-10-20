@@ -8,6 +8,7 @@ const gates = await get_gates(Astro)
 const can_view_timers = can(gates, 'structures.timers.view#strict')
 const can_add_moons = can(gates, 'moons.manage#strict')
 const can_view_moons = can(gates, 'moons.view#strict')
+const can_view_affiliations = can(gates, 'intel.affiliations')
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -54,6 +55,7 @@ const leading_text = t('intel.leading_text');
                 can_view_timers={can_view_timers}
                 can_add_moons={can_add_moons}
                 can_view_moons={can_view_moons}
+                can_view_affiliations={can_view_affiliations}
             />
         </Flexblock>
     </PageLanding>

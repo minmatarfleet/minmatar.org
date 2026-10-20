@@ -1,0 +1,408 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+import type { IntelAffiliationReview, IntelBlocSummary } from '@dtypes/api.minmatar.org'
+import { get_affiliation_review, get_blocs } from '@helpers/api.minmatar.org/intel_affiliations'
+import { fill, intel_bloc_path, intel_entity_image, intel_entity_path } from '@helpers/intel_affiliations'
+
+let review: IntelAffiliationReview | null = null
+let blocs: IntelBlocSummary[] = []
+let data_fetching_error: any = null
+
+try {
+    ;[review, blocs] = await Promise.all([
+        get_affiliation_review(auth_token),
+        get_blocs(auth_token),
+    ])
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    data_fetching_error = error
+}
+
+const suggestions = review?.suggestions ?? []
+const group_suggestions = suggestions.filter(row => row.entity.kind !== 'character')
+const pilot_suggestions = suggestions.filter(row => row.entity.kind === 'character')
+const queue = review?.queue ?? null
+
+const SEARCH_URL = translatePath('/partials/intel_affiliation_search_component')
+const MEMBERS_URL = translatePath('/partials/intel_affiliation_members_component')
+
+const tabs = [
+    {
+        id: 'review',
+        label: t('intel.affiliations.tab.review'),
+        meta: String(suggestions.length),
+        ...(suggestions.length > 0 ? { flag: 'attention' as const } : {}),
+    },
+    { id: 'blocs', label: t('intel.affiliations.tab.blocs'), meta: String(blocs.length) },
+    { id: 'members', label: t('intel.affiliations.tab.members') },
+]
+
+const page_title = t('intel.affiliations.page_title')
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: page_title, accumulated_path: '/intel/affiliations/' },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import IntelAffiliationAddForm from '@components/blocks/IntelAffiliationAddForm.astro'
+import IntelAffiliationRow from '@components/blocks/IntelAffiliationRow.astro'
+import IntelEntitySearchResults from '@components/blocks/IntelEntitySearchResults.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.intel.affiliations.description')}>
+    <PageWide
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover-990.jpg',
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <small class="[ intel-affiliations__sensitive ]">{t('intel.affiliations.sensitive')}</small>
+            </Flexblock>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)" class="[ intel-affiliations ]">
+            <p class="[ intel-affiliations__lead ]">{t('intel.affiliations.leading_text')}</p>
+
+            {data_fetching_error ?
+                <p class="[ intel-affiliations__error ]" role="alert">{data_fetching_error.message}</p>
+                :
+                <Fragment>
+                    <Grid min_item_width="22rem" row_gap="var(--space-s)" column_gap="var(--space-s)">
+                        <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+                            <Flexblock gap="var(--space-2xs)">
+                                <label class="[ intel-affiliations__label ]" for="intel-affiliation-search">{t('intel.affiliations.search.label')}</label>
+                                <input
+                                    id="intel-affiliation-search"
+                                    class="[ intel-affiliations__search ]"
+                                    type="search"
+                                    name="q"
+                                    minlength="3"
+                                    maxlength="100"
+                                    autocomplete="off"
+                                    placeholder={t('intel.affiliations.search.placeholder')}
+                                    hx-get={SEARCH_URL}
+                                    hx-trigger="input changed delay:300ms, search"
+                                    hx-target="#intel-affiliation-search-results"
+                                    hx-swap="innerHTML"
+                                    hx-sync="this:replace"
+                                />
+                                <div id="intel-affiliation-search-results" aria-live="polite">
+                                    <IntelEntitySearchResults results={[]} query="" />
+                                </div>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        {queue &&
+                            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+                                <Flexblock gap="var(--space-xs)">
+                                    <span class="[ intel-affiliations__label ]">{t('intel.affiliations.queue.title')}</span>
+                                    <dl class="[ intel-affiliations__queue ]">
+                                        <div><dt>{t('intel.affiliations.queue.queued')}</dt><dd>{queue.queued}</dd></div>
+                                        <div><dt>{t('intel.affiliations.queue.investigating')}</dt><dd>{queue.investigating}</dd></div>
+                                        <div><dt>{t('intel.affiliations.queue.investigated')}</dt><dd>{queue.investigated}</dd></div>
+                                        <div><dt>{t('intel.affiliations.queue.failed')}</dt><dd class:list={{ 'is-failed': queue.failed > 0 }}>{queue.failed}</dd></div>
+                                    </dl>
+                                    {queue.next.length > 0 ?
+                                        <Flexblock gap="var(--space-3xs)">
+                                            <span class="[ intel-affiliations__label ]">{t('intel.affiliations.queue.next')}</span>
+                                            <ol class="[ intel-affiliations__next ]">
+                                                {queue.next.map(entry =>
+                                                    <li>
+                                                        <a href={translatePath(intel_entity_path(entry.kind, entry.id))}>
+                                                            <img src={intel_entity_image(entry.kind, entry.id, 32)} alt="" width="16" height="16" loading="lazy" />
+                                                            {entry.name}
+                                                        </a>
+                                                        <small>{fill(t('intel.affiliations.queue.sightings'), { count: entry.sightings })}</small>
+                                                    </li>
+                                                )}
+                                            </ol>
+                                        </Flexblock>
+                                        :
+                                        <EmptyState title={t('intel.affiliations.queue.empty')} />
+                                    }
+                                </Flexblock>
+                            </ComponentBlock>
+                        }
+                    </Grid>
+
+                    <SectionTabs aria_label={t('intel.affiliations.tabs_label')} id_prefix="intel-affiliations" tabs={tabs}>
+                        <SectionTabPanel id="review" id_prefix="intel-affiliations" is_default={true}>
+                            {suggestions.length === 0 ?
+                                <EmptyState title={t('intel.affiliations.review.empty')} hint={t('intel.affiliations.review.empty_hint')} />
+                                :
+                                <Flexblock gap="var(--space-l)">
+                                    {[
+                                        { id: 'groups', title: t('intel.affiliations.review.groups'), rows: group_suggestions },
+                                        { id: 'pilots', title: t('intel.affiliations.review.pilots'), rows: pilot_suggestions },
+                                    ].filter(section => section.rows.length > 0).map(section =>
+                                        <section class="[ intel-affiliations__section ]" aria-labelledby={`intel-review-${section.id}`}>
+                                            <h2 id={`intel-review-${section.id}`}>{section.title} <span>{section.rows.length}</span></h2>
+                                            <Flexblock gap="var(--space-2xs)">
+                                                {section.rows.map(row => <IntelAffiliationRow affiliation={row} />)}
+                                            </Flexblock>
+                                        </section>
+                                    )}
+                                </Flexblock>
+                            }
+                        </SectionTabPanel>
+
+                        <SectionTabPanel id="blocs" id_prefix="intel-affiliations">
+                            <Flexblock gap="var(--space-l)">
+                                {blocs.length === 0 ?
+                                    <EmptyState title={t('intel.affiliations.blocs.empty')} />
+                                    :
+                                    <ul class="[ intel-affiliations__blocs ]" role="list">
+                                        {blocs.map(bloc =>
+                                            <li>
+                                                <a class="[ intel-affiliations__bloc ]" href={translatePath(intel_bloc_path(bloc.id))}>
+                                                    {bloc.anchor ?
+                                                        <img src={intel_entity_image(bloc.anchor.kind, bloc.anchor.id, 64)} alt="" width="32" height="32" loading="lazy" /> :
+                                                        <span class="[ intel-affiliations__blank ]" aria-hidden="true"></span>
+                                                    }
+                                                    <span>{bloc.name}</span>
+                                                </a>
+                                                <span class="[ intel-affiliations__counts ]">
+                                                    {fill(t('intel.affiliations.blocs.groups'), { count: bloc.groups })}
+                                                    {' · '}
+                                                    {fill(t('intel.affiliations.blocs.associates'), { count: bloc.associates })}
+                                                    {bloc.suggested > 0 &&
+                                                        <Fragment>{' · '}<b>{fill(t('intel.affiliations.blocs.suggested'), { count: bloc.suggested })}</b></Fragment>
+                                                    }
+                                                    {bloc.manual && <Fragment>{' · '}{t('intel.affiliations.blocs.manual')}</Fragment>}
+                                                </span>
+                                                {bloc.notes && <p class="[ intel-affiliations__notes ]">{bloc.notes}</p>}
+                                            </li>
+                                        )}
+                                    </ul>
+                                }
+
+                                <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)" width="narrow">
+                                    <Flexblock gap="var(--space-xs)">
+                                        <h2 class="[ intel-affiliations__h2 ]">{t('intel.affiliations.add.title')}</h2>
+                                        <IntelAffiliationAddForm blocs={blocs} return_to="bloc" />
+                                    </Flexblock>
+                                </ComponentBlock>
+                            </Flexblock>
+                        </SectionTabPanel>
+
+                        <SectionTabPanel id="members" id_prefix="intel-affiliations">
+                            <LazyPartial url={MEMBERS_URL} trigger="reveal">
+                                <p class="[ intel-affiliations__loading ]">{t('loading')}</p>
+                            </LazyPartial>
+                        </SectionTabPanel>
+                    </SectionTabs>
+                </Fragment>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .intel-affiliations__sensitive {
+        font-size: var(--step--1);
+        color: var(--fleet-red);
+        filter: brightness(1.4);
+    }
+
+    .intel-affiliations__lead {
+        margin: 0;
+        max-width: var(--max-text-width);
+        color: var(--foreground);
+    }
+
+    .intel-affiliations__label {
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .intel-affiliations__search {
+        width: 100%;
+        padding: var(--space-2xs) var(--space-xs);
+        color: var(--form-color);
+        color-scheme: dark;
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border-color-hover);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+    }
+
+    .intel-affiliations__queue {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
+        gap: var(--space-xs);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-end;
+        }
+
+        dt {
+            font-size: var(--step--2);
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-2);
+            line-height: 1.1;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+
+            &.is-failed {
+                color: var(--fleet-red);
+                filter: brightness(1.3);
+            }
+        }
+    }
+
+    .intel-affiliations__next {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-xs);
+        }
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            min-width: 0;
+            color: var(--highlight);
+            text-decoration: none;
+        }
+
+        small {
+            flex: none;
+            color: var(--text-muted);
+        }
+    }
+
+    .intel-affiliations__section h2,
+    .intel-affiliations__h2 {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+
+        span {
+            color: var(--highlight);
+        }
+    }
+
+    .intel-affiliations__blocs {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-3xs) var(--space-s);
+            padding-block: var(--space-2xs);
+            border-block-end: 1px solid var(--hairline);
+        }
+    }
+
+    .intel-affiliations__bloc {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+        color: var(--highlight);
+        text-decoration: none;
+
+        img, .intel-affiliations__blank {
+            flex: none;
+            width: 2rem;
+            height: 2rem;
+            outline: 1px solid var(--border-color-hover);
+            outline-offset: -1px;
+        }
+
+        .intel-affiliations__blank {
+            background-color: var(--component-background);
+        }
+
+        &:hover span,
+        &:focus-visible span {
+            text-decoration: underline;
+        }
+    }
+
+    .intel-affiliations__counts {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        b {
+            font-weight: normal;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .intel-affiliations__notes {
+        flex-basis: 100%;
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .intel-affiliations__error {
+        color: var(--highlight);
+    }
+
+    .intel-affiliations__loading {
+        color: var(--faded);
+    }
+</style>

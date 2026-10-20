@@ -1,0 +1,186 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+import type { IntelBlocDetail, IntelBlocSummary } from '@dtypes/api.minmatar.org'
+import { get_bloc, get_blocs } from '@helpers/api.minmatar.org/intel_affiliations'
+import { bloc_affiliation_sections, fill, intel_entity_image, intel_entity_path, parse_id } from '@helpers/intel_affiliations'
+
+const bloc_id = parse_id(Astro.params.bloc_id)
+if (!bloc_id) return HTTP_404_Not_Found()
+
+let bloc: IntelBlocDetail | null = null
+let blocs: IntelBlocSummary[] = []
+let error_message: string | null = null
+
+try {
+    ;[bloc, blocs] = await Promise.all([
+        get_bloc(auth_token, bloc_id),
+        get_blocs(auth_token),
+    ])
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    error_message = error?.cause === 404 ? t('intel.affiliations.bloc.not_found') : error.message
+}
+
+const sections = bloc ? bloc_affiliation_sections(bloc.affiliations) : null
+const SECTION_IDS = ['groups', 'associates', 'suggested', 'ended', 'rejected'] as const
+const section_list = sections ? SECTION_IDS.map(id => ({ id, rows: sections[id] })) : []
+
+const page_title = bloc?.name ?? t('intel.affiliations.page_title')
+const breadcrumbs = [
+    { page_title: t('intel.page_title'), accumulated_path: '/intel/' },
+    { page_title: t('intel.affiliations.page_title'), accumulated_path: '/intel/affiliations/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import IntelAffiliationAddForm from '@components/blocks/IntelAffiliationAddForm.astro'
+import IntelAffiliationRow from '@components/blocks/IntelAffiliationRow.astro'
+import IntelBlocSettings from '@components/blocks/IntelBlocSettings.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.intel.affiliations.description')}>
+    <PageWide
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover-990.jpg',
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <FlexInline gap="var(--space-s)" class="[ intel-bloc__header ]">
+                {bloc?.anchor &&
+                    <img src={intel_entity_image(bloc.anchor.kind, bloc.anchor.id, 64)} alt="" width="48" height="48" />
+                }
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle><span id="intel-bloc-title">{page_title}</span></PageTitle>
+                    {bloc &&
+                        <small class="[ intel-bloc__subtitle ]">
+                            {bloc.anchor &&
+                                <Fragment>
+                                    {t('intel.affiliations.blocs.anchor')}{' '}
+                                    <a href={translatePath(intel_entity_path(bloc.anchor.kind, bloc.anchor.id))}>{bloc.anchor.name}</a>
+                                    {' · '}
+                                </Fragment>
+                            }
+                            {fill(t('intel.affiliations.blocs.groups'), { count: bloc.groups })}
+                            {' · '}
+                            {fill(t('intel.affiliations.blocs.associates'), { count: bloc.associates })}
+                            {bloc.suggested > 0 && <Fragment>{' · '}{fill(t('intel.affiliations.blocs.suggested'), { count: bloc.suggested })}</Fragment>}
+                        </small>
+                    }
+                </Flexblock>
+            </FlexInline>
+        </FlexInline>
+
+        {error_message || !bloc || !sections ?
+            <p class="[ intel-bloc__error ]" role="alert">{error_message}</p>
+            :
+            <FluidFixed width="22rem" gap="var(--space-l)" class="[ intel-bloc ]">
+                <Flexblock gap="var(--space-l)" class="[ intel-bloc__main ]">
+                    <small class="[ intel-bloc__sensitive ]">{t('intel.affiliations.sensitive')}</small>
+                    {bloc.affiliations.length === 0 &&
+                        <EmptyState title={t('intel.affiliations.bloc.empty')} />
+                    }
+                    {section_list.filter(section => section.rows.length > 0).map(section =>
+                        <section class="[ intel-bloc__section ]" aria-labelledby={`intel-bloc-${section.id}`}>
+                            <h2 id={`intel-bloc-${section.id}`}>
+                                {t(t_key('intel.affiliations.bloc.section.', section.id))} <span>{section.rows.length}</span>
+                            </h2>
+                            <Flexblock gap="var(--space-2xs)">
+                                {section.rows.map(row => <IntelAffiliationRow affiliation={row} show_bloc={false} />)}
+                            </Flexblock>
+                        </section>
+                    )}
+                </Flexblock>
+
+                <Flexblock gap="var(--space-s)" class="[ intel-bloc__aside ]">
+                    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+                        <IntelBlocSettings bloc={bloc} others={blocs.filter(row => row.id !== bloc.id)} />
+                    </ComponentBlock>
+                    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+                        <Flexblock gap="var(--space-xs)">
+                            <h2 class="[ intel-bloc__h2 ]">{t('intel.affiliations.add.title')}</h2>
+                            <IntelAffiliationAddForm bloc_id={bloc.id} return_to="bloc" />
+                        </Flexblock>
+                    </ComponentBlock>
+                </Flexblock>
+            </FluidFixed>
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .intel-bloc__header {
+        flex-wrap: nowrap;
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: var(--space-xl);
+            outline: 1px solid var(--border-color-hover);
+            outline-offset: -1px;
+        }
+    }
+
+    .intel-bloc__subtitle {
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        a {
+            color: var(--highlight);
+        }
+    }
+
+    .intel-bloc__sensitive {
+        font-size: var(--step--1);
+        color: var(--fleet-red);
+        filter: brightness(1.4);
+    }
+
+    .intel-bloc__error {
+        color: var(--highlight);
+    }
+
+    .intel-bloc__main,
+    .intel-bloc__aside {
+        min-width: 0;
+    }
+
+    .intel-bloc__section h2,
+    .intel-bloc__h2 {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+
+        span {
+            color: var(--highlight);
+        }
+    }
+</style>

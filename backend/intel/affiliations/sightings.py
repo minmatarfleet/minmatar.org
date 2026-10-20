@@ -8,6 +8,7 @@ investigated a month ago and still see is queued again for its new months.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from datetime import datetime, timedelta
 
@@ -24,6 +25,8 @@ from intel.affiliations.constants import (
 )
 from intel.affiliations.investigate import group_of
 from intel.models import IntelEntity, IntelReport
+
+logger = logging.getLogger(__name__)
 
 CURSOR_KEY = "intel:sightings:cursor"
 FIRST_WINDOW = timedelta(hours=1)
@@ -123,6 +126,7 @@ def collect(now: datetime | None = None) -> dict:
     try:
         since = cache.get(CURSOR_KEY)
     except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning("Sightings cursor unavailable", exc_info=True)
         since = None
     since = since or now - FIRST_WINDOW
     counts = killmail_sightings(since, now) + local_sightings(since, now)
@@ -130,5 +134,5 @@ def collect(now: datetime | None = None) -> dict:
     try:
         cache.set(CURSOR_KEY, now, None)
     except Exception:  # pylint: disable=broad-exception-caught
-        pass
+        logger.warning("Sightings cursor not saved", exc_info=True)
     return {"groups": len(counts), "queued": queued}
