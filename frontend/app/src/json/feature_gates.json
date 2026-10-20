@@ -89,6 +89,11 @@
             "parity": "superuser_gain",
             "note": "Intel page add-moon tile."
         },
+        "intel.affiliations": {
+            "feature": "intel.affiliations",
+            "legacy": { "perms": ["intel.change_intelaffiliation"], "superuser": true },
+            "note": "Intel affiliation database: review, blocs, members, profiles."
+        },
         "applications.manage": {
             "feature": "applications.manage",
             "legacy": { "perms": ["applications.change_evecorporationapplication"], "superuser": true }

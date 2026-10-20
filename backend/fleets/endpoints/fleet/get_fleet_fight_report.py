@@ -7,6 +7,12 @@ from django.utils import timezone
 from pydantic import BaseModel
 
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
+from intel.affiliations.resolve import (
+    bloc_for_group,
+    bloc_map,
+    public_entry,
+)
 
 from fleets.endpoints.helpers import _fleet_authorized, _fleet_manager
 from fleets.helpers.fights.battle import build_report, ensure_snapshot
@@ -34,6 +40,13 @@ class FleetBattleTotals(BaseModel):
     efficiency: Optional[int] = None
 
 
+class FleetBattleBloc(BaseModel):
+    id: int
+    name: str
+    # Still only suggested in the intel affiliation database.
+    likely: bool
+
+
 class FleetBattleGroup(BaseModel):
     id: int
     kind: str
@@ -41,6 +54,8 @@ class FleetBattleGroup(BaseModel):
     pilots: int
     ships_lost: int
     isk_lost: int
+    # The bloc the group really flies for, for viewers with intel access.
+    bloc: Optional[FleetBattleBloc] = None
 
 
 class FleetBattleShip(BaseModel):
@@ -155,4 +170,15 @@ def get_fleet_fight_report(
     report = build_report(timeline, position, sides)
     if report is None:
         return 404, None
+    if can_use_feature(request.user, "intel.view"):
+        _add_blocs(report)
     return report
+
+
+def _add_blocs(report: dict) -> None:
+    blocs = bloc_map()
+    for team in report.get("teams") or []:
+        for group in team.get("groups") or []:
+            group["bloc"] = public_entry(
+                bloc_for_group(group["kind"], group["id"], blocs=blocs)
+            )

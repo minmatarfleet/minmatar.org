@@ -9,6 +9,7 @@ import { get_item_icon, get_corporation_logo, get_alliance_logo, get_group_logo 
 import { eve_clock, format_damage, ship_group_rank } from '@helpers/fleet_fights'
 import { get_ships_type } from '@helpers/sde/ships'
 import { query_string } from '@helpers/string'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
 
 /**
  * One engagement's battle report, laid out like br.evetools: a Team card
@@ -302,6 +303,7 @@ import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
                                     <img src={member.logo} alt="" width="22" height="22" loading="lazy" />
                                     <span class="[ br__muted ]">({member.pilots})</span>
                                     <a href={`https://zkillboard.com/${member.kind}/${member.id}/`} target="_blank" rel="noopener noreferrer">{member.name}</a>
+                                    {member.bloc && <IntelBlocTag bloc={member.bloc} />}
                                 </span>
                                 {member.right !== null ?
                                     <a

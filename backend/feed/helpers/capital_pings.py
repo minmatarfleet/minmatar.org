@@ -35,6 +35,7 @@ from feed.helpers.ingest import parse_r2z2_payload
 from feed.helpers.killmail_classify import attacker_pilot_count, is_npc_kill
 from feed.helpers.system_distance import light_years_between_systems
 from feed.models import FeedCapitalAlert, FeedCapitalPing
+from intel.affiliations.resolve import bloc_for_group, bloc_map
 from requests.exceptions import HTTPError
 
 logger = logging.getLogger(__name__)
@@ -511,6 +512,28 @@ def _merge_composition(
     )
 
 
+def _bloc_line(composition: dict[str, Any]) -> str | None:
+    """The confirmed bloc most of the attackers fly for, from the intel
+    affiliation database (pings are never edited, so no guesses)."""
+    blocs = bloc_map()
+    attackers: Counter[int] = Counter()
+    names: dict[int, str] = {}
+    for key, count in (composition.get("group_counts") or {}).items():
+        parsed = _parse_group_count_key(key)
+        if parsed is None:
+            continue
+        entry = bloc_for_group(*parsed, confirmed_only=True, blocs=blocs)
+        if entry is not None:
+            attackers[entry["id"]] += int(count)
+            names[entry["id"]] = entry["name"]
+    if not attackers:
+        return None
+    bloc_id, count = attackers.most_common(1)[0]
+    total = int(composition.get("attacker_count") or 0)
+    of_total = f" of {total}" if total >= count else ""
+    return f"**Bloc:** {names[bloc_id]} · {count}{of_total} attackers"
+
+
 def _composition_description_lines(
     composition: dict[str, Any] | None,
 ) -> list[str]:
@@ -524,6 +547,9 @@ def _composition_description_lines(
     main_group_name = main_group.get("name")
     if main_group_name:
         lines.append(f"**Main group:** {main_group_name}")
+    bloc_line = _bloc_line(composition)
+    if bloc_line:
+        lines.append(bloc_line)
     top_ship = composition.get("top_ship") or {}
     top_ship_name = top_ship.get("name")
     if top_ship_name:

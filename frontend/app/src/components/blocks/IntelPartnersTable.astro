@@ -1,0 +1,128 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelPartner } from '@dtypes/api.minmatar.org'
+import { fill, format_month, format_share, intel_bloc_path, intel_entity_image, intel_entity_path } from '@helpers/intel_affiliations'
+
+/**
+ * Who a subject shares kills with: groups on a group's kills, outside pilots
+ * on a group's kills, or (for a pilot) the investigated groups it flies
+ * with. `share` is the share of the subject's sampled kills; a pilot's rows
+ * have none.
+ */
+interface Props {
+    rows:               IntelPartner[];
+    /** Leave out the Share column (a pilot's partners carry no share). */
+    show_share?:        boolean;
+    /** Rows shown before "Show all"; the rest are already rendered, only hidden. */
+    shown?:             number;
+    [propName: string]: any;
+}
+
+const {
+    rows,
+    show_share = true,
+    shown = 10,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const columns = [
+    t('intel.affiliations.col.name'),
+    ...(show_share ? [t('intel.affiliations.col.share')] : []),
+    t('intel.affiliations.col.shared'),
+    t('intel.affiliations.col.months'),
+    t('intel.affiliations.col.against'),
+    t('intel.affiliations.col.militia'),
+    t('intel.affiliations.col.last'),
+    t('intel.affiliations.col.bloc'),
+]
+const numeric = show_share ? [1, 2, 3, 4, 5] : [1, 2, 3, 4]
+const hidden_count = Math.max(0, rows.length - shown)
+const template = `minmax(11rem, 2fr)${show_share ? ' 4rem' : ''} 4.5rem 4.5rem 4.5rem 4.5rem 4.5rem minmax(7rem, 1fr)`
+
+import DataGrid from '@components/blocks/DataGrid.astro'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+---
+
+<div class="[ intel-partners-wrap ]" x-data="{ all: false }">
+<DataGrid
+    columns={columns}
+    template={template}
+    numeric={numeric}
+    min_width={show_share ? '46rem' : '42rem'}
+    class:list={['[ intel-partners ]', Astro.props.class]}
+    {...attributes}
+>
+    {rows.map((row, index) =>
+        <div
+            class="[ data-grid-row ]"
+            role="row"
+            x-show={index >= shown ? 'all' : undefined}
+            x-cloak={index >= shown ? '' : undefined}
+        >
+            <a class="[ data-grid-media intel-partners__name ]" role="cell" href={translatePath(intel_entity_path(row.kind, row.id))}>
+                <img src={intel_entity_image(row.kind, row.id, 64)} alt="" width="24" height="24" loading="lazy" />
+                <span>{row.name}</span>
+            </a>
+            {show_share && <span role="cell" class="[ data-grid-numeric ]">{format_share(row.share)}</span>}
+            <span role="cell" class="[ data-grid-numeric intel-partners__kills ]">{row.shared}</span>
+            <span role="cell" class="[ data-grid-numeric ]">{row.months_together}</span>
+            <span role="cell" class:list={['[ data-grid-numeric ]', { 'intel-partners__zero': !row.against }]}>{row.against}</span>
+            <span role="cell" class:list={['[ data-grid-numeric ]', { 'intel-partners__zero': !row.militia_shared }]}>{row.militia_shared}</span>
+            <span role="cell" class="[ data-grid-numeric data-grid-muted ]">{format_month(row.last_month)}</span>
+            <span role="cell" class="[ data-grid-cell intel-partners__bloc ]">
+                {row.bloc ? <IntelBlocTag bloc={row.bloc} href={translatePath(intel_bloc_path(row.bloc.id))} /> : ''}
+            </span>
+        </div>
+    )}
+</DataGrid>
+{hidden_count > 0 &&
+    <button type="button" class="[ intel-partners__more ]" x-on:click="all = !all" x-bind:aria-expanded="String(all)">
+        <span x-show="!all">{fill(t('intel.affiliations.show_all'), { count: rows.length })}</span>
+        <span x-show="all" x-cloak>{t('intel.affiliations.show_fewer')}</span>
+    </button>
+}
+</div>
+
+<style lang="scss">
+    .intel-partners__name {
+        color: var(--highlight);
+        text-decoration: none;
+
+        &:hover span,
+        &:focus-visible span {
+            text-decoration: underline;
+        }
+    }
+
+    .intel-partners__bloc {
+        justify-items: start;
+    }
+
+    .intel-partners__more {
+        margin-block-start: var(--space-2xs);
+        padding: var(--space-3xs) 0;
+        font: inherit;
+        font-size: var(--step--1);
+        color: var(--foreground);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .intel-partners__kills {
+        color: var(--alliance-blue);
+        filter: brightness(1.8);
+    }
+
+    .intel-partners__zero {
+        color: var(--text-muted);
+    }
+</style>

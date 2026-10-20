@@ -59,6 +59,10 @@ services:
         <<: *celery-worker
         command: celery -A app worker -l info -Q fleets
 
+    celery-intel:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q intel
+
     celery-campaigns:
         <<: *celery-worker
         command: celery -A app worker -l info -Q campaigns

@@ -53,6 +53,12 @@ QUEUES: dict[str, QueueSpec] = {
             dedupe_ttl_seconds=5 * 60,
         ),
         QueueSpec(
+            "intel",
+            "Intel affiliation database: sightings, zKill investigations",
+            max_wait_seconds=30 * 60,
+            dedupe_ttl_seconds=60 * 60,
+        ),
+        QueueSpec(
             "fleets",
             "Fleet tracking, implants, NPSI calendars, roam reports",
             max_wait_seconds=2 * 60,
@@ -129,6 +135,7 @@ FAST_TASKS = frozenset(
 ROUTES: dict[str, str] = {
     "feed.": "feed",
     "fleets.": "fleets",
+    "intel.": "intel",
     "campaigns.": "campaigns",
     "eveonline.": "eveonline",
     "structures.": "eveonline",

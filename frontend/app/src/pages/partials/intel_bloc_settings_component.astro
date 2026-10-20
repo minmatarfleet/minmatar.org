@@ -1,0 +1,77 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a settings save; a failed save shows in the block it swaps back.
+// POST ?action=save renames a bloc / edits its notes; ?action=merge merges it
+// into another bloc and opens that one.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.affiliations')) return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST') return HTTP_400_Bad_Request()
+
+import type { IntelBlocSummary } from '@dtypes/api.minmatar.org'
+import { get_blocs, merge_bloc, update_bloc } from '@helpers/api.minmatar.org/intel_affiliations'
+import { fill, intel_bloc_path, parse_id } from '@helpers/intel_affiliations'
+
+const params = Astro.url.searchParams
+const bloc_id = parse_id(params.get('bloc_id'))
+const action = params.get('action')
+if (!bloc_id || (action !== 'save' && action !== 'merge')) return HTTP_400_Bad_Request()
+
+const form = await Astro.request.formData()
+let status: { kind: 'success' | 'error'; text: string } | null = null
+
+if (action === 'merge') {
+    const into_bloc_id = parse_id(form.get('into_bloc_id'))
+    if (!into_bloc_id) return HTTP_400_Bad_Request()
+    try {
+        await merge_bloc(auth_token, bloc_id, into_bloc_id)
+        return partial_redirect(Astro.request, translatePath(intel_bloc_path(into_bloc_id)))
+    } catch (error) {
+        if ((error as Error).cause === 403) return HTTP_403_Forbidden()
+        status = { kind: 'error', text: fill(t('intel.affiliations.decision_error'), { error: (error as Error).message }) }
+    }
+} else {
+    const name = ((form.get('name') as string | null) ?? '').trim()
+    const notes = ((form.get('notes') as string | null) ?? '').trim()
+    try {
+        await update_bloc(auth_token, bloc_id, { name: name || null, notes })
+        status = { kind: 'success', text: t('intel.affiliations.bloc.saved') }
+    } catch (error) {
+        if ((error as Error).cause === 403) return HTTP_403_Forbidden()
+        status = { kind: 'error', text: fill(t('intel.affiliations.decision_error'), { error: (error as Error).message }) }
+    }
+}
+
+let blocs: IntelBlocSummary[] = []
+try {
+    blocs = await get_blocs(auth_token)
+} catch (error) {
+    status = { kind: 'error', text: fill(t('intel.affiliations.decision_error'), { error: (error as Error).message }) }
+}
+const bloc = blocs.find(row => row.id === bloc_id)
+
+import IntelBlocSettings from '@components/blocks/IntelBlocSettings.astro'
+---
+
+{bloc && action === 'save' && status?.kind === 'success' &&
+    <span id="intel-bloc-title" hx-swap-oob="true">{bloc.name}</span>
+}
+
+{bloc ?
+    <IntelBlocSettings
+        bloc={bloc}
+        others={blocs.filter(row => row.id !== bloc_id)}
+        status={status}
+    />
+    :
+    <p class="[ intel-bloc-settings-error ]" role="alert">{status?.text ?? t('intel.affiliations.bloc.not_found')}</p>
+}

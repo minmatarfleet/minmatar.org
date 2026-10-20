@@ -59,6 +59,10 @@ def report_summary_line(report: IntelReport) -> str:
         ]
         if sides:
             line += " · " + ", ".join(sides)
+        # The biggest bloc we're sure of, from the affiliation database.
+        sure = [b for b in summary.get("blocs") or [] if not b.get("likely")]
+        if sure:
+            line += f" · {sure[0]['count']} {sure[0]['name']}"
     return line
 
 

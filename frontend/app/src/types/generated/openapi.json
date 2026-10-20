@@ -178,6 +178,114 @@
         "title": "AffiliationRefSchema",
         "type": "object"
       },
+      "AffiliationSchema": {
+        "properties": {
+          "bloc": {
+            "$ref": "#/components/schemas/BlocRef"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "ended": {
+            "title": "Ended",
+            "type": "boolean"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/EntityRef"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "first_month": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Month"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_month": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Month"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "relation": {
+            "title": "Relation",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entity",
+          "bloc",
+          "relation",
+          "status",
+          "source",
+          "confidence",
+          "evidence",
+          "first_month",
+          "last_month",
+          "ended",
+          "decided_by",
+          "decided_at",
+          "note"
+        ],
+        "title": "AffiliationSchema",
+        "type": "object"
+      },
       "AggregateSchema": {
         "properties": {
           "distribution": {
@@ -751,6 +859,202 @@
           "character_name"
         ],
         "title": "BasicCharacterResponse",
+        "type": "object"
+      },
+      "BlocDetailResponse": {
+        "properties": {
+          "affiliations": {
+            "items": {
+              "$ref": "#/components/schemas/AffiliationSchema"
+            },
+            "title": "Affiliations",
+            "type": "array"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "associates": {
+            "title": "Associates",
+            "type": "integer"
+          },
+          "groups": {
+            "title": "Groups",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "manual": {
+            "title": "Manual",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "suggested": {
+            "title": "Suggested",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "anchor",
+          "notes",
+          "manual",
+          "groups",
+          "associates",
+          "suggested",
+          "affiliations"
+        ],
+        "title": "BlocDetailResponse",
+        "type": "object"
+      },
+      "BlocListResponse": {
+        "properties": {
+          "blocs": {
+            "items": {
+              "$ref": "#/components/schemas/BlocSummarySchema"
+            },
+            "title": "Blocs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocs"
+        ],
+        "title": "BlocListResponse",
+        "type": "object"
+      },
+      "BlocMergeRequest": {
+        "properties": {
+          "into_bloc_id": {
+            "title": "Into Bloc Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "into_bloc_id"
+        ],
+        "title": "BlocMergeRequest",
+        "type": "object"
+      },
+      "BlocPatchRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "BlocPatchRequest",
+        "type": "object"
+      },
+      "BlocRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "likely": {
+            "default": false,
+            "title": "Likely",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "BlocRef",
+        "type": "object"
+      },
+      "BlocSummarySchema": {
+        "properties": {
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "associates": {
+            "title": "Associates",
+            "type": "integer"
+          },
+          "groups": {
+            "title": "Groups",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "manual": {
+            "title": "Manual",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "suggested": {
+            "title": "Suggested",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "anchor",
+          "notes",
+          "manual",
+          "groups",
+          "associates",
+          "suggested"
+        ],
+        "title": "BlocSummarySchema",
         "type": "object"
       },
       "BlockSchema": {
@@ -8509,6 +8813,57 @@
         "title": "DamageEvent",
         "type": "object"
       },
+      "DecisionRequest": {
+        "properties": {
+          "bloc_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bloc Id"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pet",
+                  "alt",
+                  "ally",
+                  "associate",
+                  "member"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DecisionRequest",
+        "type": "object"
+      },
       "DeleteStatus": {
         "properties": {
           "deleted": {
@@ -8865,6 +9220,227 @@
           "enlisted"
         ],
         "title": "EnlistResponse",
+        "type": "object"
+      },
+      "EntityProfileResponse": {
+        "properties": {
+          "affiliations": {
+            "items": {
+              "$ref": "#/components/schemas/AffiliationSchema"
+            },
+            "title": "Affiliations",
+            "type": "array"
+          },
+          "alliance_history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alliance History",
+            "type": "array"
+          },
+          "bloc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlocRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/PartnerSchema"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "faction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faction Id"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "investigated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Investigated At"
+          },
+          "kills_sampled": {
+            "title": "Kills Sampled",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "losses_sampled": {
+            "title": "Losses Sampled",
+            "type": "integer"
+          },
+          "months_sampled": {
+            "title": "Months Sampled",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "partners": {
+            "items": {
+              "$ref": "#/components/schemas/PartnerSchema"
+            },
+            "title": "Partners",
+            "type": "array"
+          },
+          "sightings": {
+            "title": "Sightings",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "status",
+          "sightings",
+          "first_seen_at",
+          "last_seen_at",
+          "investigated_at",
+          "faction_id",
+          "kills_sampled",
+          "losses_sampled",
+          "months_sampled",
+          "bloc",
+          "alliance_history",
+          "partners",
+          "characters",
+          "affiliations"
+        ],
+        "title": "EntityProfileResponse",
+        "type": "object"
+      },
+      "EntityRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "title": "EntityRef",
+        "type": "object"
+      },
+      "EntitySearchListResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/EntitySearchResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "EntitySearchListResponse",
+        "type": "object"
+      },
+      "EntitySearchResult": {
+        "properties": {
+          "bloc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlocRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "status",
+          "bloc"
+        ],
+        "title": "EntitySearchResult",
         "type": "object"
       },
       "ErrorDetail": {
@@ -13001,6 +13577,29 @@
         "title": "FittingResponse",
         "type": "object"
       },
+      "FleetBattleBloc": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "likely": {
+            "title": "Likely",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "likely"
+        ],
+        "title": "FleetBattleBloc",
+        "type": "object"
+      },
       "FleetBattleFinalBlow": {
         "properties": {
           "character_id": {
@@ -13032,6 +13631,16 @@
       },
       "FleetBattleGroup": {
         "properties": {
+          "bloc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetBattleBloc"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -17926,6 +18535,39 @@
         "title": "InferredSalesVolumeResponse",
         "type": "object"
       },
+      "InvestigateResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "status",
+          "priority"
+        ],
+        "title": "InvestigateResponse",
+        "type": "object"
+      },
       "JitaCheckPollResponse": {
         "properties": {
           "check": {
@@ -20007,6 +20649,85 @@
         "title": "LoyaltyOrderStatsWeek",
         "type": "object"
       },
+      "ManualAffiliationRequest": {
+        "properties": {
+          "bloc_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bloc Id"
+          },
+          "eve_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eve Id"
+          },
+          "kind": {
+            "enum": [
+              "alliance",
+              "corporation",
+              "character"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "new_bloc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Bloc Name"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "pet",
+              "alt",
+              "ally",
+              "associate",
+              "member"
+            ],
+            "title": "Relation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "relation"
+        ],
+        "title": "ManualAffiliationRequest",
+        "type": "object"
+      },
       "MarkSectionReadRequest": {
         "properties": {
           "page_title": {
@@ -20651,6 +21372,87 @@
           }
         },
         "title": "MemberContextSchema",
+        "type": "object"
+      },
+      "MemberCrosscheckResponse": {
+        "properties": {
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberCrosscheckRow"
+            },
+            "title": "Members",
+            "type": "array"
+          }
+        },
+        "required": [
+          "members"
+        ],
+        "title": "MemberCrosscheckResponse",
+        "type": "object"
+      },
+      "MemberCrosscheckRow": {
+        "properties": {
+          "bloc": {
+            "$ref": "#/components/schemas/BlocRef"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/EntityRef"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "last_month": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Month"
+          },
+          "main_character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Character Name"
+          },
+          "months_together": {
+            "title": "Months Together",
+            "type": "integer"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "main_character_name",
+          "bloc",
+          "shared",
+          "months_together",
+          "last_month",
+          "groups"
+        ],
+        "title": "MemberCrosscheckRow",
         "type": "object"
       },
       "MembershipCharacterHistorySchema": {
@@ -22806,6 +23608,85 @@
           "is_acknowledged"
         ],
         "title": "PageProgressStatusResponse",
+        "type": "object"
+      },
+      "PartnerSchema": {
+        "properties": {
+          "against": {
+            "title": "Against",
+            "type": "integer"
+          },
+          "bloc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlocRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_month": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Month"
+          },
+          "militia_shared": {
+            "title": "Militia Shared",
+            "type": "integer"
+          },
+          "months_together": {
+            "title": "Months Together",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share"
+          },
+          "shared": {
+            "title": "Shared",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "shared",
+          "share",
+          "months_together",
+          "against",
+          "militia_shared",
+          "last_month",
+          "bloc"
+        ],
+        "title": "PartnerSchema",
         "type": "object"
       },
       "PartyAttachRequest": {
@@ -25612,6 +26493,75 @@
         "title": "QuestionSchema",
         "type": "object"
       },
+      "QueueEntrySchema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "integer"
+          },
+          "sightings": {
+            "title": "Sightings",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "sightings",
+          "priority"
+        ],
+        "title": "QueueEntrySchema",
+        "type": "object"
+      },
+      "QueueStatsSchema": {
+        "properties": {
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "investigated": {
+            "title": "Investigated",
+            "type": "integer"
+          },
+          "investigating": {
+            "title": "Investigating",
+            "type": "integer"
+          },
+          "next": {
+            "items": {
+              "$ref": "#/components/schemas/QueueEntrySchema"
+            },
+            "title": "Next",
+            "type": "array"
+          },
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queued",
+          "investigating",
+          "investigated",
+          "failed",
+          "next"
+        ],
+        "title": "QueueStatsSchema",
+        "type": "object"
+      },
       "QuietCounts": {
         "properties": {
           "dark": {
@@ -26307,6 +27257,26 @@
           "segment_key"
         ],
         "title": "ResultsSchema",
+        "type": "object"
+      },
+      "ReviewResponse": {
+        "properties": {
+          "queue": {
+            "$ref": "#/components/schemas/QueueStatsSchema"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/AffiliationSchema"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "suggestions",
+          "queue"
+        ],
+        "title": "ReviewResponse",
         "type": "object"
       },
       "RightNow": {
@@ -45918,6 +46888,655 @@
         "tags": [
           "Industry",
           "Industry - Products"
+        ]
+      }
+    },
+    "/api/intel/affiliations": {
+      "post": {
+        "description": "Name the subject by EVE id or exact name, and the bloc by id or a new name. Hand-made affiliations are confirmed.",
+        "operationId": "intel_endpoints_affiliations_post_affiliation_post_affiliation",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAffiliationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliationSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an affiliation by hand",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/affiliations/members": {
+      "get": {
+        "description": "Characters registered on this site that were on an investigated group's sampled kills as often as an associate would be. Leads for a conversation, not proof: a merc contract or a third party on the same brawl looks the same.",
+        "operationId": "intel_endpoints_affiliations_get_members_get_member_crosscheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberCrosscheckResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Our pilots who keep turning up on another bloc's kills",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/affiliations/review": {
+      "get": {
+        "operationId": "intel_endpoints_affiliations_get_review_get_affiliation_review",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Suggested affiliations waiting for the intel team",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/affiliations/{affiliation_id}/decision": {
+      "post": {
+        "description": "Confirming can also correct the relation or move it to another bloc. A rejection is remembered: scoring never suggests it again.",
+        "operationId": "intel_endpoints_affiliations_post_decision_post_affiliation_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "affiliation_id",
+            "required": true,
+            "schema": {
+              "title": "Affiliation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliationSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Confirm or reject an affiliation",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/blocs": {
+      "get": {
+        "operationId": "intel_endpoints_affiliations_get_blocs_get_blocs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlocListResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Every bloc in the affiliation database",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/blocs/{bloc_id}": {
+      "get": {
+        "operationId": "intel_endpoints_affiliations_get_bloc_get_bloc",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bloc_id",
+            "required": true,
+            "schema": {
+              "title": "Bloc Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlocDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "One bloc: its groups, associates, and rejected suggestions",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      },
+      "patch": {
+        "operationId": "intel_endpoints_affiliations_patch_bloc_patch_bloc",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bloc_id",
+            "required": true,
+            "schema": {
+              "title": "Bloc Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlocPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlocSummarySchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Rename a bloc or edit its notes",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/blocs/{bloc_id}/merge": {
+      "post": {
+        "description": "The merged bloc's anchor becomes a confirmed alt alliance of the other, and its affiliations move across (where the other bloc already has a row for the same subject, that row is kept).",
+        "operationId": "intel_endpoints_affiliations_post_bloc_merge_post_bloc_merge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bloc_id",
+            "required": true,
+            "schema": {
+              "title": "Bloc Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlocMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlocSummarySchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Merge a bloc into another",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/entities/search": {
+      "get": {
+        "operationId": "intel_endpoints_affiliations_get_search_get_entity_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitySearchListResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find a group or pilot by name",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/entities/{kind}/{eve_id}": {
+      "get": {
+        "operationId": "intel_endpoints_affiliations_get_entity_get_entity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eve_id",
+            "required": true,
+            "schema": {
+              "title": "Eve Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityProfileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A group or pilot in the affiliation database, with evidence",
+        "tags": [
+          "Intel",
+          "Intel"
+        ]
+      }
+    },
+    "/api/intel/entities/{kind}/{eve_id}/investigate": {
+      "post": {
+        "operationId": "intel_endpoints_affiliations_post_investigate_post_investigate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eve_id",
+            "required": true,
+            "schema": {
+              "title": "Eve Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvestigateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Queue a group's investigation ahead of everything else",
+        "tags": [
+          "Intel",
+          "Intel"
         ]
       }
     },

@@ -28,6 +28,7 @@ from eveonline.constants import (
     MINMATAR_FLEET_ALLIANCE_ID,
 )
 from feed.models import FeedCharacterAffiliation
+from intel.affiliations.resolve import bloc_for, bloc_map, public_entry
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,8 @@ IDS_CHUNK = 500
 AFFILIATION_CHUNK = 1000
 NAMES_CHUNK = 1000
 MAX_ALLIANCE_ROWS = 25
+MAX_CORPORATION_ROWS = 15
+MAX_BLOC_ROWS = 10
 
 _MISSING = 0  # cached for names ESI doesn't know, so they aren't retried
 
@@ -186,6 +189,8 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
         "standings": {HOSTILE: 0, NEUTRAL: 0, FRIENDLY: 0},
         "militia": {"amarr": 0, "minmatar": 0, "none": 0},
         "alliances": [],
+        "corporations": [],
+        "blocs": [],
     }
     use_esi = use_esi and esi_available()
     ids_by_name = _cached_lookup(
@@ -210,6 +215,15 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
 
     alliance_counts: Counter = Counter()
     alliance_standing: dict[int | None, str] = {}
+    # Pilots outside an alliance, by corporation, so a corp that is
+    # someone's pet shows up too.
+    corporation_counts: Counter = Counter()
+    corporation_standing: dict[int, str] = {}
+    blocs = bloc_map()
+    bloc_pilots: Counter = Counter()
+    bloc_entries: dict[int, dict] = {}
+    bloc_groups: dict[int, Counter] = {}
+    bloc_likely: set = set()
     for character_id in character_ids:
         affiliation = affiliations.get(character_id)
         if not affiliation:
@@ -228,14 +242,45 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
         # An alliance is as hostile as its most hostile pilot here.
         if alliance_standing.get(alliance_id) != HOSTILE:
             alliance_standing[alliance_id] = side
+        corporation_id = affiliation.get("corporation_id")
+        if not alliance_id and corporation_id:
+            corporation_counts[corporation_id] += 1
+            if corporation_standing.get(corporation_id) != HOSTILE:
+                corporation_standing[corporation_id] = side
+        entry = bloc_for(
+            character_id=character_id,
+            corporation_id=corporation_id,
+            alliance_id=alliance_id,
+            blocs=blocs,
+        )
+        if entry is not None:
+            bloc_pilots[entry["id"]] += 1
+            group = (
+                ("alliance", alliance_id)
+                if alliance_id
+                else ("corporation", corporation_id)
+            )
+            bloc_groups.setdefault(entry["id"], Counter())[group] += 1
+            # A bloc is certain once any pilot is in it for sure; a group
+            # stays likely while any of its pilots is only suggested.
+            if entry["status"] != "suggested":
+                bloc_entries[entry["id"]] = entry
+            else:
+                bloc_entries.setdefault(entry["id"], entry)
+                bloc_likely.add((entry["id"], group))
 
     alliance_ids = [aid for aid in alliance_counts if aid]
+    corporation_ids = [
+        cid for cid, _ in corporation_counts.most_common(MAX_CORPORATION_ROWS)
+    ]
     alliance_names = (
         _cached_lookup(
-            alliance_ids,
+            alliance_ids + corporation_ids,
             "intel:entity:",
             _esi_names if use_esi else _no_esi,
             ENTITY_NAME_TTL,
+            # Cached too, so a group ESI can't name isn't asked again.
+            missing="",
         )
         or {}
     )
@@ -243,22 +288,61 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
         {
             "id": alliance_id,
             "name": (
-                alliance_names.get(alliance_id, f"Alliance {alliance_id}")
+                alliance_names.get(alliance_id) or f"Alliance {alliance_id}"
                 if alliance_id
                 else "No alliance"
             ),
             "count": count,
             "standing": alliance_standing.get(alliance_id, NEUTRAL),
+            "bloc": public_entry(
+                bloc_for(alliance_id=alliance_id, blocs=blocs)
+            ),
         }
         for alliance_id, count in alliance_counts.items()
     ]
     rows.sort(key=lambda row: (-row["count"], row["name"]))
+    corporation_rows = [
+        {
+            "id": corporation_id,
+            "name": alliance_names.get(corporation_id)
+            or f"Corporation {corporation_id}",
+            "count": corporation_counts[corporation_id],
+            "standing": corporation_standing.get(corporation_id, NEUTRAL),
+            "bloc": public_entry(
+                bloc_for(corporation_id=corporation_id, blocs=blocs)
+            ),
+        }
+        for corporation_id in corporation_ids
+    ]
+    bloc_rows = [
+        {
+            **public_entry(bloc_entries[bloc_id]),
+            "count": count,
+            "groups": [
+                {
+                    "kind": kind,
+                    "id": group_id,
+                    "name": alliance_names.get(group_id)
+                    or f"{kind.title()} {group_id}",
+                    "count": group_count,
+                    "likely": (bloc_id, (kind, group_id)) in bloc_likely,
+                }
+                for (kind, group_id), group_count in bloc_groups[
+                    bloc_id
+                ].most_common()
+                if group_id
+            ],
+        }
+        for bloc_id, count in bloc_pilots.most_common(MAX_BLOC_ROWS)
+    ]
     resolved = sum(alliance_counts.values())
     summary.update(
         {
             "resolved": True,
             "unknown": len(names) - resolved,
             "alliances": rows[:MAX_ALLIANCE_ROWS],
+            "corporations": corporation_rows,
+            "blocs": bloc_rows,
         }
     )
     return summary

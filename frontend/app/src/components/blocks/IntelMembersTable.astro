@@ -1,0 +1,131 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelMemberCrosscheck } from '@dtypes/api.minmatar.org'
+import { fill, format_month, intel_bloc_path, intel_entity_image, intel_entity_path } from '@helpers/intel_affiliations'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+/**
+ * Our own pilots who keep turning up on another bloc's kills. Leads for the
+ * intel team, not proof: the hint above the table says so.
+ */
+interface Props {
+    members:            IntelMemberCrosscheck[];
+    [propName: string]: any;
+}
+
+const {
+    members,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import DataGrid from '@components/blocks/DataGrid.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+---
+
+<Flexblock gap="var(--space-s)" class:list={['[ intel-members ]', Astro.props.class]} {...attributes}>
+    <p class="[ intel-members__hint ]">{t('intel.affiliations.members.hint')}</p>
+    {members.length === 0 ?
+        <EmptyState title={t('intel.affiliations.members.empty')} />
+        :
+        <DataGrid
+            columns={[
+                t('intel.affiliations.members.col_pilot'),
+                t('intel.affiliations.members.col_bloc'),
+                t('intel.affiliations.members.col_shared'),
+                t('intel.affiliations.members.col_months'),
+                t('intel.affiliations.members.col_last'),
+                t('intel.affiliations.members.col_groups'),
+            ]}
+            template="minmax(12rem, 1.5fr) minmax(8rem, 1fr) 5.5rem 4.5rem 4.5rem minmax(12rem, 2fr)"
+            numeric={[2, 3, 4]}
+            min_width="50rem"
+        >
+            {members.map(member =>
+                <div class="[ data-grid-row ]" role="row">
+                    <a class="[ data-grid-media intel-members__pilot ]" role="cell" href={translatePath(intel_entity_path('character', member.character_id))}>
+                        <img src={get_player_icon(member.character_id, 64)} alt="" width="24" height="24" loading="lazy" />
+                        <span>
+                            {member.character_name}
+                            {member.main_character_name && member.main_character_name !== member.character_name &&
+                                <small>{fill(t('intel.affiliations.members.main'), { name: member.main_character_name })}</small>
+                            }
+                        </span>
+                    </a>
+                    <span role="cell" class="[ data-grid-cell intel-members__bloc ]">
+                        <IntelBlocTag bloc={member.bloc} href={translatePath(intel_bloc_path(member.bloc.id))} />
+                    </span>
+                    <span role="cell" class="[ data-grid-numeric intel-members__kills ]">{member.shared}</span>
+                    <span role="cell" class="[ data-grid-numeric ]">{member.months_together}</span>
+                    <span role="cell" class="[ data-grid-numeric data-grid-muted ]">{format_month(member.last_month)}</span>
+                    <span role="cell" class="[ intel-members__groups ]">
+                        {member.groups.map(group =>
+                            <a href={translatePath(intel_entity_path(group.kind, group.id))}>
+                                <img src={intel_entity_image(group.kind, group.id, 32)} alt="" width="16" height="16" loading="lazy" />
+                                {group.name}
+                            </a>
+                        )}
+                    </span>
+                </div>
+            )}
+        </DataGrid>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .intel-members__hint {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .intel-members__pilot {
+        color: var(--highlight);
+        text-decoration: none;
+
+        small {
+            display: block;
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+
+        &:hover > span,
+        &:focus-visible > span {
+            text-decoration: underline;
+        }
+    }
+
+    .intel-members__bloc {
+        justify-items: start;
+    }
+
+    .intel-members__kills {
+        color: var(--alliance-blue);
+        filter: brightness(1.8);
+    }
+
+    .intel-members__groups {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-xs);
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+            color: var(--foreground);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--highlight);
+            }
+        }
+    }
+</style>

@@ -3103,6 +3103,8 @@ export interface IntelLocalAlliance {
     name:               string;
     count:              number;
     standing:           IntelStanding;
+    /** Reports shared before the affiliation database have no bloc. */
+    bloc?:              IntelBlocRef | null;
 }
 
 export interface IntelLocalSummary {
@@ -3112,6 +3114,34 @@ export interface IntelLocalSummary {
     standings?:         Record<IntelStanding, number>;
     militia?:           { amarr: number; minmatar: number; none: number };
     alliances?:         IntelLocalAlliance[];
+    /** Pilots outside an alliance, by corporation (newer reports only). */
+    corporations?:      (IntelLocalAlliance & { id: number })[];
+    /** Pilots by bloc (newer reports only). */
+    blocs?:             IntelLocalBloc[];
+}
+
+// Intel affiliation database: blocs, pets, alts, allies and associates.
+export type IntelBlocRef = ApiResponse<'BlocRef'>
+export type IntelEntityRef = ApiResponse<'EntityRef'>
+export type IntelAffiliation = ApiResponse<'AffiliationSchema'>
+export type IntelAffiliationReview = ApiResponse<'ReviewResponse'>
+export type IntelQueueStats = ApiResponse<'QueueStatsSchema'>
+export type IntelBlocSummary = ApiResponse<'BlocSummarySchema'>
+export type IntelBlocDetail = ApiResponse<'BlocDetailResponse'>
+export type IntelMemberCrosscheck = ApiResponse<'MemberCrosscheckRow'>
+export type IntelEntitySearchResult = ApiResponse<'EntitySearchResult'>
+export type IntelEntityProfile = ApiResponse<'EntityProfileResponse'>
+export type IntelPartner = ApiResponse<'PartnerSchema'>
+export type IntelInvestigation = ApiResponse<'InvestigateResponse'>
+export type IntelDecisionRequest = ApiRequest<'DecisionRequest'>
+export type IntelManualAffiliationRequest = ApiRequest<'ManualAffiliationRequest'>
+export type IntelBlocPatch = ApiRequest<'BlocPatchRequest'>
+export type IntelRelation = IntelManualAffiliationRequest['relation']
+export type IntelEntityKind = IntelManualAffiliationRequest['kind']
+/** A bloc row of a Local report summary (an untyped dict from the API). */
+export type IntelLocalBloc = IntelBlocRef & {
+    count:              number;
+    groups:             (IntelEntityRef & { count: number; likely: boolean })[];
 }
 
 export interface IntelReport {
