@@ -4,8 +4,13 @@ from django.utils import timezone
 
 from discord.models import DiscordUser
 from reddit.markdown import check_reddit_markdown
-from reddit import schedule
-from reddit.models import RedditAccount, RedditPost, RedditPostTemplate
+from reddit import approval, schedule
+from reddit.models import (
+    RedditAccount,
+    RedditPost,
+    RedditPostChangeRequest,
+    RedditPostTemplate,
+)
 from reddit.scheduling import automatic_blocker
 
 # Reddit's own limits for self posts.
@@ -83,6 +88,9 @@ def post_settings(corporation, user) -> dict:
         "recent_changes": [],
         "approved": False,
         "approved_at": None,
+        "change_pending": False,
+        "change_submitted_at": None,
+        "change_rejected_note": None,
         "automatic_status": UNSCHEDULED,
         "last_post_at": None,
         "last_reddit_post_url": None,
@@ -101,13 +109,23 @@ def post_settings(corporation, user) -> dict:
     if template is None:
         return data
     now = timezone.now()
+    # The CEO keeps editing their waiting change, not the approved words.
+    change = approval.pending_change(template)
+    words = change or template
+    # A rejection is news until the CEO edits again.
+    latest = change or template.change_requests.first()
+    rejected = (
+        latest
+        if latest and latest.status == RedditPostChangeRequest.REJECTED
+        else None
+    )
     last_post = _latest(template, RedditPost.POSTED)
     last_reminder = _latest(template, RedditPost.REMINDED)
     in_rotation = template.in_rotation
     data.update(
         {
-            "title": template.title,
-            "content": template.content,
+            "title": words.title,
+            "content": words.content,
             "delivery_method": template.delivery_method,
             "subreddit": template.subreddit,
             "paused": template.paused,
@@ -130,6 +148,13 @@ def post_settings(corporation, user) -> dict:
             ),
             "approved": template.approved,
             "approved_at": template.approved_at,
+            "change_pending": bool(change and template.approved),
+            "change_submitted_at": (
+                change.created_at if change and template.approved else None
+            ),
+            "change_rejected_note": (
+                rejected.review_note if rejected else None
+            ),
             "automatic_status": (
                 (automatic_blocker(template) or READY)
                 if in_rotation
@@ -142,7 +167,7 @@ def post_settings(corporation, user) -> dict:
             "last_reminder_at": (
                 last_reminder.delivered_at if last_reminder else None
             ),
-            "markdown_problems": markdown_problems(template.content),
+            "markdown_problems": markdown_problems(words.content),
         }
     )
     return data
@@ -154,11 +179,13 @@ def save_post_settings(
     content: str,
     delivery_method: str,
     paused: bool | None = None,
+    user=None,
 ) -> RedditPostTemplate:
     """Create or update the corporation's template. `paused` of None leaves
-    it as it is. Editing the title or body withdraws approval: a superuser
-    approved the old words, not the new. The rotation's drafts are brought
-    up to date straight away, so the CEO sees their new estimates."""
+    it as it is. Once a superuser has approved the post, a new title or body
+    waits for them as a change request and the approved words keep going
+    out (see `reddit.approval`). The rotation's drafts are brought up to
+    date straight away, so the CEO sees their new estimates."""
     # Line numbers in Markdown problems refer to the text as typed.
     typed_content = content or ""
     title = (title or "").strip()
@@ -182,15 +209,9 @@ def save_post_settings(
     ).first()
     if template is None:
         template = RedditPostTemplate(corporation=corporation)
-    elif template.title != title or template.content != content:
-        template.approved = False
-        template.approved_by = None
-        template.approved_at = None
-    template.title = title
-    template.content = content
     template.delivery_method = delivery_method
     if paused is not None:
         template.paused = paused
-    template.save()
+    approval.save_edit(template, title, content, user)
     schedule.refresh_drafts()
     return template

@@ -553,6 +553,11 @@ export interface CorporationRedditPost {
     recent_changes:         RedditScheduleChange[];
     approved:               boolean;
     approved_at:            string | null;
+    /** The CEO's edits to an approved post, waiting for a superuser; the approved words keep posting meanwhile. */
+    change_pending:         boolean;
+    change_submitted_at:    string | null;
+    /** Set when their last change was rejected; empty when no note was left. */
+    change_rejected_note:   string | null;
     automatic_status:       RedditAutomaticStatus;
     last_post_at:           string | null;
     last_reddit_post_url:   string | null;

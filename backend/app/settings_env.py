@@ -173,6 +173,15 @@ REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
 REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
 REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
+# Discord user ids DMed when a corporation's Reddit post needs approving.
+# Defaults to BearThatCares.
+REDDIT_REVIEWER_DISCORD_IDS = [
+    i.strip()
+    for i in os.environ.get(
+        "REDDIT_REVIEWER_DISCORD_IDS", "124039469488799746"
+    ).split(",")
+    if i.strip()
+]
 
 # Notifications (web push / Discord DM / Eve mail)
 NOTIFICATIONS_EVE_MAIL_CHARACTER_ID = int(

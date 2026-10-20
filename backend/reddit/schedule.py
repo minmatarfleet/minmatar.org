@@ -16,7 +16,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from reddit import rotation, scheduling
+from reddit import approval, rotation, scheduling
 from reddit.models import (
     RedditPost,
     RedditPostTemplate,
@@ -477,6 +477,7 @@ def run(now: datetime | None = None) -> list[str]:
     publish_due(now)
     reconcile_published(now)
     send_heads_ups(now)
+    approval.notify_reviewers(now)
     return deliver_due(now)
 
 

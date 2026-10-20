@@ -94,6 +94,7 @@ def put_corporation_post(
             payload.content,
             payload.delivery_method,
             payload.paused,
+            user=request.user,
         )
     except PostSettingsError as e:
         return 400, {"detail": e.code, "problems": e.problems}
