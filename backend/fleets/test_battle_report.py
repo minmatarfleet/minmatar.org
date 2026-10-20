@@ -272,6 +272,35 @@ class BattleReportTests(TestCase):
             "Name-99000800", timeline.battle_names["groups"][str(THIRD)]
         )
 
+    def test_groups_show_their_bloc_to_intel_viewers(self):
+        # pylint: disable=import-outside-toplevel
+        from django.contrib.auth.models import Permission
+
+        from intel.models import IntelAffiliation, IntelBloc, IntelEntity
+
+        main = IntelEntity.objects.create(kind="alliance", eve_id=99000999)
+        bloc = IntelBloc.objects.create(name="Snuffed Out", anchor=main)
+        IntelAffiliation.objects.create(
+            entity=IntelEntity.objects.create(kind="alliance", eve_id=THEM),
+            bloc=bloc,
+            relation="pet",
+            status="suggested",
+        )
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+
+        theirs = self.team(self.report().json(), 1)
+        self.assertIsNone(theirs["groups"][0]["bloc"])
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="view_intelreport")
+        )
+        theirs = self.team(self.report().json(), 1)
+        self.assertEqual(
+            {"id": bloc.id, "name": "Snuffed Out", "likely": True},
+            theirs["groups"][0]["bloc"],
+        )
+
     def test_report_has_the_round_window_and_sides(self):
         self.fight()
         fights.rebuild(self.fleet, now=self.now)

@@ -108,4 +108,25 @@ test('report: d-scan tabs and a resolved Local', () => {
     assert.match(html, /data-flex="2"/)
     assert.match(html, /alliances\/99\/logo\?size=64/)
     assert.match(html, /corporations\/500003\/logo/)
+    // Older backends send no blocs: no section.
+    assert.doesNotMatch(html, /By bloc/)
+})
+
+test('report: Local groups pilots into blocs when the backend sends them', () => {
+    const local = {
+        status: 'ready', report_id: 'r2', kind: 'local', system_name: 'Amamake', reporter_name: 'Kesra', created_at: '2026-10-16T19:50:00Z', note: '',
+        summary: {
+            pilots: 14, resolved: true, unknown: 0, standings: { hostile: 0, neutral: 14, friendly: 0 }, militia: { amarr: 0, none: 14, minmatar: 0 },
+            alliances: [{ id: 99004901, name: 'Snuffed Out', standing: 'neutral', count: 9, bloc: { id: 1, name: 'Snuffed Out', likely: false } }],
+            blocs: [{ id: 1, name: 'Snuffed Out', likely: false, count: 14, groups: [
+                { kind: 'alliance', id: 99004901, name: 'Snuffed Out', count: 9, likely: false },
+                { kind: 'alliance', id: 99010022, name: 'Scary <Wormhole> People', count: 5, likely: true },
+            ] }],
+        },
+    }
+    const html = detail_view({ detail: local })
+    assert.match(html, /By bloc/)
+    assert.match(html, /alliances\/99004901\/logo\?size=64/)
+    assert.match(html, /Scary &lt;Wormhole&gt; People 5 <small>likely<\/small>/)
+    assert.ok(html.indexOf('By bloc') < html.indexOf('By alliance'))
 })

@@ -40,7 +40,7 @@ Use these when you only need part of the stack, or when debugging a single proce
 | --- | --- | --- |
 | MariaDB + Redis | repo root | `docker compose up -d` |
 | Django API | `backend/` | `pipenv run python manage.py runserver` |
-| Celery worker (all queues) | `backend/` | `pipenv run celery -A app worker -l info -Q celery,feed,fleets,campaigns,eveonline,market,industry,community` |
+| Celery worker (all queues) | `backend/` | `pipenv run celery -A app worker -l info -Q celery,feed,intel,fleets,campaigns,eveonline,market,industry,community` |
 | Celery worker (one queue, e.g. the fast lane) | `backend/` | `pipenv run celery -A app worker -l info -Q celery` (queues: [docs/architecture/celery-queues.md](docs/architecture/celery-queues.md)) |
 | Celery Beat | `backend/` | `pipenv run celery -A app beat -l info` |
 | Discord bot | `bot/` | `pipenv run python main.py` |

@@ -4101,6 +4101,189 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intel/affiliations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add an affiliation by hand
+         * @description Name the subject by EVE id or exact name, and the bloc by id or a new name. Hand-made affiliations are confirmed.
+         */
+        post: operations["intel_endpoints_affiliations_post_affiliation_post_affiliation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/affiliations/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Our pilots who keep turning up on another bloc's kills
+         * @description Characters registered on this site that were on an investigated group's sampled kills as often as an associate would be. Leads for a conversation, not proof: a merc contract or a third party on the same brawl looks the same.
+         */
+        get: operations["intel_endpoints_affiliations_get_members_get_member_crosscheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/affiliations/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Suggested affiliations waiting for the intel team */
+        get: operations["intel_endpoints_affiliations_get_review_get_affiliation_review"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/affiliations/{affiliation_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm or reject an affiliation
+         * @description Confirming can also correct the relation or move it to another bloc. A rejection is remembered: scoring never suggests it again.
+         */
+        post: operations["intel_endpoints_affiliations_post_decision_post_affiliation_decision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/blocs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every bloc in the affiliation database */
+        get: operations["intel_endpoints_affiliations_get_blocs_get_blocs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/blocs/{bloc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One bloc: its groups, associates, and rejected suggestions */
+        get: operations["intel_endpoints_affiliations_get_bloc_get_bloc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a bloc or edit its notes */
+        patch: operations["intel_endpoints_affiliations_patch_bloc_patch_bloc"];
+        trace?: never;
+    };
+    "/api/intel/blocs/{bloc_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge a bloc into another
+         * @description The merged bloc's anchor becomes a confirmed alt alliance of the other, and its affiliations move across (where the other bloc already has a row for the same subject, that row is kept).
+         */
+        post: operations["intel_endpoints_affiliations_post_bloc_merge_post_bloc_merge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/entities/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a group or pilot by name */
+        get: operations["intel_endpoints_affiliations_get_search_get_entity_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/entities/{kind}/{eve_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A group or pilot in the affiliation database, with evidence */
+        get: operations["intel_endpoints_affiliations_get_entity_get_entity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intel/entities/{kind}/{eve_id}/investigate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a group's investigation ahead of everything else */
+        post: operations["intel_endpoints_affiliations_post_investigate_post_investigate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intel/map": {
         parameters: {
             query?: never;
@@ -6721,6 +6904,37 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** AffiliationSchema */
+        AffiliationSchema: {
+            bloc: components["schemas"]["BlocRef"];
+            /** Confidence */
+            confidence: number;
+            /** Decided At */
+            decided_at: string | null;
+            /** Decided By */
+            decided_by: string | null;
+            /** Ended */
+            ended: boolean;
+            entity: components["schemas"]["EntityRef"];
+            /** Evidence */
+            evidence: {
+                [key: string]: unknown;
+            };
+            /** First Month */
+            first_month: string | null;
+            /** Id */
+            id: number;
+            /** Last Month */
+            last_month: string | null;
+            /** Note */
+            note: string;
+            /** Relation */
+            relation: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+        };
         /** AggregateSchema */
         AggregateSchema: {
             /**
@@ -6964,6 +7178,73 @@ export interface components {
             character_id: number;
             /** Character Name */
             character_name: string;
+        };
+        /** BlocDetailResponse */
+        BlocDetailResponse: {
+            /** Affiliations */
+            affiliations: components["schemas"]["AffiliationSchema"][];
+            anchor: components["schemas"]["EntityRef"] | null;
+            /** Associates */
+            associates: number;
+            /** Groups */
+            groups: number;
+            /** Id */
+            id: number;
+            /** Manual */
+            manual: boolean;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Suggested */
+            suggested: number;
+        };
+        /** BlocListResponse */
+        BlocListResponse: {
+            /** Blocs */
+            blocs: components["schemas"]["BlocSummarySchema"][];
+        };
+        /** BlocMergeRequest */
+        BlocMergeRequest: {
+            /** Into Bloc Id */
+            into_bloc_id: number;
+        };
+        /** BlocPatchRequest */
+        BlocPatchRequest: {
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** BlocRef */
+        BlocRef: {
+            /** Id */
+            id: number;
+            /**
+             * Likely
+             * @default false
+             */
+            likely?: boolean;
+            /** Name */
+            name: string;
+        };
+        /** BlocSummarySchema */
+        BlocSummarySchema: {
+            anchor: components["schemas"]["EntityRef"] | null;
+            /** Associates */
+            associates: number;
+            /** Groups */
+            groups: number;
+            /** Id */
+            id: number;
+            /** Manual */
+            manual: boolean;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Suggested */
+            suggested: number;
         };
         /** BlockSchema */
         BlockSchema: {
@@ -10183,6 +10464,23 @@ export interface components {
              */
             weapon?: string;
         };
+        /** DecisionRequest */
+        DecisionRequest: {
+            /** Bloc Id */
+            bloc_id?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Relation */
+            relation?: ("pet" | "alt" | "ally" | "associate" | "member") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "confirmed" | "rejected";
+        };
         /** DeleteStatus */
         DeleteStatus: {
             /** Deleted */
@@ -10339,6 +10637,70 @@ export interface components {
              * @default
              */
             token_chain_url?: string;
+        };
+        /** EntityProfileResponse */
+        EntityProfileResponse: {
+            /** Affiliations */
+            affiliations: components["schemas"]["AffiliationSchema"][];
+            /** Alliance History */
+            alliance_history: {
+                [key: string]: unknown;
+            }[];
+            bloc: components["schemas"]["BlocRef"] | null;
+            /** Characters */
+            characters: components["schemas"]["PartnerSchema"][];
+            /** Faction Id */
+            faction_id: number | null;
+            /** First Seen At */
+            first_seen_at: string | null;
+            /** Id */
+            id: number;
+            /** Investigated At */
+            investigated_at: string | null;
+            /** Kills Sampled */
+            kills_sampled: number;
+            /** Kind */
+            kind: string;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /** Losses Sampled */
+            losses_sampled: number;
+            /** Months Sampled */
+            months_sampled: number;
+            /** Name */
+            name: string;
+            /** Partners */
+            partners: components["schemas"]["PartnerSchema"][];
+            /** Sightings */
+            sightings: number;
+            /** Status */
+            status: string;
+        };
+        /** EntityRef */
+        EntityRef: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** EntitySearchListResponse */
+        EntitySearchListResponse: {
+            /** Results */
+            results: components["schemas"]["EntitySearchResult"][];
+        };
+        /** EntitySearchResult */
+        EntitySearchResult: {
+            bloc: components["schemas"]["BlocRef"] | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
         };
         /** ErrorDetail */
         ErrorDetail: {
@@ -11947,6 +12309,15 @@ export interface components {
              */
             updated_at: string;
         };
+        /** FleetBattleBloc */
+        FleetBattleBloc: {
+            /** Id */
+            id: number;
+            /** Likely */
+            likely: boolean;
+            /** Name */
+            name: string;
+        };
         /** FleetBattleFinalBlow */
         FleetBattleFinalBlow: {
             /** Character Id */
@@ -11958,6 +12329,7 @@ export interface components {
         };
         /** FleetBattleGroup */
         FleetBattleGroup: {
+            bloc?: components["schemas"]["FleetBattleBloc"] | null;
             /** Id */
             id: number;
             /** Isk Lost */
@@ -13845,6 +14217,19 @@ export interface components {
             top_movers: components["schemas"]["InferredSalesTopMover"][];
             velocity: components["schemas"]["InferredSalesVelocity"];
         };
+        /** InvestigateResponse */
+        InvestigateResponse: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: number;
+            /** Status */
+            status: string;
+        };
         /** JitaCheckPollResponse */
         JitaCheckPollResponse: {
             check: components["schemas"]["FittingBuyJitaCheckSchema"];
@@ -14717,6 +15102,32 @@ export interface components {
              */
             week_start: string;
         };
+        /** ManualAffiliationRequest */
+        ManualAffiliationRequest: {
+            /** Bloc Id */
+            bloc_id?: number | null;
+            /** Eve Id */
+            eve_id?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "alliance" | "corporation" | "character";
+            /** Name */
+            name?: string | null;
+            /** New Bloc Name */
+            new_bloc_name?: string | null;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "pet" | "alt" | "ally" | "associate" | "member";
+        };
         /** MarkSectionReadRequest */
         MarkSectionReadRequest: {
             /**
@@ -15006,6 +15417,29 @@ export interface components {
              * @default []
              */
             tribes?: components["schemas"]["TribeRefSchema"][];
+        };
+        /** MemberCrosscheckResponse */
+        MemberCrosscheckResponse: {
+            /** Members */
+            members: components["schemas"]["MemberCrosscheckRow"][];
+        };
+        /** MemberCrosscheckRow */
+        MemberCrosscheckRow: {
+            bloc: components["schemas"]["BlocRef"];
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Groups */
+            groups: components["schemas"]["EntityRef"][];
+            /** Last Month */
+            last_month: string | null;
+            /** Main Character Name */
+            main_character_name: string | null;
+            /** Months Together */
+            months_together: number;
+            /** Shared */
+            shared: number;
         };
         /** MembershipCharacterHistorySchema */
         MembershipCharacterHistorySchema: {
@@ -15887,6 +16321,28 @@ export interface components {
             section_total: number;
             /** Version */
             version?: string | null;
+        };
+        /** PartnerSchema */
+        PartnerSchema: {
+            /** Against */
+            against: number;
+            bloc: components["schemas"]["BlocRef"] | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Last Month */
+            last_month: string | null;
+            /** Militia Shared */
+            militia_shared: number;
+            /** Months Together */
+            months_together: number;
+            /** Name */
+            name: string;
+            /** Share */
+            share: number | null;
+            /** Shared */
+            shared: number;
         };
         /** PartyAttachRequest */
         PartyAttachRequest: {
@@ -17153,6 +17609,32 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** QueueEntrySchema */
+        QueueEntrySchema: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: number;
+            /** Sightings */
+            sightings: number;
+        };
+        /** QueueStatsSchema */
+        QueueStatsSchema: {
+            /** Failed */
+            failed: number;
+            /** Investigated */
+            investigated: number;
+            /** Investigating */
+            investigating: number;
+            /** Next */
+            next: components["schemas"]["QueueEntrySchema"][];
+            /** Queued */
+            queued: number;
+        };
         /** QuietCounts */
         QuietCounts: {
             /**
@@ -17475,6 +17957,12 @@ export interface components {
             campaign_id: number;
             /** Segment Key */
             segment_key: string;
+        };
+        /** ReviewResponse */
+        ReviewResponse: {
+            queue: components["schemas"]["QueueStatsSchema"];
+            /** Suggestions */
+            suggestions: components["schemas"]["AffiliationSchema"][];
         };
         /** RightNow */
         RightNow: {
@@ -29046,6 +29534,447 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_post_affiliation_post_affiliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualAffiliationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AffiliationSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_members_get_member_crosscheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberCrosscheckResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_review_get_affiliation_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_post_decision_post_affiliation_decision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                affiliation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AffiliationSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_blocs_get_blocs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlocListResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_bloc_get_bloc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bloc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlocDetailResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_patch_bloc_patch_bloc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bloc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlocPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlocSummarySchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_post_bloc_merge_post_bloc_merge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bloc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlocMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlocSummarySchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_search_get_entity_search: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitySearchListResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_get_entity_get_entity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                eve_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    intel_endpoints_affiliations_post_investigate_post_investigate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                eve_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestigateResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

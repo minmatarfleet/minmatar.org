@@ -19,6 +19,11 @@ from authentication import AuthBearer
 from eveonline.helpers.characters.characters import user_primary_character
 from eveonline.models import EveCharacter
 from groups.helpers.feature_access import can_use_feature
+from intel.endpoints.affiliations import (
+    affiliations_router,
+    blocs_router,
+    entities_router,
+)
 from intel.models import IntelReport
 from intel.services.fixtures import load_map, system_ids_by_name
 from intel.services.local import HOSTILE, summarize_local
@@ -32,6 +37,9 @@ from intel.services.recent import (
 from intel.services.ships import summarize_dscan
 
 router = Router(tags=["Intel"])
+router.add_router("affiliations", affiliations_router)
+router.add_router("blocs", blocs_router)
+router.add_router("entities", entities_router)
 
 VIEW_FEATURE = "intel.view"
 REPORT_FEATURE = "intel.report"

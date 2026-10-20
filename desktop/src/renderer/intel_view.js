@@ -224,6 +224,15 @@
             const img = a.id ? `<img class="intel-logo" src="${esc(image_url({ kind: 'alliance', id: a.id }, 64))}" alt="">` : '<span class="intel-logo intel-logo--blank">—</span>'
             return `<div class="intel-alliance">${img}<span>${esc(a.name)}</span>${standing_square(a.standing)}<span class="intel-num">${esc(a.count)}</span></div>`
         }).join('')
+        // Blocs come from the alliance's affiliation database (pets, alt alliances, pilots who fly with a group);
+        // older backends don't send them. "likely" is still only a suggestion.
+        const blocs = (s.blocs || []).map(b => {
+            const lead = (b.groups || [])[0]
+            const img = lead ? `<img class="intel-logo" src="${esc(image_url({ kind: lead.kind, id: lead.id }, 64))}" alt="">` : '<span class="intel-logo intel-logo--blank">—</span>'
+            const groups = (b.groups || []).map(g => `<span>${esc(g.name)} ${esc(g.count)}${g.likely ? ' <small>likely</small>' : ''}</span>`).join('')
+            return `<div class="intel-bloc"><div class="intel-alliance">${img}<span>${esc(b.name)}${b.likely ? ' <small class="intel-likely">likely</small>' : ''}</span><span class="intel-num">${esc(b.count)}</span></div><div class="intel-bloc__groups">${groups}</div></div>`
+        }).join('')
+        const by_bloc = blocs ? `<section aria-label="By bloc"><div class="intel-heading"><span>By bloc</span></div>${blocs}</section>` : ''
         return `<div class="intel-toolbar"><b class="intel-big">${esc(s.pilots)}</b><span class="eve-dim">pilots in local</span><span class="intel-spacer"></span>${delta}</div>
         <div class="intel-bar" role="img" aria-label="${esc(`${st.hostile} hostile, ${st.neutral} neutral, ${st.friendly} friendly`)}">
             <div class="intel-bar__hostile" data-flex="${st.hostile}"></div><div class="intel-bar__neutral" data-flex="${st.neutral}"></div><div class="intel-bar__friendly" data-flex="${st.friendly}"></div>
@@ -233,6 +242,7 @@
             <div><span class="intel-logo intel-logo--blank intel-logo--lg">—</span><span><b>${esc(s.militia.none)}</b><br><small>No militia</small></span></div>
             <div>${logo(MINMATAR)}<span><b>${esc(s.militia.minmatar)}</b><br><small>Minmatar militia</small></span></div>
         </div>
+        ${by_bloc}
         <section aria-label="By alliance"><div class="intel-heading"><span>By alliance</span>${s.unknown ? `<span>${esc(s.unknown)} not found</span>` : ''}</div>${alliances}</section>`
     }
 

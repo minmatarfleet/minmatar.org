@@ -72,6 +72,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 |------|-------|-------------------|----------------|
 | `intel.view` | `affiliation` | `intel.view_intelreport` | Alliance, Associate |
 | `intel.report` | `affiliation` | `intel.add_intelreport` | Alliance, Associate |
+| `intel.affiliations` | `staff` | `intel.change_intelaffiliation` | staff permission |
 
 ## Staff / administration
 

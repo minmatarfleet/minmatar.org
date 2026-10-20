@@ -286,6 +286,47 @@ class CapitalPingTestCase(TestCase):
         self.assertNotIn("(attacking)", embed["description"])
         self.assertNotIn("Kills:", embed["description"])
 
+    def test_build_capital_alert_payload_names_a_confirmed_bloc(self):
+        # pylint: disable=import-outside-toplevel
+        from intel.affiliations.resolve import invalidate
+        from intel.models import IntelAffiliation, IntelBloc, IntelEntity
+
+        main = IntelEntity.objects.create(kind="alliance", eve_id=99000000)
+        bloc = IntelBloc.objects.create(name="Snuffed Out", anchor=main)
+        for eve_id, status in (
+            (99000001, "confirmed"),
+            (99000002, "suggested"),
+        ):
+            IntelAffiliation.objects.create(
+                entity=IntelEntity.objects.create(
+                    kind="alliance", eve_id=eve_id
+                ),
+                bloc=bloc,
+                relation="pet",
+                status=status,
+            )
+        invalidate()
+        built = build_capital_alert_payload(
+            system_name="Amamake",
+            distance_ly=0.0,
+            capitals=[],
+            composition={
+                "attacker_count": 20,
+                "group_counts": {
+                    "alliance:99000000": 9,
+                    "alliance:99000001": 5,
+                    # Only suggested: a ping is never edited, so no guesses.
+                    "alliance:99000002": 4,
+                    "corporation:98000001": 2,
+                },
+            },
+            kills=[],
+        )
+        self.assertIn(
+            "**Bloc:** Snuffed Out · 14 of 20 attackers",
+            built["embeds"][0]["description"],
+        )
+
     def test_build_capital_alert_payload_includes_kills_when_multiple(self):
         built = build_capital_alert_payload(
             system_name="Amamake",

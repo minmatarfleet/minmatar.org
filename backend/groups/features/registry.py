@@ -325,6 +325,18 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="intel.add_intelreport",
         default_affiliation_names=_aff("Alliance", "Associate"),
     ),
+    "intel.affiliations": FeatureDefinition(
+        code="intel.affiliations",
+        label="Manage intel affiliations",
+        scope=FeatureScope.STAFF,
+        description=(
+            "See the evidence behind blocs, pets and associates, confirm or "
+            "reject suggested affiliations, and check members who fly with "
+            "other blocs."
+        ),
+        staff_permission="intel.change_intelaffiliation",
+        legacy_permission="intel.change_intelaffiliation",
+    ),
     "campaigns.view": FeatureDefinition(
         code="campaigns.view",
         label="View campaigns",

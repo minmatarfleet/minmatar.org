@@ -518,6 +518,32 @@ CELERYBEAT_FEED = [
     ),
 ]
 
+# Intel affiliation database
+CELERYBEAT_INTEL = [
+    (
+        "[Intel] Collect group sightings",
+        {
+            "task": "intel.tasks.collect_intel_sightings",
+            "schedule": crontab(minute=5, hour="*"),
+        },
+    ),
+    (
+        "[Intel] Investigate queued groups",
+        {
+            "task": "intel.tasks.investigate_queued_groups",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"expire_seconds": 10 * 60},
+        },
+    ),
+    (
+        "[Intel] Score affiliations",
+        {
+            "task": "intel.tasks.score_intel_affiliations",
+            "schedule": crontab(minute=40, hour=5),
+        },
+    ),
+]
+
 CELERYBEAT_SURVEYS = [
     (
         "[Surveys] Snapshot aggregates for open campaigns",
@@ -660,6 +686,7 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
     + CELERYBEAT_FEED
+    + CELERYBEAT_INTEL
     + CELERYBEAT_SURVEYS
     + CELERYBEAT_CAMPAIGNS
     + CELERYBEAT_OTHER
