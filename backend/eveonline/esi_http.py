@@ -31,6 +31,9 @@ from eveonline import esi_budget
 logger = logging.getLogger(__name__)
 
 ESI_BASE_URL = "https://esi.evetech.net/latest"
+# Routes added since compatibility dates replaced versions (corporation
+# projects) are only served here; under /latest they answer 404.
+ESI_HOST_URL = "https://esi.evetech.net"
 ESI_COMPATIBILITY_DATE = "2026-06-09"
 DEFAULT_TIMEOUT_SECONDS = 30
 UA_APPNAME = "MinmatarOrg"

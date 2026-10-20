@@ -13,6 +13,7 @@ from eveonline import esi_budget
 from eveonline.esi_http import (  # noqa: F401 - re-exported constants
     ESI_BASE_URL,
     ESI_COMPATIBILITY_DATE,
+    ESI_HOST_URL,
     EsiHttpResult,
     esi_request,
 )
@@ -1214,7 +1215,7 @@ class EsiClient:
     ) -> EsiResponse:
         """Every project of the corporation (``state`` All or Active)."""
         return self._cursor_walk(
-            f"{ESI_BASE_URL}/corporations/{corporation_id}/projects",
+            f"{ESI_HOST_URL}/corporations/{corporation_id}/projects",
             SCOPE_CORPORATION_PROJECTS,
             "projects",
             params={"state": state},
@@ -1226,7 +1227,7 @@ class EsiClient:
         """One project with its configuration, reward and dates."""
         return self._authenticated_esi_request(
             "GET",
-            f"{ESI_BASE_URL}/corporations/{corporation_id}"
+            f"{ESI_HOST_URL}/corporations/{corporation_id}"
             f"/projects/{project_id}",
             SCOPE_CORPORATION_PROJECTS,
         )
@@ -1237,7 +1238,7 @@ class EsiClient:
         """Each contributor's total progress. Needs the Project_Manager
         role in game, which CEOs and directors hold."""
         return self._cursor_walk(
-            f"{ESI_BASE_URL}/corporations/{corporation_id}"
+            f"{ESI_HOST_URL}/corporations/{corporation_id}"
             f"/projects/{project_id}/contributors",
             SCOPE_CORPORATION_PROJECTS,
             "contributors",

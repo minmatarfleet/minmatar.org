@@ -53,6 +53,7 @@ class FakeEsi:
         self.calls.append(
             {
                 "method": prepared.method,
+                "url": prepared.url.split("?")[0],
                 "path": path,
                 "query": query,
                 "headers": dict(prepared.headers),
