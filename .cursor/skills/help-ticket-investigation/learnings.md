@@ -39,6 +39,36 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-20 — Set main returns 500 (nickname collision)
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Set main and Add your main both returned 500. Another account still held the character name on `EvePlayer.nickname` and still pointed `primary_character` at the moved character. Alliance Discord roles stayed empty because affiliation needs a main.
+**Durable rule:** A 500 on `/characters/primary` or `/characters/add` during set-main is `IntegrityError` on nickname or the primary one-to-one. `set_primary_character` must free both before saving the claimer.
+**Skill update:** added the set-main 500 row above the unlinked-account row.
+
+## 2026-10-20 — Alts category for doctrine ships
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner (they opened it)
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Asked to add a group's ships to doctrines and a new Alts ship category. Fitting roles are primary, secondary, support, and utility. No hull list and no target doctrine were in the thread.
+**Durable rule:** Do not invent doctrine hulls. Ask which ships and which doctrine. An Alts role is a new `EveDoctrineFitting.role`, not a doctrine type.
+**Skill update:** added the Alts-category row.
+
+## 2026-10-20 — Open technology tickets already answered
+
+**Category:** pulse.technology
+**Verdict:** skip
+**Discord:** no new reply
+**PR:** skill-only (same PR)
+**Symptom vs cause:** The open set included an archived onboarding thread, a note-to-self, and a fitting-paste thread that already had a clarify reply. Non-technology categories were left to their assignees.
+**Durable rule:** Do not re-reply a thread that already has the 1/2/3 outcome. Archived threads and note-to-self tickets stay quiet.
+**Skill update:** none (already covered)
+
 ## 2026-10-17 — Previous corp Discord role stays after the main moves
 
 **Category:** pulse.technology

@@ -2,6 +2,7 @@ import logging
 from typing import List, Sequence
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.utils import timezone
 from pydantic import BaseModel
 
@@ -75,36 +76,134 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
     return None
 
 
+def _nickname_taken(nickname: str, exclude_player: EvePlayer | None) -> bool:
+    """True when another player already holds this nickname (case-insensitive)."""
+    if not nickname:
+        return False
+    queryset = EvePlayer.objects.filter(nickname__iexact=nickname)
+    if exclude_player is not None and exclude_player.pk:
+        queryset = queryset.exclude(pk=exclude_player.pk)
+    return queryset.exists()
+
+
+def _fallback_player_nickname(player: EvePlayer, *, avoid: str) -> str:
+    """A unique nickname that is not the character name being claimed."""
+    base = ""
+    if player.user_id and player.user.username:
+        base = player.user.username
+    if not base:
+        base = f"player{player.pk or 'x'}"
+    avoid_fold = (avoid or "").casefold()
+    pk = player.pk or "x"
+    candidates = [base, f"{base}__u{pk}", f"{base}__u{pk}__2"]
+    for candidate in candidates:
+        if not candidate or candidate.casefold() == avoid_fold:
+            continue
+        if not _nickname_taken(candidate, player):
+            return candidate[:255]
+    return f"{base}__u{pk}__3"[:255]
+
+
+def _available_player_nickname(
+    desired: str, *, exclude_player: EvePlayer | None, user: User
+) -> str:
+    """Prefer the character name; otherwise a unique fallback that will save."""
+    cleaned = (desired or "").strip()
+    if cleaned and not _nickname_taken(cleaned, exclude_player):
+        return cleaned[:255]
+    if exclude_player is not None:
+        return _fallback_player_nickname(exclude_player, avoid=cleaned)
+    base = user.username or f"user{user.pk}"
+    for candidate in (base, f"{base}__u{user.pk}"):
+        if cleaned and candidate.casefold() == cleaned.casefold():
+            continue
+        if not _nickname_taken(candidate, None):
+            return candidate[:255]
+    return f"{base}__u{user.pk}__2"[:255]
+
+
+def _release_nickname(holder: EvePlayer, desired: str) -> None:
+    if (
+        desired
+        and holder.nickname
+        and holder.nickname.casefold() == desired.casefold()
+    ):
+        holder.nickname = _fallback_player_nickname(holder, avoid=desired)
+
+
+def _release_character_from_other_players(
+    character: EveCharacter, user: User
+) -> None:
+    """Drop a stale primary pointer so this character can be claimed.
+
+    EvePlayer.primary_character is one-to-one, and nickname is unique.
+    A previous account can still point at the character, or still hold its
+    name, after the character moved. Saving the new primary then raises
+    IntegrityError (500) on either key.
+    """
+    desired = (character.character_name or "").strip()
+    holders = EvePlayer.objects.filter(primary_character=character).exclude(
+        user=user
+    )
+    for holder in holders:
+        holder.primary_character = None
+        _release_nickname(holder, desired)
+        holder.save()
+
+    if not desired:
+        return
+    name_holders = EvePlayer.objects.filter(nickname__iexact=desired).exclude(
+        user=user
+    )
+    for holder in name_holders:
+        _release_nickname(holder, desired)
+        holder.save()
+
+
 def set_primary_character(user: User, character: EveCharacter):
     """Sets the primary character for a user"""
-    current_primary = user_primary_character(user)
-    if current_primary and (current_primary != character):
-        AuditEntry.objects.create(
-            user=user,
-            character=character,
-            old_character_id=current_primary.character_id,
-            category="primary_char",
-            summary=f"User {user.username} set primary character to {character.character_name}",
-        )
-        old_player = user_player(user)
-        if old_player and old_player.primary_character == current_primary:
-            old_player.primary_character = None
-            old_player.save()
+    with transaction.atomic():
+        current_primary = user_primary_character(user)
+        if current_primary and (current_primary != character):
+            AuditEntry.objects.create(
+                user=user,
+                character=character,
+                old_character_id=current_primary.character_id,
+                category="primary_char",
+                summary=(
+                    f"User {user.username} set primary character to "
+                    f"{character.character_name}"
+                ),
+            )
+            old_player = user_player(user)
+            if old_player and old_player.primary_character == current_primary:
+                old_player.primary_character = None
+                old_player.save()
 
-    character.user = user
-    character.save()
+        _release_character_from_other_players(character, user)
 
-    player = user_player(user)
-    if player:
-        player.primary_character = character
-        player.nickname = character.character_name
-        player.save()
-    else:
-        EvePlayer.objects.create(
-            user=user,
-            primary_character=character,
-            nickname=character.character_name,
-        )
+        character.user = user
+        character.save()
+
+        desired = character.character_name or ""
+        player = user_player(user)
+        if player:
+            player.primary_character = character
+            if desired.strip():
+                player.nickname = _available_player_nickname(
+                    desired, exclude_player=player, user=user
+                )
+            player.save()
+        else:
+            EvePlayer.objects.create(
+                user=user,
+                primary_character=character,
+                nickname=_available_player_nickname(
+                    desired or user.username,
+                    exclude_player=None,
+                    user=user,
+                ),
+            )
 
 
 def user_player(user: User) -> EvePlayer | None:
