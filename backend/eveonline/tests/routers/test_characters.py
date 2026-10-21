@@ -815,6 +815,7 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual("ACTIVE", tokens[0]["token_state"])
         self.assertEqual("Basic", tokens[0]["requested_level"])
         self.assertEqual("Public", tokens[0]["actual_level"])
+        self.assertEqual(["Public"], tokens[0]["actual_groups"])
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_delete_character_orphans_instead_of_hard_delete(self):

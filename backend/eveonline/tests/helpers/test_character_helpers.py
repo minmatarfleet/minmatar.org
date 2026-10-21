@@ -20,6 +20,7 @@ from eveonline.scopes import (
     TokenType,
     parse_scope_groups,
     scope_group,
+    scope_groups,
     scope_names,
     scopes_for,
     scopes_for_groups,
@@ -146,6 +147,46 @@ class CharacterHelperTests(TestCase):
             token_satisfies_type(token, TokenType.FACTION_WARFARE)
         )
         self.assertEqual("Basic", scope_group(token))
+
+    def test_scope_groups_lists_every_group_widest_first(self):
+        token = Token.objects.create(user=self.user, character_id=10010)
+        for token_type in (
+            TokenType.EXECUTOR,
+            TokenType.INDUSTRY,
+            TokenType.FLEET_COMMANDER,
+            TokenType.FACTION_WARFARE,
+            TokenType.DESKTOP,
+        ):
+            add_scopes(token_type, token)
+
+        self.assertEqual(
+            [
+                "Executor",
+                "Market",
+                "Director",
+                "Industry",
+                "FleetCommander",
+                "FactionWarfare",
+                "Desktop",
+            ],
+            scope_groups(token),
+        )
+
+    def test_scope_groups_keeps_the_widest_label_on_a_partial_token(self):
+        token = Token.objects.create(user=self.user, character_id=10011)
+        add_scopes(TokenType.BASIC, token)
+        blueprints, _ = Scope.objects.get_or_create(
+            name="esi-characters.read_blueprints.v1"
+        )
+        token.scopes.add(blueprints)
+
+        self.assertEqual(["Industry"], scope_groups(token))
+
+    def test_scope_groups_basic_token(self):
+        token = Token.objects.create(user=self.user, character_id=10012)
+        add_scopes(TokenType.BASIC, token)
+
+        self.assertEqual(["Basic"], scope_groups(token))
 
     def test_market_does_not_request_director_scopes(self):
         market = set(scopes_for(TokenType.MARKET))
