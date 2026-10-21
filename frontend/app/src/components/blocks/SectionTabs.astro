@@ -61,7 +61,15 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             },
             // In-page links such as href="#apply" open their tab.
             follow_hash() {
-                const hash = window.location.hash.replace('#', '')
+                this.open_hash(window.location.hash.replace('#', ''))
+            },
+            // ClientRouter turns same-page hash links into pushState, which
+            // fires no hashchange, so those links are followed on click too.
+            follow_link(event) {
+                const link = event.target.closest?.('a[href^="#"]')
+                if (link) this.open_hash(link.getAttribute('href').slice(1))
+            },
+            open_hash(hash) {
                 const next = this.tab_for(hash)
                 if (!next) return
                 const aliased = next !== hash
@@ -91,6 +99,7 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             },
         }`}
         x-on:hashchange.window="follow_hash()"
+        x-on:click.window="follow_link($event)"
     >
         <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
             {tabs.map((tab) =>
