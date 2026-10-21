@@ -1,0 +1,67 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FittingItem } from '@dtypes/layout_components'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { get_fitting_item } from '@helpers/fetching/ships'
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+// Results for the Ctrl+Shift+G fitting finder. Fetched as the pilot types, so
+// pages don't carry the whole fitting library in their HTML.
+const search = Astro.url.searchParams.get('search') ?? ''
+
+let fittings:FittingItem[] = []
+let get_fittings_error:Error | false = false
+
+if (search !== '') {
+    try {
+        const query = search.toLowerCase()
+        const matches = (await get_fittings()).filter((fitting) => fitting.name.toLowerCase().includes(query))
+        fittings = await Promise.all(matches.map((fitting) => get_fitting_item(fitting)))
+        fittings.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a.ship_type) - SHIP_TYPES_SORTED.indexOf(b.ship_type))
+    } catch (error) {
+        get_fittings_error = error
+    }
+}
+
+const FITTINGS_FINDER_LIST_PARTIAL_URL = translatePath(`/partials/fittings_finder_list_component?search=${encodeURIComponent(search)}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Badge from '@components/blocks/Badge.astro';
+import FittingLink from '@components/blocks/FittingLink.astro';
+---
+
+{get_fittings_error ?
+    <ErrorRefetch
+        args={{
+            partial: FITTINGS_FINDER_LIST_PARTIAL_URL,
+            error: get_fittings_error,
+            delay: 0,
+        }}
+    />
+    : search !== '' &&
+    <Flexblock gap='var(--space-3xs)'>
+        {/* Always first, as in the old inline list, so results keep their spacing. */}
+        <div class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]" hidden={fittings.length > 0}>
+            <span>{t('no_fittings')}</span>
+        </div>
+        {fittings.map((fitting) =>
+            <FittingLink
+                fitting_id={fitting.id}
+                fitting_name={fitting.fitting_name}
+                fitting-finder-action="accept"
+                fitting-finder-data={fitting.id}
+                x-on:click="(search = '')"
+            >
+                <Badge
+                    title={fitting.fitting_name}
+                    image={get_item_icon(fitting.ship_id)}
+                    subtitle={fitting.ship_type}
+                />
+            </FittingLink>
+        )}
+    </Flexblock>
+}

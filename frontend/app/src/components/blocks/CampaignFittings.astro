@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CampaignFitting } from '@dtypes/api.minmatar.org'
@@ -30,7 +31,7 @@ const rows = (fittings ?? []).filter(fitting => fitting.fitting_id)
                 {rows.map(fitting =>
                     <a
                         class="[ campaign-fittings__link ]"
-                        href={translatePath(`/ships/fittings/${fitting.fitting_id}`)}
+                        href={translatePath(fitting_path(fitting.fitting_id))}
                     >
                         <span>{fitting.role_label || fitting.ship_name || fitting.name}</span>
                         {fitting.srp_eligible &&

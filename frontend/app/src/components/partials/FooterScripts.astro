@@ -107,6 +107,10 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
                 || document.getElementById('content')
             if (root)
                 htmx.process(root)
+            // The character and fitting finders sit outside that root and
+            // search through htmx; each navigation renders them afresh.
+            document.querySelectorAll('.characters-finder, .fittings-finder')
+                .forEach((finder) => htmx.process(finder))
             // Init from body so page bindings see Viewport x-data
             // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
             // initTree(content) alone orphans those expressions after soft nav.

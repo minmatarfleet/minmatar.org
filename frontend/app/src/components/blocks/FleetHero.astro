@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path, fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Contract } from '@dtypes/api.minmatar.org'
@@ -113,7 +114,7 @@ import TextBox from '@components/layout/TextBox.astro';
                                 {doctrine &&
                                     <div class="[ fleet-fact ]">
                                         <small class="[ fleet-fact__label ]">{t('doctrine')}</small>
-                                        <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+                                        <StylessButton href={translatePath(doctrine_path(doctrine.id, doctrine.name))}>
                                             <ItemBadge
                                                 type_id={doctrine.primary_fittings[0].ship_id}
                                                 item_name={doctrine.name}
@@ -172,7 +173,7 @@ import TextBox from '@components/layout/TextBox.astro';
             >
                 <Marquee separator_width='200px'>
                     {hero_fittings.map((fitting) => (
-                        <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+                        <StylessButton href={translatePath(fitting_path(fitting.id, fitting.fitting_name))}>
                             <ItemBadge
                                 type_id={fitting.ship_id}
                                 item_name={fitting.fitting_name}

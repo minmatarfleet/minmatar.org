@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { COVER_IMAGE, CANONICAL_PATH } from '@/data/campaigns/auga'
+import { COVER_IMAGE, ALLIANCE_PATH } from '@/data/campaigns/auga'
 import { buildAugaSiegeJsonLd } from '@/data/campaigns/auga-seo'
 import { get_site_origin } from '@helpers/seo'
 
@@ -20,7 +20,7 @@ const page_description = t('campaigns.auga.leading_text')
 const meta_title = t('campaigns.auga.meta_title').replace('{site}', t('index.page_title'))
 const meta_description = t('campaigns.auga.meta_description')
 const site_origin = get_site_origin(Astro.url.origin)
-const canonical_url = new URL(translatePath(CANONICAL_PATH), site_origin).href
+const canonical_url = new URL(translatePath(ALLIANCE_PATH), site_origin).href
 const meta_image = new URL(COVER_IMAGE, site_origin).href
 
 import {

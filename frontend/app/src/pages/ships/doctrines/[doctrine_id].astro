@@ -35,6 +35,15 @@ try {
     fetch_doctrine_error = error
 }
 
+import { doctrine_path } from '@helpers/ship_paths'
+
+// One URL per doctrine: ID-only, stale-name and slashless links land on the named one.
+if (doctrine) {
+    const canonical_path = translatePath(doctrine_path(doctrine.id, doctrine.name))
+    if (Astro.url.pathname !== canonical_path)
+        return Astro.redirect(`${canonical_path}${Astro.url.search}`, 301)
+}
+
 const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
 
 import {
@@ -96,7 +105,7 @@ const page_description = doctrine?.description
         {fetch_doctrine_error ?
             <ErrorRefetch
                 args={{
-                    partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
+                    partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${parseInt(doctrine_id)}`,
                     error: fetch_doctrine_error,
                     delay: 0,
                 }}

@@ -7,7 +7,6 @@ export const YC_YEAR = 128
 export const YC_LABEL = `YC${YC_YEAR}` as const
 /** URL slug — includes YC so future Auga sieges can coexist. */
 export const SLUG = `auga-yc${YC_YEAR}` as const
-export const CANONICAL_PATH = `/campaigns/${SLUG}/` as const
 export const ALLIANCE_PATH = `/alliance/campaigns/${SLUG}/` as const
 
 export const SOLAR_SYSTEM_ID = 30_002_542

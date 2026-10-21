@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
 import { eve_day_short } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -97,7 +98,7 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
             <dt>{fleet.doctrine ? t('doctrine') : t('campaign')}</dt>
             <dd>
                 {fleet.doctrine &&
-                    <StylessButton href={translatePath(`/ships/doctrines/${fleet.doctrine.id}`)}>
+                    <StylessButton href={translatePath(doctrine_path(fleet.doctrine.id, fleet.doctrine.name))}>
                         <ItemBadge
                             type_id={fleet.doctrine.primary_fittings[0]?.ship_id}
                             item_name={fleet.doctrine.name}

@@ -21,7 +21,7 @@ const meta_title = t('campaigns.etherium_reach.meta_title')
     .replace('{site}', t('index.page_title'))
 const meta_description = t('campaigns.etherium_reach.meta_description')
 const site_origin = get_site_origin(Astro.url.origin)
-const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), site_origin).href
+const canonical_url = new URL(translatePath('/alliance/campaigns/etherium-reach/'), site_origin).href
 const meta_image = new URL(COVER_IMAGE, site_origin).href
 
 import {

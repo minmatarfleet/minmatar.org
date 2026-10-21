@@ -1,5 +1,6 @@
 ---
 import { i18n, t_key } from '@helpers/i18n'
+import { fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -58,7 +59,7 @@ const remove_url = (volunteer_id:number) => `${FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL
     ...partial_params,
 })}`
 
-const fitting_href = entry.fitting_id ? translatePath(`/ships/fittings/${entry.fitting_id}/`) : undefined
+const fitting_href = entry.fitting_id ? translatePath(fitting_path(entry.fitting_id)) : undefined
 const contracts = supply?.contracts ?? null
 const market_fits = supply?.market_fits ?? null
 const market_title = market_fits === 0 && supply?.market_missing?.length

@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { DoctrineType } from '@dtypes/layout_components'
@@ -100,7 +101,7 @@ const off_plan = Boolean(planned && flown_ids.size > 0 && !flown_ids.has(planned
                 </span>
                 <span class="[ doctrine-flown__name ]">
                     {row.doctrine_id ?
-                        <a href={translatePath(`/ships/doctrines/${row.doctrine_id}`)}><b>{row.name}</b></a> :
+                        <a href={translatePath(doctrine_path(row.doctrine_id, row.name))}><b>{row.name}</b></a> :
                         <b>{row.name}</b>
                     }
                     <small>
