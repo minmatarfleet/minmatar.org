@@ -1,4 +1,4 @@
-"""Every killmail around a fleet's rounds, and the round battle report.
+"""Every killmail around a fleet's rounds, and its battle report.
 
 The timeline's own rows only hold mails our fleet was on. A battle report
 needs everything that died nearby: third parties, and allies who were not
@@ -18,9 +18,10 @@ A snapshot row:
      "partial" (only on rows rebuilt from the timeline's own row because
                 the feed no longer had the mail)}
 
-A round's report filters the snapshot to the round's systems, from its
-first mail minus ``WINDOW_PAD`` to its last plus ``WINDOW_PAD``, then splits
-everyone into sides (``assign_sides``, pure) the way br.evetools does.
+A report covers the whole fleet, or any window of it an FC saved as a
+segment or a pilot picked on the activity strip. It filters the snapshot
+to the window, then splits everyone into sides (``assign_sides``, pure) the
+way br.evetools does, from the window's own mails.
 """
 
 from __future__ import annotations
@@ -471,18 +472,6 @@ def _report_names(timeline) -> dict:
     }
 
 
-def window_rows(
-    battle: list[dict], systems: Iterable[int], start, end
-) -> list[dict]:
-    """Snapshot rows in ``systems`` from ``start`` to ``end``, inclusive."""
-    wanted = set(systems)
-    return [
-        row
-        for row in battle
-        if row["system"] in wanted and start <= parse_time(row["t"]) <= end
-    ]
-
-
 class _Pilot:
     def __init__(self, character: int):
         self.character = character
@@ -666,27 +655,24 @@ def _team_groups(
     )
 
 
-def build_report(timeline, position: int, sides: str | None = None):
-    """The battle report for round ``position`` (1-based), or None.
-
-    ``isk_destroyed`` for a team is the ISK every other team lost on mails
-    where that team had at least one attacker, so a mail shot by two teams
-    counts for both.
-    """
-    summaries = (timeline.payload or {}).get("rounds") or []
-    if not 1 <= position <= len(summaries):
-        return None
-    summary = summaries[position - 1]
-    start, end = parse_time(summary["start"]), parse_time(summary["end"])
-    window_start, window_end = start - WINDOW_PAD, end + WINDOW_PAD
-    system_ids = [system["id"] for system in summary["systems"]]
+def _battle(timeline) -> tuple[list[dict], bool]:
+    """The snapshot rows, and whether the feed had them all."""
     collected = timeline.battle_collected_at is not None
     battle = (
         timeline.battle_killmails
         if collected
         else [partial_row(row) for row in timeline.killmails or []]
     )
-    rows = window_rows(battle, system_ids, window_start, window_end)
+    return battle, collected
+
+
+def _report(timeline, rows: list[dict], sides: str | None) -> dict:
+    """Teams, sides and killmails for ``rows``.
+
+    ``isk_destroyed`` for a team is the ISK every other team lost on mails
+    where that team had at least one attacker, so a mail shot by two teams
+    counts for both.
+    """
     names = _report_names(timeline)
     ours = our_characters(timeline.killmails or [])
     teams, normalised = assign_sides(rows, ours, sides)
@@ -740,16 +726,8 @@ def build_report(timeline, position: int, sides: str | None = None):
                 "pilots": _team_pilots(by_team[index], names),
             }
         )
+    system_ids = sorted({row["system"] for row in rows})
     return {
-        "fleet_id": timeline.eve_fleet_id,
-        "position": position,
-        "kind": summary["kind"],
-        "number": summary.get("number"),
-        "start": summary["start"],
-        "end": summary["end"],
-        "minutes": summary["minutes"],
-        "window_start": window_start.isoformat(),
-        "window_end": window_end.isoformat(),
         "systems": [
             {
                 "id": system_id,
@@ -759,10 +737,83 @@ def build_report(timeline, position: int, sides: str | None = None):
             }
             for system_id in system_ids
         ],
-        "complete": collected and not any(r.get("partial") for r in rows),
         "sides": normalised,
         "teams": report_teams,
         "killmails": [
             _killmail(row, names, row_teams[row["id"]]) for row in rows
+        ],
+    }
+
+
+def activity(timeline, battle: list[dict]) -> list[dict]:
+    """ISK lost per minute across the whole fleet, by team.
+
+    The sides are the whole fleet's, so the strip keeps its colours while
+    the report below is scoped to a window.
+    """
+    ours = our_characters(timeline.killmails or [])
+    teams, _ = assign_sides(battle, ours)
+    minutes: dict = {}
+    for row in battle:
+        minute = parse_time(row["t"]).replace(second=0, microsecond=0)
+        team = _team_of(
+            teams, _victim_group(row), row["victim"]["character"], ours
+        )
+        isk = minutes.setdefault(minute, [0] * MAX_TEAMS)
+        isk[min(team, MAX_TEAMS - 1)] += row["isk"]
+    return [
+        {"minute": minute.isoformat(), "isk": isk}
+        for minute, isk in sorted(minutes.items())
+    ]
+
+
+def build_window_report(
+    timeline, start=None, end=None, sides: str | None = None
+):
+    """The battle report for every mail from ``start`` to ``end``.
+
+    Without a window it covers the whole fleet: every mail in the snapshot,
+    in every system. Sides are worked out from the window's own mails, so a
+    group that fought both sides over the night lands where it fought in
+    the window. None when the snapshot is empty.
+    """
+    battle, collected = _battle(timeline)
+    if not battle:
+        return None
+    first, last = parse_time(battle[0]["t"]), parse_time(battle[-1]["t"])
+    span_start, span_end = first - WINDOW_PAD, last + WINDOW_PAD
+    if start and end and start > end:
+        start, end = end, start
+    window_start, window_end = start or span_start, end or span_end
+    rows = [
+        row
+        for row in battle
+        if window_start <= parse_time(row["t"]) <= window_end
+    ]
+    times = [parse_time(row["t"]) for row in rows]
+    rounds = (timeline.payload or {}).get("rounds") or []
+    return {
+        "fleet_id": timeline.eve_fleet_id,
+        "whole": start is None and end is None,
+        "window_start": window_start.isoformat(),
+        "window_end": window_end.isoformat(),
+        "start": (min(times) if times else window_start).isoformat(),
+        "end": (max(times) if times else window_end).isoformat(),
+        "minutes": (
+            round((max(times) - min(times)).total_seconds() / 60)
+            if times
+            else 0
+        ),
+        "span_start": span_start.isoformat(),
+        "span_end": span_end.isoformat(),
+        "complete": collected and not any(r.get("partial") for r in rows),
+        **_report(timeline, rows, sides),
+        "activity": activity(timeline, battle),
+        "fights": [
+            {
+                "start": (parse_time(r["start"]) - WINDOW_PAD).isoformat(),
+                "end": (parse_time(r["end"]) + WINDOW_PAD).isoformat(),
+            }
+            for r in rounds
         ],
     }

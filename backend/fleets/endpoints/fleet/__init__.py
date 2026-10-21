@@ -176,6 +176,18 @@ from fleets.endpoints.fleet.get_fleet_fight_report import (
     get_fleet_fight_report,
     METHOD as get_fleet_fight_report_method,
 )
+from fleets.endpoints.fleet.post_fleet_battle_segment import (
+    PATH as post_fleet_battle_segment_path,
+    ROUTE_SPEC as post_fleet_battle_segment_spec,
+    create_fleet_battle_segment,
+    METHOD as post_fleet_battle_segment_method,
+)
+from fleets.endpoints.fleet.delete_fleet_battle_segment import (
+    PATH as delete_fleet_battle_segment_path,
+    ROUTE_SPEC as delete_fleet_battle_segment_spec,
+    delete_fleet_battle_segment,
+    METHOD as delete_fleet_battle_segment_method,
+)
 from fleets.endpoints.fleet.post_fleet_fights_merge import (
     PATH as post_fleet_fights_merge_path,
     ROUTE_SPEC as post_fleet_fights_merge_spec,
@@ -339,6 +351,18 @@ _ROUTES = (
         get_fleet_fight_report_path,
         get_fleet_fight_report_spec,
         get_fleet_fight_report,
+    ),
+    (
+        post_fleet_battle_segment_method,
+        post_fleet_battle_segment_path,
+        post_fleet_battle_segment_spec,
+        create_fleet_battle_segment,
+    ),
+    (
+        delete_fleet_battle_segment_method,
+        delete_fleet_battle_segment_path,
+        delete_fleet_battle_segment_spec,
+        delete_fleet_battle_segment,
     ),
     (
         post_fleet_fights_merge_method,

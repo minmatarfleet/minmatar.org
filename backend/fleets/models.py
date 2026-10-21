@@ -651,6 +651,31 @@ class EveFleetFightEdit(models.Model):
         return f"{self.kind} on fleet {self.eve_fleet_id} at {self.start}"
 
 
+class EveFleetBattleSegment(models.Model):
+    """A window of a fleet's battle report the FC saved under a name.
+
+    Like fight edits, a segment is a time range, not a round number, so it
+    still holds when late killmails or an edit re-cut the rounds.
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="battle_segments"
+    )
+    name = models.CharField(max_length=64)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["start", "id"]
+
+    def __str__(self):
+        return f"{self.name} on fleet {self.eve_fleet_id}"
+
+
 class EveFleetInstanceMemberRole(models.Model):
     """
     Optional role assigned to a fleet instance member for critical fleet positions.

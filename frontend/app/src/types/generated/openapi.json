@@ -13577,6 +13577,28 @@
         "title": "FittingResponse",
         "type": "object"
       },
+      "FleetBattleActivity": {
+        "properties": {
+          "isk": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Isk",
+            "type": "array"
+          },
+          "minute": {
+            "format": "date-time",
+            "title": "Minute",
+            "type": "string"
+          }
+        },
+        "required": [
+          "minute",
+          "isk"
+        ],
+        "title": "FleetBattleActivity",
+        "type": "object"
+      },
       "FleetBattleBloc": {
         "properties": {
           "id": {
@@ -13881,8 +13903,19 @@
         "type": "object"
       },
       "FleetBattleReportResponse": {
-        "description": "Every killmail in a round's systems from its first mail minus a\nminute to its last plus a minute, split into sides.",
+        "description": "Every killmail around the fleet, or in a window of it, split into\nsides.",
         "properties": {
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleActivity"
+            },
+            "title": "Activity",
+            "type": "array"
+          },
+          "can_edit_segments": {
+            "title": "Can Edit Segments",
+            "type": "boolean"
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -13891,6 +13924,13 @@
             "format": "date-time",
             "title": "End",
             "type": "string"
+          },
+          "fights": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleWindow"
+            },
+            "title": "Fights",
+            "type": "array"
           },
           "fleet_id": {
             "title": "Fleet Id",
@@ -13903,15 +13943,11 @@
             "title": "Killmails",
             "type": "array"
           },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
           "minutes": {
             "title": "Minutes",
             "type": "integer"
           },
-          "number": {
+          "segment_id": {
             "anyOf": [
               {
                 "type": "integer"
@@ -13920,14 +13956,27 @@
                 "type": "null"
               }
             ],
-            "title": "Number"
+            "title": "Segment Id"
           },
-          "position": {
-            "title": "Position",
-            "type": "integer"
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/FleetBattleSegment"
+            },
+            "title": "Segments",
+            "type": "array"
           },
           "sides": {
             "title": "Sides",
+            "type": "string"
+          },
+          "span_end": {
+            "format": "date-time",
+            "title": "Span End",
+            "type": "string"
+          },
+          "span_start": {
+            "format": "date-time",
+            "title": "Span Start",
             "type": "string"
           },
           "start": {
@@ -13949,6 +13998,10 @@
             "title": "Teams",
             "type": "array"
           },
+          "whole": {
+            "title": "Whole",
+            "type": "boolean"
+          },
           "window_end": {
             "format": "date-time",
             "title": "Window End",
@@ -13962,20 +14015,80 @@
         },
         "required": [
           "fleet_id",
-          "position",
-          "kind",
+          "whole",
+          "window_start",
+          "window_end",
           "start",
           "end",
           "minutes",
-          "window_start",
-          "window_end",
+          "span_start",
+          "span_end",
           "systems",
           "complete",
           "sides",
           "teams",
-          "killmails"
+          "killmails",
+          "activity",
+          "fights",
+          "segments",
+          "can_edit_segments"
         ],
         "title": "FleetBattleReportResponse",
+        "type": "object"
+      },
+      "FleetBattleSegment": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "start",
+          "end"
+        ],
+        "title": "FleetBattleSegment",
+        "type": "object"
+      },
+      "FleetBattleSegmentRequest": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "FleetBattleSegmentRequest",
         "type": "object"
       },
       "FleetBattleShip": {
@@ -14121,6 +14234,26 @@
           "isk_destroyed"
         ],
         "title": "FleetBattleTotals",
+        "type": "object"
+      },
+      "FleetBattleWindow": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "FleetBattleWindow",
         "type": "object"
       },
       "FleetFightChart": {
@@ -41393,6 +41526,216 @@
         ]
       }
     },
+    "/api/fleets/{fleet_id}/fights/report": {
+      "get": {
+        "description": "A battle report for the whole fleet: every killmail around its fights, third parties included, with up to three sides. ``start`` and ``end`` scope it to a window, and ``segment`` to a window the FC saved. Sides are worked out from the window's own mails. Team 0 is ours. Groups are alliances, or corporations outside one. ``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; the response echoes the moves it applied. isk_destroyed is the ISK other teams lost on mails the team was on. activity is ISK lost per minute over the whole fleet, by team. complete is false when the killmail feed had already purged the mails and the report only has the mails our fleet was on. Same access rules as GET /fights.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "segment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Segment"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sides",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sides"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetBattleReportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Fight Report",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/segments": {
+      "post": {
+        "description": "Save a window of the fleet's battle report under a name, for everyone who can see the report. The fleet's FC only. A blank name saves the window's EVE times, e.g. 18:27–18:49 ET.",
+        "operationId": "fleets_endpoints_fleet_post_fleet_battle_segment_create_fleet_battle_segment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetBattleSegmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetBattleSegment"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create Fleet Battle Segment",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/fights/segments/{segment_id}": {
+      "delete": {
+        "description": "Remove a saved battle report window. The fleet's FC only.",
+        "operationId": "fleets_endpoints_fleet_delete_fleet_battle_segment_delete_fleet_battle_segment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Delete Fleet Battle Segment",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/{fleet_id}/fights/split": {
       "post": {
         "description": "Start a new round at a time, usually the first mail after a quiet gap. Fleet managers only; returns the re-cut timeline.",
@@ -41442,75 +41785,6 @@
           }
         ],
         "summary": "Split Fleet Fights",
-        "tags": [
-          "Fleets"
-        ]
-      }
-    },
-    "/api/fleets/{fleet_id}/fights/{position}/report": {
-      "get": {
-        "description": "A battle report for round or skirmish ``position`` (1-based, in the order of GET /fights rounds): every killmail in its systems from its first mail minus a minute to its last plus a minute, third parties included, with up to three sides. Team 0 is ours. Groups are alliances, or corporations outside one. ``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; the response echoes the moves it applied. isk_destroyed is the ISK other teams lost on mails the team was on. complete is false when the killmail feed had already purged the mails and the report only has the mails our fleet was on. Same access rules as GET /fights.",
-        "operationId": "fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "fleet_id",
-            "required": true,
-            "schema": {
-              "title": "Fleet Id",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "path",
-            "name": "position",
-            "required": true,
-            "schema": {
-              "title": "Position",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sides",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Sides"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FleetBattleReportResponse"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "security": [
-          {
-            "AuthBearer": []
-          }
-        ],
-        "summary": "Get Fleet Fight Report",
         "tags": [
           "Fleets"
         ]

@@ -856,3 +856,17 @@ class FleetFightMergeRequest(BaseModel):
 
 class FleetFightSplitRequest(BaseModel):
     at: datetime
+
+
+class FleetBattleSegmentRequest(BaseModel):
+    # Blank saves the window's times as its name.
+    name: str = ""
+    start: datetime
+    end: datetime
+
+
+class FleetBattleSegment(BaseModel):
+    id: int
+    name: str
+    start: datetime
+    end: datetime

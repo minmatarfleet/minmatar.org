@@ -12,6 +12,11 @@ import {
     move_to_side,
     killmail_engagement,
     pilot_odds,
+    round_window,
+    scope_params,
+    strip_bars,
+    strip_position,
+    strip_ticks,
 } from '@helpers/fleet_fights'
 
 const contract = (name: string): FleetFights =>
@@ -127,5 +132,52 @@ describe('pilot odds', () => {
         expect(pilot_odds(30, 0)).toBeNull()
         expect(pilot_odds(null, 12)).toBeNull()
         expect(pilot_odds(30, undefined)).toBeNull()
+    })
+})
+
+describe('battle report scope', () => {
+    it('pads an engagement a minute each side', () => {
+        expect(round_window({ start: '2026-10-18T18:27:12Z', end: '2026-10-18T18:48:47Z' })).toEqual({
+            start: '2026-10-18T18:26:12.000Z',
+            end: '2026-10-18T18:49:47.000Z',
+        })
+    })
+
+    it('prefers a segment to a window and keeps the sides', () => {
+        expect(scope_params({ start: 'a', end: 'b', segment: 4, sides: '9:1' })).toEqual({ segment: '4', sides: '9:1' })
+        expect(scope_params({ start: 'a', end: 'b' })).toEqual({ start: 'a', end: 'b' })
+        expect(scope_params({ start: 'a' })).toEqual({})
+    })
+})
+
+describe('battle report activity strip', () => {
+    const report = {
+        span_start: '2026-10-18T18:00:00Z',
+        span_end: '2026-10-18T18:10:00Z',
+        activity: [
+            { minute: '2026-10-18T18:01:00Z', isk: [300, 100, 0] },
+            { minute: '2026-10-18T18:05:00Z', isk: [0, 100, 0] },
+        ],
+    }
+
+    it('places moments along the span and clamps the ends', () => {
+        expect(strip_position(report, '2026-10-18T18:05:00Z')).toBe(50)
+        expect(strip_position(report, '2026-10-18T17:00:00Z')).toBe(0)
+        expect(strip_position(report, '2026-10-18T19:00:00Z')).toBe(100)
+    })
+
+    it('stacks each minute by team and scales to the busiest', () => {
+        const bars = strip_bars(report)
+        expect(bars).toHaveLength(2)
+        expect(bars[0].height).toBe(1)
+        expect(bars[1].height).toBeCloseTo(0.5)
+        expect(bars[0].parts).toEqual([{ team: 0, share: 0.75 }, { team: 1, share: 0.25 }])
+        expect(bars[0].left).toBeGreaterThan(10)
+        expect(bars[0].left + bars[0].width).toBeLessThan(20)
+    })
+
+    it('ticks every quarter hour in EVE time', () => {
+        expect(strip_ticks({ span_start: '2026-10-18T17:10:00Z', span_end: '2026-10-18T18:05:00Z' }).map(tick => tick.label))
+            .toEqual(['17:15', '17:30', '17:45', '18:00'])
     })
 })

@@ -5,7 +5,8 @@ const { t, translatePath } = i18n(Astro.url)
 import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { earlier_rounds, round_bars, round_opponents, seconds_since, eve_clock } from '@helpers/fleet_fights'
+import { earlier_rounds, round_bars, round_opponents, round_window, seconds_since, eve_clock } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
 
 /**
  * The Fights tab: a fleet's killmails as rounds. While the fleet is out it
@@ -31,7 +32,12 @@ delete attributes.class
 
 const PARTIAL_URL = `${translatePath('/partials/fleet_fights_component')}?fleet_id=${fleet_id}`
 const EDIT_URL = `${translatePath('/partials/fleet_fights_edit_component')}?fleet_id=${fleet_id}`
-const round_href = (position: number) => translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
+// Each engagement opens the fleet's battle report scoped to its window.
+const REPORT_URL = translatePath(`/fleets/history/${fleet_id}/report`)
+const round_href = (position: number) => {
+    const round = fights.rounds[position - 1]
+    return round ? `${REPORT_URL}?${query_string(round_window(round))}` : REPORT_URL
+}
 
 const building = fights.status === 'building'
 const live = fights.live
@@ -170,7 +176,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                         </ul>
                         <div class="[ fleet-fights__report-links ]">
                             <span>
-                                <a href={round_href(rounds.length)}>{t('fleets.fights.report_so_far')}</a>
+                                <a href={REPORT_URL}>{t('fleets.fights.report_so_far')}</a>
                             </span>
                         </div>
                     </div>
@@ -182,6 +188,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             <section class="[ fleet-fights__section ]" aria-labelledby="fleet-fights-night">
                 <header>
                     <h2 id="fleet-fights-night">{live ? t('fleets.fights.so_far') : t('fleets.fights.night')}</h2>
+                    {!live && <a href={REPORT_URL}>{t('fleets.fights.whole_report')} →</a>}
                     {live && totals &&
                         <span set:html={t('fleets.fights.kills_losses').replace('{kills}', totals.ships_destroyed.toString()).replace('{losses}', totals.ships_lost.toString()) + ` · ${format_isk(totals.isk_destroyed)} / ${format_isk(totals.isk_lost)}`} />
                     }

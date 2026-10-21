@@ -2468,6 +2468,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/fights/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Fight Report
+         * @description A battle report for the whole fleet: every killmail around its fights, third parties included, with up to three sides. ``start`` and ``end`` scope it to a window, and ``segment`` to a window the FC saved. Sides are worked out from the window's own mails. Team 0 is ours. Groups are alliances, or corporations outside one. ``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; the response echoes the moves it applied. isk_destroyed is the ISK other teams lost on mails the team was on. activity is ISK lost per minute over the whole fleet, by team. complete is false when the killmail feed had already purged the mails and the report only has the mails our fleet was on. Same access rules as GET /fights.
+         */
+        get: operations["fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Fleet Battle Segment
+         * @description Save a window of the fleet's battle report under a name, for everyone who can see the report. The fleet's FC only. A blank name saves the window's EVE times, e.g. 18:27–18:49 ET.
+         */
+        post: operations["fleets_endpoints_fleet_post_fleet_battle_segment_create_fleet_battle_segment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/fights/segments/{segment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Fleet Battle Segment
+         * @description Remove a saved battle report window. The fleet's FC only.
+         */
+        delete: operations["fleets_endpoints_fleet_delete_fleet_battle_segment_delete_fleet_battle_segment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/fights/split": {
         parameters: {
             query?: never;
@@ -2482,26 +2542,6 @@ export interface paths {
          * @description Start a new round at a time, usually the first mail after a quiet gap. Fleet managers only; returns the re-cut timeline.
          */
         post: operations["fleets_endpoints_fleet_post_fleet_fights_split_split_fleet_fights"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/fleets/{fleet_id}/fights/{position}/report": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Fleet Fight Report
-         * @description A battle report for round or skirmish ``position`` (1-based, in the order of GET /fights rounds): every killmail in its systems from its first mail minus a minute to its last plus a minute, third parties included, with up to three sides. Team 0 is ours. Groups are alliances, or corporations outside one. ``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; the response echoes the moves it applied. isk_destroyed is the ISK other teams lost on mails the team was on. complete is false when the killmail feed had already purged the mails and the report only has the mails our fleet was on. Same access rules as GET /fights.
-         */
-        get: operations["fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12318,6 +12358,16 @@ export interface components {
              */
             updated_at: string;
         };
+        /** FleetBattleActivity */
+        FleetBattleActivity: {
+            /** Isk */
+            isk: number[];
+            /**
+             * Minute
+             * Format: date-time
+             */
+            minute: string;
+        };
         /** FleetBattleBloc */
         FleetBattleBloc: {
             /** Id */
@@ -12420,10 +12470,14 @@ export interface components {
         };
         /**
          * FleetBattleReportResponse
-         * @description Every killmail in a round's systems from its first mail minus a
-         *     minute to its last plus a minute, split into sides.
+         * @description Every killmail around the fleet, or in a window of it, split into
+         *     sides.
          */
         FleetBattleReportResponse: {
+            /** Activity */
+            activity: components["schemas"]["FleetBattleActivity"][];
+            /** Can Edit Segments */
+            can_edit_segments: boolean;
             /** Complete */
             complete: boolean;
             /**
@@ -12431,20 +12485,30 @@ export interface components {
              * Format: date-time
              */
             end: string;
+            /** Fights */
+            fights: components["schemas"]["FleetBattleWindow"][];
             /** Fleet Id */
             fleet_id: number;
             /** Killmails */
             killmails: components["schemas"]["FleetBattleKillmail"][];
-            /** Kind */
-            kind: string;
             /** Minutes */
             minutes: number;
-            /** Number */
-            number?: number | null;
-            /** Position */
-            position: number;
+            /** Segment Id */
+            segment_id?: number | null;
+            /** Segments */
+            segments: components["schemas"]["FleetBattleSegment"][];
             /** Sides */
             sides: string;
+            /**
+             * Span End
+             * Format: date-time
+             */
+            span_end: string;
+            /**
+             * Span Start
+             * Format: date-time
+             */
+            span_start: string;
             /**
              * Start
              * Format: date-time
@@ -12454,6 +12518,8 @@ export interface components {
             systems: components["schemas"]["FleetBattleSystem"][];
             /** Teams */
             teams: components["schemas"]["FleetBattleTeam"][];
+            /** Whole */
+            whole: boolean;
             /**
              * Window End
              * Format: date-time
@@ -12464,6 +12530,41 @@ export interface components {
              * Format: date-time
              */
             window_start: string;
+        };
+        /** FleetBattleSegment */
+        FleetBattleSegment: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
+        /** FleetBattleSegmentRequest */
+        FleetBattleSegmentRequest: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
         };
         /** FleetBattleShip */
         FleetBattleShip: {
@@ -12514,6 +12615,19 @@ export interface components {
             pods_lost: number;
             /** Ships Lost */
             ships_lost: number;
+        };
+        /** FleetBattleWindow */
+        FleetBattleWindow: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
         };
         /** FleetFightChart */
         FleetFightChart: {
@@ -25954,6 +26068,122 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report: {
+        parameters: {
+            query?: {
+                start?: string | null;
+                end?: string | null;
+                segment?: number | null;
+                sides?: string | null;
+            };
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetBattleReportResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_post_fleet_battle_segment_create_fleet_battle_segment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FleetBattleSegmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetBattleSegment"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_delete_fleet_battle_segment_delete_fleet_battle_segment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+                segment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     fleets_endpoints_fleet_post_fleet_fights_split_split_fleet_fights: {
         parameters: {
             query?: never;
@@ -25976,45 +26206,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetFightsResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    fleets_endpoints_fleet_get_fleet_fight_report_get_fleet_fight_report: {
-        parameters: {
-            query?: {
-                sides?: string | null;
-            };
-            header?: never;
-            path: {
-                fleet_id: number;
-                position: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FleetBattleReportResponse"];
                 };
             };
             /** @description Forbidden */
