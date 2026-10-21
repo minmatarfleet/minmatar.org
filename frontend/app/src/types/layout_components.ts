@@ -419,6 +419,8 @@ export interface PageFinderUI {
     icon?:          string;
     description?:   string;
     publish:        boolean;
+    /** `false` keeps a path that only redirects out of sitemap.xml. */
+    sitemap?:       boolean;
     permissions?:   Permissions;
 }
 

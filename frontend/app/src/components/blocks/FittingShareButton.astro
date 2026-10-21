@@ -6,11 +6,13 @@ import type { ButtonSizes } from '@dtypes/layout_components';
 import { get_request_user } from '@helpers/request_user'
 
 import { get_app_url } from '@helpers/env'
+import { fitting_path } from '@helpers/ship_paths'
 
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
 interface Props {
     fitting_id:         number;
+    fitting_name?:      string | null;
     narrow?:            boolean;
     size?:              ButtonSizes;
     iconed?:            boolean;
@@ -19,6 +21,7 @@ interface Props {
 
 const {
     fitting_id,
+    fitting_name,
     narrow = false,
     size = 'sm',
     iconed = true,
@@ -27,10 +30,10 @@ const {
 
 const { user } = get_request_user(Astro)
 
-const fitting_path = translatePath(`/ships/fittings/${fitting_id}`)
+const share_path = translatePath(fitting_path(fitting_id, fitting_name))
 const share_url = user
-    ? `${get_app_url(fitting_path)}?ref=${user.user_id}`
-    : get_app_url(fitting_path)
+    ? `${get_app_url(share_path)}?ref=${user.user_id}`
+    : get_app_url(share_path)
 ---
 
 <ClipboardButton

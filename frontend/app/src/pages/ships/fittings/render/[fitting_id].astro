@@ -9,6 +9,7 @@ import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 import { get_ship_info } from '@helpers/sde/ships'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { fitting_path } from '@helpers/ship_paths'
 import { get_site_origin } from '@helpers/seo'
 
 let fitting:Fitting | null = null
@@ -68,7 +69,7 @@ const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitti
 
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 
-const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
+const normal_view = translatePath(fitting_path(fitting.id, fitting.name))
 
 const fitting_display_name = fitting?.name ?? fitting_parsed.name
 const page_title = fitting_display_name;
@@ -90,7 +91,7 @@ const seo_input: FittingDetailSeoInput = {
     siteOrigin: site_origin,
     fittingsListUrl: new URL(translatePath('/ships/fittings/'), site_origin).href,
     shipsUrl: new URL(translatePath('/ships/'), site_origin).href,
-    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), site_origin).href,
+    canonicalUrl: new URL(normal_view, site_origin).href,
     metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : `${site_origin}/images/fits-cover.jpg`,
 }
 
@@ -192,7 +193,7 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                         </PageTitle>
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <FlexInline>                            
-                            <FittingShareButton fitting_id={parseInt(fitting_id ?? '0')} />
+                            <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.name} />
                             <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
                                 {fitting?.eft_format as string}
                             </ClipboardButton>

@@ -1,9 +1,9 @@
 import {
+    ALLIANCE_PATH as AUGA_PATH,
     AMARR_DESTROYED_ISK,
     AMARR_DESTROYED_SHIPS,
     AMARR_PILOTS,
     CAMPAIGN_ISK_DESTROYED,
-    CANONICAL_PATH as AUGA_CANONICAL_PATH,
     ENGAGEMENT_MIX,
     MINMATAR_DESTROYED_ISK,
     MINMATAR_DESTROYED_SHIPS,
@@ -234,7 +234,7 @@ export const YC128_07: WarzoneIssue = {
                 label: 'Revelation',
             },
         ],
-        campaign_path: AUGA_CANONICAL_PATH,
+        campaign_path: AUGA_PATH,
     },
     fleet: {
         tracked_fleets: 64,

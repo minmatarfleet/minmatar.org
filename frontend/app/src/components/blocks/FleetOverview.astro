@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI } from '@dtypes/layout_components'
@@ -107,7 +108,7 @@ import Button from '@components/blocks/Button.astro'
                             <img src={get_item_icon(fleet.doctrine.primary_fittings[0].ship_id, 64)} alt="" width="36" height="36" loading="lazy" />
                         }
                         <span>
-                            <a href={translatePath(`/ships/doctrines/${fleet.doctrine.id}`)}><b>{fleet.doctrine.name}</b></a>
+                            <a href={translatePath(doctrine_path(fleet.doctrine.id, fleet.doctrine.name))}><b>{fleet.doctrine.name}</b></a>
                             <a href="#ships"><small>{t('fleets.overview.fits_link').replace('{count}', composition.length.toString())}</small></a>
                         </span>
                     </>

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro'
 
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { fitting_path } from '@helpers/ship_paths'
 import {
     buildUrlsetXml,
     getSitemapOrigin,
@@ -15,7 +16,7 @@ export const GET: APIRoute = async ({ request }) => {
     try {
         const fittings = await get_fittings()
         const entries = fittings.map((f) => {
-            const loc = `${origin}/ships/fittings/normal/${f.id}`
+            const loc = `${origin}${fitting_path(f.id, f.name)}`
             const lastmod = f.updated_at
                 ? new Date(f.updated_at as unknown as string).toISOString().slice(0, 10)
                 : ''

@@ -74,6 +74,7 @@
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.story.description",
         "keywords": [
             "story"
@@ -169,6 +170,7 @@
         "slug": "campaigns.etherium_reach",
         "path": "/campaigns/etherium-reach/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.etherium_reach.description",
         "keywords": [
             "Etherium Reach",
@@ -182,6 +184,7 @@
         "slug": "campaigns.auga",
         "path": "/campaigns/auga-yc128/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.auga.description",
         "keywords": [
             "Auga",
@@ -227,6 +230,7 @@
         "slug": "newsletter",
         "path": "/newsletter/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.newsletter.description",
         "keywords": ["newsletter", "Fleet Newsletter", "Minmatar Fleet", "what's new", "updates", "YC128"]
     },
@@ -262,6 +266,7 @@
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.providence.description",
         "keywords": [
             "Providence",
@@ -275,6 +280,7 @@
         "slug": "campaigns.scalding_pass",
         "path": "/campaigns/scalding-pass/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.scalding_pass.description",
         "keywords": [
             "Scalding Pass",
@@ -288,6 +294,7 @@
         "slug": "campaigns.hek",
         "path": "/campaigns/hek/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.hek.description",
         "keywords": [
             "Hek",
@@ -397,6 +404,7 @@
         "path": "/alliance/tribes/?tribe=capitals",
         "description": "page_finder.tribes.capitals.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -408,6 +416,7 @@
         "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.industry.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -420,6 +429,7 @@
         "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.market.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -433,6 +443,7 @@
         "path": "/alliance/tribes/?tribe=pulse",
         "description": "page_finder.tribes.pulse.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -697,6 +708,7 @@
         "slug": "buyback_orders",
         "path": "/market/buyback/orders/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.buyback_orders.description"
     },
     {

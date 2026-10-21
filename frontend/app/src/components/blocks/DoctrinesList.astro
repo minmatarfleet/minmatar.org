@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { DoctrineLocationUI } from '@dtypes/layout_components'
@@ -66,7 +67,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         {sorted_doctrines.map((doctrine) =>
             <a
                 class="[ doctrine-card-container ]"
-                href={translatePath(`/ships/doctrines/${doctrine.id}${active_doctrine_location_ui.id ? `?location_id=${active_doctrine_location_ui.id}` : '/' }`)}
+                href={`${translatePath(doctrine_path(doctrine.id, doctrine.name))}${active_doctrine_location_ui.id ? `?location_id=${active_doctrine_location_ui.id}` : ''}`}
             >
                 <DoctrineCard
                     doctrine={doctrine}
