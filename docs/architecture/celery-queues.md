@@ -9,7 +9,7 @@ How background work is split across queues and workers, the rules every task fol
 | `celery` (default) | Fast lane: critical, user-facing work that finishes in seconds | `celery` | 2 | 1 min |
 | `feed` | zKillboard feed: live poll, rollups, clusters, affiliations | `celery-feed` | 1 (4 processes) | 2 min |
 | `intel` | Intel affiliation database: sightings, zKill investigations | `celery-intel` | 1 | 30 min |
-| `fleets` | Fleet tracking, implants, NPSI calendars, roam reports | `celery-fleets` | 1 | 2 min |
+| `fleets` | Fleet tracking, implants, NPSI calendars, fleet reports | `celery-fleets` | 1 | 2 min |
 | `campaigns` | FW campaigns: sweeps, polls, stats, lifecycle | `celery-campaigns` | 2 | 15 min |
 | `eveonline` | ESI sync for characters, corporations, structures, tokens, SDE | `celery-eveonline` | 4 | 30 min |
 | `market` | Market orders, contracts, prices, history, moon revenue | `celery-market` | 2 | 30 min |

@@ -9,6 +9,7 @@ from authentication import AuthOptional
 from feed.helpers.fleet_kills import fleet_kill_report
 
 from fleets.helpers.fights.serve import pilot_numbers
+from fleets.helpers.visibility import public_kills_allowed
 from fleets.models import EveFleet, EveFleetFightTimeline, EveFleetInstance
 
 PATH = "/{fleet_id}/public-kills"
@@ -68,16 +69,6 @@ ROUTE_SPEC = {
 }
 
 
-def _publishable(fleet) -> bool:
-    if fleet.status == "cancelled":
-        return False
-    if fleet.host_group_id and not fleet.open_to_alliance:
-        return False
-    if fleet.audience_id and fleet.audience.hidden:
-        return False
-    return True
-
-
 def _killmail(row: dict) -> dict:
     # Victims are on the public killmail, ours included.
     return {
@@ -100,7 +91,7 @@ def get_fleet_public_kills(request, fleet_id: int):
     fleet = (
         EveFleet.objects.filter(id=fleet_id).select_related("audience").first()
     )
-    if not fleet or not _publishable(fleet):
+    if not fleet or not public_kills_allowed(fleet):
         return 404, None
     spans = list(
         EveFleetInstance.objects.filter(eve_fleet=fleet).values_list(

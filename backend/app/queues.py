@@ -60,7 +60,7 @@ QUEUES: dict[str, QueueSpec] = {
         ),
         QueueSpec(
             "fleets",
-            "Fleet tracking, implants, NPSI calendars, roam reports",
+            "Fleet tracking, implants, NPSI calendars, fleet reports",
             max_wait_seconds=2 * 60,
             dedupe_ttl_seconds=10 * 60,
         ),

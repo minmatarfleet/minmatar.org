@@ -119,12 +119,6 @@ DISCORD_AARS_FORUM_CHANNEL_ID = env_int(
     "DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256
 )
 
-# Roam Report
-ROAM_REPORT_API_KEY = os.environ.get("ROAM_REPORT_API_KEY", "")
-ROAM_REPORT_API_URL = os.environ.get(
-    "ROAM_REPORT_API_URL", "https://www.roamreport.com/api/fleets"
-)
-
 # ESI
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")
 ESI_SSO_CLIENT_SECRET = os.environ.get("ESI_SSO_CLIENT_SECRET", "")

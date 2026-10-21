@@ -20,7 +20,6 @@ from fleets.models import (
     close_fleet_cleanup,
 )
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
-from fleets.helpers.roam_report import schedule_roam_report
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
 
@@ -217,15 +216,11 @@ def _fleet_apply_optional_scalar_updates(fleet: EveFleet, payload) -> None:
 
 
 def update_instance_endtime(fleet: EveFleet) -> None:
-    closed_tracking = False
     for instance in EveFleetInstance.objects.filter(eve_fleet=fleet):
         if not instance.end_time:
             instance.end_time = timezone.now()
             instance.save()
-            closed_tracking = True
     close_fleet_cleanup(fleet)
-    if closed_tracking and fleet.status == "complete":
-        schedule_roam_report(fleet.id)
 
 
 def try_refresh_active_fleet_motd(fleet: EveFleet) -> None:

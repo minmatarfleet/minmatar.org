@@ -40,3 +40,14 @@ def visible_fleets_q(user) -> Q:
     if group_ids:
         q |= Q(host_group_id__in=group_ids)
     return q | Q(created_by_id=user.pk)
+
+
+def public_kills_allowed(fleet) -> bool:
+    """Whether anyone with the link may see the fleet's kills page."""
+    if fleet.status == "cancelled":
+        return False
+    if fleet.host_group_id and not fleet.open_to_alliance:
+        return False
+    if fleet.audience_id and fleet.audience.hidden:
+        return False
+    return True
