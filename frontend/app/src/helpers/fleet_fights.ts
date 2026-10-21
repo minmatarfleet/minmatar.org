@@ -3,7 +3,7 @@
  * the minute chart, which ticks to draw, and the one-line skirmish summary.
  * Pure functions over the /fights payload, so the tab renders on the server.
  */
-import type { FleetFights, FleetFightRound } from '@helpers/api.minmatar.org/fleets'
+import type { FleetFights, FleetFightRound, FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
 
 const MINUTE_MS = 60 * 1000
 
@@ -160,6 +160,79 @@ export function move_to_side(sides: string, group: number, team: number): string
     }
     if (Number.isInteger(group) && group > 0 && Number.isInteger(team) && team >= 0) moves.set(group, team)
     return [...moves.entries()].sort((a, b) => a[0] - b[0]).map(([id, index]) => `${id}:${index}`).join(',')
+}
+
+/** A round's battle report window: its first mail minus a minute to its last plus a minute. */
+export function round_window(round: { start: string, end: string }): { start: string, end: string } {
+    return {
+        start: new Date(new Date(round.start).getTime() - MINUTE_MS).toISOString(),
+        end: new Date(new Date(round.end).getTime() + MINUTE_MS).toISOString(),
+    }
+}
+
+/** What a battle report covers: the whole fleet, a window, or a saved segment. */
+export interface BattleScope {
+    start?:     string | null;
+    end?:       string | null;
+    segment?:   number | null;
+    /** Group moves, ``group:team,...``. */
+    sides?:     string | null;
+}
+
+/** A battle report scope as query params; a segment wins over a window. */
+export function scope_params(scope: BattleScope): Record<string, string> {
+    const params: Record<string, string> = {}
+    if (scope.segment) params.segment = scope.segment.toString()
+    else if (scope.start && scope.end) {
+        params.start = scope.start
+        params.end = scope.end
+    }
+    if (scope.sides) params.sides = scope.sides
+    return params
+}
+
+export interface StripBar {
+    /** Percent of the strip. */
+    left:   number;
+    width:  number;
+    /** Share of the strip's height, 0 to 1; square root, so small fights still show. */
+    height: number;
+    /** Each team's share of the bar, in team order. */
+    parts:  { team: number, share: number }[];
+}
+
+/** Where a moment falls on the activity strip, in percent. */
+export function strip_position(report: Pick<FleetBattleReport, 'span_start' | 'span_end'>, moment: string): number {
+    const start = new Date(report.span_start).getTime()
+    const span = Math.max(1, new Date(report.span_end).getTime() - start)
+    return Math.min(100, Math.max(0, 100 * (new Date(moment).getTime() - start) / span))
+}
+
+/** One bar per minute of the fleet's activity, stacked by the team that lost the ISK. */
+export function strip_bars(report: Pick<FleetBattleReport, 'span_start' | 'span_end' | 'activity'>): StripBar[] {
+    const totals = report.activity.map(minute => minute.isk.reduce((sum, isk) => sum + isk, 0))
+    const busiest = Math.max(1, ...totals)
+    const minute_width = strip_position(report, new Date(new Date(report.span_start).getTime() + MINUTE_MS).toISOString())
+    return report.activity.map((minute, index) => ({
+        left: strip_position(report, minute.minute) + minute_width * 0.12,
+        width: minute_width * 0.76,
+        height: Math.max(0.06, Math.sqrt(totals[index] / busiest)),
+        parts: minute.isk
+            .map((isk, team) => ({ team, share: totals[index] ? isk / totals[index] : 0 }))
+            .filter(part => part.share > 0),
+    }))
+}
+
+/** Quarter-hour ticks along the strip, in EVE time. */
+export function strip_ticks(report: Pick<FleetBattleReport, 'span_start' | 'span_end'>): ChartTick[] {
+    const quarter = 15 * MINUTE_MS
+    const end = new Date(report.span_end).getTime()
+    const ticks: ChartTick[] = []
+    for (let at = Math.ceil(new Date(report.span_start).getTime() / quarter) * quarter; at <= end; at += quarter) {
+        const moment = new Date(at).toISOString()
+        ticks.push({ label: eve_clock(moment), left: strip_position(report, moment) })
+    }
+    return ticks
 }
 
 /** Damage the way br.evetools shows it: 108.7k, 1.56m. */

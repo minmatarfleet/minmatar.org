@@ -1062,11 +1062,16 @@ export interface BattlePilotRow {
     name:               string;
     icon_type_id:       number | null;
     ship:               string;
+    /** The main hull's killmail, when it was lost. */
     killmail_id:        number | null;
     pod_killmail_id:    number | null;
+    pod_title:          string;
     lost:               boolean;
     loss:               string;
+    /** "2 hulls" when more than one was lost. */
+    loss_note:          string;
     damage:             string;
+    share:              string;
     damage_top:         boolean;
     kills:              number;
     kills_top:          boolean;
@@ -1074,5 +1079,6 @@ export interface BattlePilotRow {
     corporation_name:   string;
     alliance_id:        number | null;
     alliance_name:      string;
-    extras:             { type_id: number, name: string, lost: boolean, killmail_id: number | null, info: string }[];
+    /** The other hulls they flew, shown as icons after the ship name. */
+    extras:             { type_id: number, title: string, lost: boolean, killmail_id: number | null }[];
 }

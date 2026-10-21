@@ -2,65 +2,138 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FleetFights, FleetFightRound, FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
+import type { FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
+import type { BattleScope } from '@helpers/fleet_fights'
 import type { BattlePilotRow } from '@dtypes/layout_components'
 import { format_isk } from '@helpers/numbers'
 import { get_item_icon, get_corporation_logo, get_alliance_logo, get_group_logo } from '@helpers/eve_image_server'
-import { eve_clock, format_damage, ship_group_rank } from '@helpers/fleet_fights'
+import { eve_clock, format_damage, move_to_side, scope_params, ship_group_rank, strip_bars, strip_position, strip_ticks } from '@helpers/fleet_fights'
 import { get_ships_type } from '@helpers/sde/ships'
 import { query_string } from '@helpers/string'
 import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
 
 /**
- * One engagement's battle report, laid out like br.evetools: a Team card
- * per side (ISK lost, efficiency, ships lost, damage dealt, and its groups
- * with « » to move them to the next team), then the Involved, Summary,
- * Timeline, Damage and Composition views per team. Every mail in the
- * engagement's systems from a minute before it to a minute after.
+ * A fleet's battle report: the whole fleet, a window a pilot dragged on the
+ * activity strip, or a segment the FC saved. One Team card per side (ISK
+ * lost, efficiency, ships lost, damage, and its groups with « » to move
+ * them), a full-width band for a third party of three pilots or fewer, then
+ * the Involved, Summary, Timeline, Damage and Composition views per team.
  *
- * Views, row expansion and display settings are local (Alpine over rendered
- * rows). Moving a group re-renders the report from the API
- * (fleet_battle_report_component), and the sides stay in the URL.
+ * Views, the phone team switcher and dragging the strip are local (Alpine).
+ * Every new scope, move or segment re-renders the report from the API
+ * (fleet_battle_report_component), and the scope stays in the URL.
  */
 interface Props {
     report:             FleetBattleReport;
-    fights:             FleetFights;
-    /** 1-based position in the rounds list. */
-    position:           number;
     fleet_id:           number;
+    /** The after action report this report came from. */
+    back_href:          string;
     [propName: string]: any;
 }
 
 const {
     report,
-    fights,
-    position,
     fleet_id,
+    back_href,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
 const LETTERS = ['A', 'B', 'C']
-const MEMBERS_SHOWN = 10
+const GROUPS_SHOWN = 8
 const CAPSULE_IDS = [670, 33328]
+const PARTIAL_URL = translatePath('/partials/fleet_battle_report_component')
+const PAGE_URL = translatePath(`/fleets/history/${fleet_id}/report`)
 
-const href = (at: number) => translatePath(`/fleets/history/${fleet_id}/rounds/${at}`)
-const back = translatePath(fights.live ? `/fleets/upcoming/${fleet_id}#aar` : `/fleets/history/${fleet_id}#aar`)
-const previous = position > 1 ? fights.rounds[position - 2] : null
-const next = position < fights.rounds.length ? fights.rounds[position] : null
-const label = (round: FleetFightRound) => round.kind === 'round' ?
-    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
-    t('fleets.fights.skirmish')
-const title = report.kind === 'round' ?
-    t('fleets.fights.report_title').replace('{number}', (report.number ?? 0).toString()).replace('{total}', fights.round_count.toString()) :
-    t('fleets.fights.report_skirmish').replace('{time}', eve_clock(report.start))
+const scope: BattleScope = report.segment_id ? { segment: report.segment_id } :
+    report.whole ? {} : { start: report.window_start, end: report.window_end }
+const page_href = (next: BattleScope) => {
+    const query = query_string(scope_params(next))
+    return query ? `${PAGE_URL}?${query}` : PAGE_URL
+}
+const partial_href = (next: BattleScope) => `${PARTIAL_URL}?${query_string({ fleet_id, ...scope_params(next) })}`
 
-const day = new Date(report.window_start).toISOString().slice(0, 10)
+const window_label = (start: string, end: string) => t('fleets.report.window').replace('{start}', eve_clock(start)).replace('{end}', eve_clock(end))
+const segment = report.segments.find(entry => entry.id === report.segment_id)
+const title = report.whole ? t('fleets.report.whole_fleet') : segment ? segment.name : window_label(report.window_start, report.window_end)
+const duration = report.minutes >= 60 ?
+    t('fleets.report.hours').replace('{hours}', Math.floor(report.minutes / 60).toString()).replace('{minutes}', (report.minutes % 60).toString()) :
+    t('fleets.report.minutes').replace('{minutes}', report.minutes.toString())
+const meta = t('fleets.report.meta')
+    .replace('{date}', report.start.slice(0, 10))
+    .replace('{start}', eve_clock(report.start))
+    .replace('{end}', eve_clock(report.end))
+    .replace('{duration}', duration)
 const total_isk = report.killmails.reduce((sum, mail) => sum + mail.isk, 0)
 const pilots_total = report.teams.reduce((sum, team) => sum + team.totals.pilots, 0)
+const empty = report.killmails.length === 0
 
-// Hull classes from the SDE, for sorting and the Summary groups.
+// The activity strip: the whole fleet, whatever the scope.
+const bars = strip_bars(report)
+const ticks = strip_ticks(report)
+const selection = report.whole ? null : {
+    left: strip_position(report, report.window_start),
+    right: strip_position(report, report.window_end),
+}
+const span_ms = [new Date(report.span_start).getTime(), new Date(report.span_end).getTime()]
+const fights_ms = report.fights.map(fight => [new Date(fight.start).getTime(), new Date(fight.end).getTime()])
+const strip_data = `{
+    span: ${JSON.stringify(span_ms)},
+    fights: ${JSON.stringify(fights_ms)},
+    drag: null,
+    at(event) {
+        const box = this.$refs.strip.getBoundingClientRect()
+        const share = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
+        return this.span[0] + share * (this.span[1] - this.span[0])
+    },
+    down(event) {
+        if (event.button !== 0) return
+        this.$refs.strip.setPointerCapture(event.pointerId)
+        const at = this.at(event)
+        this.drag = { from: at, to: at }
+    },
+    move(event) {
+        if (this.drag) this.drag.to = this.at(event)
+    },
+    up() {
+        if (!this.drag) return
+        let from = Math.min(this.drag.from, this.drag.to)
+        let to = Math.max(this.drag.from, this.drag.to)
+        this.drag = null
+        if (to - from < 45000) {
+            const fight = this.fights.find(([start, end]) => from >= start - 30000 && from <= end + 30000)
+            if (!fight) return
+            ;[from, to] = fight
+        }
+        this.$refs.start.value = new Date(from).toISOString()
+        this.$refs.end.value = new Date(to).toISOString()
+        this.$refs.form.requestSubmit()
+    },
+    pct(at) {
+        return 100 * (at - this.span[0]) / (this.span[1] - this.span[0])
+    },
+    get drag_style() {
+        if (!this.drag) return ''
+        const from = this.pct(Math.min(this.drag.from, this.drag.to))
+        const to = this.pct(Math.max(this.drag.from, this.drag.to))
+        return 'left: ' + from + '%; width: ' + (to - from) + '%'
+    },
+}`
+
+const chips = [
+    { name: t('fleets.report.whole_fleet'), range: window_label(report.span_start, report.span_end), on: report.whole, scope: {}, segment: null },
+    ...report.segments.map(entry => ({
+        name: entry.name,
+        range: window_label(entry.start, entry.end),
+        on: entry.id === report.segment_id,
+        scope: { segment: entry.id },
+        segment: entry,
+    })),
+]
+const show_save = !report.whole && !report.segment_id && report.can_edit_segments
+
+// Hull classes from the SDE, for sorting and the Summary.
 const type_ids = [...new Set([
     ...report.teams.flatMap(team => team.pilots.flatMap(pilot => pilot.ships.map(ship => ship.type_id))),
     ...report.killmails.map(mail => mail.ship_type_id),
@@ -71,49 +144,56 @@ try {
 } catch (error) {
     console.log(`Battle report ship groups: ${error.message}`)
 }
-const group_of = (type_id: number | null) => (type_id && ship_groups.get(type_id)) || t('fleets.report.other_ships')
+const group_of = (type_id: number | null | undefined) => (type_id && ship_groups.get(type_id)) || t('fleets.report.other_ships')
 
 const mail_isk = new Map(report.killmails.map(mail => [mail.id, mail.isk]))
 const teams_sorted = [...report.teams].sort((a, b) => a.index - b.index)
 const last_index = Math.max(...teams_sorted.map(team => team.index))
 const can_open_team = teams_sorted.length < 3
+// With three sides, the smallest one (ties go to the later team) folds into a
+// full-width band when it has three pilots or fewer, so the two real sides
+// keep the width.
+const band_team = teams_sorted.length >= 3 ?
+    teams_sorted.reduce((smallest, team) => team.totals.pilots <= smallest.totals.pilots ? team : smallest) : null
+const pilots_text = (count: number) => count === 1 ? t('fleets.report.pilot_one') : t('fleets.report.pilot_count').replace('{count}', count.toString())
 
-const PARTIAL_URL = translatePath('/partials/fleet_battle_report_component')
-const PAGE_URL = translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
-const move_query = (group: number, team: number) => query_string({ fleet_id, position, sides: report.sides, group, team })
-const page_query = (group: number, team: number) => query_string({ sides: report.sides, group, team })
-const RESET_URL = `${PARTIAL_URL}?${query_string({ fleet_id, position })}`
-
-const teams = teams_sorted.map(team => {
-    const name = t('fleets.report.team').replace('{letter}', LETTERS[team.index] ?? `${team.index + 1}`)
+const teams = teams_sorted.map((team, position) => {
+    const letter = LETTERS[team.index] ?? `${team.index + 1}`
     const max_damage = Math.max(0, ...team.pilots.map(pilot => pilot.damage))
     const max_kills = Math.max(0, ...team.pilots.map(pilot => pilot.kills))
 
-    const members = team.groups.map(group => ({
-        ...group,
-        logo: get_group_logo(group.id, 32, group.kind),
-        left: team.index > 0 ? team.index - 1 : null,
-        right: team.index < last_index ? team.index + 1 : can_open_team ? last_index + 1 : null,
-    }))
+    const members = team.groups.map((group, index) => {
+        const left = team.index > 0 ? team.index - 1 : null
+        const right = team.index < last_index ? team.index + 1 : can_open_team ? last_index + 1 : null
+        const move = (to: number) => ({ ...scope, sides: move_to_side(report.sides, group.id, to) })
+        return {
+            ...group,
+            logo: get_group_logo(group.id, 32, group.kind),
+            hidden: team.groups.length > GROUPS_SHOWN + 1 && index >= GROUPS_SHOWN,
+            left: left === null ? null : { href: page_href(move(left)), partial: partial_href(move(left)), label: t('fleets.report.move').replace('{name}', group.name).replace('{team}', LETTERS[left] ?? '') },
+            right: right === null ? null : { href: page_href(move(right)), partial: partial_href(move(right)), label: t('fleets.report.move').replace('{name}', group.name).replace('{team}', LETTERS[right] ?? '') },
+        }
+    })
 
-    const rows: (BattlePilotRow & { rank: number, damage_value: number })[] = team.pilots.map(pilot => {
+    const pilot_rows = team.pilots.map(pilot => {
         const hulls = pilot.ships.filter(ship => ship.type_id && !CAPSULE_IDS.includes(ship.type_id))
         const lost = hulls.filter(ship => ship.lost)
         const main = lost[0] ?? hulls[0] ?? pilot.ships[0]
         const pod = pilot.ships.find(ship => ship.lost && ship.type_id && CAPSULE_IDS.includes(ship.type_id))
         const loss_value = lost.reduce((sum, ship) => sum + (mail_isk.get(ship.killmail_id ?? 0) ?? 0), 0)
-        return {
+        const row: BattlePilotRow = {
             character_id: pilot.character_id,
             name: pilot.name,
             icon_type_id: main?.type_id ?? null,
             ship: main?.name ?? '',
             killmail_id: main?.lost ? main.killmail_id ?? null : null,
             pod_killmail_id: pod?.killmail_id ?? null,
+            pod_title: pod ? t('fleets.report.pod_lost').replace('{isk}', format_isk(mail_isk.get(pod.killmail_id ?? 0) ?? 0)) : '',
             lost: lost.length > 0,
-            loss: lost.length > 1 ?
-                t('fleets.report.lost_many').replace('{count}', lost.length.toString()).replace('{isk}', format_isk(loss_value)) :
-                loss_value ? format_isk(loss_value) : '',
-            damage: pilot.damage ? `${format_damage(pilot.damage)} (${(100 * pilot.damage / Math.max(1, team.totals.damage)).toFixed(1)}%)` : '0',
+            loss: loss_value ? format_isk(loss_value) : '',
+            loss_note: lost.length > 1 ? t('fleets.report.hulls').replace('{count}', lost.length.toString()) : '',
+            damage: format_damage(pilot.damage),
+            share: team.totals.damage ? `${(100 * pilot.damage / team.totals.damage).toFixed(1)}%` : '',
             damage_top: pilot.damage > 0 && pilot.damage === max_damage,
             kills: pilot.kills,
             kills_top: pilot.kills > 0 && pilot.kills === max_kills,
@@ -121,44 +201,46 @@ const teams = teams_sorted.map(team => {
             corporation_name: pilot.corporation_name,
             alliance_id: pilot.alliance_id ?? null,
             alliance_name: pilot.alliance_name,
-            extras: hulls.map(ship => ({
+            extras: hulls.filter(ship => ship !== main).map(ship => ({
                 type_id: ship.type_id as number,
-                name: ship.name,
+                title: ship.lost ? t('fleets.report.hull_lost').replace('{ship}', ship.name).replace('{isk}', format_isk(mail_isk.get(ship.killmail_id ?? 0) ?? 0)) : ship.name,
                 lost: ship.lost,
                 killmail_id: ship.lost ? ship.killmail_id ?? null : null,
-                info: ship.lost ? t('fleets.report.one_lost').replace('{isk}', format_isk(mail_isk.get(ship.killmail_id ?? 0) ?? 0)) : '',
             })),
-            rank: ship_group_rank(group_of(main?.type_id ?? null)),
-            damage_value: pilot.damage,
         }
+        return { row, rank: ship_group_rank(group_of(main?.type_id)), damage: pilot.damage }
     })
-    const involved = [...rows].sort((a, b) => a.rank - b.rank || Number(b.lost) - Number(a.lost) || b.damage_value - a.damage_value)
-    const by_damage = [...rows].sort((a, b) => b.damage_value - a.damage_value)
+    const involved = [...pilot_rows].sort((a, b) => a.rank - b.rank || Number(b.row.lost) - Number(a.row.lost) || b.damage - a.damage)
+    const by_damage = [...pilot_rows].sort((a, b) => b.damage - a.damage)
+        .map(entry => ({ ...entry.row, bar: max_damage ? 100 * entry.damage / max_damage : 0 }))
 
-    const types = new Map<number, { type_id: number, name: string, group: string, flying: number, lost: number, isk: number }>()
+    type TypeEntry = { type_id: number, name: string, group: string, flown: number, lost: number, isk: number }
+    const types = new Map<number, TypeEntry>()
     team.pilots.forEach(pilot => pilot.ships.forEach(ship => {
-        if (!ship.type_id) return
-        const entry = types.get(ship.type_id) ?? { type_id: ship.type_id, name: ship.name, group: group_of(ship.type_id), flying: 0, lost: 0, isk: 0 }
-        entry.flying += 1
+        if (!ship.type_id || CAPSULE_IDS.includes(ship.type_id)) return
+        const entry = types.get(ship.type_id) ?? { type_id: ship.type_id, name: ship.name, group: group_of(ship.type_id), flown: 0, lost: 0, isk: 0 }
+        entry.flown += 1
         if (ship.lost) {
             entry.lost += 1
             entry.isk += mail_isk.get(ship.killmail_id ?? 0) ?? 0
         }
         types.set(ship.type_id, entry)
     }))
-    const summary = [...types.values()].sort((a, b) => ship_group_rank(a.group) - ship_group_rank(b.group) || b.flying - a.flying)
-    const summary_groups = [...summary.reduce((groups, entry) => {
-        const group = groups.get(entry.group) ?? { name: entry.group, flying: 0, lost: 0, isk: 0 }
-        group.flying += entry.flying
-        group.lost += entry.lost
-        group.isk += entry.isk
-        return groups.set(entry.group, group)
-    }, new Map<string, { name: string, flying: number, lost: number, isk: number }>()).values()]
-
-    const timeline = report.killmails.map(mail => mail.team === team.index ? mail : null)
+    const classes = [...[...types.values()].reduce((by_class, entry) => {
+        const list = by_class.get(entry.group) ?? []
+        list.push(entry)
+        return by_class.set(entry.group, list)
+    }, new Map<string, TypeEntry[]>()).entries()]
+        .sort((a, b) => ship_group_rank(a[0]) - ship_group_rank(b[0]))
+        .map(([name, entries]) => ({
+            name,
+            flown: entries.reduce((sum, entry) => sum + entry.flown, 0),
+            lost: entries.reduce((sum, entry) => sum + entry.lost, 0),
+            types: entries.sort((a, b) => b.flown - a.flown),
+        }))
 
     type CorpCount = { id: number, name: string, pilots: number }
-    type GroupCount = { id: number, name: string, logo: string, pilots: number, corps: Map<number, CorpCount> }
+    type GroupCount = { id: number, name: string, logo: string, pilots: number, alliance: boolean, corps: Map<number, CorpCount>, hulls: Map<number, { type_id: number, name: string, count: number }> }
     const composition = [...team.pilots.reduce((groups, pilot) => {
         const key = pilot.alliance_id ?? pilot.corporation_id ?? 0
         const group = groups.get(key) ?? {
@@ -166,7 +248,9 @@ const teams = teams_sorted.map(team => {
             name: pilot.alliance_id ? pilot.alliance_name : pilot.corporation_name,
             logo: pilot.alliance_id ? get_alliance_logo(key, 64) : get_corporation_logo(key, 64),
             pilots: 0,
+            alliance: Boolean(pilot.alliance_id),
             corps: new Map<number, CorpCount>(),
+            hulls: new Map(),
         }
         group.pilots += 1
         if (pilot.alliance_id && pilot.corporation_id) {
@@ -174,22 +258,72 @@ const teams = teams_sorted.map(team => {
             corp.pilots += 1
             group.corps.set(pilot.corporation_id, corp)
         }
+        pilot.ships.forEach(ship => {
+            if (!ship.type_id || CAPSULE_IDS.includes(ship.type_id)) return
+            const hull = group.hulls.get(ship.type_id) ?? { type_id: ship.type_id, name: ship.name, count: 0 }
+            hull.count += 1
+            group.hulls.set(ship.type_id, hull)
+        })
         return groups.set(key, group)
     }, new Map<number, GroupCount>()).values()]
-        .map(group => ({ ...group, corps: [...group.corps.values()].sort((a, b) => b.pilots - a.pilots) }))
+        .map(group => ({
+            ...group,
+            share: team.totals.pilots ? Math.round(100 * group.pilots / team.totals.pilots) : 0,
+            corps: [...group.corps.values()].sort((a, b) => b.pilots - a.pilots),
+            hulls: [...group.hulls.values()].sort((a, b) => b.count - a.count).slice(0, 5),
+        }))
         .sort((a, b) => b.pilots - a.pilots)
 
     return {
         ...team,
-        name,
+        position,
+        letter,
+        name: t('fleets.report.team').replace('{letter}', letter),
+        pilots_text: pilots_text(team.totals.pilots),
+        tiny: team === band_team && team.totals.pilots <= 3,
         members,
-        involved,
+        hidden_groups: members.filter(member => member.hidden).length,
+        involved: involved.map(entry => entry.row),
         by_damage,
-        summary,
-        summary_groups,
-        timeline,
+        classes,
         composition,
     }
+})
+
+const columns = teams.filter(team => !team.tiny)
+const bands = teams.filter(team => team.tiny)
+const grid_columns = `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))`
+const view_row = bands.length ? 3 : 2
+
+const matchup_classes = [...new Set(columns.flatMap(team => team.classes.map(entry => entry.name)))]
+    .sort((a, b) => ship_group_rank(a) - ship_group_rank(b))
+const class_of = (team: typeof teams[number], name: string) => team.classes.find(entry => entry.name === name)
+const matchup_max = Math.max(1, ...matchup_classes.flatMap(name => columns.map(team => class_of(team, name)?.flown ?? 0)))
+const matchup = matchup_classes.map(name => ({
+    name,
+    cells: columns.map(team => {
+        const entry = class_of(team, name)
+        return { flown: entry?.flown ?? 0, lost: entry?.lost ?? 0 }
+    }),
+}))
+
+// The timeline: one row per killmail, in the column of the team that lost
+// it, with a divider each minute. Mails outside the main system say where.
+const system_counts = report.killmails.reduce((counts, mail) => counts.set(mail.system_id, (counts.get(mail.system_id) ?? 0) + 1), new Map<number, number>())
+const main_system = [...system_counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+const column_index = new Map(columns.map((team, index) => [team.index, index]))
+type TimelineItem = { minute: string } | { mail: typeof report.killmails[number], column: number, team: typeof teams[number] }
+const timeline: TimelineItem[] = []
+let previous_minute = ''
+report.killmails.forEach(mail => {
+    const column = column_index.get(mail.team)
+    if (column === undefined) return
+    const minute = eve_clock(mail.time)
+    if (minute !== previous_minute) {
+        timeline.push({ minute })
+        previous_minute = minute
+    }
+    timeline.push({ mail, column, team: columns[column] })
 })
 
 const views = [
@@ -200,336 +334,786 @@ const views = [
     { id: 'composition', label: t('fleets.report.composition') },
 ]
 
+const team_class = (index: number) => `br-team-${Math.min(index, 2)}`
+const selected = (position: number) => `{ 'is-sel': team === ${position} }`
+
 import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 <div
     id="battle-report"
     class:list={['[ br ]', Astro.props.class]}
-    x-data={`{
-        view: 'involved',
-        members_open: false,
-        settings_open: false,
-        extended: $persist(true).as('battle_report_extended'),
-        expand_ships: $persist(false).as('battle_report_expand_ships'),
-    }`}
-    x-on:keydown.escape="settings_open = false"
+    x-data="{ view: 'involved', team: 0, groups_open: false }"
+    hx-history="false"
+    x-bind:class="{ 'br--ready': true, 'br--timeline': view === 'timeline', 'br--summary': view === 'summary' }"
     {...attributes}
 >
-    <header class="[ br__bar ]">
-        <div class="[ br__bar-group ]">
-            <a class="[ br__button ]" href={back}>‹ {t('fleets.fights.back')}</a>
-            <span class="[ br__step ]">
-                {previous ?
-                    <a class="[ br__arrow ]" href={href(position - 1)} aria-label={label(previous)}>‹</a> :
-                    <span class="[ br__arrow ]" aria-hidden="true">‹</span>
-                }
-                <b>{title}</b>
-                {next ?
-                    <a class="[ br__arrow ]" href={href(position + 1)} aria-label={label(next)}>›</a> :
-                    <span class="[ br__arrow ]" aria-hidden="true">›</span>
-                }
-            </span>
+    <header class="[ br__mast ]">
+        <div class="[ br__mast-top ]">
+            <a class="[ br__back ]" href={back_href}>‹ {t('fleets.fights.back')}</a>
         </div>
-        <div class="[ br__bar-group ]">
-            <span class="[ br__status ]">{t('fleets.report.status').replace('{count}', report.killmails.length.toString())}</span>
-            {report.sides &&
-                <button type="button" class="[ br__button ]" hx-get={RESET_URL} hx-target="#battle-report" hx-swap="outerHTML">{t('fleets.report.reset')}</button>
-            }
-            <button type="button" class="[ br__button br__button--icon ]" aria-label={t('fleets.report.settings')} x-on:click="settings_open = true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
-            </button>
+        <div class="[ br__mast-head ]">
+            <div>
+                <h2 class="[ br__title ]">{title}</h2>
+                <p class="[ br__meta ]">
+                    <span>{meta}</span>
+                    {report.systems.map(system =>
+                        <a href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system.name.replace(/ /g, '_'))}`} target="_blank" rel="noopener noreferrer">{system.name} ↗</a>
+                    )}
+                </p>
+            </div>
+            <dl class="[ br__totals ]">
+                <div><dt class="[ br__cap ]">{t('fleets.report.killmails')}</dt><dd>{report.killmails.length}</dd></div>
+                <div><dt class="[ br__cap ]">{t('fleets.report.pilots')}</dt><dd>{pilots_total}</dd></div>
+                <div><dt class="[ br__cap ]">{t('fleets.report.isk_destroyed')}</dt><dd>{format_isk(total_isk)}</dd></div>
+            </dl>
         </div>
     </header>
 
-    <nav class="[ br__tabs ]" role="tablist" aria-label={t('fleets.report.views')}>
-        {views.map(view =>
-            <button
-                type="button"
-                role="tab"
-                class="[ br__tab ]"
-                aria-selected={view.id === 'involved' ? 'true' : 'false'}
-                x-bind:aria-selected={`String(view === '${view.id}')`}
-                x-on:click={`view = '${view.id}'`}
-            >{view.label}</button>
-        )}
-    </nav>
-
-    <section class="[ br__info ]" aria-label={t('fleets.report.engagement')}>
-        <div>
-            <b>{day}, {eve_clock(report.window_start)} – {eve_clock(report.window_end)} ET</b>
-            <span>{t('fleets.report.duration').replace('{minutes}', report.minutes.toString())}</span>
-        </div>
-        <div>
-            <b>{t('fleets.report.totals').replace('{mails}', report.killmails.length.toString()).replace('{pilots}', pilots_total.toString()).replace('{isk}', format_isk(total_isk))}</b>
-            {!report.complete && <span>{t('fleets.report.partial')}</span>}
-        </div>
-        <div class="[ br__systems ]">
-            {report.systems.map(system =>
-                <a href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system.name.replace(/ /g, '_'))}`} target="_blank" rel="noopener noreferrer">{system.name} ↗</a>
+    <section class="[ br__panel br__scope ]" aria-label={t('fleets.report.scope')} x-data={strip_data}>
+        <div class="[ br__chips ]" role="group" aria-label={t('fleets.report.segments')}>
+            {chips.map(chip =>
+                <span class:list={['[ br__chip ]', { 'is-on': chip.on }]}>
+                    <a
+                        href={page_href(chip.scope)}
+                        hx-get={partial_href(chip.scope)}
+                        hx-target="#battle-report"
+                        hx-swap="outerHTML"
+                        aria-current={chip.on ? 'true' : undefined}
+                    ><b>{chip.name}</b><small>{chip.range}</small></a>
+                    {chip.segment && report.can_edit_segments &&
+                        <form hx-post={PARTIAL_URL} hx-target="#battle-report" hx-swap="outerHTML">
+                            <input type="hidden" name="fleet_id" value={fleet_id} />
+                            <input type="hidden" name="action" value="delete" />
+                            <input type="hidden" name="segment_id" value={chip.segment.id} />
+                            {Object.entries(scope_params(scope)).map(([name, value]) =>
+                                <input type="hidden" name={name} value={value} />
+                            )}
+                            <button type="submit" class="[ br__chip-x ]" aria-label={t('fleets.report.delete_segment').replace('{name}', chip.segment.name)}>✕</button>
+                        </form>
+                    }
+                </span>
             )}
         </div>
+
+        <div
+            class="[ br__strip ]"
+            role="group"
+            aria-label={t('fleets.report.strip').replace('{start}', eve_clock(report.span_start)).replace('{end}', eve_clock(report.span_end))}
+            x-ref="strip"
+            x-on:pointerdown="down($event)"
+            x-on:pointermove="move($event)"
+            x-on:pointerup="up()"
+        >
+            {bars.map(bar =>
+                <div class="[ br__bar ]" style={`left: ${bar.left}%; width: ${bar.width}%; height: ${100 * bar.height}%`}>
+                    {bar.parts.map(part => <span class={team_class(part.team)} style={`height: ${100 * part.share}%`} />)}
+                </div>
+            )}
+            {selection &&
+                <>
+                    <div class="[ br__dim ]" style={`left: 0; width: ${selection.left}%`} />
+                    <div class="[ br__dim ]" style={`right: 0; width: ${100 - selection.right}%`} />
+                    <div class="[ br__sel ]" style={`left: ${selection.left}%; width: ${selection.right - selection.left}%`}>
+                        <span>{window_label(report.window_start, report.window_end)}</span>
+                    </div>
+                </>
+            }
+            <div class="[ br__drag ]" x-show="drag" x-cloak x-bind:style="drag_style" />
+            {ticks.map(tick => <span class="[ br__tick ]" style={`left: ${tick.left}%`}>{tick.label}</span>)}
+        </div>
+        <form x-ref="form" hx-get={PARTIAL_URL} hx-target="#battle-report" hx-swap="outerHTML" hidden>
+            <input type="hidden" name="fleet_id" value={fleet_id} />
+            <input type="hidden" name="start" x-ref="start" />
+            <input type="hidden" name="end" x-ref="end" />
+        </form>
+
+        <p class="[ br__legend ]">
+            <span>{t('fleets.report.strip_legend')}</span>
+            {teams_sorted.map(team => <span><i class={team_class(team.index)} />{t('fleets.report.team').replace('{letter}', LETTERS[team.index] ?? '')}</span>)}
+            <span class="[ br__muted ]">{t('fleets.report.strip_hint')}</span>
+        </p>
+
+        {show_save &&
+            <form class="[ br__save ]" hx-post={PARTIAL_URL} hx-target="#battle-report" hx-swap="outerHTML">
+                <input type="hidden" name="fleet_id" value={fleet_id} />
+                <input type="hidden" name="action" value="save" />
+                <input type="hidden" name="start" value={report.window_start} />
+                <input type="hidden" name="end" value={report.window_end} />
+                <span set:html={t('fleets.report.selected').replace('{window}', window_label(report.window_start, report.window_end)).replace('{count}', report.killmails.length.toString())} />
+                <label>
+                    <span class="[ br__cap ]">{t('fleets.report.segment_name')}</span>
+                    <input type="text" name="name" maxlength="64" placeholder={window_label(report.window_start, report.window_end)} />
+                </label>
+                <button type="submit" class="[ br__button br__button--primary ]">{t('fleets.report.save_segment')}</button>
+            </form>
+        }
     </section>
 
-    <div class="[ br__scroll ]">
-        <div class="[ br__grid ]" style={`grid-template-columns: repeat(${teams.length}, minmax(min(85vw, 22rem), 35rem))`}>
-            {teams.map((team, column) =>
-                <section class="[ br__team ]" style={`grid-row: 1; grid-column: ${column + 1}`} aria-labelledby={`br-team-${team.index}`}>
-                    <h3 id={`br-team-${team.index}`}>{team.name} ({team.totals.pilots})</h3>
-                    <dl class="[ br__stats ]">
-                        <div><dt>{t('fleets.report.isk_lost')}</dt><dd>{format_isk(team.totals.isk_lost)}</dd></div>
-                        <div><dt>{t('fleets.report.efficiency')}</dt><dd>{team.totals.efficiency !== null && team.totals.efficiency !== undefined ? `${team.totals.efficiency}%` : '–'}</dd></div>
-                        <div><dt>{t('fleets.report.ships_lost')}</dt><dd>{t('fleets.report.ships').replace('{count}', team.totals.ships_lost.toString())}</dd></div>
-                        <div><dt>{t('fleets.report.inflicted')}</dt><dd>{format_damage(team.totals.damage)}</dd></div>
-                    </dl>
-                    <ul class="[ br__members ]">
-                        {team.members.map((member, index) =>
-                            <li
-                                x-show={team.members.length > MEMBERS_SHOWN && index >= MEMBERS_SHOWN - 1 ? 'members_open' : undefined}
-                                x-cloak={team.members.length > MEMBERS_SHOWN && index >= MEMBERS_SHOWN - 1 ? '' : undefined}
-                            >
-                                {member.left !== null ?
-                                    <a
-                                        class="[ br__move ]"
-                                        href={`${PAGE_URL}?${page_query(member.id, member.left)}`}
-                                        hx-get={`${PARTIAL_URL}?${move_query(member.id, member.left)}`}
-                                        hx-target="#battle-report"
-                                        hx-swap="outerHTML"
-                                        aria-label={t('fleets.report.move').replace('{name}', member.name).replace('{team}', LETTERS[member.left] ?? '')}
-                                    >«</a> :
-                                    <span />
-                                }
-                                <span class="[ br__member ]">
-                                    <img src={member.logo} alt="" width="22" height="22" loading="lazy" />
-                                    <span class="[ br__muted ]">({member.pilots})</span>
-                                    <a href={`https://zkillboard.com/${member.kind}/${member.id}/`} target="_blank" rel="noopener noreferrer">{member.name}</a>
-                                    {member.bloc && <IntelBlocTag bloc={member.bloc} />}
-                                </span>
-                                {member.right !== null ?
-                                    <a
-                                        class="[ br__move ]"
-                                        href={`${PAGE_URL}?${page_query(member.id, member.right)}`}
-                                        hx-get={`${PARTIAL_URL}?${move_query(member.id, member.right)}`}
-                                        hx-target="#battle-report"
-                                        hx-swap="outerHTML"
-                                        aria-label={t('fleets.report.move').replace('{name}', member.name).replace('{team}', LETTERS[member.right] ?? '')}
-                                    >»</a> :
-                                    <span />
-                                }
-                            </li>
-                        )}
-                    </ul>
-                    {team.members.length > MEMBERS_SHOWN &&
-                        <button type="button" class="[ br__expand ]" x-on:click="members_open = !members_open" x-bind:aria-expanded="String(members_open)">
-                            <span x-show="!members_open">⌄ {t('fleets.report.more_groups').replace('{count}', (team.members.length - MEMBERS_SHOWN + 1).toString())}</span>
-                            <span x-show="members_open" x-cloak>⌃ {t('fleets.after.show_fewer')}</span>
-                        </button>
-                    }
-                </section>
-            )}
-
-            {teams.map((team, column) =>
-                <section class="[ br__view ]" style={`grid-row: 2; grid-column: ${column + 1}`} aria-label={team.name}>
-                    {[{ id: 'involved', rows: team.involved }, { id: 'damage', rows: team.by_damage }].map(list =>
-                        <div x-show={`view === '${list.id}'`} x-cloak={list.id === 'involved' ? undefined : ''}>
-                            <div class="[ br__head ]">
-                                <button
-                                    type="button"
-                                    class="[ br__expand br__expand--icon ]"
-                                    x-on:click="expand_ships = !expand_ships"
-                                    x-bind:aria-label={`expand_ships ? ${JSON.stringify(t('fleets.report.collapse_all_ships'))} : ${JSON.stringify(t('fleets.report.expand_all_ships'))}`}
-                                    aria-label={t('fleets.report.expand_all_ships')}
-                                ><span x-text="expand_ships ? '⌃' : '⌄'">⌄</span></button>
-                                <div class="[ br__head-cols ]">
-                                    <div class="[ br__head-gold ]"><span>{t('fleets.report.col_pilot')}</span><span>{t('fleets.report.col_used')}</span></div>
-                                    <div><span>{t('fleets.report.col_ship')}</span><span>{t('fleets.report.col_damage')}</span></div>
-                                </div>
-                                <span>{t('fleets.report.col_corp')}</span>
-                                <span>{t('fleets.report.col_ally')}</span>
-                            </div>
-                            {list.rows.map(row => <FleetBattlePilotRow row={row} />)}
-                        </div>
-                    )}
-
-                    <div x-show="view === 'summary'" x-cloak x-data="{ grouped: false }">
-                        <button type="button" class="[ br__summary-toggle ]" x-on:click="grouped = !grouped">
-                            <span x-show="!grouped">{t('fleets.report.ship_types_title')}</span>
-                            <span x-show="grouped" x-cloak>{t('fleets.report.ship_groups_title')}</span>
-                            <small>{t('fleets.report.click_to_change')}</small>
-                        </button>
-                        <div x-show="!grouped">
-                            {team.summary.map(entry =>
-                                <div class="[ br__sum ]">
-                                    <img src={get_item_icon(entry.type_id, 64)} alt="" width="36" height="36" loading="lazy" />
-                                    <span class="[ br__sum-names ]"><b>{entry.name}</b><small>{entry.group}</small></span>
-                                    <span class="[ br__num ]">{entry.flying}</span>
-                                    <span class="[ br__red ]">{entry.lost || ''}</span>
-                                    <span class:list={['[ br__red ]', { 'br__red--bold': entry.isk >= 1_000_000_000 }]}>{entry.isk ? format_isk(entry.isk) : ''}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div x-show="grouped" x-cloak>
-                            {team.summary_groups.map(group =>
-                                <div class="[ br__sum br__sum--group ]">
-                                    <span class="[ br__sum-names ]"><b>{group.name}</b></span>
-                                    <span class="[ br__num ]">{group.flying}</span>
-                                    <span class="[ br__red ]">{group.lost || ''}</span>
-                                    <span class:list={['[ br__red ]', { 'br__red--bold': group.isk >= 1_000_000_000 }]}>{group.isk ? format_isk(group.isk) : ''}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div x-show="view === 'timeline'" x-cloak>
-                        {team.timeline.map(mail => mail ?
-                            <div class="[ br__tl br__tl--loss ]">
-                                <a href={`https://zkillboard.com/kill/${mail.id}/`} target="_blank" rel="noopener noreferrer" aria-label={t('fleets.report.killmail_of').replace('{ship}', mail.ship_name).replace('{pilot}', mail.victim_name)}>
-                                    {mail.ship_type_id && <img src={get_item_icon(mail.ship_type_id, 64)} alt="" width="36" height="36" loading="lazy" />}
-                                </a>
-                                <span class="[ br__tl-body ]">
-                                    <span><b>{mail.victim_name}</b><time datetime={mail.time}>{mail.time.slice(11, 19)}</time></span>
-                                    <span><span>{mail.ship_name}</span><b>{format_isk(mail.isk)}</b></span>
-                                </span>
-                                {mail.victim_corporation_id ? <img src={get_corporation_logo(mail.victim_corporation_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
-                                {mail.victim_alliance_id ? <img src={get_alliance_logo(mail.victim_alliance_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
-                            </div>
-                            :
-                            <div class="[ br__tl ]" aria-hidden="true" />
-                        )}
-                    </div>
-
-                    <div x-show="view === 'composition'" x-cloak>
-                        {team.composition.map(group =>
-                            <div class="[ br__ally ]">
-                                <span class="[ br__ally-head ]">
-                                    <img src={group.logo} alt="" width="40" height="40" loading="lazy" />
-                                    <span>({group.pilots}) {group.name}</span>
-                                </span>
-                                {group.corps.length > 0 &&
-                                    <ul>
-                                        {group.corps.map(corp =>
-                                            <li><img src={get_corporation_logo(corp.id, 32)} alt="" width="20" height="20" loading="lazy" />({corp.pilots}) {corp.name}</li>
-                                        )}
-                                    </ul>
-                                }
-                            </div>
-                        )}
-                    </div>
-                </section>
+    <div class="[ br__tabs ]">
+        <div class="[ br__tab-list ]" role="tablist" aria-label={t('fleets.report.views')}>
+            {views.map(view =>
+                <button
+                    type="button"
+                    role="tab"
+                    class="[ br__tab ]"
+                    aria-selected={view.id === 'involved' ? 'true' : 'false'}
+                    x-bind:aria-selected={`String(view === '${view.id}')`}
+                    x-on:click={`view = '${view.id}'`}
+                >{view.label}</button>
             )}
         </div>
+        {report.sides &&
+            <a class="[ br__button ]" href={page_href(scope)} hx-get={partial_href(scope)} hx-target="#battle-report" hx-swap="outerHTML">{t('fleets.report.reset')}</a>
+        }
     </div>
 
-    <div class="[ br__backdrop ]" x-show="settings_open" x-cloak x-on:click.self="settings_open = false">
-        <section class="[ br__dialog ]" role="dialog" aria-modal="true" aria-labelledby="br-settings-title">
-            <header>
-                <h2 id="br-settings-title">{t('fleets.report.settings')}</h2>
-                <button type="button" class="[ br__button br__button--icon ]" aria-label={t('fleets.report.close_settings')} x-on:click="settings_open = false">✕</button>
-            </header>
-            {[{ key: 'extended', label: t('fleets.report.setting_extended') }, { key: 'expand_ships', label: t('fleets.report.setting_expand') }].map(setting =>
-                <button type="button" role="switch" class="[ br__switch ]" x-bind:aria-checked={`String(${setting.key})`} x-on:click={`${setting.key} = !${setting.key}`}>
-                    <span class="[ br__switch-track ]" aria-hidden="true"><span /></span>
-                    <span>{setting.label}</span>
-                </button>
-            )}
-        </section>
-    </div>
+    {!report.complete && <p class="[ br__partial ]">{t('fleets.report.partial')}</p>}
+
+    {empty ?
+        <EmptyState title={t('fleets.report.empty')} />
+        :
+        <>
+            <div class="[ br__switch ]" role="group" aria-label={t('fleets.report.team_shown')}>
+                {teams.map(team =>
+                    <button type="button" x-bind:aria-pressed={`String(team === ${team.position})`} aria-pressed={team.position === 0 ? 'true' : 'false'} x-on:click={`team = ${team.position}`}>
+                        <span class:list={['[ br__badge br__badge--s ]', team_class(team.index)]}>{team.letter}</span>
+                        <span>{team.pilots_text}</span>
+                    </button>
+                )}
+            </div>
+
+            <div class="[ br__grid ]" style={`grid-template-columns: ${grid_columns}`}>
+                {columns.map((team, column) =>
+                    <section class="[ br__col br__card-col ]" x-bind:class={selected(team.position)} style={`grid-row: 1; grid-column: ${column + 1}`} aria-labelledby={`br-team-${team.index}`}>
+                        <div class="[ br__panel br__card ]">
+                            <div class="[ br__card-head ]">
+                                <span class:list={['[ br__badge ]', team_class(team.index)]} aria-hidden="true">{team.letter}</span>
+                                <h3 id={`br-team-${team.index}`}>{team.name}</h3>
+                                <span class="[ br__muted ]">{team.pilots_text}</span>
+                                {team.ours && <span class="[ br__ours ]">{t('fleets.report.our_fleet')}</span>}
+                            </div>
+                            <dl class="[ br__stats ]">
+                                <div><dt class="[ br__cap ]">{t('fleets.report.isk_lost')}</dt><dd>{format_isk(team.totals.isk_lost)}</dd></div>
+                                <div>
+                                    <dt class="[ br__cap ]">{t('fleets.report.efficiency')}</dt>
+                                    <dd>{team.totals.efficiency ?? 0}%</dd>
+                                    <span class="[ br__eff ]" aria-hidden="true"><span style={`width: ${team.totals.efficiency ?? 0}%`} /></span>
+                                </div>
+                                <div><dt class="[ br__cap ]">{t('fleets.report.ships_lost')}</dt><dd>{team.totals.ships_lost}</dd></div>
+                                <div><dt class="[ br__cap ]">{t('fleets.report.damage_dealt')}</dt><dd>{format_damage(team.totals.damage)}</dd></div>
+                            </dl>
+                            <ul class="[ br__groups ]">
+                                {team.members.map(member =>
+                                    <li x-show={member.hidden ? 'groups_open' : undefined} x-cloak={member.hidden ? '' : undefined}>
+                                        {member.left ?
+                                            <a class="[ br__move ]" href={member.left.href} hx-get={member.left.partial} hx-target="#battle-report" hx-swap="outerHTML" aria-label={member.left.label}>«</a> :
+                                            <span />
+                                        }
+                                        <img src={member.logo} alt="" width="24" height="24" loading="lazy" />
+                                        <span class="[ br__group-name ]">
+                                            <a href={`https://zkillboard.com/${member.kind}/${member.id}/`} target="_blank" rel="noopener noreferrer" data-tippy-content={member.name}>{member.name}</a>
+                                            {member.bloc && <IntelBlocTag bloc={member.bloc} />}
+                                        </span>
+                                        <span class="[ br__group-count ]">{member.pilots}</span>
+                                        {member.right ?
+                                            <a class="[ br__move ]" href={member.right.href} hx-get={member.right.partial} hx-target="#battle-report" hx-swap="outerHTML" aria-label={member.right.label}>»</a> :
+                                            <span />
+                                        }
+                                    </li>
+                                )}
+                            </ul>
+                            {team.hidden_groups > 0 &&
+                                <button type="button" class="[ br__more ]" x-on:click="groups_open = !groups_open" x-bind:aria-expanded="String(groups_open)">
+                                    <span x-show="!groups_open">{t('fleets.report.more_groups').replace('{count}', team.hidden_groups.toString())}</span>
+                                    <span x-show="groups_open" x-cloak>{t('fleets.report.fewer_groups')}</span>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                )}
+
+                {bands.map(team =>
+                    <section class="[ br__col br__card-col br__span ]" x-bind:class={selected(team.position)} style="grid-row: 2" aria-labelledby={`br-team-${team.index}`}>
+                        <div class="[ br__panel br__band ]">
+                            <div class="[ br__band-head ]">
+                                <span class:list={['[ br__badge ]', team_class(team.index)]} aria-hidden="true">{team.letter}</span>
+                                <h3 id={`br-team-${team.index}`}>{team.name}</h3>
+                                <span class="[ br__muted ]">{team.pilots_text} · {t('fleets.report.third_party')}</span>
+                                <dl class="[ br__band-stats ]">
+                                    <div><dt class="[ br__cap ]">{t('fleets.report.isk_lost')}</dt><dd>{format_isk(team.totals.isk_lost)}</dd></div>
+                                    <div><dt class="[ br__cap ]">{t('fleets.report.efficiency')}</dt><dd>{team.totals.efficiency ?? 0}%</dd></div>
+                                    <div><dt class="[ br__cap ]">{t('fleets.report.ships_lost')}</dt><dd>{team.totals.ships_lost}</dd></div>
+                                    <div><dt class="[ br__cap ]">{t('fleets.report.damage_dealt')}</dt><dd>{format_damage(team.totals.damage)}</dd></div>
+                                </dl>
+                            </div>
+                            <div class="[ br__band-body ]">
+                                <ul class="[ br__groups ]">
+                                    {team.members.map(member =>
+                                        <li>
+                                            {member.left ?
+                                                <a class="[ br__move ]" href={member.left.href} hx-get={member.left.partial} hx-target="#battle-report" hx-swap="outerHTML" aria-label={member.left.label}>«</a> :
+                                                <span />
+                                            }
+                                            <img src={member.logo} alt="" width="24" height="24" loading="lazy" />
+                                            <span class="[ br__group-name ]">
+                                                <a href={`https://zkillboard.com/${member.kind}/${member.id}/`} target="_blank" rel="noopener noreferrer">{member.name}</a>
+                                                {member.bloc && <IntelBlocTag bloc={member.bloc} />}
+                                            </span>
+                                            <span class="[ br__group-count ]">{member.pilots}</span>
+                                            {member.right ?
+                                                <a class="[ br__move ]" href={member.right.href} hx-get={member.right.partial} hx-target="#battle-report" hx-swap="outerHTML" aria-label={member.right.label}>»</a> :
+                                                <span />
+                                            }
+                                        </li>
+                                    )}
+                                </ul>
+                                <div class="[ br__band-pilots ]">
+                                    {team.involved.map(row => <div class="[ br__band-cell ]"><FleetBattlePilotRow row={row} /></div>)}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {columns.map((team, column) =>
+                    <section class="[ br__col ]" x-bind:class={selected(team.position)} x-show="view === 'involved'" style={`grid-row: ${view_row}; grid-column: ${column + 1}`} aria-label={team.name}>
+                        <div class="[ br__panel ]">
+                            <div class="[ br__head br__head--pilots ]">
+                                <span /><span>{t('fleets.report.col_pilot_ship')}</span>
+                                <span class="[ br__r br__wide ]">{t('fleets.report.col_damage')}</span>
+                                <span class="[ br__r br__wide ]">{t('fleets.report.col_kills')}</span>
+                                <span class="[ br__r br__wide ]">{t('fleets.report.col_lost')}</span>
+                                <span class="[ br__r ]">{t('fleets.report.col_corp')}</span>
+                            </div>
+                            {team.involved.map(row => <FleetBattlePilotRow row={row} />)}
+                        </div>
+                    </section>
+                )}
+
+                <section class="[ br__span br__panel br__matchup ]" x-show="view === 'summary'" x-cloak style={`grid-row: ${view_row}`} aria-labelledby="br-matchup">
+                    <h3 id="br-matchup">{t('fleets.report.matchup')}</h3>
+                    <div class="[ br__matchup-grid ]" style={`grid-template-columns: var(--br-class-col) repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))`}>
+                        <span class="[ br__cap ]">{t('fleets.report.col_class')}</span>
+                        {columns.map(team =>
+                            <span class="[ br__matchup-team ]"><span class:list={['[ br__badge br__badge--s ]', team_class(team.index)]}>{team.letter}</span><span class="[ br__cap ]">{t('fleets.report.col_flown_lost')}</span></span>
+                        )}
+                        {matchup.map(row =>
+                            <>
+                                <span class="[ br__matchup-class ]">{row.name}</span>
+                                {row.cells.map(cell =>
+                                    <span class="[ br__matchup-cell ]">
+                                        <span class="[ br__matchup-text ]"><span>{cell.flown || '–'}</span><span class="[ br__loss ]">{cell.lost ? t('fleets.report.lost_count').replace('{count}', cell.lost.toString()) : ''}</span></span>
+                                        {cell.flown > 0 &&
+                                            <span class="[ br__matchup-bar ]" aria-hidden="true">
+                                                <span style={`width: ${100 * cell.flown / matchup_max}%`} />
+                                                <span class="[ br__matchup-lost ]" style={`width: ${100 * cell.lost / matchup_max}%`} />
+                                            </span>
+                                        }
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </section>
+
+                {columns.map((team, column) =>
+                    <section class="[ br__col ]" x-bind:class={selected(team.position)} x-show="view === 'summary'" x-cloak style={`grid-row: ${view_row + 1}; grid-column: ${column + 1}`} aria-label={team.name}>
+                        <div class="[ br__panel ]">
+                            <div class="[ br__head br__head--types ]">
+                                <span /><span>{t('fleets.report.col_ship')}</span>
+                                <span class="[ br__r ]">{t('fleets.report.col_flown')}</span>
+                                <span class="[ br__r ]">{t('fleets.report.col_lost')}</span>
+                                <span class="[ br__r ]">{t('fleets.report.col_isk_lost')}</span>
+                            </div>
+                            {team.classes.map(entry =>
+                                <>
+                                    <div class="[ br__class ]">{entry.name}</div>
+                                    {entry.types.map(type =>
+                                        <div class="[ br__type ]">
+                                            <img src={get_item_icon(type.type_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                            <span class="[ br__type-name ]">{type.name}</span>
+                                            <span class="[ br__num ]">{type.flown}</span>
+                                            <span class="[ br__loss ]">{type.lost || ''}</span>
+                                            <span class="[ br__loss ]">{type.isk ? format_isk(type.isk) : ''}</span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                <section class="[ br__span br__timeline ]" x-show="view === 'timeline'" x-cloak style={`grid-row: ${view_row}`} aria-label={t('fleets.report.timeline')}>
+                    {timeline.map(item => 'minute' in item ?
+                        <p class="[ br__minute ]">{t('fleets.report.minute').replace('{time}', item.minute)}</p>
+                        :
+                        <div class="[ br__tl-row ]" style={`grid-template-columns: ${grid_columns}`}>
+                            {columns.map((_, column) => column !== item.column ?
+                                <span class="[ br__tl-gap ]" aria-hidden="true" />
+                                :
+                                <a class:list={['[ br__kill ]', { 'br__kill--pod': item.mail.pod }]} href={`https://zkillboard.com/kill/${item.mail.id}/`} target="_blank" rel="noopener noreferrer">
+                                    {item.mail.ship_type_id ? <img src={get_item_icon(item.mail.ship_type_id, 64)} alt="" width="36" height="36" loading="lazy" /> : <span />}
+                                    <span class="[ br__kill-body ]">
+                                        <span class="[ br__kill-line ]">
+                                            <span class="[ br__kill-victim ]">
+                                                <span class:list={['[ br__badge br__badge--s br__kill-badge ]', team_class(item.team.index)]}>{item.team.letter}</span>
+                                                <b>{item.mail.victim_name}</b>
+                                            </span>
+                                            <span class="[ br__kill-time ]">
+                                                {new Date(item.mail.time).toISOString().slice(11, 19)}
+                                                {item.mail.system_id !== main_system && <span class="[ br__sys ]">{item.mail.system_name}</span>}
+                                            </span>
+                                        </span>
+                                        <span class="[ br__kill-line ]">
+                                            <span class="[ br__kill-ship ]">
+                                                {item.mail.ship_name}
+                                                {item.mail.final_blow &&
+                                                    <span class="[ br__kill-by ]"> · {t('fleets.report.final_blow').replace('{name}', item.mail.final_blow.name)} · {t('fleets.report.on_mail').replace('{count}', item.mail.attackers.toString())}</span>
+                                                }
+                                            </span>
+                                            <b class="[ br__num ]">{item.mail.pod && !item.mail.isk ? t('fleets.report.pod') : format_isk(item.mail.isk)}</b>
+                                        </span>
+                                        <span class="[ br__kill-foot ]">
+                                            {new Date(item.mail.time).toISOString().slice(11, 19)}
+                                            {item.mail.system_id !== main_system && <span class="[ br__sys ]">{item.mail.system_name}</span>}
+                                            {item.mail.final_blow && <> · {t('fleets.report.final_blow').replace('{name}', item.mail.final_blow.name)}</>}
+                                        </span>
+                                    </span>
+                                    <span class="[ br__logos ]">
+                                        {item.mail.victim_corporation_id && <img src={get_corporation_logo(item.mail.victim_corporation_id, 64)} alt="" width="24" height="24" loading="lazy" />}
+                                        {item.mail.victim_alliance_id && <img src={get_alliance_logo(item.mail.victim_alliance_id, 64)} alt="" width="24" height="24" loading="lazy" />}
+                                    </span>
+                                </a>
+                            )}
+                        </div>
+                    )}
+                </section>
+
+                {columns.map((team, column) =>
+                    <section class="[ br__col ]" x-bind:class={selected(team.position)} x-show="view === 'damage'" x-cloak style={`grid-row: ${view_row}; grid-column: ${column + 1}`} aria-label={team.name}>
+                        <div class="[ br__panel ]">
+                            <div class="[ br__head br__head--damage ]">
+                                <span class="[ br__r ]">{t('fleets.report.col_rank')}</span><span /><span>{t('fleets.report.col_pilot_ship')}</span>
+                                <span>{t('fleets.report.damage_dealt')}</span>
+                                <span class="[ br__r ]">{t('fleets.report.col_kills')}</span>
+                            </div>
+                            {team.by_damage.map((row, rank) =>
+                                <div class="[ br__dmg-row ]">
+                                    <span class="[ br__rank ]">{rank + 1}</span>
+                                    {row.icon_type_id ? <img src={get_item_icon(row.icon_type_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                                    <span class="[ br__dmg-name ]"><b>{row.name}</b><span>{row.ship}</span></span>
+                                    <span class="[ br__dmg-bar ]"><span style={`width: ${row.bar}%`} /><b>{row.damage}</b></span>
+                                    <span class:list={['[ br__num ]', { 'br__top': row.kills_top }]}>{row.kills}</span>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {columns.map((team, column) =>
+                    <section class="[ br__col ]" x-bind:class={selected(team.position)} x-show="view === 'composition'" x-cloak style={`grid-row: ${view_row}; grid-column: ${column + 1}`} aria-label={team.name}>
+                        <div class="[ br__panel ]">
+                            {team.composition.map(group =>
+                                <div class="[ br__ally ]">
+                                    <div class="[ br__ally-head ]">
+                                        <img src={group.logo} alt="" width="32" height="32" loading="lazy" />
+                                        <span class="[ br__ally-name ]">
+                                            <b data-tippy-content={group.name}>{group.name}</b>
+                                            <span class="[ br__share ]" aria-hidden="true"><span style={`width: ${group.share}%`} /></span>
+                                        </span>
+                                        <span class="[ br__num ]">{group.pilots} <span class="[ br__muted ]">({group.share}%)</span></span>
+                                    </div>
+                                    {group.hulls.length > 0 &&
+                                        <div class="[ br__hulls ]">
+                                            {group.hulls.map(hull =>
+                                                <span class="[ br__hull ]" data-tippy-content={hull.name}><img src={get_item_icon(hull.type_id, 32)} alt={hull.name} width="20" height="20" loading="lazy" />×{hull.count}</span>
+                                            )}
+                                        </div>
+                                    }
+                                    {group.alliance && group.corps.length > 0 &&
+                                        <ul class="[ br__corps ]">
+                                            {group.corps.map(corp =>
+                                                <li><img src={get_corporation_logo(corp.id, 32)} alt="" width="20" height="20" loading="lazy" /><span>{corp.name}</span><span class="[ br__num ]">{corp.pilots}</span></li>
+                                            )}
+                                        </ul>
+                                    }
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+            </div>
+        </>
+    }
 </div>
 
 <style lang="scss">
     .br {
+        container: battle-report / inline-size;
         display: flex;
         flex-direction: column;
+        gap: var(--space-s);
         font-size: var(--step--1);
 
+        --br-team-a: var(--fleet-yellow);
+        --br-team-b: color-mix(in srgb, var(--alliance-blue) 45%, white);
+        --br-team-c: color-mix(in srgb, var(--highlight) 45%, var(--background));
+        --br-loss: color-mix(in srgb, var(--fleet-red) 60%, white);
+        --br-class-col: 15rem;
+
         :global(button:focus-visible),
-        :global(a:focus-visible) {
+        :global(a:focus-visible),
+        :global(input:focus-visible) {
             outline: 2px solid var(--fleet-yellow);
             outline-offset: 2px;
         }
+
+        h3 {
+            margin: 0;
+        }
     }
 
-    .br__bar {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-2xs) var(--space-m);
-        padding: var(--space-2xs) var(--space-s);
+    .br-team-0 { background-color: var(--br-team-a); }
+    .br-team-1 { background-color: var(--br-team-b); }
+    .br-team-2 { background-color: var(--br-team-c); }
+
+    .br__panel {
         background-color: var(--component-background);
-        border-bottom: 1px solid var(--hairline-medium);
+        border: 1px solid var(--hairline-medium);
     }
 
-    .br__bar-group {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-2xs) var(--space-s);
+    .br__muted {
+        color: var(--text-muted);
+    }
+
+    .br__cap {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .br__r {
+        text-align: right;
+    }
+
+    .br__num {
+        color: var(--highlight);
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__loss {
+        color: var(--br-loss);
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__top {
+        color: color-mix(in srgb, var(--green) 55%, white);
+        font-weight: 700;
     }
 
     .br__button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 2.75rem;
-        padding: 0 var(--space-s);
+        min-height: 2.25rem;
+        padding: 0 var(--space-xs);
         background: transparent;
         border: 1px solid var(--hairline-strong);
         color: var(--foreground);
         font: inherit;
-        font-weight: 700;
+        font-weight: 600;
+        white-space: nowrap;
         text-decoration: none;
         cursor: pointer;
 
         &:hover {
             border-color: var(--foreground);
-        }
-    }
-
-    .br__button--icon {
-        width: 2.75rem;
-        padding: 0;
-    }
-
-    .br__step {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-
-        b {
             color: var(--highlight);
         }
     }
 
-    .br__arrow {
+    .br__button--primary {
+        background-color: var(--foreground);
+        border-color: var(--foreground);
+        color: var(--background);
+
+        &:hover {
+            background-color: var(--highlight);
+            color: var(--background);
+        }
+    }
+
+    .br__mast {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .br__back {
+        color: var(--text-muted);
+        text-decoration: none;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .br__mast-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: var(--space-s) var(--space-l);
+    }
+
+    .br__title {
+        margin: 0;
+        font-size: var(--step-3);
+        color: var(--highlight);
+    }
+
+    .br__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        margin: var(--space-3xs) 0 0;
+        color: var(--text-muted);
+
+        a {
+            font-weight: 600;
+            color: var(--foreground);
+            text-decoration: none;
+        }
+    }
+
+    .br__totals {
+        display: flex;
+        gap: var(--space-l);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-2);
+            font-weight: 700;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .br__scope {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+    }
+
+    .br__chips {
+        display: flex;
+        gap: var(--space-2xs);
+        overflow-x: auto;
+    }
+
+    .br__chip {
+        flex: none;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        min-width: 2.75rem;
-        min-height: 2.75rem;
-        color: var(--foreground);
-        font-size: var(--step-1);
-        text-decoration: none;
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-strong);
+
+        > a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            min-height: 2.25rem;
+            padding: 0 var(--space-xs);
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        b {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            font-variant-numeric: tabular-nums;
+        }
+
+        form {
+            display: contents;
+        }
+
+        &.is-on {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 12%, var(--component-background));
+            border-color: var(--foreground);
+        }
     }
 
-    span.br__arrow {
-        opacity: 0.3;
+    .br__chip-x {
+        min-width: 2rem;
+        min-height: 2.25rem;
+        background: transparent;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--highlight);
+        }
     }
 
-    .br__status {
-        color: var(--highlight);
+    .br__strip {
+        position: relative;
+        height: 7rem;
+        margin-bottom: var(--space-m);
+        background-color: var(--surface-sunken);
+        border-bottom: 1px solid var(--hairline-strong);
+        cursor: crosshair;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .br__bar {
+        position: absolute;
+        bottom: 0;
+        display: flex;
+        flex-direction: column-reverse;
+
+        span {
+            display: block;
+            width: 100%;
+        }
+    }
+
+    .br__dim {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background-color: color-mix(in srgb, var(--background) 62%, transparent);
+        pointer-events: none;
+    }
+
+    .br__sel,
+    .br__drag {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-inline: 2px solid var(--foreground);
+        pointer-events: none;
+    }
+
+    .br__drag {
+        background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+    }
+
+    .br__sel span {
+        position: absolute;
+        top: var(--space-3xs);
+        left: var(--space-3xs);
+        padding: 0 var(--space-3xs);
+        background-color: var(--foreground);
+        color: var(--background);
+        font-size: var(--step--2);
         font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .br__tick {
+        position: absolute;
+        top: 100%;
+        margin-top: var(--space-3xs);
+        transform: translateX(-50%);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        pointer-events: none;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+        }
+
+        i {
+            display: inline-block;
+            width: 0.625rem;
+            height: 0.625rem;
+        }
+    }
+
+    .br__save {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 12%, var(--component-background));
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+
+        :global(b) {
+            color: var(--highlight);
+        }
+
+        label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            margin-left: auto;
+        }
+
+        input {
+            width: 14rem;
+            min-height: 2.25rem;
+            padding: 0 var(--space-xs);
+            background-color: var(--background);
+            border: 1px solid var(--hairline-strong);
+            color: var(--highlight);
+            font: inherit;
+        }
     }
 
     .br__tabs {
         display: flex;
-        overflow-x: auto;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: 0 var(--space-2xs);
         background-color: var(--component-background);
         border-bottom: 1px solid var(--hairline-medium);
     }
 
+    .br__tab-list {
+        display: flex;
+        min-width: 0;
+        overflow-x: auto;
+    }
+
     .br__tab {
-        min-height: 2.75rem;
+        min-height: 3rem;
         padding: 0 var(--space-s);
         background: transparent;
         border: 0;
@@ -541,99 +1125,127 @@ import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
         white-space: nowrap;
         cursor: pointer;
 
+        &:hover {
+            color: var(--highlight);
+        }
+
         &[aria-selected='true'] {
             color: var(--highlight);
             border-bottom-color: var(--fleet-red);
         }
     }
 
-    .br__info {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: var(--space-s) var(--space-l);
-        padding: var(--space-s) 0;
-
-        > div {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-        }
-
-        b {
-            color: var(--highlight);
-        }
+    .br__partial {
+        margin: 0;
+        padding: var(--space-s);
+        color: var(--text-muted);
     }
 
-    .br__systems {
-        align-items: flex-end;
-
-        a {
-            font-family: var(--heading-font);
-            font-size: var(--step-1);
-            color: var(--highlight);
-            text-transform: uppercase;
-            text-decoration: none;
-        }
-    }
-
-    .br__scroll {
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        padding-bottom: var(--space-l);
+    .br__switch {
+        display: none;
     }
 
     .br__grid {
         display: grid;
-        grid-template-rows: auto auto;
-        gap: var(--space-s) var(--space-l);
-        justify-content: center;
+        gap: var(--space-s) var(--space-m);
+    }
 
-        > section {
-            min-width: 0;
-            scroll-snap-align: start;
+    .br__col {
+        min-width: 0;
+        container-type: inline-size;
+    }
+
+    .br__span {
+        grid-column: 1 / -1;
+        min-width: 0;
+    }
+
+    .br__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        height: 100%;
+        padding: var(--space-s);
+    }
+
+    .br__card-head,
+    .br__band-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-xs);
+
+        h3 {
+            font-size: var(--step-2);
+            color: var(--highlight);
         }
     }
 
-    .br__team {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
+    .br__badge {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--background);
+    }
 
-        h3 {
-            margin: 0;
-            font-size: var(--step-2);
-            color: var(--highlight);
-            text-align: center;
-        }
+    .br__badge--s {
+        width: 1.25rem;
+        height: 1.25rem;
+        font-size: var(--step--1);
+    }
+
+    .br__ours {
+        margin-left: auto;
+        padding: var(--space-3xs) var(--space-2xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
     }
 
     .br__stats {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
         margin: 0;
-        padding: 0 var(--space-xs);
+        background-color: var(--hairline-medium);
+        border: 1px solid var(--hairline-medium);
 
-        div {
+        > div {
             display: flex;
-            justify-content: space-between;
-            gap: var(--space-s);
-        }
-
-        dt {
-            color: var(--text-muted);
+            flex-direction: column;
+            gap: 2px;
+            padding: var(--space-2xs) var(--space-xs);
+            background-color: var(--component-background);
         }
 
         dd {
             margin: 0;
+            font-size: var(--step-1);
+            font-weight: 700;
             color: var(--highlight);
-            font-weight: 600;
             font-variant-numeric: tabular-nums;
         }
     }
 
-    .br__members {
+    .br__eff {
+        display: flex;
+        height: 3px;
+        margin-top: var(--space-3xs);
+        background-color: color-mix(in srgb, var(--fleet-red) 55%, transparent);
+
+        span {
+            background-color: var(--green);
+        }
+    }
+
+    .br__groups {
         display: flex;
         flex-direction: column;
         margin: 0;
@@ -642,36 +1254,28 @@ import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
 
         li {
             display: grid;
-            grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+            grid-template-columns: 2rem 1.5rem minmax(0, 1fr) auto 2rem;
             align-items: center;
-            border-bottom: 1px solid var(--hairline-medium);
+            column-gap: var(--space-2xs);
+            min-height: 2.25rem;
+            border-top: 1px solid var(--hairline);
+        }
+
+        img {
+            display: block;
         }
     }
 
-    .br__move {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 2.75rem;
-        color: var(--text-muted);
-        font-size: var(--step-1);
-        text-decoration: none;
-
-        &:hover {
-            color: var(--foreground);
-        }
-    }
-
-    .br__member {
+    .br__group-name {
         display: flex;
         align-items: center;
-        gap: var(--space-2xs);
+        gap: var(--space-3xs);
         min-width: 0;
-        white-space: nowrap;
 
         a {
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
             color: var(--foreground);
             text-decoration: none;
 
@@ -681,170 +1285,391 @@ import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
         }
     }
 
-    .br__muted {
+    .br__group-count {
         color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
     }
 
-    .br__expand {
-        min-height: 1.75rem;
-        width: 100%;
-        background-color: color-mix(in srgb, var(--component-background) 80%, var(--background));
+    .br__move {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        min-height: 2rem;
+        color: var(--text-muted);
+        font-size: var(--step-0);
+        text-decoration: none;
+
+        &:hover {
+            color: var(--highlight);
+            background-color: var(--hairline);
+        }
+    }
+
+    .br__more {
+        min-height: 2.25rem;
+        padding: 0 0 0 calc(3.5rem + 2 * var(--space-2xs));
+        background: transparent;
         border: 0;
+        border-top: 1px solid var(--hairline);
         color: var(--text-muted);
         font: inherit;
+        text-align: left;
         cursor: pointer;
 
         &:hover {
-            color: var(--foreground);
+            color: var(--highlight);
         }
+    }
+
+    .br__band {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+    }
+
+    .br__band-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-m);
+        margin: 0 0 0 auto;
+
+        div {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-2xs);
+        }
+
+        dd {
+            margin: 0;
+            font-weight: 700;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .br__band-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: var(--space-2xs) var(--space-m);
+        align-items: start;
+    }
+
+    .br__band-pilots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-2xs);
+    }
+
+    .br__band-cell {
+        min-width: 0;
+        container-type: inline-size;
+        border: 1px solid var(--hairline);
     }
 
     .br__head {
         display: grid;
-        grid-template-columns: 44px minmax(0, 1fr) 36px 36px;
         align-items: center;
-        min-height: 2.75rem;
-        background-color: var(--component-background);
-        border-bottom: 1px solid var(--background);
-        color: var(--text-muted);
-        text-align: center;
-    }
-
-    .br__expand--icon {
-        width: 2rem;
+        column-gap: var(--space-2xs);
         min-height: 2rem;
-        margin-inline: auto;
+        padding: 0 var(--space-2xs);
+        border-bottom: 1px solid var(--hairline-medium);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
     }
 
-    .br__head-cols {
-        display: flex;
-        flex-direction: column;
-        padding: 0 var(--space-xs);
-
-        div {
-            display: flex;
-            justify-content: space-between;
-        }
+    .br__head--pilots {
+        grid-template-columns: 2.25rem minmax(0, 1fr) 4.5rem 2.25rem 4rem 3.25rem;
     }
 
-    .br__head-gold {
-        color: var(--foreground);
-        font-weight: 700;
+    .br__head--types,
+    .br__type {
+        grid-template-columns: 1.75rem minmax(0, 1fr) 2.75rem 2.5rem 4rem;
     }
 
-    .br__summary-toggle {
-        width: 100%;
-        min-height: 2.75rem;
-        background-color: var(--component-background);
-        border: 0;
-        border-bottom: 1px solid var(--background);
-        color: var(--foreground);
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-
-        small {
-            margin-left: var(--space-3xs);
-            color: var(--text-muted);
-            font-weight: 400;
-        }
+    .br__head--damage,
+    .br__dmg-row {
+        grid-template-columns: 1.5rem 2rem minmax(0, 1fr) minmax(6.5rem, 48%) 2rem;
     }
 
-    .br__sum {
+    .br__class {
+        padding: var(--space-xs) var(--space-2xs) var(--space-3xs);
+        border-bottom: 1px solid var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .br__type,
+    .br__dmg-row {
         display: grid;
-        grid-template-columns: 44px minmax(0, 1fr) 2.5rem 2.5rem 4.5rem;
         align-items: center;
-        min-height: 2.75rem;
-        background-color: var(--component-background);
-        border-bottom: 1px solid var(--background);
-        font-variant-numeric: tabular-nums;
-
-        img {
-            margin-inline: auto;
-        }
-    }
-
-    .br__sum--group {
-        grid-template-columns: minmax(0, 1fr) 2.5rem 2.5rem 4.5rem;
-        padding-left: var(--space-xs);
-    }
-
-    .br__sum-names {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        padding: 0 var(--space-xs);
-
-        b {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: var(--highlight);
-            font-weight: 600;
-        }
-
-        small {
-            color: var(--text-muted);
-        }
-    }
-
-    .br__num,
-    .br__red {
-        padding-right: var(--space-xs);
-        text-align: right;
-        color: var(--highlight);
-    }
-
-    .br__red {
-        color: color-mix(in srgb, var(--fleet-red) 60%, white);
-    }
-
-    .br__red--bold {
-        font-weight: 700;
-    }
-
-    .br__tl {
-        display: grid;
-        grid-template-columns: 44px minmax(0, 1fr) 36px 36px;
-        align-items: center;
-        height: 2.75rem;
-        background-color: color-mix(in srgb, var(--component-background) 60%, var(--background));
-        border-bottom: 1px solid var(--background);
+        column-gap: var(--space-2xs);
+        min-height: 2.5rem;
+        padding: 2px var(--space-2xs);
+        border-bottom: 1px solid var(--hairline);
 
         img {
             display: block;
-            margin-inline: auto;
         }
     }
 
-    .br__tl--loss {
-        background-color: color-mix(in srgb, var(--fleet-red) 30%, var(--component-background));
+    .br__type-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+        font-weight: 600;
     }
 
-    .br__tl-body {
+    .br__matchup {
+        padding: var(--space-s);
+
+        h3 {
+            margin-bottom: var(--space-xs);
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+    }
+
+    .br__matchup-grid {
+        display: grid;
+        align-items: center;
+        column-gap: var(--space-m);
+    }
+
+    .br__matchup-team {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: 1.75rem;
+    }
+
+    .br__matchup-class,
+    .br__matchup-cell {
         display: flex;
         flex-direction: column;
-        min-width: 0;
-        padding: 0 var(--space-xs);
+        justify-content: center;
+        gap: var(--space-3xs);
+        min-height: 2.25rem;
+        border-top: 1px solid var(--hairline);
+    }
 
-        > span {
-            display: flex;
-            justify-content: space-between;
-            gap: var(--space-xs);
-            white-space: nowrap;
+    .br__matchup-class {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .br__matchup-text {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__matchup-bar {
+        position: relative;
+        height: 6px;
+        background-color: var(--hairline);
+
+        span {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            background-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
         }
+
+        .br__matchup-lost {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .br__timeline {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .br__minute {
+        margin: 0;
+        padding: var(--space-xs) 0 var(--space-3xs);
+        border-bottom: 1px solid var(--hairline-medium);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+
+    .br__tl-row {
+        display: grid;
+        column-gap: var(--space-m);
+    }
+
+    .br__tl-gap {
+        min-height: 3rem;
+        background-color: var(--surface-sunken);
+        border-bottom: 1px solid var(--background);
+    }
+
+    .br__kill {
+        display: grid;
+        grid-template-columns: 2.25rem minmax(0, 1fr) 3.25rem;
+        align-items: center;
+        column-gap: var(--space-2xs);
+        min-width: 0;
+        min-height: 3rem;
+        padding: var(--space-3xs) var(--space-2xs);
+        background-color: color-mix(in srgb, var(--fleet-red) 22%, var(--component-background));
+        border-bottom: 1px solid var(--background);
+        color: inherit;
+        text-decoration: none;
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--fleet-red) 32%, var(--component-background));
+        }
+
+        img {
+            display: block;
+        }
+    }
+
+    .br__kill--pod {
+        background-color: color-mix(in srgb, var(--fleet-red) 12%, var(--component-background));
+    }
+
+    .br__kill-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .br__kill-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .br__kill-victim {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
 
         b {
             overflow: hidden;
             text-overflow: ellipsis;
-            color: var(--highlight);
+            white-space: nowrap;
+            color: var(--foreground);
+        }
+    }
+
+    .br__kill-badge {
+        display: none;
+    }
+
+    .br__kill-time,
+    .br__kill-foot {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__kill-foot {
+        display: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .br__kill-ship {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .br__kill-by {
+        color: var(--text-muted);
+    }
+
+    .br__sys {
+        margin-left: var(--space-3xs);
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--hairline-strong);
+        font-size: var(--step--2);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .br__logos {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+
+        img {
+            display: block;
+        }
+    }
+
+    .br__rank {
+        color: var(--text-muted);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .br__dmg-name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b,
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        > span:first-child b {
+        b {
             color: var(--foreground);
         }
 
-        time {
+        span {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+
+    .br__dmg-bar {
+        position: relative;
+        height: 1.375rem;
+        background-color: var(--hairline);
+
+        span {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            background-color: color-mix(in srgb, var(--fleet-yellow) 32%, transparent);
+        }
+
+        b {
+            position: relative;
+            padding: 0 var(--space-3xs);
+            font-size: var(--step--1);
+            line-height: 1.375rem;
             color: var(--highlight);
             font-variant-numeric: tabular-nums;
         }
@@ -853,121 +1678,223 @@ import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
     .br__ally {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
+        gap: var(--space-2xs);
         padding: var(--space-xs);
-        background-color: var(--component-background);
-        border-bottom: 1px solid var(--background);
-
-        ul {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            margin: 0;
-            padding: 0 0 0 calc(40px + var(--space-xs));
-            list-style: none;
-        }
-
-        li {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2xs);
-        }
+        border-bottom: 1px solid var(--hairline);
     }
 
     .br__ally-head {
-        display: flex;
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr) auto;
         align-items: center;
-        gap: var(--space-xs);
-        color: var(--highlight);
-        font-weight: 600;
+        column-gap: var(--space-xs);
+
+        img {
+            display: block;
+        }
     }
 
-    .br__backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: var(--backdrop-z-index);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: var(--space-3xl) var(--space-s) 0;
-        background-color: color-mix(in srgb, var(--background) 70%, transparent);
-    }
-
-    .br__dialog {
-        z-index: var(--dialog-z-index);
+    .br__ally-name {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
-        width: min(35rem, 100%);
-        padding: 0 var(--space-s) var(--space-s);
-        background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
+        min-width: 0;
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: var(--space-xs) 0;
-            border-bottom: 1px solid var(--hairline-medium);
-        }
-
-        h2 {
-            margin: 0;
-            font-size: var(--step-2);
+        b {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             color: var(--highlight);
         }
     }
 
-    .br__switch {
-        display: grid;
-        grid-template-columns: 3.25rem minmax(0, 1fr);
+    .br__share {
+        height: 3px;
+        margin-top: var(--space-3xs);
+        background-color: var(--hairline);
+
+        span {
+            display: block;
+            height: 100%;
+            background-color: color-mix(in srgb, var(--fleet-yellow) 55%, transparent);
+        }
+    }
+
+    .br__hulls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        padding-left: calc(2rem + var(--space-xs));
+    }
+
+    .br__hull {
+        display: inline-flex;
         align-items: center;
-        gap: var(--space-xs);
-        min-height: 3rem;
-        background: transparent;
-        border: 0;
-        color: var(--foreground);
-        font: inherit;
-        font-size: var(--step-0);
-        text-align: left;
-        cursor: pointer;
+        gap: var(--space-3xs);
+        padding: 2px var(--space-3xs) 2px 2px;
+        background-color: var(--hairline);
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+    }
 
-        &[aria-checked='true'] .br__switch-track {
-            background-color: var(--green);
+    .br__corps {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0 0 0 calc(2rem + var(--space-xs));
+        list-style: none;
 
-            span {
-                transform: translateX(1.25rem);
-                background-color: var(--highlight);
+        li {
+            display: grid;
+            grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+            align-items: center;
+            column-gap: var(--space-2xs);
+            min-height: 1.625rem;
+            font-size: var(--step--1);
+
+            span:nth-child(2) {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
         }
     }
 
-    .br__switch-track {
-        display: flex;
-        align-items: center;
-        width: 2.75rem;
-        height: 1.5rem;
-        padding: 0 3px;
-        border-radius: 999px;
-        background-color: var(--hairline-strong);
+    @container (max-width: 28.75rem) {
+        .br__head--pilots {
+            grid-template-columns: 2.25rem minmax(0, 1fr) 3.25rem;
+        }
 
-        span {
-            width: 1.125rem;
-            height: 1.125rem;
-            border-radius: 50%;
-            background-color: var(--text-muted);
-            transition: transform var(--fast-transition);
+        .br__wide {
+            display: none;
+        }
+
+        .br__stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
-    @media (max-width: 48rem) {
-        .br__grid {
-            justify-content: start;
-            column-gap: var(--space-s);
+    @container (max-width: 43.75rem) {
+        .br__band-body,
+        .br__band-pilots {
+            grid-template-columns: minmax(0, 1fr);
         }
 
-        .br__systems {
-            align-items: flex-start;
+        .br__band-stats {
+            margin-left: 0;
+        }
+    }
+
+    @container battle-report (max-width: 40rem) {
+        .br__totals {
+            gap: var(--space-m);
+
+            div {
+                align-items: flex-start;
+            }
+        }
+
+        .br__strip {
+            height: 5.5rem;
+        }
+
+        .br__save label {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .br__save input {
+            flex: 1;
+            width: auto;
+        }
+
+        .br__tab-list {
+            mask-image: linear-gradient(to right, black 85%, transparent);
+        }
+
+        .br__tab {
+            padding: 0 var(--space-xs);
+            font-size: var(--step-0);
+        }
+
+        .br__groups li {
+            grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr) auto 2.75rem;
+        }
+
+        .br__move {
+            min-width: 2.75rem;
+            min-height: 2.75rem;
+        }
+
+        .br__grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+
+        .br__col {
+            grid-column: 1 !important;
+            grid-row: auto !important;
+        }
+
+        .br--ready .br__switch {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            display: flex;
+            gap: var(--space-3xs);
+            padding: var(--space-2xs) 0;
+            background-color: var(--background);
+
+            button {
+                flex: 1 1 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-2xs);
+                min-height: 2.75rem;
+                background-color: var(--component-background);
+                border: 1px solid var(--hairline-medium);
+                color: var(--text-muted);
+                font: inherit;
+                font-weight: 600;
+                cursor: pointer;
+
+                &[aria-pressed='true'] {
+                    border-color: var(--foreground);
+                    color: var(--highlight);
+                }
+            }
+        }
+
+        .br--ready .br__col:not(.is-sel) {
+            display: none;
+        }
+
+        .br--ready.br--timeline .br__switch,
+        .br--ready.br--timeline .br__card-col,
+        .br--ready.br--summary .br__card-col {
+            display: none;
+        }
+
+        .br__tl-row {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+
+        .br__tl-gap,
+        .br__kill-time,
+        .br__kill-by {
+            display: none;
+        }
+
+        .br__kill-badge {
+            display: inline-flex;
+        }
+
+        .br__kill-foot {
+            display: block;
+        }
+
+        .br__matchup-grid {
+            --br-class-col: 6.5rem;
+            column-gap: var(--space-s);
         }
     }
 </style>

@@ -1,3 +1,4 @@
+import type { BattleScope } from '@helpers/fleet_fights'
 import type {
     FleetMember,
     Fleet,
@@ -685,13 +686,37 @@ export async function get_fleet_my_pilot_locations(access_token: string, fleet_i
 export type FleetParticipants = ApiResponse<'FleetParticipantsResponse'>
 
 export type FleetBattleReport = ApiResponse<'FleetBattleReportResponse'>
+export type FleetBattleSegment = ApiResponse<'FleetBattleSegment'>
 
-/** One engagement's battle report; ``sides`` moves groups (``group:team,...``). */
-export async function get_fleet_battle_report(access_token: string, fleet_id: number, position: number, sides: string = ''): Promise<FleetBattleReport | null> {
-    const query = sides ? `?sides=${encodeURIComponent(sides)}` : ''
-    return await api_request<FleetBattleReport | null>(`${API_ENDPOINT}/${fleet_id}/fights/${position}/report${query}`, {
+/** The fleet's battle report, or a window of it; null when the viewer may not see it. */
+export async function get_fleet_battle_report(access_token: string, fleet_id: number, scope: BattleScope = {}): Promise<FleetBattleReport | null> {
+    const params = new URLSearchParams()
+    if (scope.segment) params.set('segment', scope.segment.toString())
+    else if (scope.start && scope.end) {
+        params.set('start', scope.start)
+        params.set('end', scope.end)
+    }
+    if (scope.sides) params.set('sides', scope.sides)
+    const query = params.size ? `?${params}` : ''
+    return await api_request<FleetBattleReport | null>(`${API_ENDPOINT}/${fleet_id}/fights/report${query}`, {
         token: access_token,
         allow: [403, 404],
+    })
+}
+
+// The fleet's FC saves and removes battle report windows for everyone.
+export async function create_fleet_battle_segment(access_token: string, fleet_id: number, name: string, start: string, end: string): Promise<FleetBattleSegment> {
+    return await api_request<FleetBattleSegment>(`${API_ENDPOINT}/${fleet_id}/fights/segments`, {
+        method: 'POST',
+        token: access_token,
+        body: { name, start, end },
+    })
+}
+
+export async function delete_fleet_battle_segment(access_token: string, fleet_id: number, segment_id: number): Promise<void> {
+    await api_request<null>(`${API_ENDPOINT}/${fleet_id}/fights/segments/${segment_id}`, {
+        method: 'DELETE',
+        token: access_token,
     })
 }
 

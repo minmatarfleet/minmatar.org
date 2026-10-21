@@ -11,44 +11,80 @@ const { auth_token, user } = get_request_user(Astro)
 if (!user)
     return HTTP_403_Forbidden()
 
-const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
-const position = parseInt(Astro.url.searchParams.get('position') ?? '0')
+// The FC's save and delete forms post here; everything else is a GET.
+const form = Astro.request.method === 'POST' ? await Astro.request.formData() : null
+const fleet_id = parseInt((form?.get('fleet_id') ?? Astro.url.searchParams.get('fleet_id') ?? '0').toString())
 
-if (!fleet_id || !position)
+if (!fleet_id)
     return HTTP_404_Not_Found()
 
-import { get_fleet_fights, get_fleet_battle_report, type FleetFights, type FleetBattleReport as FleetBattleReportData } from '@helpers/api.minmatar.org/fleets'
-import { move_to_side } from '@helpers/fleet_fights'
+import {
+    create_fleet_battle_segment,
+    delete_fleet_battle_segment,
+    get_fleet_battle_report,
+    get_fleet_fights,
+    type FleetBattleReport as FleetBattleReportData,
+    type FleetFights,
+} from '@helpers/api.minmatar.org/fleets'
+import { scope_params, type BattleScope } from '@helpers/fleet_fights'
 import { query_string } from '@helpers/string'
 
-// The move form sends the sides so far plus the group it moved.
-const sides = move_to_side(
-    Astro.url.searchParams.get('sides') ?? '',
-    parseInt(Astro.url.searchParams.get('group') ?? ''),
-    parseInt(Astro.url.searchParams.get('team') ?? ''),
-)
+// The scope to render: a segment, a window, or the whole fleet.
+const read_scope = (params: { get: (name: string) => FormDataEntryValue | string | null }): BattleScope => ({
+    start: params.get('start')?.toString() || null,
+    end: params.get('end')?.toString() || null,
+    segment: parseInt(params.get('segment')?.toString() ?? '') || null,
+    sides: params.get('sides')?.toString() || null,
+})
+
+let scope = read_scope(form ?? Astro.url.searchParams)
+let fetch_error:Error | false = false
+
+if (form) {
+    try {
+        if (form.get('action') === 'save') {
+            const segment = await create_fleet_battle_segment(
+                auth_token as string,
+                fleet_id,
+                form.get('name')?.toString() ?? '',
+                form.get('start')?.toString() ?? '',
+                form.get('end')?.toString() ?? '',
+            )
+            scope = { segment: segment.id }
+        } else if (form.get('action') === 'delete') {
+            const segment_id = parseInt(form.get('segment_id')?.toString() ?? '')
+            await delete_fleet_battle_segment(auth_token as string, fleet_id, segment_id)
+            if (scope.segment === segment_id) scope = {}
+        }
+    } catch (error) {
+        fetch_error = error
+    }
+}
 
 let fights:FleetFights | null = null
 let report:FleetBattleReportData | null = null
-let fetch_error:Error | false = false
 
-try {
-    [fights, report] = await Promise.all([
-        get_fleet_fights(auth_token as string, fleet_id),
-        get_fleet_battle_report(auth_token as string, fleet_id, position, sides),
-    ])
-} catch (error) {
-    fetch_error = error
+if (!fetch_error) {
+    try {
+        [fights, report] = await Promise.all([
+            get_fleet_fights(auth_token as string, fleet_id),
+            get_fleet_battle_report(auth_token as string, fleet_id, scope),
+        ])
+    } catch (error) {
+        fetch_error = error
+    }
 }
 
 if (!fetch_error && (!fights || !report))
     return HTTP_404_Not_Found()
 
-// The address bar keeps the sides, so the link shares this report as shown.
-const page_url = translatePath(`/fleets/history/${fleet_id}/rounds/${position}`)
-Astro.response.headers.set('HX-Push-Url', report?.sides ? `${page_url}?sides=${encodeURIComponent(report.sides)}` : page_url)
+// The address bar keeps the scope and sides, so the link shares the report as shown.
+const params = query_string(scope_params(scope))
+const page_url = translatePath(`/fleets/history/${fleet_id}/report`)
+Astro.response.headers.set('HX-Push-Url', params ? `${page_url}?${params}` : page_url)
 
-const RETRY_URL = `${translatePath('/partials/fleet_battle_report_component')}?${query_string({ fleet_id, position, ...(sides && { sides }) })}`
+const RETRY_URL = `${translatePath('/partials/fleet_battle_report_component')}?${query_string({ fleet_id, ...scope_params(scope) })}`
+const back_href = translatePath(fights?.live ? `/fleets/upcoming/${fleet_id}#aar` : `/fleets/history/${fleet_id}#aar`)
 
 import FleetBattleReport from '@components/blocks/FleetBattleReport.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -66,5 +102,5 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         />
     </div>
     :
-    <FleetBattleReport report={report as FleetBattleReportData} fights={fights as FleetFights} position={position} fleet_id={fleet_id} />
+    <FleetBattleReport report={report as FleetBattleReportData} fleet_id={fleet_id} back_href={back_href} />
 }

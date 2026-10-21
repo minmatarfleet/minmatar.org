@@ -1,8 +1,8 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
 import { get_request_user } from '@helpers/request_user'
 
@@ -10,111 +10,24 @@ const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 
-import { get_gates, can } from '@helpers/gates'
-const gates = await get_gates(Astro)
-
-if (!can(gates, 'fleets.view'))
-    return HTTP_403_Forbidden()
-
 const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 const position = parseInt(Astro.params.round ?? '0')
 
-if (isNaN(fleet_id) || isNaN(position) || position < 1)
+if (isNaN(fleet_id) || isNaN(position))
     return HTTP_404_Not_Found()
 
-import type { FleetUI } from '@dtypes/layout_components'
-import { fetch_fleet_access } from '@helpers/fetching/fleets'
-import { get_fleet_fights, get_fleet_battle_report, type FleetFights, type FleetBattleReport as FleetBattleReportData } from '@helpers/api.minmatar.org/fleets'
-import { move_to_side } from '@helpers/fleet_fights'
+import { get_fleet_fights } from '@helpers/api.minmatar.org/fleets'
+import { round_window } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
 
-let fleet:FleetUI | null = null
-let fights:FleetFights | null = null
-let report:FleetBattleReportData | null = null
-let fetch_error:Error | false = false
+/**
+ * Old links to one engagement's report: the battle report now covers the
+ * whole fleet, so send them to that engagement's window, or to the whole
+ * fleet when the engagement is gone or the fights can't be read.
+ */
+const report_path = translatePath(`/fleets/history/${fleet_id}/report`)
+const fights = await get_fleet_fights(auth_token as string, fleet_id).catch(() => null)
+const round = fights?.rounds[position - 1]
 
-// Sides the viewer moved groups to; without JavaScript the move form posts here.
-const sides = move_to_side(
-    Astro.url.searchParams.get('sides') ?? '',
-    parseInt(Astro.url.searchParams.get('group') ?? ''),
-    parseInt(Astro.url.searchParams.get('team') ?? ''),
-)
-
-try {
-    const [access, fleet_fights, battle_report] = await Promise.all([
-        fetch_fleet_access(auth_token as string, fleet_id),
-        // A members-only tribe fleet 403s here for outsiders; the fleet
-        // page below shows them the group's gate instead.
-        get_fleet_fights(auth_token as string, fleet_id).catch((error) => {
-            if (error?.cause === 403) return null
-            throw error
-        }),
-        get_fleet_battle_report(auth_token as string, fleet_id, position, sides),
-    ])
-    // Members-only tribe fleet: the fleet page shows who to ask, and nothing
-    // about the fleet or its fights.
-    if (access.restricted?.host_group)
-        return Astro.redirect(translatePath(`/fleets/history/${fleet_id}`))
-    fleet = access.fleet
-    fights = fleet_fights
-    report = battle_report
-} catch (error) {
-    if (error?.cause === 403)
-        return HTTP_403_Forbidden()
-    if (error?.cause === 404)
-        return HTTP_404_Not_Found()
-    fetch_error = error
-}
-
-// While the fleet is out only its managers and pilots may read its fights.
-if (!fetch_error && !fights)
-    return HTTP_403_Forbidden()
-
-const round = fights?.rounds[position - 1] ?? null
-
-const fleet_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`
-const round_title = !round ? t('fleets.fights.rounds') : round.kind === 'round' ?
-    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
-    t('fleets.fights.skirmish')
-const fleet_path = fights?.live ? `/fleets/upcoming/${fleet_id}` : `/fleets/history/${fleet_id}`
-const breadcrumbs = [
-    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
-    { page_title: t('fleets.history.page_title'), accumulated_path: '/fleets/history/' },
-    { page_title: fleet_title, accumulated_path: fleet_path },
-    { page_title: round_title, accumulated_path: Astro.url.pathname },
-]
-
-import Viewport from '@layouts/Viewport.astro'
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-import Wrapper from '@components/compositions/Wrapper.astro'
-import FleetBattleReport from '@components/blocks/FleetBattleReport.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
-import Button from '@components/blocks/Button.astro'
+return Astro.redirect(round ? `${report_path}?${query_string(round_window(round))}` : report_path, 302)
 ---
-
-<Viewport title={`${round_title} · ${fleet_title}`}>
-    <PageWide
-        cover={{
-            image: '/images/fleets-cover.jpg',
-            image_990: '/images/fleets-cover.jpg',
-            animated: false,
-            scrollable: true,
-            overlay: true,
-        }}
-        breadcrumbs={breadcrumbs}
-    >
-        <PageTitle slot="header">{fleet_title}</PageTitle>
-
-        <Wrapper padding_block='0' padding_inline='0' max_width='var(--max-col-width)'>
-            {fetch_error ?
-                <EmptyState title={fetch_error.message} prominent={true} />
-                : round && fights && report ?
-                    <FleetBattleReport report={report} fights={fights} position={position} fleet_id={fleet_id} />
-                    :
-                    <EmptyState title={t('fleets.fights.round_missing')} prominent={true}>
-                        <Button slot="action" href={translatePath(`${fleet_path}#aar`)}>{t('fleets.fights.back')}</Button>
-                    </EmptyState>
-            }
-        </Wrapper>
-    </PageWide>
-</Viewport>
