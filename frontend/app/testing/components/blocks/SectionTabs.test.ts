@@ -20,6 +20,17 @@ test("one hashchange listener, wired to follow_hash", async () => {
   expect(result).toContain('aria-controls="campaign-panel-fleets"');
 });
 
+test("same-page hash links are followed on click", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(SectionTabs, {
+    props: { tabs, aria_label: "Campaign", id_prefix: "campaign" },
+  });
+
+  // ClientRouter navigates #hash links with pushState, so no hashchange fires.
+  expect(result).toContain('x-on:click.window="follow_link($event)"');
+  expect(result).toContain("a[href^=");
+});
+
 test("hash aliases reach the tab state", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(SectionTabs, {
