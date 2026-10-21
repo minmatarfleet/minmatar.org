@@ -9,6 +9,7 @@ if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 import { ClientRouter } from 'astro:transitions';
 
 import GuestsHeadScripts from '@components/partials/GuestsHeadScripts.astro';
+import Posthog from '@components/partials/Posthog.astro';
 import GuestsFooterScripts from '@components/partials/GuestsFooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
@@ -79,7 +80,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 		<link rel="manifest" href="/site.webmanifest">
 
-		{/* Analytics only from production builds, so dev traffic stays out of the GA property. */}
+		{/* Analytics only from production builds, so dev traffic stays out of the properties. */}
+		<Posthog />
 		{is_prod_mode() && <>
 			<!-- Google tag (gtag.js) -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
