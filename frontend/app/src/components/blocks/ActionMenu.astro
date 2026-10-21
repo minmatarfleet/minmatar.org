@@ -24,6 +24,8 @@ interface Props {
     hover?:             'tint' | 'fill';
     /** Panel as wide as the trigger (at least 12rem); long items wrap. */
     fit_trigger?:       boolean;
+    /** Accessible name for the trigger when several menus share a page, e.g. "Actions for <character>". */
+    trigger_label?:     string;
     [propName: string]: any;
 }
 
@@ -31,6 +33,7 @@ const {
     label = t('actions'),
     hover = 'tint',
     fit_trigger = false,
+    trigger_label,
     ...attributes
 } = Astro.props
 
@@ -39,6 +42,7 @@ delete attributes.class
 
 <Dropdown
     class:list={['[ action-menu ]', { 'action-menu--fill': hover === 'fill', 'action-menu--fit': fit_trigger }, Astro.props.class]}
+    trigger_label={trigger_label}
     {...attributes}
 >
     <span slot="button" class="[ action-menu__label ]">{label}</span>

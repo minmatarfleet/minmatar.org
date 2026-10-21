@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * One channel cell of a NotificationPreferences row, inside its Alpine
+ * `ntype` loop: a checkbox when the type is sent on this channel, a dash
+ * when it never is.
+ */
+interface Props {
+    channel_key:    string;
+    label:          string;
+}
+
+const {
+    channel_key,
+    label,
+} = Astro.props
+
+const has_channel = `ntype.channels.some((ch) => ch.channel === ${JSON.stringify(channel_key)})`
+
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+---
+
+<div class="[ notification-channel-cell ]">
+    <template x-if={has_channel}>
+        <RadioCheckInput
+            type="checkbox"
+            x-bind:checked={`ntype.channels.find((ch) => ch.channel === ${JSON.stringify(channel_key)}).enabled`}
+            x-on:change={`setChannel(ntype.key, ${JSON.stringify(channel_key)}, $event.target.checked)`}
+        >
+            <span class="[ notification-channel-cell__label ]">{label}</span>
+        </RadioCheckInput>
+    </template>
+    <template x-if={`!${has_channel}`}>
+        <span
+            class="[ notification-channel-cell__none ]"
+            title={t('account.not_sent_by').replace('CHANNEL', label)}
+        >—</span>
+    </template>
+</div>
+
+<style lang="scss">
+    .notification-channel-cell {
+        display: flex;
+        justify-content: center;
+        padding-block-start: var(--space-3xs);
+    }
+
+    .notification-channel-cell__none {
+        color: var(--text-muted);
+    }
+
+    // The column header names the channel on wide screens.
+    .notification-channel-cell__label {
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    // Phones: no column header, so each checkbox carries its channel name.
+    @media (max-width: 48rem) {
+        .notification-channel-cell {
+            justify-content: flex-start;
+            padding: 0;
+        }
+
+        .notification-channel-cell:has(.notification-channel-cell__none) {
+            display: none;
+        }
+
+        .notification-channel-cell__label {
+            position: static;
+            width: auto;
+            height: auto;
+            overflow: visible;
+            clip: auto;
+        }
+    }
+</style>

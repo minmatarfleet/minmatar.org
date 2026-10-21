@@ -13,7 +13,8 @@ const {
     character_errors
 } = Astro.props
 
-import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
@@ -25,20 +26,15 @@ import Button from '@components/blocks/Button.astro';
 import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
 ---
 
-<Wrapper
-    id="character_errors"
-    class="[ component ]"
-    padding_block='var(--component-padding-block)'
-    padding_inline='var(--space-l-xl)'
-    max_width='var(--max-text-width)'
->
-    <Flexblock gap='var(--space-l)'>
-        <h2>{t('character_troubleshooting')}</h2>
-
-        <p>{t('character_troubleshooting_description')}</p>
+<ComponentBlock id="character_errors" class="[ character-errors ]">
+    <Flexblock gap='0'>
+        <FlexInline gap='var(--space-xs)' class="[ character-errors__head ][ items-baseline ]">
+            <h2>{character_errors.length === 1 ? t('account.attention_title_one') : t('account.attention_title').replace('{count}', character_errors.length.toString())}</h2>
+            <small class="[ character-errors__hint ]">{t('account.attention_hint')}</small>
+        </FlexInline>
 
         {character_errors.map(character_error =>
-            <FluidFixed width='200px' class="[ items-center ]">
+            <FluidFixed width='200px' class="[ character-errors__row ][ items-center ]">
                 <FixedFluid width="32px" gap="var(--space-2xs)">
                     <CharacterPicture
                         character_id={character_error?.character?.character_id ?? 0}
@@ -63,7 +59,6 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                 <div class="[ flex justify-end items-center ]">{
                     character_error.error === 'MAIN_NOT_IN_FL33T' ?
                         <ButtonAddPrimary
-                            color='green'
                             size='sm'
                             dialog_title={t('add_primary_pilot_dialog_title')}
                         >
@@ -72,18 +67,15 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                     character_error.error === 'NO_TOKEN_LEVEL' ?
                         <FixESITokenButton
                             character={character_error.character as SummaryCharacter}
-                            color='green'
                             fix={true}
                         /> :
                     character_error.error === 'ESI_SUSPENDED' ?
                         <FixESITokenButton
                             character={character_error.character as SummaryCharacter}
-                            color='green'
                             fix={true}
                         /> :
                     character_error.error === 'NO_MAIN_SET' ?
                         <ButtonAddPrimary
-                            color='green'
                             size='sm'
                             dialog_title={t('add_primary_pilot_dialog_title')}
                         >
@@ -93,7 +85,6 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
                         <Button
                             href={translatePath(`/account/tags/${character_error.character?.character_id ?? ''}`)}
                             size='sm'
-                            color='green'
                         >
                             {t('set_character_roles')}
                         </Button>  :
@@ -102,10 +93,23 @@ import FixESITokenButton from '@components/blocks/FixESITokenButton.astro';
             </FluidFixed>
         )}
     </Flexblock>
-</Wrapper>
+</ComponentBlock>
 
 <style lang="scss">
-    #character_errors {
-        background-color: var(--fleet-red);
+    .character-errors__head {
+        padding-block-end: var(--space-s);
+
+        h2 {
+            color: var(--security-status-point-4);
+        }
+    }
+
+    .character-errors__hint {
+        color: var(--text-muted);
+    }
+
+    .character-errors__row {
+        padding-block: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
     }
 </style>

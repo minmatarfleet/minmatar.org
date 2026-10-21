@@ -843,6 +843,8 @@ export interface Posts {
 }
 
 export interface ReferralLinkStatsUI {
+    /** The referral page key (an external-referrals.json name or a sitemap slug). */
+    name?:      string;
     title:      string;
     count:      number;
     target?:    string;
