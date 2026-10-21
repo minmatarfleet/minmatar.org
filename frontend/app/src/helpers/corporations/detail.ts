@@ -10,6 +10,9 @@ export function corporation_path(corporation_id: number, name?: string | null): 
     return `/alliance/corporations/${corporation_slug(name) || corporation_id}/`
 }
 
+// The detail page header's apply control; other Apply buttons on the page point here.
+export const CORPORATION_APPLY_ID = 'corporation-apply'
+
 export type MemberSortMetric = 'fleets' | 'kills' | 'voice' | 'timezone' | 'name' | 'joined' | 'last'
 export const MEMBER_SORTS = ['fleets', 'kills', 'name', 'joined', 'last'] as const
 

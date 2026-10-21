@@ -5,6 +5,7 @@ const { t } = i18n(Astro.url)
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 import { prime_codes } from '@helpers/corporations/leadership'
+import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
 
 import Button from '@components/blocks/Button.astro'
 
@@ -28,6 +29,9 @@ const hidden_requirements = Math.max(0, requirements.length - VISIBLE_REQUIREMEN
 const recruiters = (corporation.leadership ?? []).filter((member) => member.role === 'recruiter')
 const other_recruiters = recruiters.slice(VISIBLE_RECRUITERS).map((member) => member.character_name)
 const acceptance_days = corporation.application_process?.acceptance_days
+// Opens the header's apply dialog. When that button is disabled, or before
+// Alpine loads, the link scrolls up to it so the reason is in view.
+const open_header_apply = `const target = document.querySelector('#${CORPORATION_APPLY_ID} button:not([disabled])'); if (target) { $event.preventDefault(); target.click() }`
 ---
 
 {apply_href &&
@@ -66,7 +70,7 @@ const acceptance_days = corporation.application_process?.acceptance_days
             }
             <div class="column">
                 <h3 class="eyebrow">{t('corporations.about.ready_to_join')}</h3>
-                <Button href={apply_href}>
+                <Button href={`#${CORPORATION_APPLY_ID}`} x-on:click={open_header_apply}>
                     {t('corporations.about.apply_to').replace('~NAME', corporation.corporation_name)}
                 </Button>
                 {corporation.discord_invite_url &&

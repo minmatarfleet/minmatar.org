@@ -6,13 +6,11 @@ import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
 }
 
 const {
     corporation,
-    is_user_corporation = false,
     picture_placement = 'left',
 } = Astro.props
 
@@ -27,7 +25,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
     ceo_image='/images/corporations/omega/ceo.png'
     ceo_character_id={HIBBIE_ID}
     corporation={corporation}
-    is_user_corporation={is_user_corporation}
     picture_placement='right'
     mirror_slide={picture_placement === 'left'}
 >

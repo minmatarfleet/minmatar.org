@@ -8,14 +8,12 @@ import { query_string } from '@helpers/string';
 
 interface Props {
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
     
 }
 
 const {
     corporation,
-    is_user_corporation = false,
     picture_placement = 'left',
 } = Astro.props
 
@@ -36,7 +34,6 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     ceo_image='/images/corporations/littlehelp/ceo.webp'
     ceo_character_id={BLUEBRICK_ID}
     corporation={corporation}
-    is_user_corporation={is_user_corporation}
     picture_placement='left'
     mirror_slide={picture_placement === 'right'}
 >
