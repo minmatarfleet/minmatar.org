@@ -35,6 +35,10 @@ const FIX_CHARACTER_URL = `${get_public_api_url()}/api/eveonline/characters/add?
 const PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/pilots_list_component')}`
 const SET_MAIN_CHARACTER_PARTIAL_URL = translatePath('/partials/set_primary_character')
 
+// Scope groups shown as tags before the rest fold into "+N more".
+const SCOPE_GROUPS_SHOWN = 2
+const scope_group_label = (group:string) => t(dynamic_key(group)) ?? group
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
@@ -186,9 +190,17 @@ delete attributes.class
                         {pilot.token_status === 'SUSPENDED' &&
                             <Tag text={t('account.token_suspended')} color='security-status-point-4' text_color='var(--background)' />
                         }
-                        {(pilot.actual_groups ?? []).map((group) =>
-                            <Tag text={t(dynamic_key(group)) ?? group} color='hairline-strong' text_color='var(--highlight)' />
+                        {(pilot.actual_groups ?? []).slice(0, SCOPE_GROUPS_SHOWN).map((group) =>
+                            <Tag text={scope_group_label(group)} color='hairline-strong' text_color='var(--highlight)' />
                         )}
+                        {(pilot.actual_groups ?? []).length > SCOPE_GROUPS_SHOWN &&
+                            <Tag
+                                text={t('account.more_scope_groups').replace('{count}', ((pilot.actual_groups ?? []).length - SCOPE_GROUPS_SHOWN).toString())}
+                                variant='outline'
+                                tabindex="0"
+                                data-tippy-content={(pilot.actual_groups ?? []).slice(SCOPE_GROUPS_SHOWN).map(scope_group_label).join(', ')}
+                            />
+                        }
                         {(pilot.actual_groups ?? []).length === 0 &&
                             <small class="[ pilot-list__muted ]">{t('account.public_only')}</small>
                         }

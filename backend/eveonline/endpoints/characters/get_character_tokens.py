@@ -11,7 +11,7 @@ from eveonline.helpers.characters import (
     character_desired_scopes,
 )
 from eveonline.models import EveCharacter
-from eveonline.scopes import scope_names, scope_group
+from eveonline.scopes import scope_names, scope_group, scope_groups
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 PATH = "{int:character_id}/tokens"
@@ -43,7 +43,7 @@ def get_character_tokens(request, character_id: int):
         if is_admin or token.user == request.user:
             scopes = scope_names(token)
             actual_group = scope_group(token)
-            actual_groups = [actual_group] if actual_group else []
+            actual_groups = scope_groups(token)
             response.append(
                 CharacterTokenInfo(
                     id=str(token.pk),

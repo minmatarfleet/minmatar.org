@@ -236,6 +236,39 @@ def scope_group(token: Token) -> str | None:
     return TokenType.PUBLIC.value
 
 
+# Widest first, the order scope_group() tests them in.
+LISTED_SCOPE_GROUPS = (
+    TokenType.EXECUTOR,
+    TokenType.MARKET,
+    TokenType.DIRECTOR,
+    TokenType.INDUSTRY,
+    TokenType.FLEET_COMMANDER,
+    TokenType.FACTION_WARFARE,
+    TokenType.DESKTOP,
+)
+
+
+def scope_groups(token: Token) -> List[str]:
+    """Every scope group the token holds, widest first.
+
+    scope_group()'s label always comes first, so a token missing a scope that
+    was added to its group later keeps the label it had. The others are listed
+    only when the token has all of their scopes. Basic or Public is the only
+    entry when nothing wider matches.
+    """
+    widest = scope_group(token)
+    if widest is None:
+        return []
+    groups = [widest]
+    token_scopes = set(scope_names(token))
+    for token_type in LISTED_SCOPE_GROUPS:
+        if token_type.value not in groups and set(
+            scopes_for(token_type)
+        ).issubset(token_scopes):
+            groups.append(token_type.value)
+    return groups
+
+
 def scope_names(token: Token) -> List[str]:
     token_scopes = []
     for scope in token.scopes.all():

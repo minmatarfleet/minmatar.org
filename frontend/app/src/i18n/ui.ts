@@ -2217,6 +2217,7 @@ export const ui = {
         'account.column_esi': 'ESI access',
         'account.no_alliance': 'No alliance',
         'account.public_only': 'Public data only',
+        'account.more_scope_groups': '+{count} more',
         'account.token_suspended': 'Token suspended',
         'account.no_roles_yet': 'No roles yet',
         'account.more_actions': 'Actions for CHARACTER_NAME',
