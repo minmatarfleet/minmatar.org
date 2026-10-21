@@ -423,12 +423,33 @@ class CompatRouteParityTest(_Base):
             self.assertEqual(
                 c["headers"]["X-Compatibility-Date"], "2026-06-09"
             )
+            # ESI answers 404 for project routes under /latest.
+            self.assertEqual(
+                c["url"],
+                f"https://esi.evetech.net/corporations/{CORP}/projects",
+            )
 
     def test_project_detail(self):
         path = f"/corporations/{CORP}/projects/p1"
         self.fake.add("GET", path, make_response(200, {"id": "p1"}))
         response = EsiClient(CHAR).get_corporation_project(CORP, "p1")
         self.assertEqual(response.data, {"id": "p1"})
+        self.assertEqual(
+            self.fake.calls[0]["url"], f"https://esi.evetech.net{path}"
+        )
+
+    def test_project_contributors(self):
+        path = f"/corporations/{CORP}/projects/p1/contributors"
+        self.fake.add(
+            "GET", path, make_response(200, {"contributors": [{"id": 1}]})
+        )
+        response = EsiClient(CHAR).get_corporation_project_contributors(
+            CORP, "p1"
+        )
+        self.assertEqual(response.data, [{"id": 1}])
+        self.assertEqual(
+            self.fake.calls[0]["url"], f"https://esi.evetech.net{path}"
+        )
 
 
 class RegionOrdersParityTest(_Base):
