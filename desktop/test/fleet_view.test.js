@@ -204,13 +204,40 @@ test('Recent: SRP still owed first, then your last fleets with their SRP state',
         ],
     }
     const parts = recent_tab(snapshot({ recent }))
-    assert.match(parts.main, /Needs you/)
+    assert.match(parts.main, /SRP to file/)
     assert.match(parts.main, /data-fleet-command="fleet:srp" data-id="77"/)
     assert.match(parts.main, /SRP not filed/)
     assert.match(parts.main, /SRP paid 42M/)
     assert.match(parts.main, /you were FC/)
     assert.match(parts.main, /2h 05m/)
-    assert.doesNotMatch(recent_tab(snapshot({ recent: { srp_owed: 0, fleets: [] } })).main, /Needs you/)
+    assert.doesNotMatch(recent_tab(snapshot({ recent: { srp_owed: 0, fleets: [] } })).main, /SRP to file/)
+})
+
+test('Recent: fleets are schedule-style rows grouped by day, with the FC, the fleet type and the ISK bar', () => {
+    const lost = { ship_type_id: 11198, ship_name: 'Stiletto', isk_value: 60e6, solar_system_name: 'Huola', killmail_time: '2026-10-16T20:01:00Z', srp_status: 'none', srp_amount: 0, srp_covered: false }
+    const recent = {
+        srp_owed: 0,
+        fleets: [
+            { fleet_id: 9, title: 'TFIs', type: 'strategic', type_label: 'Strategic', fc_character_id: 2112, fc_name: 'Arifsdald', started_at: '2026-10-16T19:00:00Z', ended_at: '2026-10-16T21:26:00Z', live: false, was_fc: false,
+              kills: 72, losses: 84, isk_destroyed: 9e9, isk_lost: 3e9, my_losses: [{ ...lost, killmail_id: 1 }, { ...lost, killmail_id: 2 }] },
+            { fleet_id: 8, title: 'Plexing', type_label: 'Non-Strategic', started_at: '2026-10-15T19:00:00Z', ended_at: '2026-10-15T20:45:00Z', live: false, was_fc: true,
+              kills: 8, losses: 0, isk_destroyed: 0, isk_lost: 0, my_losses: [] },
+        ],
+    }
+    const main = recent_tab(snapshot({ recent })).main
+    assert.doesNotMatch(main, /Your last fleets/)
+    assert.equal((main.match(/class="fw-section"/g) || []).length, 2)
+    assert.match(main, /class="fw-list-row fw-recent"[^>]*data-id="9"/)
+    assert.match(main, /fleet-type--strategic">Strategic/)
+    assert.match(main, /19:00 EVE · 2h 26m · FC Arifsdald/)
+    assert.match(main, /No SRP ×2/)
+    assert.match(main, /class="fw-kill-text">72 kills/)
+    assert.match(main, /class="fw-danger">84 lost/)
+    assert.match(main, /aria-label="ISK efficiency 75 percent: 9\.00B destroyed, 3\.00B lost"><span data-pct="75">/)
+    // An older backend sends no type or FC: no badge, a blank portrait, and no ISK bar for an empty fleet.
+    assert.match(main, /Plexing<\/span>/)
+    assert.match(main, /class="eve-dim">0 lost/)
+    assert.equal((main.match(/fw-efficiency__bar/g) || []).length, 1)
 })
 
 test('Recent: a loss SRP does not cover is not owed and has no File SRP', () => {
@@ -220,9 +247,9 @@ test('Recent: a loss SRP does not cover is not owed and has no File SRP', () => 
             my_losses: [{ killmail_id: 77, ship_type_id: 11198, ship_name: 'Stiletto', isk_value: 60e6, solar_system_name: 'Huola', killmail_time: '2026-10-16T20:01:00Z', srp_status: 'none', srp_amount: 0, srp_covered: false }] }],
     }
     const main = recent_tab(snapshot({ recent })).main
-    assert.doesNotMatch(main, /Needs you/)
+    assert.doesNotMatch(main, /SRP to file/)
     assert.doesNotMatch(main, /fleet:srp/)
-    assert.match(main, /class="fw-tag eve-dim">No SRP</)
+    assert.match(main, /class="fw-tag eve-dim" title="No SRP">No SRP</)
 })
 
 test('the return strip and the tab badges', () => {

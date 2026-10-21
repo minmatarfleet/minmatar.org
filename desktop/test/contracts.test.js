@@ -134,7 +134,8 @@ test('my fleets: recent fleets with losses and their SRP state', async () => {
     assert.equal(owed.length, 1)
     assert.ok(html.includes(`data-fleet-command="fleet:srp" data-id="${owed[0].killmail_id}"`))
     assert.match(html, /SRP not filed · SRP paid 42M/)
-    assert.match(html, /Sat 17 Jan · 20m · you lost 2/)
+    assert.match(html, /Sat 17 Jan<\/span>[\s\S]*17:35 EVE · 20m · FC The FC/)
+    assert.match(html, /fleet-type--non_strategic/)
     assert.ok(html.includes(mine.fleets[0].title))
 })
 

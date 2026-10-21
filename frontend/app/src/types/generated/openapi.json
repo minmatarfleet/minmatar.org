@@ -22326,6 +22326,28 @@
             ],
             "title": "Ended At"
           },
+          "fc_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Character Id"
+          },
+          "fc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Name"
+          },
           "fleet_id": {
             "title": "Fleet Id",
             "type": "integer"
@@ -22365,6 +22387,11 @@
           },
           "title": {
             "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "default": "",
+            "title": "Type",
             "type": "string"
           },
           "type_label": {

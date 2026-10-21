@@ -644,7 +644,10 @@ class MyFleetLoss(BaseModel):
 class MyRecentFleet(BaseModel):
     fleet_id: int
     title: str
+    type: str = ""
     type_label: str
+    fc_character_id: Optional[int] = None
+    fc_name: Optional[str] = None
     started_at: datetime
     ended_at: Optional[datetime] = None
     live: bool
