@@ -1,4 +1,4 @@
-"""The round battle report: the killmail snapshot, sides, and the API."""
+"""The battle report: the killmail snapshot, sides, windows, and the API."""
 
 import importlib
 from datetime import timedelta
@@ -18,6 +18,7 @@ from fleets.helpers.fights import timeline as fights
 from fleets.helpers.fights.battle import assign_sides
 from fleets.models import (
     EveFleet,
+    EveFleetBattleSegment,
     EveFleetFightTimeline,
     EveFleetInstance,
     EveFleetInstanceMember,
@@ -241,11 +242,19 @@ class BattleReportTests(TestCase):
                 system=DAL,
             )
 
-    def report(self, position=1, token=None, **query):
+    def report(self, token=None, **query):
         return self.client.get(
-            f"{BASE_URL}/{self.fleet.id}/fights/{position}/report",
+            f"{BASE_URL}/{self.fleet.id}/fights/report",
             query,
             HTTP_AUTHORIZATION=f"Bearer {token or self.token}",
+        )
+
+    def window(self, start, end, **query):
+        """The report from minute ``start`` to minute ``end``."""
+        return self.report(
+            start=self.at(start).isoformat(),
+            end=self.at(end).isoformat(),
+            **query,
         )
 
     def team(self, body, index):
@@ -301,24 +310,25 @@ class BattleReportTests(TestCase):
             theirs["groups"][0]["bloc"],
         )
 
-    def test_report_has_the_round_window_and_sides(self):
+    def test_a_window_has_every_system_in_it_and_its_sides(self):
         self.fight()
         fights.rebuild(self.fleet, now=self.now)
 
-        response = self.report()
+        response = self.window(9, 15)
 
         self.assertEqual(200, response.status_code)
         body = response.json()
-        self.assertEqual("round", body["kind"])
-        self.assertEqual(1, body["number"])
-        self.assertEqual([LANTORN], [s["id"] for s in body["systems"]])
+        self.assertFalse(body["whole"])
+        self.assertEqual([LANTORN, DAL], [s["id"] for s in body["systems"]])
         self.assertEqual(
             self.at(9).isoformat()[:19], body["window_start"][:19]
         )
         self.assertEqual(self.at(15).isoformat()[:19], body["window_end"][:19])
+        self.assertEqual(self.at(9.2).isoformat()[:19], body["start"][:19])
+        self.assertEqual(6, body["minutes"])
         self.assertTrue(body["complete"])
         self.assertEqual(
-            [150, 100, 101, 102, 103, 104, 151],
+            [150, 100, 101, 102, 161, 103, 104, 151],
             [k["id"] for k in body["killmails"]],
         )
 
@@ -334,8 +344,9 @@ class BattleReportTests(TestCase):
         self.assertEqual(1, ours["totals"]["ships_lost"])
         self.assertEqual(5 * 10**7, ours["totals"]["isk_destroyed"])
         self.assertEqual(83, ours["totals"]["efficiency"])
-        self.assertEqual(6, theirs["totals"]["ships_lost"])
-        self.assertEqual(2 * 10**7, third["totals"]["isk_destroyed"])
+        self.assertEqual(7, theirs["totals"]["ships_lost"])
+        self.assertEqual(2, third["totals"]["pilots"])
+        self.assertEqual(3 * 10**7, third["totals"]["isk_destroyed"])
 
         pilot = next(p for p in ours["pilots"] if p["character_id"] == 2001)
         self.assertEqual("Name-2001", pilot["name"])
@@ -371,7 +382,7 @@ class BattleReportTests(TestCase):
         self.fight()
         fights.rebuild(self.fleet, now=self.now)
 
-        body = self.report(sides=f"{THIRD}:1,bogus").json()
+        body = self.window(9, 15, sides=f"{THIRD}:1,bogus").json()
 
         self.assertEqual(f"{THIRD}:1", body["sides"])
         self.assertIn(THIRD, [g["id"] for g in self.team(body, 1)["groups"]])
@@ -387,7 +398,7 @@ class BattleReportTests(TestCase):
         body = self.report().json()
 
         self.assertTrue(body["complete"])
-        self.assertEqual(7, len(body["killmails"]))
+        self.assertEqual(13, len(body["killmails"]))
         timeline = EveFleetFightTimeline.objects.get()
         self.assertIsNotNone(timeline.battle_collected_at)
         self.assertEqual(13, len(timeline.battle_killmails))
@@ -400,7 +411,7 @@ class BattleReportTests(TestCase):
         )
         FeedKillmail.objects.all().delete()
 
-        body = self.report().json()
+        body = self.window(9, 15).json()
 
         self.assertFalse(body["complete"])
         self.assertEqual(
@@ -412,7 +423,7 @@ class BattleReportTests(TestCase):
         )
         self.assertEqual(5, self.team(body, 1)["totals"]["ships_lost"])
 
-        losses = self.report(position=2).json()
+        losses = self.window(34, 40).json()
         self.assertFalse(losses["complete"])
         self.assertEqual(4, self.team(losses, 0)["totals"]["ships_lost"])
         self.assertEqual(
@@ -420,19 +431,142 @@ class BattleReportTests(TestCase):
             {p["character_id"] for p in self.team(losses, 1)["pilots"]},
         )
 
-    def test_unknown_round_or_timeline_is_404(self):
+    def test_unknown_fleet_timeline_or_segment_is_404(self):
         self.assertEqual(404, self.report().status_code)
         self.fight()
         fights.rebuild(self.fleet, now=self.now)
 
-        self.assertEqual(200, self.report(position=2).status_code)
-        self.assertEqual(404, self.report(position=3).status_code)
-        self.assertEqual(404, self.report(position=0).status_code)
+        self.assertEqual(200, self.report().status_code)
+        self.assertEqual(404, self.report(segment=987).status_code)
         missing = self.client.get(
-            f"{BASE_URL}/987654/fights/1/report",
+            f"{BASE_URL}/987654/fights/report",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(404, missing.status_code)
+
+    def test_the_whole_fleet_is_every_mail_with_its_activity(self):
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+
+        body = self.report().json()
+
+        self.assertTrue(body["whole"])
+        self.assertEqual(13, len(body["killmails"]))
+        self.assertEqual([LANTORN, DAL], [s["id"] for s in body["systems"]])
+        self.assertEqual(
+            self.at(8.2).isoformat()[:19], body["span_start"][:19]
+        )
+        self.assertEqual(
+            13 * 10**7, sum(sum(m["isk"]) for m in body["activity"])
+        )
+        # Our four losses in Dal close the night, a minute apart.
+        self.assertEqual(
+            [[10**7, 0, 0]] * 4, [m["isk"] for m in body["activity"][-4:]]
+        )
+        self.assertEqual(2, len(body["fights"]))
+        self.assertEqual(
+            self.at(9).isoformat()[:19], body["fights"][0]["start"][:19]
+        )
+        self.assertEqual([], body["segments"])
+        self.assertTrue(body["can_edit_segments"])
+
+    def test_sides_come_from_the_window_alone(self):
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+
+        dal = self.window(34, 40).json()
+
+        self.assertEqual([0, 1], [t["index"] for t in dal["teams"]])
+        self.assertEqual(
+            [THEM], [g["id"] for g in self.team(dal, 1)["groups"]]
+        )
+        self.assertEqual(4, self.team(dal, 0)["totals"]["ships_lost"])
+
+    def test_the_fc_saves_and_deletes_a_segment(self):
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+        url = f"{BASE_URL}/{self.fleet.id}/fights/segments"
+
+        saved = self.client.post(
+            url,
+            {
+                "name": "  Lantorn   brawl ",
+                "start": self.at(9).isoformat(),
+                "end": self.at(15).isoformat(),
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, saved.status_code)
+        segment = saved.json()
+        self.assertEqual("Lantorn brawl", segment["name"])
+        body = self.report(segment=segment["id"]).json()
+        self.assertEqual(segment["id"], body["segment_id"])
+        self.assertEqual(
+            [(segment["id"], "Lantorn brawl")],
+            [(s["id"], s["name"]) for s in body["segments"]],
+        )
+        self.assertEqual(8, len(body["killmails"]))
+
+        deleted = self.client.delete(
+            f"{url}/{segment['id']}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(204, deleted.status_code)
+        self.assertFalse(EveFleetBattleSegment.objects.exists())
+        self.assertEqual(
+            404,
+            self.client.delete(
+                f"{url}/{segment['id']}",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            ).status_code,
+        )
+
+    def test_a_blank_name_is_the_window_times(self):
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+
+        saved = self.client.post(
+            f"{BASE_URL}/{self.fleet.id}/fights/segments",
+            {
+                "start": self.at(15).isoformat(),
+                "end": self.at(9).isoformat(),
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+
+        self.assertEqual(
+            f"{self.at(9):%H:%M}–{self.at(15):%H:%M} ET", saved["name"]
+        )
+        self.assertLess(saved["start"], saved["end"])
+
+    def test_only_the_fc_edits_segments(self):
+        self.fight()
+        fights.rebuild(self.fleet, now=self.now)
+        segment = EveFleetBattleSegment.objects.create(
+            eve_fleet=self.fleet,
+            name="Mine",
+            start=self.at(9),
+            end=self.at(15),
+        )
+        other = make_token(User.objects.create(username="other-fc"))
+        url = f"{BASE_URL}/{self.fleet.id}/fights/segments"
+
+        created = self.client.post(
+            url,
+            {"start": self.at(9).isoformat(), "end": self.at(15).isoformat()},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {other}",
+        )
+        deleted = self.client.delete(
+            f"{url}/{segment.id}", HTTP_AUTHORIZATION=f"Bearer {other}"
+        )
+
+        self.assertEqual(403, created.status_code)
+        self.assertEqual(403, deleted.status_code)
+        self.assertEqual(1, EveFleetBattleSegment.objects.count())
 
     def test_while_live_a_stranger_cannot_see_the_report(self):
         self.fight()

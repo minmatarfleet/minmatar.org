@@ -1,4 +1,4 @@
-"""GET /{fleet_id}/fights/{position}/report — one round's battle report."""
+"""GET /{fleet_id}/fights/report — the battle report for the fleet or a window."""
 
 from datetime import datetime
 from typing import List, Optional
@@ -15,12 +15,18 @@ from intel.affiliations.resolve import (
 )
 
 from fleets.endpoints.helpers import _fleet_authorized, _fleet_manager
-from fleets.helpers.fights.battle import build_report, ensure_snapshot
+from fleets.endpoints.schemas import FleetBattleSegment
+from fleets.helpers.fights.battle import build_window_report, ensure_snapshot
 from fleets.helpers.fights.serve import may_view
 from fleets.helpers.fights.timeline import is_live
-from fleets.models import EveFleet, EveFleetFightTimeline, EveFleetInstance
+from fleets.models import (
+    EveFleet,
+    EveFleetBattleSegment,
+    EveFleetFightTimeline,
+    EveFleetInstance,
+)
 
-PATH = "/{fleet_id}/fights/{position}/report"
+PATH = "/{fleet_id}/fights/report"
 METHOD = "get"
 
 
@@ -111,38 +117,60 @@ class FleetBattleKillmail(BaseModel):
     final_blow: Optional[FleetBattleFinalBlow] = None
 
 
+class FleetBattleActivity(BaseModel):
+    minute: datetime
+    # ISK lost that minute by team 0, 1 and 2, on the whole fleet's sides.
+    isk: List[int]
+
+
+class FleetBattleWindow(BaseModel):
+    start: datetime
+    end: datetime
+
+
 class FleetBattleReportResponse(BaseModel):
-    """Every killmail in a round's systems from its first mail minus a
-    minute to its last plus a minute, split into sides."""
+    """Every killmail around the fleet, or in a window of it, split into
+    sides."""
 
     fleet_id: int
-    position: int
-    kind: str
-    number: Optional[int] = None
+    # True when no window was asked for: the whole fleet.
+    whole: bool
+    window_start: datetime
+    window_end: datetime
+    # The first and last mail in the window.
     start: datetime
     end: datetime
     minutes: int
-    window_start: datetime
-    window_end: datetime
+    # The whole fleet, from its first mail minus a minute to its last plus
+    # a minute.
+    span_start: datetime
+    span_end: datetime
     systems: List[FleetBattleSystem]
     complete: bool
     sides: str
     teams: List[FleetBattleTeam]
     killmails: List[FleetBattleKillmail]
+    activity: List[FleetBattleActivity]
+    # The fleet's rounds, padded a minute each side, for picking one.
+    fights: List[FleetBattleWindow]
+    segments: List[FleetBattleSegment]
+    segment_id: Optional[int] = None
+    can_edit_segments: bool
 
 
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: FleetBattleReportResponse, 403: None, 404: None},
     "description": (
-        "A battle report for round or skirmish ``position`` (1-based, in "
-        "the order of GET /fights rounds): every killmail in its systems "
-        "from its first mail minus a minute to its last plus a minute, "
-        "third parties included, with up to three sides. Team 0 is ours. "
-        "Groups are alliances, or corporations outside one. ``sides`` "
-        "moves groups between teams, e.g. 99000001:1,98000002:0; the "
-        "response echoes the moves it applied. isk_destroyed is the ISK "
-        "other teams lost on mails the team was on. complete is false when "
+        "A battle report for the whole fleet: every killmail around its "
+        "fights, third parties included, with up to three sides. ``start`` "
+        "and ``end`` scope it to a window, and ``segment`` to a window the "
+        "FC saved. Sides are worked out from the window's own mails. Team "
+        "0 is ours. Groups are alliances, or corporations outside one. "
+        "``sides`` moves groups between teams, e.g. 99000001:1,98000002:0; "
+        "the response echoes the moves it applied. isk_destroyed is the ISK "
+        "other teams lost on mails the team was on. activity is ISK lost "
+        "per minute over the whole fleet, by team. complete is false when "
         "the killmail feed had already purged the mails and the report only "
         "has the mails our fleet was on. Same access rules as GET /fights."
     ),
@@ -150,7 +178,12 @@ ROUTE_SPEC = {
 
 
 def get_fleet_fight_report(
-    request, fleet_id: int, position: int, sides: str = None
+    request,
+    fleet_id: int,
+    start: datetime = None,
+    end: datetime = None,
+    segment: int = None,
+    sides: str = None,
 ):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if (
@@ -166,12 +199,24 @@ def get_fleet_fight_report(
     timeline = EveFleetFightTimeline.objects.filter(eve_fleet=fleet).first()
     if timeline is None or not timeline.payload:
         return 404, None
+    segments = list(EveFleetBattleSegment.objects.filter(eve_fleet=fleet))
+    if segment is not None:
+        chosen = next((s for s in segments if s.id == segment), None)
+        if chosen is None:
+            return 404, None
+        start, end = chosen.start, chosen.end
     ensure_snapshot(timeline, now=timezone.now())
-    report = build_report(timeline, position, sides)
+    report = build_window_report(timeline, start, end, sides)
     if report is None:
         return 404, None
     if can_use_feature(request.user, "intel.view"):
         _add_blocs(report)
+    report["segments"] = [
+        {"id": s.id, "name": s.name, "start": s.start, "end": s.end}
+        for s in segments
+    ]
+    report["segment_id"] = segment
+    report["can_edit_segments"] = request.user == fleet.created_by
     return report
 
 
