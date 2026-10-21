@@ -10,7 +10,7 @@ from tribes.schemas import RestrictedResponse, restricted
 from fleets.endpoints.helpers import _fleet_authorized, fleet_host_fields
 
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
-from fleets.helpers.roam_report import aars_forum_url
+from fleets.helpers.close_mail import aars_forum_url
 from fleets.models import EveFleet, EveFleetInstance
 
 PATH = "/{fleet_id}"

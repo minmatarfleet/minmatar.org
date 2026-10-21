@@ -494,12 +494,6 @@ class EveFleetInstance(models.Model):
         self.eve_fleet.status = "complete"
         self.eve_fleet.save()
         close_fleet_cleanup(self.eve_fleet)
-        # Imported lazily: fleets.helpers.roam_report may import this module.
-        from fleets.helpers.roam_report import (  # pylint: disable=import-outside-toplevel
-            schedule_roam_report,
-        )
-
-        schedule_roam_report(self.eve_fleet.id)
 
 
 class EveFleetInstanceMember(models.Model):

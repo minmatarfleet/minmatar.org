@@ -17,7 +17,6 @@ from fleets.helpers.active_clones import (
     poll_fleet_member_implants as poll_member_implants_impl,
 )
 from fleets.helpers.npsi_ingest import poll_npsi_sources
-from fleets.helpers.roam_report import publish_fleet_roam_report_impl
 from fleets.models import CAMPAIGN_FLEET_TYPES, EveFleet, EveFleetInstance
 from tribes.helpers.publishing import group_page_path
 
@@ -239,12 +238,6 @@ def poll_fleet_member_implants(member_id: int):
     return poll_member_implants_impl(member_id)
 
 
-@app.task()
-def publish_fleet_roam_report(fleet_id: int):
-    """POST roamreport.com and Eve-mail the FC when a tracked fleet closes."""
-    return publish_fleet_roam_report_impl(fleet_id)
-
-
 @app.task(exclusive=10 * 60)
 def poll_npsi_events():
     """Fetch NPSI calendar feeds and DM FCs to confirm schedule posts."""
@@ -317,10 +310,12 @@ def sweep_fight_killmails(fleet_id: int):
 
 @app.task(expires=15 * 60, exclusive=15 * 60)
 def settle_fight_timeline(fleet_id: int):
-    """Last rebuild two hours after the fleet, plus eve-kill battle links."""
+    """Last rebuild two hours after the fleet, plus eve-kill battle links,
+    then mail the FC the fleet's numbers."""
     # pylint: disable=import-outside-toplevel
+    from fleets.helpers.close_mail import send_fleet_report
     from fleets.helpers.fights import timeline as fights
 
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if fleet:
-        fights.settle(fleet)
+        send_fleet_report(fleet, fights.settle(fleet))

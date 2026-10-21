@@ -205,7 +205,7 @@ def group_kind(group: int | None, names: dict) -> str:
     return "alliance" if group >= FIRST_ALLIANCE_ID else "corporation"
 
 
-def _hostiles(rows: list[dict], names: dict) -> list[dict]:
+def hostile_groups(rows: list[dict], names: dict) -> list[dict]:
     """Who we fought: pilots on our losses, and what we killed of theirs."""
     pilots: dict[int, set] = defaultdict(set)
     killed: Counter = Counter()
@@ -394,7 +394,7 @@ def summarize_segment(
         "mails": len(rows),
         "our_pilots": len(our_pilots),
         "hostile_pilots": len(hostile_pilots),
-        "hostiles": _hostiles(rows, names),
+        "hostiles": hostile_groups(rows, names),
         "hulls_killed": _hulls(
             [r for r in rows if r["outcome"] == OUTCOME_KILL], names
         ),
