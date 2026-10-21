@@ -177,4 +177,13 @@ describe('convention rule matchers', () => {
         expect(count('tailwind_apply', astro(`<style>.card { @apply p-4 bg-black; }</style>`))).toBe(1)
         expect(count('tailwind_apply', astro(`<p>Click apply to @apply</p>`))).toBe(0)
     })
+
+    it('hand_rolled_action_menu: actions lists in a raw Dropdown or a bespoke popup, not ActionMenu or pickers', () => {
+        expect(count('hand_rolled_action_menu', astro(`<Dropdown variant="button"><span slot="button">{t('actions')}</span><nav><button>Copy</button></nav></Dropdown>`))).toBe(1)
+        expect(count('hand_rolled_action_menu', astro(`<div x-data="{ open: false }"><button x-on:click="open = !open" aria-haspopup="true" aria-label="Survey actions">⋯</button></div>`))).toBe(1)
+        expect(count('hand_rolled_action_menu', astro(`<ActionMenu><ActionMenuItem href="/x">Open</ActionMenuItem></ActionMenu>`))).toBe(0)
+        expect(count('hand_rolled_action_menu', astro(`<Dropdown><StationInfo slot="button" /><StationsSelector /></Dropdown>`))).toBe(0)
+        expect(count('hand_rolled_action_menu', astro(`<button aria-haspopup="listbox" aria-label="Currency">LP</button><button aria-haspopup="true">{page_title}</button>`))).toBe(0)
+        expect(count('hand_rolled_action_menu', astro(`<Dropdown><span slot="button">{t('actions')}</span></Dropdown>`, 'src/components/blocks/ActionMenu.astro'))).toBe(0)
+    })
 })

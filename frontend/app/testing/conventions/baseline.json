@@ -89,7 +89,6 @@
         "src/components/blocks/warzone/WarzoneReportIssue.astro": 10,
         "src/pages/alliance/propaganda/[post_id]/editor.astro": 1,
         "src/pages/industry/orders/planner.astro": 3,
-        "src/pages/surveys/index.astro": 1,
         "src/styles/_global.scss": 1,
         "src/styles/components/_tippy-theme.scss": 1,
         "src/styles/tailwind.css": 2

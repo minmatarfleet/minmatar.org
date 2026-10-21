@@ -11,7 +11,8 @@ import Dropdown from '@components/blocks/Dropdown.astro'
  *
  * A component that renders its own trigger button (a DialogButton such as
  * ButtonApplyTribe) goes inside `<div class="action-menu-item-host">`, which
- * styles that button like an item.
+ * styles that button like an item (add `action-menu-item-host--success` for
+ * the green of ActionMenuItem's success variant).
  */
 interface Props {
     /** Trigger text and the list's accessible name. Defaults to "Actions". */
@@ -76,7 +77,9 @@ delete attributes.class
         width: 100%;
     }
 
-    .action-menu-item-host :is(button, a) {
+    /* Scoped under the list so it beats the host's own button reset
+       (StylessButton's button[data-astro-cid]), whichever loads last. */
+    .action-menu__list .action-menu-item-host :is(button, a) {
         display: block;
         width: 100%;
         box-sizing: border-box;
@@ -97,6 +100,16 @@ delete attributes.class
         &:focus-visible {
             color: var(--foreground);
             background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+    }
+
+    .action-menu__list .action-menu-item-host--success :is(button, a) {
+        color: var(--green);
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--green) 25%, transparent);
+            color: var(--highlight);
         }
     }
 
