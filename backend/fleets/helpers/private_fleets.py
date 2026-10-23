@@ -143,6 +143,118 @@ def parse_invite_names(text: str) -> list[str]:
     return names
 
 
+def _claim_invite_name(
+    matched_user: dict,
+    claimed: set[str],
+    *,
+    user_id: int,
+    name: str,
+    label: str,
+    detail: str,
+) -> None:
+    key = name.casefold()
+    if key in claimed:
+        return
+    claimed.add(key)
+    if user_id in matched_user:
+        return
+    matched_user[user_id] = {
+        "kind": "pilot",
+        "id": user_id,
+        "name": label,
+        "detail": detail,
+        "matched_as": name,
+    }
+
+
+def _match_invite_characters(
+    cleaned: list[str],
+    by_key: dict[str, str],
+    matched_user: dict,
+    claimed: set[str],
+) -> None:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.models import EveCorporation
+
+    character_q = Q()
+    for name in cleaned:
+        character_q |= Q(character_name__iexact=name)
+    characters = list(
+        EveCharacter.objects.filter(character_q)
+        .filter(user__isnull=False, user__is_active=True)
+        .select_related("user")
+    )
+    corp_ids = {c.corporation_id for c in characters if c.corporation_id}
+    corp_names = dict(
+        EveCorporation.objects.filter(corporation_id__in=corp_ids).values_list(
+            "corporation_id", "name"
+        )
+    )
+    for character in characters:
+        _claim_invite_name(
+            matched_user,
+            claimed,
+            user_id=character.user_id,
+            name=by_key.get(
+                character.character_name.casefold(), character.character_name
+            ),
+            label=character.character_name,
+            detail=corp_names.get(character.corporation_id, ""),
+        )
+
+
+def _match_invite_discord(
+    still: list[str],
+    by_key: dict[str, str],
+    matched_user: dict,
+    claimed: set[str],
+) -> None:
+    if not still:
+        return
+    discord_q = Q()
+    for name in still:
+        discord_q |= (
+            Q(discord_tag__iexact=name)
+            | Q(discord_tag__istartswith=f"{name}#")
+            | Q(user__username__iexact=name)
+        )
+    for discord_user in DiscordUser.objects.filter(
+        discord_q, user__is_active=True
+    ).select_related("user"):
+        tag = discord_user.discord_tag or ""
+        username = tag.split("#", maxsplit=1)[0]
+        site_name = discord_user.user.username
+        for candidate in (tag, username, site_name):
+            key = candidate.casefold()
+            if key in by_key and key not in claimed:
+                _claim_invite_name(
+                    matched_user,
+                    claimed,
+                    user_id=discord_user.user_id,
+                    name=by_key[key],
+                    label=username or site_name,
+                    detail="Discord",
+                )
+                break
+
+
+def _prefer_primary_invite_names(matched_user: dict) -> None:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.helpers.characters.identity import (
+        primary_characters_for_users,
+    )
+
+    mains = primary_characters_for_users(list(matched_user))
+    for user_id, row in matched_user.items():
+        main = mains.get(user_id)
+        if main is None:
+            continue
+        # Prefer the primary's name (alts and Discord usernames still match).
+        row["name"] = main.character_name
+        if not row["detail"] or row["detail"] == "Discord":
+            row["detail"] = ""
+
+
 def resolve_invite_names(names) -> dict:
     """Match pasted primary-character or Discord usernames to accounts.
 
@@ -151,12 +263,6 @@ def resolve_invite_names(names) -> dict:
     username. Returns ``matched`` pilots (one per user, first name wins) and
     ``not_found`` for the rest. Caps at ``MAX_RESOLVE_NAMES``.
     """
-    # pylint: disable=import-outside-toplevel
-    from eveonline.helpers.characters.identity import (
-        primary_characters_for_users,
-    )
-    from eveonline.models import EveCorporation
-
     cleaned = parse_invite_names(
         "\n".join(names) if not isinstance(names, str) else names
     )
@@ -170,81 +276,10 @@ def resolve_invite_names(names) -> dict:
     by_key = {name.casefold(): name for name in cleaned}
     matched_user: dict[int, dict] = {}
     claimed: set[str] = set()
-
-    def claim(user_id: int, name: str, label: str, detail: str) -> None:
-        key = name.casefold()
-        if key in claimed:
-            return
-        claimed.add(key)
-        if user_id in matched_user:
-            return
-        matched_user[user_id] = {
-            "kind": "pilot",
-            "id": user_id,
-            "name": label,
-            "detail": detail,
-            "matched_as": name,
-        }
-
-    character_q = Q()
-    for name in cleaned:
-        character_q |= Q(character_name__iexact=name)
-    characters = list(
-        EveCharacter.objects.filter(character_q)
-        .filter(user__isnull=False, user__is_active=True)
-        .select_related("user")
-    )
-
-    corp_ids = {c.corporation_id for c in characters if c.corporation_id}
-    corp_names = dict(
-        EveCorporation.objects.filter(corporation_id__in=corp_ids).values_list(
-            "corporation_id", "name"
-        )
-    )
-    for character in characters:
-        claim(
-            character.user_id,
-            by_key.get(
-                character.character_name.casefold(), character.character_name
-            ),
-            character.character_name,
-            corp_names.get(character.corporation_id, ""),
-        )
-
+    _match_invite_characters(cleaned, by_key, matched_user, claimed)
     still = [n for n in cleaned if n.casefold() not in claimed]
-    if still:
-        discord_q = Q()
-        for name in still:
-            discord_q |= (
-                Q(discord_tag__iexact=name)
-                | Q(discord_tag__istartswith=f"{name}#")
-                | Q(user__username__iexact=name)
-            )
-        for discord_user in DiscordUser.objects.filter(
-            discord_q, user__is_active=True
-        ).select_related("user"):
-            tag = discord_user.discord_tag or ""
-            username = tag.split("#", maxsplit=1)[0]
-            site_name = discord_user.user.username
-            for candidate in (tag, username, site_name):
-                key = candidate.casefold()
-                if key in by_key and key not in claimed:
-                    claim(
-                        discord_user.user_id,
-                        by_key[key],
-                        username or site_name,
-                        "Discord",
-                    )
-                    break
-
-    mains = primary_characters_for_users(list(matched_user))
-    for user_id, row in matched_user.items():
-        main = mains.get(user_id)
-        if main is not None:
-            # Prefer the primary's name (alts and Discord usernames still match).
-            row["name"] = main.character_name
-            if not row["detail"] or row["detail"] == "Discord":
-                row["detail"] = ""
+    _match_invite_discord(still, by_key, matched_user, claimed)
+    _prefer_primary_invite_names(matched_user)
 
     matched = sorted(
         matched_user.values(), key=lambda row: row["name"].lower()
