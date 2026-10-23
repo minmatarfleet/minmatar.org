@@ -12,7 +12,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 from app.testing import make_token
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePlayer
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 from fleets.helpers.doctrine_flown import doctrine_hulls, pick_doctrine
 from fleets.helpers.opsec import sensitive_hull_ids
@@ -128,8 +128,15 @@ class FleetParticipantsTestCase(TestCase):
         )
         self.clock = timezone.now() - timedelta(hours=2)
 
-        # Typhoon, podded, back in a Guardian: logi from a later hull.
-        self._pilot(OWN, "Own Pilot", [TYPHOON, CAPSULE, GUARDIAN], GUARDIAN)
+        # Typhoon for most of the fleet, podded, back in a Guardian: logi
+        # from a later hull.
+        self._pilot(
+            OWN,
+            "Own Pilot",
+            [TYPHOON, CAPSULE, GUARDIAN],
+            GUARDIAN,
+            at=[0, 90, 91],
+        )
         # Typhoon, podded and stayed in the pod.
         self._pilot(3002, "Podded", [TYPHOON, CAPSULE], CAPSULE)
         # Joined in a pod, then boarded the links ship.
@@ -152,7 +159,12 @@ class FleetParticipantsTestCase(TestCase):
         )
         return fitting
 
-    def _pilot(self, character_id, name, snapshots, final, instance=None):
+    def _pilot(
+        self, character_id, name, snapshots, final, instance=None, at=None
+    ):
+        """``at`` gives each snapshot's minute from the start of the clock;
+        without it snapshots follow each other a minute apart."""
+        start = timezone.now() - timedelta(hours=2)
         member = EveFleetInstanceMember.objects.create(
             eve_fleet_instance=instance or self.instance,
             character_id=character_id,
@@ -166,7 +178,7 @@ class FleetParticipantsTestCase(TestCase):
             squad_id=1,
             wing_id=1,
         )
-        for ship_type_id, ship_name in snapshots:
+        for index, (ship_type_id, ship_name) in enumerate(snapshots):
             snapshot = EveFleetInstanceMemberShipSnapshot.objects.create(
                 member=member,
                 ship_type_id=ship_type_id,
@@ -174,10 +186,14 @@ class FleetParticipantsTestCase(TestCase):
                 solar_system_id=30002537,
                 solar_system_name="Amamake",
             )
-            self.clock += timedelta(minutes=1)
+            if at is None:
+                self.clock += timedelta(minutes=1)
+                moment = self.clock
+            else:
+                moment = start + timedelta(minutes=at[index])
             EveFleetInstanceMemberShipSnapshot.objects.filter(
                 pk=snapshot.pk
-            ).update(created_at=self.clock)
+            ).update(created_at=moment)
         return member
 
     def _get(self, user=None, path="participants"):
@@ -196,7 +212,7 @@ class FleetParticipantsTestCase(TestCase):
     def _role(body, role):
         return next(row for row in body["roles_flown"] if row["role"] == role)
 
-    def test_each_pilot_counts_once_by_first_non_capsule_ship(self):
+    def test_each_pilot_counts_once_by_the_hull_flown_longest(self):
         body = self._body(self.sfc)
 
         self.assertEqual(7, body["pilots"])
@@ -340,8 +356,18 @@ class FleetParticipantsTestCase(TestCase):
         self.assertEqual("Typhoon", typhoon["ship_name"])
         self.assertEqual(
             [
-                {"character_id": OWN, "character_name": "Own Pilot"},
-                {"character_id": 3002, "character_name": "Podded"},
+                {
+                    "character_id": OWN,
+                    "character_name": "Own Pilot",
+                    "kills": None,
+                    "losses": None,
+                },
+                {
+                    "character_id": 3002,
+                    "character_name": "Podded",
+                    "kills": None,
+                    "losses": None,
+                },
             ],
             typhoon["pilots"],
         )
@@ -497,8 +523,8 @@ class DoctrinePickTestCase(TestCase):
         )
 
 
-class FleetEngagementsTestCase(TestCase):
-    """Rounds of the fight timeline narrow the tab; doctrine per round.
+class TimelineFleetFixture(TestCase):
+    """A fleet with a fight timeline, and pilots joining and reshipping.
 
     Round 1 (position 1) is a Typhoon fight; a skirmish sits at position 2;
     rounds 2 and 3 (positions 3, 4) are fought in Maelstroms.
@@ -639,6 +665,10 @@ class FleetEngagementsTestCase(TestCase):
     def _flew(body):
         return [(row["ship_name"], row["count"]) for row in body["flew"]]
 
+
+class FleetEngagementsTestCase(TimelineFleetFixture):
+    """Rounds of the fight timeline narrow the tab; doctrine per round."""
+
     def test_engagements_list_only_rounds(self):
         body = self._body()
 
@@ -669,9 +699,19 @@ class FleetEngagementsTestCase(TestCase):
         self.assertEqual([("Maelstrom", 3), ("Typhoon", 1)], self._flew(body))
         self.assertEqual(0, body["ended_in_pod"])
 
-    def test_skirmish_or_missing_engagement_is_not_found(self):
-        self.assertEqual(404, self._get(query="?engagement=2").status_code)
+    def test_missing_engagement_is_not_found(self):
         self.assertEqual(404, self._get(query="?engagement=9").status_code)
+
+    def test_a_skirmish_can_be_picked(self):
+        body = self._body(query="?engagement=2")
+
+        self.assertEqual("skirmish", body["fight"]["kind"])
+        self.assertIsNone(body["fight"]["number"])
+        # Own Pilot sat in a pod, counted by the Typhoon they lost; the
+        # early leaver is inside the last-seen grace; no Maelstroms yet.
+        self.assertEqual([("Typhoon", 3)], self._flew(body))
+        self.assertEqual([], body["roster"])
+        self.assertEqual([], body["phases"])
 
     def test_opsec_hides_capital_recon_and_cyno_pilots(self):
         body = self._body()
@@ -753,3 +793,180 @@ class FleetEngagementsTestCase(TestCase):
         with CaptureQueriesContext(connection) as ctx:
             self._get()
         return len(ctx.captured_queries)
+
+
+class FleetRosterTestCase(TimelineFleetFixture):
+    """People in join order, kills from the timeline, in-fleet and parts.
+
+    Typhoon Two is an alt on the viewer's account and its primary.
+    """
+
+    def setUp(self):
+        super().setUp()
+        EveCharacter.objects.create(
+            character_id=3002, character_name="Typhoon Two", user=self.user
+        )
+        EvePlayer.objects.create(
+            nickname="viewer",
+            user=self.user,
+            primary_character=EveCharacter.objects.get(character_id=3002),
+        )
+        timeline = EveFleetFightTimeline.objects.get(eve_fleet=self.fleet)
+        timeline.killmails = [
+            self._mail(12, "kill", pilots=[OWN, 3002]),
+            self._mail(14, "loss", victim=OWN),
+            self._mail(15, "loss", victim=OWN, pod=True),
+            self._mail(45, "kill", pilots=[3003]),
+        ]
+        timeline.payload["events"] = [
+            {"kind": "reship", "at": self._at(3).isoformat(), "count": 3},
+            {"kind": "reship", "at": self._at(37).isoformat(), "count": 3},
+        ]
+        timeline.save()
+
+    def _mail(self, minutes, outcome, pilots=(), victim=None, pod=False):
+        return {
+            "t": self._at(minutes).isoformat(),
+            "outcome": outcome,
+            "pilots": list(pilots),
+            "victim": victim,
+            "pod": pod,
+        }
+
+    def test_whole_fleet_counts_the_hull_flown_longest(self):
+        body = self._body()
+
+        # Own Pilot flew the Typhoon 14 minutes and the Maelstrom 45.
+        self.assertEqual([("Maelstrom", 3), ("Typhoon", 2)], self._flew(body))
+
+    def test_fights_list_rounds_and_skirmishes(self):
+        body = self._body()
+
+        self.assertEqual(
+            [
+                (1, "round", 1),
+                (2, "skirmish", None),
+                (3, "round", 2),
+                (4, "round", 3),
+            ],
+            [(f["position"], f["kind"], f["number"]) for f in body["fights"]],
+        )
+
+    def test_roster_folds_alts_into_one_person_in_join_order(self):
+        body = self._body()
+
+        self.assertEqual(5, body["characters"])
+        self.assertEqual(4, body["people"])
+        self.assertEqual(
+            [
+                ("Early Leaver", False, ["Early Leaver"]),
+                ("Typhoon Two", True, ["Typhoon Two", "Own Pilot"]),
+                ("Second Maelstrom", False, ["Second Maelstrom"]),
+                ("Late Maelstrom", False, ["Late Maelstrom"]),
+            ],
+            [
+                (
+                    person["character_name"],
+                    person["registered"],
+                    [c["character_name"] for c in person["characters"]],
+                )
+                for person in body["roster"]
+            ],
+        )
+        own = body["roster"][1]["characters"][1]
+        self.assertEqual(
+            ["Typhoon", "Capsule", "Maelstrom"],
+            [ship["ship_name"] for ship in own["ships"]],
+        )
+        self.assertEqual("Maelstrom", own["ship_name"])
+
+    def test_kills_and_losses_from_the_timeline(self):
+        body = self._body()
+
+        person = body["roster"][1]
+        self.assertEqual((2, 1), (person["kills"], person["losses"]))
+        own = person["characters"][1]
+        self.assertEqual((1, 1), (own["kills"], own["losses"]))
+        self.assertAlmostEqual(
+            self._at(14),
+            parse_datetime(own["lost_at"][0]),
+            delta=timedelta(seconds=1),
+        )
+        # Own Pilot, Typhoon Two and Late Maelstrom; two of them one person.
+        self.assertEqual(3, body["on_killmail"])
+        self.assertEqual(2, body["people_on_killmail"])
+
+        engagement = self._body(query="?engagement=1")
+        typhoons = engagement["flew"][0]["pilots"]
+        self.assertEqual(
+            [
+                ("Early Leaver", 0, 0),
+                ("Own Pilot", 1, 1),
+                ("Typhoon Two", 1, 0),
+            ],
+            [(p["character_name"], p["kills"], p["losses"]) for p in typhoons],
+        )
+        self.assertEqual(2, engagement["on_killmail"])
+        self.assertEqual(1, engagement["people_on_killmail"])
+
+    def test_no_timeline_means_unknown_kills(self):
+        EveFleetFightTimeline.objects.filter(eve_fleet=self.fleet).delete()
+
+        body = self._body()
+        self.assertIsNone(body["roster"][0]["kills"])
+        self.assertIsNone(body["on_killmail"])
+        self.assertEqual([], body["fights"])
+        self.assertEqual(1, len(body["phases"]))
+
+    def test_in_fleet_series_and_peak(self):
+        body = self._body()
+
+        self.assertEqual(4, body["peak"])
+        self.assertAlmostEqual(
+            self._at(38),
+            parse_datetime(body["peak_at"]),
+            delta=timedelta(minutes=1),
+        )
+        counts = [point["count"] for point in body["in_fleet"]]
+        self.assertEqual(3, counts[0])
+        self.assertEqual(0, counts[-1])
+
+    def test_parts_split_at_reships_after_the_form_up(self):
+        phases = self._body()["phases"]
+
+        # The minute-3 reship is the form-up; minute 37 splits the fleet.
+        self.assertEqual(2, len(phases))
+        self.assertEqual(
+            [[("Typhoon", 3)], [("Maelstrom", 3), ("Typhoon", 1)]],
+            [
+                [(h["ship_name"], h["count"]) for h in phase["hulls"]]
+                for phase in phases
+            ],
+        )
+        self.assertEqual([3, 4], [phase["peak"] for phase in phases])
+
+    def test_hidden_roster_names_only_your_own_people(self):
+        self.fleet.hide_volunteers = True
+        self.fleet.save()
+
+        body = self._body()
+        self.assertEqual(
+            ["Typhoon Two"],
+            [person["character_name"] for person in body["roster"]],
+        )
+        self.assertEqual(3, body["hidden_pilots"])
+        self.assertEqual(4, body["people"])
+
+    def test_opsec_leaves_hidden_hulls_out_of_the_roster(self):
+        names = {
+            c["character_name"]
+            for person in self._body()["roster"]
+            for c in person["characters"]
+        }
+        self.assertFalse(names & {"Dread", "Recon", "Cyno"})
+        everyone = {
+            c["character_name"]
+            for person in self._body(self.sfc)["roster"]
+            for c in person["characters"]
+        }
+        self.assertTrue({"Dread", "Recon", "Cyno"} <= everyone)

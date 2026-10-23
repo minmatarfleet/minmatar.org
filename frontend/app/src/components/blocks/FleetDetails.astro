@@ -167,7 +167,7 @@ const history_tabs = [
         label: t('fleets.tabs.ships'),
         ...(has_ships ? { meta: t('fleets.tabs.fits_meta').replace('{count}', composition.length.toString()) } : {}),
     }] : []),
-    ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.flew_meta').replace('{count}', participants.pilots.toString()) }] : []),
+    ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.pilots_meta').replace('{count}', participants.people.toString()) }] : []),
     ...(show_kills && fleet_kills ? [{ id: 'kills', label: t('fleets.tabs.kills'), meta: t('fleets.tabs.kills_meta').replace('{count}', fleet_kills.killmails.length.toString()) }] : []),
     { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
     // Run it again: the only setting a finished fleet has left.
@@ -205,7 +205,7 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
         corporation_id={fleet_commander_metrics?.corporation_id ?? 0}
         corporation_name={fleet_commander_metrics?.corporation_name ?? ''}
         fleet_count={fleet_commander_metrics?.fleet_count}
-        members_count={fleet_metrics?.members}
+        members_count={participants ? participants.people : fleet_metrics?.members}
     />
 
     {history &&

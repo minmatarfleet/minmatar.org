@@ -1,0 +1,1107 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+import { eve_clock, round_window } from '@helpers/fleet_fights'
+import {
+    event_markers,
+    fight_bands,
+    in_fleet_chart,
+    participants_span,
+    roster_orders,
+    ship_lane,
+    ship_sequence,
+    ship_steps,
+    time_ticks,
+} from '@helpers/fleet_participants'
+
+/**
+ * Who was in a finished fleet: the in-fleet count over time with its
+ * engagements, then one row per pilot in join order with their ships along
+ * the same time axis (alts folded under the account). Picking an engagement
+ * (a band or a pill, swapped in by fleet_participants_pilots_component)
+ * lists the pilots in it by the ship they were in at the time.
+ */
+interface Props {
+    participants:   FleetParticipants;
+    fleet_id:       number;
+}
+
+const { participants, fleet_id } = Astro.props
+
+const PARTIAL_URL = (position: number | null) => `${translatePath('/partials/fleet_participants_pilots_component')}?${query_string({
+    fleet_id,
+    ...(position !== null && { engagement: position }),
+})}`
+const REPORT_URL = translatePath(`/fleets/history/${fleet_id}/report`)
+
+const fights = participants.fights
+const fight = participants.fight
+const kills_known = participants.on_killmail !== null
+const rounds = fights.filter(item => item.kind === 'round').length
+const fight_name = (item: { kind: string, number?: number | null, start: string }) =>
+    item.kind === 'round' && item.number ?
+        t('fleets.fights.round').replace('{number}', item.number.toString()) :
+        t('fleets.after.skirmish_at').replace('{time}', eve_clock(item.start))
+
+const span = participants_span(participants)
+const chart = span ? in_fleet_chart(participants, span) : null
+const ticks = span ? time_ticks(span) : []
+const bands = span ? fight_bands(fights, span) : []
+const event_label = (event: FleetParticipants['fleet_events'][number]) =>
+    `${eve_clock(event.at)} ${event.kind === 'joined' ?
+        t('fleets.after.event_joined').replace('{count}', event.count.toString()) :
+        t('fleets.after.event_reship').replace('{count}', event.count.toString()).replace('{ships}', event.ships.map(ship => ship.name).join(', '))}`
+const event_labels = participants.fleet_events.map(event_label)
+// About a character per percent of a desktop-width chart.
+const markers = span ? event_markers(participants.fleet_events, span, event_labels) : []
+const event_rows = Math.max(1, ...markers.map(marker => marker.row + 1))
+
+// The engagement bands behind every lane, as one background.
+const band_background = bands.length === 0 ? 'none' : `linear-gradient(to right, ${bands.map(band =>
+    `transparent ${band.left}%, var(${band.round ? '--hairline-medium' : '--hairline'}) ${band.left}% ${band.left + band.width}%, transparent ${band.left + band.width}%`
+).join(', ')})`
+
+const stats = fight ?
+    [
+        { label: t('fleets.after.stat_kills'), value: fight.kills.toString(), kind: 'kill' },
+        { label: t('fleets.after.stat_losses'), value: fight.losses.toString(), kind: 'loss' },
+        { label: t('fleets.after.stat_in_fleet'), value: participants.characters.toString(), sub: t('fleets.after.stat_in_fleet_people').replace('{count}', participants.people.toString()) },
+        ...(participants.on_killmail !== null ? [{ label: t('fleets.after.stat_on_killmail'), value: participants.on_killmail.toString(), sub: t('fleets.after.stat_of_characters').replace('{count}', participants.characters.toString()) }] : []),
+    ] :
+    [
+        ...(participants.peak_at ? [{ label: t('fleets.after.stat_peak'), value: participants.peak.toString(), sub: t('fleets.after.stat_peak_at').replace('{time}', eve_clock(participants.peak_at)) }] : []),
+        { label: t('fleets.after.stat_people'), value: participants.people.toString(), sub: t('fleets.after.stat_characters').replace('{count}', participants.characters.toString()) },
+        ...(participants.people_on_killmail !== null ? [{ label: t('fleets.after.stat_on_killmail'), value: participants.people_on_killmail.toString(), sub: t('fleets.after.stat_of_people').replace('{count}', participants.people.toString()) }] : []),
+        ...(fights.length > 0 ? [{ label: t('fleets.after.stat_engagements'), value: rounds.toString(), sub: t('fleets.after.stat_skirmishes').replace('{count}', (fights.length - rounds).toString()) }] : []),
+    ]
+
+const pills = [
+    { position: null, label: t('fleets.after.whole_fleet'), meta: span ? `${eve_clock(new Date(span.start))}–${eve_clock(new Date(span.end))}` : '', round: true },
+    ...fights.map(item => ({ position: item.position, label: fight_name(item), meta: item.kind === 'round' ? eve_clock(item.start) : '', round: item.kind === 'round' })),
+]
+
+const roster = participants.roster
+const PEOPLE_SHOWN = 30
+const orders = roster_orders(roster)
+const lane_label = (character: FleetParticipants['roster'][number]['characters'][number]) =>
+    t('fleets.after.lane_label')
+        .replace('{joined}', eve_clock(character.joined))
+        .replace('{left}', eve_clock(character.left))
+        .replace('{ships}', character.ships.map(ship => t('fleets.after.ship_at').replace('{ship}', ship.ship_name).replace('{time}', eve_clock(ship.start))).join(', '))
+const count_text = (value: number | null | undefined) => value ? value.toString() : '–'
+const alts_text = (count: number) => count === 1 ? t('fleets.after.alt') : t('fleets.after.alts').replace('{count}', count.toString())
+
+const fight_minutes = fight ? Math.max(1, Math.round((new Date(fight.end).getTime() - new Date(fight.start).getTime()) / 60000)) : 0
+// Pilots on the mails first, most kills first; names break ties.
+const active_first = (pilots: FleetParticipants['flew'][number]['pilots']) => [...pilots].sort((a, b) =>
+    Number(!!(b.kills || b.losses)) - Number(!!(a.kills || a.losses)) ||
+    (b.kills ?? 0) - (a.kills ?? 0) ||
+    a.character_name.localeCompare(b.character_name))
+const chip_kills = (count: number) => count === 1 ? t('fleets.after.chip_kill') : t('fleets.after.chip_kills').replace('{count}', count.toString())
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+<section id="fleet-pilots" class="[ fleet-pilots ]" aria-labelledby="fleet-pilots-title">
+    <header class="[ fleet-pilots__head ]">
+        <h2 id="fleet-pilots-title">{t('fleets.after.in_fleet_title')}</h2>
+        {fights.length > 0 && <small>{t('fleets.after.in_fleet_hint')}</small>}
+    </header>
+
+    <div class:list={['[ fleet-pilots__overview ]', { 'fleet-pilots__overview--no-chart': !chart, 'fleet-pilots__overview--no-kills': !kills_known }]}>
+        <dl class="[ fleet-pilots__stats ]">
+            {stats.map(stat =>
+                <div>
+                    <dt>{stat.label}</dt>
+                    <dd>
+                        <b class:list={[{ 'fleet-pilots__kill': stat.kind === 'kill', 'fleet-pilots__loss': stat.kind === 'loss' }]}>{stat.value}</b>
+                        {stat.sub && <small>{stat.sub}</small>}
+                    </dd>
+                </div>
+            )}
+        </dl>
+
+        {span && chart &&
+            <div class="[ fleet-pilots__chart ]">
+                {markers.length > 0 &&
+                    <div class="[ fleet-pilots__events ]" style={`--event-rows: ${event_rows}`} aria-hidden="true">
+                        {markers.map((marker, index) =>
+                            <span
+                                class:list={['[ fleet-pilots__event-label ]', { 'fleet-pilots__event-label--flip': marker.flip }]}
+                                style={`left: ${marker.left}%; --event-row: ${marker.row}`}
+                            >{event_labels[index]}</span>
+                        )}
+                    </div>
+                }
+                <div class="[ fleet-pilots__plot ]">
+                    {chart.grid.map(line =>
+                        <span class="[ fleet-pilots__grid ]" style={`top: ${line.top}%`} aria-hidden="true"><small>{line.value}</small></span>
+                    )}
+                    {bands.map(band =>
+                        <button
+                            type="button"
+                            tabindex="-1"
+                            aria-hidden="true"
+                            class:list={['[ fleet-pilots__band ]', { 'fleet-pilots__band--round': band.round, 'fleet-pilots__band--active': band.position === participants.engagement }]}
+                            style={`left: ${band.left}%; width: ${band.width}%`}
+                            title={fight_name(fights.find(item => item.position === band.position)!)}
+                            hx-get={PARTIAL_URL(band.position === participants.engagement ? null : band.position)}
+                            hx-target="#fleet-pilots"
+                            hx-swap="outerHTML"
+                        ><span>{band.label}</span></button>
+                    )}
+                    {markers.map(marker =>
+                        <span class="[ fleet-pilots__event-line ]" style={`left: ${marker.left}%`} aria-hidden="true" />
+                    )}
+                    <svg
+                        viewBox="0 0 1000 100"
+                        preserveAspectRatio="none"
+                        role="img"
+                        aria-label={t('fleets.after.chart_label')
+                            .replace('{start}', eve_clock(new Date(span.start)))
+                            .replace('{end}', eve_clock(new Date(span.end)))
+                            .replace('{peak}', participants.peak.toString())
+                            .replace('{at}', participants.peak_at ? eve_clock(participants.peak_at) : '')}
+                    >
+                        <path class="[ fleet-pilots__area ]" d={chart.area} />
+                        <path class="[ fleet-pilots__line ]" d={chart.line} vector-effect="non-scaling-stroke" />
+                    </svg>
+                    {chart.peak && participants.peak_at &&
+                        <span class:list={['[ fleet-pilots__peak ]', { 'fleet-pilots__peak--flip': chart.peak.left > 80 }]} style={`left: ${chart.peak.left}%; top: ${chart.peak.top}%`} aria-hidden="true">
+                            <small>{t('fleets.after.peak_label').replace('{count}', participants.peak.toString()).replace('{time}', eve_clock(participants.peak_at))}</small>
+                        </span>
+                    }
+                </div>
+                <div class="[ fleet-pilots__ticks ]" aria-hidden="true">
+                    {ticks.map(tick => <small style={`left: ${tick.left}%`}>{tick.label}</small>)}
+                </div>
+            </div>
+        }
+    </div>
+
+    {fights.length > 0 &&
+        <XFadeScroll>
+        <div class="[ fleet-pilots__pills ]" role="group" aria-label={t('fleets.killfeed.engagement')}>
+            {pills.map(pill =>
+                <button
+                    type="button"
+                    class:list={['[ fleet-pilots__pill ]', { 'fleet-pilots__pill--minor': !pill.round }]}
+                    aria-pressed={pill.position === participants.engagement ? 'true' : 'false'}
+                    hx-get={PARTIAL_URL(pill.position)}
+                    hx-target="#fleet-pilots"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                >{pill.label}{pill.meta && <small>{pill.meta}</small>}</button>
+            )}
+        </div>
+        </XFadeScroll>
+    }
+
+    {fight ?
+        <div class="[ fleet-pilots__fight ]">
+            <header>
+                <div>
+                    <h3>{fight_name(fight)}</h3>
+                    <small>{t('fleets.after.fight_when')
+                        .replace('{start}', eve_clock(fight.start))
+                        .replace('{end}', eve_clock(fight.end))
+                        .replace('{minutes}', fight_minutes.toString())
+                        .replace('{systems}', fight.systems.join(', '))}</small>
+                </div>
+                <div class="[ fleet-pilots__against ]">
+                    <small>{t('fleets.after.against')}</small>
+                    <span>{fight.against.length > 0 ? fight.against.join(', ') : t('fleets.after.against_nobody')}</span>
+                </div>
+                <a class="[ fleet-pilots__report ]" href={`${REPORT_URL}?${query_string(round_window(fight))}`}>{t('fleets.fights.battle_report')} →</a>
+            </header>
+            {participants.flew.length === 0 ?
+                <EmptyState title={t('fleets.after.nobody_in')} />
+                :
+                <>
+                    {kills_known && <small>{t('fleets.after.fight_hint')}</small>}
+                    <ul class="[ fleet-pilots__groups ]">
+                        {participants.flew.map(hull =>
+                            <li>
+                                <img src={get_item_icon(hull.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                <b>{hull.ship_name}</b>
+                                <b class="[ fleet-pilots__num ]">{hull.count}</b>
+                                <span class="[ fleet-pilots__chips ]">
+                                    {active_first(hull.pilots).map(pilot =>
+                                        <span class:list={['[ fleet-pilots__chip ]', { 'fleet-pilots__chip--idle': kills_known && !pilot.kills && !pilot.losses }]}>
+                                            <img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                            {pilot.character_name}
+                                            {!!pilot.kills && <b class="[ fleet-pilots__kill ]">{chip_kills(pilot.kills)}</b>}
+                                            {!!pilot.losses && <b class="[ fleet-pilots__loss ]">{t('fleets.after.chip_lost')}</b>}
+                                        </span>
+                                    )}
+                                    {hull.count > hull.pilots.length && <small>{t('fleets.after.unnamed').replace('{count}', (hull.count - hull.pilots.length).toString())}</small>}
+                                </span>
+                            </li>
+                        )}
+                    </ul>
+                </>
+            }
+        </div>
+        :
+        <section class="[ fleet-pilots__roster ]" aria-labelledby="fleet-roster-title" x-data="{ order: 'joined', all: false }" style={`--fight-bands: ${band_background}`}>
+            <header class="[ fleet-pilots__head ]">
+                <h3 id="fleet-roster-title">{t('fleets.after.roster_title')}</h3>
+                {roster.length > 1 &&
+                    <div class="[ fleet-pilots__order ]" role="group" aria-label={t('fleets.after.order')}>
+                        <small>{t('fleets.after.order')}</small>
+                        {([['joined', t('fleets.after.order_joined')], ...(kills_known ? [['kills', t('fleets.after.order_kills')]] : []), ['ship', t('fleets.after.order_ship')]] as [string, string][]).map(([id, label]) =>
+                            <button
+                                type="button"
+                                class="[ fleet-pilots__pill ]"
+                                aria-pressed={id === 'joined' ? 'true' : 'false'}
+                                x-bind:aria-pressed={`order === '${id}' ? 'true' : 'false'`}
+                                x-on:click={`order = '${id}'`}
+                            >{label}</button>
+                        )}
+                    </div>
+                }
+            </header>
+            {roster.length === 0 ?
+                <EmptyState title={t('fleets.after.nobody_in')} />
+                :
+                <div class:list={['[ fleet-pilots__people ]', { 'fleet-pilots__people--no-kills': !kills_known }]}>
+                    <div class="[ fleet-pilots__row fleet-pilots__row--head ]" aria-hidden="true">
+                        <small>{t('fleets.after.col_pilot')}</small>
+                        {kills_known && <small class="[ fleet-pilots__num ]">{t('fleets.after.col_kills')}</small>}
+                        {kills_known && <small class="[ fleet-pilots__num ]">{t('fleets.after.col_lost')}</small>}
+                        <span class="[ fleet-pilots__axis ]">
+                            {ticks.map(tick => <small style={`left: ${tick.left}%`}>{tick.label}</small>)}
+                        </span>
+                    </div>
+                    {roster.map((person, index) =>
+                        <div
+                            class="[ fleet-pilots__person ]"
+                            x-data="{ open: false }"
+                            style={`order: ${index}`}
+                            x-bind:style={`{ order: ${JSON.stringify(orders[index])}[order] }`}
+                            x-show={roster.length > PEOPLE_SHOWN ? `all || ${JSON.stringify(orders[index])}[order] < ${PEOPLE_SHOWN}` : undefined}
+                            x-cloak={index >= PEOPLE_SHOWN ? true : undefined}
+                        >
+                            {person.characters.map((character, position) => {
+                                const lane = span ? ship_lane(character, span) : { segments: [], losses: [] }
+                                const lead = position === 0
+                                const alts = person.characters.length - 1
+                                return (
+                                    <div
+                                        class:list={['[ fleet-pilots__row ]', { 'fleet-pilots__row--alt': !lead }]}
+                                        x-show={lead ? undefined : 'open'}
+                                        x-cloak={lead ? undefined : true}
+                                    >
+                                        <span class="[ fleet-pilots__who ]">
+                                            <img src={get_player_icon(character.character_id, 64)} alt="" width={lead ? 32 : 24} height={lead ? 32 : 24} loading="lazy" />
+                                            <span>
+                                                <span class="[ fleet-pilots__name ]">
+                                                    <b>{character.character_name}</b>
+                                                    {lead && !person.registered && <span class="[ fleet-pilots__tag ]">{t('fleets.after.no_account')}</span>}
+                                                    {lead && alts > 0 &&
+                                                        <button
+                                                            type="button"
+                                                            class="[ fleet-pilots__alts ]"
+                                                            aria-expanded="false"
+                                                            x-bind:aria-expanded="open ? 'true' : 'false'"
+                                                            x-on:click="open = !open"
+                                                            x-text={`open ? ${JSON.stringify(t('fleets.after.fold_alts'))} : ${JSON.stringify(alts_text(alts))}`}
+                                                        >{alts_text(alts)}</button>
+                                                    }
+                                                </span>
+                                                <small>{ship_sequence(character).join(' → ')}</small>
+                                            </span>
+                                        </span>
+                                        {kills_known && (lead && alts > 0 ?
+                                            <>
+                                                <b class:list={['[ fleet-pilots__num ]', { 'fleet-pilots__kill': !!person.kills }]} x-text={`open ? ${JSON.stringify(count_text(character.kills))} : ${JSON.stringify(count_text(person.kills))}`}>{count_text(person.kills)}</b>
+                                                <b class:list={['[ fleet-pilots__num ]', { 'fleet-pilots__loss': !!person.losses }]} x-text={`open ? ${JSON.stringify(count_text(character.losses))} : ${JSON.stringify(count_text(person.losses))}`}>{count_text(person.losses)}</b>
+                                            </> :
+                                            <>
+                                                <b class:list={['[ fleet-pilots__num ]', { 'fleet-pilots__kill': !!character.kills }]}>{count_text(character.kills)}</b>
+                                                <b class:list={['[ fleet-pilots__num ]', { 'fleet-pilots__loss': !!character.losses }]}>{count_text(character.losses)}</b>
+                                            </>
+                                        )}
+                                        <span class="[ fleet-pilots__lane ]" role="img" aria-label={lane_label(character)}>
+                                            {lane.segments.map(segment =>
+                                                <span
+                                                    class:list={['[ fleet-pilots__segment ]', { 'fleet-pilots__segment--pod': segment.pod }]}
+                                                    style={`left: ${segment.left}%; width: ${segment.width}%`}
+                                                    title={segment.title}
+                                                />
+                                            )}
+                                            {lane.segments.filter(segment => segment.icon).map(segment =>
+                                                <img class="[ fleet-pilots__icon ]" src={get_item_icon(segment.ship_type_id, 32)} alt="" width="22" height="22" loading="lazy" style={`left: ${segment.left}%`} title={segment.title} />
+                                            )}
+                                            {lane.losses.map(loss =>
+                                                <span class="[ fleet-pilots__lost ]" style={`left: ${loss.left}%`} title={t('fleets.after.lost_at').replace('{time}', loss.title)} />
+                                            )}
+                                        </span>
+                                        <span class="[ fleet-pilots__steps ]" aria-hidden="true">
+                                            {ship_steps(character).map(step =>
+                                                <span><img src={get_item_icon(step.ship_type_id, 32)} alt="" width="20" height="20" loading="lazy" />{step.name}<small>{step.at}</small></span>
+                                            )}
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            }
+            {roster.length > PEOPLE_SHOWN &&
+                <button
+                    type="button"
+                    class="[ fleet-pilots__more ]"
+                    x-on:click="all = !all"
+                    x-text={`all ? ${JSON.stringify(t('fleets.after.show_fewer'))} : ${JSON.stringify(t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString()))}`}
+                >{t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString())}</button>
+            }
+            {participants.hidden_pilots > 0 && <small>{t('fleets.after.hidden_pilots').replace('{count}', participants.hidden_pilots.toString())}</small>}
+            {roster.length > 0 &&
+                <div class="[ fleet-pilots__legend ]" aria-hidden="true">
+                    <span><i class="[ fleet-pilots__key fleet-pilots__key--ship ]" />{t('fleets.after.legend_ship')}</span>
+                    <span><i class="[ fleet-pilots__key fleet-pilots__key--pod ]" />{t('fleets.after.legend_pod')}</span>
+                    {kills_known && <span><i class="[ fleet-pilots__key fleet-pilots__key--lost ]" />{t('fleets.after.legend_lost')}</span>}
+                    {bands.length > 0 && <span><i class="[ fleet-pilots__key fleet-pilots__key--fight ]" />{t('fleets.after.legend_fight')}</span>}
+                </div>
+            }
+        </section>
+    }
+
+    {participants.opsec_filtered && <small class="[ fleet-pilots__muted ]">{t('fleets.after.opsec')}</small>}
+</section>
+
+<style lang="scss">
+    .fleet-pilots {
+        --kill-text: color-mix(in srgb, var(--alliance-blue) 55%, white);
+        --loss-text: color-mix(in srgb, var(--fleet-red) 70%, white);
+        --who-width: 17.5rem;
+        --count-width: 3rem;
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-col-width);
+
+        h3 {
+            margin: 0;
+        }
+    }
+
+    .fleet-pilots__head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-m);
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .fleet-pilots__muted {
+        color: var(--text-muted);
+    }
+
+    .fleet-pilots__kill {
+        color: var(--kill-text);
+    }
+
+    .fleet-pilots__loss {
+        color: var(--loss-text);
+    }
+
+    .fleet-pilots__num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Stats beside the chart, the chart lined up with the lanes below.
+    .fleet-pilots__overview {
+        display: grid;
+        grid-template-columns: calc(var(--who-width) + 2 * var(--count-width) + 2 * var(--space-s) + var(--space-s)) minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: stretch;
+    }
+
+    .fleet-pilots__overview--no-kills {
+        grid-template-columns: calc(var(--who-width) + var(--space-s)) minmax(0, 1fr);
+    }
+
+    .fleet-pilots__overview--no-chart {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .fleet-pilots__stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-2xs);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            line-height: 1.1;
+            color: var(--highlight);
+        }
+
+        b.fleet-pilots__kill {
+            color: var(--kill-text);
+        }
+
+        b.fleet-pilots__loss {
+            color: var(--loss-text);
+        }
+
+        small {
+            font-size: var(--step--1);
+        }
+    }
+
+    .fleet-pilots__chart {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding-right: var(--space-s);
+    }
+
+    .fleet-pilots__events {
+        --event-line: calc(var(--step--2) * 1.5);
+
+        position: relative;
+        height: calc(var(--event-rows, 1) * var(--event-line) + var(--space-2xs));
+        font-size: var(--step--2);
+        font-weight: 600;
+        line-height: 1.5;
+        color: var(--highlight);
+    }
+
+    .fleet-pilots__event-label {
+        position: absolute;
+        top: calc(var(--event-row, 0) * var(--event-line));
+        padding-left: var(--space-3xs);
+        white-space: nowrap;
+    }
+
+    .fleet-pilots__event-label--flip {
+        padding-left: 0;
+        padding-right: var(--space-3xs);
+        transform: translateX(-100%);
+    }
+
+    .fleet-pilots__plot {
+        position: relative;
+        height: 9rem;
+        border-bottom: 1px solid var(--hairline-strong);
+
+        svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+    }
+
+    .fleet-pilots__area {
+        fill: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
+    }
+
+    .fleet-pilots__line {
+        fill: none;
+        stroke: var(--fleet-yellow);
+        stroke-width: 1.5;
+    }
+
+    .fleet-pilots__grid {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px solid var(--hairline);
+        pointer-events: none;
+
+        small {
+            position: absolute;
+            left: var(--space-3xs);
+            bottom: 0;
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .fleet-pilots__band {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        background-color: var(--hairline);
+        color: var(--highlight);
+        font: inherit;
+        cursor: pointer;
+
+        span {
+            margin-top: var(--space-3xs);
+            font-size: var(--step--2);
+            font-weight: 700;
+        }
+
+        &:hover {
+            background-color: var(--hairline-strong);
+        }
+    }
+
+    .fleet-pilots__band--round {
+        background-color: var(--hairline-strong);
+    }
+
+    .fleet-pilots__band--active {
+        background-color: color-mix(in srgb, var(--fleet-yellow) 38%, transparent);
+        color: var(--background);
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        }
+    }
+
+    .fleet-pilots__event-line {
+        position: absolute;
+        top: calc(-1 * var(--space-2xs));
+        bottom: 0;
+        border-left: 1px dashed var(--faded);
+        pointer-events: none;
+    }
+
+    .fleet-pilots__peak {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        margin: -4px 0 0 -4px;
+        border-radius: 50%;
+        background-color: var(--highlight);
+        pointer-events: none;
+
+        small {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: var(--step--2);
+            font-weight: 700;
+            color: var(--highlight);
+            white-space: nowrap;
+        }
+    }
+
+    .fleet-pilots__peak--flip small {
+        left: auto;
+        right: 50%;
+        transform: none;
+    }
+
+    .fleet-pilots__ticks,
+    .fleet-pilots__axis {
+        position: relative;
+        height: calc(var(--step--2) * 1.6);
+
+        small {
+            position: absolute;
+            transform: translateX(-50%);
+            font-size: var(--step--2);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+    }
+
+    .fleet-pilots__pills,
+    .fleet-pilots__order {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        align-items: center;
+    }
+
+    .fleet-pilots__order > small {
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .fleet-pilots__pill {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        line-height: 2.75rem;
+        cursor: pointer;
+
+        small {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        &:hover {
+            border-color: var(--foreground);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+
+        &[aria-pressed='true'] {
+            background-color: var(--highlight);
+            border-color: var(--highlight);
+            color: var(--background);
+
+            small {
+                color: var(--background);
+            }
+        }
+    }
+
+    .fleet-pilots__pill--minor {
+        font-weight: 500;
+    }
+
+    // One row per character: who, kills, losses, then their ships in time.
+    .fleet-pilots__people {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .fleet-pilots__person {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .fleet-pilots__row {
+        display: grid;
+        grid-template-columns: var(--who-width) var(--count-width) var(--count-width) minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        min-height: 3rem;
+        padding: var(--space-3xs) var(--space-s);
+        background-color: var(--component-background);
+    }
+
+    .fleet-pilots__people--no-kills .fleet-pilots__row {
+        grid-template-columns: var(--who-width) minmax(0, 1fr);
+    }
+
+    .fleet-pilots__row--head {
+        min-height: 0;
+        background: transparent;
+
+        > small {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+    }
+
+    .fleet-pilots__row--alt {
+        background-color: color-mix(in srgb, var(--component-background) 60%, var(--background));
+
+        .fleet-pilots__who {
+            padding-left: var(--space-m);
+        }
+    }
+
+    .fleet-pilots__who {
+        display: flex;
+        gap: var(--space-2xs);
+        align-items: center;
+        min-width: 0;
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        img {
+            flex: 0 0 auto;
+        }
+
+        small {
+            overflow: hidden;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .fleet-pilots__name {
+        display: flex;
+        gap: var(--space-2xs);
+        align-items: center;
+        min-width: 0;
+
+        b {
+            overflow: hidden;
+            font-weight: 600;
+            color: var(--highlight);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .fleet-pilots__tag {
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--hairline-strong);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .fleet-pilots__alts {
+        min-height: 1.75rem;
+        padding: 0 var(--space-3xs);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-size: var(--step--2);
+        font-weight: 700;
+        white-space: nowrap;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .fleet-pilots__lane {
+        position: relative;
+        align-self: stretch;
+        min-height: 1.5rem;
+        margin-block: calc(-1 * var(--space-3xs));
+        background: var(--fight-bands, none);
+    }
+
+    .fleet-pilots__segment {
+        position: absolute;
+        top: calc(50% - 0.375rem);
+        height: 0.75rem;
+        background-color: color-mix(in srgb, var(--fleet-yellow) 24%, transparent);
+        box-shadow: inset 2px 0 0 var(--fleet-yellow);
+    }
+
+    .fleet-pilots__segment--pod {
+        background: repeating-linear-gradient(135deg, var(--faded) 0 1px, transparent 1px 5px);
+        box-shadow: none;
+        opacity: 0.6;
+    }
+
+    .fleet-pilots__icon {
+        position: absolute;
+        top: calc(50% - 11px);
+        outline: 1px solid var(--background);
+    }
+
+    .fleet-pilots__lost {
+        position: absolute;
+        top: 50%;
+        width: 10px;
+        height: 10px;
+        margin: -5px 0 0 -5px;
+        background-color: var(--loss-text);
+        transform: rotate(45deg);
+    }
+
+    .fleet-pilots__steps {
+        display: none;
+    }
+
+    .fleet-pilots__more {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px dashed var(--border-color-hover);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .fleet-pilots__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-m);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        span {
+            display: inline-flex;
+            gap: var(--space-2xs);
+            align-items: center;
+        }
+    }
+
+    .fleet-pilots__key {
+        display: inline-block;
+        width: 1.1rem;
+        height: 0.6rem;
+    }
+
+    .fleet-pilots__key--ship {
+        background-color: color-mix(in srgb, var(--fleet-yellow) 24%, transparent);
+        box-shadow: inset 2px 0 0 var(--fleet-yellow);
+    }
+
+    .fleet-pilots__key--pod {
+        background: repeating-linear-gradient(135deg, var(--faded) 0 1px, transparent 1px 5px);
+    }
+
+    .fleet-pilots__key--lost {
+        width: 0.55rem;
+        height: 0.55rem;
+        background-color: var(--loss-text);
+        transform: rotate(45deg);
+    }
+
+    .fleet-pilots__key--fight {
+        background-color: var(--hairline-strong);
+    }
+
+    // An engagement: who was in it, by the ship they were in at the time.
+    .fleet-pilots__fight {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        > header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-s) var(--space-l);
+            align-items: center;
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+
+            > div {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+    }
+
+    .fleet-pilots__against {
+        flex: 1 1 16rem;
+
+        small {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        span {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-pilots__report {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        border: 1px solid var(--hairline-strong);
+        font-weight: 700;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .fleet-pilots__groups {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 14rem) var(--count-width) minmax(0, 1fr);
+            gap: var(--space-xs) var(--space-s);
+            align-items: start;
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+
+            > b {
+                padding-top: var(--space-2xs);
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .fleet-pilots__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-2xs);
+        align-items: center;
+    }
+
+    .fleet-pilots__chip {
+        display: inline-flex;
+        gap: var(--space-3xs);
+        align-items: center;
+        padding: 2px var(--space-2xs) 2px 2px;
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        color: var(--highlight);
+
+        b {
+            font-weight: 600;
+        }
+    }
+
+    .fleet-pilots__chip--idle {
+        opacity: 0.55;
+    }
+
+    @media screen and (max-width: 48rem) {
+        .fleet-pilots__overview {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .fleet-pilots__chart {
+            padding-right: 0;
+        }
+
+        .fleet-pilots__events {
+            display: none;
+        }
+
+        .fleet-pilots__pills {
+            flex-wrap: nowrap;
+
+            .fleet-pilots__pill {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+        }
+
+        .fleet-pilots__row,
+        .fleet-pilots__people--no-kills .fleet-pilots__row {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            row-gap: var(--space-2xs);
+            padding: var(--space-2xs) var(--space-s);
+        }
+
+        .fleet-pilots__people--no-kills .fleet-pilots__row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .fleet-pilots__row--head {
+            display: none;
+        }
+
+        .fleet-pilots__lane {
+            grid-column: 1 / -1;
+            align-self: auto;
+            min-height: 0;
+            height: 6px;
+            margin-block: 0;
+            background: var(--hairline);
+        }
+
+        .fleet-pilots__segment {
+            top: 0;
+            height: 100%;
+        }
+
+        .fleet-pilots__icon {
+            display: none;
+        }
+
+        .fleet-pilots__lost {
+            width: 8px;
+            height: 8px;
+            margin: -4px 0 0 -4px;
+        }
+
+        .fleet-pilots__steps {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-xs);
+            font-size: var(--step--1);
+            color: var(--highlight);
+
+            span {
+                display: inline-flex;
+                gap: var(--space-3xs);
+                align-items: center;
+                white-space: nowrap;
+            }
+
+            small {
+                color: var(--text-muted);
+            }
+        }
+
+        .fleet-pilots__who small {
+            display: none;
+        }
+
+        .fleet-pilots__groups li {
+            grid-template-columns: 40px minmax(0, 1fr) auto;
+
+            .fleet-pilots__chips {
+                grid-column: 1 / -1;
+            }
+        }
+    }
+</style>
