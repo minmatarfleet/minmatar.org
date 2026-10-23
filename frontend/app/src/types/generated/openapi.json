@@ -1,6 +1,22 @@
 {
   "components": {
     "schemas": {
+      "AcceptInvitationRequest": {
+        "properties": {
+          "character_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Character Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_ids"
+        ],
+        "title": "AcceptInvitationRequest",
+        "type": "object"
+      },
       "AckDeliveryRequest": {
         "properties": {
           "discord_user_id": {
@@ -8967,6 +8983,19 @@
           "type"
         ],
         "title": "DiscordChannelSchema",
+        "type": "object"
+      },
+      "DiscordDeclineRequest": {
+        "properties": {
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordDeclineRequest",
         "type": "object"
       },
       "DiscordNpsiActionRequest": {
@@ -18701,6 +18730,206 @@
         "title": "InvestigateResponse",
         "type": "object"
       },
+      "InvitationCandidateSchema": {
+        "properties": {
+          "blocker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocker"
+          },
+          "blocker_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocker Date"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "matched_character_name": {
+            "default": "",
+            "title": "Matched Character Name",
+            "type": "string"
+          },
+          "membership_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Membership Id"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "character_id",
+          "character_name"
+        ],
+        "title": "InvitationCandidateSchema",
+        "type": "object"
+      },
+      "InvitationSchema": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "dm_error": {
+            "default": "",
+            "title": "Dm Error",
+            "type": "string"
+          },
+          "dm_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Status"
+          },
+          "expires_at": {
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "invited_by_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited By Character Id"
+          },
+          "invited_by_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited By Id"
+          },
+          "invited_by_name": {
+            "default": "",
+            "title": "Invited By Name",
+            "type": "string"
+          },
+          "joined_character_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joined Character Count"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "title": "Tribe Group Id",
+            "type": "integer"
+          },
+          "tribe_group_name": {
+            "title": "Tribe Group Name",
+            "type": "string"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tribe_id",
+          "tribe_name",
+          "tribe_group_id",
+          "tribe_group_name",
+          "user_id",
+          "status",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "InvitationSchema",
+        "type": "object"
+      },
       "JitaCheckPollResponse": {
         "properties": {
           "check": {
@@ -28078,6 +28307,27 @@
           "items"
         ],
         "title": "SellOrderLocationResponse",
+        "type": "object"
+      },
+      "SendInvitationsRequest": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "user_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "user_ids"
+        ],
+        "title": "SendInvitationsRequest",
         "type": "object"
       },
       "SessionSchema": {
@@ -55017,6 +55267,292 @@
         ]
       }
     },
+    "/api/tribes/invitations/mine": {
+      "get": {
+        "operationId": "tribes_endpoints_invitations_get_my_invitations_get_my_invitations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your waiting tribe group invites.",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
+        ]
+      }
+    },
+    "/api/tribes/invitations/{invitation_id}/accept": {
+      "post": {
+        "operationId": "tribes_endpoints_invitations_post_invitation_accept_post_invitation_accept",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Accept a tribe group invite: join at once with the picked characters.",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
+        ]
+      }
+    },
+    "/api/tribes/invitations/{invitation_id}/decline": {
+      "post": {
+        "operationId": "tribes_endpoints_invitations_post_invitation_decline_post_invitation_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Decline a tribe group invite.",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
+        ]
+      }
+    },
+    "/api/tribes/invitations/{invitation_id}/discord-decline": {
+      "post": {
+        "operationId": "tribes_endpoints_invitations_post_invitation_discord_decline_post_invitation_discord_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordDeclineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Decline a tribe group invite from its Discord DM (bot).",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
+        ]
+      }
+    },
     "/api/tribes/publishable-groups": {
       "get": {
         "operationId": "tribes_endpoints_publishing_get_publishable_groups_get_publishable_groups",
@@ -55382,6 +55918,353 @@
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations": {
+      "get": {
+        "operationId": "tribes_endpoints_invitations_get_group_invitations_get_group_invitations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Invites to a tribe group: waiting, and answered in 30 days.",
+        "tags": [
+          "Tribes",
+          "Tribes - Invitations"
+        ]
+      },
+      "post": {
+        "operationId": "tribes_endpoints_invitations_post_group_invitations_post_group_invitations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendInvitationsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Invite pilots to a tribe group (people who manage it).",
+        "tags": [
+          "Tribes",
+          "Tribes - Invitations"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations/candidates": {
+      "get": {
+        "operationId": "tribes_endpoints_invitations_get_invitation_candidates_get_invitation_candidates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationCandidateSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find pilots to invite, by any of their characters' names.",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations/{invitation_id}": {
+      "delete": {
+        "operationId": "tribes_endpoints_invitations_delete_group_invitation_delete_group_invitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Withdraw a waiting invite (people who manage the group).",
+        "tags": [
+          "Tribes - Invitations",
+          "Tribes - Invitations"
         ]
       }
     },

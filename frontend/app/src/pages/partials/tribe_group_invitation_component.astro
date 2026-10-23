@@ -1,0 +1,101 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+// no-error-refetch: accept/decline actions; a failure shows in an alert, and a failed
+// reload of the invite drops the banner (the page still offers Apply to join).
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+const invitation_id = parseInt(Astro.url.searchParams.get('invitation_id') ?? '')
+const action = Astro.url.searchParams.get('action')
+
+if (isNaN(tribe_id) || isNaN(group_id) || isNaN(invitation_id))
+    return HTTP_400_Bad_Request()
+
+import type { SummaryCharacter, TribeAvailableCharacter, TribeGroup, TribeInvitation } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import {
+    accept_invitation,
+    decline_invitation,
+    get_membership_characters_available,
+    get_my_invitations,
+    get_tribe_group,
+} from '@helpers/api.minmatar.org/tribes'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { open_invitation_for_group } from '@helpers/tribe_invitations'
+
+let alert: Alert | false = false
+let declined_by = ''
+
+if (Astro.request.method === 'POST' && action === 'accept') {
+    try {
+        const data = await Astro.request.formData()
+        const character_ids = JSON.parse(data.get('character_ids') as string) as number[]
+        if (!Array.isArray(character_ids) || !character_ids.every((id) => typeof id === 'number'))
+            throw new Error(t('invalid_characters'))
+        await accept_invitation(auth_token, invitation_id, character_ids)
+        // The page's membership state, actions and tabs all change: reload it.
+        return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+    } catch (error) {
+        alert = { title: t('tribes.invite.joining'), content: error.message }
+    }
+}
+
+if (Astro.request.method === 'POST' && action === 'decline') {
+    try {
+        const invitation = await decline_invitation(auth_token, invitation_id)
+        declined_by = invitation.invited_by_name
+        alert = {
+            title: t('tribes.invite.decline'),
+            content: t('tribes.invite.declined_alert').replace('{name}', declined_by),
+        }
+    } catch (error) {
+        alert = { title: t('tribes.invite.declining'), content: error.message }
+    }
+}
+
+let invitation: TribeInvitation | null = null
+let tribe_group: TribeGroup | null = null
+let user_characters: SummaryCharacter[] = []
+let available_characters: TribeAvailableCharacter[] = []
+
+if (!declined_by) {
+    try {
+        const [invitations, group, summary, available] = await Promise.all([
+            get_my_invitations(auth_token),
+            get_tribe_group(tribe_id, group_id, auth_token),
+            get_characters_summary_sorted(auth_token),
+            get_membership_characters_available(auth_token, tribe_id, group_id).catch(() => []),
+        ])
+        invitation = open_invitation_for_group(invitations, group_id)
+        tribe_group = group
+        user_characters = summary.characters ?? []
+        available_characters = available
+    } catch {
+        invitation = null
+    }
+}
+
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
+---
+
+{alert && <ShowAlert alert={alert} />}
+
+{invitation && tribe_group ?
+    <TribeGroupInvitationBanner
+        invitation={invitation}
+        group={tribe_group}
+        user_characters={user_characters}
+        available_characters={available_characters}
+    />
+    :
+    <div id="tribe-invitation-banner" hidden></div>
+}

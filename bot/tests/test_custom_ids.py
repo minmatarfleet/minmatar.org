@@ -20,6 +20,9 @@ HISTORICAL_TEMPLATES = {
     "NPSI_POST_ALIAS_TEMPLATE": r"npsi:post:(?P<event_id>[0-9]+)",
     "NPSI_PREPING_TEMPLATE": r"npsi:preping:(?P<event_id>[0-9]+)",
     "NPSI_TRACK_TEMPLATE": r"npsi:track:(?P<event_id>[0-9]+)",
+    "TRIBE_INVITE_DECLINE_TEMPLATE": (
+        r"tribe_invite:decline:(?P<invitation_id>[0-9]+)"
+    ),
     "HELP_TICKET_CLOSE_TEMPLATE": r"help_ticket_close:(?P<ticket_id>[0-9]+)",
     "HELP_TICKET_CLOSE_REASON_TEMPLATE": (
         r"help_ticket_close_reason:(?P<ticket_id>[0-9]+)"
@@ -60,6 +63,7 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
             TrackButton,
         )
         from app.tickets.views import CloseTicketButton, CloseWithReasonButton
+        from app.tribe_invites.views import DeclineInviteButton
 
         pairs = {
             CompleteButton: custom_ids.BUYBACK_COMPLETE_TEMPLATE,
@@ -73,6 +77,7 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
             TrackButton: custom_ids.NPSI_TRACK_TEMPLATE,
             CloseTicketButton: custom_ids.HELP_TICKET_CLOSE_TEMPLATE,
             CloseWithReasonButton: custom_ids.HELP_TICKET_CLOSE_REASON_TEMPLATE,
+            DeclineInviteButton: custom_ids.TRIBE_INVITE_DECLINE_TEMPLATE,
         }
         for item, template in pairs.items():
             compiled = item.__discord_ui_compiled_template__

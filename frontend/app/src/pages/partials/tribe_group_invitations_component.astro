@@ -1,0 +1,85 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+
+if (isNaN(tribe_id) || isNaN(group_id))
+    return HTTP_400_Bad_Request()
+
+import type { TribeInvitation } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import {
+    get_group_invitations,
+    send_group_invitations,
+    withdraw_group_invitation,
+} from '@helpers/api.minmatar.org/tribes'
+
+let alert: Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    try {
+        const data = await Astro.request.formData()
+        const user_ids = data.getAll('user_ids')
+            .map((value) => parseInt(value as string))
+            .filter((value) => !isNaN(value))
+        const note = (data.get('note') as string | null) ?? ''
+        await send_group_invitations(auth_token, tribe_id, group_id, user_ids, note)
+    } catch (error) {
+        alert = { title: t('tribes.invite.sending'), content: error.message }
+    }
+}
+
+if (Astro.request.method === 'DELETE') {
+    try {
+        const invitation_id = parseInt(Astro.url.searchParams.get('invitation_id') ?? '')
+        if (isNaN(invitation_id)) throw new Error(t('invalid_membership_id'))
+        await withdraw_group_invitation(auth_token, tribe_id, group_id, invitation_id)
+    } catch (error) {
+        alert = { title: t('tribes.invite.withdrawing'), content: error.message }
+    }
+}
+
+let invitations: TribeInvitation[] = []
+let fetch_error: Error | false = false
+
+try {
+    invitations = await get_group_invitations(auth_token, tribe_id, group_id)
+} catch (error) {
+    fetch_error = error
+}
+
+const INVITATIONS_PARTIAL_URL = translatePath(`/partials/tribe_group_invitations_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import TribeInvitationList from '@components/blocks/TribeInvitationList.astro'
+---
+
+{alert && <ShowAlert alert={alert} />}
+
+<div id="tribe-invitations">
+    {fetch_error ?
+        <ErrorRefetch
+            args={{
+                partial: INVITATIONS_PARTIAL_URL,
+                error: fetch_error,
+                delay: 0,
+            }}
+        />
+        :
+        <TribeInvitationList
+            invitations={invitations}
+            tribe_id={tribe_id}
+            group_id={group_id}
+        />
+    }
+</div>

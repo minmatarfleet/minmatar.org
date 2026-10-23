@@ -1,0 +1,129 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter, TribeAvailableCharacter, TribeGroup, TribeInvitation } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    invitation:             TribeInvitation;
+    group:                  TribeGroup;
+    user_characters:        SummaryCharacter[];
+    available_characters:   TribeAvailableCharacter[];
+    [propName: string]:     any;
+}
+
+const {
+    invitation,
+    group,
+    user_characters,
+    available_characters,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { eve_day_short } from '@helpers/date'
+import { query_string } from '@helpers/string'
+
+const BANNER_ID = 'tribe-invitation-banner'
+const INVITATION_PARTIAL_URL = translatePath(`/partials/tribe_group_invitation_component?${query_string({
+    tribe_id: group.tribe_id,
+    group_id: group.id,
+    invitation_id: invitation.id,
+})}`)
+const inviter = invitation.invited_by_name
+const expires = eve_day_short(lang, invitation.expires_at, { weekday: true })
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+---
+
+<section
+    id={BANNER_ID}
+    class:list={['[ tribe-invitation-banner ]', Astro.props.class]}
+    aria-label={t('tribes.invite.banner_title').replace('{name}', inviter).replace('{group}', group.name)}
+    {...attributes}
+>
+    <FlexInline gap="var(--space-s)" class="[ tribe-invitation-banner__who ]">
+        {invitation.invited_by_character_id &&
+            <CharacterPicture
+                character_id={invitation.invited_by_character_id}
+                character_name={inviter}
+                size={64}
+            />
+        }
+        <Flexblock gap="var(--space-3xs)">
+            <h3>{t('tribes.invite.banner_title').replace('{name}', inviter).replace('{group}', group.name)}</h3>
+            {invitation.note &&
+                <p class="[ tribe-invitation-banner__note ]">“{invitation.note}”</p>
+            }
+            <small class="[ text-muted ]">{t('tribes.invite.banner_hint').replace('{date}', expires)}</small>
+        </Flexblock>
+    </FlexInline>
+
+    <FlexInline gap="var(--space-xs)">
+        <ButtonConfirm
+            label={t('tribes.invite.decline')}
+            size='sm'
+            color='transparent'
+        >
+            <Button
+                size='sm'
+                hx-post={`${INVITATION_PARTIAL_URL}&action=decline`}
+                hx-target={`#${BANNER_ID}`}
+                hx-indicator=".loader"
+                hx-swap="outerHTML transition:true"
+                x-on:click="$el.setAttribute('disabled','')"
+            >
+                {t('confirm')}
+            </Button>
+        </ButtonConfirm>
+
+        <ButtonApplyTribe
+            target_id={BANNER_ID}
+            title={group.name}
+            tribe_id={group.tribe_id}
+            group_id={group.id}
+            pilots={user_characters}
+            available_characters={available_characters}
+            required_token_type={group.required_token_type}
+            label={t('tribes.invite.join').replace('{group}', group.name)}
+            post_url={`${INVITATION_PARTIAL_URL}&action=accept`}
+            subtitle={t('tribes.invite.join_subtitle').replace('{name}', inviter)}
+            submit_label={t('tribes.invite.join').replace('{group}', group.name)}
+        />
+    </FlexInline>
+</section>
+
+<style lang="scss">
+    .tribe-invitation-banner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s) var(--space-l);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px color-mix(in srgb, var(--green) 60%, transparent);
+        background-color: color-mix(in srgb, var(--green) 10%, transparent);
+    }
+
+    .tribe-invitation-banner__who {
+        flex: 999 1 420px;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    h3 {
+        font-size: var(--step-0);
+    }
+
+    .tribe-invitation-banner__note {
+        font-style: italic;
+        margin: 0;
+    }
+</style>
