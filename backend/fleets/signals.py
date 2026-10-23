@@ -11,19 +11,65 @@ from fleets.tasks import queue_fleet_schedule_refresh
 logger = logging.getLogger(__name__)
 
 
+def fleet_on_schedule_message(fleet: EveFleet) -> bool:
+    """Whether this fleet would appear in the #schedule Discord message.
+
+    Private fleets never do. Tribe group fleets only do when open and
+    ``on_schedule``. Alliance fleets need an audience that posts to schedule.
+    """
+    if getattr(fleet, "invite_only", False):
+        return False
+    if getattr(fleet, "status", None) == "cancelled":
+        return False
+    if fleet.host_group_id:
+        return bool(fleet.open_to_alliance and fleet.on_schedule)
+    audience = getattr(fleet, "audience", None)
+    if audience is None:
+        return False
+    return bool(audience.add_to_schedule)
+
+
+@receiver(
+    signals.pre_save,
+    sender=EveFleet,
+    dispatch_uid="fleet_schedule_dirty_on_save",
+)
+def fleet_schedule_dirty_on_save(sender, instance, **kwargs):
+    """Refresh when the fleet is on the schedule, or when it just left it."""
+    after = fleet_on_schedule_message(instance)
+    before = False
+    if instance.pk:
+        old = (
+            EveFleet.objects.filter(pk=instance.pk)
+            .select_related("audience")
+            .first()
+        )
+        if old is not None:
+            before = fleet_on_schedule_message(old)
+    instance._refresh_fleet_schedule = before or after
+
+
 @receiver(
     signals.post_save,
     sender=EveFleet,
     dispatch_uid="update_fleet_schedule_on_save",
 )
 def update_fleet_schedule_on_save(sender, instance, created, **kwargs):
-    if instance.audience and not instance.audience.add_to_schedule:
+    # pre_save sets _refresh_fleet_schedule when both the old and new row are
+    # known; fall back for direct calls (tests) and for creates that skipped it.
+    if hasattr(instance, "_refresh_fleet_schedule"):
+        should_refresh = bool(instance._refresh_fleet_schedule)
+    else:
+        should_refresh = fleet_on_schedule_message(instance)
+    if not should_refresh:
         return
     queue_fleet_schedule_refresh()
 
 
 @receiver(signals.post_delete, sender=EveFleet)
 def update_fleet_schedule_on_delete(sender, instance, **kwargs):
+    if not fleet_on_schedule_message(instance):
+        return
     queue_fleet_schedule_refresh()
 
 

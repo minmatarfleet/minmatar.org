@@ -29043,6 +29043,76 @@
         "title": "ResolveKillmailResponse",
         "type": "object"
       },
+      "ResolveNamesRequest": {
+        "description": "A paste of primary character names or Discord usernames.",
+        "properties": {
+          "text": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "title": "ResolveNamesRequest",
+        "type": "object"
+      },
+      "ResolveNamesResponse": {
+        "properties": {
+          "matched": {
+            "items": {
+              "$ref": "#/components/schemas/ResolvedPilot"
+            },
+            "title": "Matched",
+            "type": "array"
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Found",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matched",
+          "not_found"
+        ],
+        "title": "ResolveNamesResponse",
+        "type": "object"
+      },
+      "ResolvedPilot": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "matched_as": {
+            "title": "Matched As",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "detail",
+          "matched_as"
+        ],
+        "title": "ResolvedPilot",
+        "type": "object"
+      },
       "RestrictedResponse": {
         "description": "403 for a members-only item: names the group, hides the content.",
         "properties": {
@@ -44362,6 +44432,67 @@
           }
         ],
         "summary": "Post Reping",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/resolve": {
+      "post": {
+        "description": "Match a paste of primary character names or Discord usernames to pilots for the New wave form.",
+        "operationId": "fleets_endpoints_private_invites_post_resolve_names",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveNamesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveNamesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Resolve Names",
         "tags": [
           "Fleets"
         ]

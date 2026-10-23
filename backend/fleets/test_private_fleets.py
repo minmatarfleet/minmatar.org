@@ -303,6 +303,34 @@ class WaveTests(PrivateFleetTestBase):
         self.assertFalse(body["can_see_leak_trace"])
         self.assertIsNone(body["invites"][0]["first_viewed_at"])
 
+    def test_resolve_paste_of_characters_and_discord_names(self):
+        fleet = self.private_fleet()
+        body = {
+            "text": "Teysha\npilot\n@nobody-here\nCasper, Teysha",
+        }
+        response = self.call(
+            "post", f"/{fleet.id}/invites/resolve", self.strat, body
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        matched_ids = {row["id"] for row in data["matched"]}
+        self.assertEqual(matched_ids, {self.pilot.id, self.strat.id})
+        self.assertEqual(data["not_found"], ["nobody-here"])
+        by_id = {row["id"]: row for row in data["matched"]}
+        self.assertEqual(by_id[self.pilot.id]["kind"], "pilot")
+        self.assertEqual(by_id[self.pilot.id]["name"], "Teysha")
+
+    def test_resolve_rejects_a_huge_paste(self):
+        fleet = self.private_fleet()
+        names = "\n".join(f"Pilot{index}" for index in range(60))
+        response = self.call(
+            "post",
+            f"/{fleet.id}/invites/resolve",
+            self.strat,
+            {"text": names},
+        )
+        self.assertEqual(response.status_code, 400)
+
 
 class AnswerTests(PrivateFleetTestBase):
     def test_picking_a_ship_is_in_and_sitting_out_clears_it(self):

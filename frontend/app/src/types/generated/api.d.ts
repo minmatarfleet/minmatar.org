@@ -2768,6 +2768,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/invites/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Resolve Names
+         * @description Match a paste of primary character names or Discord usernames to pilots for the New wave form.
+         */
+        post: operations["fleets_endpoints_private_invites_post_resolve_names"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/invites/waves": {
         parameters: {
             query?: never;
@@ -19009,6 +19029,37 @@ export interface components {
             victim_character_name: string;
         };
         /**
+         * ResolveNamesRequest
+         * @description A paste of primary character names or Discord usernames.
+         */
+        ResolveNamesRequest: {
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+        };
+        /** ResolveNamesResponse */
+        ResolveNamesResponse: {
+            /** Matched */
+            matched: components["schemas"]["ResolvedPilot"][];
+            /** Not Found */
+            not_found: string[];
+        };
+        /** ResolvedPilot */
+        ResolvedPilot: {
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Matched As */
+            matched_as: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * RestrictedResponse
          * @description 403 for a members-only item: names the group, hides the content.
          */
@@ -27755,6 +27806,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    fleets_endpoints_private_invites_post_resolve_names: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveNamesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveNamesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
