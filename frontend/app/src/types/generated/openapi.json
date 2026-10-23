@@ -8010,6 +8010,11 @@
             "title": "Immediate Ping",
             "type": "boolean"
           },
+          "invite_only": {
+            "default": false,
+            "title": "Invite Only",
+            "type": "boolean"
+          },
           "location_id": {
             "anyOf": [
               {
@@ -8895,6 +8900,24 @@
         "title": "DecisionRequest",
         "type": "object"
       },
+      "DeclassifiedResponse": {
+        "properties": {
+          "declassified_at": {
+            "title": "Declassified At",
+            "type": "string"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "declassified_at"
+        ],
+        "title": "DeclassifiedResponse",
+        "type": "object"
+      },
       "DeleteStatus": {
         "properties": {
           "deleted": {
@@ -9053,6 +9076,19 @@
           "status"
         ],
         "title": "DiscordNpsiActionResponse",
+        "type": "object"
+      },
+      "DiscordSitOutRequest": {
+        "properties": {
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordSitOutRequest",
         "type": "object"
       },
       "DiscordUserSchema": {
@@ -10088,6 +10124,23 @@
             "title": "Can Copy",
             "type": "boolean"
           },
+          "can_manage_invites": {
+            "default": false,
+            "title": "Can Manage Invites",
+            "type": "boolean"
+          },
+          "declassified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Declassified At"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -10096,6 +10149,17 @@
             "default": false,
             "title": "Disable Motd",
             "type": "boolean"
+          },
+          "discord_thread_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Thread Url"
           },
           "doctrine_id": {
             "anyOf": [
@@ -10164,9 +10228,36 @@
             "title": "Id",
             "type": "integer"
           },
+          "invite_only": {
+            "default": false,
+            "title": "Invite Only",
+            "type": "boolean"
+          },
           "location": {
             "title": "Location",
             "type": "string"
+          },
+          "my_invite_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Invite Answer"
+          },
+          "my_invite_wave": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Invite Wave"
           },
           "objective": {
             "anyOf": [
@@ -15423,6 +15514,80 @@
         "title": "FleetFightTotals",
         "type": "object"
       },
+      "FleetInvitesResponse": {
+        "properties": {
+          "can_see_leak_trace": {
+            "title": "Can See Leak Trace",
+            "type": "boolean"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "invites": {
+            "items": {
+              "$ref": "#/components/schemas/InvitePilot"
+            },
+            "title": "Invites",
+            "type": "array"
+          },
+          "reping_available_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reping Available At"
+          },
+          "sending": {
+            "title": "Sending",
+            "type": "boolean"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/ShipTargetProgress"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "thread_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Url"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/InviteTotals"
+          },
+          "waves": {
+            "items": {
+              "$ref": "#/components/schemas/InviteWave"
+            },
+            "title": "Waves",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "totals",
+          "waves",
+          "invites",
+          "targets",
+          "sending",
+          "can_see_leak_trace"
+        ],
+        "title": "FleetInvitesResponse",
+        "type": "object"
+      },
       "FleetParticipantsCharacter": {
         "properties": {
           "character_id": {
@@ -19928,6 +20093,257 @@
         "title": "InvitationSchema",
         "type": "object"
       },
+      "InviteCandidate": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "detail"
+        ],
+        "title": "InviteCandidate",
+        "type": "object"
+      },
+      "InvitePilot": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Name"
+          },
+          "dm_delivered": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Delivered"
+          },
+          "first_viewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Viewed At"
+          },
+          "invite_id": {
+            "title": "Invite Id",
+            "type": "integer"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "ships": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ships",
+            "type": "array"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "wave": {
+            "title": "Wave",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_id",
+          "user_id",
+          "character_name",
+          "wave",
+          "answer",
+          "ships"
+        ],
+        "title": "InvitePilot",
+        "type": "object"
+      },
+      "InviteTotals": {
+        "properties": {
+          "answered_in": {
+            "title": "Answered In",
+            "type": "integer"
+          },
+          "answered_out": {
+            "title": "Answered Out",
+            "type": "integer"
+          },
+          "characters_in": {
+            "title": "Characters In",
+            "type": "integer"
+          },
+          "invited": {
+            "title": "Invited",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invited",
+          "answered_in",
+          "characters_in",
+          "answered_out",
+          "pending"
+        ],
+        "title": "InviteTotals",
+        "type": "object"
+      },
+      "InviteWave": {
+        "properties": {
+          "answered_in": {
+            "title": "Answered In",
+            "type": "integer"
+          },
+          "answered_out": {
+            "title": "Answered Out",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "invited": {
+            "title": "Invited",
+            "type": "integer"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "array"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "sent": {
+            "title": "Sent",
+            "type": "integer"
+          },
+          "sent_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent By"
+          }
+        },
+        "required": [
+          "number",
+          "created_at",
+          "note",
+          "labels",
+          "invited",
+          "sent",
+          "answered_in",
+          "answered_out",
+          "pending"
+        ],
+        "title": "InviteWave",
+        "type": "object"
+      },
       "JitaCheckPollResponse": {
         "properties": {
           "check": {
@@ -23592,6 +24008,24 @@
           }
         },
         "title": "MyFleetsResponse",
+        "type": "object"
+      },
+      "MyInviteResponse": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "invite_id": {
+            "title": "Invite Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "invite_id",
+          "answer"
+        ],
+        "title": "MyInviteResponse",
         "type": "object"
       },
       "MyPilotLocationResponse": {
@@ -28378,6 +28812,19 @@
         "title": "RepairAnalysis",
         "type": "object"
       },
+      "RepingResponse": {
+        "properties": {
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pilots"
+        ],
+        "title": "RepingResponse",
+        "type": "object"
+      },
       "ReportResponse": {
         "properties": {
           "created_at": {
@@ -29612,6 +30059,106 @@
         "title": "ShipSuggestionResponse",
         "type": "object"
       },
+      "ShipTargetLine": {
+        "properties": {
+          "group_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Group Ids",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 64,
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          },
+          "target": {
+            "maximum": 999,
+            "minimum": 1,
+            "title": "Target",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "target"
+        ],
+        "title": "ShipTargetLine",
+        "type": "object"
+      },
+      "ShipTargetProgress": {
+        "properties": {
+          "group_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Group Ids",
+            "type": "array"
+          },
+          "have": {
+            "title": "Have",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          },
+          "short": {
+            "title": "Short",
+            "type": "integer"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "target",
+          "have",
+          "short",
+          "ship_type_ids",
+          "group_ids"
+        ],
+        "title": "ShipTargetProgress",
+        "type": "object"
+      },
+      "ShipTargetsRequest": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ShipTargetLine"
+            },
+            "maxItems": 20,
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "title": "ShipTargetsRequest",
+        "type": "object"
+      },
       "Signals30": {
         "properties": {
           "fleets": {
@@ -30513,6 +31060,29 @@
           "indices_from_esi"
         ],
         "title": "SystemIndustrySchema",
+        "type": "object"
+      },
+      "TargetHelp": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "own": {
+            "title": "Own",
+            "type": "integer"
+          },
+          "short": {
+            "title": "Short",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "short",
+          "own"
+        ],
+        "title": "TargetHelp",
         "type": "object"
       },
       "TestFleetCreationRequest": {
@@ -33644,6 +34214,106 @@
           "occupier"
         ],
         "title": "WarzoneSystemSchema",
+        "type": "object"
+      },
+      "WavePreviewResponse": {
+        "properties": {
+          "already_invited": {
+            "title": "Already Invited",
+            "type": "integer"
+          },
+          "helps": {
+            "items": {
+              "$ref": "#/components/schemas/TargetHelp"
+            },
+            "title": "Helps",
+            "type": "array"
+          },
+          "new": {
+            "title": "New",
+            "type": "integer"
+          },
+          "no_discord": {
+            "title": "No Discord",
+            "type": "integer"
+          },
+          "picked": {
+            "title": "Picked",
+            "type": "integer"
+          },
+          "will_dm": {
+            "title": "Will Dm",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "picked",
+          "already_invited",
+          "new",
+          "will_dm",
+          "no_discord",
+          "helps"
+        ],
+        "title": "WavePreviewResponse",
+        "type": "object"
+      },
+      "WaveRequest": {
+        "properties": {
+          "corporation_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Corporation Ids",
+            "type": "array"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "tribe_group_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Tribe Group Ids",
+            "type": "array"
+          },
+          "user_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "title": "WaveRequest",
+        "type": "object"
+      },
+      "WaveSentResponse": {
+        "properties": {
+          "invited": {
+            "title": "Invited",
+            "type": "integer"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "will_dm": {
+            "title": "Will Dm",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "number",
+          "invited",
+          "will_dm"
+        ],
+        "title": "WaveSentResponse",
         "type": "object"
       },
       "WaypointRequest": {
@@ -41561,6 +42231,84 @@
         ]
       }
     },
+    "/api/fleets/invites/{invite_id}/discord-out": {
+      "post": {
+        "description": "Sitting out from the invite DM's button (bot).",
+        "operationId": "fleets_endpoints_private_answers_post_invite_discord_out",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invite_id",
+            "required": true,
+            "schema": {
+              "title": "Invite Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSitOutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyInviteResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Discord Out",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/metrics": {
       "get": {
         "description": "All fleets of the last year, or just ``fleet_id`` (same filters).",
@@ -42399,7 +43147,7 @@
         ]
       },
       "get": {
-        "description": "Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group.",
+        "description": "Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group. A private fleet the viewer wasn't invited to is a 404, as if it didn't exist.",
         "operationId": "fleets_endpoints_fleet_get_fleet_get_fleet",
         "parameters": [
           {
@@ -42635,6 +43383,57 @@
           }
         ],
         "summary": "Copy Fleet To Date",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/declassify": {
+      "post": {
+        "description": "After a private fleet, its FC or a Strategic FC makes it a normal fleet: history, kills, battle report and metrics. Invites, answers and the thread stay private.",
+        "operationId": "fleets_endpoints_private_declassify_post_declassify",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclassifiedResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Declassify",
         "tags": [
           "Fleets"
         ]
@@ -43263,6 +44062,385 @@
         ]
       }
     },
+    "/api/fleets/{fleet_id}/invites": {
+      "get": {
+        "description": "A private fleet's invite waves and answers, for its FC and Strategic FCs. first_viewed_at (the leak trace) is null unless the caller is a Strategic FC.",
+        "operationId": "fleets_endpoints_private_invites_get_fleet_invites",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetInvitesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Invites",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/candidates": {
+      "get": {
+        "description": "Tribe groups, corporations and pilots to invite.",
+        "operationId": "fleets_endpoints_private_invites_get_invite_candidates",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InviteCandidate"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Invite Candidates",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/me/out": {
+      "post": {
+        "description": "Sit out a private fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.",
+        "operationId": "fleets_endpoints_private_answers_post_my_invite_out",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyInviteResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post My Invite Out",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/preview": {
+      "post": {
+        "description": "Who a wave with these picks would reach.",
+        "operationId": "fleets_endpoints_private_invites_post_wave_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WavePreviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Wave Preview",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/reping": {
+      "post": {
+        "description": "DM everyone who hasn't answered once more. At most once every 15 minutes per fleet.",
+        "operationId": "fleets_endpoints_private_invites_post_reping",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepingResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Reping",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/invites/waves": {
+      "post": {
+        "description": "Invite the new players in these picks. The DMs go out from a task at about one a second; one wave sends at a time.",
+        "operationId": "fleets_endpoints_private_invites_post_wave",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaveSentResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Wave",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/{fleet_id}/kills": {
       "get": {
         "description": "Killmails the fleet's pilots were on while in fleet, from the feed. Totals count capsules towards ISK but not ships.",
@@ -43761,6 +44939,16 @@
               }
             },
             "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
           },
           "403": {
             "content": {
@@ -44476,6 +45664,117 @@
           }
         ],
         "summary": "Get Fleet Supply",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/targets": {
+      "get": {
+        "description": "The fleet's ship targets with how many characters signed up for each line.",
+        "operationId": "fleets_endpoints_private_targets_get_fleet_targets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShipTargetProgress"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Targets",
+        "tags": [
+          "Fleets"
+        ]
+      },
+      "put": {
+        "description": "Replace the fleet's ship targets. A hull or EVE group can be on one line only.",
+        "operationId": "fleets_endpoints_private_targets_put_fleet_targets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShipTargetsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShipTargetProgress"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put Fleet Targets",
         "tags": [
           "Fleets"
         ]

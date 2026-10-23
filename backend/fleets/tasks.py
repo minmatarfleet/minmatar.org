@@ -66,6 +66,8 @@ def update_fleet_schedule():
         # A standing fleet is always up and a gang forms on the spot;
         # neither belongs on a schedule of upcoming fleets.
         .exclude(type__in=CAMPAIGN_FLEET_TYPES)
+        # Private fleets are never scheduled, even once declassified.
+        .exclude(invite_only=True)
         .order_by("start_time")
         .select_related(
             "location", "audience", "created_by", "host_group__tribe"
@@ -344,3 +346,306 @@ def settle_fight_timeline(fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if fleet:
         send_fleet_report(fleet, fights.settle(fleet))
+
+
+# --- Private fleets (docs/fleets/private-fleets.md) ------------------------
+
+# Seconds between invite DMs. Opening many new DM channels at once trips
+# Discord's anti-spam (error 40003), so a wave goes out at about one a second.
+INVITE_DM_SPACING_SECONDS = 1.0
+
+
+def _pace():
+    # pylint: disable=import-outside-toplevel
+    import time
+
+    if not getattr(settings, "TESTING", False):
+        time.sleep(INVITE_DM_SPACING_SECONDS)
+
+
+def _send_invite_dm(invite, *, reminder: bool = False) -> bool:
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleet_discord import send_invite_dm
+
+    return send_invite_dm(discord_client, invite, reminder=reminder)
+
+
+@app.task(exclusive=30 * 60)
+def send_fleet_invite_wave(wave_id: int):
+    """Send a wave's invite DMs, about one a second. Safe to run twice:
+    invites already tried are skipped."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetInvite, EveFleetInviteWave
+
+    wave = (
+        EveFleetInviteWave.objects.select_related("eve_fleet")
+        .filter(id=wave_id)
+        .first()
+    )
+    if wave is None or wave.finished_at:
+        return
+    invites = (
+        EveFleetInvite.objects.filter(wave=wave, dm_delivered__isnull=True)
+        .select_related(
+            "wave",
+            "eve_fleet__doctrine",
+            "eve_fleet__location",
+            "eve_fleet__created_by",
+        )
+        .order_by("id")
+    )
+    for index, invite in enumerate(invites):
+        if index:
+            _pace()
+        _send_invite_dm(invite)
+    wave.finished_at = timezone.now()
+    wave.save(update_fields=["finished_at"])
+
+
+@app.task(exclusive=30 * 60)
+def send_fleet_invite_reminders(fleet_id: int, invite_ids: list[int]):
+    """Re-ping no answers: one more invite DM each, paced like a wave."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetInvite
+
+    invites = EveFleetInvite.objects.filter(
+        eve_fleet_id=fleet_id,
+        id__in=invite_ids,
+        answer=EveFleetInvite.ANSWER_PENDING,
+    ).select_related("wave", "eve_fleet__doctrine", "eve_fleet__location")
+    for index, invite in enumerate(invites):
+        if index:
+            _pace()
+        _send_invite_dm(invite, reminder=True)
+
+
+def _edit_invite_dm(invite) -> None:
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleet_discord import answered_payload
+
+    if not invite.dm_channel_id or not invite.dm_message_id:
+        return
+    try:
+        discord_client.update_message(
+            invite.dm_channel_id,
+            invite.dm_message_id,
+            payload=answered_payload(invite),
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Could not edit private fleet invite DM %s",
+            invite.id,
+            exc_info=True,
+        )
+
+
+def _thread_add(fleet, user_id: int) -> bool:
+    # pylint: disable=import-outside-toplevel
+    from discord.models import DiscordUser
+
+    discord_user = DiscordUser.objects.filter(user_id=user_id).first()
+    if discord_user is None or not fleet.discord_thread_id:
+        return False
+    try:
+        discord_client.add_thread_member(
+            fleet.discord_thread_id, discord_user.id
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Could not add user %s to fleet %s thread",
+            user_id,
+            fleet.id,
+            exc_info=True,
+        )
+        return False
+    return True
+
+
+def _thread_remove(fleet, user_id: int) -> None:
+    # pylint: disable=import-outside-toplevel
+    from discord.models import DiscordUser
+
+    discord_user = DiscordUser.objects.filter(user_id=user_id).first()
+    if discord_user is None or not fleet.discord_thread_id:
+        return
+    try:
+        discord_client.remove_thread_member(
+            fleet.discord_thread_id, discord_user.id
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Could not remove user %s from fleet %s thread",
+            user_id,
+            fleet.id,
+            exc_info=True,
+        )
+
+
+@app.task()
+def sync_private_fleet_invite(invite_id: int):
+    """After an answer: edit the DM, add to or remove from the thread, and
+    refresh the thread's pinned summary."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_visibility import sees_every_private_fleet
+    from fleets.models import EveFleetInvite
+
+    invite = (
+        EveFleetInvite.objects.select_related(
+            "eve_fleet__audience", "eve_fleet__location", "wave", "user"
+        )
+        .filter(id=invite_id)
+        .first()
+    )
+    if invite is None:
+        return
+    fleet = invite.eve_fleet
+    _edit_invite_dm(invite)
+    if invite.answer == EveFleetInvite.ANSWER_IN and not invite.in_thread:
+        if _thread_add(fleet, invite.user_id):
+            invite.in_thread = True
+            invite.save(update_fields=["in_thread"])
+    elif invite.answer != EveFleetInvite.ANSWER_IN and invite.in_thread:
+        # Strategic FCs stay in the thread whatever they answer.
+        if not sees_every_private_fleet(invite.user):
+            _thread_remove(fleet, invite.user_id)
+        invite.in_thread = False
+        invite.save(update_fields=["in_thread"])
+    refresh_private_fleet_summary.delay(fleet.id)
+
+
+@app.task(exclusive=10 * 60)
+def ensure_private_fleet_thread(fleet_id: int):
+    """Open the fleet's private thread with the FC and every Strategic FC,
+    and pin the summary. Safe to run twice."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleet_discord import (
+        strategic_fc_user_ids,
+        summary_payload,
+        thread_name,
+        thread_parent_channel_id,
+    )
+
+    fleet = (
+        EveFleet.objects.select_related("audience", "location", "created_by")
+        .filter(id=fleet_id, invite_only=True)
+        .first()
+    )
+    if fleet is None:
+        return
+    if not fleet.discord_thread_id:
+        parent = thread_parent_channel_id(fleet)
+        if not parent:
+            logger.warning("Private fleet %s has no thread channel", fleet_id)
+            return
+        thread = discord_client.create_private_thread(
+            parent, thread_name(fleet)
+        )
+        fleet.discord_thread_id = int(thread["id"])
+        fleet.save(update_fields=["discord_thread_id"])
+    members = strategic_fc_user_ids()
+    if fleet.created_by_id:
+        members.add(fleet.created_by_id)
+    for index, user_id in enumerate(sorted(members)):
+        if index:
+            _pace()
+        _thread_add(fleet, user_id)
+    if not fleet.discord_summary_message_id:
+        message = discord_client.create_message(
+            fleet.discord_thread_id, payload=summary_payload(fleet)
+        ).json()
+        fleet.discord_summary_message_id = int(message["id"])
+        fleet.save(update_fields=["discord_summary_message_id"])
+        try:
+            discord_client.pin_message(fleet.discord_thread_id, message["id"])
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Could not pin fleet %s summary", fleet_id, exc_info=True
+            )
+
+
+@app.task()
+def refresh_private_fleet_summary(fleet_id: int):
+    """Edit the pinned summary in the fleet's thread."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleet_discord import summary_payload
+
+    fleet = (
+        EveFleet.objects.select_related("location", "created_by")
+        .filter(id=fleet_id, invite_only=True)
+        .first()
+    )
+    if (
+        fleet is None
+        or not fleet.discord_thread_id
+        or not fleet.discord_summary_message_id
+    ):
+        return
+    try:
+        discord_client.update_message(
+            fleet.discord_thread_id,
+            fleet.discord_summary_message_id,
+            payload=summary_payload(fleet),
+        )
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Could not edit fleet %s summary", fleet_id, exc_info=True
+        )
+
+
+@app.task()
+def post_private_fleet_start_ping(fleet_id: int):
+    """The start ping, in the private thread, with @everyone. Refuses to
+    post anywhere that isn't a private thread: a wrong id would ping the
+    whole parent channel."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleet_discord import (
+        is_private_thread,
+        thread_start_ping_payload,
+    )
+
+    fleet = EveFleet.objects.filter(id=fleet_id, invite_only=True).first()
+    if fleet is None or not fleet.discord_thread_id:
+        return
+    if not is_private_thread(discord_client, fleet.discord_thread_id):
+        logger.error(
+            "Fleet %s thread %s isn't a private thread; start ping not sent",
+            fleet_id,
+            fleet.discord_thread_id,
+        )
+        return
+    ping = fleet.start_ping()
+    if ping is None:
+        return
+    discord_client.create_message(
+        fleet.discord_thread_id,
+        payload=thread_start_ping_payload(ping.payload),
+    )
+
+
+@app.task(exclusive=30 * 60)
+def update_private_fleet_dms(fleet_id: int):
+    """Edit every invite DM after the fleet starts, ends or is cancelled."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleetInvite
+
+    invites = EveFleetInvite.objects.filter(
+        eve_fleet_id=fleet_id, dm_message_id__isnull=False
+    ).select_related("eve_fleet", "wave")
+    for index, invite in enumerate(invites):
+        if index:
+            _pace()
+        _edit_invite_dm(invite)
+
+
+@app.task()
+def close_private_fleet_thread(fleet_id: int):
+    """Lock and archive the thread once the fleet is over."""
+    fleet = EveFleet.objects.filter(id=fleet_id, invite_only=True).first()
+    if fleet is None or not fleet.discord_thread_id:
+        return
+    try:
+        discord_client.close_thread(fleet.discord_thread_id)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Could not close fleet %s thread", fleet_id, exc_info=True
+        )

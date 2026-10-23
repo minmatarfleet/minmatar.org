@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const action = Astro.url.searchParams.get('action') ?? ''
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import {
+    get_fleet_invites,
+    preview_fleet_wave,
+    reping_fleet_invites,
+    send_fleet_wave,
+    type FleetInvites as FleetInvitesData,
+    type FleetWavePreview as FleetWavePreviewData,
+    type FleetWaveRequest,
+} from '@helpers/api.minmatar.org/fleets'
+
+const ids = (form:FormData, name:string) =>
+    form.getAll(name).map(value => parseInt(value as string)).filter(id => !isNaN(id))
+
+const wave_request = (form:FormData):FleetWaveRequest => ({
+    tribe_group_ids: ids(form, 'tribe_group_ids'),
+    corporation_ids: ids(form, 'corporation_ids'),
+    user_ids: ids(form, 'pilot_ids'),
+    note: ((form.get('note') as string) ?? '').trim(),
+})
+
+let preview:FleetWavePreviewData | null = null
+let notice:string | false = false
+let error:string | false = false
+
+if (Astro.request.method === 'POST') {
+    try {
+        // The re-ping button posts no body.
+        const form = action === 'reping' ? new FormData() : await Astro.request.formData()
+        if (action === 'preview') {
+            preview = await preview_fleet_wave(auth_token as string, fleet_id, wave_request(form))
+        } else if (action === 'wave') {
+            await send_fleet_wave(auth_token as string, fleet_id, wave_request(form))
+        } else if (action === 'reping') {
+            const queued = await reping_fleet_invites(auth_token as string, fleet_id)
+            notice = t('fleets.private.reping_queued').replace('{count}', (queued?.pilots ?? 0).toString())
+        }
+    } catch (e) {
+        error = e.message
+    }
+}
+
+let data:FleetInvitesData | null = null
+if (action !== 'preview') {
+    try {
+        data = await get_fleet_invites(auth_token as string, fleet_id)
+    } catch (e) {
+        if (e.cause === 404)
+            return HTTP_404_Not_Found()
+        error = e.message
+    }
+}
+
+import FleetInvites from '@components/blocks/FleetInvites.astro'
+import FleetWavePreview from '@components/blocks/FleetWavePreview.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{action === 'preview' ?
+    <FleetWavePreview preview={preview} error={error} /> :
+    data ?
+        <FleetInvites fleet_id={fleet_id} data={data} notice={notice} error={error} /> :
+        <ErrorRefetch args={{ partial: Astro.url.toString(), error: new Error(error || 'Error fetching fleet invites'), delay: 0 }} />
+}

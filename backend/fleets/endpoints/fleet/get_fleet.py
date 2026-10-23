@@ -15,6 +15,12 @@ from fleets.endpoints.schemas import (
 )
 from fleets.helpers.close_mail import aars_forum_url
 from fleets.helpers.copy_fleet import can_copy_fleet
+from fleets.helpers.private_fleet_discord import thread_url
+from fleets.helpers.private_fleets import record_page_view, user_invite
+from fleets.helpers.private_visibility import (
+    is_hidden_private,
+    private_fleet_visible_to,
+)
 from fleets.models import EveFleet, EveFleetInstance
 
 PATH = "/{fleet_id}"
@@ -28,7 +34,9 @@ ROUTE_SPEC = {
     },
     "description": (
         "Get fleet by ID. Requires fleets.view_evefleet. A members-only "
-        "tribe group fleet the viewer can't see is a 403 naming the group."
+        "tribe group fleet the viewer can't see is a 403 naming the group. "
+        "A private fleet the viewer wasn't invited to is a 404, as if it "
+        "didn't exist."
     ),
 }
 
@@ -36,6 +44,10 @@ ROUTE_SPEC = {
 def get_fleet(request, fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
+        return 404, None
+    if is_hidden_private(fleet) and not private_fleet_visible_to(
+        request.user, fleet
+    ):
         return 404, None
     if not _fleet_authorized(request, fleet):
         if fleet_hidden_from(request.user, fleet):
@@ -72,8 +84,32 @@ def get_fleet(request, fleet_id: int):
         "aar_forum_url": aars_forum_url(),
         "can_copy": can_copy_fleet(request.user, fleet),
         **fleet_host_fields(fleet),
+        **private_fleet_fields(request.user, fleet),
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
 
     return EveFleetDetailResponse(**payload)
+
+
+def private_fleet_fields(user, fleet) -> dict:
+    """The viewer's invite, the Invites tab and the thread link. Opening the
+    page as an invitee is recorded for the leak trace."""
+    if not fleet.invite_only:
+        return {}
+    # pylint: disable=import-outside-toplevel
+    from fleets.endpoints.private.invites import can_manage_invites
+
+    invite = user_invite(fleet, user)
+    if invite is not None:
+        record_page_view(fleet, user)
+    manages = can_manage_invites(user, fleet)
+    in_thread = manages or (invite is not None and invite.answer == "in")
+    return {
+        "invite_only": True,
+        "declassified_at": fleet.declassified_at,
+        "my_invite_answer": invite.answer if invite else None,
+        "my_invite_wave": invite.wave.number if invite else None,
+        "can_manage_invites": manages,
+        "discord_thread_url": thread_url(fleet) if in_thread else None,
+    }

@@ -91,6 +91,12 @@ describe('fetch_fleet_by_id', () => {
             open_to_alliance: false,
             on_schedule: false,
             can_copy: false,
+            invite_only: false,
+            declassified_at: null,
+            my_invite_answer: null,
+            my_invite_wave: null,
+            can_manage_invites: false,
+            discord_thread_url: null,
         })
         expect(get_campaign).toHaveBeenCalledWith('tama', 'token')
     })

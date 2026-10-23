@@ -88,6 +88,8 @@ import FleetParticipantsDone from '@components/blocks/FleetParticipantsDone.astr
 import FleetAfterAction from '@components/blocks/FleetAfterAction.astro';
 import FleetKillFeed from '@components/blocks/FleetKillFeed.astro';
 import FleetDoctrineFlown from '@components/blocks/FleetDoctrineFlown.astro';
+import FleetPrivateBanner from '@components/blocks/FleetPrivateBanner.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
 
 // A finished fleet with no kills or losses has no Fights tab.
 const show_fights = Boolean(fights && (fights.status === 'building' || fights.live || fights.rounds.length > 0))
@@ -117,6 +119,13 @@ const next_step = next_command_step(steps)
 const show_command = can_manage
 const default_tab = is_fleet_commander && !cancelled && next_step ? 'command' : 'overview'
 
+// A private fleet: the opsec banner until it's declassified, and the Invites
+// tab for its FC and Strategic FCs (docs/fleets/private-fleets.md).
+const still_private = Boolean(fleet.invite_only && !fleet.declassified_at)
+const show_invites = Boolean(fleet.invite_only && fleet.can_manage_invites)
+const invites_tab = show_invites ? [{ id: 'invites', label: t('fleets.tabs.invites') }] : []
+const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?fleet_id=${fleet.id}`
+
 const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.logi_fc'), cynos: t('fleets.after.cyno') }) : null
 const show_in_fleet = is_fleet_commander
 
@@ -142,6 +151,7 @@ const fleet_tabs = [
         label: t('fleets.tabs.command'),
         ...(cancelled ? {} : next_step ? { meta: next_step.label, flag: 'attention' as const } : { meta: t('fleets.tabs.all_set') }),
     }] : []),
+    ...invites_tab,
     // Edit, who sees names, MOTD and cancel: easy to find on their own tab.
     ...(show_command ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
 ]
@@ -159,6 +169,7 @@ const participant_tabs = [
 // A finished fleet: Overview, what it flew, who flew, every killmail, and the
 // after action report last.
 const show_kills = Boolean(fleet_kills?.tracked && fleet_kills.killmails.length > 0)
+const show_history_settings = Boolean(fleet.can_copy) || (still_private && show_invites)
 const show_history_ships = has_ships || Boolean(fleet.doctrine) || (participants?.doctrine_flown?.length ?? 0) > 0
 const history_tabs = [
     { id: 'overview', label: t('fleets.tabs.overview') },
@@ -170,8 +181,9 @@ const history_tabs = [
     ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.pilots_meta').replace('{count}', participants.people.toString()) }] : []),
     ...(show_kills && fleet_kills ? [{ id: 'kills', label: t('fleets.tabs.kills'), meta: t('fleets.tabs.kills_meta').replace('{count}', fleet_kills.killmails.length.toString()) }] : []),
     { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
-    // Run it again: the only setting a finished fleet has left.
-    ...(fleet.can_copy ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
+    ...invites_tab,
+    // Run it again, or declassify a private fleet.
+    ...(show_history_settings ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
 ]
 
 // Old links (Discord, the hub) still open the right tab.
@@ -182,6 +194,10 @@ const tab_aliases = {
 }
 
 import { query_string } from '@helpers/string'
+const TARGETS_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({
+    fleet_id: fleet.id,
+    can_manage: Boolean(can_manage && !cancelled),
+})}`
 const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
     fleet_id: fleet.id,
     ...(can_manage && { can_manage: true }),
@@ -207,6 +223,8 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
         fleet_count={fleet_commander_metrics?.fleet_count}
         members_count={participants ? participants.people : fleet_metrics?.members}
     />
+
+    {still_private && <FleetPrivateBanner fleet={fleet} />}
 
     {history &&
         <SectionTabs
@@ -303,7 +321,15 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                 </Wrapper>
             </SectionTabPanel>
 
-            {fleet.can_copy &&
+            {show_invites &&
+                <SectionTabPanel id="invites" id_prefix="fleet">
+                    <LazyPartial url={INVITES_URL} trigger="reveal">
+                        <p class="[ loading ]">{t('fleets.tabs.invites')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            {show_history_settings &&
                 <SectionTabPanel id="settings" id_prefix="fleet">
                     <FleetSettings fleet={fleet} />
                 </SectionTabPanel>
@@ -337,6 +363,8 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                     max_width='var(--max-col-width)'
                 >
                     <BlockList gap="var(--space-xl)">
+                        <LazyPartial url={TARGETS_URL} trigger="reveal" indicator={false} />
+
                         {show_my_pilots &&
                             <div
                                 id="fleet-ships-picker"
@@ -474,6 +502,14 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                         steps={steps}
                         is_fleet_commander={is_fleet_commander}
                     />
+                </SectionTabPanel>
+            }
+
+            {show_invites &&
+                <SectionTabPanel id="invites" id_prefix="fleet">
+                    <LazyPartial url={INVITES_URL} trigger="reveal">
+                        <p class="[ loading ]">{t('fleets.tabs.invites')}</p>
+                    </LazyPartial>
                 </SectionTabPanel>
             }
 

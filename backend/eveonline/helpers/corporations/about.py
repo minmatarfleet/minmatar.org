@@ -30,9 +30,14 @@ from eveonline.models import (
     EveCharacterKillmailAttacker,
     EveCorporation,
 )
+
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
+from fleets.helpers.private_visibility import private_hidden_q
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from tribes.models import TribeGroupMembership
+
+# Private fleets stay out of corp pages until declassified.
+_FLEET = "eve_fleet_instance__eve_fleet__"
 
 WEEKS = 13
 RECORD_DAYS = 365
@@ -76,7 +81,9 @@ def corporation_about(
         EveFleetInstanceMember.objects.filter(
             character_id__in=list(owners),
             join_time__gte=record_cutoff,
-        ).values_list(
+        )
+        .exclude(private_hidden_q(_FLEET))
+        .values_list(
             "character_id",
             "join_time",
             "eve_fleet_instance_id",
@@ -119,11 +126,18 @@ def member_facts(
     )
     recent: dict[int, set] = defaultdict(set)
     hulls: dict[int, Counter] = defaultdict(Counter)
-    rows = EveFleetInstanceMember.objects.filter(
-        character_id__in=ids,
-        join_time__gte=min(week_start, cutoff),
-    ).values_list(
-        "character_id", "join_time", "eve_fleet_instance_id", "ship_type_id"
+    rows = (
+        EveFleetInstanceMember.objects.filter(
+            character_id__in=ids,
+            join_time__gte=min(week_start, cutoff),
+        )
+        .exclude(private_hidden_q(_FLEET))
+        .values_list(
+            "character_id",
+            "join_time",
+            "eve_fleet_instance_id",
+            "ship_type_id",
+        )
     )
     for character_id, join_time, instance_id, ship_type_id in rows:
         if join_time is None:
@@ -359,9 +373,11 @@ def _leaderboards(characters, owners, mains, now) -> dict:
     """All-time fleets flown, kills and fleets led by the corp's current
     pilots. Attackers are read without joining killmail rows (see kills)."""
     ids = [c.character_id for c in characters]
-    attended = EveFleetInstanceMember.objects.filter(
-        character_id__in=ids
-    ).values_list("character_id", "eve_fleet_instance_id")
+    attended = (
+        EveFleetInstanceMember.objects.filter(character_id__in=ids)
+        .exclude(private_hidden_q(_FLEET))
+        .values_list("character_id", "eve_fleet_instance_id")
+    )
     fleets: dict[int, set] = defaultdict(set)
     for character_id, instance_id in attended:
         fleets[owners[character_id]].add(instance_id)

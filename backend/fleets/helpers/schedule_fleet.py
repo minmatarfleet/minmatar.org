@@ -57,6 +57,11 @@ def group_fleet_error(
 def create_scheduled_fleet(
     *, user: User, payload: CreateEveFleetRequest
 ) -> EveFleet | tuple[int, dict]:
+    invite_only = bool(getattr(payload, "invite_only", False))
+    if invite_only:
+        error = private_fleet_error(user, payload)
+        if error:
+            return error
     if getattr(payload, "host_group_id", None):
         return create_group_fleet(user=user, payload=payload)
 
@@ -86,6 +91,7 @@ def create_scheduled_fleet(
         hide_volunteers=payload.hide_volunteers,
         status="pending",
         campaign=campaign,
+        invite_only=invite_only,
     )
 
     if payload.doctrine_id:
@@ -97,7 +103,8 @@ def create_scheduled_fleet(
     if not fleet.audience.add_to_schedule:
         immediate_ping = True
 
-    if immediate_ping:
+    # A private fleet never pings its audience before it starts.
+    if immediate_ping and not invite_only:
         send_discord_pre_ping(fleet)
 
     return fleet
@@ -146,6 +153,27 @@ def create_group_fleet(
         status="pending",
         campaign=campaign,
     )
+
+
+def private_fleet_error(user: User, payload) -> tuple[int, dict] | None:
+    """A private fleet is an alliance fleet a Strategic FC creates, with no
+    campaign (campaign pages are public)."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.endpoints.helpers import is_strategic_fc
+
+    if not (user.is_superuser or is_strategic_fc(user)):
+        return 403, ErrorResponse.new(
+            "Only Strategic FCs can create private fleets"
+        )
+    if getattr(payload, "host_group_id", None):
+        return 400, ErrorResponse.new(
+            "A tribe group fleet can't be invite only"
+        )
+    if getattr(payload, "campaign_id", None):
+        return 400, ErrorResponse.new(
+            "A private fleet can't count towards a campaign"
+        )
+    return None
 
 
 def resolve_campaign(campaign_id):

@@ -179,3 +179,24 @@ export async function get_ship_hulls():Promise<ShipHull[]> {
         .filter(row => row.typeName)
         .map(row => ({ type_id: row.typeId, name: row.typeName as string }))
 }
+
+/** Every published ship group (Dreadnought, Logistics...), by name: a ship
+ * target line can count a whole group. */
+export async function get_ship_groups():Promise<ShipHull[]> {
+    const q = await sde_db.select({
+        groupId: schema.invGroups.groupId,
+        groupName: schema.invGroups.groupName,
+    })
+    .from(schema.invGroups)
+    .where(
+        and(
+            eq(schema.invGroups.categoryId, 6),
+            eq(schema.invGroups.published, '1'),
+        )
+    )
+    .orderBy(schema.invGroups.groupName)
+
+    return q
+        .filter(row => row.groupName)
+        .map(row => ({ type_id: row.groupId, name: row.groupName as string }))
+}

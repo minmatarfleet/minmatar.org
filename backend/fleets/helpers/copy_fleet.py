@@ -27,6 +27,7 @@ from fleets.models import (
     EveFleet,
     EveFleetFitting,
     EveFleetFittingRefit,
+    EveFleetShipTarget,
 )
 
 # Keys of ``not_copied``: the website names each one.
@@ -147,6 +148,8 @@ def _copy_request(
         host_group_id=fleet.host_group_id,
         open_to_alliance=open_to_alliance,
         on_schedule=open_to_alliance and bool(fleet.on_schedule),
+        # Invites are never copied: the new fleet starts with nobody asked.
+        invite_only=bool(fleet.invite_only),
     )
 
 
@@ -186,6 +189,19 @@ def copy_fleet_ships(source: EveFleet, copy: EveFleet) -> int:
             notes=refit.notes,
             eft_format=refit.eft_format,
         )
+    EveFleetShipTarget.objects.bulk_create(
+        [
+            EveFleetShipTarget(
+                eve_fleet=copy,
+                name=target.name,
+                target=target.target,
+                order=target.order,
+                ship_type_ids=list(target.ship_type_ids or []),
+                group_ids=list(target.group_ids or []),
+            )
+            for target in EveFleetShipTarget.objects.filter(eve_fleet=source)
+        ]
+    )
     return len(new_ids)
 
 

@@ -114,6 +114,14 @@ class EveFleet(models.Model):
         help_text="Counts this fleet towards a Faction Warfare campaign.",
     )
 
+    # A private fleet: only invited pilots, its FC and Strategic FCs know it
+    # exists until it is declassified. See docs/fleets/private-fleets.md.
+    invite_only = models.BooleanField(default=False)
+    declassified_at = models.DateTimeField(null=True, blank=True)
+    # The private coordination thread under the audience's channel.
+    discord_thread_id = models.BigIntegerField(null=True, blank=True)
+    discord_summary_message_id = models.BigIntegerField(null=True, blank=True)
+
     # Link to After Action Report in Discord
     # e.g. https://discord.com/channels/1041384161505722368/1398825964225695945
     aar_link = models.CharField(max_length=120, null=True)
@@ -215,6 +223,28 @@ class EveFleet(models.Model):
         Send the start ping to the audience's Discord channel (a group
         fleet: the group's channel), if configured.
         """
+        if self.invite_only:
+            # A private fleet pings its own thread, never the audience.
+            # pylint: disable=import-outside-toplevel
+            from discord.outbox import on_commit_enqueue
+            from fleets.tasks import (
+                post_private_fleet_start_ping,
+                update_private_fleet_dms,
+            )
+
+            on_commit_enqueue(
+                post_private_fleet_start_ping,
+                (self.id,),
+                context=f"fleet {self.id} private start ping",
+            )
+            # After start() marks the fleet active, so the DMs say started.
+            on_commit_enqueue(
+                update_private_fleet_dms,
+                (self.id,),
+                context=f"fleet {self.id} private DMs",
+                countdown=30,
+            )
+            return
         if not self.host_group_id and (
             not self.audience or not self.audience.discord_channel_id
         ):
@@ -1147,6 +1177,16 @@ def _motd_role_volunteers(eve_fleet):
 
 def close_fleet_cleanup(eve_fleet) -> None:
     """Housekeeping when a fleet ends: drop the in-game fittings we saved."""
+    if eve_fleet.invite_only:
+        # pylint: disable=import-outside-toplevel
+        from discord.outbox import on_commit_enqueue
+        from fleets.tasks import close_private_fleet_thread
+
+        on_commit_enqueue(
+            close_private_fleet_thread,
+            (eve_fleet.id,),
+            context=f"fleet {eve_fleet.id} close thread",
+        )
     from fleets.helpers.esi_fittings import (  # pylint: disable=import-outside-toplevel
         cleanup_fleet_esi_fittings,
     )
@@ -1317,3 +1357,107 @@ class NpsiExternalEvent(models.Model):
 
     def __str__(self):
         return f"{self.summary} @ {self.start_time}"
+
+
+class EveFleetInviteWave(models.Model):
+    """One batch of private fleet invites the FC sent together."""
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="invite_waves"
+    )
+    number = models.PositiveSmallIntegerField()
+    sent_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    note = models.CharField(max_length=300, blank=True, default="")
+    # What the FC picked, kept so the Invites tab can label the wave.
+    tribe_group_ids = models.JSONField(default=list, blank=True)
+    corporation_ids = models.JSONField(default=list, blank=True)
+    user_ids = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Set when the paced sender has sent every DM in the wave.
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "number"],
+                name="fleets_invite_wave_unique_number",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} wave {self.number}"
+
+
+class EveFleetInvite(models.Model):
+    """A player invited to a private fleet, and their answer."""
+
+    ANSWER_PENDING = "pending"
+    ANSWER_IN = "in"
+    ANSWER_OUT = "out"
+    ANSWER_CHOICES = (
+        (ANSWER_PENDING, "No answer"),
+        (ANSWER_IN, "In"),
+        (ANSWER_OUT, "Sitting out"),
+    )
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="invites"
+    )
+    wave = models.ForeignKey(
+        EveFleetInviteWave, on_delete=models.CASCADE, related_name="invites"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="fleet_invites"
+    )
+    answer = models.CharField(
+        max_length=16, choices=ANSWER_CHOICES, default=ANSWER_PENDING
+    )
+    answered_at = models.DateTimeField(null=True, blank=True)
+    # The leak trace: when the pilot first opened the fleet page.
+    first_viewed_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    # None until the sender tries; False when the DM could not be sent.
+    dm_delivered = models.BooleanField(null=True, blank=True)
+    dm_channel_id = models.BigIntegerField(null=True, blank=True)
+    dm_message_id = models.BigIntegerField(null=True, blank=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
+    in_thread = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "wave", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "user"],
+                name="fleets_invite_unique_user",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} → {self.user_id} ({self.answer})"
+
+
+class EveFleetShipTarget(models.Model):
+    """
+    How many of a kind of ship the FC wants, e.g. 40 Dreads. A line counts
+    the hulls in ``ship_type_ids`` and every hull in an EVE group in
+    ``group_ids``; each signed-up character counts once per line.
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="ship_targets"
+    )
+    name = models.CharField(max_length=64)
+    target = models.PositiveSmallIntegerField()
+    order = models.PositiveSmallIntegerField(default=0)
+    ship_type_ids = models.JSONField(default=list, blank=True)
+    group_ids = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "order", "id"]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} {self.name} ×{self.target}"

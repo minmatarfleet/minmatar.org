@@ -1,0 +1,111 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetWavePreview } from '@helpers/api.minmatar.org/fleets'
+
+/** Who the New wave form's picks would reach, and its Send button. */
+interface Props {
+    preview:    FleetWavePreview | null;
+    error?:     string | false;
+}
+
+const {
+    preview,
+    error = false,
+} = Astro.props
+
+import Button from '@components/blocks/Button.astro'
+---
+
+{error && <small class="[ wave-preview__error ]" role="alert">{error}</small>}
+
+{!preview || preview.picked === 0 ?
+    <small>{t('fleets.private.wave_pick_first')}</small> :
+    <div class="[ wave-preview ]">
+        <p class="[ wave-preview__headline ]">
+            <b>{preview.new}</b>{` ${t('fleets.private.preview_dm')}`}
+        </p>
+        <dl class="[ wave-preview__rows ]">
+            <dt>{t('fleets.private.preview_picked')}</dt><dd>{preview.picked}</dd>
+            <dt>{t('fleets.private.preview_already')}</dt><dd>−{preview.already_invited}</dd>
+            {preview.no_discord > 0 &&
+                <Fragment>
+                    <dt class="[ is-pending ]">{t('fleets.private.preview_no_discord')}</dt>
+                    <dd class="[ is-pending ]">{preview.no_discord}</dd>
+                </Fragment>
+            }
+        </dl>
+        {preview.helps.length > 0 &&
+            <div class="[ wave-preview__helps ]">
+                <small>{t('fleets.private.preview_helps')}</small>
+                <ul>
+                    {preview.helps.map(help =>
+                        <li>
+                            <b>{help.name}</b>
+                            <small class="[ is-pending ]">{t('fleets.private.short').replace('{count}', help.short.toString())}</small>
+                            <span>{t('fleets.private.preview_own').replace('{count}', help.own.toString())}</span>
+                        </li>
+                    )}
+                </ul>
+            </div>
+        }
+        {preview.new > 0 &&
+            <Button type="submit" size="sm">
+                {t('fleets.private.wave_send').replace('{count}', preview.new.toString())}
+            </Button>
+        }
+    </div>
+}
+
+<style lang="scss">
+    .wave-preview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border-color);
+    }
+
+    .wave-preview__headline b {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    .wave-preview__rows {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-3xs) var(--space-m);
+        font-size: var(--step--1);
+
+        dd {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .wave-preview__helps ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: var(--space-2xs);
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-2xs) var(--space-xs);
+            border: 1px solid var(--hairline-medium);
+        }
+    }
+
+    .is-pending {
+        color: var(--fleet-yellow);
+    }
+
+    .wave-preview__error {
+        color: var(--fleet-red);
+    }
+</style>

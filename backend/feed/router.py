@@ -21,18 +21,22 @@ router = Router(tags=["Feed"])
 
 
 def members_only_fleet_ids(*, since: datetime) -> list[int]:
-    """Group fleets that aren't open to the alliance stay out of the public
-    feed; their kills still show on the fleet's own page for members."""
+    """Group fleets that aren't open to the alliance, and private fleets not
+    yet declassified, stay out of the public feed; their kills still show on
+    the fleet's own page for the people who can see it."""
     # Imported here: fleets imports feed helpers, so a module-level import
     # would close the loop.
     from fleets.models import (  # pylint: disable=import-outside-toplevel
         EveFleet,
     )
 
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_visibility import private_hidden_q
+
     return list(
         EveFleet.objects.filter(
-            host_group__isnull=False,
-            open_to_alliance=False,
+            Q(host_group__isnull=False, open_to_alliance=False)
+            | private_hidden_q(),
             start_time__gte=since - timedelta(days=2),
         ).values_list("id", flat=True)
     )

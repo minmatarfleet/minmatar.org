@@ -186,6 +186,9 @@ class DiscordBaseClient:
         return response
 
 
+# Discord channel type of a private thread.
+PRIVATE_THREAD = 12
+
 DISCORD_OAUTH_SCOPES = "identify guilds.join"
 DISCORD_OAUTH_SCOPES_URL = "identify%20guilds.join"
 
@@ -395,6 +398,37 @@ class DiscordClient(DiscordBaseClient):
                 "archived": True,
                 "locked": True,
             },
+        )
+
+    def create_private_thread(self, channel_id, name: str) -> dict:
+        """Create a private thread in a text channel that only the bot can
+        add people to (invitable false)."""
+        return self.post(
+            f"{BASE_URL}/channels/{channel_id}/threads",
+            json={
+                "name": (name or "")[:100],
+                "type": PRIVATE_THREAD,
+                "invitable": False,
+                "auto_archive_duration": 10080,
+            },
+        ).json()
+
+    def add_thread_member(self, thread_id, discord_user_id):
+        """Add a user to a thread."""
+        return self.put(
+            f"{BASE_URL}/channels/{thread_id}/thread-members/{discord_user_id}",
+        )
+
+    def remove_thread_member(self, thread_id, discord_user_id):
+        """Remove a user from a thread (a missing member is not an error)."""
+        return self.delete(
+            f"{BASE_URL}/channels/{thread_id}/thread-members/{discord_user_id}",
+        )
+
+    def pin_message(self, channel_id, message_id):
+        """Pin a message in a channel or thread."""
+        return self.put(
+            f"{BASE_URL}/channels/{channel_id}/pins/{message_id}",
         )
 
     def get_active_threads(self):

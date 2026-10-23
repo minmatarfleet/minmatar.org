@@ -299,12 +299,23 @@ def _user_auth_group_ids(user) -> set[int]:
 
 
 def fleet_hidden_from(user, fleet) -> bool:
-    """True for a members-only tribe group fleet this user may not see.
+    """True for a members-only tribe group fleet, or a private fleet, this
+    user may not see.
 
     Checked before any fleet-scoped feature (fleets.view, srp.submit), so
     neither the RESOURCE_MATCH scope nor a legacy permission can reveal it.
     """
-    if fleet is None or not getattr(fleet, "host_group_id", None):
+    if fleet is None:
+        return False
+    if getattr(fleet, "invite_only", False):
+        # Imported here: fleets helpers import this module.
+        from fleets.helpers.private_visibility import (  # pylint: disable=import-outside-toplevel
+            private_fleet_visible_to,
+        )
+
+        if not private_fleet_visible_to(user, fleet):
+            return True
+    if not getattr(fleet, "host_group_id", None):
         return False
     # Imported here: tribes.helpers imports this module.
     from tribes.helpers.publishing import (  # pylint: disable=import-outside-toplevel

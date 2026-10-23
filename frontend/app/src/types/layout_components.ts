@@ -598,6 +598,16 @@ export interface FleetUI {
     on_schedule?:           boolean;
     /** The viewer may copy this fleet to a new date (from the API). */
     can_copy?:              boolean;
+    /** A private fleet (docs/fleets/private-fleets.md). */
+    invite_only?:           boolean;
+    declassified_at?:       string | null;
+    /** The viewer's invite: "pending", "in" or "out"; null if not invited. */
+    my_invite_answer?:      string | null;
+    my_invite_wave?:        number | null;
+    /** The FC and Strategic FCs see the Invites tab. */
+    can_manage_invites?:    boolean;
+    /** The private coordination thread, for pilots who are in and managers. */
+    discord_thread_url?:    string | null;
 }
 
 export interface Tracking {

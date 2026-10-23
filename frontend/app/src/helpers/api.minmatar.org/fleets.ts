@@ -15,6 +15,7 @@ import type {
     FleetPingPreviewRequest,
     RestrictedResponse,
     ApiResponse,
+    ApiRequest,
 } from '@dtypes/api.minmatar.org'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
@@ -751,5 +752,86 @@ export async function get_fleet_participants(access_token: string, fleet_id: num
     const query = engagement ? `?engagement=${engagement}` : ''
     return await api_request<FleetParticipants>(`${API_ENDPOINT}/${fleet_id}/participants${query}`, {
         token: access_token,
+    })
+}
+
+// Private fleets and ship targets (docs/fleets/private-fleets.md).
+
+export type FleetInvites = ApiResponse<'FleetInvitesResponse'>
+export type FleetInvitePilot = ApiResponse<'InvitePilot'>
+export type FleetInviteWave = ApiResponse<'InviteWave'>
+export type FleetWavePreview = ApiResponse<'WavePreviewResponse'>
+export type FleetWaveRequest = ApiRequest<'WaveRequest'>
+export type FleetInviteCandidate = ApiResponse<'InviteCandidate'>
+export type ShipTargetProgress = ApiResponse<'ShipTargetProgress'>
+export type ShipTargetLine = ApiRequest<'ShipTargetLine'>
+
+/** The FC's and Strategic FCs' view of a private fleet's invites. */
+export async function get_fleet_invites(access_token:string, fleet_id:number) {
+    return await api_request<FleetInvites>(`${API_ENDPOINT}/${fleet_id}/invites`, {
+        token: access_token,
+        error: 'Error fetching fleet invites',
+    })
+}
+
+/** Who a wave with these picks would reach. */
+export async function preview_fleet_wave(access_token:string, fleet_id:number, wave:FleetWaveRequest) {
+    return await api_request<FleetWavePreview>(`${API_ENDPOINT}/${fleet_id}/invites/preview`, {
+        method: 'POST',
+        token: access_token,
+        body: wave,
+    })
+}
+
+/** Invite the new players in these picks. Throws with the backend's reason. */
+export async function send_fleet_wave(access_token:string, fleet_id:number, wave:FleetWaveRequest) {
+    return await api_request<{ number: number, invited: number, will_dm: number }>(`${API_ENDPOINT}/${fleet_id}/invites/waves`, {
+        method: 'POST',
+        token: access_token,
+        body: wave,
+    })
+}
+
+/** DM everyone who hasn't answered once more; 429 while cooling down. */
+export async function reping_fleet_invites(access_token:string, fleet_id:number) {
+    return await api_request<{ pilots: number }>(`${API_ENDPOINT}/${fleet_id}/invites/reping`, {
+        method: 'POST',
+        token: access_token,
+    })
+}
+
+export async function get_fleet_invite_candidates(access_token:string, fleet_id:number, q:string) {
+    return await api_request<FleetInviteCandidate[]>(`${API_ENDPOINT}/${fleet_id}/invites/candidates?q=${encodeURIComponent(q)}`, {
+        token: access_token,
+    }) ?? []
+}
+
+/** Sit out a private fleet you were invited to. */
+export async function sit_out_fleet(access_token:string, fleet_id:number) {
+    return await api_request<{ invite_id: number, answer: string }>(`${API_ENDPOINT}/${fleet_id}/invites/me/out`, {
+        method: 'POST',
+        token: access_token,
+    })
+}
+
+export async function declassify_fleet(access_token:string, fleet_id:number) {
+    return await api_request<{ fleet_id: number, declassified_at: string }>(`${API_ENDPOINT}/${fleet_id}/declassify`, {
+        method: 'POST',
+        token: access_token,
+    })
+}
+
+export async function get_fleet_targets(access_token:string, fleet_id:number) {
+    return await api_request<ShipTargetProgress[]>(`${API_ENDPOINT}/${fleet_id}/targets`, {
+        token: access_token,
+    }) ?? []
+}
+
+/** Replace the fleet's ship targets. Throws with the backend's reason. */
+export async function put_fleet_targets(access_token:string, fleet_id:number, lines:ShipTargetLine[]) {
+    return await api_request<ShipTargetProgress[]>(`${API_ENDPOINT}/${fleet_id}/targets`, {
+        method: 'PUT',
+        token: access_token,
+        body: { lines },
     })
 }

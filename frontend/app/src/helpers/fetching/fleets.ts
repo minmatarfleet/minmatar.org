@@ -165,6 +165,12 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         open_to_alliance: fleet.open_to_alliance ?? false,
         on_schedule: fleet.on_schedule ?? false,
         can_copy: fleet.can_copy ?? false,
+        invite_only: fleet.invite_only ?? false,
+        declassified_at: fleet.declassified_at ?? null,
+        my_invite_answer: fleet.my_invite_answer ?? null,
+        my_invite_wave: fleet.my_invite_wave ?? null,
+        can_manage_invites: fleet.can_manage_invites ?? false,
+        discord_thread_url: fleet.discord_thread_url ?? null,
     } as FleetUI
 }
 

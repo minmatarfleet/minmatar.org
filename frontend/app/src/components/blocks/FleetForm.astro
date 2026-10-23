@@ -37,6 +37,8 @@ interface Props {
     on_schedule?:                   boolean;
     cancel_href?:                   string | null;
     ping_preview?:                  FleetPingPreviewUI | null;
+    /** Strategic FCs creating a fleet may make it invite only (docs/fleets/private-fleets.md). */
+    can_invite_only?:               boolean;
 }
 
 const {
@@ -60,6 +62,7 @@ const {
     on_schedule = false,
     cancel_href = null,
     ping_preview = null,
+    can_invite_only = false,
 } = Astro.props
 
 const audiences = Array.isArray(audiences_prop) ? audiences_prop : []
@@ -339,6 +342,31 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             />
                             <input type="hidden" name="host_tribe_id" value={initial_group?.tribe_id ?? ''} x-bind:value="group?.tribe_id ?? ''" />
                         </>}
+
+                        {can_invite_only &&
+                            <Flexblock
+                                gap="var(--space-xs)"
+                                x-data="{ invite_only: false }"
+                                {...(show_host_row ? { 'x-show': '!is_group', style: initial_is_group ? 'display: none' : undefined } : {})}
+                            >
+                                <SwitchSquare
+                                    class="[ w-full ]"
+                                    name="invite_only"
+                                    label={t('fleets.private.form_private')}
+                                    description={t('fleets.private.form_private_hint')}
+                                    x-on:change="invite_only = $event.target.checked"
+                                />
+                                <div class="[ fleet-private-changes ]" x-show="invite_only" x-cloak>
+                                    <b>{t('fleets.private.form_changes')}</b>
+                                    <ul>
+                                        <li>{t('fleets.private.form_change_lists')}</li>
+                                        <li>{t('fleets.private.form_change_waves')}</li>
+                                        <li>{t('fleets.private.form_change_thread')}</li>
+                                        <li>{t('fleets.private.form_change_after')}</li>
+                                    </ul>
+                                </div>
+                            </Flexblock>
+                        }
 
                         <Flexblock>
                             {show_audience_picker ?
@@ -745,6 +773,19 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 </div>
 
 <style lang="scss">
+    .fleet-private-changes {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--alliance-blue) 45%, transparent);
+
+        ul {
+            padding-left: var(--space-s);
+            list-style: disc;
+        }
+    }
+
     .audiences{
         button:focus-visible {
             outline: none;
