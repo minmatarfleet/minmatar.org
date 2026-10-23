@@ -46,7 +46,7 @@ def fleet_schedule_dirty_on_save(sender, instance, **kwargs):
         )
         if old is not None:
             before = fleet_on_schedule_message(old)
-    instance._refresh_fleet_schedule = before or after
+    instance.schedule_refresh_needed = before or after
 
 
 @receiver(
@@ -55,10 +55,10 @@ def fleet_schedule_dirty_on_save(sender, instance, **kwargs):
     dispatch_uid="update_fleet_schedule_on_save",
 )
 def update_fleet_schedule_on_save(sender, instance, created, **kwargs):
-    # pre_save sets _refresh_fleet_schedule when both the old and new row are
+    # pre_save sets schedule_refresh_needed when both the old and new row are
     # known; fall back for direct calls (tests) and for creates that skipped it.
-    if hasattr(instance, "_refresh_fleet_schedule"):
-        should_refresh = bool(instance._refresh_fleet_schedule)
+    if hasattr(instance, "schedule_refresh_needed"):
+        should_refresh = bool(instance.schedule_refresh_needed)
     else:
         should_refresh = fleet_on_schedule_message(instance)
     if not should_refresh:
