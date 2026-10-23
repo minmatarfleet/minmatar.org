@@ -5,12 +5,20 @@ everyone when it is open to the alliance; otherwise only to the group's
 active members, the people who manage the group and its FC. Alliance
 metrics count only fleets anyone in the alliance could see.
 See docs/tribes/tribe-publishing.md.
+
+A private (invite-only) fleet is left out of every list and count until it
+is declassified, except for the people who may see it
+(fleets.helpers.private_visibility).
 """
 
 from __future__ import annotations
 
 from django.db.models import Q
 
+from fleets.helpers.private_visibility import (
+    listed_private_q,
+    private_hidden_q,
+)
 from tribes.helpers.publishing import visible_group_ids
 
 
@@ -25,8 +33,10 @@ def _is_strategic_fc(user) -> bool:
 
 
 def alliance_fleets_q() -> Q:
-    """Fleets that are not members-only group fleets."""
-    return Q(host_group__isnull=True) | Q(open_to_alliance=True)
+    """Fleets that are not members-only group fleets or private fleets."""
+    return (Q(host_group__isnull=True) | Q(open_to_alliance=True)) & ~(
+        private_hidden_q()
+    )
 
 
 def visible_fleets_q(user) -> Q:
@@ -39,7 +49,8 @@ def visible_fleets_q(user) -> Q:
     group_ids = visible_group_ids(user)
     if group_ids:
         q |= Q(host_group_id__in=group_ids)
-    return q | Q(created_by_id=user.pk)
+    q |= Q(created_by_id=user.pk)
+    return q | (private_hidden_q() & listed_private_q(user))
 
 
 def public_kills_allowed(fleet) -> bool:

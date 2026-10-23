@@ -27,6 +27,10 @@ from fleets.helpers.npsi_discord import (
     preping_custom_id,
     track_custom_id,
 )
+from fleets.helpers.private_fleet_discord import (
+    SIT_OUT_CUSTOM_ID_PREFIX,
+    sit_out_custom_id,
+)
 from industry.helpers.lp_buyback_discord_buttons import (
     ISK_SENT_CUSTOM_ID_PREFIX,
     LP_SENT_CUSTOM_ID_PREFIX,
@@ -80,6 +84,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (PREPING_CUSTOM_ID_PREFIX, self.bot.NPSI_PREPING_PREFIX),
             (TRACK_CUSTOM_ID_PREFIX, self.bot.NPSI_TRACK_PREFIX),
             (DECLINE_CUSTOM_ID_PREFIX, self.bot.TRIBE_INVITE_DECLINE_PREFIX),
+            (SIT_OUT_CUSTOM_ID_PREFIX, self.bot.FLEET_INVITE_OUT_PREFIX),
         ]
         for backend, bot in pairs:
             self.assertEqual(backend, bot)
@@ -95,6 +100,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (preping_custom_id, self.bot.NPSI_PREPING_TEMPLATE),
             (track_custom_id, self.bot.NPSI_TRACK_TEMPLATE),
             (decline_custom_id, self.bot.TRIBE_INVITE_DECLINE_TEMPLATE),
+            (sit_out_custom_id, self.bot.FLEET_INVITE_OUT_TEMPLATE),
         ]
         for build, template in pairs:
             built = build(1234567890123)

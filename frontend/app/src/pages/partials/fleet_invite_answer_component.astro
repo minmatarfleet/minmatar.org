@@ -1,0 +1,48 @@
+---
+// no-error-refetch: Sitting out; a failure shows on the banner it swaps back.
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (!fleet_id || Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+import { sit_out_fleet } from '@helpers/api.minmatar.org/fleets'
+import { fetch_fleet_access } from '@helpers/fetching/fleets'
+import type { FleetUI } from '@dtypes/layout_components'
+
+// Sitting out clears the pilot's ships, so the whole page reloads.
+let error:string | false = false
+try {
+    await sit_out_fleet(auth_token as string, fleet_id)
+    return new Response(null, {
+        status: 200,
+        headers: { 'HX-Redirect': translatePath(`/fleets/upcoming/${fleet_id}`) },
+    })
+} catch (e) {
+    error = e.message
+}
+
+let fleet:FleetUI | null = null
+try {
+    fleet = (await fetch_fleet_access(auth_token as string, fleet_id)).fleet
+} catch (e) {
+    console.log(`Sit out: ${e.message}`)
+}
+
+if (!fleet)
+    return HTTP_404_Not_Found()
+
+import FleetPrivateBanner from '@components/blocks/FleetPrivateBanner.astro'
+---
+
+<FleetPrivateBanner fleet={fleet} error={error} />

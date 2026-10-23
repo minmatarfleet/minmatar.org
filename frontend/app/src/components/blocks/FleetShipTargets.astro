@@ -1,0 +1,261 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ShipTargetProgress } from '@helpers/api.minmatar.org/fleets'
+import type { ShipHull } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string'
+
+/**
+ * Ship targets on the Ships tab: how many of each kind of ship the FC wants
+ * (40 Dreads, 20 Logistics...) and how many characters have signed up for
+ * each line. Managers edit the lines; a hull or EVE group counts on one line.
+ * Rendered and saved by partials/fleet_ship_targets_component.
+ */
+interface Props {
+    fleet_id:       number;
+    targets:        ShipTargetProgress[];
+    hulls:          ShipHull[];
+    groups:         ShipHull[];
+    can_manage:     boolean;
+    saved?:         boolean;
+    error?:         string | false;
+}
+
+const {
+    fleet_id,
+    targets,
+    hulls,
+    groups,
+    can_manage,
+    saved = false,
+    error = false,
+} = Astro.props
+
+const hull_names = new Map(hulls.map(hull => [hull.type_id, hull.name]))
+const group_names = new Map(groups.map(group => [group.type_id, group.name]))
+const counts_text = (target:ShipTargetProgress) => [
+    ...target.group_ids.map(id => group_names.get(id) ?? `#${id}`),
+    ...target.ship_type_ids.map(id => hull_names.get(id) ?? `#${id}`),
+].join(', ')
+
+// Two blank lines to add more; a blank line is dropped on save.
+const rows = [
+    ...targets.map(target => ({ name: target.name, target: target.target, hulls: counts_text(target), progress: target })),
+    ...[0, 1].map(() => ({ name: '', target: '', hulls: '', progress: null })),
+]
+
+const SAVE_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({ fleet_id, can_manage })}`
+const LIST_ID = `fleet-${fleet_id}-target-hulls`
+---
+
+{(can_manage || targets.length > 0) &&
+    <section id="fleet-ship-targets" class="[ ship-targets ]" aria-labelledby="ship-targets-title">
+        <header>
+            <h2 id="ship-targets-title">{t('fleets.targets.title')}</h2>
+            <small>{t('fleets.targets.hint')}</small>
+        </header>
+
+        {can_manage ?
+            <form
+                hx-post={SAVE_URL}
+                hx-target="#fleet-ship-targets"
+                hx-swap="outerHTML"
+            >
+                <datalist id={LIST_ID}>
+                    {groups.map(group => <option value={group.name} />)}
+                    {hulls.map(hull => <option value={hull.name} />)}
+                </datalist>
+                <div class="[ ship-targets__grid ]" role="table">
+                    <div class="[ ship-targets__head ]" role="row">
+                        <span role="columnheader">{t('fleets.targets.col_line')}</span>
+                        <span role="columnheader">{t('fleets.targets.col_target')}</span>
+                        <span role="columnheader">{t('fleets.targets.col_hulls')}</span>
+                        <span role="columnheader">{t('fleets.targets.col_signed')}</span>
+                    </div>
+                    {rows.map((row, index) =>
+                        <div class="[ ship-targets__row ]" role="row">
+                            <label>
+                                <span class="[ visually-hidden ]">{t('fleets.targets.col_line')}</span>
+                                <input type="text" name={`name_${index}`} value={row.name} maxlength="64" />
+                            </label>
+                            <label>
+                                <span class="[ visually-hidden ]">{t('fleets.targets.col_target')}</span>
+                                <input type="number" name={`target_${index}`} value={row.target} min="1" max="999" />
+                            </label>
+                            <label>
+                                <span class="[ visually-hidden ]">{t('fleets.targets.col_hulls')}</span>
+                                <input
+                                    type="text"
+                                    name={`hulls_${index}`}
+                                    value={row.hulls}
+                                    list={LIST_ID}
+                                    placeholder={t('fleets.targets.hulls_placeholder')}
+                                />
+                            </label>
+                            <span class="[ ship-targets__progress ]">
+                                {row.progress &&
+                                    <Fragment>
+                                        <span>
+                                            <b>{row.progress.have}</b> / {row.progress.target}
+                                            {row.progress.short > 0 && <small class="[ is-short ]"> · {t('fleets.private.short').replace('{count}', row.progress.short.toString())}</small>}
+                                        </span>
+                                        <span class="[ ship-targets__bar ]" aria-hidden="true">
+                                            <span style={`width: ${Math.min(100, Math.round(100 * row.progress.have / Math.max(row.progress.target, 1)))}%`}></span>
+                                        </span>
+                                    </Fragment>
+                                }
+                            </span>
+                        </div>
+                    )}
+                </div>
+                <input type="hidden" name="rows" value={rows.length} />
+                <div class="[ ship-targets__actions ]">
+                    <button type="submit" class="[ ship-targets__save ]">{t('fleets.targets.save')}</button>
+                    {saved && <small role="status">{t('fleets.targets.saved')}</small>}
+                    {error && <small class="[ is-error ]" role="alert">{error}</small>}
+                    <small>{t('fleets.targets.empty_hint')}</small>
+                </div>
+            </form>
+            :
+            <ul class="[ ship-targets__list ]">
+                {targets.map(target =>
+                    <li>
+                        <span><b>{target.name}</b> {t('fleets.targets.signed_up').replace('{have}', target.have.toString()).replace('{target}', target.target.toString())}</span>
+                        <span class="[ ship-targets__bar ]" aria-hidden="true">
+                            <span style={`width: ${Math.min(100, Math.round(100 * target.have / Math.max(target.target, 1)))}%`}></span>
+                        </span>
+                    </li>
+                )}
+            </ul>
+        }
+    </section>
+}
+
+<style lang="scss">
+    .ship-targets {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        h2 {
+            font-size: var(--step-1);
+        }
+    }
+
+    .ship-targets__grid {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ship-targets__head,
+    .ship-targets__row {
+        display: grid;
+        grid-template-columns: minmax(8rem, 1fr) 5rem minmax(12rem, 2fr) minmax(9rem, 1fr);
+        gap: var(--space-xs);
+        align-items: center;
+        padding: var(--space-2xs) 0;
+    }
+
+    .ship-targets__head {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .ship-targets__row {
+        border-bottom: 1px solid var(--hairline);
+
+        input {
+            width: 100%;
+            padding: var(--space-3xs) var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--border-color);
+            color: var(--highlight);
+            font: inherit;
+        }
+
+        input[type="number"] {
+            text-align: right;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .ship-targets__head {
+            display: none;
+        }
+
+        .ship-targets__row {
+            grid-template-columns: minmax(0, 1fr) 5rem;
+        }
+    }
+
+    .ship-targets__progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ship-targets__bar {
+        display: block;
+        height: var(--space-3xs);
+        background-color: var(--hairline-medium);
+
+        span {
+            display: block;
+            height: 100%;
+            background-color: var(--highlight);
+        }
+    }
+
+    .ship-targets__list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: var(--space-s);
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .ship-targets__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+        margin-top: var(--space-s);
+    }
+
+    .ship-targets__save {
+        min-height: 2.5rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .is-short {
+        color: var(--fleet-yellow);
+    }
+
+    .is-error {
+        color: var(--fleet-red);
+    }
+</style>

@@ -79,6 +79,16 @@ class EveFleetDetailResponse(EveFleetResponse):
 
     # The viewer may copy this fleet to a new date (POST /{id}/copy).
     can_copy: bool = False
+    # A private fleet (docs/fleets/private-fleets.md).
+    invite_only: bool = False
+    declassified_at: Optional[datetime] = None
+    # The viewer's own invite: "pending", "in" or "out"; null if not invited.
+    my_invite_answer: Optional[str] = None
+    my_invite_wave: Optional[int] = None
+    # The FC and Strategic FCs manage invites (the Invites tab).
+    can_manage_invites: bool = False
+    # The private coordination thread, for pilots who are in and managers.
+    discord_thread_url: Optional[str] = None
 
 
 class EveFleetCopyResponse(EveFleetResponse):
@@ -131,6 +141,9 @@ class CreateEveFleetRequest(BaseModel):
     host_group_id: Optional[int] = None
     open_to_alliance: bool = False
     on_schedule: bool = False
+    # A private fleet: off the schedule and every list; Strategic FCs only.
+    # docs/fleets/private-fleets.md.
+    invite_only: bool = False
 
 
 class CopyEveFleetRequest(BaseModel):

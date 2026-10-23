@@ -1,0 +1,89 @@
+---
+// no-error-refetch: search-as-you-type; a failed search shows no matches and the next keystroke retries.
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const q = (Astro.url.searchParams.get('q') ?? '').trim()
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import { get_fleet_invite_candidates, type FleetInviteCandidate } from '@helpers/api.minmatar.org/fleets'
+
+let candidates:FleetInviteCandidate[] = []
+if (q.length >= 2) {
+    try {
+        candidates = await get_fleet_invite_candidates(auth_token as string, fleet_id, q)
+    } catch (e) {
+        console.log(`Invite candidates: ${e.message}`)
+    }
+}
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+{q.length >= 2 && (candidates.length === 0 ?
+    <EmptyState title={t('fleets.private.no_results')} /> :
+    <ul class="[ invite-candidates ]">
+        {candidates.map(candidate =>
+            <li>
+                <button
+                    type="button"
+                    x-on:click={`$dispatch('pick-candidate', ${JSON.stringify({ kind: candidate.kind, id: candidate.id, name: candidate.name })})`}
+                >
+                    <b>{candidate.name}</b>
+                    <small>{t(t_key('fleets.private.kind_', candidate.kind))} · {candidate.detail}</small>
+                </button>
+            </li>
+        )}
+    </ul>
+)}
+
+<style lang="scss">
+    .invite-candidates {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--border-color);
+
+        li + li {
+            border-top: 1px solid var(--hairline);
+        }
+
+        button {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            gap: var(--space-s);
+            padding: var(--space-2xs) var(--space-xs);
+            background: transparent;
+            border: 0;
+            color: var(--foreground);
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--hairline);
+            }
+        }
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+</style>

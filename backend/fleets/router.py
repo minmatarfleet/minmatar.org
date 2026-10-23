@@ -15,6 +15,7 @@ from fleets.endpoints.catalog import _ROUTES as catalog_routes
 from fleets.endpoints.fleet import _ROUTES as fleet_routes
 from fleets.endpoints.metrics import _ROUTES as metrics_routes
 from fleets.endpoints.npsi import _ROUTES as npsi_routes
+from fleets.endpoints.private import _ROUTES as private_routes
 from fleets.endpoints.reference import _ROUTES as reference_routes
 
 router = Router(tags=["Fleets"])
@@ -25,6 +26,7 @@ for routes in (
     npsi_routes,
     metrics_routes,
     active_routes,
+    private_routes,
     fleet_routes,
 ):
     for method, path, spec, view in routes:

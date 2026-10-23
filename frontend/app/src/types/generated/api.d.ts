@@ -2078,6 +2078,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/invites/{invite_id}/discord-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Discord Out
+         * @description Sitting out from the invite DM's button (bot).
+         */
+        post: operations["fleets_endpoints_private_answers_post_invite_discord_out"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/metrics": {
         parameters: {
             query?: never;
@@ -2349,7 +2369,7 @@ export interface paths {
         };
         /**
          * Get Fleet
-         * @description Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group.
+         * @description Get fleet by ID. Requires fleets.view_evefleet. A members-only tribe group fleet the viewer can't see is a 403 naming the group. A private fleet the viewer wasn't invited to is a 404, as if it didn't exist.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_get_fleet"];
         put?: never;
@@ -2402,6 +2422,26 @@ export interface paths {
          * @description Schedule a new fleet at start_time with this fleet's settings: host, type, objective, briefing, staging, doctrine, campaign, the ships the FC added and their refits, hide names and MOTD. The caller becomes its FC; sign-ups start empty. Must manage the fleet and be able to schedule fleets for its host. A campaign that has ended by then, a staging that is no longer active and an open flag the group no longer allows are left off and listed in not_copied.
          */
         post: operations["fleets_endpoints_fleet_post_fleet_copy_copy_fleet_to_date"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/declassify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Declassify
+         * @description After a private fleet, its FC or a Strategic FC makes it a normal fleet: history, kills, battle report and metrics. Invites, answers and the thread stay private.
+         */
+        post: operations["fleets_endpoints_private_declassify_post_declassify"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2623,6 +2663,126 @@ export interface paths {
          * @description Remove a fleet fitting. Ship volunteers and refits attached to a manual fit are removed with it. Fleet commander only.
          */
         delete: operations["fleets_endpoints_fleet_delete_fleet_fitting_delete_fleet_fitting"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Invites
+         * @description A private fleet's invite waves and answers, for its FC and Strategic FCs. first_viewed_at (the leak trace) is null unless the caller is a Strategic FC.
+         */
+        get: operations["fleets_endpoints_private_invites_get_fleet_invites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Invite Candidates
+         * @description Tribe groups, corporations and pilots to invite.
+         */
+        get: operations["fleets_endpoints_private_invites_get_invite_candidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/me/out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post My Invite Out
+         * @description Sit out a private fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.
+         */
+        post: operations["fleets_endpoints_private_answers_post_my_invite_out"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Wave Preview
+         * @description Who a wave with these picks would reach.
+         */
+        post: operations["fleets_endpoints_private_invites_post_wave_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/reping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Reping
+         * @description DM everyone who hasn't answered once more. At most once every 15 minutes per fleet.
+         */
+        post: operations["fleets_endpoints_private_invites_post_reping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/waves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Wave
+         * @description Invite the new players in these picks. The DMs go out from a task at about one a second; one wave sends at a time.
+         */
+        post: operations["fleets_endpoints_private_invites_post_wave"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3033,6 +3193,30 @@ export interface paths {
          */
         get: operations["fleets_endpoints_fleet_get_fleet_supply_get_fleet_supply"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Targets
+         * @description The fleet's ship targets with how many characters signed up for each line.
+         */
+        get: operations["fleets_endpoints_private_targets_get_fleet_targets"];
+        /**
+         * Put Fleet Targets
+         * @description Replace the fleet's ship targets. A hull or EVE group can be on one line only.
+         */
+        put: operations["fleets_endpoints_private_targets_put_fleet_targets"];
         post?: never;
         delete?: never;
         options?: never;
@@ -10279,6 +10463,11 @@ export interface components {
              * @default false
              */
             immediate_ping?: boolean;
+            /**
+             * Invite Only
+             * @default false
+             */
+            invite_only?: boolean;
             /** Location Id */
             location_id?: number | null;
             /** Objective */
@@ -10686,6 +10875,13 @@ export interface components {
              */
             status: "confirmed" | "rejected";
         };
+        /** DeclassifiedResponse */
+        DeclassifiedResponse: {
+            /** Declassified At */
+            declassified_at: string;
+            /** Fleet Id */
+            fleet_id: number;
+        };
         /** DeleteStatus */
         DeleteStatus: {
             /** Deleted */
@@ -10751,6 +10947,11 @@ export interface components {
             fleet_id?: number | null;
             /** Status */
             status: string;
+        };
+        /** DiscordSitOutRequest */
+        DiscordSitOutRequest: {
+            /** Discord User Id */
+            discord_user_id: number;
         };
         /**
          * DiscordUserSchema
@@ -11117,6 +11318,13 @@ export interface components {
              * @default false
              */
             can_copy?: boolean;
+            /**
+             * Can Manage Invites
+             * @default false
+             */
+            can_manage_invites?: boolean;
+            /** Declassified At */
+            declassified_at?: string | null;
             /** Description */
             description: string;
             /**
@@ -11124,6 +11332,8 @@ export interface components {
              * @default false
              */
             disable_motd?: boolean;
+            /** Discord Thread Url */
+            discord_thread_url?: string | null;
             /** Doctrine Id */
             doctrine_id?: number | null;
             /** Doctrine Name */
@@ -11142,8 +11352,17 @@ export interface components {
             host_group?: components["schemas"]["HostGroupRef"] | null;
             /** Id */
             id: number;
+            /**
+             * Invite Only
+             * @default false
+             */
+            invite_only?: boolean;
             /** Location */
             location: string;
+            /** My Invite Answer */
+            my_invite_answer?: string | null;
+            /** My Invite Wave */
+            my_invite_wave?: number | null;
             /** Objective */
             objective?: string | null;
             /**
@@ -13188,6 +13407,26 @@ export interface components {
             /** Ships Lost */
             ships_lost: number;
         };
+        /** FleetInvitesResponse */
+        FleetInvitesResponse: {
+            /** Can See Leak Trace */
+            can_see_leak_trace: boolean;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Invites */
+            invites: components["schemas"]["InvitePilot"][];
+            /** Reping Available At */
+            reping_available_at?: string | null;
+            /** Sending */
+            sending: boolean;
+            /** Targets */
+            targets: components["schemas"]["ShipTargetProgress"][];
+            /** Thread Url */
+            thread_url?: string | null;
+            totals: components["schemas"]["InviteTotals"];
+            /** Waves */
+            waves: components["schemas"]["InviteWave"][];
+        };
         /** FleetParticipantsDoctrineHull */
         FleetParticipantsDoctrineHull: {
             /** Count */
@@ -14725,6 +14964,85 @@ export interface components {
             /** User Id */
             user_id: number;
         };
+        /** InviteCandidate */
+        InviteCandidate: {
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** InvitePilot */
+        InvitePilot: {
+            /** Answer */
+            answer: string;
+            /** Answered At */
+            answered_at?: string | null;
+            /** Character Id */
+            character_id?: number | null;
+            /** Character Name */
+            character_name: string;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /** Dm Delivered */
+            dm_delivered?: boolean | null;
+            /** First Viewed At */
+            first_viewed_at?: string | null;
+            /** Invite Id */
+            invite_id: number;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Ships */
+            ships: string[];
+            /** User Id */
+            user_id: number;
+            /** Wave */
+            wave: number;
+        };
+        /** InviteTotals */
+        InviteTotals: {
+            /** Answered In */
+            answered_in: number;
+            /** Answered Out */
+            answered_out: number;
+            /** Characters In */
+            characters_in: number;
+            /** Invited */
+            invited: number;
+            /** Pending */
+            pending: number;
+        };
+        /** InviteWave */
+        InviteWave: {
+            /** Answered In */
+            answered_in: number;
+            /** Answered Out */
+            answered_out: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Invited */
+            invited: number;
+            /** Labels */
+            labels: string[];
+            /** Note */
+            note: string;
+            /** Number */
+            number: number;
+            /** Pending */
+            pending: number;
+            /** Sent */
+            sent: number;
+            /** Sent By */
+            sent_by?: string | null;
+        };
         /** JitaCheckPollResponse */
         JitaCheckPollResponse: {
             check: components["schemas"]["FittingBuyJitaCheckSchema"];
@@ -16241,6 +16559,13 @@ export interface components {
              * @default 0
              */
             srp_owed?: number;
+        };
+        /** MyInviteResponse */
+        MyInviteResponse: {
+            /** Answer */
+            answer: string;
+            /** Invite Id */
+            invite_id: number;
         };
         /** MyPilotLocationResponse */
         MyPilotLocationResponse: {
@@ -18349,6 +18674,11 @@ export interface components {
             /** Ship */
             ship?: string;
         };
+        /** RepingResponse */
+        RepingResponse: {
+            /** Pilots */
+            pilots: number;
+        };
         /** ReportResponse */
         ReportResponse: {
             /**
@@ -18923,6 +19253,45 @@ export interface components {
             /** Ship Name */
             ship_name: string;
         };
+        /** ShipTargetLine */
+        ShipTargetLine: {
+            /**
+             * Group Ids
+             * @default []
+             */
+            group_ids?: number[];
+            /** Name */
+            name: string;
+            /**
+             * Ship Type Ids
+             * @default []
+             */
+            ship_type_ids?: number[];
+            /** Target */
+            target: number;
+        };
+        /** ShipTargetProgress */
+        ShipTargetProgress: {
+            /** Group Ids */
+            group_ids: number[];
+            /** Have */
+            have: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
+            /** Short */
+            short: number;
+            /** Target */
+            target: number;
+        };
+        /** ShipTargetsRequest */
+        ShipTargetsRequest: {
+            /** Lines */
+            lines?: components["schemas"]["ShipTargetLine"][];
+        };
         /** Signals30 */
         Signals30: {
             /**
@@ -19334,6 +19703,15 @@ export interface components {
             system_id: number;
             /** System Name */
             system_name: string;
+        };
+        /** TargetHelp */
+        TargetHelp: {
+            /** Name */
+            name: string;
+            /** Own */
+            own: number;
+            /** Short */
+            short: number;
         };
         /**
          * TestFleetCreationRequest
@@ -20639,6 +21017,53 @@ export interface components {
             system_id: number;
             /** System Name */
             system_name: string;
+        };
+        /** WavePreviewResponse */
+        WavePreviewResponse: {
+            /** Already Invited */
+            already_invited: number;
+            /** Helps */
+            helps: components["schemas"]["TargetHelp"][];
+            /** New */
+            new: number;
+            /** No Discord */
+            no_discord: number;
+            /** Picked */
+            picked: number;
+            /** Will Dm */
+            will_dm: number;
+        };
+        /** WaveRequest */
+        WaveRequest: {
+            /**
+             * Corporation Ids
+             * @default []
+             */
+            corporation_ids?: number[];
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
+             * Tribe Group Ids
+             * @default []
+             */
+            tribe_group_ids?: number[];
+            /**
+             * User Ids
+             * @default []
+             */
+            user_ids?: number[];
+        };
+        /** WaveSentResponse */
+        WaveSentResponse: {
+            /** Invited */
+            invited: number;
+            /** Number */
+            number: number;
+            /** Will Dm */
+            will_dm: number;
         };
         /** WaypointRequest */
         WaypointRequest: {
@@ -25623,6 +26048,59 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_private_answers_post_invite_discord_out: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSitOutRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyInviteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_metrics_get_fleet_metrics_get_fleet_metrics: {
         parameters: {
             query?: {
@@ -26343,6 +26821,44 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_private_declassify_post_declassify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclassifiedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     fleets_endpoints_fleet_get_fleet_fights_get_fleet_fights: {
         parameters: {
             query?: never;
@@ -26777,6 +27293,292 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_private_invites_get_fleet_invites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetInvitesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_invites_get_invite_candidates: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteCandidate"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_answers_post_my_invite_out: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyInviteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_invites_post_wave_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WavePreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_private_invites_post_reping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_private_invites_post_wave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaveSentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_fleet_get_fleet_kills_get_fleet_kills: {
         parameters: {
             query?: never;
@@ -27152,6 +27954,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -27683,6 +28494,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetSupplyResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_get_fleet_targets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipTargetProgress"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_put_fleet_targets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipTargetsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipTargetProgress"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */

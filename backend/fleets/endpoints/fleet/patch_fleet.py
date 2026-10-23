@@ -51,6 +51,9 @@ def _can_manage_group_fleet(request, fleet: EveFleet) -> bool:
 
 def _apply_host_group(request, fleet: EveFleet, payload):
     """Move the fleet into or out of a tribe group; None or an error."""
+    private_error = _private_fleet_error(fleet, payload)
+    if private_error:
+        return private_error
     if "host_group_id" not in payload.model_fields_set:
         return None
     if payload.host_group_id == fleet.host_group_id:
@@ -90,6 +93,18 @@ def _apply_group_flags(fleet: EveFleet, payload):
         return error
     fleet.audience = None
     fleet.on_schedule = fleet.open_to_alliance and fleet.on_schedule
+    return None
+
+
+def _private_fleet_error(fleet, payload):
+    """A private fleet stays an alliance fleet on no campaign."""
+    if fleet.invite_only and (
+        payload.host_group_id
+        or ("campaign_id" in payload.model_fields_set and payload.campaign_id)
+    ):
+        return 400, ErrorResponse(
+            detail="A private fleet can't be a group or campaign fleet"
+        )
     return None
 
 

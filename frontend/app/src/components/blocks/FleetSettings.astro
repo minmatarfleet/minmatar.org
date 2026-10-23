@@ -34,6 +34,12 @@ const STATE_URL = `${translatePath('/partials/fleet_state_button_component')}?${
 })}`
 const HIDE_NAMES_URL = `${translatePath('/partials/fleet_hide_names_component')}?${query_string({ fleet_id: fleet.id })}`
 
+// A private fleet stays private until its FC or a Strategic FC declassifies
+// it, once it's over (docs/fleets/private-fleets.md).
+const still_private = Boolean(fleet.invite_only && !fleet.declassified_at && fleet.can_manage_invites)
+const fleet_over = history || cancelled || new Date(fleet.start_time) < new Date()
+const DECLASSIFY_URL = `${translatePath('/partials/fleet_declassify_component')}?${query_string({ fleet_id: fleet.id })}`
+
 import Button from '@components/blocks/Button.astro'
 import FleetCopyButton from '@components/blocks/FleetCopyButton.astro'
 ---
@@ -99,6 +105,36 @@ import FleetCopyButton from '@components/blocks/FleetCopyButton.astro'
         </div>
         <div id="fleet-settings-sink" hidden></div>
     </section>
+
+    {still_private &&
+        <section class="[ fleet-settings__card ]" aria-labelledby="fleet-settings-private">
+            <h2 id="fleet-settings-private">{t('fleets.private.declassify_title')}</h2>
+            <small>{t('fleets.private.declassify_hint')}</small>
+            <p>{t('fleets.private.declassify_makes')}</p>
+            <p>{t('fleets.private.declassify_stays')}</p>
+            <div class="[ fleet-settings__actions ]">
+                {fleet_over ?
+                    <Button
+                        type="button"
+                        size="sm"
+                        x-on:click={`show_confirm_dialog({
+                            title: ${JSON.stringify(t('fleets.private.declassify_confirm_title'))},
+                            content: ${JSON.stringify(t('fleets.private.declassify_confirm_text'))},
+                            hx: {
+                                method: 'post',
+                                url: ${JSON.stringify(DECLASSIFY_URL)},
+                                target: '#fleet-settings-sink',
+                                swap: 'innerHTML'
+                            }
+                        })`}
+                    >
+                        {t('fleets.private.declassify')}
+                    </Button> :
+                    <small>{t('fleets.private.declassify_after')}</small>
+                }
+            </div>
+        </section>
+    }
 </div>
 
 <style lang="scss">

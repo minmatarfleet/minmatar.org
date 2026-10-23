@@ -46,6 +46,9 @@ SEND_DM_ALLOWLIST = {
     "reddit/scheduling.py": "slot status records whether the CEO was told",
     "tribes/helpers/external_guild.py": "OAuth join link and chief alerts",
     "fittings/helpers/notifications.py": "doctrine change digest (Celery)",
+    "fleets/helpers/private_fleet_discord.py": (
+        "private fleet invites: paced, edited once answered, never mutable"
+    ),
 }
 
 REQUEST_PATH_TOKENS = ("DiscordClient", ".send_dm(", ".create_message(")

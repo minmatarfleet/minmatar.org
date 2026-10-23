@@ -118,6 +118,11 @@ DISCORD_INDUSTRY_CHANNEL_ID = env_int(
 DISCORD_AARS_FORUM_CHANNEL_ID = env_int(
     "DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256
 )
+# Parent channel for private fleet threads. Unset: the fleet audience's
+# channel (#pings for the alliance audience).
+DISCORD_PRIVATE_FLEET_CHANNEL_ID = env_int(
+    "DISCORD_PRIVATE_FLEET_CHANNEL_ID", 0
+)
 
 # ESI
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")

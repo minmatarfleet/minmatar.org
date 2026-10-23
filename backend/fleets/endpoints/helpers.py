@@ -135,9 +135,10 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
     """Queue a Discord pre-ping for a fleet; a worker posts it.
 
     Returns False when the fleet has no audience channel to ping. Tribe
-    group fleets never pre-ping (docs/tribes/tribe-publishing.md rule 3).
+    group fleets never pre-ping (docs/tribes/tribe-publishing.md rule 3),
+    and nor do private fleets (docs/fleets/private-fleets.md).
     """
-    if fleet.host_group_id or not fleet.audience:
+    if fleet.host_group_id or fleet.invite_only or not fleet.audience:
         return False
     if not fleet.audience.discord_channel_id:
         logger.error(

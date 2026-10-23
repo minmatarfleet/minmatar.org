@@ -17,6 +17,8 @@ if (isNaN(fleet_id))
 import {
     get_fleet_composition,
     get_fleet_my_pilots,
+    get_fleet_targets,
+    type ShipTargetProgress,
     type FleetCompositionEntry,
     type MyFleetPilot,
 } from '@helpers/api.minmatar.org/fleets'
@@ -30,13 +32,16 @@ import type { ShipHull } from '@dtypes/layout_components'
 let composition: FleetCompositionEntry[] = []
 let pilots: MyFleetPilot[] = []
 let hulls: ShipHull[] = []
+let targets: ShipTargetProgress[] = []
 let fetch_error: Error | false = false
 
 try {
-    ;[composition, pilots, hulls] = await Promise.all([
+    ;[composition, pilots, hulls, targets] = await Promise.all([
         get_fleet_composition(auth_token as string, fleet_id),
         get_fleet_my_pilots(auth_token as string, fleet_id),
         get_ship_hulls(),
+        // Ship targets the fleet is still short of; never blocks the picker.
+        get_fleet_targets(auth_token as string, fleet_id).catch(() => []),
     ])
 } catch (error) {
     fetch_error = error
@@ -74,6 +79,7 @@ const off_doctrine_hull = (pilot:MyFleetPilot) => {
 }
 
 const has_suggestions = pilots.some(pilot => pilot.suggestion)
+const still_needed = targets.filter(target => target.short > 0)
 
 const suggested_label = (pilot:MyFleetPilot) => {
     const { ship_name, fleets } = pilot.suggestion!
@@ -139,6 +145,14 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                 <h3 class="[ pick-ships__title ]">{t('pick_ships_title')}</h3>
                 <small>{t(has_suggestions ? 'pick_ships_suggested_subtitle' : 'pick_ships_subtitle')}</small>
             </Flexblock>
+
+            {still_needed.length > 0 &&
+                <p class="[ pick-ships__needed ]">
+                    <b>{t('fleets.targets.still_needed')}</b>
+                    {still_needed.map(target => <span><b>{target.short}</b> {target.name}</span>)}
+                    <small>{t('fleets.targets.still_needed_hint')}</small>
+                </p>
+            }
 
             {composition.length === 0 ?
                 <p>{t('fleet_ships_empty')}</p>
@@ -257,6 +271,23 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 }
 
 <style lang="scss">
+    .pick-ships__needed {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-3xs) var(--space-s);
+        padding: var(--space-2xs) var(--space-xs);
+        border: 1px solid var(--border-color);
+
+        span b {
+            color: var(--fleet-yellow);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
     [x-cloak] {
         display: none !important;
     }

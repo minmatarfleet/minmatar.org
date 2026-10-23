@@ -1,0 +1,83 @@
+---
+// no-error-refetch: a form; a failed save shows inline, and a failed load shows the empty editor.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const can_manage = Astro.url.searchParams.get('can_manage') === 'true'
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import {
+    get_fleet_targets,
+    put_fleet_targets,
+    type ShipTargetLine,
+    type ShipTargetProgress,
+} from '@helpers/api.minmatar.org/fleets'
+import { get_ship_groups, get_ship_hulls } from '@helpers/sde/ships'
+
+const [hulls, groups] = await Promise.all([get_ship_hulls(), get_ship_groups()])
+const hull_ids = new Map(hulls.map(hull => [hull.name.toLowerCase(), hull.type_id]))
+const group_ids = new Map(groups.map(group => [group.name.toLowerCase(), group.type_id]))
+
+let targets:ShipTargetProgress[] = []
+let saved = false
+let error:string | false = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const count = parseInt((form.get('rows') as string) ?? '0') || 0
+    const lines:ShipTargetLine[] = []
+    for (let index = 0; index < count; index++) {
+        const name = ((form.get(`name_${index}`) as string) ?? '').trim()
+        const target = parseInt((form.get(`target_${index}`) as string) ?? '')
+        const names = ((form.get(`hulls_${index}`) as string) ?? '').split(',').map(part => part.trim()).filter(Boolean)
+        if (!name && !names.length) continue
+        const line:ShipTargetLine = { name, target: isNaN(target) ? 0 : target, ship_type_ids: [], group_ids: [] }
+        for (const part of names) {
+            const key = part.toLowerCase()
+            if (group_ids.has(key)) line.group_ids!.push(group_ids.get(key)!)
+            else if (hull_ids.has(key)) line.ship_type_ids!.push(hull_ids.get(key)!)
+            else error = t('fleets.targets.unknown').replace('{name}', part)
+        }
+        lines.push(line)
+    }
+    if (!error) {
+        try {
+            targets = await put_fleet_targets(auth_token as string, fleet_id, lines)
+            saved = true
+        } catch (e) {
+            error = e.message
+        }
+    }
+}
+
+if (!saved) {
+    try {
+        targets = await get_fleet_targets(auth_token as string, fleet_id)
+    } catch (e) {
+        console.log(`Ship targets: ${e.message}`)
+    }
+}
+
+import FleetShipTargets from '@components/blocks/FleetShipTargets.astro'
+---
+
+<FleetShipTargets
+    fleet_id={fleet_id}
+    targets={targets}
+    hulls={hulls}
+    groups={groups}
+    can_manage={can_manage}
+    saved={saved}
+    error={error}
+/>
