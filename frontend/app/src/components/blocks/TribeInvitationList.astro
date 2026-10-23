@@ -1,0 +1,151 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { TribeInvitation } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+
+interface Props {
+    invitations:    TribeInvitation[];
+    tribe_id:       number;
+    group_id:       number;
+}
+
+const {
+    invitations,
+    tribe_id,
+    group_id,
+} = Astro.props
+
+import { eve_day_short } from '@helpers/date'
+import { query_string } from '@helpers/string'
+import {
+    invitation_detail,
+    invitation_dm_undelivered,
+    invitation_status_label,
+    invitation_tone,
+} from '@helpers/tribe_invitations'
+
+const INVITATIONS_PARTIAL_URL = translatePath(`/partials/tribe_group_invitations_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const invite_link = new URL(translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`), Astro.url).toString()
+
+const TAG_COLORS: Record<string, TagColors | undefined> = {
+    attention: 'fleet-yellow',
+    good: 'green',
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Button from '@components/blocks/Button.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import Table from '@components/blocks/Table.astro';
+import Tag from '@components/blocks/Tag.astro';
+---
+
+{invitations.length > 0 &&
+    <Flexblock gap='var(--space-l)'>
+        <FlexInline justification='space-between' class="[ items-baseline! ]">
+            <h4 class="[ group-title ]">{t('tribes.invite.invitations')}</h4>
+            <small class="[ text-muted ]">{t('tribes.invite.list_hint')}</small>
+        </FlexInline>
+
+        <Table>
+            {invitations.map((invitation) => {
+                const detail = invitation_detail(invitation, t, lang)
+                const tone = invitation_tone(invitation.status)
+                const pending = invitation.status === 'pending'
+                const invited_by = t('tribes.invite.invited_by')
+                    .replace('{date}', eve_day_short(lang, invitation.created_at))
+                    .replace('{name}', invitation.invited_by_name)
+
+                return (
+                    <div x-show="show_item($el)">
+                        <FlexInline gap='var(--space-2xs)' class="[ tribe-invitation ]">
+                            <FixedFluid width='64px' class="[ basis-[380px] items-center! ]">
+                                <CharacterPicture
+                                    character_id={invitation.character_id ?? 0}
+                                    character_name={invitation.character_name}
+                                    size={64}
+                                />
+                                <Flexblock gap='var(--space-3xs)'>
+                                    <h3 class="[ membership-characters ]">{invitation.character_name}</h3>
+                                    <small>{invited_by}</small>
+                                </Flexblock>
+                            </FixedFluid>
+
+                            <Flexblock gap='var(--space-3xs)' class="[ basis-[300px] grow ]">
+                                <FlexInline gap='var(--space-2xs)'>
+                                    <Tag
+                                        text={invitation_status_label(invitation.status, t)}
+                                        color={TAG_COLORS[tone]}
+                                        variant='outline'
+                                        narrow={true}
+                                    />
+                                    <span class:list={['[ tribe-invitation__detail ]', { 'text-fleet-yellow': detail.tone === 'attention', 'text-muted': detail.tone === 'muted' }]}>
+                                        {detail.text}
+                                    </span>
+                                </FlexInline>
+                                {invitation.note &&
+                                    <small class="[ tribe-invitation__note ]">“{invitation.note}”</small>
+                                }
+                            </Flexblock>
+
+                            {pending &&
+                                <FlexInline>
+                                    {invitation_dm_undelivered(invitation) &&
+                                        <div x-data="{ copied: false }">
+                                            <Button
+                                                size='sm'
+                                                type="button"
+                                                x-on:click={`navigator.clipboard.writeText(${JSON.stringify(invite_link)}); copied = true; setTimeout(() => copied = false, 2000)`}
+                                            >
+                                                <span x-text={`copied ? ${JSON.stringify(t('tribes.invite.link_copied'))} : ${JSON.stringify(t('tribes.invite.copy_link'))}`}>
+                                                    {t('tribes.invite.copy_link')}
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    }
+                                    <ButtonConfirm
+                                        label={t('tribes.invite.withdraw')}
+                                        size='sm'
+                                        color='transparent'
+                                    >
+                                        <Button
+                                            size='sm'
+                                            hx-delete={`${INVITATIONS_PARTIAL_URL}&${query_string({ invitation_id: invitation.id })}`}
+                                            hx-target="#tribe-invitations"
+                                            hx-indicator=".loader"
+                                            hx-swap="outerHTML transition:true"
+                                            x-on:click="$el.setAttribute('disabled','')"
+                                        >
+                                            {t('confirm')}
+                                        </Button>
+                                    </ButtonConfirm>
+                                </FlexInline>
+                            }
+                        </FlexInline>
+                    </div>
+                )
+            })}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </Table>
+    </Flexblock>
+}
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .tribe-invitation__note {
+        font-style: italic;
+        color: var(--text-muted);
+    }
+
+    .text-fleet-yellow {
+        color: var(--fleet-yellow);
+    }
+</style>

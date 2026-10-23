@@ -19,6 +19,8 @@ import type {
     TribeEventCreate,
     TribeEventPatch,
     TribeEventAnnouncementPreview,
+    TribeInvitation,
+    TribeInvitationCandidate,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -332,5 +334,60 @@ export async function cancel_tribe_event(access_token:string, event_id:number) {
         method: 'POST',
         token: access_token,
         error: 'Error cancelling event',
+    })
+}
+
+export async function get_group_invitations(access_token:string, tribe_id:number, group_id:number) {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations`, {
+        token: access_token,
+        error: 'Error fetching invitations',
+    })
+}
+
+export async function send_group_invitations(access_token:string, tribe_id:number, group_id:number, user_ids:number[], note:string = '') {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations`, {
+        method: 'POST',
+        token: access_token,
+        body: { user_ids, note },
+        error: 'Error sending invitations',
+    })
+}
+
+export async function withdraw_group_invitation(access_token:string, tribe_id:number, group_id:number, invitation_id:number) {
+    return await api_request<TribeInvitation>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations/${invitation_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error withdrawing invitation',
+    })
+}
+
+export async function get_invitation_candidates(access_token:string, tribe_id:number, group_id:number, q:string) {
+    return await api_request<TribeInvitationCandidate[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations/candidates?${query_string({ q })}`, {
+        token: access_token,
+        error: 'Error searching pilots',
+    })
+}
+
+export async function get_my_invitations(access_token:string) {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/invitations/mine`, {
+        token: access_token,
+        error: 'Error fetching your invitations',
+    })
+}
+
+export async function accept_invitation(access_token:string, invitation_id:number, character_ids:number[]) {
+    return await api_request<TribeMembership>(`${API_ENDPOINT}/invitations/${invitation_id}/accept`, {
+        method: 'POST',
+        token: access_token,
+        body: { character_ids },
+        error: 'Error joining the group',
+    })
+}
+
+export async function decline_invitation(access_token:string, invitation_id:number) {
+    return await api_request<TribeInvitation>(`${API_ENDPOINT}/invitations/${invitation_id}/decline`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error declining the invitation',
     })
 }

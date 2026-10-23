@@ -20,6 +20,10 @@ interface Props {
     styless?:               boolean;
     actions_ui?:            boolean;
     label?:                 string;
+    /** Invite mode: where the form posts (the invitation partial), and its wording. */
+    post_url?:              string;
+    subtitle?:              string;
+    submit_label?:          string;
     [propName: string]:     any;
 }
 
@@ -36,6 +40,9 @@ const {
     styless = false,
     actions_ui = false,
     label,
+    post_url,
+    subtitle,
+    submit_label,
     ...attributes
 } = Astro.props
 
@@ -95,7 +102,7 @@ import Tag from '@components/blocks/Tag.astro';
     <form
         class="[ h-full ]"
         slot="dialog" 
-        hx-post={TRIBE_GROUP_STATUS_PARTIAL_URL}
+        hx-post={post_url ?? TRIBE_GROUP_STATUS_PARTIAL_URL}
         hx-trigger="submit"
         hx-target={`#${target_id}`}
         hx-indicator=".loader"
@@ -121,7 +128,7 @@ import Tag from '@components/blocks/Tag.astro';
         <Flexblock class="[ h-full justify-between! ]" gap="var(--space-l)">
             <Flexblock gap="var(--space-3xs)">
                 <h3>{title}</h3>
-                <small>{t('tribes.detail.apply')}</small>
+                <small>{subtitle ?? t('tribes.detail.apply')}</small>
             </Flexblock>
                 
             <Wrapper
@@ -236,7 +243,7 @@ import Tag from '@components/blocks/Tag.astro';
                         off_disable={true}
                         disabled
                     >
-                        {t('apply')}
+                        {submit_label ?? t('apply')}
                     </Button>
                 </div>
 

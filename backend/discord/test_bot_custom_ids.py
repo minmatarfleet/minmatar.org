@@ -37,6 +37,10 @@ from notifications.discord_buttons import (
     NOTIF_ACK_CUSTOM_ID_PREFIX,
     ack_custom_id,
 )
+from tribes.helpers.invitation_discord import (
+    DECLINE_CUSTOM_ID_PREFIX,
+    decline_custom_id,
+)
 
 BOT_CUSTOM_IDS = (
     Path(__file__).resolve().parents[2] / "bot" / "app" / "custom_ids.py"
@@ -75,6 +79,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (POST_CUSTOM_ID_PREFIX, self.bot.NPSI_POST_PREFIX),
             (PREPING_CUSTOM_ID_PREFIX, self.bot.NPSI_PREPING_PREFIX),
             (TRACK_CUSTOM_ID_PREFIX, self.bot.NPSI_TRACK_PREFIX),
+            (DECLINE_CUSTOM_ID_PREFIX, self.bot.TRIBE_INVITE_DECLINE_PREFIX),
         ]
         for backend, bot in pairs:
             self.assertEqual(backend, bot)
@@ -89,6 +94,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (post_custom_id, self.bot.NPSI_POST_TEMPLATE),
             (preping_custom_id, self.bot.NPSI_PREPING_TEMPLATE),
             (track_custom_id, self.bot.NPSI_TRACK_TEMPLATE),
+            (decline_custom_id, self.bot.TRIBE_INVITE_DECLINE_TEMPLATE),
         ]
         for build, template in pairs:
             built = build(1234567890123)

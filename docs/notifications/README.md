@@ -38,7 +38,7 @@ They still never run inside a web request; see [Discord outside notifications](#
 
 Discord DMs are sent as **embeds** with an author line for the product area
 (e.g. `Industry`), so pilots can tell what kind of ping it is at a glance.
-Each DM also includes a **Mark as read** button (`custom_id`: `notif_ack:{delivery_id}`). On click the bot:
+Each DM also includes a **Mark as read** button (`custom_id`: `notif_ack:{delivery_id}`), unless the payload carries its own `discord_components` (tribe invites). On click the bot:
 
 1. Calls `POST /api/notifications/deliveries/{id}/ack` with the clicker's Discord snowflake
 2. Deletes the DM if ack succeeds
@@ -52,6 +52,8 @@ Delivery status becomes `read` and `read_at` is set. Message ids are stored on `
 | `industry.*` | Industry order participants | see [Industry orders](industry-orders.md) |
 | `fleets.closed` | The FC, when tracking stops | Web (on), Eve mail (on) |
 | `tribes.membership_requested` | The tribe group chief, when a pilot applies | Discord (on), Web (off) |
+| `tribes.invited` | A pilot a chief invites to a tribe group (Open invite / Decline buttons) | Discord (on), Web (on) |
+| `tribes.invite_answered` | The inviter, when the pilot joins or declines | Discord (on), Web (off) |
 
 ## Discord outside notifications
 

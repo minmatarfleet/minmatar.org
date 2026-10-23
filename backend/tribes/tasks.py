@@ -11,6 +11,8 @@ Tasks:
   and their groups' About tabs; refresh_tribe_group_about rebuilds one group.
 - create/update/cancel_tribe_discord_event: Push a group event to Discord.
 - sync_tribe_event_interest: Read interested counts, complete past events.
+- expire_tribe_invitations: Mark invites past their 14 days as expired.
+- update_tribe_invitation_dm: Edit an answered invite's DM (no buttons).
 """
 
 import logging
@@ -19,6 +21,8 @@ from collections import defaultdict
 from app.celery import app
 from django.contrib.auth.models import User
 from discord.client import DiscordClient
+from notifications.models import NotificationChannel, NotificationDelivery
+from notifications.types.tribes import TRIBE_INVITED_KEY
 
 from tribes.helpers.chief_membership import (
     ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
@@ -36,8 +40,19 @@ from tribes.helpers.external_guild import (
 )
 from tribes.helpers.about import refresh_group_about, refresh_tribe_about
 from tribes.helpers import event_sync
+from tribes.helpers.invitation_discord import answered_embed
+from tribes.helpers.invitations import (
+    answered_dm,
+    expire_due_invitations,
+    invited_delivery_key,
+)
 from tribes.helpers.showcase import refresh_group_showcase
-from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import (
+    Tribe,
+    TribeGroup,
+    TribeGroupInvitation,
+    TribeGroupMembership,
+)
 from tribes.reports.registry import REPORT_BINDINGS
 
 discord = DiscordClient()
@@ -295,3 +310,47 @@ def cancel_tribe_discord_event(event_id: int):
 def sync_tribe_event_interest():
     """Every 15 minutes: Discord interested counts and finished events."""
     return event_sync.sync_event_interest()
+
+
+@app.task()
+def expire_tribe_invitations():
+    """Daily: pending invites past their expiry become expired."""
+    return expire_due_invitations()
+
+
+@app.task(ignore_result=True)
+def update_tribe_invitation_dm(invitation_id: int):
+    """Edit an answered invite's DM: say what happened, remove the buttons.
+
+    Safe to run twice: it rewrites the same message to the same text.
+    """
+    invitation = (
+        TribeGroupInvitation.objects.select_related(
+            "tribe_group__tribe", "invited_by__eveplayer__primary_character"
+        )
+        .filter(pk=invitation_id)
+        .first()
+    )
+    if invitation is None:
+        return
+    deliveries = NotificationDelivery.objects.filter(
+        notification_type=TRIBE_INVITED_KEY,
+        channel=NotificationChannel.DISCORD,
+        idempotency_key=(
+            f"{invited_delivery_key(invitation)}:u{invitation.user_id}"
+        ),
+    ).exclude(discord_message_id="")
+    embed = answered_embed(**answered_dm(invitation))
+    for delivery in deliveries:
+        try:
+            discord.update_message(
+                delivery.discord_channel_id,
+                delivery.discord_message_id,
+                payload={"embeds": [embed], "components": []},
+            )
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Could not edit tribe invite DM %s",
+                invitation_id,
+                exc_info=True,
+            )

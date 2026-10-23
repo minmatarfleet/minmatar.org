@@ -92,6 +92,11 @@ export type TribeEventPatch = ApiRequest<'TribeEventPatch'>
 export type TribeEventPreview = ApiResponse<'TribeEventPreviewSchema'>
 export type TribeEventAnnouncementPreview = ApiResponse<'TribeEventAnnouncementPreview'>
 
+// Tribe group invitations (docs/tribes/tribe-invitations.md)
+export type TribeInvitation = ApiResponse<'InvitationSchema'>
+export type TribeInvitationCandidate = ApiResponse<'InvitationCandidateSchema'>
+export type TribeInvitationsSend = ApiRequest<'SendInvitationsRequest'>
+
 export interface Tribe {
     id:                     number;
     name:                   string;

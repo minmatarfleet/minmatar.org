@@ -299,6 +299,13 @@ CELERYBEAT_TRIBES = [
         },
     ),
     (
+        "[Tribes] Expire tribe invitations",
+        {
+            "task": "tribes.tasks.expire_tribe_invitations",
+            "schedule": crontab(minute=17, hour=3),
+        },
+    ),
+    (
         "[Tribes] Sync group event interest",
         {
             "task": "tribes.tasks.sync_tribe_event_interest",

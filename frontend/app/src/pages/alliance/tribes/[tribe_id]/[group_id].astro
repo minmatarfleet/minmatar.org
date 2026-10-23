@@ -29,6 +29,7 @@ import type {
     TribeEvent,
     TribeGroupPublishing,
     TribeGroupAbout as TribeGroupAboutData,
+    TribeInvitation,
 } from '@dtypes/api.minmatar.org'
 import type { DiscordChannelUI, FleetItem, PostTileUI, TribeVisibility } from '@dtypes/layout_components'
 import type { GuideMeta } from '@/data/guides/types'
@@ -43,7 +44,9 @@ import {
     get_group_events,
     get_group_publishing,
     get_discord_channels,
+    get_my_invitations,
 } from '@helpers/api.minmatar.org/tribes'
+import { open_invitation_for_group } from '@helpers/tribe_invitations'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { TRIBE_ACTIVITY_BY_CODE } from '@helpers/tribe_activity'
 import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
@@ -88,6 +91,7 @@ let voice_channels: DiscordChannelUI[] = []
 let publishing: TribeGroupPublishing | null = null
 let text_channels: DiscordChannelUI[] | null = null
 let fetch_group_error: Error | false = false
+let my_invitations: TribeInvitation[] = []
 
 try {
     tribe = await get_tribe(tribe_id)
@@ -132,14 +136,16 @@ try {
     text_channels = text_list ? text_list.map(discord_channel_ui) : null
 
     if (auth_token && user) {
-        const [summary, memberships, available] = await Promise.all([
+        const [summary, memberships, available, invitations] = await Promise.all([
             get_characters_summary_sorted(auth_token),
             get_memberships(auth_token as string, tribe_id, group_id, { mine: true }).catch(() => []),
             get_membership_characters_available(auth_token as string, tribe_id, group_id).catch(() => []),
+            get_my_invitations(auth_token as string).catch(() => []),
         ])
         user_characters = summary.characters ?? []
         membership_by_group.set(group_id, memberships[0] ?? null)
         available_characters = available
+        my_invitations = invitations
     }
 } catch (error) {
     fetch_group_error = error as Error
@@ -158,6 +164,10 @@ const can_manage = tribe_group_can_manage({
     group: tribe_group,
     is_leader,
 })
+// A chief's invite to this group, until the pilot joins.
+const invitation = membership?.status === 'active'
+    ? null
+    : open_invitation_for_group(my_invitations, group_id)
 const roster_hidden = Boolean(tribe_group?.roster_hidden)
 const can_see_roster = roster_hidden
     ? Boolean(can_manage || membership?.status === 'active')
@@ -288,6 +298,7 @@ import TribeGroupPublishingSettings from '@components/blocks/TribeGroupPublishin
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
+import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
@@ -365,6 +376,15 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                 :
                 tribe_group &&
                     <div id="tribe-group-hub">
+                        {invitation &&
+                            <TribeGroupInvitationBanner
+                                class="[ mb-[var(--space-l)] ]"
+                                invitation={invitation}
+                                group={tribe_group}
+                                user_characters={user_characters}
+                                available_characters={available_characters}
+                            />
+                        }
                         <SectionTabs
                             aria_label={t('tribes.detail.tabs_label')}
                             id_prefix="tribe-group"

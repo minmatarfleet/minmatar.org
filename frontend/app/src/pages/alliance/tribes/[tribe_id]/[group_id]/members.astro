@@ -73,6 +73,7 @@ else
     count_text = t(approved.length !== 1 ? 'memebrship_plural' : 'memebrship_singular').replace('{count}', String(approved.length))
 
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const TRIBE_GROUP_INVITATIONS_PARTIAL_URL = translatePath(`/partials/tribe_group_invitations_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -87,6 +88,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Input from '@components/blocks/Input.astro';
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
+import ButtonInvitePilots from '@components/blocks/ButtonInvitePilots.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import GroupLeadership from '@components/blocks/GroupLeadership.astro';
 import DebugTag from '@components/blocks/DebugTag.astro';
 
@@ -153,6 +156,13 @@ const breadcrumbs = [
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
+                {tribe_group &&
+                    <ButtonInvitePilots
+                        tribe_id={tribe_id}
+                        group_id={tribe_group.id}
+                        group_name={tribe_group.name}
+                    />
+                }
             </PageActions>
         </FlexInline>
         
@@ -176,9 +186,13 @@ const breadcrumbs = [
                             chief_membership={chief_membership}
                         />
                         <MembershipRequests requests={pending} />
+                        <LazyPartial url={TRIBE_GROUP_INVITATIONS_PARTIAL_URL} swap="outerHTML" />
                         <MembershipTable memberships={approved} />
                         :
-                        <p>{t('no_request_no_members')}</p>
+                        <>
+                            <p>{t('no_request_no_members')}</p>
+                            <LazyPartial url={TRIBE_GROUP_INVITATIONS_PARTIAL_URL} swap="outerHTML" />
+                        </>
                     }
                 </Flexblock>
                 :

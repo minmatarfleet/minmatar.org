@@ -1,0 +1,194 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    tribe_id:           number;
+    group_id:           number;
+    group_name:         string;
+    [propName: string]: any;
+}
+
+const {
+    tribe_id,
+    group_id,
+    group_name,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { query_string } from '@helpers/string'
+
+/** The API takes at most this many pilots per send. */
+const MAX_PICKS = 10
+const NOTE_MAX_LENGTH = 300
+
+const INVITATIONS_PARTIAL_URL = translatePath(`/partials/tribe_group_invitations_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const CANDIDATES_PARTIAL_URL = translatePath(`/partials/tribe_invitation_candidates_component?${query_string({ tribe_id, group_id, group_name })}`)
+const results_id = `invite-candidates-${group_id}`
+const remove_label = JSON.stringify(t('tribes.invite.remove_pick'))
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import DialogButton from '@components/blocks/DialogButton.astro';
+import Input from '@components/blocks/Input.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+---
+
+<DialogButton
+    size='sm'
+    color='fleet-red'
+    max_width='760px'
+    class:list={['[ button-invite-pilots ]', Astro.props.class]}
+    {...attributes}
+>
+    {t('tribes.invite.invite_pilots')}
+
+    <form
+        slot="dialog"
+        hx-post={INVITATIONS_PARTIAL_URL}
+        hx-target="#tribe-invitations"
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-on:submit="close_dialog()"
+        x-init="$el.addEventListener('htmx:afterRequest', (event) => { if (event.detail.elt === $el) { picked = []; note = '' } })"
+        x-data={`{
+            picked: [],
+            note: '',
+            toggle_pick(user_id, name, character_id) {
+                const index = this.picked.findIndex(pilot => pilot.user_id === user_id)
+                if (index >= 0) this.picked.splice(index, 1)
+                else if (this.picked.length < ${MAX_PICKS}) this.picked.push({ user_id, name, character_id })
+            },
+            is_picked(user_id) {
+                return this.picked.some(pilot => pilot.user_id === user_id)
+            },
+        }`}
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{t('tribes.invite.dialog_title').replace('{group}', group_name)}</h3>
+                <small>{t('tribes.invite.dialog_hint')}</small>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-2xs)">
+                <b x-text={`${JSON.stringify(t('tribes.invite.picked'))}.replace('{count}', picked.length)`}>
+                    {t('tribes.invite.picked').replace('{count}', '0')}
+                </b>
+                <FlexInline gap="var(--space-2xs)" class="[ invite-picks ]">
+                    <small class="[ text-muted ]" x-show="picked.length === 0">{t('tribes.invite.picked_none')}</small>
+                    <template x-for="pilot in picked" x-bind:key="pilot.user_id">
+                        <span class="[ invite-pick ]">
+                            <img
+                                x-bind:src="`https://images.evetech.net/characters/${pilot.character_id}/portrait?size=64`"
+                                alt=""
+                                width="28"
+                                height="28"
+                            />
+                            <span x-text="pilot.name"></span>
+                            <button
+                                type="button"
+                                class="[ invite-pick__remove ]"
+                                x-bind:aria-label={`${remove_label}.replace('{name}', pilot.name)`}
+                                x-on:click="toggle_pick(pilot.user_id, pilot.name, pilot.character_id)"
+                            >×</button>
+                            <input type="hidden" name="user_ids" x-bind:value="pilot.user_id" />
+                        </span>
+                    </template>
+                </FlexInline>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-2xs)">
+                <label for={`invite-search-${group_id}`}><b>{t('tribes.invite.find_pilot')}</b></label>
+                <Input
+                    id={`invite-search-${group_id}`}
+                    type="search"
+                    name="q"
+                    autocomplete="off"
+                    x-on:keydown.enter.prevent=""
+                    placeholder={t('tribes.invite.search_placeholder')}
+                    hx-get={CANDIDATES_PARTIAL_URL}
+                    hx-trigger="input changed delay:300ms, search"
+                    hx-target={`#${results_id}`}
+                    hx-swap="innerHTML"
+                    hx-indicator={`#${results_id}`}
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+                <div id={results_id} aria-live="polite">
+                    <small class="[ text-muted ]">{t('tribes.invite.search_hint')}</small>
+                </div>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-2xs)">
+                <FlexInline justification="space-between">
+                    <label for={`invite-note-${group_id}`}>
+                        <b>{t('tribes.invite.note')}</b> <span class="[ text-muted ]">{t('tribes.invite.optional')}</span>
+                    </label>
+                    <small class="[ text-muted ]" x-text={`note.length + ' / ${NOTE_MAX_LENGTH}'`}>0 / {NOTE_MAX_LENGTH}</small>
+                </FlexInline>
+                <Textarea
+                    id={`invite-note-${group_id}`}
+                    name="note"
+                    rows="3"
+                    maxlength={NOTE_MAX_LENGTH}
+                    x-model="note"
+                />
+                <small class="[ text-muted ]">{t('tribes.invite.note_hint')}</small>
+            </Flexblock>
+
+            <FlexInline justification="space-between">
+                <small class="[ text-muted ]">{t('tribes.invite.send_footer')}</small>
+                <FlexInline>
+                    <Button
+                        type="button"
+                        size='sm'
+                        color='transparent'
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                    <Button
+                        type="submit"
+                        size='sm'
+                        color='fleet-red'
+                        x-bind:disabled="picked.length === 0"
+                        off_disable={true}
+                        disabled
+                    >
+                        {t('tribes.invite.send')}
+                    </Button>
+                </FlexInline>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .invite-pick {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-3xs);
+        border: solid 1px var(--border-color);
+        background-color: var(--surface-sunken);
+    }
+
+    .invite-pick__remove {
+        min-width: var(--space-l);
+        min-height: var(--space-l);
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+    }
+</style>

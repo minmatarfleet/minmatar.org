@@ -28,6 +28,9 @@ NPSI_POST_ALIAS_PREFIX = "npsi:post:"
 NPSI_PREPING_PREFIX = "npsi:preping:"
 NPSI_TRACK_PREFIX = "npsi:track:"
 
+# Tribe group invite DMs (backend: tribes/helpers/invitation_discord.py)
+TRIBE_INVITE_DECLINE_PREFIX = "tribe_invite:decline:"
+
 # Help tickets (bot-only: the bot posts these itself)
 HELP_TICKET_CLOSE_PREFIX = "help_ticket_close:"
 HELP_TICKET_CLOSE_REASON_PREFIX = "help_ticket_close_reason:"
@@ -53,6 +56,9 @@ NPSI_POST_TEMPLATE = template(NPSI_POST_PREFIX, "event_id")
 NPSI_POST_ALIAS_TEMPLATE = template(NPSI_POST_ALIAS_PREFIX, "event_id")
 NPSI_PREPING_TEMPLATE = template(NPSI_PREPING_PREFIX, "event_id")
 NPSI_TRACK_TEMPLATE = template(NPSI_TRACK_PREFIX, "event_id")
+TRIBE_INVITE_DECLINE_TEMPLATE = template(
+    TRIBE_INVITE_DECLINE_PREFIX, "invitation_id"
+)
 HELP_TICKET_CLOSE_TEMPLATE = template(HELP_TICKET_CLOSE_PREFIX, "ticket_id")
 HELP_TICKET_CLOSE_REASON_TEMPLATE = template(
     HELP_TICKET_CLOSE_REASON_PREFIX, "ticket_id"

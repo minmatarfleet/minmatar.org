@@ -6331,6 +6331,74 @@ export interface paths {
         patch: operations["tribes_endpoints_publishing_patch_group_publishing_patch_group_publishing"];
         trace?: never;
     };
+    "/api/tribes/invitations/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your waiting tribe group invites. */
+        get: operations["tribes_endpoints_invitations_get_my_invitations_get_my_invitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/invitations/{invitation_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a tribe group invite: join at once with the picked characters. */
+        post: operations["tribes_endpoints_invitations_post_invitation_accept_post_invitation_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/invitations/{invitation_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline a tribe group invite. */
+        post: operations["tribes_endpoints_invitations_post_invitation_decline_post_invitation_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/invitations/{invitation_id}/discord-decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline a tribe group invite from its Discord DM (bot). */
+        post: operations["tribes_endpoints_invitations_post_invitation_discord_decline_post_invitation_discord_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/publishable-groups": {
         parameters: {
             query?: never;
@@ -6445,6 +6513,58 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invites to a tribe group: waiting, and answered in 30 days. */
+        get: operations["tribes_endpoints_invitations_get_group_invitations_get_group_invitations"];
+        put?: never;
+        /** Invite pilots to a tribe group (people who manage it). */
+        post: operations["tribes_endpoints_invitations_post_group_invitations_post_group_invitations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find pilots to invite, by any of their characters' names. */
+        get: operations["tribes_endpoints_invitations_get_invitation_candidates_get_invitation_candidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/groups/{group_id}/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Withdraw a waiting invite (people who manage the group). */
+        delete: operations["tribes_endpoints_invitations_delete_group_invitation_delete_group_invitation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6901,6 +7021,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptInvitationRequest */
+        AcceptInvitationRequest: {
+            /** Character Ids */
+            character_ids: number[];
+        };
         /** AckDeliveryRequest */
         AckDeliveryRequest: {
             /** Discord User Id */
@@ -10607,6 +10732,11 @@ export interface components {
             name: string;
             /** Type */
             type: string;
+        };
+        /** DiscordDeclineRequest */
+        DiscordDeclineRequest: {
+            /** Discord User Id */
+            discord_user_id: number;
         };
         /** DiscordNpsiActionRequest */
         DiscordNpsiActionRequest: {
@@ -14521,6 +14651,79 @@ export interface components {
             priority: number;
             /** Status */
             status: string;
+        };
+        /** InvitationCandidateSchema */
+        InvitationCandidateSchema: {
+            /** Blocker */
+            blocker?: string | null;
+            /** Blocker Date */
+            blocker_date?: string | null;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Matched Character Name
+             * @default
+             */
+            matched_character_name?: string;
+            /** Membership Id */
+            membership_id?: number | null;
+            /** User Id */
+            user_id: number;
+        };
+        /** InvitationSchema */
+        InvitationSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Created At */
+            created_at: string;
+            /**
+             * Dm Error
+             * @default
+             */
+            dm_error?: string;
+            /** Dm Status */
+            dm_status?: string | null;
+            /** Expires At */
+            expires_at: string;
+            /** Id */
+            id: number;
+            /** Invited By Character Id */
+            invited_by_character_id?: number | null;
+            /** Invited By Id */
+            invited_by_id?: number | null;
+            /**
+             * Invited By Name
+             * @default
+             */
+            invited_by_name?: string;
+            /** Joined Character Count */
+            joined_character_count?: number | null;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Responded At */
+            responded_at?: string | null;
+            /** Status */
+            status: string;
+            /** Tribe Group Id */
+            tribe_group_id: number;
+            /** Tribe Group Name */
+            tribe_group_name: string;
+            /** Tribe Id */
+            tribe_id: number;
+            /** Tribe Name */
+            tribe_name: string;
+            /** User Id */
+            user_id: number;
         };
         /** JitaCheckPollResponse */
         JitaCheckPollResponse: {
@@ -18614,6 +18817,16 @@ export interface components {
             location_name: string;
             /** Short Name */
             short_name: string;
+        };
+        /** SendInvitationsRequest */
+        SendInvitationsRequest: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** User Ids */
+            user_ids: number[];
         };
         /** SessionSchema */
         SessionSchema: {
@@ -35065,6 +35278,210 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_invitations_get_my_invitations_get_my_invitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"][];
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_post_invitation_accept_post_invitation_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_post_invitation_decline_post_invitation_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_post_invitation_discord_decline_post_invitation_discord_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordDeclineRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_publishing_get_publishable_groups_get_publishable_groups: {
         parameters: {
             query: {
@@ -35273,6 +35690,215 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TribeGroupGrowthSchema"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_get_group_invitations_get_group_invitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_post_group_invitations_post_group_invitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendInvitationsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_get_invitation_candidates_get_invitation_candidates: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationCandidateSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_invitations_delete_group_invitation_delete_group_invitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+                invitation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Not Found */
