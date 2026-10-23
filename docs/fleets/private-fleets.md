@@ -9,7 +9,7 @@ Wireframes: the "Private Fleets" design canvas (Oct 2026).
 | Rule | |
 |---|---|
 | Who can make one | Strategic FCs only (`fleets.manage_any`). It's an alliance fleet: never a tribe group fleet, never on a campaign. Set on create (`invite_only` on `POST /api/fleets`); copying a fleet keeps it. |
-| Who can see it | Invited players (whatever they answered), its creator, Strategic FCs and superusers. Everyone else gets a 404 from `GET /api/fleets/{id}` and every fleet-scoped endpoint, as if it didn't exist. |
+| Who can see it | Invited players (whatever they answered), its creator, Strategic FCs and superusers. Everyone else gets a 404 from every `/api/fleets/{fleet_id}/…` route (`fleets/router.py` wraps them all), as if it didn't exist: a 403 would confirm it does. |
 | Lists | Upcoming, History, Results and the desktop app show it only to its creator, Strategic FCs, and invitees who said I'm in. |
 | Who invites | The creator and Strategic FCs, in waves. Invitees can't forward an invite; they can bring any of their own characters. |
 | Answers | Picking a ship on the fleet page is I'm in. Sitting out clears the pilot's ships. A pilot can change their answer until the fleet starts. |

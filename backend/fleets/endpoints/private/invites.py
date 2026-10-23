@@ -311,13 +311,19 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
             )
         )
     seen = set()
-    for character in (
+    characters = list(
         EveCharacter.objects.filter(
             character_name__icontains=q, user__isnull=False
         )
         .select_related("user")
         .order_by("character_name")[:10]
-    ):
+    )
+    corp_names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in={c.corporation_id for c in characters}
+        ).values_list("corporation_id", "name")
+    )
+    for character in characters:
         if character.user_id in seen:
             continue
         seen.add(character.user_id)
@@ -326,7 +332,7 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
                 kind="pilot",
                 id=character.user_id,
                 name=character.character_name,
-                detail="Pilot",
+                detail=corp_names.get(character.corporation_id, ""),
             )
         )
     return out

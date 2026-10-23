@@ -41,7 +41,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                     x-on:click={`$dispatch('pick-candidate', ${JSON.stringify({ kind: candidate.kind, id: candidate.id, name: candidate.name })})`}
                 >
                     <b>{candidate.name}</b>
-                    <small>{t(t_key('fleets.private.kind_', candidate.kind))} · {candidate.detail}</small>
+                    <small>{[t(t_key('fleets.private.kind_', candidate.kind)), candidate.detail].filter(Boolean).join(' · ')}</small>
                 </button>
             </li>
         )}

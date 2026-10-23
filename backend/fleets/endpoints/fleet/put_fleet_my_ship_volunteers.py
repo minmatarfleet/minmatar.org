@@ -24,6 +24,7 @@ from fleets.endpoints.schemas import (
 from fleets.helpers.composition import resolve_composition_target
 from fleets.helpers.fit_roles import canonical_bursts, fit_roles
 from fleets.helpers.fleet_window import forget_fleet_window
+from fleets.helpers.private_fleets import sync_answer_from_ships
 from fleets.models import EveFleet, EveFleetShipVolunteer
 
 logger = logging.getLogger(__name__)
@@ -182,6 +183,9 @@ def set_my_ship_volunteers(
                 )
             )
         EveFleetShipVolunteer.objects.bulk_create(rows)
+        # bulk_create sends no signals: picking ships is I'm in on a
+        # private fleet (docs/fleets/private-fleets.md).
+        sync_answer_from_ships(fleet, request.user.pk)
 
     forget_fleet_window(fleet.id)
     # Cynos in the MOTD come from ship volunteers.

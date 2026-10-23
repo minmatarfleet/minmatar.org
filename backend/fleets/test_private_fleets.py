@@ -14,6 +14,7 @@ from app.test import TestCase
 from app.testing import make_token
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveLocation
+from fittings.models import EveFitting
 from fleets.helpers.private_fleet_discord import (
     answered_payload,
     invite_payload,
@@ -30,6 +31,7 @@ from fleets.helpers.visibility import alliance_fleets_q
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
+    EveFleetFitting,
     EveFleetInvite,
     EveFleetShipVolunteer,
 )
@@ -317,6 +319,39 @@ class AnswerTests(PrivateFleetTestBase):
         self.assertFalse(
             EveFleetShipVolunteer.objects.filter(eve_fleet=fleet).exists()
         )
+
+    def test_the_ship_picker_says_im_in(self):
+        """The picker saves with bulk_create, which sends no signals."""
+        fleet = self.private_fleet()
+        (invite,) = self.invite(fleet, self.pilot)
+        fitting = EveFitting.objects.create(
+            name="Revelation", ship_id=19720, eft_format="[Revelation, x]"
+        )
+        EveFleetFitting.objects.create(
+            eve_fleet=fleet, fitting=fitting, name="Revelation", ship_id=19720
+        )
+        character = EveCharacter.objects.get(user=self.pilot)
+        response = self.call(
+            "put",
+            f"/{fleet.id}/my-ship-volunteers",
+            self.pilot,
+            {
+                "selections": [
+                    {
+                        "character_id": character.character_id,
+                        "fitting_id": fitting.id,
+                    }
+                ]
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        invite.refresh_from_db()
+        self.assertEqual(invite.answer, "in")
+
+        # Every fleet route is a 404 for someone not invited, not a 403.
+        for path in ("", "/ship-volunteers", "/roles", "/composition"):
+            response = self.call("get", f"/{fleet.id}{path}", self.outsider)
+            self.assertEqual(response.status_code, 404, path)
 
     def test_discord_button_must_be_the_invitee(self):
         fleet = self.private_fleet()

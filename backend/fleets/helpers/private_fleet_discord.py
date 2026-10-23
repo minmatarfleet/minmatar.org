@@ -364,8 +364,9 @@ def summary_payload(fleet) -> dict:
                     f"{_eve_time(fleet.start_time)} "
                     f"{_discord_time(fleet.start_time)} · {location} · "
                     f"FC {_fc_name(fleet)}\n"
-                    f"{totals['in']} players are in with "
-                    f"{totals['characters_in']} characters.\n\n"
+                    f"{_count(totals['in'], 'player is', 'players are')} in "
+                    f"with {_count(totals['characters_in'], 'character')}."
+                    "\n\n"
                     f"🔒 **{OPSEC_LINE}**"
                 ),
                 "fields": fields,
@@ -377,6 +378,11 @@ def summary_payload(fleet) -> dict:
             _link("Change my ships", fleet_url(fleet.id)),
         ),
     }
+
+
+def _count(number: int, one: str, many: str = "") -> str:
+    """'1 player is', '3 players are'; '1 character', '2 characters'."""
+    return f"{number} {one if number == 1 else (many or one + 's')}"
 
 
 def is_private_thread(client, thread_id) -> bool:

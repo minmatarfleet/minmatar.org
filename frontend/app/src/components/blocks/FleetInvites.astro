@@ -75,11 +75,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
             <div class="[ is-pending ]"><dt>{t('fleets.private.pending')}</dt><dd>{totals.pending}</dd></div>
         </dl>
         <div class="[ fleet-invites__actions ]">
-            {data.thread_url &&
-                <Button href={data.thread_url} size="sm" color="transparent" target="_blank" rel="noopener">
-                    {t('fleets.private.open_thread')}
-                </Button>
-            }
             {reping_waiting ?
                 <small>{t('fleets.private.reping_wait').replace('{time}', `${eve_clock(reping_at!)} EVE`)}</small> :
                 pending_delivered > 0 &&

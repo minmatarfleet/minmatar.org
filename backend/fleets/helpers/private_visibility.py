@@ -70,6 +70,22 @@ def private_fleet_visible_to(user, fleet) -> bool:
     return is_invited(user, fleet)
 
 
+def private_fleet_hidden_from(user, fleet_id) -> bool:
+    """True when ``fleet_id`` is a private fleet this user may not see. One
+    query, and only private fleets are loaded."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.models import EveFleet
+
+    fleet = (
+        EveFleet.objects.filter(
+            pk=fleet_id, invite_only=True, declassified_at__isnull=True
+        )
+        .only("id", "invite_only", "declassified_at", "created_by_id")
+        .first()
+    )
+    return fleet is not None and not private_fleet_visible_to(user, fleet)
+
+
 def listed_private_q(user) -> Q:
     """Private fleets a list may show this user: the ones they said I'm in
     to, plus the ones they created."""

@@ -24,7 +24,7 @@ import Button from '@components/blocks/Button.astro'
     <small>{t('fleets.private.wave_pick_first')}</small> :
     <div class="[ wave-preview ]">
         <p class="[ wave-preview__headline ]">
-            <b>{preview.new}</b> {t('fleets.private.preview_dm')}
+            <b>{preview.new}</b>{` ${t('fleets.private.preview_dm')}`}
         </p>
         <dl class="[ wave-preview__rows ]">
             <dt>{t('fleets.private.preview_picked')}</dt><dd>{preview.picked}</dd>

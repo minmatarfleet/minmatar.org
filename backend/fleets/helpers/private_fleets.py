@@ -269,6 +269,8 @@ def sync_answer_from_ships(fleet: EveFleet, user_id: int) -> str | None:
     """After a pilot changes their ships: a ship means I'm in; no ships
     after being in means no answer again. Returns the new answer if it
     changed."""
+    if not fleet.invite_only:
+        return None
     invite = EveFleetInvite.objects.filter(
         eve_fleet=fleet, user_id=user_id
     ).first()
