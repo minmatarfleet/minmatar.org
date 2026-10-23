@@ -12,7 +12,7 @@ import type {
     FleetTrackingTexts,
     Tracking,
 } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember, FleetMetrics, FleetCommanderMetrics, RestrictedResponse } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, Fleet, FleetDetail, FleetMember, FleetMetrics, FleetCommanderMetrics, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import {
     get_fleets_v3,
     get_fleet_by_id,
@@ -127,7 +127,7 @@ export async function fetch_fleet_access(access_token:string, fleet_id:number):P
     return { fleet: await fleet_ui(access_token, access.fleet), restricted: null }
 }
 
-async function fleet_ui(access_token:string, fleet:Fleet):Promise<FleetUI> {
+async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI> {
     // FC, doctrine and campaign only need the fleet, so fetch them together.
     const [profile_result, doctrine_result, campaign_name_result] = await Promise.allSettled([
         fleet?.fleet_commander ? get_user_character(fleet.fleet_commander) : null,
@@ -164,6 +164,7 @@ async function fleet_ui(access_token:string, fleet:Fleet):Promise<FleetUI> {
         host_group: host_group_ref(fleet.host_group),
         open_to_alliance: fleet.open_to_alliance ?? false,
         on_schedule: fleet.on_schedule ?? false,
+        can_copy: fleet.can_copy ?? false,
     } as FleetUI
 }
 

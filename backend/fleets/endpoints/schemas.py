@@ -74,6 +74,23 @@ class EveFleetResponse(BaseModel):
     tracking: Optional[EveFleetTrackingResponse] = None
 
 
+class EveFleetDetailResponse(EveFleetResponse):
+    """One fleet, with what the viewer may do with it."""
+
+    # The viewer may copy this fleet to a new date (POST /{id}/copy).
+    can_copy: bool = False
+
+
+class EveFleetCopyResponse(EveFleetResponse):
+    """The new fleet, plus what could not be copied onto its date."""
+
+    copied_from: int
+    # "campaign" (ended by then), "location" (no longer a fleet staging,
+    # the default staging is used) or "open_to_alliance" (the group no
+    # longer opens fleets).
+    not_copied: List[str] = []
+
+
 class EveFleetMemberResponse(BaseModel):
     character_id: int
     character_name: str
@@ -114,6 +131,12 @@ class CreateEveFleetRequest(BaseModel):
     host_group_id: Optional[int] = None
     open_to_alliance: bool = False
     on_schedule: bool = False
+
+
+class CopyEveFleetRequest(BaseModel):
+    """The copy's start time; every other setting comes from the fleet."""
+
+    start_time: datetime
 
 
 class UpdateEveFleetRequest(BaseModel):

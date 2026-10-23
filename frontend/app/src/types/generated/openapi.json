@@ -5100,6 +5100,21 @@
         "title": "CompleteLearningResponse",
         "type": "object"
       },
+      "CopyEveFleetRequest": {
+        "description": "The copy's start time; every other setting comes from the fleet.",
+        "properties": {
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_time"
+        ],
+        "title": "CopyEveFleetRequest",
+        "type": "object"
+      },
       "CorporationAbout": {
         "description": "Cached About-tab rollups; mains only, never alts.",
         "properties": {
@@ -9749,6 +9764,458 @@
           "refits"
         ],
         "title": "EveFleetCompositionEntryResponse",
+        "type": "object"
+      },
+      "EveFleetCopyResponse": {
+        "description": "The new fleet, plus what could not be copied onto its date.",
+        "properties": {
+          "aar_forum_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aar Forum Url"
+          },
+          "aar_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aar Link"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Id"
+          },
+          "campaign_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Slug"
+          },
+          "copied_from": {
+            "title": "Copied From",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "disable_motd": {
+            "default": false,
+            "title": "Disable Motd",
+            "type": "boolean"
+          },
+          "doctrine_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Id"
+          },
+          "doctrine_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Name"
+          },
+          "fleet_commander": {
+            "title": "Fleet Commander",
+            "type": "integer"
+          },
+          "fleet_commander_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Character Id"
+          },
+          "fleet_commander_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Name"
+          },
+          "hide_volunteers": {
+            "default": false,
+            "title": "Hide Volunteers",
+            "type": "boolean"
+          },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "not_copied": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Copied",
+            "type": "array"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "on_schedule": {
+            "default": false,
+            "title": "On Schedule",
+            "type": "boolean"
+          },
+          "open_to_alliance": {
+            "default": false,
+            "title": "Open To Alliance",
+            "type": "boolean"
+          },
+          "roam_report_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roam Report Url"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tracking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EveFleetTrackingResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/EveFleetType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "description",
+          "fleet_commander",
+          "location",
+          "copied_from"
+        ],
+        "title": "EveFleetCopyResponse",
+        "type": "object"
+      },
+      "EveFleetDetailResponse": {
+        "description": "One fleet, with what the viewer may do with it.",
+        "properties": {
+          "aar_forum_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aar Forum Url"
+          },
+          "aar_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aar Link"
+          },
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Id"
+          },
+          "campaign_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Slug"
+          },
+          "can_copy": {
+            "default": false,
+            "title": "Can Copy",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "disable_motd": {
+            "default": false,
+            "title": "Disable Motd",
+            "type": "boolean"
+          },
+          "doctrine_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Id"
+          },
+          "doctrine_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Name"
+          },
+          "fleet_commander": {
+            "title": "Fleet Commander",
+            "type": "integer"
+          },
+          "fleet_commander_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Character Id"
+          },
+          "fleet_commander_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Name"
+          },
+          "hide_volunteers": {
+            "default": false,
+            "title": "Hide Volunteers",
+            "type": "boolean"
+          },
+          "host_group": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostGroupRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective"
+          },
+          "on_schedule": {
+            "default": false,
+            "title": "On Schedule",
+            "type": "boolean"
+          },
+          "open_to_alliance": {
+            "default": false,
+            "title": "Open To Alliance",
+            "type": "boolean"
+          },
+          "roam_report_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roam Report Url"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tracking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EveFleetTrackingResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/EveFleetType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "description",
+          "fleet_commander",
+          "location"
+        ],
+        "title": "EveFleetDetailResponse",
         "type": "object"
       },
       "EveFleetFightsResponse": {
@@ -41169,7 +41636,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EveFleetResponse"
+                  "$ref": "#/components/schemas/EveFleetDetailResponse"
                 }
               }
             },
@@ -41316,6 +41783,77 @@
           }
         ],
         "summary": "Get Fleet Composition",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/copy": {
+      "post": {
+        "description": "Schedule a new fleet at start_time with this fleet's settings: host, type, objective, briefing, staging, doctrine, campaign, the ships the FC added and their refits, hide names and MOTD. The caller becomes its FC; sign-ups start empty. Must manage the fleet and be able to schedule fleets for its host. A campaign that has ended by then, a staging that is no longer active and an open flag the group no longer allows are left off and listed in not_copied.",
+        "operationId": "fleets_endpoints_fleet_post_fleet_copy_copy_fleet_to_date",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyEveFleetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetCopyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Copy Fleet To Date",
         "tags": [
           "Fleets"
         ]

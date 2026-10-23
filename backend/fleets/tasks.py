@@ -213,6 +213,31 @@ def queue_fleet_schedule_refresh() -> None:
     )
 
 
+@app.task(expires=60 * 60)
+def save_copied_fleet_fits(fleet_id: int):
+    """Save a copied fleet's custom fits and refits in-game under its FC."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.copy_fleet import save_copied_fits
+
+    fleet = EveFleet.objects.filter(id=fleet_id).first()
+    if fleet is None:
+        return 0
+    return save_copied_fits(fleet)
+
+
+def queue_save_copied_fleet_fits(fleet: EveFleet) -> None:
+    """Queue save_copied_fleet_fits after commit, when there is a fit to save."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.copy_fleet import fits_to_save
+
+    if fits_to_save(fleet):
+        on_commit_enqueue(
+            save_copied_fleet_fits,
+            (fleet.id,),
+            context=f"saving copied fits for fleet {fleet.id}",
+        )
+
+
 @app.task(exclusive=30 * 60)
 def poll_active_fleet_implants():
     """Queue implant polls for active fleet members within the 45-minute window."""

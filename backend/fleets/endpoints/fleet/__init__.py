@@ -108,6 +108,12 @@ from fleets.endpoints.fleet.post_fleet_tracking import (
     start_fleet,
     METHOD as post_fleet_tracking_method,
 )
+from fleets.endpoints.fleet.post_fleet_copy import (
+    PATH as post_fleet_copy_path,
+    ROUTE_SPEC as post_fleet_copy_spec,
+    copy_fleet_to_date,
+    METHOD as post_fleet_copy_method,
+)
 from fleets.endpoints.fleet.post_refresh_fleet_motd import (
     PATH as post_refresh_fleet_motd_path,
     ROUTE_SPEC as post_refresh_fleet_motd_spec,
@@ -462,6 +468,12 @@ _ROUTES = (
     ),
     (get_fleet_method, get_fleet_path, get_fleet_spec, get_fleet),
     (patch_fleet_method, patch_fleet_path, patch_fleet_spec, update_fleet),
+    (
+        post_fleet_copy_method,
+        post_fleet_copy_path,
+        post_fleet_copy_spec,
+        copy_fleet_to_date,
+    ),
     (
         post_fleet_tracking_method,
         post_fleet_tracking_path,

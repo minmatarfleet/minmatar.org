@@ -9,8 +9,12 @@ from tribes.schemas import RestrictedResponse, restricted
 
 from fleets.endpoints.helpers import _fleet_authorized, fleet_host_fields
 
-from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
+from fleets.endpoints.schemas import (
+    EveFleetDetailResponse,
+    EveFleetTrackingResponse,
+)
 from fleets.helpers.close_mail import aars_forum_url
+from fleets.helpers.copy_fleet import can_copy_fleet
 from fleets.models import EveFleet, EveFleetInstance
 
 PATH = "/{fleet_id}"
@@ -18,7 +22,7 @@ METHOD = "get"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {
-        200: EveFleetResponse,
+        200: EveFleetDetailResponse,
         403: Optional[RestrictedResponse],
         404: None,
     },
@@ -66,9 +70,10 @@ def get_fleet(request, fleet_id: int):
         "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         "roam_report_url": fleet.roam_report_url,
         "aar_forum_url": aars_forum_url(),
+        "can_copy": can_copy_fleet(request.user, fleet),
         **fleet_host_fields(fleet),
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id
 
-    return EveFleetResponse(**payload)
+    return EveFleetDetailResponse(**payload)
