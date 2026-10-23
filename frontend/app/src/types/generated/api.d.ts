@@ -2388,6 +2388,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy Fleet To Date
+         * @description Schedule a new fleet at start_time with this fleet's settings: host, type, objective, briefing, staging, doctrine, campaign, the ships the FC added and their refits, hide names and MOTD. The caller becomes its FC; sign-ups start empty. Must manage the fleet and be able to schedule fleets for its host. A campaign that has ended by then, a staging that is no longer active and an open flag the group no longer allows are left off and listed in not_copied.
+         */
+        post: operations["fleets_endpoints_fleet_post_fleet_copy_copy_fleet_to_date"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/fights": {
         parameters: {
             query?: never;
@@ -9039,6 +9059,17 @@ export interface components {
             newly_awarded: components["schemas"]["CertificateAwardSchema"][];
         };
         /**
+         * CopyEveFleetRequest
+         * @description The copy's start time; every other setting comes from the fleet.
+         */
+        CopyEveFleetRequest: {
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+        };
+        /**
          * CorporationAbout
          * @description Cached About-tab rollups; mains only, never alts.
          */
@@ -10865,6 +10896,144 @@ export interface components {
             ship_name: string;
             /** Source */
             source: string;
+        };
+        /**
+         * EveFleetCopyResponse
+         * @description The new fleet, plus what could not be copied onto its date.
+         */
+        EveFleetCopyResponse: {
+            /** Aar Forum Url */
+            aar_forum_url?: string | null;
+            /** Aar Link */
+            aar_link?: string | null;
+            /** Audience */
+            audience?: string | null;
+            /** Campaign Id */
+            campaign_id?: number | null;
+            /** Campaign Slug */
+            campaign_slug?: string | null;
+            /** Copied From */
+            copied_from: number;
+            /** Description */
+            description: string;
+            /**
+             * Disable Motd
+             * @default false
+             */
+            disable_motd?: boolean;
+            /** Doctrine Id */
+            doctrine_id?: number | null;
+            /** Doctrine Name */
+            doctrine_name?: string | null;
+            /** Fleet Commander */
+            fleet_commander: number;
+            /** Fleet Commander Character Id */
+            fleet_commander_character_id?: number | null;
+            /** Fleet Commander Name */
+            fleet_commander_name?: string | null;
+            /**
+             * Hide Volunteers
+             * @default false
+             */
+            hide_volunteers?: boolean;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
+            /** Id */
+            id: number;
+            /** Location */
+            location: string;
+            /**
+             * Not Copied
+             * @default []
+             */
+            not_copied?: string[];
+            /** Objective */
+            objective?: string | null;
+            /**
+             * On Schedule
+             * @default false
+             */
+            on_schedule?: boolean;
+            /**
+             * Open To Alliance
+             * @default false
+             */
+            open_to_alliance?: boolean;
+            /** Roam Report Url */
+            roam_report_url?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+            /** Status */
+            status?: string | null;
+            tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
+            type: components["schemas"]["EveFleetType"];
+        };
+        /**
+         * EveFleetDetailResponse
+         * @description One fleet, with what the viewer may do with it.
+         */
+        EveFleetDetailResponse: {
+            /** Aar Forum Url */
+            aar_forum_url?: string | null;
+            /** Aar Link */
+            aar_link?: string | null;
+            /** Audience */
+            audience?: string | null;
+            /** Campaign Id */
+            campaign_id?: number | null;
+            /** Campaign Slug */
+            campaign_slug?: string | null;
+            /**
+             * Can Copy
+             * @default false
+             */
+            can_copy?: boolean;
+            /** Description */
+            description: string;
+            /**
+             * Disable Motd
+             * @default false
+             */
+            disable_motd?: boolean;
+            /** Doctrine Id */
+            doctrine_id?: number | null;
+            /** Doctrine Name */
+            doctrine_name?: string | null;
+            /** Fleet Commander */
+            fleet_commander: number;
+            /** Fleet Commander Character Id */
+            fleet_commander_character_id?: number | null;
+            /** Fleet Commander Name */
+            fleet_commander_name?: string | null;
+            /**
+             * Hide Volunteers
+             * @default false
+             */
+            hide_volunteers?: boolean;
+            host_group?: components["schemas"]["HostGroupRef"] | null;
+            /** Id */
+            id: number;
+            /** Location */
+            location: string;
+            /** Objective */
+            objective?: string | null;
+            /**
+             * On Schedule
+             * @default false
+             */
+            on_schedule?: boolean;
+            /**
+             * Open To Alliance
+             * @default false
+             */
+            open_to_alliance?: boolean;
+            /** Roam Report Url */
+            roam_report_url?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+            /** Status */
+            status?: string | null;
+            tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
+            type: components["schemas"]["EveFleetType"];
         };
         /**
          * EveFleetFightsResponse
@@ -25780,7 +25949,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EveFleetResponse"];
+                    "application/json": components["schemas"]["EveFleetDetailResponse"];
                 };
             };
             /** @description Forbidden */
@@ -25900,6 +26069,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_post_fleet_copy_copy_fleet_to_date: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyEveFleetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetCopyResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Not Found */
             404: {

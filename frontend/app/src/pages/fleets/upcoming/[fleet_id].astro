@@ -204,6 +204,13 @@ const motd_refreshed = Astro.url.searchParams.get('motd_refreshed') === '1'
 const motd_error = Astro.url.searchParams.get('motd_error') === '1'
 const motd_alert = motd_refreshed ? { title: t('refresh_motd'), content: t('refresh_motd_success') } : motd_error ? { title: t('refresh_motd'), content: t('refresh_motd_error') } : null
 
+// Landing on a fleet the FC just copied: say so, and name any setting left off.
+import { copied_alert_content, parse_not_copied } from '@helpers/fleet_copy'
+const copied_alert = fleet && Astro.url.searchParams.has('copied_from') ?
+    { title: t('fleets.copy.copied_title'), content: copied_alert_content(parse_not_copied(Astro.url.searchParams.get('not_copied')), t) } :
+    null
+const page_alert = motd_alert ?? copied_alert
+
 import {
     get_location_video_cover,
     get_location_video_cover_thumb,
@@ -261,9 +268,9 @@ const breadcrumbs = [
         }}
         x-init={[
             fleet_tracking_error_text ? `show_alert_dialog(${JSON.stringify({ title: t('start_fleet_tracking'), content: fleet_tracking_error_text })})` : '',
-            motd_alert ? `show_alert_dialog(${JSON.stringify(motd_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
+            page_alert ? `show_alert_dialog(${JSON.stringify(page_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
         ].filter(Boolean).join('; ') || undefined}
-        data-clean-url={motd_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
+        data-clean-url={page_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
         breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">

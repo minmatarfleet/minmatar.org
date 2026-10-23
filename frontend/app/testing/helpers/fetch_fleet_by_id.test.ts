@@ -90,6 +90,7 @@ describe('fetch_fleet_by_id', () => {
             host_group: null,
             open_to_alliance: false,
             on_schedule: false,
+            can_copy: false,
         })
         expect(get_campaign).toHaveBeenCalledWith('tama', 'token')
     })

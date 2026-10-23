@@ -885,6 +885,8 @@ export const fleet_types = ['strategic', 'non_strategic', 'training', 'npsi'] as
 export type FleetTypes = typeof fleet_types[number]
 
 export type Fleet = ApiResponse<'EveFleetResponse'>
+/** One fleet from GET /fleets/{id}, with what the viewer may do with it. */
+export type FleetDetail = ApiResponse<'EveFleetDetailResponse'>
 
 export interface Tracking {
     id:             number;

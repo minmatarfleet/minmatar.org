@@ -1,0 +1,153 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string'
+import { copy_default_start } from '@helpers/fleet_copy'
+import { local_hour_bands } from '@helpers/local_hour'
+
+/**
+ * Copy this fleet: a dialog with only the new EVE date and time. The copy
+ * keeps every other setting (backend fleets/helpers/copy_fleet.py) and the
+ * partial sends the FC to the new fleet.
+ */
+interface Props {
+    fleet:                  FleetUI;
+}
+
+const {
+    fleet,
+} = Astro.props
+
+const { eve_date, eve_time } = copy_default_start(fleet.start_time as unknown as string)
+const COPY_URL = `${translatePath('/partials/fleet_copy_component')}?${query_string({ fleet_id: fleet.id })}`
+const HOUR_BANDS = local_hour_bands(t)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+---
+
+<DialogButton
+    size="sm"
+    color="transparent"
+    max_width="32rem"
+>
+    {t('fleets.copy.button')}
+
+    <form
+        slot="dialog"
+        class="[ fleet-copy ]"
+        hx-post={COPY_URL}
+        hx-target="find .fleet-copy__error"
+        hx-swap="innerHTML"
+        x-data={`{
+            eve_date: ${JSON.stringify(eve_date)},
+            eve_time: ${JSON.stringify(eve_time)},
+            submitting: false,
+            bands: ${JSON.stringify(HOUR_BANDS)},
+            get start() {
+                const start = new Date(this.eve_date + 'T' + this.eve_time + ':00Z')
+                return isNaN(start.getTime()) ? null : start
+            },
+            get past() { return this.start !== null && this.start <= new Date() },
+            get band() { return this.start ? this.bands[this.start.getHours()] : ['', ''] },
+            get local_day() {
+                return this.start ? this.start.toLocaleDateString(${JSON.stringify(lang)}, { weekday: 'short', day: 'numeric', month: 'short' }) : ''
+            },
+            get local_time() {
+                return this.start ? this.start.toLocaleTimeString(${JSON.stringify(lang)}, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+            },
+        }`}
+        {...{
+            'x-on:htmx:before-request': 'submitting = true',
+            'x-on:htmx:after-request': 'submitting = false',
+        }}
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-2xs)">
+                <h3>{t('fleets.copy.title')}</h3>
+                <p>{t('fleets.copy.text')}</p>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-s)">
+                <Grid min_item_width="10rem" column_gap="var(--space-s)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <label for={`fleet-copy-date-${fleet.id}`}>{t('fleets.copy.date')}</label>
+                        <Input
+                            id={`fleet-copy-date-${fleet.id}`}
+                            type="date"
+                            name="eve_date"
+                            value={eve_date}
+                            x-model="eve_date"
+                            required
+                        />
+                    </Flexblock>
+                    <Flexblock gap="var(--space-3xs)">
+                        <label for={`fleet-copy-time-${fleet.id}`}>{t('fleets.copy.eve_time')}</label>
+                        <Input
+                            id={`fleet-copy-time-${fleet.id}`}
+                            type="time"
+                            name="eve_time"
+                            value={eve_time}
+                            x-model="eve_time"
+                            required
+                        />
+                    </Flexblock>
+                </Grid>
+
+                <p class="[ fleet-copy__local ]" x-show="start && !past" aria-live="polite">
+                    <span x-text="local_day"></span> · <b x-bind:class="band[0]" x-text="local_time"></b>
+                    <span class="[ fleet-copy__hint ]">{t('fleets.copy.your_time')} · <span x-text="band[1]"></span></span>
+                </p>
+                <p class="[ fleet-copy__past ]" x-show="past" role="alert" style="display: none">{t('fleets.copy.past')}</p>
+                <div class="[ fleet-copy__error ]" role="alert"></div>
+            </Flexblock>
+
+            <FlexInline justification="flex-end">
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    x-on:click="close_dialog()"
+                >
+                    {t('cancel')}
+                </Button>
+                <Button
+                    type="submit"
+                    size="sm"
+                    color="fleet-red"
+                    x-bind:disabled="!start || past || submitting"
+                >
+                    <span x-show="!submitting">{t('fleets.copy.submit')}</span>
+                    <span x-show="submitting" style="display: none">{t('fleets.copy.submitting')}</span>
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    .fleet-copy__local {
+        font-size: var(--step--1);
+    }
+
+    .fleet-copy__hint {
+        color: var(--text-muted);
+    }
+
+    .fleet-copy__error:empty {
+        display: none;
+    }
+
+    .fleet-copy__past,
+    .fleet-copy__error :global(small) {
+        color: var(--fleet-red);
+        font-size: var(--step--1);
+    }
+</style>

@@ -1,0 +1,45 @@
+---
+// no-error-refetch: mutation form; a refused copy says why inside the dialog.
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, partial_redirect } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import { copy_fleet } from '@helpers/api.minmatar.org/fleets'
+import { copied_fleet_path, copy_start_iso } from '@helpers/fleet_copy'
+
+const data = await Astro.request.formData()
+const start_time = copy_start_iso(String(data.get('eve_date') ?? ''), String(data.get('eve_time') ?? ''))
+
+// The backend checks the caller may copy this fleet and that the time is ahead.
+let error:string = t('fleets.copy.failed')
+if (start_time) {
+    try {
+        const copy = await copy_fleet(auth_token as string, fleet_id, start_time)
+        if (copy)
+            return partial_redirect(Astro.request, translatePath(copied_fleet_path(copy.id, copy.copied_from, copy.not_copied ?? [])))
+    } catch (failure) {
+        console.log(`Copying fleet ${fleet_id} failed: ${(failure as Error).message}`)
+        error = (failure as Error).message || error
+    }
+} else {
+    error = t('fleets.copy.pick_time')
+}
+---
+
+<small>{error}</small>

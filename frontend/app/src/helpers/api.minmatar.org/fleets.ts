@@ -2,6 +2,7 @@ import type { BattleScope } from '@helpers/fleet_fights'
 import type {
     FleetMember,
     Fleet,
+    FleetDetail,
     FleetRequest,
     Audience,
     Location,
@@ -49,7 +50,7 @@ export async function get_fleets_v3(access_token:string, status:FleetStatus, hos
  * including a plain 403, throw.
  */
 export async function get_fleet_access(access_token:string, id:number):Promise<
-    { fleet: Fleet, restricted: null } | { fleet: null, restricted: RestrictedResponse }
+    { fleet: FleetDetail, restricted: null } | { fleet: null, restricted: RestrictedResponse }
 > {
     const response = await api_response(`${API_ENDPOINT}/${id}`, {
         token: access_token,
@@ -65,7 +66,7 @@ export async function get_fleet_access(access_token:string, id:number):Promise<
         throw new Error('Error fetching fleet: HTTP error! Status — 403', { cause: 403 })
     }
 
-    return { fleet: body as Fleet, restricted: null }
+    return { fleet: body as FleetDetail, restricted: null }
 }
 
 /** The Discord start ping these fleet form fields would send (same builder as the real ping). */
@@ -106,8 +107,23 @@ export async function update_fleet(access_token:string, fleet:FleetPatchRequest,
     })
 }
 
+/** The new fleet, the fleet it was copied from, and the settings left off. */
+export type FleetCopy = ApiResponse<'EveFleetCopyResponse'>
+
+/**
+ * Schedules a copy of the fleet at `start_time`. Throws with the backend's
+ * reason unprefixed, so the dialog can show it to the FC as is.
+ */
+export async function copy_fleet(access_token:string, fleet_id:number, start_time:string) {
+    return await api_request<FleetCopy>(`${API_ENDPOINT}/${fleet_id}/copy`, {
+        method: 'POST',
+        token: access_token,
+        body: { start_time },
+    })
+}
+
 export async function get_fleet_by_id(access_token:string, id:number) {
-    return await api_request<Fleet>(`${API_ENDPOINT}/${id}`, {
+    return await api_request<FleetDetail>(`${API_ENDPOINT}/${id}`, {
         token: access_token,
         error: 'Error fetching fleet',
     })

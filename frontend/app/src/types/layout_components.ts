@@ -596,6 +596,8 @@ export interface FleetUI {
     host_group?:            TribeGroupRefUI | null;
     open_to_alliance?:      boolean;
     on_schedule?:           boolean;
+    /** The viewer may copy this fleet to a new date (from the API). */
+    can_copy?:              boolean;
 }
 
 export interface Tracking {
