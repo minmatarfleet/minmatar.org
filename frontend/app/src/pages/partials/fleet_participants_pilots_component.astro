@@ -29,26 +29,26 @@ try {
     fetch_error = error
 }
 
-const PARTIAL_URL = `${translatePath('/partials/fleet_participants_flew_component')}?${query_string({
+const PARTIAL_URL = `${translatePath('/partials/fleet_participants_pilots_component')}?${query_string({
     fleet_id,
     ...(engagement && { engagement }),
 })}`
 
-import FleetParticipantsFlew from '@components/blocks/FleetParticipantsFlew.astro'
+import FleetParticipantsPilots from '@components/blocks/FleetParticipantsPilots.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
 {fetch_error ?
-    <div id="fleet-flew">
+    <div id="fleet-pilots">
         <ErrorRefetch
             args={{
                 partial: PARTIAL_URL,
                 error: fetch_error,
                 delay: 0,
-                target: '#fleet-flew',
+                target: '#fleet-pilots',
             }}
         />
     </div>
     :
-    participants && <FleetParticipantsFlew participants={participants} fleet_id={fleet_id} />
+    participants && <FleetParticipantsPilots participants={participants} fleet_id={fleet_id} />
 }

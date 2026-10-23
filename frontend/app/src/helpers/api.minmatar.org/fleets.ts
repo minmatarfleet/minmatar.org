@@ -697,7 +697,8 @@ export async function get_fleet_my_pilot_locations(access_token: string, fleet_i
 // --- Participants after the fleet ------------------------------------------
 
 /**
- * Who flew a fleet: each pilot once by the first ship they undocked in, the
+ * Who flew a fleet: the people in join order with their ships, each pilot
+ * once by the ship they flew longest, the in-fleet count over time, the
  * roles flown, and (for the fleet's managers only, else null) the no-shows.
  */
 export type FleetParticipants = ApiResponse<'FleetParticipantsResponse'>

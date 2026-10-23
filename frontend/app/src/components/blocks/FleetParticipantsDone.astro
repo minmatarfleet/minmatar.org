@@ -6,9 +6,10 @@ import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
 import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
 
 /**
- * Participants after the fleet: who flew what (each pilot once, by the ship
- * they undocked in), the roles actually flown, and, for the FC and strategic
- * FCs, who signed up and never joined.
+ * Participants after the fleet: the pilots in join order with their ships
+ * (or the pilots in one engagement), who flew what by ship, the roles
+ * actually flown, and, for the FC and strategic FCs, who signed up and never
+ * joined.
  */
 interface Props {
     participants:   FleetParticipants;
@@ -30,20 +31,33 @@ const signed_up = participants.signed_up ?? 0
 const walk_ins = participants.joined_without_signing_up ?? participants.pilots
 
 const sub_tabs = [
-    { id: 'participants-flew', label: t('fleets.after.flew'), meta: participants.pilots.toString() },
+    { id: 'participants-pilots', label: t('fleets.after.pilots_tab') },
+    { id: 'participants-by-ship', label: t('fleets.after.by_ship') },
     { id: 'participants-roles-flown', label: t('fleets.after.roles_flown') },
     ...(no_shows !== null ? [{ id: 'participants-no-shows', label: t('fleets.after.no_shows'), meta: no_shows.length.toString() }] : []),
 ]
 
-import FleetParticipantsFlew from '@components/blocks/FleetParticipantsFlew.astro'
+import FleetParticipantsPilots from '@components/blocks/FleetParticipantsPilots.astro'
+import FleetParticipantsByShip from '@components/blocks/FleetParticipantsByShip.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
-<SectionTabs aria_label={t('fleets.participants.label')} id_prefix="fleet-after" tabs={sub_tabs} variant="pills" class="[ fleet-after ]">
-    <SectionTabPanel id="participants-flew" id_prefix="fleet-after" is_default={true}>
-        <FleetParticipantsFlew participants={participants} fleet_id={fleet_id} />
+<SectionTabs
+    aria_label={t('fleets.participants.label')}
+    id_prefix="fleet-after"
+    tabs={sub_tabs}
+    hash_aliases={{ 'participants-flew': 'participants-pilots' }}
+    variant="pills"
+    class="[ fleet-after ]"
+>
+    <SectionTabPanel id="participants-pilots" id_prefix="fleet-after" is_default={true}>
+        <FleetParticipantsPilots participants={participants} fleet_id={fleet_id} />
+    </SectionTabPanel>
+
+    <SectionTabPanel id="participants-by-ship" id_prefix="fleet-after">
+        <FleetParticipantsByShip participants={participants} />
     </SectionTabPanel>
 
     <SectionTabPanel id="participants-roles-flown" id_prefix="fleet-after">

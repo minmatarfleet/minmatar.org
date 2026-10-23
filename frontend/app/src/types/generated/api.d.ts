@@ -2957,7 +2957,7 @@ export interface paths {
         };
         /**
          * Get Fleet Participants
-         * @description Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else. engagement=<position> (1-based over the fight timeline's rounds, the same index the Fights tab uses) counts only pilots in fleet from a minute before that round to a minute after, each by the hull they were in at the time; a skirmish, a missing position or a fleet without a timeline is a 404. engagements lists the rounds for filter pills. doctrine_flown has one segment per round (neighbouring rounds on the same doctrine merged; a doctrine needs half the pilots out of pods in its hulls), one whole-fleet segment when the timeline has no rounds, and is empty without a timeline. For viewers who are not Strategic FCs every pilot who flew a capital, jump freighter, Rorqual, force recon, black ops or cyno hull is left out of everything and the cyno row is dropped; opsec_filtered is true for every such viewer.
+         * @description Who flew the fleet, from every tracked instance: hulls by the non-capsule ship each pilot flew longest, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. pilots and characters count characters; people folds them into one per account (unregistered characters count alone). roster lists those people in join order, each with their characters' ships in order, and is whole-fleet only, as is phases (the fleet split at reship waves after the form-up, each pilot by the hull flown longest in that part). in_fleet is the character count per minute as change points, with peak and peak_at. Kills and losses come from the fight timeline's matched killmails and are null without a timeline. A hidden roster names only the caller's own characters (Strategic FCs see everyone) and hidden_pilots counts the people left out; counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else. engagement=<position> (1-based over the fight timeline's rounds and skirmishes, the same index the Fights tab uses) counts only pilots in fleet from a minute before it to a minute after, each by the hull they were in at the time, with fight describing it; a missing position or a fleet without a timeline is a 404. engagements lists the rounds and fights every round and skirmish. doctrine_flown has one segment per round (neighbouring rounds on the same doctrine merged; a doctrine needs half the pilots out of pods in its hulls), one whole-fleet segment when the timeline has no rounds, and is empty without a timeline. For viewers who are not Strategic FCs every pilot who flew a capital, jump freighter, Rorqual, force recon, black ops or cyno hull is left out of everything and the cyno row is dropped; opsec_filtered is true for every such viewer.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants"];
         put?: never;
@@ -13427,6 +13427,38 @@ export interface components {
             /** Waves */
             waves: components["schemas"]["InviteWave"][];
         };
+        /** FleetParticipantsCharacter */
+        FleetParticipantsCharacter: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Joined
+             * Format: date-time
+             */
+            joined: string;
+            /** Kills */
+            kills?: number | null;
+            /**
+             * Left
+             * Format: date-time
+             */
+            left: string;
+            /** Losses */
+            losses?: number | null;
+            /**
+             * Lost At
+             * @default []
+             */
+            lost_at?: string[];
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Ships */
+            ships: components["schemas"]["FleetParticipantsShipFlown"][];
+        };
         /** FleetParticipantsDoctrineHull */
         FleetParticipantsDoctrineHull: {
             /** Count */
@@ -13472,6 +13504,89 @@ export interface components {
              */
             start: string;
         };
+        /** FleetParticipantsEvent */
+        FleetParticipantsEvent: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Count */
+            count: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "joined" | "reship";
+            /**
+             * Ships
+             * @default []
+             */
+            ships?: components["schemas"]["FleetParticipantsEventShip"][];
+        };
+        /** FleetParticipantsEventShip */
+        FleetParticipantsEventShip: {
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+        };
+        /** FleetParticipantsFight */
+        FleetParticipantsFight: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Kills */
+            kills: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "round" | "skirmish";
+            /** Losses */
+            losses: number;
+            /** Number */
+            number?: number | null;
+            /** Position */
+            position: number;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
+        /** FleetParticipantsFightDetail */
+        FleetParticipantsFightDetail: {
+            /** Against */
+            against: string[];
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Kills */
+            kills: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "round" | "skirmish";
+            /** Losses */
+            losses: number;
+            /** Number */
+            number?: number | null;
+            /** Position */
+            position: number;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /** Systems */
+            systems: string[];
+        };
         /** FleetParticipantsHull */
         FleetParticipantsHull: {
             /** Count */
@@ -13492,6 +13607,20 @@ export interface components {
             character_id: number;
             /** Character Name */
             character_name: string;
+            /** Kills */
+            kills?: number | null;
+            /** Losses */
+            losses?: number | null;
+        };
+        /** FleetParticipantsInFleet */
+        FleetParticipantsInFleet: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Count */
+            count: number;
         };
         /** FleetParticipantsNoShow */
         FleetParticipantsNoShow: {
@@ -13504,10 +13633,54 @@ export interface components {
             /** Ship Type Id */
             ship_type_id: number;
         };
+        /** FleetParticipantsPerson */
+        FleetParticipantsPerson: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Characters */
+            characters: components["schemas"]["FleetParticipantsCharacter"][];
+            /**
+             * Joined
+             * Format: date-time
+             */
+            joined: string;
+            /** Kills */
+            kills?: number | null;
+            /** Losses */
+            losses?: number | null;
+            /** Registered */
+            registered: boolean;
+        };
+        /** FleetParticipantsPhase */
+        FleetParticipantsPhase: {
+            /** Characters */
+            characters: number;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Hulls */
+            hulls: components["schemas"]["FleetParticipantsHull"][];
+            /** Peak */
+            peak: number;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+        };
         /** FleetParticipantsResponse */
         FleetParticipantsResponse: {
             /** Changed Ship */
             changed_ship: number;
+            /**
+             * Characters
+             * @default 0
+             */
+            characters?: number;
             /**
              * Doctrine Flown
              * @default []
@@ -13522,23 +13695,70 @@ export interface components {
              * @default []
              */
             engagements?: components["schemas"]["FleetParticipantsEngagement"][];
+            fight?: components["schemas"]["FleetParticipantsFightDetail"] | null;
+            /**
+             * Fights
+             * @default []
+             */
+            fights?: components["schemas"]["FleetParticipantsFight"][];
+            /**
+             * Fleet Events
+             * @default []
+             */
+            fleet_events?: components["schemas"]["FleetParticipantsEvent"][];
             /** Flew */
             flew: components["schemas"]["FleetParticipantsHull"][];
+            /**
+             * Hidden Pilots
+             * @default 0
+             */
+            hidden_pilots?: number;
+            /**
+             * In Fleet
+             * @default []
+             */
+            in_fleet?: components["schemas"]["FleetParticipantsInFleet"][];
             /** Joined Without Signing Up */
             joined_without_signing_up?: number | null;
             /** Logi Fc */
             logi_fc: components["schemas"]["EveFleetRoleVolunteerResponse"][];
             /** No Shows */
             no_shows?: components["schemas"]["FleetParticipantsNoShow"][] | null;
+            /** On Killmail */
+            on_killmail?: number | null;
             /**
              * Opsec Filtered
              * @default false
              */
             opsec_filtered?: boolean;
+            /**
+             * Peak
+             * @default 0
+             */
+            peak?: number;
+            /** Peak At */
+            peak_at?: string | null;
+            /**
+             * People
+             * @default 0
+             */
+            people?: number;
+            /** People On Killmail */
+            people_on_killmail?: number | null;
+            /**
+             * Phases
+             * @default []
+             */
+            phases?: components["schemas"]["FleetParticipantsPhase"][];
             /** Pilots */
             pilots: number;
             /** Roles Flown */
             roles_flown: components["schemas"]["FleetParticipantsRole"][];
+            /**
+             * Roster
+             * @default []
+             */
+            roster?: components["schemas"]["FleetParticipantsPerson"][];
             /** Signed Up */
             signed_up?: number | null;
         };
@@ -13573,6 +13793,23 @@ export interface components {
             character_name: string;
             /** Ship Name */
             ship_name: string;
+        };
+        /** FleetParticipantsShipFlown */
+        FleetParticipantsShipFlown: {
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
         };
         /**
          * FleetPingPreviewRequest

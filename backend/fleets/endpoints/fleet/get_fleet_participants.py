@@ -30,6 +30,9 @@ METHOD = "get"
 class FleetParticipantsHullPilot(BaseModel):
     character_id: int
     character_name: str
+    # Killmails in the same scope; null without a fight timeline.
+    kills: Optional[int] = None
+    losses: Optional[int] = None
 
 
 class FleetParticipantsHull(BaseModel):
@@ -74,6 +77,78 @@ class FleetParticipantsEngagement(BaseModel):
     end: datetime
 
 
+class FleetParticipantsFight(BaseModel):
+    position: int  # 1-based index into the fight timeline's rounds
+    kind: Literal["round", "skirmish"]
+    number: Optional[int] = None  # rounds only
+    start: datetime
+    end: datetime
+    kills: int
+    losses: int
+
+
+class FleetParticipantsFightDetail(FleetParticipantsFight):
+    systems: List[str]
+    against: List[str]
+
+
+class FleetParticipantsInFleet(BaseModel):
+    at: datetime
+    count: int
+
+
+class FleetParticipantsEventShip(BaseModel):
+    name: str
+    count: int
+
+
+class FleetParticipantsEvent(BaseModel):
+    kind: Literal["joined", "reship"]
+    at: datetime
+    count: int
+    ships: List[FleetParticipantsEventShip] = []
+
+
+class FleetParticipantsShipFlown(BaseModel):
+    ship_type_id: int
+    ship_name: str
+    start: datetime
+    end: datetime
+
+
+class FleetParticipantsCharacter(BaseModel):
+    character_id: int
+    character_name: str
+    joined: datetime
+    left: datetime
+    kills: Optional[int] = None
+    losses: Optional[int] = None
+    lost_at: List[datetime] = []
+    # The hull flown longest.
+    ship_type_id: int
+    ship_name: str
+    ships: List[FleetParticipantsShipFlown]
+
+
+class FleetParticipantsPerson(BaseModel):
+    # The account's primary character when it flew, else its first in.
+    character_id: int
+    character_name: str
+    registered: bool
+    joined: datetime
+    kills: Optional[int] = None
+    losses: Optional[int] = None
+    characters: List[FleetParticipantsCharacter]
+
+
+class FleetParticipantsPhase(BaseModel):
+    start: datetime
+    end: datetime
+    characters: int
+    peak: int
+    hulls: List[FleetParticipantsHull]
+
+
 class FleetParticipantsDoctrineHull(BaseModel):
     ship_type_id: int
     ship_name: str
@@ -93,6 +168,10 @@ class FleetParticipantsDoctrineSegment(BaseModel):
 
 class FleetParticipantsResponse(BaseModel):
     pilots: int
+    characters: int = 0
+    people: int = 0
+    on_killmail: Optional[int] = None
+    people_on_killmail: Optional[int] = None
     flew: List[FleetParticipantsHull]
     changed_ship: int
     ended_in_pod: int
@@ -100,6 +179,16 @@ class FleetParticipantsResponse(BaseModel):
     logi_fc: List[EveFleetRoleVolunteerResponse]
     engagements: List[FleetParticipantsEngagement] = []
     engagement: Optional[int] = None
+    fights: List[FleetParticipantsFight] = []
+    fight: Optional[FleetParticipantsFightDetail] = None
+    in_fleet: List[FleetParticipantsInFleet] = []
+    peak: int = 0
+    peak_at: Optional[datetime] = None
+    fleet_events: List[FleetParticipantsEvent] = []
+    # Whole fleet only (empty for an engagement).
+    roster: List[FleetParticipantsPerson] = []
+    hidden_pilots: int = 0
+    phases: List[FleetParticipantsPhase] = []
     doctrine_flown: List[FleetParticipantsDoctrineSegment] = []
     opsec_filtered: bool = False
     # FC and fleet managers only; null for everyone else.
@@ -112,19 +201,30 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: FleetParticipantsResponse, 403: None, 404: None},
     "description": (
-        "Who flew the fleet, from every tracked instance: hulls by each "
-        "pilot's first non-capsule ship, pilots who reshipped or ended in a "
-        "pod, and logi, links and cynos from any hull a pilot flew. A hidden "
-        "roster names only the caller's own characters in roles flown "
-        "(Strategic FCs see everyone); counts cover every pilot. no_shows, "
+        "Who flew the fleet, from every tracked instance: hulls by the "
+        "non-capsule ship each pilot flew longest, pilots who reshipped or "
+        "ended in a pod, and logi, links and cynos from any hull a pilot "
+        "flew. pilots and characters count characters; people folds them "
+        "into one per account (unregistered characters count alone). "
+        "roster lists those people in join order, each with their "
+        "characters' ships in order, and is whole-fleet only, as is phases "
+        "(the fleet split at reship waves after the form-up, each pilot by "
+        "the hull flown longest in that part). in_fleet is the character "
+        "count per minute as change points, with peak and peak_at. Kills "
+        "and losses come from the fight timeline's matched killmails and "
+        "are null without a timeline. A hidden roster names only the "
+        "caller's own characters (Strategic FCs see everyone) and "
+        "hidden_pilots counts the people left out; counts cover every "
+        "pilot. no_shows, "
         "signed_up and joined_without_signing_up are only returned to the "
         "FC and fleet managers, null for everyone else. "
-        "engagement=<position> (1-based over the fight timeline's rounds, "
-        "the same index the Fights tab uses) counts only pilots in fleet "
-        "from a minute before that round to a minute after, each by the "
-        "hull they were in at the time; a skirmish, a missing position or a "
-        "fleet without a timeline is a 404. engagements lists the rounds "
-        "for filter pills. doctrine_flown has one segment per round "
+        "engagement=<position> (1-based over the fight timeline's rounds "
+        "and skirmishes, the same index the Fights tab uses) counts only "
+        "pilots in fleet from a minute before it to a minute after, each by "
+        "the hull they were in at the time, with fight describing it; a "
+        "missing position or a fleet without a timeline is a 404. "
+        "engagements lists the rounds and fights every round and skirmish. "
+        "doctrine_flown has one segment per round "
         "(neighbouring rounds on the same doctrine merged; a doctrine needs "
         "half the pilots out of pods in its hulls), one whole-fleet segment "
         "when the timeline has no rounds, and is empty without a timeline. "

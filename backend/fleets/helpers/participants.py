@@ -5,8 +5,8 @@ Every instance of the fleet counts, so a pilot who was in two instances is
 still one pilot. Ship history comes from the append-only ship snapshots;
 the member row holds the last ship the poller saw.
 
-- What the fleet flew counts each pilot once, by the first hull they were
-  in that is not a capsule (the member row when no snapshot has one).
+- What the fleet flew counts each pilot once, by the hull they flew
+  longest that is not a capsule (the member row when no snapshot has one).
 - Roles flown look at every hull a pilot was in, so a pilot who reshipped
   into logi counts as logi. Hulls are matched to roles the same way a pilot
   in a live fleet is (``role_coverage.hull_roles``): the fleet's
@@ -15,10 +15,14 @@ the member row holds the last ship the poller saw.
   is not counted.
 - No-shows are ship sign-ups whose character never joined any instance.
 
-An engagement (a round of the fight timeline, by its 1-based position in
-the timeline's ``rounds``) narrows all of this to the pilots in fleet
-during that round, give or take a minute, each by the hull they were in at
-the time: the latest non-capsule ship seen by the end of the round.
+An engagement (a round or skirmish of the fight timeline, by its 1-based
+position in the timeline's ``rounds``) narrows all of this to the pilots in
+fleet during it, give or take a minute, each by the hull they were in at
+the time: the latest non-capsule ship seen by the end of it.
+
+The whole-fleet view also has the people behind the characters in join
+order, the in-fleet count over time and the fleet split into parts at its
+reship waves (``participants_roster``).
 
 For viewers who are not Strategic FCs every pilot who flew a sensitive hull
 (fleets.helpers.opsec) is left out entirely, and so is the cyno row.
@@ -39,6 +43,7 @@ from fleets.helpers.doctrine_flown import (
     pick_doctrine,
 )
 from fleets.helpers.opsec import sensitive_hull_ids, sensitive_pilot_ids
+from fleets.helpers import participants_roster as roster
 from fleets.helpers.presence import (
     JOIN_GRACE,
     LAST_SEEN_GRACE,
@@ -61,7 +66,7 @@ ENGAGEMENT_SLACK = timedelta(minutes=1)
 
 
 class EngagementNotFound(LookupError):
-    """No round at that position of the fleet's fight timeline."""
+    """No round or skirmish at that position of the fleet's fight timeline."""
 
 
 @dataclass
@@ -170,7 +175,7 @@ def _hulls_flown(pilot) -> list[tuple[int, str]]:
 
 def _whole_fleet(pilot) -> _Flown:
     return _Flown(
-        hull=_first_ship(pilot),
+        hull=roster.longest_hull(roster.segments(pilot)) or _first_ship(pilot),
         hulls=_hulls_flown(pilot),
         changed=len({type_id for type_id, _ in pilot["snapshots"]}) > 1,
         podded=_is_pod(*pilot["members"][-1]),
@@ -259,7 +264,7 @@ def _roles_flown(
     return rows
 
 
-def _flew(pilots, flown: dict[int, _Flown], visible) -> list[dict]:
+def _flew(pilots, flown: dict[int, _Flown], visible, kills=None) -> list[dict]:
     """One row per hull, each pilot by the hull they count as."""
     rows: dict[int, dict] = {}
     for character_id, record in flown.items():
@@ -279,6 +284,14 @@ def _flew(pilots, flown: dict[int, _Flown], visible) -> list[dict]:
                 {
                     "character_id": character_id,
                     "character_name": pilots[character_id]["name"],
+                    "kills": (
+                        kills.kills.get(character_id, 0) if kills else None
+                    ),
+                    "losses": (
+                        len(kills.losses.get(character_id, ()))
+                        if kills
+                        else None
+                    ),
                 }
             )
     for row in rows.values():
@@ -288,19 +301,26 @@ def _flew(pilots, flown: dict[int, _Flown], visible) -> list[dict]:
     )
 
 
-def fleet_engagements(fleet) -> list[dict] | None:
-    """
-    The fight timeline's rounds with their 1-based position, or None when
-    the fleet has no timeline yet. Skirmishes keep their position.
-    """
+def _timeline(fleet) -> tuple[dict | None, list]:
+    """The fight timeline's payload and matched killmail rows."""
     # pylint: disable=import-outside-toplevel
     from fleets.models import EveFleetFightTimeline
 
-    payload = (
+    row = (
         EveFleetFightTimeline.objects.filter(eve_fleet=fleet)
-        .values_list("payload", flat=True)
+        .values_list("payload", "killmails")
         .first()
     )
+    if not row or not row[0]:
+        return None, []
+    return row[0], row[1] or []
+
+
+def fleet_engagements(payload) -> list[dict] | None:
+    """
+    The fight timeline's rounds and skirmishes with their 1-based position,
+    or None when the fleet has no timeline yet.
+    """
     if not payload:
         return None
     return [
@@ -310,6 +330,14 @@ def fleet_engagements(fleet) -> list[dict] | None:
             "number": summary.get("number"),
             "start": summary["start"],
             "end": summary["end"],
+            "kills": summary.get("ships_destroyed") or 0,
+            "losses": summary.get("ships_lost") or 0,
+            "systems": [
+                system.get("name") for system in summary.get("systems") or []
+            ],
+            "against": [
+                group.get("name") for group in summary.get("hostiles") or []
+            ],
         }
         for position, summary in enumerate(payload.get("rounds") or [], 1)
     ]
@@ -496,12 +524,17 @@ def fleet_participants(
             if character_id not in hidden
         }
 
-    timeline = fleet_engagements(fleet)
+    payload, killmails = _timeline(fleet)
+    timeline = fleet_engagements(payload)
     rounds = [e for e in timeline or [] if e["kind"] == "round"]
+    chosen = None
     if engagement is None:
         flown = {character_id: whole[character_id] for character_id in pilots}
+        kills = roster.tally(killmails) if payload else None
     else:
-        chosen = next((e for e in rounds if e["position"] == engagement), None)
+        chosen = next(
+            (e for e in timeline or [] if e["position"] == engagement), None
+        )
         if chosen is None:
             raise EngagementNotFound(engagement)
         start, end = _window(chosen)
@@ -510,10 +543,40 @@ def fleet_participants(
             for character_id, pilot in pilots.items()
             if _present(pilot, start, end)
         }
+        kills = roster.tally(killmails, start, end)
+
+    keys, primaries = roster.accounts(list(pilots))
+    in_fleet, peak, peak_at = roster.in_fleet_series(pilots)
+    events = roster.fleet_events(payload)
+    on_killmail = (
+        {c for c in flown if kills.on_killmail(c)} if kills else set()
+    )
+    whole_view = {}
+    if engagement is None:
+        flown_segments = {
+            character_id: roster.segments(pilot)
+            for character_id, pilot in pilots.items()
+        }
+        rows, hidden_people = roster.person_rows(
+            pilots, flown_segments, kills, visible, keys, primaries
+        )
+        whole_view = {
+            "roster": rows,
+            "hidden_pilots": hidden_people,
+            "phases": _phases(
+                pilots, flown_segments, events, in_fleet, visible
+            ),
+        }
 
     return {
         "pilots": len(flown),
-        "flew": _flew(pilots, flown, visible),
+        "characters": len(flown),
+        "people": len({keys[c] for c in flown}),
+        "on_killmail": len(on_killmail) if kills else None,
+        "people_on_killmail": (
+            len({keys[c] for c in on_killmail}) if kills else None
+        ),
+        "flew": _flew(pilots, flown, visible, kills),
         "changed_ship": sum(1 for record in flown.values() if record.changed),
         "ended_in_pod": sum(1 for record in flown.values() if record.podded),
         "roles_flown": _roles_flown(
@@ -523,11 +586,72 @@ def fleet_participants(
             {key: e[key] for key in ("position", "number", "start", "end")}
             for e in rounds
         ],
+        "fights": [
+            {
+                key: e[key]
+                for key in (
+                    "position",
+                    "kind",
+                    "number",
+                    "start",
+                    "end",
+                    "kills",
+                    "losses",
+                )
+            }
+            for e in timeline or []
+        ],
         "engagement": engagement,
+        "fight": chosen,
+        "in_fleet": in_fleet,
+        "peak": peak,
+        "peak_at": peak_at,
+        "fleet_events": events,
         "doctrine_flown": _doctrine_flown(
             fleet, pilots, None if timeline is None else rounds
         ),
         "opsec_filtered": opsec,
         "member_ids": member_ids,
         "hidden_ids": hidden,
+        **whole_view,
     }
+
+
+def _phases(pilots, flown_segments, events, in_fleet, visible) -> list[dict]:
+    """
+    The fleet split at its reship waves: each pilot in a part counts once,
+    by the hull they flew longest in it.
+    """
+    if not pilots:
+        return []
+    spans = {c: roster.presence(pilot) for c, pilot in pilots.items()}
+    start = min(first for first, _ in spans.values())
+    end = max(last for _, last in spans.values())
+    cuts = [start, *roster.phase_cuts(events, start), end]
+    phases = []
+    for lo, hi in zip(cuts, cuts[1:]):
+        flown: dict[int, _Flown] = {}
+        for character_id, (first, last) in spans.items():
+            # Leaving just after a cut is not flying in the next part.
+            if min(last, hi) - max(first, lo) < roster.MIN_PHASE_PRESENCE:
+                continue
+            hull = roster.longest_hull(flown_segments[character_id], lo, hi)
+            if hull is None:
+                continue
+            flown[character_id] = _Flown(
+                hull=hull, hulls=[hull], changed=False, podded=False
+            )
+        # The count as the part opens, then every change inside it.
+        before = [p["count"] for p in in_fleet if p["at"] <= lo][-1:]
+        inside = [p["count"] for p in in_fleet if lo < p["at"] <= hi]
+        peak = max(before + inside, default=0)
+        phases.append(
+            {
+                "start": lo,
+                "end": hi,
+                "characters": len(flown),
+                "peak": peak,
+                "hulls": _flew(pilots, flown, visible),
+            }
+        )
+    return phases

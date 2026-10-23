@@ -15588,6 +15588,85 @@
         "title": "FleetInvitesResponse",
         "type": "object"
       },
+      "FleetParticipantsCharacter": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "joined": {
+            "format": "date-time",
+            "title": "Joined",
+            "type": "string"
+          },
+          "kills": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kills"
+          },
+          "left": {
+            "format": "date-time",
+            "title": "Left",
+            "type": "string"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losses"
+          },
+          "lost_at": {
+            "default": [],
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Lost At",
+            "type": "array"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsShipFlown"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "joined",
+          "left",
+          "ship_type_id",
+          "ship_name",
+          "ships"
+        ],
+        "title": "FleetParticipantsCharacter",
+        "type": "object"
+      },
       "FleetParticipantsDoctrineHull": {
         "properties": {
           "count": {
@@ -15721,6 +15800,186 @@
         "title": "FleetParticipantsEngagement",
         "type": "object"
       },
+      "FleetParticipantsEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "joined",
+              "reship"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "ships": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsEventShip"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "count"
+        ],
+        "title": "FleetParticipantsEvent",
+        "type": "object"
+      },
+      "FleetParticipantsEventShip": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "title": "FleetParticipantsEventShip",
+        "type": "object"
+      },
+      "FleetParticipantsFight": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "round",
+              "skirmish"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "kind",
+          "start",
+          "end",
+          "kills",
+          "losses"
+        ],
+        "title": "FleetParticipantsFight",
+        "type": "object"
+      },
+      "FleetParticipantsFightDetail": {
+        "properties": {
+          "against": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Against",
+            "type": "array"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "round",
+              "skirmish"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Systems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "position",
+          "kind",
+          "start",
+          "end",
+          "kills",
+          "losses",
+          "systems",
+          "against"
+        ],
+        "title": "FleetParticipantsFightDetail",
+        "type": "object"
+      },
       "FleetParticipantsHull": {
         "properties": {
           "count": {
@@ -15761,6 +16020,28 @@
           "character_name": {
             "title": "Character Name",
             "type": "string"
+          },
+          "kills": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kills"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losses"
           }
         },
         "required": [
@@ -15768,6 +16049,25 @@
           "character_name"
         ],
         "title": "FleetParticipantsHullPilot",
+        "type": "object"
+      },
+      "FleetParticipantsInFleet": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "count"
+        ],
+        "title": "FleetParticipantsInFleet",
         "type": "object"
       },
       "FleetParticipantsNoShow": {
@@ -15798,10 +16098,112 @@
         "title": "FleetParticipantsNoShow",
         "type": "object"
       },
+      "FleetParticipantsPerson": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "joined": {
+            "format": "date-time",
+            "title": "Joined",
+            "type": "string"
+          },
+          "kills": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kills"
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losses"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "registered",
+          "joined",
+          "characters"
+        ],
+        "title": "FleetParticipantsPerson",
+        "type": "object"
+      },
+      "FleetParticipantsPhase": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "hulls": {
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsHull"
+            },
+            "title": "Hulls",
+            "type": "array"
+          },
+          "peak": {
+            "title": "Peak",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "characters",
+          "peak",
+          "hulls"
+        ],
+        "title": "FleetParticipantsPhase",
+        "type": "object"
+      },
       "FleetParticipantsResponse": {
         "properties": {
           "changed_ship": {
             "title": "Changed Ship",
+            "type": "integer"
+          },
+          "characters": {
+            "default": 0,
+            "title": "Characters",
             "type": "integer"
           },
           "doctrine_flown": {
@@ -15835,11 +16237,50 @@
             "title": "Engagements",
             "type": "array"
           },
+          "fight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetParticipantsFightDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fights": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsFight"
+            },
+            "title": "Fights",
+            "type": "array"
+          },
+          "fleet_events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsEvent"
+            },
+            "title": "Fleet Events",
+            "type": "array"
+          },
           "flew": {
             "items": {
               "$ref": "#/components/schemas/FleetParticipantsHull"
             },
             "title": "Flew",
+            "type": "array"
+          },
+          "hidden_pilots": {
+            "default": 0,
+            "title": "Hidden Pilots",
+            "type": "integer"
+          },
+          "in_fleet": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsInFleet"
+            },
+            "title": "In Fleet",
             "type": "array"
           },
           "joined_without_signing_up": {
@@ -15874,10 +16315,62 @@
             ],
             "title": "No Shows"
           },
+          "on_killmail": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Killmail"
+          },
           "opsec_filtered": {
             "default": false,
             "title": "Opsec Filtered",
             "type": "boolean"
+          },
+          "peak": {
+            "default": 0,
+            "title": "Peak",
+            "type": "integer"
+          },
+          "peak_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak At"
+          },
+          "people": {
+            "default": 0,
+            "title": "People",
+            "type": "integer"
+          },
+          "people_on_killmail": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "People On Killmail"
+          },
+          "phases": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsPhase"
+            },
+            "title": "Phases",
+            "type": "array"
           },
           "pilots": {
             "title": "Pilots",
@@ -15888,6 +16381,14 @@
               "$ref": "#/components/schemas/FleetParticipantsRole"
             },
             "title": "Roles Flown",
+            "type": "array"
+          },
+          "roster": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetParticipantsPerson"
+            },
+            "title": "Roster",
             "type": "array"
           },
           "signed_up": {
@@ -15996,6 +16497,36 @@
           "ship_name"
         ],
         "title": "FleetParticipantsRolePilot",
+        "type": "object"
+      },
+      "FleetParticipantsShipFlown": {
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "ship_name",
+          "start",
+          "end"
+        ],
+        "title": "FleetParticipantsShipFlown",
         "type": "object"
       },
       "FleetPingPreviewRequest": {
@@ -44324,7 +44855,7 @@
     },
     "/api/fleets/{fleet_id}/participants": {
       "get": {
-        "description": "Who flew the fleet, from every tracked instance: hulls by each pilot's first non-capsule ship, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. A hidden roster names only the caller's own characters in roles flown (Strategic FCs see everyone); counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else. engagement=<position> (1-based over the fight timeline's rounds, the same index the Fights tab uses) counts only pilots in fleet from a minute before that round to a minute after, each by the hull they were in at the time; a skirmish, a missing position or a fleet without a timeline is a 404. engagements lists the rounds for filter pills. doctrine_flown has one segment per round (neighbouring rounds on the same doctrine merged; a doctrine needs half the pilots out of pods in its hulls), one whole-fleet segment when the timeline has no rounds, and is empty without a timeline. For viewers who are not Strategic FCs every pilot who flew a capital, jump freighter, Rorqual, force recon, black ops or cyno hull is left out of everything and the cyno row is dropped; opsec_filtered is true for every such viewer.",
+        "description": "Who flew the fleet, from every tracked instance: hulls by the non-capsule ship each pilot flew longest, pilots who reshipped or ended in a pod, and logi, links and cynos from any hull a pilot flew. pilots and characters count characters; people folds them into one per account (unregistered characters count alone). roster lists those people in join order, each with their characters' ships in order, and is whole-fleet only, as is phases (the fleet split at reship waves after the form-up, each pilot by the hull flown longest in that part). in_fleet is the character count per minute as change points, with peak and peak_at. Kills and losses come from the fight timeline's matched killmails and are null without a timeline. A hidden roster names only the caller's own characters (Strategic FCs see everyone) and hidden_pilots counts the people left out; counts cover every pilot. no_shows, signed_up and joined_without_signing_up are only returned to the FC and fleet managers, null for everyone else. engagement=<position> (1-based over the fight timeline's rounds and skirmishes, the same index the Fights tab uses) counts only pilots in fleet from a minute before it to a minute after, each by the hull they were in at the time, with fight describing it; a missing position or a fleet without a timeline is a 404. engagements lists the rounds and fights every round and skirmish. doctrine_flown has one segment per round (neighbouring rounds on the same doctrine merged; a doctrine needs half the pilots out of pods in its hulls), one whole-fleet segment when the timeline has no rounds, and is empty without a timeline. For viewers who are not Strategic FCs every pilot who flew a capital, jump freighter, Rorqual, force recon, black ops or cyno hull is left out of everything and the cyno row is dropped; opsec_filtered is true for every such viewer.",
         "operationId": "fleets_endpoints_fleet_get_fleet_participants_get_fleet_participants",
         "parameters": [
           {
