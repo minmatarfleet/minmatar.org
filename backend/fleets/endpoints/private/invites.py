@@ -20,6 +20,9 @@ from fleets.endpoints.private.schemas import (
     InviteTotals,
     InviteWave,
     RepingResponse,
+    ResolveNamesRequest,
+    ResolveNamesResponse,
+    ResolvedPilot,
     ShipTargetProgress,
     WavePreviewResponse,
     WaveRequest,
@@ -31,6 +34,7 @@ from fleets.helpers.private_fleets import (
     PrivateFleetError,
     invite_totals,
     reping_no_answers,
+    resolve_invite_names,
     send_wave,
     sending_wave,
     target_progress,
@@ -338,6 +342,22 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
     return out
 
 
+def post_resolve_names(request, fleet_id: int, payload: ResolveNamesRequest):
+    """Match a paste of character or Discord names to pilots for the wave
+    form."""
+    fleet = _private_fleet(request, fleet_id)
+    if isinstance(fleet, tuple):
+        return fleet
+    try:
+        resolved = resolve_invite_names(payload.text)
+    except PrivateFleetError as exc:
+        return exc.status_code, ErrorResponse(detail=str(exc))
+    return ResolveNamesResponse(
+        matched=[ResolvedPilot(**row) for row in resolved["matched"]],
+        not_found=resolved["not_found"],
+    )
+
+
 ROUTES = (
     (
         "get",
@@ -402,5 +422,22 @@ ROUTES = (
             "description": "Tribe groups, corporations and pilots to invite.",
         },
         get_invite_candidates,
+    ),
+    (
+        "post",
+        "/{fleet_id}/invites/resolve",
+        {
+            "auth": AuthBearer(),
+            "response": {
+                200: ResolveNamesResponse,
+                400: ErrorResponse,
+                404: None,
+            },
+            "description": (
+                "Match a paste of primary character names or Discord "
+                "usernames to pilots for the New wave form."
+            ),
+        },
+        post_resolve_names,
     ),
 )

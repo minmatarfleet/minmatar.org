@@ -243,11 +243,20 @@ class FleetEmojiTestCase(SimpleTestCase):
 class FleetSignalsTestCase(TestCase):
     """Tests for fleet signals"""
 
+    def _schedule_fleet_mock(self, *, on_schedule: bool):
+        instance = MagicMock(spec=EveFleet)
+        instance.invite_only = False
+        instance.status = "pending"
+        instance.host_group_id = None
+        instance.open_to_alliance = False
+        instance.on_schedule = False
+        instance.audience = MagicMock()
+        instance.audience.add_to_schedule = on_schedule
+        return instance
+
     @patch("fleets.tasks.discord_client")
     def test_update_fleet_schedule_on_save(self, discord_mock):
-        instance = MagicMock(spec=EveFleet)
-
-        instance.audience.add_to_schedule = False
+        instance = self._schedule_fleet_mock(on_schedule=False)
 
         with self.captureOnCommitCallbacks(execute=True) as callbacks:
             update_fleet_schedule_on_save(None, instance, False)
@@ -256,7 +265,7 @@ class FleetSignalsTestCase(TestCase):
         self.assertEqual([], callbacks)
         discord_mock.get_messages.assert_not_called()
 
-        instance.audience.add_to_schedule = True
+        instance = self._schedule_fleet_mock(on_schedule=True)
         discord_mock.get_messages.return_value = []
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
@@ -272,10 +281,19 @@ class FleetSignalsTestCase(TestCase):
         discord_mock.create_message.assert_called_once()
 
     @patch("fleets.tasks.discord_client")
-    def test_update_fleet_schedule_on_delete(self, discord_mock):
-        instance = MagicMock(spec=EveFleet)
+    def test_private_fleet_save_skips_schedule_refresh(self, discord_mock):
+        instance = self._schedule_fleet_mock(on_schedule=True)
+        instance.invite_only = True
 
-        instance.audience.add_to_schedule = True
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            update_fleet_schedule_on_save(None, instance, False)
+
+        self.assertEqual([], callbacks)
+        discord_mock.get_messages.assert_not_called()
+
+    @patch("fleets.tasks.discord_client")
+    def test_update_fleet_schedule_on_delete(self, discord_mock):
+        instance = self._schedule_fleet_mock(on_schedule=True)
         discord_mock.get_messages.return_value = []
 
         with self.captureOnCommitCallbacks(execute=True):
@@ -288,8 +306,7 @@ class FleetSignalsTestCase(TestCase):
     def test_saves_share_one_queued_schedule_refresh(self, apply_async):
         """Saves made before the refresh runs queue it once, after a short
         delay, so Discord sees one delete-and-repost."""
-        instance = MagicMock(spec=EveFleet)
-        instance.audience.add_to_schedule = True
+        instance = self._schedule_fleet_mock(on_schedule=True)
         # Dedupe only applies when publishing to a broker, not eager runs.
         eager = celery_app.conf.task_always_eager
         celery_app.conf.task_always_eager = False
@@ -307,6 +324,27 @@ class FleetSignalsTestCase(TestCase):
             SCHEDULE_REFRESH_DELAY_SECONDS,
             apply_async.call_args.kwargs["countdown"],
         )
+
+    @patch("fleets.tasks.queue_fleet_schedule_refresh")
+    def test_editing_a_private_fleet_does_not_refresh_schedule(self, queue):
+        """Invite-only fleets are never on #schedule; editing them must not
+        delete-and-repost the channel."""
+        setup_fleet_reference_data()
+        audience = EveFleetAudience.objects.get(name="Test Audience")
+        self.assertTrue(audience.add_to_schedule)
+        fleet = EveFleet.objects.create(
+            type="strategic",
+            description="Quiet drop",
+            start_time=timezone.now() + timedelta(hours=4),
+            created_by=self.user,
+            audience=audience,
+            status="pending",
+            invite_only=True,
+        )
+        queue.reset_mock()
+        fleet.description = "Quiet drop, amended"
+        fleet.save()
+        queue.assert_not_called()
 
 
 class FleetRouterTestCase(TestCase):

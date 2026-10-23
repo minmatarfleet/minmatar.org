@@ -806,6 +806,18 @@ export async function get_fleet_invite_candidates(access_token:string, fleet_id:
     }) ?? []
 }
 
+export type FleetResolveNames = ApiResponse<'ResolveNamesResponse'>
+export type FleetResolvedPilot = ApiResponse<'ResolvedPilot'>
+
+/** Match a paste of character or Discord names to pilots for the wave form. */
+export async function resolve_fleet_invite_names(access_token:string, fleet_id:number, text:string) {
+    return await api_request<FleetResolveNames>(`${API_ENDPOINT}/${fleet_id}/invites/resolve`, {
+        method: 'POST',
+        token: access_token,
+        body: { text },
+    }) ?? { matched: [], not_found: [] }
+}
+
 /** Sit out a private fleet you were invited to. */
 export async function sit_out_fleet(access_token:string, fleet_id:number) {
     return await api_request<{ invite_id: number, answer: string }>(`${API_ENDPOINT}/${fleet_id}/invites/me/out`, {

@@ -16,7 +16,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.utils import timezone
 
 from discord.models import DiscordUser
@@ -33,6 +33,8 @@ from fleets.models import (
 MAX_WAVE_SIZE = 300
 # Re-ping no answers at most this often per fleet.
 REPING_COOLDOWN = timedelta(minutes=15)
+# Paste-a-list resolves at most this many names in one go.
+MAX_RESOLVE_NAMES = 50
 OPSEC_LINE = (
     "Invite only. Don't mention this fleet in any channel, on comms or in "
     "chat."
@@ -117,6 +119,173 @@ def wave_preview(
         "will_dm": len(with_discord),
         "helps": target_owner_counts(fleet, new),
     }
+
+
+def parse_invite_names(text: str) -> list[str]:
+    """Split a paste of character or Discord names into unique lines.
+
+    Accepts newlines, commas or semicolons; strips a leading ``@`` and
+    surrounding whitespace. Order is kept; duplicates (case-insensitive)
+    are dropped.
+    """
+    raw = (text or "").replace(",", "\n").replace(";", "\n")
+    seen: set[str] = set()
+    names: list[str] = []
+    for line in raw.splitlines():
+        name = line.strip().lstrip("@").strip()
+        if not name:
+            continue
+        key = name.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        names.append(name)
+    return names
+
+
+def _claim_invite_name(
+    matched_user: dict,
+    claimed: set[str],
+    *,
+    user_id: int,
+    name: str,
+    label: str,
+    detail: str,
+) -> None:
+    key = name.casefold()
+    if key in claimed:
+        return
+    claimed.add(key)
+    if user_id in matched_user:
+        return
+    matched_user[user_id] = {
+        "kind": "pilot",
+        "id": user_id,
+        "name": label,
+        "detail": detail,
+        "matched_as": name,
+    }
+
+
+def _match_invite_characters(
+    cleaned: list[str],
+    by_key: dict[str, str],
+    matched_user: dict,
+    claimed: set[str],
+) -> None:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.models import EveCorporation
+
+    character_q = Q()
+    for name in cleaned:
+        character_q |= Q(character_name__iexact=name)
+    characters = list(
+        EveCharacter.objects.filter(character_q)
+        .filter(user__isnull=False, user__is_active=True)
+        .select_related("user")
+    )
+    corp_ids = {c.corporation_id for c in characters if c.corporation_id}
+    corp_names = dict(
+        EveCorporation.objects.filter(corporation_id__in=corp_ids).values_list(
+            "corporation_id", "name"
+        )
+    )
+    for character in characters:
+        _claim_invite_name(
+            matched_user,
+            claimed,
+            user_id=character.user_id,
+            name=by_key.get(
+                character.character_name.casefold(), character.character_name
+            ),
+            label=character.character_name,
+            detail=corp_names.get(character.corporation_id, ""),
+        )
+
+
+def _match_invite_discord(
+    still: list[str],
+    by_key: dict[str, str],
+    matched_user: dict,
+    claimed: set[str],
+) -> None:
+    if not still:
+        return
+    discord_q = Q()
+    for name in still:
+        discord_q |= (
+            Q(discord_tag__iexact=name)
+            | Q(discord_tag__istartswith=f"{name}#")
+            | Q(user__username__iexact=name)
+        )
+    for discord_user in DiscordUser.objects.filter(
+        discord_q, user__is_active=True
+    ).select_related("user"):
+        tag = discord_user.discord_tag or ""
+        username = tag.split("#", maxsplit=1)[0]
+        site_name = discord_user.user.username
+        for candidate in (tag, username, site_name):
+            key = candidate.casefold()
+            if key in by_key and key not in claimed:
+                _claim_invite_name(
+                    matched_user,
+                    claimed,
+                    user_id=discord_user.user_id,
+                    name=by_key[key],
+                    label=username or site_name,
+                    detail="Discord",
+                )
+                break
+
+
+def _prefer_primary_invite_names(matched_user: dict) -> None:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.helpers.characters.identity import (
+        primary_characters_for_users,
+    )
+
+    mains = primary_characters_for_users(list(matched_user))
+    for user_id, row in matched_user.items():
+        main = mains.get(user_id)
+        if main is None:
+            continue
+        # Prefer the primary's name (alts and Discord usernames still match).
+        row["name"] = main.character_name
+        if not row["detail"] or row["detail"] == "Discord":
+            row["detail"] = ""
+
+
+def resolve_invite_names(names) -> dict:
+    """Match pasted primary-character or Discord usernames to accounts.
+
+    Each name is tried as an EVE character (any linked character), then as a
+    Discord tag (``name`` or ``name#discriminator``), then as the site
+    username. Returns ``matched`` pilots (one per user, first name wins) and
+    ``not_found`` for the rest. Caps at ``MAX_RESOLVE_NAMES``.
+    """
+    cleaned = parse_invite_names(
+        "\n".join(names) if not isinstance(names, str) else names
+    )
+    if len(cleaned) > MAX_RESOLVE_NAMES:
+        raise PrivateFleetError(
+            f"Paste at most {MAX_RESOLVE_NAMES} names at a time"
+        )
+    if not cleaned:
+        return {"matched": [], "not_found": []}
+
+    by_key = {name.casefold(): name for name in cleaned}
+    matched_user: dict[int, dict] = {}
+    claimed: set[str] = set()
+    _match_invite_characters(cleaned, by_key, matched_user, claimed)
+    still = [n for n in cleaned if n.casefold() not in claimed]
+    _match_invite_discord(still, by_key, matched_user, claimed)
+    _prefer_primary_invite_names(matched_user)
+
+    matched = sorted(
+        matched_user.values(), key=lambda row: row["name"].lower()
+    )
+    not_found = [n for n in cleaned if n.casefold() not in claimed]
+    return {"matched": matched, "not_found": not_found}
 
 
 def send_wave(

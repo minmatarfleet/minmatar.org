@@ -13,7 +13,7 @@ Wireframes: the "Private Fleets" design canvas (Oct 2026).
 | Lists | Upcoming, History, Results and the desktop app show it only to its creator, Strategic FCs, and invitees who said I'm in. |
 | Who invites | The creator and Strategic FCs, in waves. Invitees can't forward an invite; they can bring any of their own characters. |
 | Answers | Picking a ship on the fleet page is I'm in. Sitting out clears the pilot's ships. A pilot can change their answer until the fleet starts. |
-| Waves | A wave picks tribe groups, corporations and pilots; players already invited (and the creator) are left out. One wave sends at a time, at most 300 players. Re-ping no answers DMs everyone who hasn't answered once more, at most once every 15 minutes. |
+| Waves | A wave picks tribe groups, corporations and pilots (search, or paste a list of primary character / Discord names); players already invited (and the creator) are left out. One wave sends at a time, at most 300 players. Re-ping no answers DMs everyone who hasn't answered once more, at most once every 15 minutes. |
 | Opsec line | Every DM, the thread summary and the top of the fleet page say: "Invite only. Don't mention this fleet in any channel, on comms or in chat." |
 | Thread | A private, not invitable Discord thread named `Op <id>` (the name shows in the audit log). The bot adds the creator and every Strategic FC when the fleet is created, and each pilot who says I'm in; Sitting out removes them. A pinned summary shows the ship targets. The bot locks and archives it when the fleet ends or is cancelled. |
 | Start ping | Posted once in the thread with `@everyone`, which in a thread reaches only its members. The sender checks the thread is a private thread (channel type 12) first and refuses otherwise. Never a pre-ping. |
@@ -40,7 +40,7 @@ DMs go out from `fleets.tasks.send_fleet_invite_wave` at about one a second, not
 - `EveFleet.invite_only`, `declassified_at`, `discord_thread_id`, `discord_summary_message_id`.
 - `EveFleetInviteWave` (fleet, number, sent_by, note, the picks, finished_at) and `EveFleetInvite` (fleet, wave, user, answer, answered_at, first_viewed_at, sent_at, dm_delivered, the DM's ids, in_thread). One invite per fleet and user.
 - `EveFleetShipTarget` (fleet, name, target, order, ship_type_ids, group_ids).
-- FC and Strategic FCs: `GET /api/fleets/{id}/invites`, `POST …/invites/preview`, `POST …/invites/waves`, `POST …/invites/reping`, `GET …/invites/candidates?q=`, `POST /api/fleets/{id}/declassify`.
+- FC and Strategic FCs: `GET /api/fleets/{id}/invites`, `POST …/invites/preview`, `POST …/invites/waves`, `POST …/invites/reping`, `GET …/invites/candidates?q=`, `POST …/invites/resolve` (paste of character / Discord names), `POST /api/fleets/{id}/declassify`.
 - Pilots: `POST /api/fleets/{id}/invites/me/out`. The bot's Sitting out button (`fleet_invite:out:<invite id>`, `bot/app/fleet_invites`) calls `POST /api/fleets/invites/{invite_id}/discord-out`.
 - `DISCORD_PRIVATE_FLEET_CHANNEL_ID` overrides the thread's parent channel; unset, it's the audience's channel. The bot needs Create Private Threads, Manage Threads and Mention Everyone there.
 

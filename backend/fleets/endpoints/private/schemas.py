@@ -123,3 +123,22 @@ class InviteCandidate(BaseModel):
     id: int
     name: str
     detail: str
+
+
+class ResolveNamesRequest(BaseModel):
+    """A paste of primary character names or Discord usernames."""
+
+    text: str = Field(default="", max_length=4000)
+
+
+class ResolvedPilot(BaseModel):
+    kind: str
+    id: int
+    name: str
+    detail: str
+    matched_as: str
+
+
+class ResolveNamesResponse(BaseModel):
+    matched: List[ResolvedPilot]
+    not_found: List[str]
