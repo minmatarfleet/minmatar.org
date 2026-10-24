@@ -65,6 +65,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import Input from '@components/blocks/Input.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 ---
 
 <div
@@ -141,21 +142,11 @@ import Textarea from '@components/blocks/Textarea.astro'
             <section class="[ fleet-invites__targets-block ]" aria-labelledby="fleet-invites-targets">
                 <header>
                     <h2 id="fleet-invites-targets">{t('fleets.private.against_targets')}</h2>
-                    <small>{t('fleets.private.against_targets_hint')}</small>
                     <a href="#ships">{t('fleets.private.edit_targets')}</a>
                 </header>
                 <ul class="[ fleet-invites__targets ]">
                     {data.targets.map(target =>
-                        <li>
-                            <span class="[ fleet-invites__target-head ]">
-                                <b>{target.name}</b>
-                                <span><b>{target.have}</b> / {target.target}</span>
-                            </span>
-                            <span class="[ fleet-invites__bar ]" role="img" aria-label={`${target.have} / ${target.target}`}>
-                                <span style={`width: ${Math.min(100, Math.round(100 * target.have / Math.max(target.target, 1)))}%`}></span>
-                            </span>
-                            {target.short > 0 && <small class="[ is-pending ]">{t('fleets.private.short').replace('{count}', target.short.toString())}</small>}
-                        </li>
+                        <li><ShipTargetMeter name={target.name} have={target.have} target={target.target} compact={true} /></li>
                     )}
                 </ul>
             </section>
@@ -443,36 +434,11 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .fleet-invites__targets {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-        gap: var(--space-s) var(--space-m);
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: var(--space-s) var(--space-l);
         list-style: none;
         padding: 0;
         margin: 0;
-
-        li {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-        }
-    }
-
-    .fleet-invites__target-head {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-2xs);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .fleet-invites__bar {
-        display: block;
-        height: var(--space-3xs);
-        background-color: var(--hairline-medium);
-
-        span {
-            display: block;
-            height: 100%;
-            background-color: var(--highlight);
-        }
     }
 
     .is-pending {

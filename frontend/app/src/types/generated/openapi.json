@@ -4660,6 +4660,27 @@
         "title": "CharacterFlagResponse",
         "type": "object"
       },
+      "CharacterHangar": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "ship_type_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "ship_type_ids"
+        ],
+        "title": "CharacterHangar",
+        "type": "object"
+      },
       "CharacterProducerRef": {
         "description": "Character producing this product type (industry jobs, planetary, and/or mining; total_value_isk aggregated).",
         "properties": {
@@ -24240,6 +24261,30 @@
         "title": "MyResponseSchema",
         "type": "object"
       },
+      "MyTargetHangarResponse": {
+        "properties": {
+          "hangars": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterHangar"
+            },
+            "title": "Hangars",
+            "type": "array"
+          },
+          "lines_by_ship": {
+            "items": {
+              "$ref": "#/components/schemas/ShipLine"
+            },
+            "title": "Lines By Ship",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines_by_ship",
+          "hangars"
+        ],
+        "title": "MyTargetHangarResponse",
+        "type": "object"
+      },
       "NestedBreakdownNode": {
         "description": "One node in a nested material breakdown tree.\nindustry_product_id is set when this type is an IndustryProduct, so the client\ncan fetch this node's breakdown via GET /products/{industry_product_id}/breakdown.",
         "properties": {
@@ -25583,6 +25628,72 @@
           "name"
         ],
         "title": "PartyAttachRequest",
+        "type": "object"
+      },
+      "PastTargetFleet": {
+        "properties": {
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PastTargetLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "title",
+          "start_time",
+          "lines"
+        ],
+        "title": "PastTargetFleet",
+        "type": "object"
+      },
+      "PastTargetLine": {
+        "properties": {
+          "group_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Group Ids",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "target",
+          "ship_type_ids",
+          "group_ids"
+        ],
+        "title": "PastTargetLine",
         "type": "object"
       },
       "PasteRequest": {
@@ -29940,6 +30051,24 @@
         "title": "ShipAsset",
         "type": "object"
       },
+      "ShipLine": {
+        "properties": {
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "target_id"
+        ],
+        "title": "ShipLine",
+        "type": "object"
+      },
       "ShipReimbursementProgramAmountResponse": {
         "properties": {
           "created_at": {
@@ -31006,6 +31135,27 @@
         "title": "Subscription",
         "type": "object"
       },
+      "SuggestedTargetLine": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "ship_type_ids"
+        ],
+        "title": "SuggestedTargetLine",
+        "type": "object"
+      },
       "SurveyQuestionsSchema": {
         "properties": {
           "campaign_id": {
@@ -31153,6 +31303,74 @@
           "own"
         ],
         "title": "TargetHelp",
+        "type": "object"
+      },
+      "TargetLineOwner": {
+        "properties": {
+          "at_formup": {
+            "title": "At Formup",
+            "type": "boolean"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "location_name": {
+            "title": "Location Name",
+            "type": "string"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "character_id",
+          "character_name",
+          "ship_type_id",
+          "ship_name",
+          "location_name",
+          "at_formup"
+        ],
+        "title": "TargetLineOwner",
+        "type": "object"
+      },
+      "TargetSuggestionsResponse": {
+        "description": "Lines to start from: one per EVE group in the doctrine, and the\ncaller's recent fleets that had targets.",
+        "properties": {
+          "doctrine": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedTargetLine"
+            },
+            "title": "Doctrine",
+            "type": "array"
+          },
+          "past_fleets": {
+            "items": {
+              "$ref": "#/components/schemas/PastTargetFleet"
+            },
+            "title": "Past Fleets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doctrine",
+          "past_fleets"
+        ],
+        "title": "TargetSuggestionsResponse",
         "type": "object"
       },
       "TestFleetCreationRequest": {
@@ -33452,6 +33670,29 @@
           "corp"
         ],
         "title": "UnknownCharacter",
+        "type": "object"
+      },
+      "UnmatchedHull": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "ship_name",
+          "characters"
+        ],
+        "title": "UnmatchedHull",
         "type": "object"
       },
       "UpcomingSlot": {
@@ -45906,6 +46147,193 @@
           }
         ],
         "summary": "Put Fleet Targets",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/targets/mine": {
+      "get": {
+        "description": "For the ship picker: the target line each doctrine hull counts toward, and the doctrine hulls each of your characters owns.",
+        "operationId": "fleets_endpoints_private_targets_get_my_target_hangar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTargetHangarResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get My Target Hangar",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/targets/suggestions": {
+      "get": {
+        "description": "Lines to start the fleet's targets from: one per EVE group in its doctrine, and your recent fleets' targets.",
+        "operationId": "fleets_endpoints_private_targets_get_target_suggestions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetSuggestionsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Target Suggestions",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/targets/unmatched": {
+      "get": {
+        "description": "Hulls signed up that no target line counts.",
+        "operationId": "fleets_endpoints_private_targets_get_unmatched_hulls",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnmatchedHull"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Unmatched Hulls",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/targets/{target_id}/owners": {
+      "get": {
+        "description": "Private fleets: alliance players not yet invited who own a hull this line counts, from ESI assets. The fleet's creator and Strategic FCs only.",
+        "operationId": "fleets_endpoints_private_targets_get_line_owners",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "title": "Target Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TargetLineOwner"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Line Owners",
         "tags": [
           "Fleets"
         ]

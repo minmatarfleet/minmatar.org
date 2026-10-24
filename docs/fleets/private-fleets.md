@@ -29,7 +29,14 @@ Wireframes: the "Private Fleets" design canvas (Oct 2026).
 
 ## Ship targets
 
-Any fleet can have ship target lines: a name, a count and the hulls (`ship_type_ids`) or EVE groups (`group_ids`) that count, e.g. 40 Dreads, 40 TFIs, 20 Logistics. A hull or group may sit on one line only; each signed-up character counts once per line. `GET`/`PUT /api/fleets/{id}/targets`. On a private fleet they show on the Invites tab, in the wave preview (how many of the new players own a hull for each line, from their ESI assets) and to pilots in the ship picker ("Still needed").
+Any fleet can have ship target lines: a name, a count and the hulls (`ship_type_ids`) or EVE groups (`group_ids`) that count, e.g. 40 Dreads, 40 TFIs, 20 Logistics. A hull or group may sit on one line only; each signed-up character counts once per line. `GET`/`PUT /api/fleets/{id}/targets`.
+
+Every surface shows a line the same way (`ShipTargetMeter`): the name, a bar and one number, how many more are needed (orange) or Met (green). Lines keep the FC's order.
+
+- **Ships tab** (`partials/fleet_ship_targets_component`): managers edit one line at a time (name, how many, hulls or groups from a search; one already on another line says so, and picking it moves it). With no lines yet, they start from the fleet's doctrine, one line per EVE group with its hulls filled in (`GET …/targets/suggestions`), or copy a past fleet's lines (only fleets they created). Hulls signed up on no line are listed for managers (`GET …/targets/unmatched`).
+- **Find pilots** (private fleets that haven't ended, creator and Strategic FCs): lists alliance players not yet invited who own a hull for a short line, from ESI assets, nearest the form-up first (`GET …/targets/{target_id}/owners`); Invite sends them as the next wave.
+- **Ship picker**: Still needed bars, each option says which line it fills and whether it's still needed, hulls a character owns come first, and a character not bringing anything is offered an owned hull for a short line (`GET …/targets/mine`).
+- **Invites tab, wave preview and thread summary**: the same lines; the pinned summary says `14 / 40 · 26 needed` or `✓ Met`.
 
 ## Sending
 

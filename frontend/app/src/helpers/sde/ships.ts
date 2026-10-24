@@ -200,3 +200,25 @@ export async function get_ship_groups():Promise<ShipHull[]> {
         .filter(row => row.groupName)
         .map(row => ({ type_id: row.groupId, name: row.groupName as string }))
 }
+
+/** Every published ship's EVE group, by type id: tells the target line
+ * editor which line already counts a hull through its group. */
+export async function get_ship_hull_group_ids():Promise<Map<number, number>> {
+    const q = await sde_db.select({
+        typeId: schema.invTypes.typeId,
+        groupId: schema.invTypes.groupId,
+    })
+    .from(schema.invTypes)
+    .innerJoin(
+        schema.invGroups,
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
+    )
+    .where(
+        and(
+            eq(schema.invGroups.categoryId, 6),
+            eq(schema.invTypes.published, '1'),
+        )
+    )
+
+    return new Map(q.map(row => [row.typeId, row.groupId as number]))
+}

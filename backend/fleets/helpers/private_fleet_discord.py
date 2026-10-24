@@ -344,7 +344,7 @@ def summary_payload(fleet) -> dict:
     fields = [
         {
             "name": row["name"],
-            "value": f"{row['have']} / {row['target']}",
+            "value": _target_value(row),
             "inline": True,
         }
         for row in target_progress(fleet)
@@ -378,6 +378,12 @@ def summary_payload(fleet) -> dict:
             _link("Change my ships", fleet_url(fleet.id)),
         ),
     }
+
+
+def _target_value(row: dict) -> str:
+    """'14 / 40 · 26 needed', or '4 / 4 · ✓ Met' once the line is full."""
+    status = f"{row['short']} needed" if row["short"] else "✓ Met"
+    return f"{row['have']} / {row['target']} · {status}"
 
 
 def _count(number: int, one: str, many: str = "") -> str:

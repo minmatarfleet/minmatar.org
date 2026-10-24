@@ -43,7 +43,7 @@ import Button from '@components/blocks/Button.astro'
                     {preview.helps.map(help =>
                         <li>
                             <b>{help.name}</b>
-                            <small class="[ is-pending ]">{t('fleets.private.short').replace('{count}', help.short.toString())}</small>
+                            <small class="[ is-pending ]">{t('fleets.targets.needed').replace('{count}', help.short.toString())}</small>
                             <span>{t('fleets.private.preview_own').replace('{count}', help.own.toString())}</span>
                         </li>
                     )}

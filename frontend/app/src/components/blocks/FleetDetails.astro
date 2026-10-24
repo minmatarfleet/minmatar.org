@@ -197,6 +197,8 @@ import { query_string } from '@helpers/string'
 const TARGETS_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({
     fleet_id: fleet.id,
     can_manage: Boolean(can_manage && !cancelled),
+    // Find pilots sends a wave: private fleets that haven't ended.
+    can_invite: Boolean(still_private && show_invites && !cancelled && !history),
 })}`
 const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
     fleet_id: fleet.id,

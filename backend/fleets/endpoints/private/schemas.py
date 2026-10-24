@@ -142,3 +142,61 @@ class ResolvedPilot(BaseModel):
 class ResolveNamesResponse(BaseModel):
     matched: List[ResolvedPilot]
     not_found: List[str]
+
+
+class SuggestedTargetLine(BaseModel):
+    name: str
+    ship_type_ids: List[int]
+
+
+class PastTargetLine(BaseModel):
+    name: str
+    target: int
+    ship_type_ids: List[int]
+    group_ids: List[int]
+
+
+class PastTargetFleet(BaseModel):
+    fleet_id: int
+    title: str
+    start_time: datetime
+    lines: List[PastTargetLine]
+
+
+class TargetSuggestionsResponse(BaseModel):
+    """Lines to start from: one per EVE group in the doctrine, and the
+    caller's recent fleets that had targets."""
+
+    doctrine: List[SuggestedTargetLine]
+    past_fleets: List[PastTargetFleet]
+
+
+class UnmatchedHull(BaseModel):
+    ship_type_id: int
+    ship_name: str
+    characters: int
+
+
+class TargetLineOwner(BaseModel):
+    user_id: int
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_name: str
+    location_name: str
+    at_formup: bool
+
+
+class ShipLine(BaseModel):
+    ship_type_id: int
+    target_id: int
+
+
+class CharacterHangar(BaseModel):
+    character_id: int
+    ship_type_ids: List[int]
+
+
+class MyTargetHangarResponse(BaseModel):
+    lines_by_ship: List[ShipLine]
+    hangars: List[CharacterHangar]

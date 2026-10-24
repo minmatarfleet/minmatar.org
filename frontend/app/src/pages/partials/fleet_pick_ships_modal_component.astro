@@ -18,6 +18,8 @@ import {
     get_fleet_composition,
     get_fleet_my_pilots,
     get_fleet_targets,
+    get_my_target_hangar,
+    type MyTargetHangar,
     type ShipTargetProgress,
     type FleetCompositionEntry,
     type MyFleetPilot,
@@ -27,21 +29,25 @@ import { BURST_KINDS, counts_from_bursts, default_burst_counts } from '@helpers/
 import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
 import { get_ship_hulls } from '@helpers/sde/ships'
+import { get_item_icon } from '@helpers/eve_image_server'
 import type { ShipHull } from '@dtypes/layout_components'
 
 let composition: FleetCompositionEntry[] = []
 let pilots: MyFleetPilot[] = []
 let hulls: ShipHull[] = []
 let targets: ShipTargetProgress[] = []
+let hangar: MyTargetHangar = { lines_by_ship: [], hangars: [] }
 let fetch_error: Error | false = false
 
 try {
-    ;[composition, pilots, hulls, targets] = await Promise.all([
+    ;[composition, pilots, hulls, targets, hangar] = await Promise.all([
         get_fleet_composition(auth_token as string, fleet_id),
         get_fleet_my_pilots(auth_token as string, fleet_id),
         get_ship_hulls(),
         // Ship targets the fleet is still short of; never blocks the picker.
         get_fleet_targets(auth_token as string, fleet_id).catch(() => []),
+        // Which line each doctrine hull fills and what each character owns.
+        get_my_target_hangar(auth_token as string, fleet_id).catch(() => ({ lines_by_ship: [], hangars: [] })),
     ])
 } catch (error) {
     fetch_error = error
@@ -79,7 +85,40 @@ const off_doctrine_hull = (pilot:MyFleetPilot) => {
 }
 
 const has_suggestions = pilots.some(pilot => pilot.suggestion)
-const still_needed = targets.filter(target => target.short > 0)
+
+// Ship targets: each option says which line it fills and whether that line
+// is still short; hulls a character owns are listed first, and a character
+// not bringing anything is offered an owned hull for a short line.
+const target_by_id = new Map(targets.map(target => [target.id, target]))
+const line_by_ship = new Map(hangar.lines_by_ship.map(row => [row.ship_type_id, target_by_id.get(row.target_id)]))
+const owned_by_character = new Map(hangar.hangars.map(row => [row.character_id, new Set(row.ship_type_ids)]))
+
+const option_label = (entry:FleetCompositionEntry) => {
+    const line = line_by_ship.get(entry.ship_id)
+    if (!line) return entry.name
+    return t(line.short > 0 ? 'fleets.targets.option_needed' : 'fleets.targets.option_met')
+        .replace('{ship}', entry.name)
+        .replace('{line}', line.name)
+}
+const owned_entries = (pilot:MyFleetPilot) => {
+    const owned = owned_by_character.get(pilot.character_id)
+    return owned ? composition.filter(entry => owned.has(entry.ship_id)) : []
+}
+const pilot_groups = (pilot:MyFleetPilot) => {
+    const owned = owned_entries(pilot)
+    const keys = new Set(owned.map(entry => entry.key))
+    return [
+        ...(owned.length ? [{ title: t('fleets.targets.in_hangar'), entries: owned }] : []),
+        ...groups
+            .map(group => ({ ...group, entries: group.entries.filter(entry => !keys.has(entry.key)) }))
+            .filter(group => group.entries.length > 0),
+    ]
+}
+const hangar_hint = (pilot:MyFleetPilot) => {
+    const entry = owned_entries(pilot).find(entry => (line_by_ship.get(entry.ship_id)?.short ?? 0) > 0)
+    if (!entry) return null
+    return { entry, line: line_by_ship.get(entry.ship_id)! }
+}
 
 const suggested_label = (pilot:MyFleetPilot) => {
     const { ship_name, fleets } = pilot.suggestion!
@@ -125,6 +164,7 @@ import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
 import Input from '@components/blocks/Input.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
+import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 ---
 
 {fetch_error ?
@@ -146,12 +186,15 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                 <small>{t(has_suggestions ? 'pick_ships_suggested_subtitle' : 'pick_ships_subtitle')}</small>
             </Flexblock>
 
-            {still_needed.length > 0 &&
-                <p class="[ pick-ships__needed ]">
-                    <b>{t('fleets.targets.still_needed')}</b>
-                    {still_needed.map(target => <span><b>{target.short}</b> {target.name}</span>)}
-                    <small>{t('fleets.targets.still_needed_hint')}</small>
-                </p>
+            {targets.length > 0 &&
+                <section class="[ pick-ships__needed ]" aria-labelledby={`pick-ships-needed-${fleet_id}`}>
+                    <b id={`pick-ships-needed-${fleet_id}`}>{t('fleets.targets.still_needed')}</b>
+                    <div class="[ pick-ships__meters ]">
+                        {targets.map(target =>
+                            <ShipTargetMeter name={target.name} have={target.have} target={target.target} compact={true} />
+                        )}
+                    </div>
+                </section>
             }
 
             {composition.length === 0 ?
@@ -184,10 +227,10 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                             </PilotBadge>
                             <Select name={`ship_${pilot.character_id}`} size='sm' x-model="ship">
                                 <option value="" selected={selected_key(pilot) === ''}>{t('pick_ships_not_flying')}</option>
-                                {groups.map(group =>
+                                {pilot_groups(pilot).map(group =>
                                     <optgroup label={group.title}>
                                         {group.entries.map(entry =>
-                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{entry.name}</option>
+                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{option_label(entry)}</option>
                                         )}
                                     </optgroup>
                                 )}
@@ -198,6 +241,16 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                     <option value="other">{t('pick_ships_other_ship')}</option>
                                 </optgroup>
                             </Select>
+                            {hangar_hint(pilot) &&
+                                <p class="[ pick-ships__hint ]" x-show="ship === ''" x-cloak={selected_key(pilot) !== '' ? true : undefined}>
+                                    <img src={get_item_icon(hangar_hint(pilot)!.entry.ship_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                    <span>
+                                        {t('fleets.targets.has_hull').replace('{ship}', hangar_hint(pilot)!.entry.ship_name || hangar_hint(pilot)!.entry.name)}
+                                        {' '}<b>{t('fleets.targets.line_needs_it').replace('{name}', hangar_hint(pilot)!.line.name)}</b>
+                                    </span>
+                                    <button type="button" x-on:click={`ship = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</button>
+                                </p>
+                            }
                             <label class="[ pick-ships__other ]" x-show="ship === 'other'" x-cloak>
                                 <span class="[ visually-hidden ]">{t('pick_ships_other_ship_label')}</span>
                                 <Input
@@ -273,18 +326,48 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 <style lang="scss">
     .pick-ships__needed {
         display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: var(--space-3xs) var(--space-s);
-        padding: var(--space-2xs) var(--space-xs);
-        border: 1px solid var(--border-color);
+        flex-direction: column;
+        gap: var(--space-2xs);
 
-        span b {
+        > b {
+            color: var(--highlight);
+        }
+    }
+
+    .pick-ships__meters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: var(--space-xs) var(--space-m);
+    }
+
+    .pick-ships__hint {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 var(--space-2xs);
+        grid-column: 1 / -1;
+        padding-inline-start: var(--space-xl);
+        color: var(--foreground);
+        font-size: var(--step--1);
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        b {
             color: var(--fleet-yellow);
         }
 
-        small {
-            color: var(--text-muted);
+        button {
+            min-height: 2.75rem;
+            padding: 0;
+            background: none;
+            border: 0;
+            color: var(--fleet-yellow);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
         }
     }
 

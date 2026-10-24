@@ -1,0 +1,105 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * One ship target line: its name, how many signed up and one number,
+ * how many more are needed (orange) or Met (green). Used on the Ships tab,
+ * the Invites tab and in the ship picker.
+ */
+interface Props {
+    name:           string;
+    have:           number;
+    target:         number;
+    compact?:       boolean;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    have,
+    target,
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const short = Math.max(target - have, 0)
+const extra = Math.max(have - target, 0)
+const met = short === 0
+const width = Math.min(100, Math.round(100 * have / Math.max(target, 1)))
+const label = !met ?
+    t('fleets.targets.needed').replace('{count}', short.toString()) :
+    extra > 0 ?
+        t('fleets.targets.met_extra').replace('{count}', extra.toString()) :
+        t('fleets.targets.met')
+const counts = t('fleets.targets.of')
+    .replace('{have}', have.toString())
+    .replace('{target}', target.toString())
+---
+
+<div class:list={['[ ship-target-meter ]', Astro.props.class]} {...attributes}>
+    <span class="[ ship-target-meter__head ]">
+        <span>
+            <b>{name}</b>
+            {!compact && <span class="[ ship-target-meter__counts ]">{counts}</span>}
+        </span>
+        <span class:list={['[ ship-target-meter__label ]', { 'is-met': met }]}>{label}</span>
+    </span>
+    <span class="[ ship-target-meter__track ]" role="img" aria-label={`${name}: ${counts}, ${label}`}>
+        <span class:list={[{ 'is-met': met }]} style={`width: ${width}%`}></span>
+    </span>
+</div>
+
+<style lang="scss">
+    .ship-target-meter {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .ship-target-meter__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .ship-target-meter__counts {
+        margin-left: var(--space-3xs);
+        color: var(--text-muted);
+    }
+
+    .ship-target-meter__label {
+        flex: none;
+        color: var(--fleet-yellow);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+
+        &.is-met {
+            color: var(--green);
+        }
+    }
+
+    .ship-target-meter__track {
+        display: block;
+        height: var(--space-3xs);
+        background-color: var(--hairline-medium);
+
+        span {
+            display: block;
+            height: 100%;
+            background-color: var(--highlight);
+
+            &.is-met {
+                background-color: var(--green);
+            }
+        }
+    }
+</style>
