@@ -105,7 +105,23 @@ def _wanted(fleet) -> str:
     )
 
 
+def reminder_embed(invite) -> dict:
+    """The re-ping: a short nudge under the original invite, which already
+    has the details."""
+    fleet = invite.eve_fleet
+    return {
+        "author": {"name": "Fleets · Private"},
+        "title": f"Still coming? {fleet_title(fleet)}",
+        "url": fleet_url(fleet.id),
+        "description": "You haven't answered yet. **Not this time?** Hit "
+        f"**Sitting out** so {_fc_name(fleet)} isn't waiting on you.",
+        "color": _COLOR,
+    }
+
+
 def invite_embed(invite, *, reminder: bool = False) -> dict:
+    if reminder:
+        return reminder_embed(invite)
     fleet = invite.eve_fleet
     fields = [
         {
@@ -144,12 +160,9 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
     if note:
         description += f"\n> {note}"
     description += f"\n\n🔒 **{OPSEC_LINE}**"
-    title = f"You're invited: {fleet_title(fleet)}"
-    if reminder:
-        title = f"Still coming? {fleet_title(fleet)}"
     return {
         "author": {"name": "Fleets · Private"},
-        "title": title,
+        "title": f"You're invited: {fleet_title(fleet)}",
         "url": fleet_url(fleet.id),
         "description": description,
         "fields": fields,
@@ -158,13 +171,20 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
 
 
 def invite_payload(invite, *, reminder: bool = False) -> dict:
-    return {
+    payload = {
         "embeds": [invite_embed(invite, reminder=reminder)],
         "components": _row(
             _link("I'm in: pick ships", fleet_url(invite.eve_fleet_id)),
             _sit_out_button(invite.id),
         ),
     }
+    if reminder and invite.dm_message_id:
+        # Reply to the last DM, so the details are one click up.
+        payload["message_reference"] = {
+            "message_id": str(invite.dm_message_id),
+            "fail_if_not_exists": False,
+        }
+    return payload
 
 
 def answered_payload(invite) -> dict:
