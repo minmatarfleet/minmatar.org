@@ -37,6 +37,7 @@ from fleets.models import (
 )
 from fleets.tasks import (
     post_private_fleet_start_ping,
+    send_fleet_invite_reminders,
     send_fleet_invite_wave,
     update_fleet_schedule,
 )
@@ -291,6 +292,32 @@ class WaveTests(PrivateFleetTestBase):
         with self.assertRaises(PrivateFleetError) as error:
             reping_no_answers(fleet)
         self.assertEqual(error.exception.status_code, 429)
+
+    def test_reping_nudges_only_unanswered_pilots(self):
+        fleet = self.private_fleet()
+        (invite,) = self.invite(fleet, self.pilot)
+        EveFleetInvite.objects.update(dm_delivered=True, dm_message_id=55)
+        with patch("fleets.tasks.discord_client") as client:
+            client.send_dm.return_value.json.return_value = {
+                "id": "57",
+                "channel_id": "66",
+            }
+            send_fleet_invite_reminders(fleet.id, [invite.id])
+            payload = client.send_dm.call_args.kwargs["payload"]
+            embed = payload["embeds"][0]
+            self.assertTrue(embed["title"].startswith("Still coming?"))
+            self.assertIn("Hit **Sitting out**", embed["description"])
+            self.assertNotIn("fields", embed)
+            self.assertEqual(payload["message_reference"]["message_id"], "55")
+            labels = [
+                b["label"] for b in payload["components"][0]["components"]
+            ]
+            self.assertIn("Sitting out", labels)
+
+            # Answered since the re-ping was queued: no nudge.
+            EveFleetInvite.objects.update(answer=EveFleetInvite.ANSWER_OUT)
+            send_fleet_invite_reminders(fleet.id, [invite.id])
+        self.assertEqual(client.send_dm.call_count, 1)
 
     def test_invites_tab_leak_trace_for_strategic_fcs_only(self):
         fleet = self.private_fleet(created_by=self.outsider)
