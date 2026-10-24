@@ -103,7 +103,9 @@ def _wave_labels(waves) -> dict[int, list[str]]:
     return labels
 
 
-def _ships_by_user(fleet, user_ids) -> dict[int, list[str]]:
+def _ships_by_user(fleet, user_ids, mains) -> dict[int, list[str]]:
+    """Each player's signed-up hulls. A hull flown by an alt names the alt."""
+    main_ids = {main.character_id for main in mains.values()}
     owners = dict(
         EveCharacter.objects.filter(user_id__in=user_ids).values_list(
             "character_id", "user_id"
@@ -118,9 +120,9 @@ def _ships_by_user(fleet, user_ids) -> dict[int, list[str]]:
             ship = volunteer.fitting.name
         elif volunteer.fleet_fitting_id:
             ship = volunteer.fleet_fitting.name
-        ships[owners[volunteer.character_id]].append(
-            f"{ship} ({volunteer.character_name})"
-        )
+        if volunteer.character_id not in main_ids:
+            ship = f"{ship} ({volunteer.character_name})"
+        ships[owners[volunteer.character_id]].append(ship)
     return ships
 
 
@@ -146,7 +148,7 @@ def get_fleet_invites(request, fleet_id: int):
             }
         ).values_list("corporation_id", "name")
     )
-    ships = _ships_by_user(fleet, user_ids)
+    ships = _ships_by_user(fleet, user_ids, mains)
     labels = _wave_labels(waves)
     by_wave: dict[int, list] = defaultdict(list)
     for invite in invites:
